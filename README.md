@@ -105,6 +105,8 @@ type: custom:einkaufsliste-card
    - **👤 Für wen?**: Einfach die Person antippen (nur, wenn Personen angelegt sind)
 3. Auf den **grünen Haken ✅** tippen. Fertig!
 
+Doch nicht? Rechts in der Leiste erscheint ein roter **Radiergummi 🧽**. Ein Tipp darauf leert alle Felder auf einmal.
+
 Was du gewählt hast, steht direkt am Symbol, zum Beispiel **🔢 2x · 👤 Oma**. Bei der Notiz zeigt ein **blauer Punkt**, dass etwas drinsteht. Nach dem Eintragen klappt alles wieder zu. ✨
 
 ---

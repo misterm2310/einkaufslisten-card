@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.8.0";
+const EL_VERSION = "1.8.1";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -162,6 +162,7 @@ form.add .extras { grid-column: 1 / -1; display:flex; flex-direction:column; gap
 form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .tool.busy ha-icon { animation: pulse 1s infinite; }
 .tool.hasval { color:var(--primary-color,#03a9f4); }
+.tool.tclear { margin-left:auto; color:var(--error-color,#db4437); }
 .tool .tval { font-size:.8em; font-weight:600; margin-left:3px; line-height:1; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chipbox { display:flex; flex-direction:column; gap:6px; }
 .chips { display:flex; flex-wrap:wrap; gap:6px; }
@@ -403,6 +404,7 @@ class EinkaufslisteCard extends HTMLElement {
               <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon></button>
               <button class="tool" id="tNote" type="button" data-act="tool" data-field="inNote" title="Notiz"><ha-icon icon="mdi:note-text-outline"></ha-icon></button>
               <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon></button>
+              <button class="tool tclear" id="tClear" type="button" data-act="clear-form" title="Alles leeren" hidden><ha-icon icon="mdi:eraser"></ha-icon></button>
             </div>
             <div class="extras">
               <div id="qtyBox" class="chipbox" hidden>
@@ -430,13 +432,13 @@ class EinkaufslisteCard extends HTMLElement {
     const root = this.shadowRoot;
     this.$("addForm").addEventListener("submit", (e) => this._onAdd(e));
     this.$("newPhotoFile").addEventListener("change", (e) => this._onNewPhotoFile(e));
-    this.$("inCat").addEventListener("change", () => { this._catManual = !!this.$("inCat").value; });
+    this.$("inCat").addEventListener("change", () => { this._catManual = !!this.$("inCat").value; this._updateTools(); });
     for (const id of ["inQty", "inNote", "inFor"]) {
       this.$(id).addEventListener("input", () => this._updateTools());
       this.$(id).addEventListener("change", () => this._updateTools());
     }
     this.$("photoFile").addEventListener("change", (e) => this._onPhotoFile(e));
-    this.$("inName").addEventListener("input", () => { if (!this.$("inName").value.trim()) this._pendingBarcode = null; this._onNameInput(); if (!this._editing) this._renderList(); });
+    this.$("inName").addEventListener("input", () => { if (!this.$("inName").value.trim()) this._pendingBarcode = null; this._onNameInput(); this._updateTools(); if (!this._editing) this._renderList(); });
     root.addEventListener("click", (e) => this._onClick(e), true);
     this._setupTabScroll(this.$("tabs"));
     root.addEventListener("change", (e) => this._onChange(e));
@@ -1058,6 +1060,19 @@ class EinkaufslisteCard extends HTMLElement {
     this._updateTools();
   }
 
+  _clearForm() {
+    for (const id of ["inName", "inQty", "inNote", "inFor", "inCat"]) this.$(id).value = "";
+    for (const id of ["qtyBox", "inQty", "inNote", "forBox"]) this.$(id).hidden = true;
+    const tab = this._activeTab;
+    this.$("inStore").value = tab !== "all" && tab !== "none" ? tab : "";
+    this._newPhoto = null;
+    this._pendingBarcode = null;
+    this._catManual = false;
+    this._updateNewPhotoBtn();
+    this._updateTools();
+    this._renderList();
+  }
+
   _renderQtyChips() {
     const val = this.$("inQty").value.trim();
     const quick = ["1x", "2x", "3x", "4x", "6x", "10x"];
@@ -1076,6 +1091,12 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _updateTools() {
+    const clear = this.$("tClear");
+    if (clear) {
+      const any = ["inName", "inQty", "inNote", "inFor"].some((id) => this.$(id)?.value.trim())
+        || this._newPhoto || this._pendingBarcode || this._catManual;
+      clear.hidden = !any;
+    }
     const tools = [
       ["tQty", "qtyBox", this.$("inQty")?.value.trim(), "mdi:numeric"],
       ["tNote", "inNote", this.$("inNote")?.value.trim() ? "✓" : "", "mdi:note-text-outline"],
@@ -1101,6 +1122,7 @@ class EinkaufslisteCard extends HTMLElement {
     const btn = this.$("btnNewPhoto");
     btn.classList.toggle("on", !!this._newPhoto);
     btn.classList.toggle("filled", !!this._newPhoto);
+    this._updateTools();
     btn.title = this._newPhoto ? "Foto ist dabei – antippen zum Entfernen" : "Foto zum Artikel";
     btn.querySelector("ha-icon").setAttribute("icon", this._newPhoto ? "mdi:camera" : "mdi:camera-plus-outline");
   }
@@ -1220,6 +1242,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._toast(`🤔 Diesen Barcode kenne ich noch nicht – tipp den Namen ein, ich merk ihn mir!`);
       }
       nameEl.focus();
+      this._updateTools();
       this._renderList();
     } catch (_) { /* Meldung kam schon */ } finally {
       btn.classList.remove("busy");
@@ -1342,6 +1365,11 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "tool":
         this._toggleTool(el.dataset.field);
+        break;
+      case "clear-form":
+        this._clearForm();
+        this._toast("🧽 Alles geleert");
+        this.$("inName").focus();
         break;
       case "qty-chip": {
         const q = this.$("inQty");
