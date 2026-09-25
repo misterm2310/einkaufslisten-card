@@ -818,16 +818,24 @@ class EinkaufslisteManager:
         self._changed()
 
     @callback
-    def apply_recipe(self, recipe_id: str, added_by: str | None = None) -> dict[str, Any]:
-        """Alle Zutaten eines Rezepts auf die Liste setzen."""
+    def apply_recipe(
+        self, recipe_id: str, added_by: str | None = None, only: list[int] | None = None
+    ) -> dict[str, Any]:
+        """Zutaten eines Rezepts auf die Liste setzen (alle oder nur die ausgewählten Nummern)."""
         recipe = self.recipe_by_id(recipe_id)
         if recipe is None:
             raise ValueError("Dieses Rezept gibt es nicht (mehr).")
         if not recipe["items"]:
             raise ValueError("Das Rezept hat noch keine Zutaten.")
+        entries = recipe["items"]
+        if only is not None:
+            wanted = set(only)
+            entries = [e for n, e in enumerate(recipe["items"]) if n in wanted]
+            if not entries:
+                raise ValueError("Du hast keine Zutat ausgewählt.")
         added = 0
         already = 0
-        for entry in recipe["items"]:
+        for entry in entries:
             hist = self.history_for(entry["name"]) or {}
             store_id = entry["store_id"] or hist.get("store_id")
             store_id = store_id if self.store_by_id(store_id) else None

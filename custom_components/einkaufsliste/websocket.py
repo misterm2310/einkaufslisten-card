@@ -11,7 +11,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .barcode import async_lookup
+from .barcode import async_auto_photo, async_lookup
 from .const import DOMAIN, SIGNAL_UPDATED
 from .manager import EinkaufslisteManager, person_name_for_user
 
@@ -123,11 +123,9 @@ def ws_subscribe(hass, connection, msg):
 @callback
 def ws_item_add(hass, connection, msg):
     who = _user_name(hass, connection)
-    _run(
-        hass,
-        connection,
-        msg,
-        lambda m: m.add_item(
+
+    def _add(m):
+        item = m.add_item(
             msg["name"],
             store_id=msg.get("store_id"),
             category_id=msg.get("category_id"),
@@ -137,8 +135,19 @@ def ws_item_add(hass, connection, msg):
             added_by=who,
             barcode=msg.get("barcode"),
             added_by_id=connection.user.id if connection.user else None,
-        ),
-    )
+        )
+        _auto_photo(hass, m, msg.get("barcode"), item["name"])
+        return item
+
+    _run(hass, connection, msg, _add)
+
+
+def _auto_photo(hass, manager, code, name) -> None:
+    """Gescannt und noch kein Foto? Dann im Hintergrund das Produktfoto holen."""
+    if code and name and not manager.photos.get(name.strip().lower()):
+        hass.async_create_background_task(
+            async_auto_photo(hass, manager, code, name), "einkaufsliste_auto_photo"
+        )
 
 
 @websocket_api.websocket_command(
@@ -314,12 +323,16 @@ def ws_recipe_remove(hass, connection, msg):
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/recipe/apply", vol.Required("recipe_id"): str}
+    {
+        vol.Required("type"): "einkaufsliste/recipe/apply",
+        vol.Required("recipe_id"): str,
+        vol.Optional("items"): [vol.Coerce(int)],
+    }
 )
 @callback
 def ws_recipe_apply(hass, connection, msg):
     who = _user_name(hass, connection)
-    _run(hass, connection, msg, lambda m: m.apply_recipe(msg["recipe_id"], who))
+    _run(hass, connection, msg, lambda m: m.apply_recipe(msg["recipe_id"], who, msg.get("items")))
 
 
 async def _run_async(hass, connection, msg, coro_factory) -> None:
@@ -385,7 +398,12 @@ async def ws_barcode_lookup(hass, connection, msg):
 )
 @callback
 def ws_barcode_assign(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: m.assign_barcode(msg["item_id"], msg["code"]))
+    def _assign(m):
+        result = m.assign_barcode(msg["item_id"], msg["code"])
+        _auto_photo(hass, m, result["code"], result["name"])
+        return result
+
+    _run(hass, connection, msg, _assign)
 
 
 @websocket_api.websocket_command(

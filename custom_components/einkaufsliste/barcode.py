@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import logging
 import re
 from typing import Any
+from urllib.parse import urlparse
 
 import aiohttp
 
@@ -128,3 +130,72 @@ async def async_lookup(hass: HomeAssistant, manager: Any, code: str) -> dict[str
             ),
         }
     return {"code": code, "found": False}
+
+
+# Bilder nur von den offiziellen Bild-Servern der Datenbanken laden
+IMAGE_HOSTS = (
+    "images.openfoodfacts.org",
+    "images.openbeautyfacts.org",
+    "images.openproductsfacts.org",
+    "static.openfoodfacts.org",
+    "static.openbeautyfacts.org",
+    "static.openproductsfacts.org",
+)
+IMAGE_FIELDS = "image_front_url,image_front_small_url,image_url"
+MAX_IMAGE = 3 * 1024 * 1024
+
+
+async def _image_url(session: aiohttp.ClientSession, code: str) -> str | None:
+    for source, base in SOURCES:
+        try:
+            async with asyncio.timeout(8):
+                resp = await session.get(
+                    f"{base}/api/v2/product/{code}.json",
+                    params={"fields": IMAGE_FIELDS},
+                    headers={"User-Agent": USER_AGENT},
+                )
+                if resp.status != 200:
+                    continue
+                data = await resp.json(content_type=None)
+        except (TimeoutError, aiohttp.ClientError, ValueError) as err:
+            _LOGGER.debug("%s nicht erreichbar: %s", source, err)
+            continue
+        if not isinstance(data, dict) or data.get("status") != 1:
+            continue
+        product = data.get("product") or {}
+        for key in IMAGE_FIELDS.split(","):
+            url = product.get(key)
+            if isinstance(url, str) and url.startswith("https://") and urlparse(url).hostname in IMAGE_HOSTS:
+                return url
+    return None
+
+
+async def async_auto_photo(hass: HomeAssistant, manager: Any, code: str, name: str) -> bool:
+    """📸 Produktfoto aus der Datenbank holen – aber nur, wenn es noch kein eigenes Foto gibt."""
+    code = _clean_code(code)
+    if not code or not name or manager.photos.get(name.strip().lower()):
+        return False
+    session = async_get_clientsession(hass)
+    url = await _image_url(session, code)
+    if not url:
+        return False
+    try:
+        async with asyncio.timeout(15):
+            resp = await session.get(url, headers={"User-Agent": USER_AGENT})
+            if resp.status != 200:
+                return False
+            raw = await resp.content.read(MAX_IMAGE + 1)
+    except (TimeoutError, aiohttp.ClientError) as err:
+        _LOGGER.debug("Produktfoto nicht ladbar: %s", err)
+        return False
+    if len(raw) > MAX_IMAGE:
+        return False
+    # Inzwischen doch ein eigenes Foto gemacht? Dann das eigene behalten.
+    if manager.photos.get(name.strip().lower()):
+        return False
+    try:
+        await manager.async_set_photo(name, base64.b64encode(raw).decode())
+    except ValueError as err:
+        _LOGGER.debug("Produktfoto abgelehnt: %s", err)
+        return False
+    return True

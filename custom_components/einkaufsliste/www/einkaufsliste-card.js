@@ -2,7 +2,27 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.0.4";
+const EL_VERSION = "2.1.0";
+
+// Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
+const DUP_SYNONYMS = (() => {
+  const groups = [
+    ["klopapier", "toilettenpapier", "wcpapier", "klopapie"],
+    ["küchenrolle", "küchenpapier", "küchentücher"],
+    ["taschentücher", "taschentuch", "tempos", "tempo"],
+    ["brötchen", "semmel", "semmeln", "schrippen", "schrippe"],
+    ["sahne", "schlagsahne"],
+    ["hackfleisch", "hack", "gehacktes"],
+    ["spülmittel", "spüli"],
+    ["kartoffel", "kartoffeln", "erdäpfel"],
+    ["joghurt", "jogurt", "yoghurt"],
+    ["spülmaschinentabs", "spülitabs", "tabs", "geschirrspültabs"],
+    ["mineralwasser", "sprudel", "wasser"],
+  ];
+  const map = {};
+  for (const g of groups) for (const w of g) map[w] = g[0];
+  return map;
+})();
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -220,6 +240,16 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .qbtn { width:40px; height:40px; border-radius:50%; border:1.5px solid var(--primary-color,#03a9f4); background:transparent; color:var(--primary-color,#03a9f4); font-size:1.3em; cursor:pointer; }
 .qbtn[disabled] { opacity:.3; }
 .qval { min-width:44px; text-align:center; font-weight:600; font-size:1.1em; }
+ha-card.shop form.add { display:none; }
+ha-card.shop .item { padding:9px 4px; font-size:1.12em; }
+ha-card.shop .item .check { padding:8px; --mdc-icon-size:34px; }
+ha-card.shop .item .meta { font-size:.7em; }
+ha-card.shop .tab { padding:8px 14px; font-size:1em; }
+.shopbar { display:flex; align-items:center; gap:8px; margin:2px 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--success-color,#43a047) 14%, transparent); font-size:.9em; }
+.shopbar b { flex:1; }
+.dupbar { margin:4px 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--warning-color,#ff9800) 14%, transparent); font-size:.9em; }
+.dupbar .dbtns { display:flex; gap:8px; justify-content:flex-end; margin-top:6px; flex-wrap:wrap; }
+.dupbar .primary { padding:7px 12px; }
 ha-card.compact .item { padding:1px 2px; }
 ha-card.compact .item .meta { display:none; }
 ha-card.compact .item .check { padding:3px; }
@@ -277,6 +307,20 @@ ha-card.compact .group { margin-top:4px; }
 .recipe .rname b { display:block; word-break:break-word; }
 .recipe .rname small { color:var(--secondary-text-color); font-size:.78em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
+.rpick { margin:-2px 2px 10px; padding:8px; border-radius:0 0 12px 12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-top:0; background:var(--secondary-background-color, rgba(127,127,127,.06)); }
+.rpick .phead { display:flex; justify-content:space-between; align-items:center; font-weight:600; font-size:.9em; padding:2px 4px 6px; }
+.rpick .phead span { font-weight:400; }
+.linkbtn { background:none; border:0; color:var(--primary-color,#03a9f4); cursor:pointer; font:inherit; padding:2px; }
+.pickrow { display:flex; align-items:center; gap:10px; padding:8px 6px; border-radius:10px; cursor:pointer; }
+.pickrow ha-icon { color:var(--secondary-text-color); flex:0 0 auto; }
+.pickrow.on ha-icon { color:var(--primary-color,#03a9f4); }
+.pickrow:not(.on) .pname { opacity:.55; }
+.pickrow .pname { flex:1; min-width:0; }
+.pickrow .pname small { display:block; font-size:.78em; color:var(--secondary-text-color); }
+.pickrow .phint { font-size:.75em; color:var(--success-color,#43a047); white-space:nowrap; }
+.rpick .pbtns { display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
+.rpick .pbtns .primary { padding:9px 14px; }
+.rpick .pbtns .primary[disabled] { opacity:.4; cursor:default; }
 .ritem { display:grid; grid-template-columns: 1fr 64px 34px 34px; gap:5px; padding:8px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:6px 0; }
 .ritem .two { grid-column: 1 / -1; display:grid; grid-template-columns:1fr 1fr; gap:5px; }
 .ritem input, .ritem select { padding:7px 8px; font-size:.88em; }
@@ -429,6 +473,7 @@ class EinkaufslisteCard extends HTMLElement {
       <ha-card>
         <div class="head">
           <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant"></ha-icon><span class="t" id="title"></span><span class="badge" id="count" hidden></span></div>
+          <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon></button>
           <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon></button>
           <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon></button>
         </div>
@@ -611,12 +656,24 @@ class EinkaufslisteCard extends HTMLElement {
   // ---------------------------------------------------------------- Rendern
   _renderAll() {
     if (!this._built || !this._config) return;
+    if (this._shopMode === undefined) {
+      try { this._shopMode = localStorage.getItem("einkaufsliste_shopmode") === "1"; } catch (_) { this._shopMode = false; }
+      try { this._dupIgnore = new Set(JSON.parse(localStorage.getItem("einkaufsliste_dup_ignore") || "[]")); } catch (_) { this._dupIgnore = new Set(); }
+    }
     const d = this._data;
     const c = this._config;
     const titleText = this._fixedStore && this._store(this._fixedStore)
       ? `${c.title || ""}${c.title ? " · " : ""}${this._store(this._fixedStore).name}` : (c.title || "");
     const showTitle = c.show_title !== false && !!titleText;
-    this.shadowRoot.querySelector("ha-card").classList.toggle("compact", !!c.compact);
+    const cardEl = this.shadowRoot.querySelector("ha-card");
+    cardEl.classList.toggle("compact", !!c.compact);
+    const shop = !!this._shopMode && this._view === "list";
+    cardEl.classList.toggle("shop", shop);
+    const btnShop = this.$("btnShop");
+    btnShop.hidden = !d || this._view !== "list";
+    btnShop.classList.toggle("on", shop);
+    btnShop.title = shop ? "Laden-Modus beenden" : "Laden-Modus (große Zeilen, nur Abhaken)";
+    btnShop.querySelector("ha-icon").setAttribute("icon", shop ? "mdi:cart-off" : "mdi:cart-outline");
     this.$("title").textContent = showTitle ? titleText : "";
     this.$("titleIcon").hidden = !showTitle;
     const err = this.$("error");
@@ -937,6 +994,16 @@ class EinkaufslisteCard extends HTMLElement {
       + (this._moving === i.id ? this._moveHtml(i) : ""));
     const byName = (a, b) => a.name.localeCompare(b.name, "de");
     const html = [];
+    if (this._shopMode) {
+      html.push(`<div class="shopbar"><ha-icon icon="mdi:cart"></ha-icon><b>Laden-Modus – einfach abhaken 🛒</b><button class="btn" data-act="shopmode">Beenden</button></div>`);
+    }
+    const dup = filter ? null : this._findDuplicate(open);
+    if (dup) {
+      const [a, b] = dup;
+      const st = this._store(a.store_id);
+      html.push(`<div class="dupbar" data-a="${a.id}" data-b="${b.id}">🔍 <b>„${esc(a.name)}“</b> und <b>„${esc(b.name)}“</b> stehen beide${st ? ` bei ${esc(st.name)}` : ""} auf der Liste. Zusammenlegen?
+        <div class="dbtns"><button class="btn" data-act="dup-ignore">Passt so</button><button class="primary addbtn" data-act="dup-merge"><ha-icon icon="mdi:call-merge"></ha-icon>Zusammenlegen</button></div></div>`);
+    }
 
     if (!open.length) {
       html.push(`<div class="empty"><ha-icon icon="mdi:cart-check"></ha-icon>${
@@ -955,6 +1022,50 @@ class EinkaufslisteCard extends HTMLElement {
     }
     list.innerHTML = html.join("");
     if (this._editing) this.$("edName")?.focus();
+  }
+
+  // 🔍 Doppelt-Finder: „Tomate“ + „Tomaten“, „Klopapier“ + „Toilettenpapier“ …
+  _dupKey(name) {
+    let w = name.toLowerCase().replace(/ß/g, "ss").replace(/[^a-zäöü0-9]/g, "");
+    const syn = DUP_SYNONYMS[w];
+    if (syn) return syn;
+    for (const end of ["en", "n", "e", "s", "er"]) {
+      if (w.length > end.length + 3 && w.endsWith(end)) { w = w.slice(0, -end.length); break; }
+    }
+    return DUP_SYNONYMS[w] || w;
+  }
+
+  _findDuplicate(open) {
+    const seen = new Map();
+    const list = open.filter((i) => !i.recipe_id)
+      .sort((a, b) => String(a.added_at || "").localeCompare(String(b.added_at || "")));
+    for (const i of list) {
+      const key = [this._dupKey(i.name), i.store_id || "", (i.for_whom || "").toLowerCase()].join("|");
+      const other = seen.get(key);
+      if (other && other.name.toLowerCase() !== i.name.toLowerCase()) {
+        const pair = [other.id, i.id].sort().join("+");
+        if (!this._dupIgnore?.has(pair)) return [other, i];
+      }
+      if (!other) seen.set(key, i);
+    }
+    return null;
+  }
+
+  async _mergeDuplicate(keepId, dropId) {
+    const keep = this._data.items.find((i) => i.id === keepId);
+    const drop = this._data.items.find((i) => i.id === dropId);
+    if (!keep || !drop) return;
+    const upd = {};
+    const num = (q) => { const m = /^(\d+)\s*x$/i.exec((q || "").trim()); return m ? Number(m[1]) : null; };
+    if (num(keep.quantity) && num(drop.quantity)) upd.quantity = `${num(keep.quantity) + num(drop.quantity)}x`;
+    else if (!keep.quantity && drop.quantity) upd.quantity = drop.quantity;
+    if (!keep.note && drop.note) upd.note = drop.note;
+    else if (keep.note && drop.note && keep.note !== drop.note) upd.note = `${keep.note}, ${drop.note}`;
+    try {
+      if (Object.keys(upd).length) await this._ws({ type: "einkaufsliste/item/update", item_id: keep.id, ...upd });
+      await this._ws({ type: "einkaufsliste/item/remove", item_id: drop.id });
+      this._toast(`🔗 Zusammengelegt zu „${keep.name}“${upd.quantity ? ` (${upd.quantity})` : ""}`);
+    } catch (_) { /* Meldung kam schon */ }
   }
 
   _renderFooter() {
@@ -1147,11 +1258,35 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="recipe" data-id="${r.id}">
           <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
           <div class="rname"><b>${esc(r.name)}</b><small>${r.items.length} Zutaten · ${esc(names)}</small></div>
-          <button class="primary" data-act="recipe-apply" title="Alle Zutaten auf die Liste"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button>
-        </div>`);
+          <button class="primary" data-act="recipe-apply" title="Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button>
+        </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`);
     }
     html.push(`</div>`);
     this.$("otherView").innerHTML = html.join("");
+  }
+
+  // 🍳 Erst fragen: Welche Zutaten sollen auf die Liste?
+  _pickHtml(r) {
+    const open = new Set(this._data.items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
+    const sel = this._pickSel;
+    const rows = r.items.map((it, n) => {
+      const on = sel.has(n);
+      const info = [it.quantity, it.note, it.for_whom ? "für " + it.for_whom : ""].filter(Boolean).map(esc).join(" · ");
+      return `<div class="pickrow ${on ? "on" : ""}" data-act="pick-toggle" data-n="${n}">
+        <ha-icon icon="${on ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"}"></ha-icon>
+        <span class="pname">${esc(it.name)}${info ? `<small>${info}</small>` : ""}</span>
+        ${open.has(it.name.toLowerCase()) ? `<span class="phint">steht schon drauf</span>` : ""}
+      </div>`;
+    }).join("");
+    return `<div class="rpick" data-id="${r.id}">
+      <div class="phead">Was davon brauchst du?<span>
+        <button class="linkbtn" data-act="pick-all">Alle</button> · <button class="linkbtn" data-act="pick-none">Keine</button></span></div>
+      ${rows}
+      <div class="pbtns">
+        <button class="btn" data-act="pick-cancel">Abbrechen</button>
+        <button class="primary addbtn" data-act="pick-go" ${sel.size ? "" : "disabled"}><ha-icon icon="mdi:check-bold"></ha-icon>${sel.size} auf die Liste</button>
+      </div>
+    </div>`;
   }
 
   _openRecipe(recipe) {
@@ -1692,6 +1827,25 @@ class EinkaufslisteCard extends HTMLElement {
     const srow = el.closest(".srow");
 
     switch (act) {
+      case "shopmode":
+        this._shopMode = !this._shopMode;
+        try { localStorage.setItem("einkaufsliste_shopmode", this._shopMode ? "1" : "0"); } catch (_) { /* egal */ }
+        this._menuId = null;
+        this._toast(this._shopMode ? "🛒 Laden-Modus an – viel Spaß beim Einkaufen!" : "✍️ Laden-Modus aus");
+        this._renderAll();
+        break;
+      case "dup-merge": {
+        const bar = el.closest(".dupbar");
+        this._mergeDuplicate(bar.dataset.a, bar.dataset.b);
+        break;
+      }
+      case "dup-ignore": {
+        const bar = el.closest(".dupbar");
+        this._dupIgnore.add([bar.dataset.a, bar.dataset.b].sort().join("+"));
+        try { localStorage.setItem("einkaufsliste_dup_ignore", JSON.stringify([...this._dupIgnore].slice(-200))); } catch (_) { /* egal */ }
+        this._renderList();
+        break;
+      }
       case "view": {
         const v = el.dataset.view;
         const current = this._view === "recipe" ? "settings" : this._view;
@@ -1942,7 +2096,36 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "recipe-apply": {
         const r = this._recipe(el.closest(".recipe").dataset.id);
-        this._ws({ type: "einkaufsliste/recipe/apply", recipe_id: r.id })
+        if (this._pickRecipe === r.id) { this._pickRecipe = null; this._renderRecipes(); break; }
+        const open = new Set(this._data.items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
+        this._pickRecipe = r.id;
+        this._pickSel = new Set(r.items.map((it, n) => (open.has(it.name.toLowerCase()) ? -1 : n)).filter((n) => n >= 0));
+        this._renderRecipes();
+        break;
+      }
+      case "pick-toggle": {
+        const n = Number(el.dataset.n);
+        if (this._pickSel.has(n)) this._pickSel.delete(n); else this._pickSel.add(n);
+        this._renderRecipes();
+        break;
+      }
+      case "pick-all":
+      case "pick-none": {
+        const r = this._recipe(this._pickRecipe);
+        this._pickSel = new Set(act === "pick-all" && r ? r.items.map((_, n) => n) : []);
+        this._renderRecipes();
+        break;
+      }
+      case "pick-cancel":
+        this._pickRecipe = null;
+        this._renderRecipes();
+        break;
+      case "pick-go": {
+        const r = this._recipe(this._pickRecipe);
+        if (!r || !this._pickSel.size) break;
+        const items = [...this._pickSel].sort((a, b) => a - b);
+        this._pickRecipe = null;
+        this._ws({ type: "einkaufsliste/recipe/apply", recipe_id: r.id, items })
           .then((res) => {
             this._toast(res.added
               ? `🍽️ ${res.added} Zutaten für „${r.name}“ auf der Liste${res.already ? ` (${res.already} standen schon drauf)` : ""}`

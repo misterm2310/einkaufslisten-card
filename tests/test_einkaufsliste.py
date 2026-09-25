@@ -592,7 +592,9 @@ async def test_barcode_lookup(hass, setup, hass_ws_client, aioclient_mock):
     assert not (await client.receive_json())["success"]
 
 
-async def test_assign_barcode_to_existing_item(hass, setup, hass_ws_client):
+async def test_assign_barcode_to_existing_item(hass, setup, hass_ws_client, aioclient_mock):
+    for base in ("openfoodfacts", "openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{base}.org/api/v2/product/4000417025005.json", status=404)
     client = await hass_ws_client(hass)
     m = mgr(hass)
     aldi = m.find_store("Aldi")
@@ -605,6 +607,8 @@ async def test_assign_barcode_to_existing_item(hass, setup, hass_ws_client):
     assert res["found"] and res["source"] == "gemerkt" and res["name"] == "Milch" and res["store_id"] == aldi
     await client.send_json({"id": 3, "type": "einkaufsliste/barcode/assign", "item_id": item["id"], "code": "abc"})
     assert not (await client.receive_json())["success"]
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert "milch" not in m.photos
 
 
 async def test_category_colors_and_seen(hass, setup, hass_ws_client, hass_admin_user):
@@ -637,3 +641,50 @@ async def test_rename_keeps_barcode(hass, setup):
     item = m.add_item("❓ Unbekannt", barcode="4001234567890")
     m.update_item(item["id"], name="Hafermilch")
     assert m.barcodes["4001234567890"]["name"] == "Hafermilch"
+
+
+async def test_recipe_apply_only_selected(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    recipe = m.add_recipe("Pfannkuchen", items=[{"name": "Mehl"}, {"name": "Eier"}, {"name": "Milch"}])
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"], "items": [0, 2]})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["added"] == 2
+    assert sorted(i["name"] for i in m.items if i["recipe_id"]) == ["Mehl", "Milch"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"], "items": []})
+    assert not (await client.receive_json())["success"]
+
+
+async def test_auto_photo_from_barcode(hass, setup, hass_ws_client, aioclient_mock):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    img = "https://images.openfoodfacts.org/images/products/400/front_de.400.jpg"
+    aioclient_mock.get(
+        "https://world.openfoodfacts.org/api/v2/product/4000000000001.json",
+        json={"status": 1, "product": {"image_front_url": img}},
+    )
+    aioclient_mock.get(img, content=JPEG)
+    await client.send_json({"id": 1, "type": "einkaufsliste/item/add", "name": "Kakao", "barcode": "4000000000001"})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert "kakao" in m.photos
+
+    # eigenes Foto wird nie überschrieben
+    own = m.photos["kakao"]["id"]
+    item = next(i for i in m.items if i["name"] == "Kakao")
+    await client.send_json({"id": 2, "type": "einkaufsliste/barcode/assign", "item_id": item["id"], "code": "4000000000001"})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert m.photos["kakao"]["id"] == own
+
+    # fremde Bild-Server werden nicht geladen
+    aioclient_mock.get(
+        "https://world.openfoodfacts.org/api/v2/product/4000000000002.json",
+        json={"status": 1, "product": {"image_front_url": "https://evil.example.com/x.jpg"}},
+    )
+    for base in ("openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{base}.org/api/v2/product/4000000000002.json", status=404)
+    await client.send_json({"id": 3, "type": "einkaufsliste/item/add", "name": "Tee", "barcode": "4000000000002"})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert "tee" not in m.photos
