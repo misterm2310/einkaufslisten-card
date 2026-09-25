@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.4.0";
+const EL_VERSION = "1.5.0";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -72,6 +72,34 @@ function drawScaled(img, max) {
 
 async function shrinkImage(file, max = 900, quality = 0.8) {
   return drawScaled(await loadImage(file), max).toDataURL("image/jpeg", quality);
+}
+
+// Kategorie aus dem eingebauten Wörterbuch raten (gleiche Regeln wie in Home Assistant)
+function guessCategory(name, hints) {
+  const text = String(name || "").toLowerCase().trim();
+  if (!text || !hints?.length) return null;
+  const best = (t, minLen, whole) => {
+    let len = 0, id = null;
+    for (const h of hints) for (const w of h.words) {
+      if (w.length < minLen || w.length <= len) continue;
+      if ((whole && w.length <= 3) ? t === w : t.includes(w)) { len = w.length; id = h.id; }
+    }
+    return id;
+  };
+  const long = best(text.replace(/-/g, ""), 8, false);
+  if (long) return long;
+  for (const token of text.replace(/-/g, " ").split(/\s+/)) {
+    const hit = best(token, 1, true);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+// Luftlinie in Metern
+function distance(lat1, lon1, lat2, lon2) {
+  const r = (d) => (d * Math.PI) / 180;
+  const a = Math.sin(r(lat2 - lat1) / 2) ** 2 + Math.cos(r(lat1)) * Math.cos(r(lat2)) * Math.sin(r(lon2 - lon1) / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 // Großes Foto über allem anzeigen
@@ -154,6 +182,9 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .chip { --c:#888; display:inline-flex; align-items:center; gap:4px; }
 .chip::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--c); }
 .item .acts { display:flex; opacity:.55; }
+.moverow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:6px 8px 8px 44px; }
+.moverow .movetxt { font-size:.8em; color:var(--secondary-text-color); width:100%; }
+.moverow .tab { padding:4px 10px; font-size:.85em; }
 .item:hover .acts { opacity:1; }
 .item.done .name { opacity:.6; }
 .item.done .check { color:var(--secondary-text-color); }
@@ -235,6 +266,7 @@ class EinkaufslisteCard extends HTMLElement {
       show_dates: true,
       show_settings: true,
       show_recipes: true,
+      auto_store: true,
       ...config,
     };
     if (!this._config.store) this._config.store = "all";
@@ -246,6 +278,47 @@ class EinkaufslisteCard extends HTMLElement {
     this._hass = hass;
     if (!this._built) this._build();
     if (!this._unsub && !this._subscribing && this.isConnected) this._subscribe();
+    this._autoStore();
+  }
+
+  // 📍 Nächstes Geschäft: springt auf den Reiter des Geschäfts, bei dem DU gerade bist
+  _nearStore() {
+    if (!this._hass || !this._data) return null;
+    const uid = this._hass.user?.id;
+    const person = Object.values(this._hass.states).find(
+      (st) => st.entity_id.startsWith("person.") && st.attributes.user_id === uid
+    );
+    if (!person) return null;
+    const { latitude: lat, longitude: lon } = person.attributes;
+    let best = null;
+    for (const store of this._data.stores) {
+      const zone = store.zone && this._hass.states[store.zone];
+      if (!zone) continue;
+      const zname = zone.attributes.friendly_name || store.zone.slice(5);
+      const inside = String(person.state).toLowerCase() === String(zname).toLowerCase();
+      let dist = inside ? 0 : null;
+      if (dist === null && lat != null && zone.attributes.latitude != null) {
+        dist = distance(lat, lon, zone.attributes.latitude, zone.attributes.longitude);
+        if (dist > (zone.attributes.radius || 100) + 200) dist = null; // noch zu weit weg
+      }
+      if (dist !== null && (!best || dist < best.dist)) best = { id: store.id, dist };
+    }
+    return best?.id || null;
+  }
+
+  _autoStore() {
+    if (!this._config?.auto_store || this._fixedStore || !this._data) return;
+    const near = this._nearStore();
+    if (near === this._lastNear) return;
+    const prev = this._lastNear;
+    this._lastNear = near;
+    if (near) {
+      this._tab = near;
+      this._toast(`📍 Du bist bei ${this._store(near)?.name} – hier ist deine Liste dafür`);
+    } else if (prev && this._tab === prev) {
+      this._tab = "all";
+    }
+    this._renderAll();
   }
 
   connectedCallback() {
@@ -262,7 +335,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._subscribing = true;
     try {
       const unsub = await this._hass.connection.subscribeMessage(
-        (data) => { this._data = data; this._error = null; this._renderAll(); },
+        (data) => { this._data = data; this._error = null; this._renderAll(); this._autoStore(); },
         { type: "einkaufsliste/subscribe" }
       );
       if (!this.isConnected) unsub(); else this._unsub = unsub;
@@ -328,6 +401,7 @@ class EinkaufslisteCard extends HTMLElement {
     const root = this.shadowRoot;
     this.$("addForm").addEventListener("submit", (e) => this._onAdd(e));
     this.$("newPhotoFile").addEventListener("change", (e) => this._onNewPhotoFile(e));
+    this.$("inCat").addEventListener("change", () => { this._catManual = !!this.$("inCat").value; });
     this.$("photoFile").addEventListener("change", (e) => this._onPhotoFile(e));
     this.$("inName").addEventListener("input", () => { this._onNameInput(); if (!this._editing) this._renderList(); });
     root.addEventListener("click", (e) => this._onClick(e), true);
@@ -470,7 +544,7 @@ class EinkaufslisteCard extends HTMLElement {
     const active = this._activeTab;
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span></button>`];
     for (const s of d.stores) {
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""}" style="--c:${esc(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id)}</span></button>`);
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""}" style="--c:${esc(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id)}</span></button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
@@ -542,9 +616,21 @@ class EinkaufslisteCard extends HTMLElement {
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
         <div class="acts">
+          ${!item.checked && this._data.stores.length > 1 ? `<button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button>` : ""}
           <button class="iconbtn" data-act="edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
           <button class="iconbtn" data-act="remove" title="Ganz löschen"><ha-icon icon="mdi:close"></ha-icon></button>
         </div>
+      </div>`;
+  }
+
+  _moveHtml(item) {
+    const here = this._store(item.store_id);
+    const targets = this._data.stores.filter((s) => s.id !== item.store_id);
+    return `
+      <div class="moverow" data-id="${item.id}">
+        <span class="movetxt">${here ? `Bei ${esc(here.name)} nicht da? Ab zu:` : "Wo gibt's das?"}</span>
+        ${targets.map((s) => `<button class="tab" style="--c:${esc(s.color)}" data-act="move-to" data-store="${s.id}"><span class="dot"></span>${esc(s.name)}</button>`).join("")}
+        <button class="iconbtn" data-act="move-cancel" title="Abbrechen"><ha-icon icon="mdi:close"></ha-icon></button>
       </div>`;
   }
 
@@ -602,7 +688,7 @@ class EinkaufslisteCard extends HTMLElement {
     const filter = (this.$("inName").value || "").trim().toLowerCase();
     let done = items.filter((i) => i.checked);
     if (filter) done = done.filter((i) => i.name.toLowerCase().includes(filter));
-    const row = (i) => (this._editing === i.id ? this._editHtml(i) : this._itemHtml(i));
+    const row = (i) => (this._editing === i.id ? this._editHtml(i) : this._itemHtml(i) + (this._moving === i.id ? this._moveHtml(i) : ""));
     const byName = (a, b) => a.name.localeCompare(b.name, "de");
     const html = [];
 
@@ -702,7 +788,19 @@ class EinkaufslisteCard extends HTMLElement {
         <button class="iconbtn" data-act="down" ${i === len - 1 ? "disabled" : ""} title="Nach unten"><ha-icon icon="mdi:chevron-down"></ha-icon></button>
         <button class="iconbtn" data-act="group-remove" title="Löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
       </div>
-      ${kind === "categories" ? `<div class="picker" hidden></div>` : ""}`;
+      ${kind === "categories" ? `<div class="picker" hidden></div>` : ""}
+      ${kind === "stores" && zones.length ? `
+      <div class="srow zonerow" data-kind="stores" data-id="${e.id}">
+        <ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon>
+        <select class="grow" data-field="zone" title="Zone für „Nächstes Geschäft“">
+          <option value="">📍 Keine Zone</option>
+          ${zones.map((z) => `<option value="${z.id}" ${z.id === e.zone ? "selected" : ""}>📍 ${esc(z.name)}</option>`).join("")}
+        </select>
+      </div>` : ""}`;
+    const zones = Object.values(this._hass.states)
+      .filter((st) => st.entity_id.startsWith("zone.") && st.entity_id !== "zone.home")
+      .map((st) => ({ id: st.entity_id, name: st.attributes.friendly_name || st.entity_id }))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
     this.$("otherView").innerHTML = `
       <div class="sec">
         <h3><ha-icon icon="mdi:store-outline"></ha-icon>Geschäfte</h3>
@@ -712,6 +810,7 @@ class EinkaufslisteCard extends HTMLElement {
           <input class="grow" name="name" placeholder="Neues Geschäft, z. B. Kaufland">
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
+        <p class="hint">📍 Hat ein Geschäft eine <b>Zone</b>, springt die Liste automatisch auf dieses Geschäft, sobald du dort bist. Zonen legst du unter Einstellungen → Bereiche & Zonen an.</p>
       </div>
       <div class="sec">
         <h3><ha-icon icon="mdi:shape-outline"></ha-icon>Kategorien</h3>
@@ -934,7 +1033,13 @@ class EinkaufslisteCard extends HTMLElement {
   _onNameInput() {
     const val = this.$("inName").value.trim().toLowerCase();
     const h = this._data?.history.find((x) => x.name.toLowerCase() === val);
-    if (!h) return;
+    if (!h) {
+      // 📖 Unbekanntes Produkt: Kategorie aus dem Wörterbuch raten (nur wenn du nicht selbst gewählt hast)
+      if (this._catManual) return;
+      const guess = guessCategory(val, this._data?.category_hints);
+      this.$("inCat").value = guess && this._cat(guess) ? guess : "";
+      return;
+    }
     if (h.category_id && this._cat(h.category_id)) this.$("inCat").value = h.category_id;
     if (!this._fixedStore && this._activeTab === "all" && h.store_id && this._store(h.store_id)) this.$("inStore").value = h.store_id;
   }
@@ -977,6 +1082,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._updateNewPhotoBtn();
       }
       for (const id of ["inName", "inQty", "inNote", "inFor", "inCat"]) this.$(id).value = "";
+      this._catManual = false;
       this._renderList();
       this.$("inName").focus();
     } catch (_) { /* Meldung kam schon */ }
@@ -1022,6 +1128,24 @@ class EinkaufslisteCard extends HTMLElement {
         this._editing = id;
         this._renderList();
         break;
+      case "move":
+        this._moving = this._moving === id ? null : id;
+        this._renderList();
+        break;
+      case "move-cancel":
+        this._moving = null;
+        this._renderList();
+        break;
+      case "move-to": {
+        const itemId = el.closest(".moverow").dataset.id;
+        const item = this._data.items.find((i) => i.id === itemId);
+        const target = this._store(el.dataset.store);
+        this._moving = null;
+        this._ws({ type: "einkaufsliste/item/update", item_id: itemId, store_id: target.id })
+          .then(() => this._toast(`🔁 ${item?.name || "Artikel"} wandert zu ${target.name}`))
+          .catch(() => this._renderList());
+        break;
+      }
       case "new-photo":
         if (this._newPhoto) {
           this._newPhoto = null;
@@ -1160,7 +1284,8 @@ class EinkaufslisteCard extends HTMLElement {
     const srow = t.closest(".srow[data-kind]");
     if (!srow || !t.dataset.field) return;
     const msg = { type: "einkaufsliste/group/update", kind: srow.dataset.kind, group_id: srow.dataset.id };
-    msg[t.dataset.field] = t.dataset.field === "icon" ? stripMdi(t.value).trim() || null : t.value;
+    msg[t.dataset.field] = t.dataset.field === "icon" ? stripMdi(t.value).trim() || null
+      : t.dataset.field === "zone" ? (t.value || null) : t.value;
     if (t.dataset.field === "icon" && !msg.icon) return;
     this._ws(msg).catch(() => this._renderSettings());
   }
@@ -1206,6 +1331,7 @@ const EDITOR_LABELS = {
   added_by_style: "Name anzeigen als",
   show_dates: "Datum & Aufräum-Tag anzeigen",
   show_recipes: "Rezepte-Knopf anzeigen",
+  auto_store: "📍 Automatisch zum Geschäft springen, bei dem ich gerade bin",
   show_settings: "Zahnrad für Einstellungen anzeigen",
 };
 
@@ -1236,6 +1362,7 @@ class EinkaufslisteCardEditor extends HTMLElement {
       { name: "show_checked", selector: { boolean: {} } },
       { name: "show_dates", selector: { boolean: {} } },
       { name: "show_recipes", selector: { boolean: {} } },
+      { name: "auto_store", selector: { boolean: {} } },
       { name: "show_settings", selector: { boolean: {} } },
     ];
   }
@@ -1253,7 +1380,7 @@ class EinkaufslisteCardEditor extends HTMLElement {
     this._form.hass = this._hass;
     this._form.data = {
       title: "Einkaufsliste", show_title: true, show_checked: true, show_added_by: true, added_by_style: "name",
-      show_dates: true, show_recipes: true, show_settings: true, ...this._config,
+      show_dates: true, show_recipes: true, show_settings: true, auto_store: true, ...this._config,
     };
     this._form.schema = this._schema();
   }

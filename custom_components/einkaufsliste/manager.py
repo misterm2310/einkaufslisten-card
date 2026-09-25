@@ -18,6 +18,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .categories import category_hints, guess_category
 from .const import (
     CONF_CLEANUP_TIME,
     CONF_CLEANUP_WEEKDAY,
@@ -59,6 +60,20 @@ def _clean(text: Any) -> str | None:
         return None
     text = str(text).strip()
     return text or None
+
+
+def _nice(text: Any) -> str | None:
+    """Namen aufhübschen: Leerzeichen säubern, erster Buchstabe groß.
+
+    „  milch “ -> „Milch“. Wörter wie „iPhone“ bleiben, wie sie sind.
+    """
+    text = _clean(text)
+    if not text:
+        return text
+    text = " ".join(text.split())
+    if text[0].islower() and (len(text) == 1 or not text[1].isupper()):
+        text = text[0].upper() + text[1:]
+    return text
 
 
 def _key(
@@ -228,6 +243,7 @@ class EinkaufslisteManager:
             "recipes": self.recipes,
             "persons": self.persons,
             "photos": {k: v.get("updated") for k, v in self.photos.items()},
+            "category_hints": category_hints(self.categories),
             "history": history[:300],
             "settings": {
                 "cleanup_weekday": self.cleanup_weekday,
@@ -290,6 +306,9 @@ class EinkaufslisteManager:
             raise ValueError(f"„{name}“ steht nicht auf der Liste.")
         matches.sort(key=lambda i: i["checked"])  # offene zuerst
         return matches[0]
+
+    def guess_category(self, name: str) -> str | None:
+        return guess_category(name, self.categories)
 
     def history_for(self, name: str) -> dict[str, Any] | None:
         return self.history.get(name.strip().lower())
@@ -380,7 +399,7 @@ class EinkaufslisteManager:
         „für wen“ und gleichem Geschäft, wird kein zweiter angelegt: Ist er abgehakt, kommt er wieder
         auf die Liste (Haken raus), sonst werden nur die Angaben aktualisiert.
         """
-        name = _clean(name)
+        name = _nice(name)
         if not name:
             raise ValueError("Ohne Namen geht's nicht – was soll denn gekauft werden?")
         store_id = self._check_store(store_id)
@@ -437,7 +456,7 @@ class EinkaufslisteManager:
     def update_item(self, item_id: str, **fields: Any) -> dict[str, Any]:
         item = self.get_item(item_id)
         new = {
-            "name": _clean(fields.get("name", item["name"])),
+            "name": _nice(fields.get("name", item["name"])),
             "note": _clean(fields.get("note", item.get("note"))),
             "for_whom": _clean(fields.get("for_whom", item.get("for_whom"))),
         }
@@ -661,7 +680,7 @@ class EinkaufslisteManager:
         out = []
         seen = set()
         for raw in items:
-            name = _clean(raw.get("name"))
+            name = _nice(raw.get("name"))
             if not name:
                 continue
             entry = {
@@ -680,7 +699,7 @@ class EinkaufslisteManager:
         return out
 
     def _recipe_name(self, name: str | None, skip_id: str | None = None) -> str:
-        name = _clean(name)
+        name = _nice(name)
         if not name:
             raise ValueError("Das Rezept braucht einen Namen.")
         for recipe in self.recipes:
@@ -787,7 +806,7 @@ class EinkaufslisteManager:
         raise ValueError("Unbekannte Liste.")
 
     def _unique_name(self, kind: str, name: str | None, skip_id: str | None = None) -> str:
-        name = _clean(name)
+        name = _nice(name)
         if not name:
             raise ValueError("Der Name darf nicht leer sein.")
         for entry in self._list(kind):
@@ -801,6 +820,7 @@ class EinkaufslisteManager:
         if kind == "stores":
             entry["color"] = _clean(color) or "#607d8b"
             entry["icon"] = _icon(icon, "mdi:cart")
+            entry["zone"] = None
         elif kind == "persons":
             pass
         else:
@@ -822,6 +842,11 @@ class EinkaufslisteManager:
                 for thing in self.items + [ri for r in self.recipes for ri in r["items"]]:
                     if (thing.get("for_whom") or "").lower() == old.lower():
                         thing["for_whom"] = entry["name"]
+        if "zone" in fields and kind == "stores":
+            zone = _clean(fields["zone"])
+            if zone and not zone.startswith("zone."):
+                raise ValueError("Das ist keine Zone.")
+            entry["zone"] = zone
         if "color" in fields and kind == "stores":
             entry["color"] = _clean(fields["color"]) or entry.get("color")
         if "icon" in fields and kind != "persons":

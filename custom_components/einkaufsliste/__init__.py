@@ -124,7 +124,7 @@ def _register_services(hass: HomeAssistant) -> None:
             if m.store_by_id(store_id) is None:
                 store_id = None
             if m.category_by_id(cat_id) is None:
-                cat_id = None
+                cat_id = m.guess_category(name) if "category" not in call.data else None
             who = call.data.get("added_by") or await _caller_name(hass, call)
             item = m.add_item(
                 name,

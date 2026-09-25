@@ -488,3 +488,61 @@ async def test_photo_kept_for_recipe(hass, setup):
     m.remove_item(item["id"])
     await hass.async_block_till_done()
     assert "mozzarella" in m.photos  # Rezept braucht es noch
+
+
+async def test_names_are_tidied(hass, setup):
+    m = mgr(hass)
+    assert m.add_item("  milch   ")["name"] == "Milch"
+    assert m.add_item("h-milch")["name"] == "H-milch"
+    assert m.add_item("iPhone Kabel")["name"] == "iPhone Kabel"
+    assert m.add_item("MILCH") is m.items[0]  # gleicher Artikel, keine Dopplung
+    r = m.add_recipe("freitags   fisch", [{"name": "fischstäbchen"}])
+    assert r["name"] == "Freitags fisch" and r["items"][0]["name"] == "Fischstäbchen"
+    assert m.add_group("stores", "kaufland")["name"] == "Kaufland"
+
+
+async def test_category_guessing(hass, setup):
+    from custom_components.einkaufsliste.categories import guess_category
+
+    m = mgr(hass)
+    cat = lambda n: (m.category_by_id(guess_category(n, m.categories)) or {}).get("name")
+    assert cat("Joghurt") == "Kühlregal & Milch"
+    assert cat("Pizza Salami") == "TK-Ware"
+    assert cat("Vollmilch") == "Kühlregal & Milch"
+    assert cat("Milchschokolade") == "Süßes & Snacks"
+    assert cat("Reis") == "Vorrat & Konserven"
+    assert cat("Eis") == "TK-Ware"
+    assert cat("Eier") == "Kühlregal & Milch"
+    assert cat("Weißwein") == "Getränke"
+    assert cat("WC-Reiniger") == "Haushalt"
+    assert cat("Bananen") == "Obst & Gemüse"
+    assert cat("Irgendwas Komisches") is None
+    hints = m.as_dict()["category_hints"]
+    assert any("joghurt" in h["words"] for h in hints)
+    # Aktion ohne Kategorie -> geraten
+    await hass.services.async_call(DOMAIN, "add_item", {"name": "Toastbrot"}, blocking=True)
+    assert m.category_by_id(m.items[0]["category_id"])["name"] == "Backwaren"
+
+
+async def test_store_zone(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    await client.send_json({"id": 1, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "zone": "zone.aldi"})
+    assert (await client.receive_json())["success"]
+    assert m.store_by_id(aldi)["zone"] == "zone.aldi"
+    await client.send_json({"id": 2, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "zone": "sensor.x"})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 3, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "zone": None})
+    assert (await client.receive_json())["success"] and m.store_by_id(aldi)["zone"] is None
+
+
+async def test_move_item_to_other_store(hass, setup):
+    m = mgr(hass)
+    aldi, netto = m.find_store("Aldi"), m.find_store("Netto")
+    item = m.add_item("Milch", store_id=aldi)
+    m.update_item(item["id"], store_id=netto)
+    assert item["store_id"] == netto
+    m.add_item("Milch", store_id=aldi)
+    with pytest.raises(ValueError):
+        m.update_item(item["id"], store_id=aldi)  # gibt's dort schon
