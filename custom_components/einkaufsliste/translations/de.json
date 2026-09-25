@@ -1,0 +1,132 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Einkaufsliste einrichten",
+        "description": "Wann soll die Liste automatisch aufgeräumt werden?",
+        "data": {
+          "cleanup_weekday": "Aufräum-Tag",
+          "cleanup_time": "Uhrzeit",
+          "min_age_days": "Mindestens so viele Tage auf der Liste"
+        },
+        "data_description": {
+          "cleanup_weekday": "An diesem Tag wird aufgeräumt.",
+          "cleanup_time": "Um diese Uhrzeit wird aufgeräumt.",
+          "min_age_days": "Beim Aufräumen werden offene Artikel automatisch abgehakt, wenn sie mindestens so viele Tage auf der Liste stehen (7 = eine Woche). Gelöscht wird nichts."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Die Einkaufsliste ist schon eingerichtet – eine reicht für die ganze Familie!"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aufräumen einstellen",
+        "data": {
+          "cleanup_weekday": "Aufräum-Tag",
+          "cleanup_time": "Uhrzeit",
+          "min_age_days": "Mindestens so viele Tage auf der Liste"
+        },
+        "data_description": {
+          "cleanup_weekday": "An diesem Tag wird aufgeräumt.",
+          "cleanup_time": "Um diese Uhrzeit wird aufgeräumt.",
+          "min_age_days": "Beim Aufräumen werden offene Artikel automatisch abgehakt, wenn sie mindestens so viele Tage auf der Liste stehen (7 = eine Woche). Gelöscht wird nichts."
+        }
+      }
+    }
+  },
+  "services": {
+    "add_item": {
+      "name": "Artikel hinzufügen",
+      "description": "Setzt einen Artikel auf die Einkaufsliste. Steht er schon abgehakt drauf, kommt er wieder auf die Liste.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Was soll gekauft werden?"
+        },
+        "store": {
+          "name": "Geschäft",
+          "description": "Name des Geschäfts, z. B. Aldi."
+        },
+        "category": {
+          "name": "Kategorie",
+          "description": "Name der Kategorie, z. B. TK-Ware."
+        },
+        "quantity": {
+          "name": "Menge",
+          "description": "z. B. 2 Liter"
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "z. B. Bio"
+        },
+        "for_whom": {
+          "name": "Für wen",
+          "description": "Für wen ist der Artikel?"
+        },
+        "added_by": {
+          "name": "Hinzugefügt von",
+          "description": "Name in Klammern hinter dem Artikel. Leer = wer die Aktion auslöst."
+        }
+      }
+    },
+    "check_item": {
+      "name": "Artikel abhaken",
+      "description": "Hakt einen Artikel ab.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Welcher Artikel?"
+        },
+        "store": {
+          "name": "Geschäft",
+          "description": "Optional."
+        }
+      }
+    },
+    "remove_item": {
+      "name": "Artikel löschen",
+      "description": "Löscht einen Artikel ganz von der Liste.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Welcher Artikel?"
+        },
+        "store": {
+          "name": "Geschäft",
+          "description": "Optional."
+        }
+      }
+    },
+    "add_recipe": {
+      "name": "Rezept auf die Liste",
+      "description": "Setzt alle Zutaten eines Rezepts auf die Einkaufsliste.",
+      "fields": {
+        "name": {
+          "name": "Rezept",
+          "description": "Name des Rezepts."
+        },
+        "added_by": {
+          "name": "Hinzugefügt von",
+          "description": "Leer = wer die Aktion auslöst."
+        }
+      }
+    },
+    "cleanup": {
+      "name": "Aufräumen",
+      "description": "Hakt jetzt alle offenen Artikel ab, die alt genug sind. Gelöscht wird nichts.",
+      "fields": {
+        "force": {
+          "name": "Alles abhaken",
+          "description": "An = alle offenen Artikel werden abgehakt, egal wie alt."
+        },
+        "min_age_days": {
+          "name": "Mindestalter (Tage)",
+          "description": "Überschreibt einmalig das eingestellte Mindestalter."
+        }
+      }
+    }
+  }
+}

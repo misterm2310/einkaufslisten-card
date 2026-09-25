@@ -1,0 +1,81 @@
+add_item:
+  fields:
+    name:
+      required: true
+      example: "Milch"
+      selector:
+        text:
+    store:
+      example: "Aldi"
+      selector:
+        text:
+    category:
+      example: "Kühlregal & Milch"
+      selector:
+        text:
+    quantity:
+      example: "2 Liter"
+      selector:
+        text:
+    note:
+      example: "Bio"
+      selector:
+        text:
+    for_whom:
+      example: "Oma"
+      selector:
+        text:
+    added_by:
+      example: "Oma"
+      selector:
+        text:
+
+check_item:
+  fields:
+    name:
+      required: true
+      example: "Milch"
+      selector:
+        text:
+    store:
+      example: "Aldi"
+      selector:
+        text:
+
+remove_item:
+  fields:
+    name:
+      required: true
+      example: "Milch"
+      selector:
+        text:
+    store:
+      example: "Aldi"
+      selector:
+        text:
+
+add_recipe:
+  fields:
+    name:
+      required: true
+      example: "Freitags Fisch"
+      selector:
+        text:
+    added_by:
+      example: "Oma"
+      selector:
+        text:
+
+cleanup:
+  fields:
+    force:
+      default: false
+      selector:
+        boolean:
+    min_age_days:
+      example: 7
+      selector:
+        number:
+          min: 0
+          max: 365
+          mode: box
