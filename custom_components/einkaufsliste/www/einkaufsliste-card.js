@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.0.2";
+const EL_VERSION = "2.0.3";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -714,31 +714,88 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 🔎 Eigene Vorschläge beim Tippen (datalist klappt in der HA-App am Handy nicht)
+  // Jede Variante aus der Liste (Menge, Notiz, für wen, Geschäft) ist ein eigener Vorschlag –
+  // antippen übernimmt alles davon ins Formular.
   _renderSuggest() {
     const box = this.$("sugg");
     if (!box) return;
-    const raw = (this.$("inName").value || "").trim();
-    const q = raw.toLowerCase();
+    const q = (this.$("inName").value || "").trim().toLowerCase();
+    this._suggMap = new Map();
     if (!q || !this._data) { box.hidden = true; box.innerHTML = ""; return; }
-    const names = new Map();
-    for (const h of this._data.history || []) names.set(h.name.toLowerCase(), h.name);
-    for (const i of this._data.items || []) if (!names.has(i.name.toLowerCase())) names.set(i.name.toLowerCase(), i.name);
-    const starts = [], contains = [];
-    for (const [low, name] of names) {
-      if (low === q) continue;
-      if (low.startsWith(q) || low.split(/\s+/).some((w) => w.startsWith(q))) starts.push(name);
-      else if (low.includes(q)) contains.push(name);
+    const score = (low) => (low.startsWith(q) || low.split(/\s+/).some((w) => w.startsWith(q)) ? 0 : low.includes(q) ? 1 : -1);
+    const cands = [];
+    const seenVariant = new Set();
+    const names = new Set();
+    // zuerst Artikel aus der Liste: aktueller Reiter vor anderen, abgehakt vor offen
+    const items = [...this._data.items].sort((a, b) =>
+      (this._matchesTab(b) - this._matchesTab(a)) || (b.checked - a.checked)
+      || String(b.added_at || "").localeCompare(String(a.added_at || "")));
+    for (const i of items) {
+      if (i.recipe_id) continue;
+      const low = i.name.toLowerCase();
+      const sc = score(low);
+      if (sc < 0) continue;
+      const key = [low, i.quantity || "", i.note || "", i.for_whom || "", i.store_id || ""].join("|");
+      if (seenVariant.has(key)) continue;
+      seenVariant.add(key);
+      names.add(low);
+      cands.push({ sc, name: i.name, item: i });
     }
-    const list = [...starts, ...contains].slice(0, 8);
+    for (const h of this._data.history || []) {
+      const low = h.name.toLowerCase();
+      if (names.has(low)) continue;
+      const sc = score(low);
+      if (sc < 0) continue;
+      names.add(low);
+      cands.push({ sc, name: h.name, hist: h });
+    }
+    cands.sort((a, b) => a.sc - b.sc);
+    const list = cands.slice(0, 8);
     if (!list.length) { box.hidden = true; box.innerHTML = ""; return; }
-    const openNames = new Set(this._data.items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
     const mark = (name) => {
       const at = name.toLowerCase().indexOf(q);
       return at < 0 ? esc(name) : esc(name.slice(0, at)) + "<b>" + esc(name.slice(at, at + q.length)) + "</b>" + esc(name.slice(at + q.length));
     };
-    box.innerHTML = list.map((n) => `<button type="button" class="sug" data-act="suggest" data-name="${esc(n)}"><span>${mark(n)}</span>${
-      openNames.has(n.toLowerCase()) ? '<span class="on">· steht drauf</span>' : ""}</button>`).join("");
+    box.innerHTML = list.map((c, n) => {
+      this._suggMap.set(String(n), c);
+      const i = c.item;
+      const bits = [];
+      if (i) {
+        if (i.quantity) bits.push(esc(i.quantity));
+        if (i.note) bits.push("📝 " + esc(i.note));
+        if (i.for_whom) bits.push("👤 " + esc(i.for_whom));
+        const st = i.store_id && this._store(i.store_id);
+        if (st && this._activeTab === "all") bits.push(esc(st.name));
+        if (!i.checked) bits.push("steht drauf");
+      }
+      return `<button type="button" class="sug" data-act="suggest" data-n="${n}"><span>${mark(c.name)}</span>${
+        bits.length ? `<span class="on">· ${bits.join(" · ")}</span>` : ""}</button>`;
+    }).join("");
     box.hidden = false;
+  }
+
+  _applySuggest(c) {
+    const set = (id, v) => { this.$(id).value = v || ""; };
+    set("inName", c.name);
+    const i = c.item;
+    if (!i) {
+      this._onNameInput();
+      return;
+    }
+    set("inQty", i.quantity);
+    set("inNote", i.note);
+    const f = this.$("inFor");
+    if (i.for_whom && ![...f.options].some((o) => o.value === i.for_whom)) {
+      const o = document.createElement("option");
+      o.value = o.textContent = i.for_whom;
+      f.appendChild(o);
+    }
+    f.value = i.for_whom || "";
+    if (!this._fixedStore && i.store_id && this._store(i.store_id)) this.$("inStore").value = i.store_id;
+    if (i.category_id && this._cat(i.category_id)) { this.$("inCat").value = i.category_id; this._catManual = true; }
+    this.$("inNote").hidden = !i.note;
+    this._renderQtyChips();
+    this._renderForChips();
   }
 
   _renderHistory() {
@@ -1818,9 +1875,10 @@ class EinkaufslisteCard extends HTMLElement {
       }
       case "suggest": {
         const inp = this.$("inName");
-        inp.value = el.dataset.name;
-        this._onNameInput();
-        this._renderSuggest();
+        const c = this._suggMap?.get(el.dataset.n);
+        if (!c) break;
+        this._applySuggest(c);
+        this.$("sugg").hidden = true;
         this._updateTools();
         this._renderList();
         inp.focus();
