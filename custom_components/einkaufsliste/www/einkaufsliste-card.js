@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.3.0";
+const EL_VERSION = "1.3.1";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -66,7 +66,7 @@ function drawScaled(img, max) {
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
   canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
-  canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+  canvas.getContext("2d").drawImage(img._src || img, 0, 0, canvas.width, canvas.height);
   return canvas;
 }
 
@@ -113,6 +113,165 @@ async function readBarcode(file) {
     if (Math.max(img.naturalWidth, img.naturalHeight) <= max) break;
   }
   return null;
+}
+
+// ------------------------------------------------------------------ Live-Kamera
+// Die Home-Assistant-App öffnet bei Datei-Feldern nur die Galerie – deshalb eine
+// eigene Kamera. Geht nur über eine sichere Verbindung (https://).
+const cameraAvailable = () => !!(window.isSecureContext && navigator.mediaDevices?.getUserMedia);
+
+function camButton(label, style = {}) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.innerHTML = label;
+  Object.assign(b.style, {
+    background: "rgba(255,255,255,.16)", color: "#fff", border: "0", borderRadius: "999px",
+    padding: "10px 16px", font: "500 15px Roboto, sans-serif", cursor: "pointer", ...style,
+  });
+  return b;
+}
+
+/**
+ * Öffnet die Kamera über allem.
+ * mode "scan": erkennt Barcodes automatisch -> { code }
+ * mode "photo": Auslöser-Knopf -> { data } (verkleinertes JPEG)
+ * { gallery: true } = lieber aus der Galerie, null = abgebrochen
+ */
+function openCamera(mode, title) {
+  return new Promise(async (resolve) => {
+    let stream = null;
+    let done = false;
+    let timer = null;
+    const overlay = document.createElement("div");
+    Object.assign(overlay.style, {
+      position: "fixed", inset: "0", background: "#000", zIndex: "10000", display: "flex",
+      flexDirection: "column", alignItems: "center", justifyContent: "center", boxSizing: "border-box",
+    });
+    const video = document.createElement("video");
+    video.setAttribute("playsinline", "");
+    video.muted = true;
+    video.autoplay = true;
+    Object.assign(video.style, { width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: "0" });
+    overlay.appendChild(video);
+
+    if (mode === "scan") {
+      const frame = document.createElement("div");
+      Object.assign(frame.style, {
+        position: "absolute", left: "10%", right: "10%", top: "38%", height: "24%",
+        border: "3px solid rgba(255,255,255,.9)", borderRadius: "16px", boxShadow: "0 0 0 9999px rgba(0,0,0,.45)",
+      });
+      const laser = document.createElement("div");
+      Object.assign(laser.style, { position: "absolute", left: "6%", right: "6%", top: "50%", height: "2px", background: "#ff5252", boxShadow: "0 0 8px #ff5252" });
+      frame.appendChild(laser);
+      overlay.appendChild(frame);
+    }
+    const top = document.createElement("div");
+    Object.assign(top.style, {
+      position: "absolute", top: "0", left: "0", right: "0", padding: "16px", display: "flex",
+      justifyContent: "space-between", alignItems: "center", gap: "8px", color: "#fff",
+      font: "500 16px Roboto, sans-serif", background: "linear-gradient(rgba(0,0,0,.6), transparent)",
+    });
+    const label = document.createElement("div");
+    label.textContent = mode === "scan" ? "🔍 Barcode ins Feld halten" : `📸 ${title || "Foto"}`;
+    const btnClose = camButton("✕", { padding: "8px 14px", fontSize: "18px" });
+    top.append(label, btnClose);
+    overlay.appendChild(top);
+
+    const bottom = document.createElement("div");
+    Object.assign(bottom.style, {
+      position: "absolute", bottom: "0", left: "0", right: "0", padding: "20px 16px 28px",
+      display: "flex", justifyContent: "center", alignItems: "center", gap: "14px",
+      background: "linear-gradient(transparent, rgba(0,0,0,.65))",
+    });
+    const btnGallery = camButton("🖼️ Galerie");
+    const btnTorch = camButton("🔦");
+    btnTorch.style.display = "none";
+    bottom.append(btnGallery);
+    if (mode === "photo") {
+      const shutter = document.createElement("button");
+      shutter.type = "button";
+      shutter.title = "Auslösen";
+      Object.assign(shutter.style, {
+        width: "74px", height: "74px", borderRadius: "50%", border: "5px solid #fff",
+        background: "rgba(255,255,255,.35)", cursor: "pointer",
+      });
+      shutter.addEventListener("click", () => {
+        if (!video.videoWidth) return;
+        const c = drawScaled({ naturalWidth: video.videoWidth, naturalHeight: video.videoHeight, _src: video }, 900);
+        finish({ data: c.toDataURL("image/jpeg", 0.8) });
+      });
+      bottom.append(shutter);
+    }
+    bottom.append(btnTorch);
+    overlay.appendChild(bottom);
+
+    const finish = (result) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      stream?.getTracks().forEach((t) => t.stop());
+      overlay.remove();
+      document.removeEventListener("keydown", onKey);
+      resolve(result);
+    };
+    const onKey = (e) => { if (e.key === "Escape") finish(null); };
+    document.addEventListener("keydown", onKey);
+    btnClose.addEventListener("click", () => finish(null));
+    btnGallery.addEventListener("click", () => finish({ gallery: true }));
+    document.body.appendChild(overlay);
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+    } catch (err) {
+      finish({ error: err?.name || "camera" });
+      return;
+    }
+    if (done) { stream.getTracks().forEach((t) => t.stop()); return; }
+    video.srcObject = stream;
+    try { await video.play(); } catch (_) { /* autoplay */ }
+
+    const track = stream.getVideoTracks()[0];
+    const caps = track?.getCapabilities?.() || {};
+    if (caps.torch) {
+      let on = false;
+      btnTorch.style.display = "";
+      btnTorch.addEventListener("click", async () => {
+        on = !on;
+        try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch (_) { /* egal */ }
+        btnTorch.style.background = on ? "rgba(255,213,79,.8)" : "rgba(255,255,255,.16)";
+      });
+    }
+
+    if (mode === "scan") {
+      const zx = await loadZxing().catch(() => null);
+      if (!zx) { finish({ error: "zxing" }); return; }
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const tick = async () => {
+        if (done) return;
+        if (video.videoWidth) {
+          const scale = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
+          canvas.width = Math.round(video.videoWidth * scale);
+          canvas.height = Math.round(video.videoHeight * scale);
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          try {
+            const results = await zx.readBarcodes(ctx.getImageData(0, 0, canvas.width, canvas.height), { tryHarder: true, maxNumberOfSymbols: 1 });
+            const hit = results.find((r) => r.isValid && r.text);
+            if (hit) {
+              navigator.vibrate?.(80);
+              finish({ code: hit.text.trim() });
+              return;
+            }
+          } catch (_) { /* nächster Versuch */ }
+        }
+        timer = setTimeout(tick, 200);
+      };
+      tick();
+    }
+  });
 }
 
 // Großes Foto über allem anzeigen
@@ -899,19 +1058,54 @@ class EinkaufslisteCard extends HTMLElement {
     return !!(name && this._data?.photos && this._data.photos[String(name).toLowerCase()]);
   }
 
-  _takePhoto(name, button) {
+  _pickFile(id) {
+    this.$(id).value = "";
+    this.$(id).click();
+  }
+
+  _cameraFallbackHint(result) {
+    if (result?.error === "NotAllowedError") {
+      this._toast("📷 Kein Kamera-Zugriff erlaubt – ich öffne die Galerie. (Erlauben: App-Einstellungen → Berechtigungen → Kamera)");
+    } else if (result?.error) {
+      this._toast("📷 Die Kamera ließ sich nicht öffnen – ich öffne die Galerie.");
+    } else if (!cameraAvailable() && !this.constructor._httpsHinted) {
+      this.constructor._httpsHinted = true;
+      this._toast("📷 Live-Kamera geht nur über https:// – deshalb kommt die Galerie. Tipp: Home Assistant über https öffnen.");
+    }
+  }
+
+  async _takePhoto(name, button) {
     this._photoTarget = { name, button };
-    this.$("photoFile").value = "";
-    this.$("photoFile").click();
+    if (!cameraAvailable()) { this._cameraFallbackHint(null); this._pickFile("photoFile"); return; }
+    const result = await openCamera("photo", name);
+    if (result?.data) { this._savePhoto(this._photoTarget, result.data); return; }
+    if (result?.gallery || result?.error) { this._cameraFallbackHint(result); this._pickFile("photoFile"); }
+  }
+
+  async _startScan() {
+    if (!cameraAvailable()) { this._cameraFallbackHint(null); this._pickFile("scanFile"); return; }
+    const result = await openCamera("scan");
+    if (result?.code) { this._handleCode(result.code); return; }
+    if (result?.gallery || result?.error) { this._cameraFallbackHint(result); this._pickFile("scanFile"); }
   }
 
   async _onPhotoFile(e) {
     const file = e.target.files?.[0];
     const target = this._photoTarget;
     if (!file || !target) return;
+    let data;
+    try {
+      data = await shrinkImage(file, 900, 0.8);
+    } catch (_) {
+      this._toast("Das Foto konnte nicht gelesen werden 🙈");
+      return;
+    }
+    this._savePhoto(target, data);
+  }
+
+  async _savePhoto(target, data) {
     try {
       this._toast("📸 Foto wird gespeichert …");
-      const data = await shrinkImage(file, 900, 0.8);
       await this._ws({ type: "einkaufsliste/photo/set", name: target.name, data });
       this._photoCache.delete(target.name.toLowerCase());
       this._toast(`📸 Foto für „${target.name}“ gespeichert`);
@@ -922,9 +1116,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._editing = null;
         this._renderList();
       }
-    } catch (err) {
-      if (!err?.code) this._toast("Das Foto konnte nicht gelesen werden 🙈");
-    }
+    } catch (_) { /* Meldung kam schon */ }
   }
 
   async _openPhoto(name) {
@@ -953,6 +1145,18 @@ class EinkaufslisteCard extends HTMLElement {
         this._toast("Kein Barcode erkannt – nochmal näher ran und scharf stellen 📷");
         return;
       }
+      await this._handleCode(code);
+    } catch (err) {
+      if (!err?.code) this._toast("Barcode-Scanner konnte nicht geladen werden 🙈");
+    } finally {
+      btn.classList.remove("busy");
+    }
+  }
+
+  async _handleCode(code) {
+    const btn = this.$("btnScan");
+    btn.classList.add("busy");
+    try {
       const res = await this._ws({ type: "einkaufsliste/barcode/lookup", code });
       this._pendingBarcode = res.code;
       const nameEl = this.$("inName");
@@ -1064,8 +1268,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderList();
         break;
       case "scan":
-        this.$("scanFile").value = "";
-        this.$("scanFile").click();
+        this._startScan();
         break;
       case "photo-view":
         this._openPhoto(el.dataset.name);
