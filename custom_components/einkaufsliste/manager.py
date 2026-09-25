@@ -58,12 +58,15 @@ def _clean(text: Any) -> str | None:
     return text or None
 
 
-def _key(name: str | None, note: str | None, for_whom: str | None) -> tuple[str, str, str]:
-    """Zwei Artikel sind gleich, wenn Name, Notiz und „für wen“ gleich sind."""
+def _key(
+    name: str | None, note: str | None, for_whom: str | None, store_id: str | None
+) -> tuple[str, str, str, str]:
+    """Zwei Artikel sind gleich, wenn Name, Notiz, „für wen“ und Geschäft gleich sind."""
     return (
         (_clean(name) or "").lower(),
         (_clean(note) or "").lower(),
         (_clean(for_whom) or "").lower(),
+        store_id or "",
     )
 
 
@@ -272,14 +275,19 @@ class EinkaufslisteManager:
         return cat_id or None
 
     def _find_same(
-        self, name: str | None, note: str | None, for_whom: str | None, skip_id: str | None = None
+        self,
+        name: str | None,
+        note: str | None,
+        for_whom: str | None,
+        store_id: str | None,
+        skip_id: str | None = None,
     ) -> dict[str, Any] | None:
-        key = _key(name, note, for_whom)
+        key = _key(name, note, for_whom, store_id)
         return next(
             (
                 i
                 for i in self.items
-                if i["id"] != skip_id and _key(i["name"], i.get("note"), i.get("for_whom")) == key
+                if i["id"] != skip_id and _key(i["name"], i.get("note"), i.get("for_whom"), i.get("store_id")) == key
             ),
             None,
         )
@@ -336,8 +344,8 @@ class EinkaufslisteManager:
     ) -> dict[str, Any]:
         """Artikel hinzufügen.
 
-        Gibt es schon einen Artikel mit gleichem Namen, gleicher Notiz und gleichem
-        „für wen“, wird kein zweiter angelegt: Ist er abgehakt, kommt er wieder
+        Gibt es schon einen Artikel mit gleichem Namen, gleicher Notiz, gleichem
+        „für wen“ und gleichem Geschäft, wird kein zweiter angelegt: Ist er abgehakt, kommt er wieder
         auf die Liste (Haken raus), sonst werden nur die Angaben aktualisiert.
         """
         name = _clean(name)
@@ -347,7 +355,7 @@ class EinkaufslisteManager:
         category_id = self._check_category(category_id)
         quantity, note, for_whom = _clean(quantity), _clean(note), _clean(for_whom)
 
-        existing = self._find_same(name, note, for_whom)
+        existing = self._find_same(name, note, for_whom, store_id)
         if existing is not None:
             readded = existing["checked"]
             if readded:
@@ -358,8 +366,6 @@ class EinkaufslisteManager:
                     added_at=_now_iso(),
                     added_by=added_by,
                 )
-            if store_id:
-                existing["store_id"] = store_id
             if category_id:
                 existing["category_id"] = category_id
             if quantity:
@@ -407,13 +413,16 @@ class EinkaufslisteManager:
         }
         if not new["name"]:
             raise ValueError("Der Name darf nicht leer sein.")
-        if self._find_same(new["name"], new["note"], new["for_whom"], skip_id=item_id):
+        new["store_id"] = (
+            self._check_store(fields["store_id"]) if "store_id" in fields else item["store_id"]
+        )
+        if self._find_same(
+            new["name"], new["note"], new["for_whom"], new["store_id"], skip_id=item_id
+        ):
             raise ValueError(
-                f"„{new['name']}“ gibt es schon – unterscheide ihn über Notiz oder „für wen“."
+                f"„{new['name']}“ gibt es schon – unterscheide ihn über Notiz, „für wen“ oder Geschäft."
             )
         item.update(new)
-        if "store_id" in fields:
-            item["store_id"] = self._check_store(fields["store_id"])
         if "category_id" in fields:
             item["category_id"] = self._check_category(fields["category_id"])
         if "quantity" in fields:
@@ -541,7 +550,7 @@ class EinkaufslisteManager:
                 "store_id": self._check_store(raw.get("store_id")),
                 "category_id": self._check_category(raw.get("category_id")),
             }
-            key = _key(entry["name"], entry["note"], entry["for_whom"])
+            key = _key(entry["name"], entry["note"], entry["for_whom"], entry["store_id"])
             if key in seen:
                 raise ValueError(f"„{name}“ steht doppelt im Rezept.")
             seen.add(key)
@@ -607,17 +616,18 @@ class EinkaufslisteManager:
         added = 0
         already = 0
         for entry in recipe["items"]:
-            same = self._find_same(entry["name"], entry["note"], entry["for_whom"])
+            hist = self.history_for(entry["name"]) or {}
+            store_id = entry["store_id"] or hist.get("store_id")
+            store_id = store_id if self.store_by_id(store_id) else None
+            cat_id = entry["category_id"] or hist.get("category_id")
+            same = self._find_same(entry["name"], entry["note"], entry["for_whom"], store_id)
             if same is not None and not same["checked"]:
                 already += 1
             else:
                 added += 1
-            hist = self.history_for(entry["name"]) or {}
-            store_id = entry["store_id"] or hist.get("store_id")
-            cat_id = entry["category_id"] or hist.get("category_id")
             self.add_item(
                 entry["name"],
-                store_id=store_id if self.store_by_id(store_id) else None,
+                store_id=store_id,
                 category_id=cat_id if self.category_by_id(cat_id) else None,
                 quantity=entry["quantity"],
                 note=entry["note"],

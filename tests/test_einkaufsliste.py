@@ -105,19 +105,20 @@ async def test_person_name_is_used(hass, setup, hass_admin_user):
     assert mgr(hass).items[0]["added_by"] == "Anna"
 
 
-async def test_duplicates_only_with_different_note_or_person(hass, setup):
+async def test_duplicates_only_with_different_note_person_or_store(hass, setup):
     m = mgr(hass)
     netto, aldi = m.find_store("Netto"), m.find_store("Aldi")
     a = m.add_item("Käse", store_id=netto, added_by="Anna")
-    same = m.add_item("käse", store_id=aldi, added_by="Ben")  # anderes Geschäft reicht nicht
+    same = m.add_item("käse", store_id=netto, added_by="Ben")
     assert same is a and len(m.items) == 1
-    assert a["store_id"] == aldi
-    m.add_item("Käse", note="gerieben")
-    m.add_item("Käse", for_whom="Oma")
-    m.add_item("Käse", note="gerieben", for_whom="Oma")
+    m.add_item("Käse", store_id=aldi)  # anderes Geschäft -> erlaubt
+    m.add_item("Käse", store_id=netto, note="gerieben")
+    m.add_item("Käse", store_id=netto, for_whom="Oma")
     assert len(m.items) == 4
     with pytest.raises(ValueError):
-        m.update_item(m.items[1]["id"], note=None)  # würde Duplikat von "Käse" ergeben
+        m.update_item(m.items[1]["id"], store_id=netto)  # würde Duplikat ergeben
+    m.update_item(m.items[1]["id"], store_id=None)  # "Egal wo" ist wieder ein eigener Ort
+    assert len(m.items) == 4
 
 
 async def test_readd_always_takes_new_name(hass, setup, freezer):
