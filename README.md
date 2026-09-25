@@ -24,7 +24,7 @@
 | 🧹 **Automatisch aufräumen** | An einem festen Tag wird alles **abgehakt**, was mindestens 7 Tage drinsteht. **Gelöscht wird nichts.** |
 | ⚡ **Live-Sync** | Trägt jemand etwas ein, steht es sofort auf allen Handys. Ohne Neuladen. |
 | 📸 **Fotos** | Ein Foto zum Artikel („genau diese Marke!“), auswählbar direkt beim Eintragen. |
-| 🔍 **Barcode** | In der Home-Assistant-App den Strichcode scannen. Der Name wird automatisch ausgefüllt. |
+| 🔍 **Barcode** | In der Home-Assistant-App scannen: zu Hause zum **Eintragen** (auch mehrere hintereinander), im Laden zum **Abhaken**. |
 | 📖 **Kategorie raten** | Tippst du „Joghurt“, springt die Kategorie von selbst auf Kühlregal, bei „Pizza“ auf TK-Ware. Dafür gibt es ein eingebautes Wörterbuch mit rund 250 Produkten. Wählst du selbst etwas aus, hat das Vorrang. |
 | 🔁 **„War aus!“** | Gab's bei Aldi nicht? Tipp am Artikel auf **⇄** und dann auf **Netto**, und der Artikel wandert rüber. |
 | 📍 **Nächstes Geschäft** | Bist du bei einem Geschäft, springt die Liste automatisch auf dessen Reiter. Jeder sieht dabei sein eigenes Geschäft. |
@@ -174,16 +174,28 @@ Damit keiner mehr die falschen Nudeln mitbringt. 😄
 
 ## 🔍 Barcode scannen (in der Home-Assistant-App)
 
-1. In der **Home-Assistant-App** in der Symbol-Leiste unter dem Eingabefeld auf **▥ (Barcode)** tippen.
-2. Der **Scanner der App** geht auf. Halte den Strichcode der Packung in den Rahmen.
-3. Die Karte füllt den **Namen** (mit Marke) und, wenn möglich, die **Kategorie** aus.
-4. Passt alles? Dann auf den **grünen Haken ✅** tippen. Fertig! 🎉
+Der ▥-Knopf in der Symbol-Leiste weiß von selbst, wo du bist:
 
+### 🏠 Zu Hause: eintragen
+1. Auf **▥** tippen. Der **Scanner der App** geht auf.
+2. Packung in den Rahmen halten. Name (mit Marke) und Kategorie werden ausgefüllt.
+3. Auf den **grünen Haken ✅** tippen. Fertig!
+
+**📦 Mehrere auf einmal (Serien-Scan am Kühlschrank):** Tippe im Scanner unten auf **„📦 Mehrere scannen“**. Jetzt einfach eine Packung nach der anderen scannen, *piep, piep, piep*. Jede kommt **sofort** auf die Liste, und der Scanner zeigt kurz „✅ Milch ist drauf“. Am Ende auf **„✔ Fertig“** tippen.
+- Kennt niemand den Barcode, kommt er als **„❓ Unbekannt 1234“** auf die Liste und blinkt orange. Benenne ihn später einmal um (lange drücken → Bearbeiten). Ab dann kennt die Liste diesen Barcode für immer. 🧠
+
+### 🛒 Im Laden: abhaken
+Bist du bei einem Geschäft, das eine **📍 Zone** hat, wird der ▥-Knopf **grün mit ✓**. Dann gilt:
+1. Auf **▥** tippen.
+2. Jede Packung scannen, bevor sie in den Wagen kommt. Der passende Artikel wird **automatisch abgehakt** („✅ Milch abgehakt“).
+3. Am Ende auf **„✔ Fertig“** tippen.
+
+### Gut zu wissen
 - Weil die **App** die Kamera öffnet (nicht der Browser), klappt das auch über `http://`. Du musst **nichts umstellen**.
-- **Barcode für einen Artikel, der schon auf der Liste steht:** Artikel **lange drücken → ▥ Barcode** (oder ✏️ Bearbeiten → ▥ Barcode zuordnen) → Packung scannen. Ab dann erkennt der Scanner ihn sofort, auch ohne Internet.
-- Den Barcode-Knopf gibt es nur in der **Home-Assistant-App** (Android/iPhone). Am PC-Browser ist er ausgeblendet.
+- Den ▥-Knopf gibt es nur in der **Home-Assistant-App** (Android/iPhone). Am PC-Browser ist er ausgeblendet.
 - Die Produktnamen kommen aus den freien Datenbanken **Open Food Facts**, **Open Beauty Facts** und **Open Products Facts**. Dafür braucht dein Home Assistant **Internet**.
-- **Kennt die Datenbank ein Produkt nicht,** tippst du den Namen einmal selbst ein. Die Liste **merkt sich** das, und beim nächsten Scan weiß sie es sofort. 🧠 Das gilt auch, wenn du einen gefundenen Namen änderst, zum Beispiel „Milch“ statt „Weihenstephan H-Milch 1,5 %“.
+- **Unbekannter Barcode beim Einzel-Scan:** Tipp den Namen einmal selbst ein, und die Liste merkt ihn sich. Das gilt auch, wenn du einen gefundenen Namen änderst, zum Beispiel „Milch“ statt „Weihenstephan H-Milch 1,5 %“.
+- **Barcode für einen Artikel, der schon auf der Liste steht:** Artikel **lange drücken → ▥ Barcode** und die Packung scannen.
 
 ---
 

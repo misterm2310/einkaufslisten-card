@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.9.1";
+const EL_VERSION = "2.0.0";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -168,6 +168,9 @@ form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .tool.busy ha-icon { animation: pulse 1s infinite; }
 .tool.hasval { color:var(--primary-color,#03a9f4); }
 .tool.tclear { margin-left:auto; color:var(--error-color,#db4437); }
+.tool.instore { color:var(--success-color,#43a047); background:color-mix(in srgb, var(--success-color,#43a047) 14%, transparent); }
+.tool.instore::after { content:"✓"; position:absolute; right:3px; bottom:2px; font-size:10px; font-weight:700; line-height:1; }
+.item.unknown .name { color:var(--warning-color,#ff9800); animation: pulse 1.6s infinite; }
 .tool .tval { font-size:.8em; font-weight:600; margin-left:3px; line-height:1; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chipbox { display:flex; flex-direction:column; gap:6px; }
 .chips { display:flex; flex-wrap:wrap; gap:6px; }
@@ -672,7 +675,11 @@ class EinkaufslisteCard extends HTMLElement {
     const st = this.$("inStore");
     const ct = this.$("inCat");
     this.$("addForm").classList.toggle("fixed", !!this._fixedStore);
-    this.$("btnScan").hidden = !this._hasAppScanner();
+    const scanBtn = this.$("btnScan");
+    scanBtn.hidden = !this._hasAppScanner();
+    const nearStore = this._lastNear && this._store(this._lastNear);
+    scanBtn.classList.toggle("instore", !!nearStore);
+    scanBtn.title = nearStore ? `Scannen & abhaken (${nearStore.name})` : "Barcode scannen";
     this._updateTools();
     st.hidden = !!this._fixedStore;
     const prevStore = st.value;
@@ -725,7 +732,7 @@ class EinkaufslisteCard extends HTMLElement {
     const cat = this._cat(item.category_id);
     const isNew = this._isNew(item);
     return `
-      <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""}" data-id="${item.id}" style="--cc:${esc(cat?.color || "transparent")}">
+      <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""}" data-id="${item.id}" style="--cc:${esc(cat?.color || "transparent")}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
           <div class="line">${isNew ? `<span class="newbadge" title="Neu seit deinem letzten Blick">✨</span>` : ""}<span class="name">${esc(item.name)}</span>${qty}${who}${this._hasPhoto(item.name) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(item.name)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
@@ -1346,31 +1353,135 @@ class EinkaufslisteCard extends HTMLElement {
     ext.__einkaufslisteTap = true;
   }
 
-  _startAppScan(onCode = (code) => this._handleCode(code), title = "🛒 Barcode scannen") {
+  /**
+   * Scanner der HA-App öffnen.
+   * series = true: Scanner bleibt offen, jeder Treffer ruft onCode auf (mit Meldung im Scanner).
+   * onAlt: was beim Zusatz-Knopf passiert (z. B. „Mehrere scannen“ oder „Fertig“).
+   */
+  _appScan({ title, description, altLabel, series = false, onCode, onAlt, onEnd }) {
     const ext = this._hass?.auth?.external;
     if (!ext) return;
     this._listenToApp();
+    let last = { code: null, at: 0 };
     const done = () => window.removeEventListener("einkaufsliste-barcode", onMsg);
-    const onMsg = (ev) => {
+    const close = () => ext.fireMessage({ type: "bar_code/close" });
+    const onMsg = async (ev) => {
       const msg = ev.detail;
       if (msg.command === "bar_code/scan_result") {
-        done();
-        ext.fireMessage({ type: "bar_code/close" });
-        if (msg.payload?.rawValue) onCode(msg.payload.rawValue);
+        const code = msg.payload?.rawValue;
+        if (!code) return;
+        if (!series) { done(); close(); onCode(code); return; }
+        // gleiche Packung doppelt erkannt? kurz ignorieren
+        if (code === last.code && Date.now() - last.at < 2500) return;
+        last = { code, at: Date.now() };
+        const note = await onCode(code);
+        if (note) ext.fireMessage({ type: "bar_code/notify", payload: { message: note } });
+        navigator.vibrate?.(60);
       } else if (msg.command === "bar_code/aborted") {
         done();
-        ext.fireMessage({ type: "bar_code/close" });
-        if (msg.payload?.reason === "alternative_options") this.$("inName").focus();
+        close();
+        if (msg.payload?.reason === "alternative_options" && onAlt) onAlt();
+        else onEnd?.();
       }
     };
     window.addEventListener("einkaufsliste-barcode", onMsg);
     ext.fireMessage({
       type: "bar_code/scan",
-      payload: {
-        title,
-        description: "Halte den Strichcode der Packung in den Rahmen.",
-        alternative_option_label: "Lieber eintippen",
+      payload: { title, description: description || "Halte den Strichcode der Packung in den Rahmen.", alternative_option_label: altLabel },
+    });
+  }
+
+  // Alter Name bleibt für „Barcode zuordnen“
+  _startAppScan(onCode = (code) => this._handleCode(code), title = "🛒 Barcode scannen") {
+    this._appScan({ title, altLabel: "Abbrechen", onCode });
+  }
+
+  // ▥ antippen: im Laden = abhaken, zu Hause = eintragen
+  _scanButton() {
+    const near = this._lastNear && this._store(this._lastNear);
+    if (near) return this._scanCheckOff(near);
+    this._appScan({
+      title: "🛒 Barcode scannen",
+      altLabel: "📦 Mehrere scannen",
+      onCode: (code) => this._handleCode(code),
+      onAlt: () => this._scanSeries(),
+    });
+  }
+
+  async _lookup(code) {
+    try {
+      return await this._hass.callWS({ type: "einkaufsliste/barcode/lookup", code });
+    } catch (_) {
+      return { code, found: false };
+    }
+  }
+
+  // 📦 Serien-Scan am Kühlschrank: jede Packung kommt direkt auf die Liste
+  _scanSeries() {
+    const stats = { added: 0, unknown: 0 };
+    const tab = this._activeTab;
+    const defaultStore = tab !== "all" && tab !== "none" ? tab : null;
+    this._appScan({
+      title: "📦 Mehrere scannen",
+      description: "Eine Packung nach der anderen in den Rahmen halten.",
+      altLabel: "✔ Fertig",
+      series: true,
+      onCode: async (code) => {
+        const res = await this._lookup(code);
+        let name = res.found ? res.name : null;
+        if (!name) {
+          name = `❓ Unbekannt ${String(res.code || code).slice(-4)}`;
+          stats.unknown++;
+        }
+        const guess = res.category_id || guessCategory(name, this._data?.category_hints);
+        try {
+          await this._hass.callWS({
+            type: "einkaufsliste/item/add",
+            name,
+            store_id: (res.store_id && this._store(res.store_id) ? res.store_id : defaultStore) || null,
+            category_id: guess && this._cat(guess) ? guess : null,
+            barcode: res.code || code,
+          });
+          stats.added++;
+          return res.found ? `✅ ${name} ist drauf` : `❓ Unbekannt – später umbenennen`;
+        } catch (err) {
+          return `⚠️ ${err?.message || "Hat nicht geklappt"}`;
+        }
       },
+      onAlt: () => this._seriesDone(stats),
+      onEnd: () => this._seriesDone(stats),
+    });
+  }
+
+  _seriesDone(stats) {
+    if (!stats.added) return;
+    this._toast(`📦 ${stats.added} Artikel eingetragen${stats.unknown ? ` – ${stats.unknown}× ❓ bitte noch umbenennen` : ""}`);
+  }
+
+  // ✅ Im Laden: gescannte Packung wird auf der Liste abgehakt
+  _scanCheckOff(store) {
+    const stats = { checked: 0 };
+    this._appScan({
+      title: `✅ Scannen & abhaken · ${store.name}`,
+      description: "Packung scannen, bevor sie in den Wagen kommt.",
+      altLabel: "✔ Fertig",
+      series: true,
+      onCode: async (code) => {
+        const res = await this._lookup(code);
+        if (!res.found) return "🤔 Diesen Barcode kenne ich noch nicht";
+        const open = this._data.items.filter((i) => !i.checked && i.name.toLowerCase() === res.name.toLowerCase());
+        const item = open.find((i) => i.store_id === store.id) || open[0];
+        if (!item) return `ℹ️ ${res.name} steht nicht auf der Liste`;
+        try {
+          await this._hass.callWS({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: true });
+          stats.checked++;
+          return `✅ ${item.name} abgehakt`;
+        } catch (err) {
+          return `⚠️ ${err?.message || "Hat nicht geklappt"}`;
+        }
+      },
+      onAlt: () => stats.checked && this._toast(`✅ ${stats.checked} Artikel per Scan abgehakt`),
+      onEnd: () => stats.checked && this._toast(`✅ ${stats.checked} Artikel per Scan abgehakt`),
     });
   }
 
@@ -1515,7 +1626,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderList();
         break;
       case "scan":
-        this._startAppScan();
+        this._scanButton();
         break;
       case "tool":
         this._toggleTool(el.dataset.field);
