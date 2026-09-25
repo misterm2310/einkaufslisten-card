@@ -1,0 +1,36 @@
+name: Release automatisch anlegen
+
+# Sobald die Version in manifest.json erhöht wird, legt GitHub selbst ein
+# Release an (z. B. v1.1.5). HACS zeigt dann diese Versionsnummer an.
+on:
+  push:
+    branches: [main]
+    paths:
+      - custom_components/einkaufsliste/manifest.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version auslesen
+        id: version
+        run: echo "tag=v$(jq -r .version custom_components/einkaufsliste/manifest.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Release anlegen (nur wenn es die Version noch nicht gibt)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG gibt es schon – nichts zu tun."
+          else
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --generate-notes
+          fi
