@@ -105,6 +105,7 @@ class EinkaufslisteManager:
         self.categories: list[dict[str, Any]] = []
         self.items: list[dict[str, Any]] = []
         self.recipes: list[dict[str, Any]] = []
+        self.persons: list[dict[str, Any]] = []
         self.history: dict[str, dict[str, Any]] = {}
         self.last_cleanup: str | None = None
         self._unsub_time: Callable[[], None] | None = None
@@ -152,6 +153,18 @@ class EinkaufslisteManager:
         for item in self.items:  # ältere Daten auffüllen
             item.setdefault("for_whom", None)
             item.setdefault("recipe_id", None)
+        if "persons" in data:
+            self.persons = data["persons"]
+        else:
+            # Erstes Update: schon benutzte „für wen“-Namen als Personen übernehmen
+            names: list[str] = []
+            for entry in self.items + [ri for r in self.recipes for ri in r["items"]]:
+                name = _clean(entry.get("for_whom"))
+                if name and name.lower() not in (n.lower() for n in names):
+                    names.append(name)
+            self.persons = [{"id": _new_id(), "name": n} for n in names]
+            if names:
+                self._schedule_save()
 
     def _to_storage(self) -> dict[str, Any]:
         return {
@@ -159,6 +172,7 @@ class EinkaufslisteManager:
             "categories": self.categories,
             "items": self.items,
             "recipes": self.recipes,
+            "persons": self.persons,
             "history": self.history,
             "last_cleanup": self.last_cleanup,
         }
@@ -203,6 +217,7 @@ class EinkaufslisteManager:
             "categories": self.categories,
             "items": self.items,
             "recipes": self.recipes,
+            "persons": self.persons,
             "history": history[:300],
             "settings": {
                 "cleanup_weekday": self.cleanup_weekday,
@@ -680,6 +695,8 @@ class EinkaufslisteManager:
             return self.categories
         if kind == "recipes":
             return self.recipes
+        if kind == "persons":
+            return self.persons
         raise ValueError("Unbekannte Liste.")
 
     def _unique_name(self, kind: str, name: str | None, skip_id: str | None = None) -> str:
@@ -697,6 +714,8 @@ class EinkaufslisteManager:
         if kind == "stores":
             entry["color"] = _clean(color) or "#607d8b"
             entry["icon"] = _icon(icon, "mdi:cart")
+        elif kind == "persons":
+            pass
         else:
             entry["icon"] = _icon(icon, "mdi:tag-outline")
         self._list(kind).append(entry)
@@ -709,10 +728,16 @@ class EinkaufslisteManager:
         if entry is None:
             raise ValueError("Gibt es nicht (mehr).")
         if "name" in fields:
+            old = entry["name"]
             entry["name"] = self._unique_name(kind, fields["name"], group_id)
+            if kind == "persons" and old != entry["name"]:
+                # Umbenennen: überall mitziehen
+                for thing in self.items + [ri for r in self.recipes for ri in r["items"]]:
+                    if (thing.get("for_whom") or "").lower() == old.lower():
+                        thing["for_whom"] = entry["name"]
         if "color" in fields and kind == "stores":
             entry["color"] = _clean(fields["color"]) or entry.get("color")
-        if "icon" in fields:
+        if "icon" in fields and kind != "persons":
             entry["icon"] = _icon(fields["icon"], entry.get("icon") or "mdi:tag-outline")
         self._changed()
         return entry
@@ -724,6 +749,10 @@ class EinkaufslisteManager:
         if entry is None:
             raise ValueError("Gibt es nicht (mehr).")
         lst.remove(entry)
+        if kind == "persons":
+            # Artikel behalten den Namen als Text – es geht nichts verloren
+            self._changed()
+            return
         field = "store_id" if kind == "stores" else "category_id"
         for item in self.items:
             if item[field] == group_id:

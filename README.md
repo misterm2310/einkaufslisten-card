@@ -103,7 +103,9 @@ Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags 
 
 - Jedes Familienmitglied braucht einen **eigenen Home-Assistant-Benutzer** (Einstellungen → Personen → Benutzer). Admin-Rechte sind **nicht** nötig.
 - Der Name in Klammern kommt von der **Person**, die mit dem Benutzer verknüpft ist (Einstellungen → Personen). Ist keine Person verknüpft, wird der Benutzername genommen.
-- Beim Feld **„Für wen?“** werden alle Personen aus Home Assistant vorgeschlagen. Du kannst aber auch frei etwas eintragen.
+- Die Personen für das Feld **„Für wen?“** trägst du selbst ein: in der Karte auf das **⚙️-Zahnrad** tippen und bei **Personen** hinzufügen (z. B. Oma, Papa, Kita). Dann wählst du sie beim Eintragen einfach aus der Liste aus, am PC und am Handy gleich.
+- Solange keine Personen angelegt sind, ist das Feld „Für wen?“ ausgeblendet.
+- Benennst du eine Person um, wird der Name automatisch überall mitgeändert.
 
 ---
 
@@ -123,7 +125,7 @@ Alles lässt sich bequem im visuellen Editor einstellen. Für YAML-Fans:
 | `show_recipes` | `true` | Kochmützen-Knopf für Rezepte anzeigen |
 | `show_settings` | `true` | Zahnrad für Geschäfte und Kategorien anzeigen (zum Beispiel fürs Kinder-Tablet ausschalten) |
 
-**Geschäfte & Kategorien:** Tipp auf das ⚙️-Zahnrad. Dort kannst du Geschäfte und Kategorien anlegen, umbenennen, einfärben, sortieren (▲▼) und löschen.
+**Geschäfte, Kategorien & Personen:** Tipp auf das ⚙️-Zahnrad. Dort kannst du alles anlegen, umbenennen, sortieren (▲▼) und löschen. Geschäfte kannst du außerdem einfärben.
 **Icons:** Tippe einfach den Namen ein, ohne „mdi:“, zum Beispiel `hund`, `dog` oder `fish`. Die passenden Icons erscheinen direkt als Vorschau zum Antippen.
 
 ---

@@ -188,7 +188,7 @@ def ws_cleanup(hass, connection, msg):
     )
 
 
-KIND = vol.In(["stores", "categories"])
+KIND = vol.In(["stores", "categories", "persons"])
 
 
 @websocket_api.websocket_command(
@@ -243,7 +243,7 @@ def ws_group_remove(hass, connection, msg):
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "einkaufsliste/group/reorder",
-        vol.Required("kind"): vol.In(["stores", "categories", "recipes"]),
+        vol.Required("kind"): vol.In(["stores", "categories", "persons", "recipes"]),
         vol.Required("ids"): [str],
     }
 )

@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.1.5";
+const EL_VERSION = "1.2.0";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -179,7 +179,6 @@ class EinkaufslisteCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     if (!this._built) this._build();
-    this._renderPersons();
     if (!this._unsub && !this._subscribing && this.isConnected) this._subscribe();
   }
 
@@ -243,14 +242,13 @@ class EinkaufslisteCard extends HTMLElement {
             <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
             <div class="row2">
               <input id="inNote" placeholder="📝 Notiz (z. B. Bio)">
-              <input id="inFor" list="persons" placeholder="👤 Für wen?">
+              <select id="inFor" title="Für wen?"></select>
             </div>
             <div class="row2 sel">
               <select id="inStore" title="Geschäft"></select>
               <select id="inCat" title="Kategorie"></select>
             </div>
             <datalist id="hist"></datalist>
-            <datalist id="persons"></datalist>
           </form>
           <div id="list"></div>
         </div>
@@ -303,12 +301,10 @@ class EinkaufslisteCard extends HTMLElement {
     for (let i = 0; i < 60 && dayDiff(d, added) < s.min_age_days; i++) d = new Date(d.getTime() + 7 * DAY);
     return d;
   }
-  _persons() {
-    if (!this._hass) return [];
-    return Object.keys(this._hass.states)
-      .filter((e) => e.startsWith("person."))
-      .map((e) => this._hass.states[e].attributes.friendly_name || e.slice(7))
-      .sort((a, b) => a.localeCompare(b, "de"));
+  _personOptions(selected) {
+    const names = (this._data?.persons || []).map((p) => p.name);
+    if (selected && !names.some((n) => n.toLowerCase() === selected.toLowerCase())) names.push(selected);
+    return `<option value="">👤 Für wen?</option>` + names.map((n) => `<option value="${esc(n)}" ${selected && n.toLowerCase() === selected.toLowerCase() ? "selected" : ""}>👤 ${esc(n)}</option>`).join("");
   }
   _selectOptions(list, selected, empty) {
     return `<option value="">${empty}</option>` + list.map((x) => `<option value="${x.id}" ${x.id === selected ? "selected" : ""}>${esc(x.name)}</option>`).join("");
@@ -360,16 +356,6 @@ class EinkaufslisteCard extends HTMLElement {
     this._renderFooter();
   }
 
-  _renderPersons() {
-    const dl = this.$("persons");
-    if (!dl) return;
-    const names = this._persons();
-    const key = names.join("|");
-    if (key === this._personsKey) return;
-    this._personsKey = key;
-    dl.innerHTML = names.map((n) => `<option value="${esc(n)}"></option>`).join("");
-  }
-
   _renderTabs() {
     const tabs = this.$("tabs");
     const d = this._data;
@@ -396,6 +382,12 @@ class EinkaufslisteCard extends HTMLElement {
     st.hidden = !!this._fixedStore;
     const prevStore = st.value;
     const prevCat = ct.value;
+    const pf = this.$("inFor");
+    const prevFor = pf.value;
+    pf.innerHTML = this._personOptions(null);
+    pf.hidden = !(d.persons || []).length;
+    this.$("inNote").style.gridColumn = pf.hidden ? "1 / span 2" : "";
+    if ((d.persons || []).some((p) => p.name === prevFor)) pf.value = prevFor;
     st.innerHTML = this._selectOptions(d.stores, null, "🛒 Egal wo");
     ct.innerHTML = this._selectOptions(d.categories, null, "📦 Ohne Kategorie");
     const tab = this._activeTab;
@@ -455,7 +447,7 @@ class EinkaufslisteCard extends HTMLElement {
       <form class="editrow" data-id="${item.id}">
         <input class="full" id="edName" value="${esc(item.name)}" placeholder="Name">
         <input id="edQty" value="${esc(item.quantity || "")}" placeholder="Menge">
-        <input id="edFor" list="persons" value="${esc(item.for_whom || "")}" placeholder="👤 Für wen?">
+        <select id="edFor">${this._personOptions(item.for_whom)}</select>
         <input class="full" id="edNote" value="${esc(item.note || "")}" placeholder="📝 Notiz (z. B. Bio)">
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
@@ -584,7 +576,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="srow" data-kind="${kind}" data-id="${e.id}">
         ${kind === "stores"
           ? `<input type="color" value="${esc(e.color || "#607d8b")}" data-field="color" title="Farbe">`
-          : `<ha-icon class="prev" icon="${esc(e.icon || "mdi:tag-outline")}"></ha-icon>`}
+          : `<ha-icon class="prev" icon="${esc(kind === "persons" ? "mdi:account-outline" : e.icon || "mdi:tag-outline")}"></ha-icon>`}
         <input class="grow" value="${esc(e.name)}" data-field="name">
         ${kind === "categories" ? this._iconField(e.icon, 'data-field="icon"') : ""}
         <button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
@@ -613,6 +605,16 @@ class EinkaufslisteCard extends HTMLElement {
         </form>
         <div class="picker" hidden></div>
         <p class="hint">Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>
+      </div>
+      <div class="sec">
+        <h3><ha-icon icon="mdi:account-group-outline"></ha-icon>Personen (für „Für wen?“)</h3>
+        ${(d.persons || []).map((e, i) => row("persons", e, i, d.persons.length)).join("")}
+        <form class="srow" data-addkind="persons">
+          <ha-icon class="prev" icon="mdi:account-plus-outline"></ha-icon>
+          <input class="grow" name="name" placeholder="Neue Person, z. B. Oma">
+          <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
+        </form>
+        ${(d.persons || []).length ? "" : `<p class="hint">Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet.</p>`}
       </div>
       <div class="sec">
         <h3><ha-icon icon="mdi:broom"></ha-icon>Aufräumen</h3>
@@ -667,7 +669,7 @@ class EinkaufslisteCard extends HTMLElement {
         <button class="iconbtn" type="button" data-act="ritem-remove" title="Zutat entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
         <div class="two">
           <input data-rf="note" value="${esc(it.note || "")}" placeholder="📝 Notiz">
-          <input data-rf="for_whom" list="persons" value="${esc(it.for_whom || "")}" placeholder="👤 Für wen?">
+          <select data-rf="for_whom">${this._personOptions(it.for_whom)}</select>
           <select data-rf="store_id">${this._selectOptions(d.stores, it.store_id, "🛒 Wie zuletzt")}</select>
           <select data-rf="category_id">${this._selectOptions(d.categories, it.category_id, "📦 Wie zuletzt")}</select>
         </div>
@@ -847,9 +849,14 @@ class EinkaufslisteCard extends HTMLElement {
       case "group-remove": {
         const kind = srow.dataset.kind;
         const entry = this._data[kind].find((x) => x.id === srow.dataset.id);
-        const field = kind === "stores" ? "store_id" : "category_id";
-        const used = this._data.items.filter((i) => i[field] === entry.id).length;
-        const txt = `„${entry.name}“ löschen?` + (used ? ` ${used} Artikel landen dann bei „${kind === "stores" ? "Egal wo" : "Ohne Kategorie"}“.` : "");
+        let txt = `„${entry.name}“ löschen?`;
+        if (kind === "persons") {
+          txt += " Artikel, die schon für diese Person eingetragen sind, behalten den Namen.";
+        } else {
+          const field = kind === "stores" ? "store_id" : "category_id";
+          const used = this._data.items.filter((i) => i[field] === entry.id).length;
+          if (used) txt += ` ${used} Artikel landen dann bei „${kind === "stores" ? "Egal wo" : "Ohne Kategorie"}“.`;
+        }
         if (!confirm(txt)) return;
         this._ws({ type: "einkaufsliste/group/remove", kind, group_id: entry.id }).then(() => this._renderSettings()).catch(() => {});
         break;

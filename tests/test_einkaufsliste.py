@@ -392,3 +392,48 @@ async def test_card_is_registered_as_resource(hass, hass_storage):
     items = hass.data[LOVELACE_DATA].resources.async_items()
     urls = [i["url"] for i in items if "einkaufsliste" in i["url"]]
     assert urls == [f"/einkaufsliste_files/einkaufsliste-card.js?v={VERSION}"]  # kein Doppel
+
+
+async def test_persons(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/group/add", "kind": "persons", "name": "Oma"})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["name"] == "Oma"
+    oma = res["result"]["id"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/group/add", "kind": "persons", "name": "oma"})
+    assert not (await client.receive_json())["success"]
+    item = m.add_item("Kekse", for_whom="Oma")
+    m.add_recipe("Kaffeeklatsch", [{"name": "Kuchen", "for_whom": "Oma"}])
+    await client.send_json(
+        {"id": 3, "type": "einkaufsliste/group/update", "kind": "persons", "group_id": oma, "name": "Omi"}
+    )
+    assert (await client.receive_json())["success"]
+    assert item["for_whom"] == "Omi" and m.recipes[0]["items"][0]["for_whom"] == "Omi"
+    await client.send_json({"id": 4, "type": "einkaufsliste/group/remove", "kind": "persons", "group_id": oma})
+    assert (await client.receive_json())["success"]
+    assert m.persons == [] and item["for_whom"] == "Omi"
+    assert m.as_dict()["persons"] == []
+
+
+async def test_persons_seeded_from_old_data(hass, hass_storage):
+    await hass.config.async_set_time_zone(TZ)
+    now = dt_util.utcnow().isoformat()
+    hass_storage["einkaufsliste.data"] = {
+        "version": 1,
+        "key": "einkaufsliste.data",
+        "data": {
+            "stores": [], "categories": [], "history": {}, "last_cleanup": now,
+            "recipes": [{"id": "r", "name": "R", "icon": "mdi:x", "items": [{"name": "A", "for_whom": "Ben"}]}],
+            "items": [{"id": "a", "name": "Alt", "store_id": None, "category_id": None, "quantity": None,
+                       "note": None, "for_whom": "Oma", "recipe_id": None, "checked": False, "added_by": None,
+                       "added_at": now, "checked_by": None, "checked_at": None}],
+        },
+    }
+    assert await async_setup_component(hass, "http", {})
+    hass.config.components.update({"frontend", "lovelace"})
+    entry = MockConfigEntry(domain=DOMAIN, options={"cleanup_weekday": 6, "cleanup_time": "03:00:00", "min_age_days": 7})
+    entry.add_to_hass(hass)
+    with patch("custom_components.einkaufsliste.frontend.add_extra_js_url"):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+    assert [p["name"] for p in mgr(hass).persons] == ["Oma", "Ben"]
