@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.1.1";
+const EL_VERSION = "1.1.2";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -422,7 +422,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._activeTab === "all" && store) meta.push(`<span class="chip" style="--c:${esc(store.color)}">${esc(store.name)}</span>`);
     if (item.for_whom) meta.push(`<span>👤 für ${esc(item.for_whom)}</span>`);
     if (item.note) meta.push(`<span>📝 ${esc(item.note)}</span>`);
-    if (recipe && !item.checked) meta.push(`<span>🍽️ ${esc(recipe.name)}</span>`);
+    if (recipe) meta.push(`<span>🍽️ ${esc(recipe.name)}</span>`);
     if (c.show_dates) {
       if (item.checked) {
         meta.push(`<span>✓ ${item.checked_by ? esc(this._who(item.checked_by)) : "automatisch"}</span>`);

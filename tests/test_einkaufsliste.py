@@ -197,20 +197,39 @@ async def test_recipes(hass, setup, hass_ws_client, hass_admin_user):
     res = await client.receive_json()
     assert res["success"], res
     assert res["result"] == {"added": 3, "already": 0}
-    assert len(m.items) == 3
-    assert not spinat["checked"] and spinat["recipe_id"] == recipe["id"]
-    assert spinat["category_id"] == tk  # aus dem Verlauf
+    # Rezept-Zutaten kommen ZUSÄTZLICH: normaler Spinat bleibt, Rezept-Spinat ist neu
+    assert len(m.items) == 4
+    assert spinat["checked"] and spinat["recipe_id"] is None
+    rezept_spinat = next(i for i in m.items if i["name"] == "Spinat" and i["recipe_id"])
+    assert not rezept_spinat["checked"] and rezept_spinat["category_id"] == tk  # aus dem Verlauf
     salat = m.find_item("Fertig-Salat")
     assert salat["for_whom"] == "Ben" and salat["added_by"] == hass_admin_user.name
 
-    # nochmal -> keine Duplikate
-    await client.send_json({"id": 3, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"]})
+    # normaler Mozzarella + Rezept-Mozzarella = zwei Einträge
+    m.add_item("Mozzarella")
+    await client.send_json(
+        {"id": 3, "type": "einkaufsliste/recipe/update", "recipe_id": recipe["id"],
+         "items": recipe["items"] + [{"name": "Mozzarella"}]}
+    )
+    assert (await client.receive_json())["success"]
+
+    # nochmal anwenden -> keine Duplikate, nur der neue Mozzarella kommt dazu
+    await client.send_json({"id": 4, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"]})
     res = await client.receive_json()
-    assert res["result"] == {"added": 0, "already": 3} and len(m.items) == 3
+    assert res["result"] == {"added": 1, "already": 3}
+    mozz = [i for i in m.items if i["name"] == "Mozzarella"]
+    assert len(mozz) == 2 and {bool(i["recipe_id"]) for i in mozz} == {True, False}
+    assert len(m.items) == 6
+
+    # abhaken und wieder reinnehmen -> bleibt beim Rezept
+    rm = next(i for i in mozz if i["recipe_id"])
+    m.set_checked(rm["id"], True)
+    m.set_checked(rm["id"], False, "Ben")
+    assert rm["recipe_id"] == recipe["id"] and rm["added_by"] == "Ben"
 
     # doppelte Zutat im Rezept -> Fehler
     await client.send_json(
-        {"id": 4, "type": "einkaufsliste/recipe/update", "recipe_id": recipe["id"],
+        {"id": 6, "type": "einkaufsliste/recipe/update", "recipe_id": recipe["id"],
          "items": [{"name": "A"}, {"name": "a"}]}
     )
     assert not (await client.receive_json())["success"]
@@ -221,11 +240,14 @@ async def test_recipes(hass, setup, hass_ws_client, hass_admin_user):
     res = await hass.services.async_call(
         DOMAIN, "add_recipe", {"name": "freitags fisch"}, blocking=True, return_response=True
     )
-    assert res["added"] == 3
+    assert res["added"] == 4 and len(m.items) == 6
 
-    await client.send_json({"id": 5, "type": "einkaufsliste/recipe/remove", "recipe_id": recipe["id"]})
+    # Rezept löschen: offene Rezept-Einträge werden normale Artikel, wenn es sie nicht
+    # schon normal gibt (Mozzarella + Spinat gibt es normal -> Rezept-Doppel fliegen raus)
+    await client.send_json({"id": 7, "type": "einkaufsliste/recipe/remove", "recipe_id": recipe["id"]})
     assert (await client.receive_json())["success"]
     assert all(i["recipe_id"] is None for i in m.items)
+    assert sorted(i["name"] for i in m.items) == ["Fertig-Salat", "Fischstäbchen", "Mozzarella", "Spinat"]
 
 
 async def test_services(hass, setup):

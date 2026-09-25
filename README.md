@@ -84,9 +84,15 @@ type: custom:einkaufsliste-card
 2. **Neues Rezept** anlegen, zum Beispiel „Freitags Fisch“.
 3. Die Zutaten eintragen. Pro Zutat kannst du Menge, Notiz, „für wen“, Geschäft und Kategorie angeben. Lässt du Geschäft und Kategorie auf **„Wie zuletzt“**, wird genommen, was bei diesem Produkt zuletzt benutzt wurde.
 4. **Speichern**.
-5. Ab jetzt reicht ein Tipp auf **Auf die Liste**, und alle Zutaten stehen drauf. Zutaten, die schon offen auf der Liste stehen, kommen nicht doppelt dazu.
+5. Ab jetzt reicht ein Tipp auf **Auf die Liste**, und alle Zutaten stehen drauf.
 
-Auf der Liste steht dann klein unter dem Artikel, zu welchem Rezept er gehört (🍽️ Freitags Fisch).
+Rezept-Zutaten kommen **zusätzlich** auf die Liste, als eigener Eintrag. Steht zum Beispiel schon Mozzarella für den normalen Einkauf drauf, bekommst du einen zweiten Eintrag:
+- **Mozzarella**
+- **Mozzarella** · 🍽️ Freitags Fisch
+
+Tippst du zweimal auf dasselbe Rezept, kommt nichts doppelt dazu.
+
+Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags Fisch), auch bei den erledigten.
 
 ---
 
