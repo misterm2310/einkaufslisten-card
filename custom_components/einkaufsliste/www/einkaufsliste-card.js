@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.0.1";
+const EL_VERSION = "2.0.2";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -173,6 +173,10 @@ form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .item.unknown .name { color:var(--warning-color,#ff9800); animation: pulse 1.6s infinite; }
 .tool .tval { font-size:.8em; font-weight:600; margin-left:3px; line-height:1; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chipbox { display:flex; flex-direction:column; gap:6px; }
+form.add .sugg { grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:6px; margin-top:-2px; }
+.sug { border:1.5px solid color-mix(in srgb, var(--primary-color,#03a9f4) 45%, transparent); background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); color:var(--primary-text-color); border-radius:999px; padding:7px 12px; cursor:pointer; font-size:.95em; display:inline-flex; align-items:center; gap:4px; }
+.sug b { color:var(--primary-color,#03a9f4); }
+.sug .on { font-size:.75em; opacity:.7; }
 .chips { display:flex; flex-wrap:wrap; gap:6px; }
 .chip2 { border:1.5px solid var(--divider-color, rgba(127,127,127,.35)); background:transparent; border-radius:999px; padding:7px 14px; cursor:pointer; font-size:.95em; min-width:44px; }
 .chip2.sel { background:var(--primary-color,#03a9f4); border-color:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
@@ -432,8 +436,9 @@ class EinkaufslisteCard extends HTMLElement {
         <div id="listView">
           <div class="tabs" id="tabs"></div>
           <form class="add" id="addForm" autocomplete="off">
-            <input id="inName" list="hist" placeholder="Was brauchen wir?" enterkeyhint="done">
+            <input id="inName" placeholder="Was brauchen wir?" enterkeyhint="done">
             <button class="primary addbtn" type="submit" title="Hinzufügen"><ha-icon icon="mdi:check-bold"></ha-icon></button>
+            <div class="sugg" id="sugg" hidden></div>
             <div class="toolbar">
               <button class="tool" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
               <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon></button>
@@ -474,7 +479,7 @@ class EinkaufslisteCard extends HTMLElement {
       this.$(id).addEventListener("change", () => this._updateTools());
     }
     this.$("photoFile").addEventListener("change", (e) => this._onPhotoFile(e));
-    this.$("inName").addEventListener("input", () => { if (!this.$("inName").value.trim()) this._pendingBarcode = null; this._onNameInput(); this._updateTools(); if (!this._editing) this._renderList(); });
+    this.$("inName").addEventListener("input", () => { if (!this.$("inName").value.trim()) this._pendingBarcode = null; this._onNameInput(); this._renderSuggest(); this._updateTools(); if (!this._editing) this._renderList(); });
     root.addEventListener("click", (e) => this._onClick(e), true);
     this._setupTabScroll(this.$("tabs"));
     this._setupLongPress(this.$("list"));
@@ -708,6 +713,34 @@ class EinkaufslisteCard extends HTMLElement {
     if (d.categories.some((c) => c.id === prevCat)) ct.value = prevCat;
   }
 
+  // 🔎 Eigene Vorschläge beim Tippen (datalist klappt in der HA-App am Handy nicht)
+  _renderSuggest() {
+    const box = this.$("sugg");
+    if (!box) return;
+    const raw = (this.$("inName").value || "").trim();
+    const q = raw.toLowerCase();
+    if (!q || !this._data) { box.hidden = true; box.innerHTML = ""; return; }
+    const names = new Map();
+    for (const h of this._data.history || []) names.set(h.name.toLowerCase(), h.name);
+    for (const i of this._data.items || []) if (!names.has(i.name.toLowerCase())) names.set(i.name.toLowerCase(), i.name);
+    const starts = [], contains = [];
+    for (const [low, name] of names) {
+      if (low === q) continue;
+      if (low.startsWith(q) || low.split(/\s+/).some((w) => w.startsWith(q))) starts.push(name);
+      else if (low.includes(q)) contains.push(name);
+    }
+    const list = [...starts, ...contains].slice(0, 8);
+    if (!list.length) { box.hidden = true; box.innerHTML = ""; return; }
+    const openNames = new Set(this._data.items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
+    const mark = (name) => {
+      const at = name.toLowerCase().indexOf(q);
+      return at < 0 ? esc(name) : esc(name.slice(0, at)) + "<b>" + esc(name.slice(at, at + q.length)) + "</b>" + esc(name.slice(at + q.length));
+    };
+    box.innerHTML = list.map((n) => `<button type="button" class="sug" data-act="suggest" data-name="${esc(n)}"><span>${mark(n)}</span>${
+      openNames.has(n.toLowerCase()) ? '<span class="on">· steht drauf</span>' : ""}</button>`).join("");
+    box.hidden = false;
+  }
+
   _renderHistory() {
     const d = this._data;
     const key = d.history.map((h) => h.name).join("|");
@@ -858,8 +891,8 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._config.show_checked && (done.length || filter)) {
       const total = items.filter((i) => i.checked).length;
       html.push(`<div class="group">
-        <div class="ghead donehead ${this._doneOpen ? "" : "closed"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
-        ${this._doneOpen ? `<div class="donehint">Tipp auf den Kreis, um es wieder auf die Liste zu nehmen.</div>${
+        <div class="ghead donehead ${this._doneOpen || filter ? "" : "closed"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
+        ${this._doneOpen || filter ? `<div class="donehint">Tipp auf den Kreis, um es wieder auf die Liste zu nehmen.</div>${
           done.length ? this._groupedHtml(done, row, byName, true, !!filter) : `<div class="donehint">Nichts gefunden zu „${esc(filter)}“.</div>`}` : ""}
       </div>`);
     }
@@ -1230,6 +1263,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   _clearForm() {
     for (const id of ["inName", "inQty", "inNote", "inFor", "inCat"]) this.$(id).value = "";
+    this._renderSuggest();
     for (const id of ["qtyBox", "inQty", "inNote", "forBox"]) this.$(id).hidden = true;
     const tab = this._activeTab;
     this.$("inStore").value = tab !== "all" && tab !== "none" ? tab : "";
@@ -1514,6 +1548,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._toast(`🤔 Diesen Barcode kenne ich noch nicht – tipp den Namen ein, ich merk ihn mir!`);
       }
       nameEl.focus();
+      this._renderSuggest();
       this._updateTools();
       this._renderList();
     } catch (_) { /* Meldung kam schon */ } finally {
@@ -1584,6 +1619,7 @@ class EinkaufslisteCard extends HTMLElement {
       this._pendingBarcode = null;
       for (const id of ["qtyBox", "inQty", "inNote", "forBox"]) this.$(id).hidden = true;
       this._updateTools();
+      this._renderSuggest();
       this._renderList();
       this.$("inName").focus();
     } catch (_) { /* Meldung kam schon */ }
@@ -1778,6 +1814,16 @@ class EinkaufslisteCard extends HTMLElement {
         if (this._openDoneCats.has(key)) this._openDoneCats.delete(key);
         else this._openDoneCats.add(key);
         this._renderList();
+        break;
+      }
+      case "suggest": {
+        const inp = this.$("inName");
+        inp.value = el.dataset.name;
+        this._onNameInput();
+        this._renderSuggest();
+        this._updateTools();
+        this._renderList();
+        inp.focus();
         break;
       }
       case "toggle-done":
