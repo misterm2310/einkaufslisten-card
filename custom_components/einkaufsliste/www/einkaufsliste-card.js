@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.2.0";
+const EL_VERSION = "1.2.1";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -154,6 +154,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._editing = null;
     this._draft = null;
     this._doneOpen = true;
+    this._openDoneCats = new Set(); // aufgeklappte Kategorien bei „Erledigt“
     this._pending = new Set();
     this._picker = null; // welches Icon-Feld gerade sucht
   }
@@ -458,7 +459,7 @@ class EinkaufslisteCard extends HTMLElement {
       </form>`;
   }
 
-  _groupedHtml(items, row, sortFn) {
+  _groupedHtml(items, row, sortFn, collapsible = false, forceOpen = false) {
     const d = this._data;
     const groups = new Map();
     for (const c of d.categories) groups.set(c.id, []);
@@ -469,7 +470,14 @@ class EinkaufslisteCard extends HTMLElement {
       if (!arr.length) continue;
       arr.sort(sortFn);
       const cat = this._cat(cid);
-      html.push(`<div class="group"><div class="ghead subhead"><ha-icon icon="${esc(cat?.icon || "mdi:tag-outline")}"></ha-icon>${esc(cat?.name || "Ohne Kategorie")}<span class="n">${arr.length}</span></div>${arr.map(row).join("")}</div>`);
+      const label = `<ha-icon icon="${esc(cat?.icon || "mdi:tag-outline")}"></ha-icon>${esc(cat?.name || "Ohne Kategorie")}<span class="n">${arr.length}</span>`;
+      if (!collapsible) {
+        html.push(`<div class="group"><div class="ghead subhead">${label}</div>${arr.map(row).join("")}</div>`);
+        continue;
+      }
+      const key = cid || "none";
+      const open = forceOpen || this._openDoneCats.has(key) || arr.some((i) => i.id === this._editing);
+      html.push(`<div class="group"><div class="ghead subhead donehead ${open ? "" : "closed"}" data-act="toggle-donecat" data-cat="${key}"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>${label}</div>${open ? arr.map(row).join("") : ""}</div>`);
     }
     return html.join("");
   }
@@ -499,7 +507,7 @@ class EinkaufslisteCard extends HTMLElement {
       html.push(`<div class="group">
         <div class="ghead donehead ${this._doneOpen ? "" : "closed"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
         ${this._doneOpen ? `<div class="donehint">Tipp auf den Kreis, um es wieder auf die Liste zu nehmen.</div>${
-          done.length ? this._groupedHtml(done, row, byName) : `<div class="donehint">Nichts gefunden zu „${esc(filter)}“.</div>`}` : ""}
+          done.length ? this._groupedHtml(done, row, byName, true, !!filter) : `<div class="donehint">Nichts gefunden zu „${esc(filter)}“.</div>`}` : ""}
       </div>`);
     }
     list.innerHTML = html.join("");
@@ -811,6 +819,13 @@ class EinkaufslisteCard extends HTMLElement {
         this._editing = null;
         this._renderList();
         break;
+      case "toggle-donecat": {
+        const key = el.dataset.cat;
+        if (this._openDoneCats.has(key)) this._openDoneCats.delete(key);
+        else this._openDoneCats.add(key);
+        this._renderList();
+        break;
+      }
       case "toggle-done":
         this._doneOpen = !this._doneOpen;
         this._renderList();
