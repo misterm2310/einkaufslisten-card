@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.3.1";
+const EL_VERSION = "1.3.2";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -271,6 +271,45 @@ function openCamera(mode, title) {
       };
       tick();
     }
+  });
+}
+
+// Erklärt, warum die Kamera nicht geht, und bietet die Galerie an -> true = Galerie
+function showCameraProblem(reason) {
+  return new Promise((resolve) => {
+    const texts = {
+      http: [
+        "📷 Live-Kamera ist gesperrt",
+        `Dein Handy erlaubt die Kamera nur über eine <b>sichere Verbindung (https://)</b>.<br>Diese Seite läuft gerade über:<br><code style="background:rgba(255,255,255,.12);padding:2px 6px;border-radius:6px;word-break:break-all">${esc(location.origin)}</code>`,
+      ],
+      NotAllowedError: ["📷 Kamera nicht erlaubt", "Der Home-Assistant-App fehlt die Kamera-Berechtigung.<br>Handy-Einstellungen → Apps → Home Assistant → Berechtigungen → <b>Kamera erlauben</b>."],
+      NotFoundError: ["📷 Keine Kamera gefunden", "Auf diesem Gerät wurde keine Kamera gefunden."],
+      NotReadableError: ["📷 Kamera belegt", "Die Kamera wird gerade von einer anderen App benutzt."],
+    };
+    const [title, body] = texts[reason] || ["📷 Kamera ließ sich nicht öffnen", `Fehler: <code>${esc(reason)}</code>`];
+    const overlay = document.createElement("div");
+    Object.assign(overlay.style, {
+      position: "fixed", inset: "0", background: "rgba(0,0,0,.8)", zIndex: "10000", display: "flex",
+      alignItems: "center", justifyContent: "center", padding: "20px", boxSizing: "border-box",
+    });
+    const box = document.createElement("div");
+    Object.assign(box.style, {
+      background: "#222", color: "#eee", borderRadius: "16px", padding: "20px", maxWidth: "420px",
+      font: "15px/1.45 Roboto, sans-serif", boxShadow: "0 10px 40px rgba(0,0,0,.5)",
+    });
+    box.innerHTML = `<div style="font-size:18px;font-weight:600;margin-bottom:10px">${title}</div><div>${body}</div>`;
+    const row = document.createElement("div");
+    Object.assign(row.style, { display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "18px", flexWrap: "wrap" });
+    const cancel = camButton("Abbrechen");
+    const gallery = camButton("🖼️ Galerie öffnen", { background: "#03a9f4" });
+    row.append(cancel, gallery);
+    box.appendChild(row);
+    overlay.appendChild(box);
+    const done = (v) => { overlay.remove(); resolve(v); };
+    cancel.addEventListener("click", () => done(false));
+    gallery.addEventListener("click", () => done(true));
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) done(false); });
+    document.body.appendChild(overlay);
   });
 }
 
@@ -1063,30 +1102,25 @@ class EinkaufslisteCard extends HTMLElement {
     this.$(id).click();
   }
 
-  _cameraFallbackHint(result) {
-    if (result?.error === "NotAllowedError") {
-      this._toast("📷 Kein Kamera-Zugriff erlaubt – ich öffne die Galerie. (Erlauben: App-Einstellungen → Berechtigungen → Kamera)");
-    } else if (result?.error) {
-      this._toast("📷 Die Kamera ließ sich nicht öffnen – ich öffne die Galerie.");
-    } else if (!cameraAvailable() && !this.constructor._httpsHinted) {
-      this.constructor._httpsHinted = true;
-      this._toast("📷 Live-Kamera geht nur über https:// – deshalb kommt die Galerie. Tipp: Home Assistant über https öffnen.");
-    }
+  async _cameraProblem(result, fileId) {
+    const reason = !cameraAvailable() ? "http" : result?.error;
+    if (!reason || result?.gallery) { this._pickFile(fileId); return; }
+    if (await showCameraProblem(reason)) this._pickFile(fileId);
   }
 
   async _takePhoto(name, button) {
     this._photoTarget = { name, button };
-    if (!cameraAvailable()) { this._cameraFallbackHint(null); this._pickFile("photoFile"); return; }
+    if (!cameraAvailable()) { this._cameraProblem(null, "photoFile"); return; }
     const result = await openCamera("photo", name);
     if (result?.data) { this._savePhoto(this._photoTarget, result.data); return; }
-    if (result?.gallery || result?.error) { this._cameraFallbackHint(result); this._pickFile("photoFile"); }
+    if (result?.gallery || result?.error) this._cameraProblem(result, "photoFile");
   }
 
   async _startScan() {
-    if (!cameraAvailable()) { this._cameraFallbackHint(null); this._pickFile("scanFile"); return; }
+    if (!cameraAvailable()) { this._cameraProblem(null, "scanFile"); return; }
     const result = await openCamera("scan");
     if (result?.code) { this._handleCode(result.code); return; }
-    if (result?.gallery || result?.error) { this._cameraFallbackHint(result); this._pickFile("scanFile"); }
+    if (result?.gallery || result?.error) this._cameraProblem(result, "scanFile");
   }
 
   async _onPhotoFile(e) {
