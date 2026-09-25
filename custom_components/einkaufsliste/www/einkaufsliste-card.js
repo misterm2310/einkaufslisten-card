@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.5.1";
+const EL_VERSION = "1.6.0";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -154,6 +154,10 @@ button { font:inherit; color:inherit; }
 .tab.active .dot { background:#fff; }
 form.add { display:grid; grid-template-columns: 1fr 64px 40px 44px; gap:6px; margin:2px 2px 6px; }
 .scanbtn { border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px !important; justify-content:center; }
+form.add.hasscan { grid-template-columns: 1fr 58px 40px 40px 44px; }
+#inQty { padding-left:6px; padding-right:6px; font-size:.88em; }
+.scanbtn.busy ha-icon { animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity:.3; } }
 .scanbtn.on { color:var(--primary-color,#03a9f4); border-color:var(--primary-color,#03a9f4) !important; }
 .photobtn { background:none; border:0; cursor:pointer; padding:0 2px; color:var(--primary-color,#03a9f4); line-height:0; --mdc-icon-size:17px; align-self:center; }
 .photorow { display:flex; flex-wrap:wrap; gap:6px; }
@@ -164,6 +168,7 @@ input, select { font:inherit; font-size:.95em; color:var(--primary-text-color); 
 input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .primary { background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border:0; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
 .primary:active { transform:scale(.96); }
+.addbtn { background:var(--success-color, #43a047); color:#fff; }
 .shake { animation: shake .35s; }
 @keyframes shake { 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
 .group { margin-top:8px; }
@@ -382,8 +387,9 @@ class EinkaufslisteCard extends HTMLElement {
           <form class="add" id="addForm" autocomplete="off">
             <input id="inName" list="hist" placeholder="Was brauchen wir?" enterkeyhint="done">
             <input id="inQty" placeholder="Menge">
+            <button class="iconbtn scanbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
             <button class="iconbtn scanbtn" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon></button>
-            <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
+            <button class="primary addbtn" type="submit" title="Hinzufügen"><ha-icon icon="mdi:check-bold"></ha-icon></button>
             <div class="row2">
               <input id="inNote" placeholder="📝 Notiz (z. B. Bio)">
               <select id="inFor" title="Für wen?"></select>
@@ -407,7 +413,7 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("newPhotoFile").addEventListener("change", (e) => this._onNewPhotoFile(e));
     this.$("inCat").addEventListener("change", () => { this._catManual = !!this.$("inCat").value; });
     this.$("photoFile").addEventListener("change", (e) => this._onPhotoFile(e));
-    this.$("inName").addEventListener("input", () => { this._onNameInput(); if (!this._editing) this._renderList(); });
+    this.$("inName").addEventListener("input", () => { if (!this.$("inName").value.trim()) this._pendingBarcode = null; this._onNameInput(); if (!this._editing) this._renderList(); });
     root.addEventListener("click", (e) => this._onClick(e), true);
     this._setupTabScroll(this.$("tabs"));
     root.addEventListener("change", (e) => this._onChange(e));
@@ -564,6 +570,9 @@ class EinkaufslisteCard extends HTMLElement {
     const st = this.$("inStore");
     const ct = this.$("inCat");
     this.$("addForm").classList.toggle("fixed", !!this._fixedStore);
+    const scan = this._hasAppScanner();
+    this.$("btnScan").hidden = !scan;
+    this.$("addForm").classList.toggle("hasscan", scan);
     st.hidden = !!this._fixedStore;
     const prevStore = st.value;
     const prevCat = ct.value;
@@ -1062,6 +1071,83 @@ class EinkaufslisteCard extends HTMLElement {
     showPhotoOverlay(cached.data, name);
   }
 
+  // ---------------------------------------------------------------- Barcode (Scanner der HA-App)
+  // Die Home-Assistant-App bringt einen eigenen Barcode-Scanner mit. Weil die App
+  // die Kamera öffnet (nicht der Browser), klappt das auch ohne https.
+  _hasAppScanner() {
+    return Boolean(this._hass?.auth?.external?.config?.hasBarCodeScanner);
+  }
+
+  _listenToApp() {
+    const ext = this._hass.auth.external;
+    if (ext.__einkaufslisteTap) return;
+    const original = ext.receiveMessage.bind(ext);
+    ext.receiveMessage = (msg) => {
+      try {
+        if (msg?.type === "command" && String(msg.command).startsWith("bar_code/")) {
+          window.dispatchEvent(new CustomEvent("einkaufsliste-barcode", { detail: msg }));
+        }
+      } catch (_) { /* nie die App stören */ }
+      return original(msg);
+    };
+    ext.__einkaufslisteTap = true;
+  }
+
+  _startAppScan() {
+    const ext = this._hass?.auth?.external;
+    if (!ext) return;
+    this._listenToApp();
+    const done = () => window.removeEventListener("einkaufsliste-barcode", onMsg);
+    const onMsg = (ev) => {
+      const msg = ev.detail;
+      if (msg.command === "bar_code/scan_result") {
+        done();
+        ext.fireMessage({ type: "bar_code/close" });
+        if (msg.payload?.rawValue) this._handleCode(msg.payload.rawValue);
+      } else if (msg.command === "bar_code/aborted") {
+        done();
+        ext.fireMessage({ type: "bar_code/close" });
+        if (msg.payload?.reason === "alternative_options") this.$("inName").focus();
+      }
+    };
+    window.addEventListener("einkaufsliste-barcode", onMsg);
+    ext.fireMessage({
+      type: "bar_code/scan",
+      payload: {
+        title: "🛒 Barcode scannen",
+        description: "Halte den Strichcode der Packung in den Rahmen.",
+        alternative_option_label: "Lieber eintippen",
+      },
+    });
+  }
+
+  async _handleCode(code) {
+    const btn = this.$("btnScan");
+    btn.classList.add("busy");
+    try {
+      const res = await this._ws({ type: "einkaufsliste/barcode/lookup", code });
+      this._pendingBarcode = res.code;
+      const nameEl = this.$("inName");
+      if (res.found) {
+        nameEl.value = res.name;
+        this._catManual = false;
+        if (res.category_id && this._cat(res.category_id)) this.$("inCat").value = res.category_id;
+        else this._onNameInput();
+        if (res.store_id && !this._fixedStore && this._activeTab === "all" && this._store(res.store_id)) this.$("inStore").value = res.store_id;
+        this._toast(res.source === "gemerkt"
+          ? `🔍 Kenn ich: „${res.name}“ – tippe ✅ zum Hinzufügen`
+          : `🔍 Gefunden: „${res.name}“ – Name passt? Dann ✅ tippen`);
+      } else {
+        nameEl.value = "";
+        this._toast(`🤔 Diesen Barcode kenne ich noch nicht – tipp den Namen ein, ich merk ihn mir!`);
+      }
+      nameEl.focus();
+      this._renderList();
+    } catch (_) { /* Meldung kam schon */ } finally {
+      btn.classList.remove("busy");
+    }
+  }
+
   // ---------------------------------------------------------------- Aktionen
   _onNameInput() {
     const val = this.$("inName").value.trim().toLowerCase();
@@ -1110,6 +1196,7 @@ class EinkaufslisteCard extends HTMLElement {
       const v = this.$(id).value.trim();
       if (v) msg[key] = v;
     }
+    if (this._pendingBarcode) msg.barcode = this._pendingBarcode;
     try {
       const item = await this._ws(msg);
       if (this._newPhoto) {
@@ -1121,6 +1208,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       for (const id of ["inName", "inQty", "inNote", "inFor", "inCat"]) this.$(id).value = "";
       this._catManual = false;
+      this._pendingBarcode = null;
       this._renderList();
       this.$("inName").focus();
     } catch (_) { /* Meldung kam schon */ }
@@ -1168,6 +1256,9 @@ class EinkaufslisteCard extends HTMLElement {
       case "edit":
         this._editing = id;
         this._renderList();
+        break;
+      case "scan":
+        this._startAppScan();
         break;
       case "move":
         this._moving = this._moving === id ? null : id;

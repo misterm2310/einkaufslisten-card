@@ -125,6 +125,7 @@ class EinkaufslisteManager:
         self.recipes: list[dict[str, Any]] = []
         self.persons: list[dict[str, Any]] = []
         self.photos: dict[str, dict[str, Any]] = {}  # Produktname (klein) -> Foto
+        self.barcodes: dict[str, dict[str, Any]] = {}  # Barcode -> gelernter Artikel
         self.photo_dir = Path(hass.config.path("einkaufsliste_fotos"))
         self.history: dict[str, dict[str, Any]] = {}
         self.last_cleanup: str | None = None
@@ -174,8 +175,7 @@ class EinkaufslisteManager:
             item.setdefault("for_whom", None)
             item.setdefault("recipe_id", None)
         self.photos = data.get("photos", {})
-        if "barcodes" in data:
-            self._schedule_save()  # alte Barcode-Daten beim nächsten Speichern weg
+        self.barcodes = data.get("barcodes", {})
         if "persons" in data:
             self.persons = data["persons"]
         else:
@@ -197,6 +197,7 @@ class EinkaufslisteManager:
             "recipes": self.recipes,
             "persons": self.persons,
             "photos": self.photos,
+            "barcodes": self.barcodes,
             "history": self.history,
             "last_cleanup": self.last_cleanup,
         }
@@ -392,6 +393,7 @@ class EinkaufslisteManager:
         added_by: str | None = None,
         recipe_id: str | None = None,
         notify: bool = True,
+        barcode: str | None = None,
     ) -> dict[str, Any]:
         """Artikel hinzufügen.
 
@@ -405,6 +407,8 @@ class EinkaufslisteManager:
         store_id = self._check_store(store_id)
         category_id = self._check_category(category_id)
         quantity, note, for_whom = _clean(quantity), _clean(note), _clean(for_whom)
+        if _clean(barcode):
+            self.learn_barcode(str(barcode).strip(), name, store_id, category_id)
 
         # Rezept-Zutaten kommen zusätzlich auf die Liste (eigener Eintrag pro Rezept)
         recipe_id = recipe_id if self.recipe_by_id(recipe_id) else None
@@ -600,6 +604,19 @@ class EinkaufslisteManager:
     async def _async_delete_file(self, photo_id: str) -> None:
         path = self._photo_path(photo_id)
         await self.hass.async_add_executor_job(lambda: path.unlink(missing_ok=True))
+
+    # ------------------------------------------------------------------ Barcodes
+    @callback
+    def learn_barcode(
+        self, code: str, name: str, store_id: str | None, category_id: str | None
+    ) -> None:
+        """Merkt sich, welcher Artikel zu einem Barcode gehört."""
+        self.barcodes[code] = {
+            "name": name,
+            "store_id": store_id,
+            "category_id": category_id,
+            "updated": _now_iso(),
+        }
 
     # ------------------------------------------------------------------ Aufräumen
     @callback
@@ -869,7 +886,7 @@ class EinkaufslisteManager:
         for item in self.items:
             if item[field] == group_id:
                 item[field] = None
-        for hist in self.history.values():
+        for hist in list(self.history.values()) + list(self.barcodes.values()):
             if hist.get(field) == group_id:
                 hist[field] = None
         for recipe in self.recipes:

@@ -546,3 +546,47 @@ async def test_move_item_to_other_store(hass, setup):
     m.add_item("Milch", store_id=aldi)
     with pytest.raises(ValueError):
         m.update_item(item["id"], store_id=aldi)  # gibt's dort schon
+
+
+async def test_barcode_lookup(hass, setup, hass_ws_client, aioclient_mock):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aioclient_mock.get(
+        "https://world.openfoodfacts.org/api/v2/product/4008400402222.json",
+        json={"status": 1, "product": {"product_name_de": "Pizza Salami", "brands": "Wagner,Nestlé",
+                                        "categories_tags": ["en:frozen-foods", "en:pizzas"]}},
+    )
+    aioclient_mock.get("https://world.openfoodfacts.org/api/v2/product/4005900000000.json", status=404)
+    aioclient_mock.get(
+        "https://world.openbeautyfacts.org/api/v2/product/4005900000000.json",
+        json={"status": 1, "product": {"product_name": "Duschgel", "brands": "Nivea"}},
+    )
+    for base in ("openfoodfacts", "openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{base}.org/api/v2/product/1111111111116.json", status=404)
+
+    await client.send_json({"id": 1, "type": "einkaufsliste/barcode/lookup", "code": "4008400402222"})
+    res = (await client.receive_json())["result"]
+    assert res["found"] and res["name"] == "Wagner Pizza Salami" and res["source"] == "Open Food Facts"
+    assert res["category_id"] == m.find_category("TK-Ware")
+
+    await client.send_json({"id": 2, "type": "einkaufsliste/barcode/lookup", "code": "4005900000000"})
+    res = (await client.receive_json())["result"]
+    assert res["name"] == "Nivea Duschgel" and res["category_id"] == m.find_category("Drogerie")
+
+    await client.send_json({"id": 3, "type": "einkaufsliste/barcode/lookup", "code": "1111111111116"})
+    res = (await client.receive_json())["result"]
+    assert res == {"code": "1111111111116", "found": False}
+
+    # unbekannten Barcode beim Hinzufügen lernen -> nächstes Mal ohne Internet
+    aldi = m.find_store("Aldi")
+    await client.send_json({"id": 4, "type": "einkaufsliste/item/add", "name": "Hausmarke Kekse",
+                            "store_id": aldi, "barcode": "1111111111116"})
+    assert (await client.receive_json())["success"]
+    calls = aioclient_mock.call_count
+    await client.send_json({"id": 5, "type": "einkaufsliste/barcode/lookup", "code": "1111111111116"})
+    res = (await client.receive_json())["result"]
+    assert res["found"] and res["source"] == "gemerkt" and res["name"] == "Hausmarke Kekse"
+    assert res["store_id"] == aldi and aioclient_mock.call_count == calls
+
+    await client.send_json({"id": 6, "type": "einkaufsliste/barcode/lookup", "code": "abc"})
+    assert not (await client.receive_json())["success"]

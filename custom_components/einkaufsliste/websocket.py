@@ -11,6 +11,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
+from .barcode import async_lookup
 from .const import DOMAIN, SIGNAL_UPDATED
 from .manager import EinkaufslisteManager, person_name_for_user
 
@@ -34,6 +35,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_photo_set,
         ws_photo_get,
         ws_photo_remove,
+        ws_barcode_lookup,
         ws_group_add,
         ws_group_update,
         ws_group_remove,
@@ -113,6 +115,7 @@ def ws_subscribe(hass, connection, msg):
         vol.Optional("quantity"): OPT_STR,
         vol.Optional("note"): OPT_STR,
         vol.Optional("for_whom"): OPT_STR,
+        vol.Optional("barcode"): OPT_STR,
     }
 )
 @callback
@@ -130,6 +133,7 @@ def ws_item_add(hass, connection, msg):
             note=msg.get("note"),
             for_whom=msg.get("for_whom"),
             added_by=who,
+            barcode=msg.get("barcode"),
         ),
     )
 
@@ -357,3 +361,11 @@ async def ws_photo_get(hass, connection, msg):
 @websocket_api.async_response
 async def ws_photo_remove(hass, connection, msg):
     await _run_async(hass, connection, msg, lambda m: m.async_remove_photo(msg["name"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/barcode/lookup", vol.Required("code"): str}
+)
+@websocket_api.async_response
+async def ws_barcode_lookup(hass, connection, msg):
+    await _run_async(hass, connection, msg, lambda m: async_lookup(hass, m, msg["code"]))

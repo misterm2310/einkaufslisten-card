@@ -22,6 +22,7 @@
 | 🧹 **Automatisch aufräumen** | An einem festen Tag wird alles **abgehakt**, was mindestens 7 Tage drinsteht. **Gelöscht wird nichts.** |
 | ⚡ **Live-Sync** | Trägt jemand etwas ein, steht es sofort auf allen Handys. Ohne Neuladen. |
 | 📸 **Fotos** | Ein Foto zum Artikel („genau diese Marke!“), auswählbar direkt beim Eintragen. |
+| 🔍 **Barcode** | In der Home-Assistant-App den Strichcode scannen. Der Name wird automatisch ausgefüllt. |
 | 📖 **Kategorie raten** | Tippst du „Joghurt“, springt die Kategorie von selbst auf Kühlregal, bei „Pizza“ auf TK-Ware. Dafür gibt es ein eingebautes Wörterbuch mit rund 250 Produkten. Wählst du selbst etwas aus, hat das Vorrang. |
 | 🔁 **„War aus!“** | Gab's bei Aldi nicht? Tipp am Artikel auf **⇄** und dann auf **Netto**, und der Artikel wandert rüber. |
 | 📍 **Nächstes Geschäft** | Bist du bei einem Geschäft, springt die Liste automatisch auf dessen Reiter. Jeder sieht dabei sein eigenes Geschäft. |
@@ -120,7 +121,7 @@ Die Liste springt automatisch auf den Reiter des Geschäfts, bei dem **du** gera
 ## 📸 Fotos zum Artikel
 
 Damit keiner mehr die falschen Nudeln mitbringt. 😄
-1. **Direkt beim Eintragen:** Tippe neben dem Eingabefeld auf das **📷-Symbol** und wähle ein Foto aus. Das Symbol wird blau. Tippst du jetzt auf **＋**, kommt das Foto gleich mit. (Nochmal aufs blaue 📷 tippen, und das Foto ist wieder raus.)
+1. **Direkt beim Eintragen:** Tippe neben dem Eingabefeld auf das **📷-Symbol** und wähle ein Foto aus. Das Symbol wird blau. Tippst du jetzt auf den **grünen Haken ✅**, kommt das Foto gleich mit. (Nochmal aufs blaue 📷 tippen, und das Foto ist wieder raus.)
 2. **Oder später:** Beim Artikel auf den **✏️ Stift** tippen und dann auf **📷 Foto**. Das Foto wählst du aus der Galerie.
 3. Fertig! Hinter dem Artikel erscheint ein kleines **📷**. Tippst du darauf, geht das Foto groß auf. Noch ein Tipp, und es ist wieder zu.
 
@@ -129,6 +130,20 @@ Damit keiner mehr die falschen Nudeln mitbringt. 😄
 - Fotos werden noch auf dem Handy **automatisch verkleinert**, auf ungefähr 100 KB.
 - Gespeichert wird alles **nur bei dir** unter `/config/einkaufsliste_fotos` und mit deinen Backups gesichert.
 - Löschst du einen Artikel ganz (⚙️ → Artikel ganz löschen), ist auch das Foto weg. Außer eine Rezept-Zutat braucht es noch.
+
+---
+
+## 🔍 Barcode scannen (in der Home-Assistant-App)
+
+1. In der **Home-Assistant-App** neben dem Eingabefeld auf das **Barcode-Symbol** tippen.
+2. Der **Scanner der App** geht auf. Halte den Strichcode der Packung in den Rahmen.
+3. Die Karte füllt den **Namen** (mit Marke) und, wenn möglich, die **Kategorie** aus.
+4. Passt alles? Dann auf den **grünen Haken ✅** tippen. Fertig! 🎉
+
+- Weil die **App** die Kamera öffnet (nicht der Browser), klappt das auch über `http://`. Du musst **nichts umstellen**.
+- Den Barcode-Knopf gibt es nur in der **Home-Assistant-App** (Android/iPhone). Am PC-Browser ist er ausgeblendet.
+- Die Produktnamen kommen aus den freien Datenbanken **Open Food Facts**, **Open Beauty Facts** und **Open Products Facts**. Dafür braucht dein Home Assistant **Internet**.
+- **Kennt die Datenbank ein Produkt nicht,** tippst du den Namen einmal selbst ein. Die Liste **merkt sich** das, und beim nächsten Scan weiß sie es sofort. 🧠 Das gilt auch, wenn du einen gefundenen Namen änderst, zum Beispiel „Milch“ statt „Weihenstephan H-Milch 1,5 %“.
 
 ---
 
@@ -219,4 +234,4 @@ pip install -r requirements_test.txt
 pytest
 ```
 
-Lizenz: MIT · Gebaut mit ❤️ und viel zu vielen Einkaufszetteln.
+Lizenz: MIT · Produktdaten: [Open Food Facts](https://world.openfoodfacts.org) (ODbL) · Gebaut mit ❤️ und viel zu vielen Einkaufszetteln.
