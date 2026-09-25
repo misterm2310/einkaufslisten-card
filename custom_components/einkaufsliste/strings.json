@@ -1,0 +1,119 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up shopping list",
+        "description": "When should the list be cleaned up automatically?",
+        "data": {
+          "cleanup_weekday": "Cleanup weekday",
+          "cleanup_time": "Time",
+          "min_age_days": "Minimum days on the list",
+          "only_checked": "Only delete checked items"
+        },
+        "data_description": {
+          "cleanup_weekday": "Day of the weekly cleanup.",
+          "cleanup_time": "Time of the cleanup.",
+          "min_age_days": "An item is only deleted once it has been on the list for at least this many days on cleanup day.",
+          "only_checked": "Off = clear everything old enough. On = only checked items are removed."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Cleanup settings",
+        "data": {
+          "cleanup_weekday": "Cleanup weekday",
+          "cleanup_time": "Time",
+          "min_age_days": "Minimum days on the list",
+          "only_checked": "Only delete checked items"
+        },
+        "data_description": {
+          "cleanup_weekday": "Day of the weekly cleanup.",
+          "cleanup_time": "Time of the cleanup.",
+          "min_age_days": "An item is only deleted once it has been on the list for at least this many days on cleanup day.",
+          "only_checked": "Off = clear everything old enough. On = only checked items are removed."
+        }
+      }
+    }
+  },
+  "services": {
+    "add_item": {
+      "name": "Add item",
+      "description": "Adds an item to the shopping list. If it is already on the list and checked, it gets unchecked.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "What to buy."
+        },
+        "store": {
+          "name": "Store",
+          "description": "Store name, e.g. Aldi."
+        },
+        "category": {
+          "name": "Category",
+          "description": "Category name."
+        },
+        "quantity": {
+          "name": "Quantity",
+          "description": "e.g. 2 litres"
+        },
+        "added_by": {
+          "name": "Added by",
+          "description": "Name shown in brackets. Empty = the calling user."
+        }
+      }
+    },
+    "check_item": {
+      "name": "Check item",
+      "description": "Checks an item.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Which item?"
+        },
+        "store": {
+          "name": "Store",
+          "description": "Optional."
+        }
+      }
+    },
+    "remove_item": {
+      "name": "Remove item",
+      "description": "Removes an item.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Which item?"
+        },
+        "store": {
+          "name": "Store",
+          "description": "Optional."
+        }
+      }
+    },
+    "clear_checked": {
+      "name": "Clear checked",
+      "description": "Removes all checked items right away.",
+      "fields": {}
+    },
+    "cleanup": {
+      "name": "Cleanup",
+      "description": "Cleans the list now using the configured rules.",
+      "fields": {
+        "force": {
+          "name": "Delete everything",
+          "description": "On = clear the whole list now."
+        },
+        "min_age_days": {
+          "name": "Minimum age (days)",
+          "description": "Override once."
+        }
+      }
+    }
+  }
+}

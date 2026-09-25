@@ -1,0 +1,119 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Einkaufsliste einrichten",
+        "description": "Wann soll die Liste automatisch aufgeräumt werden?",
+        "data": {
+          "cleanup_weekday": "Aufräum-Tag",
+          "cleanup_time": "Uhrzeit",
+          "min_age_days": "Mindestens so viele Tage auf der Liste",
+          "only_checked": "Nur abgehakte Artikel löschen"
+        },
+        "data_description": {
+          "cleanup_weekday": "An diesem Tag wird aufgeräumt.",
+          "cleanup_time": "Um diese Uhrzeit wird aufgeräumt.",
+          "min_age_days": "Ein Artikel wird erst gelöscht, wenn er am Aufräum-Tag mindestens so viele Tage auf der Liste steht (7 = eine Woche).",
+          "only_checked": "Aus = die Liste wird komplett geleert (alles, was alt genug ist). An = nur abgehakte Artikel fliegen raus."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Die Einkaufsliste ist schon eingerichtet – eine reicht für die ganze Familie!"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aufräumen einstellen",
+        "data": {
+          "cleanup_weekday": "Aufräum-Tag",
+          "cleanup_time": "Uhrzeit",
+          "min_age_days": "Mindestens so viele Tage auf der Liste",
+          "only_checked": "Nur abgehakte Artikel löschen"
+        },
+        "data_description": {
+          "cleanup_weekday": "An diesem Tag wird aufgeräumt.",
+          "cleanup_time": "Um diese Uhrzeit wird aufgeräumt.",
+          "min_age_days": "Ein Artikel wird erst gelöscht, wenn er am Aufräum-Tag mindestens so viele Tage auf der Liste steht (7 = eine Woche).",
+          "only_checked": "Aus = die Liste wird komplett geleert (alles, was alt genug ist). An = nur abgehakte Artikel fliegen raus."
+        }
+      }
+    }
+  },
+  "services": {
+    "add_item": {
+      "name": "Artikel hinzufügen",
+      "description": "Setzt einen Artikel auf die Einkaufsliste. Steht er schon abgehakt drauf, wird der Haken wieder rausgenommen.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Was soll gekauft werden?"
+        },
+        "store": {
+          "name": "Geschäft",
+          "description": "Name des Geschäfts, z. B. Aldi."
+        },
+        "category": {
+          "name": "Kategorie",
+          "description": "Name der Kategorie, z. B. TK-Ware."
+        },
+        "quantity": {
+          "name": "Menge",
+          "description": "z. B. 2 Liter"
+        },
+        "added_by": {
+          "name": "Hinzugefügt von",
+          "description": "Name in Klammern hinter dem Artikel. Leer = wer die Aktion auslöst."
+        }
+      }
+    },
+    "check_item": {
+      "name": "Artikel abhaken",
+      "description": "Hakt einen Artikel ab.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Welcher Artikel?"
+        },
+        "store": {
+          "name": "Geschäft",
+          "description": "Optional, falls es ihn in mehreren Geschäften gibt."
+        }
+      }
+    },
+    "remove_item": {
+      "name": "Artikel löschen",
+      "description": "Löscht einen Artikel von der Liste.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Welcher Artikel?"
+        },
+        "store": {
+          "name": "Geschäft",
+          "description": "Optional, falls es ihn in mehreren Geschäften gibt."
+        }
+      }
+    },
+    "clear_checked": {
+      "name": "Abgehakte entfernen",
+      "description": "Löscht alle abgehakten Artikel sofort.",
+      "fields": {}
+    },
+    "cleanup": {
+      "name": "Aufräumen",
+      "description": "Räumt die Liste jetzt nach den eingestellten Regeln auf.",
+      "fields": {
+        "force": {
+          "name": "Alles löschen",
+          "description": "An = die komplette Liste wird sofort geleert, egal wie alt."
+        },
+        "min_age_days": {
+          "name": "Mindestalter (Tage)",
+          "description": "Überschreibt einmalig das eingestellte Mindestalter."
+        }
+      }
+    }
+  }
+}

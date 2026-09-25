@@ -1,0 +1,109 @@
+# ---------------------------------------------------------------------------
+# Beispiel-Automationen für die Einkaufsliste
+# Einfach in Einstellungen → Automationen → Neu → "In YAML bearbeiten" kopieren.
+# Alles mit "DEIN_..." musst du an dein System anpassen.
+# ---------------------------------------------------------------------------
+
+# 1) Push-Nachricht, wenn jemand ANDERES etwas auf die Liste setzt
+alias: Einkaufsliste – Neuer Artikel Info
+description: >-
+  Schickt Marco eine Push-Nachricht, sobald jemand anderes aus der Familie
+  etwas auf die Einkaufsliste setzt. So weißt du beim Einkaufen immer, was
+  noch fehlt – ohne ständig in die App zu gucken.
+mode: queued
+triggers:
+  - trigger: event
+    event_type: einkaufsliste_item_added
+conditions:
+  - condition: state
+    entity_id: input_boolean.schalter_wartung
+    state: "off"
+  - condition: template
+    value_template: "{{ trigger.event.data.added_by != 'Marco' }}"
+actions:
+  - action: notify.mobile_app_DEIN_HANDY
+    continue_on_error: true
+    data:
+      title: "🛒 Einkaufsliste"
+      message: >-
+        {{ trigger.event.data.added_by or 'Jemand' }} hat
+        {{ trigger.event.data.name }}{% if trigger.event.data.quantity %}
+        ({{ trigger.event.data.quantity }}){% endif %} für
+        {{ trigger.event.data.store or 'egal wo' }} auf die Liste gesetzt.
+      data:
+        ttl: 0
+        priority: high
+        sticky: true
+        car_ui: true
+        notification_icon: mdi:cart-plus
+        tag: einkauf_neu_01
+
+---
+# 2) Erinnerung, wenn du beim Aldi ankommst und dort noch was auf der Liste steht
+alias: Einkaufsliste – Erinnerung am Aldi
+description: >-
+  Sobald Marco die Zone "Aldi" betritt und für Aldi noch Artikel offen sind,
+  kommt eine Nachricht mit allem, was mit muss. Nie wieder ohne Milch nach Hause!
+mode: single
+triggers:
+  - trigger: zone
+    entity_id: person.marco
+    zone: zone.DEINE_ALDI_ZONE
+    event: enter
+conditions:
+  - condition: state
+    entity_id: input_boolean.schalter_wartung
+    state: "off"
+  - condition: template
+    value_template: >-
+      {{ (state_attr('sensor.einkaufsliste_offene_artikel', 'pro_geschaeft') or {}).get('Aldi', 0) | int > 0 }}
+actions:
+  - action: notify.mobile_app_DEIN_HANDY
+    continue_on_error: true
+    data:
+      title: "🛒 Du bist am Aldi!"
+      message: >-
+        {{ state_attr('sensor.einkaufsliste_offene_artikel', 'artikel')
+           | selectattr('geschaeft', 'eq', 'Aldi')
+           | map(attribute='name') | join(', ') }}
+      data:
+        ttl: 0
+        priority: high
+        sticky: true
+        car_ui: true
+        notification_icon: mdi:store-marker
+        tag: einkauf_aldi_01
+
+---
+# 3) Bericht nach dem wöchentlichen Aufräumen
+alias: Einkaufsliste – Aufräum-Bericht
+description: >-
+  Meldet nach dem automatischen Aufräumen, wie viele alte Artikel von der
+  Einkaufsliste geflogen sind. Nur wenn wirklich etwas gelöscht wurde.
+mode: single
+triggers:
+  - trigger: event
+    event_type: einkaufsliste_cleanup
+    event_data:
+      scheduled: true
+conditions:
+  - condition: state
+    entity_id: input_boolean.schalter_wartung
+    state: "off"
+  - condition: template
+    value_template: "{{ trigger.event.data.removed | int > 0 }}"
+actions:
+  - action: notify.mobile_app_DEIN_HANDY
+    continue_on_error: true
+    data:
+      title: "🧹 Einkaufsliste aufgeräumt"
+      message: >-
+        {{ trigger.event.data.removed }} alte Artikel entfernt:
+        {{ trigger.event.data.names | join(', ') }}
+      data:
+        ttl: 0
+        priority: high
+        sticky: true
+        car_ui: true
+        notification_icon: mdi:broom
+        tag: einkauf_aufraeumen_01

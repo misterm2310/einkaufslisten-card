@@ -1,0 +1,19 @@
+# Skript: Artikel per Knopfdruck, NFC-Tag oder Sprachbefehl auf die Liste setzen
+# Aufruf z. B.: action: script.einkaufsliste_milch
+einkaufsliste_milch:
+  alias: Einkaufsliste – Milch drauf
+  description: >-
+    Setzt Milch für Aldi auf die Einkaufsliste. Perfekt für einen NFC-Tag am
+    Kühlschrank: Handy dranhalten – schwupps, steht Milch auf der Liste.
+  mode: single
+  icon: mdi:cup
+  sequence:
+    - condition: state
+      entity_id: input_boolean.schalter_wartung
+      state: "off"
+    - action: einkaufsliste.add_item
+      continue_on_error: true
+      data:
+        name: Milch
+        store: Aldi
+        category: Kühlregal & Milch
