@@ -618,6 +618,17 @@ class EinkaufslisteManager:
             "updated": _now_iso(),
         }
 
+    @callback
+    def assign_barcode(self, item_id: str, code: str) -> dict[str, Any]:
+        """Einem Artikel, der schon auf der Liste steht, einen Barcode zuordnen."""
+        item = self.get_item(item_id)
+        code = "".join(ch for ch in str(code or "") if ch.isdigit())
+        if not code:
+            raise ValueError("Das ist kein gültiger Barcode.")
+        self.learn_barcode(code, item["name"], item["store_id"], item["category_id"])
+        self._schedule_save()
+        return {"code": code, "name": item["name"]}
+
     # ------------------------------------------------------------------ Aufräumen
     @callback
     def cleanup(

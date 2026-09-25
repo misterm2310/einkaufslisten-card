@@ -100,12 +100,12 @@ type: custom:einkaufsliste-card
 2. Mehr Angaben? Einfach das passende **Symbol** antippen, dann geht nur dieses Feld auf:
    - **▥ Barcode scannen** (nur in der Home-Assistant-App)
    - **📷 Foto** aus der Galerie
-   - **🔢 Menge**, zum Beispiel „2x“ oder „500 g“
+   - **🔢 Menge**: Schnellknöpfe **[1x] [2x] [3x] [4x] [6x] [10x]** oder ✏️ für eine eigene Menge wie „500 g“
    - **📝 Notiz**, zum Beispiel „Bio“
-   - **👤 Für wen?** (nur, wenn Personen angelegt sind)
+   - **👤 Für wen?**: Einfach die Person antippen (nur, wenn Personen angelegt sind)
 3. Auf den **grünen Haken ✅** tippen. Fertig!
 
-Hat ein Symbol einen **blauen Punkt**, ist dort schon etwas ausgefüllt. Nach dem Eintragen klappt alles wieder zu. ✨
+Was du gewählt hast, steht direkt am Symbol, zum Beispiel **🔢 2x · 👤 Oma**. Bei der Notiz zeigt ein **blauer Punkt**, dass etwas drinsteht. Nach dem Eintragen klappt alles wieder zu. ✨
 
 ---
 
@@ -165,6 +165,7 @@ Damit keiner mehr die falschen Nudeln mitbringt. 😄
 4. Passt alles? Dann auf den **grünen Haken ✅** tippen. Fertig! 🎉
 
 - Weil die **App** die Kamera öffnet (nicht der Browser), klappt das auch über `http://`. Du musst **nichts umstellen**.
+- **Barcode für einen Artikel, der schon auf der Liste steht:** ✏️ **Bearbeiten → ▥ Barcode zuordnen** → Packung scannen. Ab dann erkennt der Scanner ihn sofort, auch ohne Internet.
 - Den Barcode-Knopf gibt es nur in der **Home-Assistant-App** (Android/iPhone). Am PC-Browser ist er ausgeblendet.
 - Die Produktnamen kommen aus den freien Datenbanken **Open Food Facts**, **Open Beauty Facts** und **Open Products Facts**. Dafür braucht dein Home Assistant **Internet**.
 - **Kennt die Datenbank ein Produkt nicht,** tippst du den Namen einmal selbst ein. Die Liste **merkt sich** das, und beim nächsten Scan weiß sie es sofort. 🧠 Das gilt auch, wenn du einen gefundenen Namen änderst, zum Beispiel „Milch“ statt „Weihenstephan H-Milch 1,5 %“.

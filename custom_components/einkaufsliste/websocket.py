@@ -36,6 +36,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_photo_get,
         ws_photo_remove,
         ws_barcode_lookup,
+        ws_barcode_assign,
         ws_group_add,
         ws_group_update,
         ws_group_remove,
@@ -369,3 +370,15 @@ async def ws_photo_remove(hass, connection, msg):
 @websocket_api.async_response
 async def ws_barcode_lookup(hass, connection, msg):
     await _run_async(hass, connection, msg, lambda m: async_lookup(hass, m, msg["code"]))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/barcode/assign",
+        vol.Required("item_id"): str,
+        vol.Required("code"): str,
+    }
+)
+@callback
+def ws_barcode_assign(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.assign_barcode(msg["item_id"], msg["code"]))

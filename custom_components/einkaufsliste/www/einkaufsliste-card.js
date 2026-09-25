@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.7.0";
+const EL_VERSION = "1.8.0";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -161,6 +161,12 @@ form.add .toolbar { grid-column: 1 / -1; display:flex; gap:4px; margin:-2px 0 0;
 form.add .extras { grid-column: 1 / -1; display:flex; flex-direction:column; gap:6px; }
 form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .tool.busy ha-icon { animation: pulse 1s infinite; }
+.tool.hasval { color:var(--primary-color,#03a9f4); }
+.tool .tval { font-size:.8em; font-weight:600; margin-left:3px; line-height:1; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chipbox { display:flex; flex-direction:column; gap:6px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip2 { border:1.5px solid var(--divider-color, rgba(127,127,127,.35)); background:transparent; border-radius:999px; padding:7px 14px; cursor:pointer; font-size:.95em; min-width:44px; }
+.chip2.sel { background:var(--primary-color,#03a9f4); border-color:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
 @keyframes pulse { 50% { opacity:.3; } }
 
 .photobtn { background:none; border:0; cursor:pointer; padding:0 2px; color:var(--primary-color,#03a9f4); line-height:0; --mdc-icon-size:17px; align-self:center; }
@@ -394,13 +400,17 @@ class EinkaufslisteCard extends HTMLElement {
             <div class="toolbar">
               <button class="tool" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
               <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon></button>
-              <button class="tool" id="tQty" type="button" data-act="tool" data-field="inQty" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon></button>
+              <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon></button>
               <button class="tool" id="tNote" type="button" data-act="tool" data-field="inNote" title="Notiz"><ha-icon icon="mdi:note-text-outline"></ha-icon></button>
-              <button class="tool" id="tFor" type="button" data-act="tool" data-field="inFor" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon></button>
+              <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon></button>
             </div>
             <div class="extras">
-              <input id="inQty" placeholder="🔢 Menge, z. B. 2x oder 500 g" hidden>
+              <div id="qtyBox" class="chipbox" hidden>
+                <div class="chips" id="qtyChips"></div>
+                <input id="inQty" placeholder="🔢 Menge, z. B. 500 g" hidden>
+              </div>
               <input id="inNote" placeholder="📝 Notiz, z. B. Bio" hidden>
+              <div id="forBox" class="chipbox" hidden><div class="chips" id="forChips"></div></div>
               <select id="inFor" title="Für wen?" hidden></select>
             </div>
             <div class="row2 sel">
@@ -592,7 +602,7 @@ class EinkaufslisteCard extends HTMLElement {
     const prevFor = pf.value;
     pf.innerHTML = this._personOptions(null);
     this.$("tFor").hidden = !(d.persons || []).length;
-    if (this.$("tFor").hidden) pf.hidden = true;
+    if (this.$("tFor").hidden) this.$("forBox").hidden = true;
     if ((d.persons || []).some((p) => p.name === prevFor)) pf.value = prevFor;
     st.innerHTML = this._selectOptions(d.stores, null, "🛒 Egal wo");
     ct.innerHTML = this._selectOptions(d.categories, null, "📦 Ohne Kategorie");
@@ -670,6 +680,7 @@ class EinkaufslisteCard extends HTMLElement {
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
         <div class="full photorow">
           <button type="button" class="btn" data-act="photo-take" data-name="${esc(item.name)}"><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${this._hasPhoto(item.name) ? "Foto ändern" : "Foto"}</button>
+          ${this._hasAppScanner() ? `<button type="button" class="btn" data-act="barcode-assign" data-id="${item.id}"><ha-icon icon="mdi:barcode-scan"></ha-icon>Barcode zuordnen</button>` : ""}
           ${this._hasPhoto(item.name) ? `<button type="button" class="btn" data-act="photo-view" data-name="${esc(item.name)}"><ha-icon icon="mdi:image-outline"></ha-icon>Ansehen</button>
           <button type="button" class="btn danger" data-act="photo-remove" data-name="${esc(item.name)}"><ha-icon icon="mdi:image-remove-outline"></ha-icon>Foto löschen</button>` : ""}
         </div>
@@ -1033,21 +1044,56 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // Symbol-Leiste: ein Tipp öffnet/schließt genau ein Feld
-  _toggleTool(fieldId) {
-    const field = this.$(fieldId);
-    const open = field.hidden;
-    field.hidden = !open;
-    if (open) field.focus();
+  _toggleTool(boxId) {
+    const box = this.$(boxId);
+    const open = box.hidden;
+    // immer nur ein Feld offen – spart Platz
+    for (const id of ["qtyBox", "inNote", "forBox"]) if (id !== boxId) this.$(id).hidden = true;
+    box.hidden = !open;
+    if (open) {
+      if (boxId === "qtyBox") this._renderQtyChips();
+      if (boxId === "forBox") this._renderForChips();
+      if (boxId === "inNote") box.focus();
+    }
     this._updateTools();
   }
 
+  _renderQtyChips() {
+    const val = this.$("inQty").value.trim();
+    const quick = ["1x", "2x", "3x", "4x", "6x", "10x"];
+    const custom = val && !quick.includes(val);
+    this.$("qtyChips").innerHTML =
+      quick.map((q) => `<button type="button" class="chip2 ${q === val ? "sel" : ""}" data-act="qty-chip" data-v="${q}">${q}</button>`).join("") +
+      `<button type="button" class="chip2 ${custom ? "sel" : ""}" data-act="qty-custom" title="Andere Menge">✏️${custom ? " " + esc(val) : ""}</button>`;
+    this.$("inQty").hidden = !custom && this.$("inQty").hidden;
+  }
+
+  _renderForChips() {
+    const val = this.$("inFor").value;
+    this.$("forChips").innerHTML = (this._data?.persons || [])
+      .map((p) => `<button type="button" class="chip2 ${p.name === val ? "sel" : ""}" data-act="for-chip" data-v="${esc(p.name)}">👤 ${esc(p.name)}</button>`)
+      .join("");
+  }
+
   _updateTools() {
-    for (const [tool, fieldId] of [["tQty", "inQty"], ["tNote", "inNote"], ["tFor", "inFor"]]) {
+    const tools = [
+      ["tQty", "qtyBox", this.$("inQty")?.value.trim(), "mdi:numeric"],
+      ["tNote", "inNote", this.$("inNote")?.value.trim() ? "✓" : "", "mdi:note-text-outline"],
+      ["tFor", "forBox", this.$("inFor")?.value, "mdi:account-outline"],
+    ];
+    for (const [tool, boxId, value, icon] of tools) {
       const btn = this.$(tool);
-      const field = this.$(fieldId);
-      if (!btn || !field) continue;
-      btn.classList.toggle("on", !field.hidden);
-      btn.classList.toggle("filled", !!field.value);
+      const box = this.$(boxId);
+      if (!btn || !box) continue;
+      btn.classList.toggle("on", !box.hidden);
+      btn.classList.toggle("filled", !!value && tool === "tNote");
+      const label = tool === "tNote" ? "" : value || "";
+      btn.classList.toggle("hasval", !!label);
+      const key = icon + "|" + label;
+      if (btn._key !== key) {
+        btn._key = key;
+        btn.innerHTML = `<ha-icon icon="${icon}"></ha-icon>${label ? `<span class="tval">${esc(label)}</span>` : ""}`;
+      }
     }
   }
 
@@ -1125,7 +1171,7 @@ class EinkaufslisteCard extends HTMLElement {
     ext.__einkaufslisteTap = true;
   }
 
-  _startAppScan() {
+  _startAppScan(onCode = (code) => this._handleCode(code), title = "🛒 Barcode scannen") {
     const ext = this._hass?.auth?.external;
     if (!ext) return;
     this._listenToApp();
@@ -1135,7 +1181,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (msg.command === "bar_code/scan_result") {
         done();
         ext.fireMessage({ type: "bar_code/close" });
-        if (msg.payload?.rawValue) this._handleCode(msg.payload.rawValue);
+        if (msg.payload?.rawValue) onCode(msg.payload.rawValue);
       } else if (msg.command === "bar_code/aborted") {
         done();
         ext.fireMessage({ type: "bar_code/close" });
@@ -1146,7 +1192,7 @@ class EinkaufslisteCard extends HTMLElement {
     ext.fireMessage({
       type: "bar_code/scan",
       payload: {
-        title: "🛒 Barcode scannen",
+        title,
         description: "Halte den Strichcode der Packung in den Rahmen.",
         alternative_option_label: "Lieber eintippen",
       },
@@ -1241,7 +1287,7 @@ class EinkaufslisteCard extends HTMLElement {
       for (const id of ["inName", "inQty", "inNote", "inFor", "inCat"]) this.$(id).value = "";
       this._catManual = false;
       this._pendingBarcode = null;
-      for (const id of ["inQty", "inNote", "inFor"]) this.$(id).hidden = true;
+      for (const id of ["qtyBox", "inQty", "inNote", "forBox"]) this.$(id).hidden = true;
       this._updateTools();
       this._renderList();
       this.$("inName").focus();
@@ -1297,6 +1343,36 @@ class EinkaufslisteCard extends HTMLElement {
       case "tool":
         this._toggleTool(el.dataset.field);
         break;
+      case "qty-chip": {
+        const q = this.$("inQty");
+        q.value = q.value === el.dataset.v ? "" : el.dataset.v;
+        q.hidden = true;
+        this.$("qtyBox").hidden = true;
+        this._updateTools();
+        break;
+      }
+      case "qty-custom": {
+        const q = this.$("inQty");
+        q.hidden = false;
+        q.focus();
+        break;
+      }
+      case "for-chip": {
+        const f = this.$("inFor");
+        f.value = f.value === el.dataset.v ? "" : el.dataset.v;
+        this.$("forBox").hidden = true;
+        this._updateTools();
+        break;
+      }
+      case "barcode-assign": {
+        const item = this._data.items.find((i) => i.id === el.dataset.id);
+        this._startAppScan((code) => {
+          this._ws({ type: "einkaufsliste/barcode/assign", item_id: item.id, code })
+            .then(() => this._toast(`▥ Barcode gespeichert – beim nächsten Scan erkenne ich „${item.name}“ sofort!`))
+            .catch(() => {});
+        }, `▥ Barcode für „${item.name}“`);
+        break;
+      }
       case "move":
         this._moving = this._moving === id ? null : id;
         this._renderList();

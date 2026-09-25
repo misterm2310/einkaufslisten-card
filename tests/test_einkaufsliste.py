@@ -590,3 +590,18 @@ async def test_barcode_lookup(hass, setup, hass_ws_client, aioclient_mock):
 
     await client.send_json({"id": 6, "type": "einkaufsliste/barcode/lookup", "code": "abc"})
     assert not (await client.receive_json())["success"]
+
+
+async def test_assign_barcode_to_existing_item(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    item = m.add_item("Milch", store_id=aldi, category_id=m.find_category("Kühlregal & Milch"))
+    await client.send_json({"id": 1, "type": "einkaufsliste/barcode/assign", "item_id": item["id"], "code": "4 000417 025005"})
+    res = await client.receive_json()
+    assert res["success"] and res["result"] == {"code": "4000417025005", "name": "Milch"}
+    await client.send_json({"id": 2, "type": "einkaufsliste/barcode/lookup", "code": "4000417025005"})
+    res = (await client.receive_json())["result"]
+    assert res["found"] and res["source"] == "gemerkt" and res["name"] == "Milch" and res["store_id"] == aldi
+    await client.send_json({"id": 3, "type": "einkaufsliste/barcode/assign", "item_id": item["id"], "code": "abc"})
+    assert not (await client.receive_json())["success"]
