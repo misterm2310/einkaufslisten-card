@@ -26,7 +26,7 @@
 | 📸 **Fotos** | Ein Foto zum Artikel („genau diese Marke!“), auswählbar direkt beim Eintragen. |
 | 🔍 **Barcode** | In der Home-Assistant-App den Strichcode scannen. Der Name wird automatisch ausgefüllt. |
 | 📖 **Kategorie raten** | Tippst du „Joghurt“, springt die Kategorie von selbst auf Kühlregal, bei „Pizza“ auf TK-Ware. Dafür gibt es ein eingebautes Wörterbuch mit rund 250 Produkten. Wählst du selbst etwas aus, hat das Vorrang. |
-| 🔁 **„War aus!“** | Gab's bei Aldi nicht? Artikel lange drücken → **⇄ Verschieben** → **Netto**, und der Artikel wandert rüber. |
+| 🔁 **„War aus!“** | Gab's bei Aldi nicht? Tipp am Artikel auf **⇄** und dann auf **Netto**, und der Artikel wandert rüber. |
 | 📍 **Nächstes Geschäft** | Bist du bei einem Geschäft, springt die Liste automatisch auf dessen Reiter. Jeder sieht dabei sein eigenes Geschäft. |
 | ✨ **Ordentliche Namen** | Aus „  milch “ wird automatisch „Milch“. |
 | 🔎 **Merkt sich Produkte** | Beim Tippen kommen Vorschläge, Geschäft und Kategorie werden automatisch ausgefüllt. Die erledigten Artikel werden dabei gleich mitgefiltert. |
@@ -114,6 +114,7 @@ Was du gewählt hast, steht direkt am Symbol, zum Beispiel **🔢 2x · 👤 Oma
 ## 👆 Bedienung in der Liste
 
 - **⭕ Kreis antippen:** abhaken
+- **⇄ antippen:** „War aus!“, also in ein anderes Geschäft verschieben
 - **Artikel lange drücken** (am PC: Rechtsklick): Es öffnet sich ein Menü mit ✏️ **Bearbeiten** · ⇄ **Verschieben** („War aus!“) · 🔢 **Menge** · 📷 **Foto** · ▥ **Barcode**
 - **Auf die Menge tippen** (zum Beispiel „2x“): Es erscheint **[−] 2x [＋]** zum schnellen Ändern
 - **✨ und rote Blase:** Artikel, die **andere** eingetragen haben, seit du zuletzt geschaut hast, bekommen ein ✨. Am Geschäfts-Reiter steht dann zum Beispiel **„+2“**. Tippst du den Reiter an, verschwindet die Blase, aber **nur bei dir**. Jeder hat seine eigene, wie bei WhatsApp. 🔴
