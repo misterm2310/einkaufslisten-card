@@ -21,6 +21,7 @@
 | 🍽️ **Rezepte** | Leg ein Rezept an, zum Beispiel „Freitags Fisch“ mit allen Zutaten. Ein Tipp auf **Auf die Liste** setzt alle Zutaten auf die Liste. |
 | 🧹 **Automatisch aufräumen** | An einem festen Tag wird alles **abgehakt**, was mindestens 7 Tage drinsteht. **Gelöscht wird nichts.** |
 | ⚡ **Live-Sync** | Trägt jemand etwas ein, steht es sofort auf allen Handys. Ohne Neuladen. |
+| 📸 **Fotos & 🔍 Barcode** | Fotos zum Artikel („genau diese Marke!“) und Barcode scannen mit der Handy-Kamera. |
 | 🔎 **Merkt sich Produkte** | Beim Tippen kommen Vorschläge, Geschäft und Kategorie werden automatisch ausgefüllt. Die erledigten Artikel werden dabei gleich mitgefiltert. |
 
 ---
@@ -96,6 +97,34 @@ Tippst du zweimal auf dasselbe Rezept, kommt nichts doppelt dazu.
 Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags Fisch).
 
 ✅ **Hakst du eine Rezept-Zutat ab, verschwindet sie ganz.** Sie taucht also nicht unten bei „Erledigt“ auf. Das gilt auch beim automatischen Aufräumen. Normale Artikel bleiben wie gewohnt unter „Erledigt“ stehen.
+
+---
+
+## 📸 Fotos zum Artikel
+
+Damit keiner mehr die falschen Nudeln mitbringt. 😄
+1. Beim Artikel auf den **✏️ Stift** tippen, dann auf **📷 Foto**.
+2. Am Handy kannst du jetzt ein Foto knipsen oder eins aus der Galerie nehmen.
+3. Fertig! Hinter dem Artikel erscheint ein kleines **📷**. Tippst du darauf, geht das Foto groß auf. Noch ein Tipp, und es ist wieder zu.
+
+- Das Foto **bleibt beim Produkt**, auch nach dem Abhaken und Wieder-Reinnehmen. Einmal knipsen reicht.
+- Auch **Rezept-Zutaten** können ein Foto haben: Das geht im Rezept über den 📷-Knopf neben der Zutat.
+- Fotos werden noch auf dem Handy **automatisch verkleinert**, auf ungefähr 100 KB.
+- Gespeichert wird alles **nur bei dir** unter `/config/einkaufsliste_fotos` und mit deinen Backups gesichert.
+- Löschst du einen Artikel ganz (✕), ist auch das Foto weg. Außer eine Rezept-Zutat braucht es noch.
+
+---
+
+## 🔍 Barcode scannen
+
+1. Oben neben dem Eingabefeld auf **🔍 (Barcode)** tippen.
+2. Die Kamera geht auf. Fotografiere den **Strichcode** der Packung, möglichst nah und scharf.
+3. Die Karte liest den Barcode aus und füllt den **Namen** (mit Marke) und, wenn möglich, auch die **Kategorie** aus.
+4. Passt alles? Dann auf **＋** tippen. Fertig! 🎉
+
+- Die Produktnamen kommen aus den freien Datenbanken **Open Food Facts**, **Open Beauty Facts** (Drogerie) und **Open Products Facts**. Dafür braucht dein Home Assistant **Internet**.
+- **Kennt die Datenbank ein Produkt nicht,** tippst du den Namen einmal selbst ein. Die Liste **merkt sich** das, und beim nächsten Scan weiß sie es sofort, ganz ohne Internet. 🧠
+- Hast du einen gescannten Namen geändert (zum Beispiel „Milch“ statt „Weihenstephan H-Milch 1,5 %“), merkt sich die Liste auch **deinen** Namen.
 
 ---
 
@@ -185,4 +214,6 @@ pip install -r requirements_test.txt
 pytest
 ```
 
-Lizenz: MIT · Gebaut mit ❤️ und viel zu vielen Einkaufszetteln.
+Lizenz: MIT · Barcode-Erkennung: [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT) · Produktdaten: [Open Food Facts](https://world.openfoodfacts.org) (ODbL)
+
+Gebaut mit ❤️ und viel zu vielen Einkaufszetteln.

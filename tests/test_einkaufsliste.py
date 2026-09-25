@@ -437,3 +437,98 @@ async def test_persons_seeded_from_old_data(hass, hass_storage):
     with patch("custom_components.einkaufsliste.frontend.add_extra_js_url"):
         assert await hass.config_entries.async_setup(entry.entry_id)
     assert [p["name"] for p in mgr(hass).persons] == ["Oma", "Ben"]
+
+
+JPEG = bytes.fromhex("ffd8ffe000104a46494600010100000100010000ffd9")
+
+
+async def test_photos(hass, setup, hass_ws_client):
+    import base64
+
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    item = m.add_item("Nudeln")
+    data = "data:image/jpeg;base64," + base64.b64encode(JPEG).decode()
+    await client.send_json({"id": 1, "type": "einkaufsliste/photo/set", "name": "Nudeln", "data": data})
+    res = await client.receive_json()
+    assert res["success"], res
+    assert "nudeln" in m.as_dict()["photos"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/photo/get", "name": "nudeln"})
+    res = await client.receive_json()
+    assert res["result"]["data"].startswith("data:image/jpeg;base64,")
+
+    # kein Bild -> Fehler
+    await client.send_json({"id": 3, "type": "einkaufsliste/photo/set", "name": "Nudeln", "data": base64.b64encode(b"hallo").decode()})
+    assert not (await client.receive_json())["success"]
+
+    # Foto bleibt beim Produkt: abhaken + wieder rein
+    m.set_checked(item["id"], True)
+    m.set_checked(item["id"], False)
+    assert "nudeln" in m.photos
+
+    # Umbenennen nimmt das Foto mit
+    m.update_item(item["id"], name="Spaghetti")
+    assert "spaghetti" in m.photos and "nudeln" not in m.photos
+    photo_file = m._photo_path(m.photos["spaghetti"]["id"])
+    assert photo_file.exists()
+
+    # Ganz löschen -> Foto weg
+    m.remove_item(item["id"])
+    await hass.async_block_till_done()
+    assert "spaghetti" not in m.photos and not photo_file.exists()
+
+
+async def test_photo_kept_for_recipe(hass, setup):
+    import base64
+
+    m = mgr(hass)
+    item = m.add_item("Mozzarella")
+    m.add_recipe("Pizza", [{"name": "Mozzarella"}])
+    await m.async_set_photo("Mozzarella", base64.b64encode(JPEG).decode())
+    m.remove_item(item["id"])
+    await hass.async_block_till_done()
+    assert "mozzarella" in m.photos  # Rezept braucht es noch
+
+
+async def test_barcode_lookup(hass, setup, hass_ws_client, aioclient_mock):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aioclient_mock.get(
+        "https://world.openfoodfacts.org/api/v2/product/4008400402222.json",
+        json={"status": 1, "product": {"product_name_de": "Pizza Salami", "brands": "Wagner,Nestlé",
+                                        "categories_tags": ["en:frozen-foods", "en:pizzas"]}},
+    )
+    aioclient_mock.get("https://world.openfoodfacts.org/api/v2/product/4005900000000.json", status=404)
+    aioclient_mock.get(
+        "https://world.openbeautyfacts.org/api/v2/product/4005900000000.json",
+        json={"status": 1, "product": {"product_name": "Duschgel", "brands": "Nivea"}},
+    )
+    for base in ("openfoodfacts", "openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{base}.org/api/v2/product/1111111111116.json", status=404)
+
+    await client.send_json({"id": 1, "type": "einkaufsliste/barcode/lookup", "code": "4008400402222"})
+    res = (await client.receive_json())["result"]
+    assert res["found"] and res["name"] == "Wagner Pizza Salami" and res["source"] == "Open Food Facts"
+    assert res["category_id"] == m.find_category("TK-Ware")
+
+    await client.send_json({"id": 2, "type": "einkaufsliste/barcode/lookup", "code": "4005900000000"})
+    res = (await client.receive_json())["result"]
+    assert res["name"] == "Nivea Duschgel" and res["category_id"] == m.find_category("Drogerie")
+
+    await client.send_json({"id": 3, "type": "einkaufsliste/barcode/lookup", "code": "1111111111116"})
+    res = (await client.receive_json())["result"]
+    assert res == {"code": "1111111111116", "found": False}
+
+    # unbekannten Barcode beim Hinzufügen lernen -> nächstes Mal ohne Internet
+    aldi = m.find_store("Aldi")
+    await client.send_json({"id": 4, "type": "einkaufsliste/item/add", "name": "Hausmarke Kekse",
+                            "store_id": aldi, "barcode": "1111111111116"})
+    assert (await client.receive_json())["success"]
+    calls = aioclient_mock.call_count
+    await client.send_json({"id": 5, "type": "einkaufsliste/barcode/lookup", "code": "1111111111116"})
+    res = (await client.receive_json())["result"]
+    assert res["found"] and res["source"] == "gemerkt" and res["name"] == "Hausmarke Kekse"
+    assert res["store_id"] == aldi and aioclient_mock.call_count == calls
+
+    await client.send_json({"id": 6, "type": "einkaufsliste/barcode/lookup", "code": "abc"})
+    assert not (await client.receive_json())["success"]

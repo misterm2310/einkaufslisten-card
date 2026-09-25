@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.2.2";
+const EL_VERSION = "1.3.0";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -46,6 +46,101 @@ const ICON_DE = {
   sonstiges: "dots-horizontal", herz: "heart", stern: "star",
 };
 
+// Foto auf dem Handy verkleinern (spart Platz in Home Assistant)
+async function loadImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+
+function drawScaled(img, max) {
+  const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+  canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+async function shrinkImage(file, max = 900, quality = 0.8) {
+  return drawScaled(await loadImage(file), max).toDataURL("image/jpeg", quality);
+}
+
+// Barcode-Leser (zxing-wasm) erst laden, wenn er gebraucht wird
+let zxingPromise = null;
+function loadZxing() {
+  if (window.ZXingWASM?.readBarcodes) return Promise.resolve(window.ZXingWASM);
+  if (!zxingPromise) {
+    zxingPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `${EL_BASE}/zxing/zxing-reader.js?v=${EL_VERSION}`;
+      script.onload = () => {
+        const zx = window.ZXingWASM;
+        zx.prepareZXingModule({
+          overrides: {
+            locateFile: (path, prefix) =>
+              path.endsWith(".wasm") ? `${EL_BASE}/zxing/zxing_reader.wasm?v=${EL_VERSION}` : prefix + path,
+          },
+        });
+        resolve(zx);
+      };
+      script.onerror = () => { zxingPromise = null; reject(new Error("zxing")); };
+      document.head.appendChild(script);
+    });
+  }
+  return zxingPromise;
+}
+
+async function readBarcode(file) {
+  const zx = await loadZxing();
+  const img = await loadImage(file);
+  const opts = { tryHarder: true, maxNumberOfSymbols: 1 };
+  // erst verkleinert (schnell), dann in voller Größe
+  for (const max of [1600, 3000]) {
+    const canvas = drawScaled(img, max);
+    const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+    const results = await zx.readBarcodes(data, opts);
+    const hit = results.find((r) => r.isValid && r.text);
+    if (hit) return hit.text.trim();
+    if (Math.max(img.naturalWidth, img.naturalHeight) <= max) break;
+  }
+  return null;
+}
+
+// Großes Foto über allem anzeigen
+function showPhotoOverlay(src, title) {
+  const overlay = document.createElement("div");
+  Object.assign(overlay.style, {
+    position: "fixed", inset: "0", background: "rgba(0,0,0,.88)", zIndex: "10000",
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    padding: "16px", cursor: "zoom-out", boxSizing: "border-box",
+  });
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = title;
+  Object.assign(img.style, { maxWidth: "100%", maxHeight: "80vh", borderRadius: "14px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
+  const cap = document.createElement("div");
+  cap.textContent = title;
+  Object.assign(cap.style, { color: "#fff", font: "500 17px Roboto, sans-serif", marginTop: "14px", textAlign: "center" });
+  const hint = document.createElement("div");
+  hint.textContent = "Tippen zum Schließen";
+  Object.assign(hint.style, { color: "#aaa", font: "13px Roboto, sans-serif", marginTop: "4px" });
+  overlay.append(img, cap, hint);
+  const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  overlay.addEventListener("click", close);
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(overlay);
+}
+
 const STYLE = `
 :host { display:block; }
 ha-card { display:block; padding:12px 12px 8px; overflow:hidden; }
@@ -70,8 +165,14 @@ button { font:inherit; color:inherit; }
 .tab .n { opacity:.7; font-size:.85em; }
 .tab.active { background:var(--c); border-color:var(--c); color:#fff; }
 .tab.active .dot { background:#fff; }
-form.add { display:grid; grid-template-columns: 1fr 72px 44px; gap:6px; margin:2px 2px 6px; }
-form.add .row2 { grid-column: 1 / span 3; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+form.add { display:grid; grid-template-columns: 1fr 64px 40px 44px; gap:6px; margin:2px 2px 6px; }
+.scanbtn { border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px !important; justify-content:center; }
+.scanbtn.busy ha-icon { animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity:.3; } }
+.photobtn { background:none; border:0; cursor:pointer; padding:0 2px; color:var(--primary-color,#03a9f4); line-height:0; --mdc-icon-size:17px; align-self:center; }
+.photorow { display:flex; flex-wrap:wrap; gap:6px; }
+.photorow .btn { padding:6px 10px; font-size:.85em; }
+form.add .row2 { grid-column: 1 / -1; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
 form.add.fixed .sel { grid-template-columns:1fr; }
 input, select { font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; min-width:0; width:100%; outline:none; }
 input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
@@ -139,8 +240,8 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .recipe .rname b { display:block; word-break:break-word; }
 .recipe .rname small { color:var(--secondary-text-color); font-size:.78em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
-.ritem { display:grid; grid-template-columns: 1fr 70px 34px; gap:5px; padding:8px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:6px 0; }
-.ritem .two { grid-column: 1 / span 3; display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+.ritem { display:grid; grid-template-columns: 1fr 64px 34px 34px; gap:5px; padding:8px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:6px 0; }
+.ritem .two { grid-column: 1 / -1; display:grid; grid-template-columns:1fr 1fr; gap:5px; }
 .ritem input, .ritem select { padding:7px 8px; font-size:.88em; }
 [hidden] { display:none !important; }
 `;
@@ -161,6 +262,8 @@ class EinkaufslisteCard extends HTMLElement {
     this._openDoneCats = new Set(); // aufgeklappte Kategorien bei „Erledigt“
     this._pending = new Set();
     this._picker = null; // welches Icon-Feld gerade sucht
+    this._photoCache = new Map();
+    this._pendingBarcode = null;
   }
 
   setConfig(config) {
@@ -242,8 +345,9 @@ class EinkaufslisteCard extends HTMLElement {
         <div id="listView">
           <div class="tabs" id="tabs"></div>
           <form class="add" id="addForm" autocomplete="off">
-            <input id="inName" list="hist" placeholder="Was brauchen wir? z. B. Milch" enterkeyhint="done">
+            <input id="inName" list="hist" placeholder="Was brauchen wir?" enterkeyhint="done">
             <input id="inQty" placeholder="Menge">
+            <button class="iconbtn scanbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
             <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
             <div class="row2">
               <input id="inNote" placeholder="📝 Notiz (z. B. Bio)">
@@ -254,6 +358,8 @@ class EinkaufslisteCard extends HTMLElement {
               <select id="inCat" title="Kategorie"></select>
             </div>
             <datalist id="hist"></datalist>
+            <input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
+            <input type="file" id="photoFile" accept="image/*" hidden>
           </form>
           <div id="list"></div>
         </div>
@@ -263,7 +369,9 @@ class EinkaufslisteCard extends HTMLElement {
 
     const root = this.shadowRoot;
     this.$("addForm").addEventListener("submit", (e) => this._onAdd(e));
-    this.$("inName").addEventListener("input", () => { this._onNameInput(); if (!this._editing) this._renderList(); });
+    this.$("scanFile").addEventListener("change", (e) => this._onScanFile(e));
+    this.$("photoFile").addEventListener("change", (e) => this._onPhotoFile(e));
+    this.$("inName").addEventListener("input", () => { if (!this.$("inName").value.trim()) this._pendingBarcode = null; this._onNameInput(); if (!this._editing) this._renderList(); });
     root.addEventListener("click", (e) => this._onClick(e), true);
     this._setupTabScroll(this.$("tabs"));
     root.addEventListener("change", (e) => this._onChange(e));
@@ -472,7 +580,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""}" data-id="${item.id}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
-          <div class="line"><span class="name">${esc(item.name)}</span>${qty}${who}</div>
+          <div class="line"><span class="name">${esc(item.name)}</span>${qty}${who}${this._hasPhoto(item.name) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(item.name)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
         <div class="acts">
@@ -492,6 +600,11 @@ class EinkaufslisteCard extends HTMLElement {
         <input class="full" id="edNote" value="${esc(item.note || "")}" placeholder="📝 Notiz (z. B. Bio)">
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
+        <div class="full photorow">
+          <button type="button" class="btn" data-act="photo-take" data-name="${esc(item.name)}"><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${this._hasPhoto(item.name) ? "Foto ändern" : "Foto"}</button>
+          ${this._hasPhoto(item.name) ? `<button type="button" class="btn" data-act="photo-view" data-name="${esc(item.name)}"><ha-icon icon="mdi:image-outline"></ha-icon>Ansehen</button>
+          <button type="button" class="btn danger" data-act="photo-remove" data-name="${esc(item.name)}"><ha-icon icon="mdi:image-remove-outline"></ha-icon>Foto löschen</button>` : ""}
+        </div>
         <div class="btns">
           <button type="button" class="textbtn" data-act="edit-cancel">Abbrechen</button>
           <button type="submit" class="primary">Speichern</button>
@@ -723,6 +836,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="ritem" data-n="${n}">
         <input data-rf="name" value="${esc(it.name || "")}" list="hist" placeholder="Zutat, z. B. Fischstäbchen">
         <input data-rf="quantity" value="${esc(it.quantity || "")}" placeholder="Menge">
+        <button class="iconbtn ${this._hasPhoto(it.name) ? "on" : ""}" type="button" data-act="ritem-photo" title="Foto"><ha-icon icon="${this._hasPhoto(it.name) ? "mdi:camera" : "mdi:camera-plus-outline"}"></ha-icon></button>
         <button class="iconbtn" type="button" data-act="ritem-remove" title="Zutat entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
         <div class="two">
           <input data-rf="note" value="${esc(it.note || "")}" placeholder="📝 Notiz">
@@ -780,6 +894,88 @@ class EinkaufslisteCard extends HTMLElement {
     } catch (_) { /* Meldung kam schon */ }
   }
 
+  // ---------------------------------------------------------------- Fotos
+  _hasPhoto(name) {
+    return !!(name && this._data?.photos && this._data.photos[String(name).toLowerCase()]);
+  }
+
+  _takePhoto(name, button) {
+    this._photoTarget = { name, button };
+    this.$("photoFile").value = "";
+    this.$("photoFile").click();
+  }
+
+  async _onPhotoFile(e) {
+    const file = e.target.files?.[0];
+    const target = this._photoTarget;
+    if (!file || !target) return;
+    try {
+      this._toast("📸 Foto wird gespeichert …");
+      const data = await shrinkImage(file, 900, 0.8);
+      await this._ws({ type: "einkaufsliste/photo/set", name: target.name, data });
+      this._photoCache.delete(target.name.toLowerCase());
+      this._toast(`📸 Foto für „${target.name}“ gespeichert`);
+      if (target.button) {
+        target.button.classList.add("on");
+        target.button.querySelector("ha-icon")?.setAttribute("icon", "mdi:camera");
+      } else {
+        this._editing = null;
+        this._renderList();
+      }
+    } catch (err) {
+      if (!err?.code) this._toast("Das Foto konnte nicht gelesen werden 🙈");
+    }
+  }
+
+  async _openPhoto(name) {
+    const key = String(name).toLowerCase();
+    const updated = this._data?.photos?.[key];
+    let cached = this._photoCache.get(key);
+    if (!cached || cached.updated !== updated) {
+      try {
+        const res = await this._ws({ type: "einkaufsliste/photo/get", name });
+        cached = { updated, data: res.data };
+        this._photoCache.set(key, cached);
+      } catch (_) { return; }
+    }
+    showPhotoOverlay(cached.data, name);
+  }
+
+  // ---------------------------------------------------------------- Barcode
+  async _onScanFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const btn = this.$("btnScan");
+    btn.classList.add("busy");
+    try {
+      const code = await readBarcode(file);
+      if (!code) {
+        this._toast("Kein Barcode erkannt – nochmal näher ran und scharf stellen 📷");
+        return;
+      }
+      const res = await this._ws({ type: "einkaufsliste/barcode/lookup", code });
+      this._pendingBarcode = res.code;
+      const nameEl = this.$("inName");
+      if (res.found) {
+        nameEl.value = res.name;
+        if (res.category_id && this._cat(res.category_id)) this.$("inCat").value = res.category_id;
+        if (res.store_id && !this._fixedStore && this._activeTab === "all" && this._store(res.store_id)) this.$("inStore").value = res.store_id;
+        this._toast(res.source === "gemerkt"
+          ? `🔍 Kenn ich: „${res.name}“ – tippe ＋ zum Hinzufügen`
+          : `🔍 Gefunden: „${res.name}“ – Name passt? Dann ＋ tippen`);
+      } else {
+        nameEl.value = "";
+        this._toast(`🤔 Barcode ${res.code} kenne ich noch nicht – tipp den Namen ein, ich merk ihn mir!`);
+      }
+      nameEl.focus();
+      this._renderList();
+    } catch (err) {
+      if (!err?.code) this._toast("Barcode-Scanner konnte nicht geladen werden 🙈");
+    } finally {
+      btn.classList.remove("busy");
+    }
+  }
+
   // ---------------------------------------------------------------- Aktionen
   _onNameInput() {
     const val = this.$("inName").value.trim().toLowerCase();
@@ -817,9 +1013,11 @@ class EinkaufslisteCard extends HTMLElement {
       const v = this.$(id).value.trim();
       if (v) msg[key] = v;
     }
+    if (this._pendingBarcode) msg.barcode = this._pendingBarcode;
     try {
       await this._ws(msg);
       for (const id of ["inName", "inQty", "inNote", "inFor", "inCat"]) this.$(id).value = "";
+      this._pendingBarcode = null;
       this._renderList();
       this.$("inName").focus();
     } catch (_) { /* Meldung kam schon */ }
@@ -865,6 +1063,27 @@ class EinkaufslisteCard extends HTMLElement {
         this._editing = id;
         this._renderList();
         break;
+      case "scan":
+        this.$("scanFile").value = "";
+        this.$("scanFile").click();
+        break;
+      case "photo-view":
+        this._openPhoto(el.dataset.name);
+        break;
+      case "photo-take":
+        this._takePhoto(el.dataset.name, null);
+        break;
+      case "photo-remove":
+        if (!confirm(`Foto von „${el.dataset.name}“ löschen?`)) return;
+        this._ws({ type: "einkaufsliste/photo/remove", name: el.dataset.name })
+          .then(() => { this._toast("Foto gelöscht 🗑️"); this._editing = null; this._renderList(); }).catch(() => {});
+        break;
+      case "ritem-photo": {
+        const name = el.closest(".ritem").querySelector("[data-rf=name]").value.trim();
+        if (!name) { this._toast("Erst den Namen der Zutat eintragen 😉"); return; }
+        this._takePhoto(name, el);
+        break;
+      }
       case "edit-cancel":
         this._editing = null;
         this._renderList();
