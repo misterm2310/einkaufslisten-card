@@ -20,6 +20,7 @@ from homeassistant.util import dt as dt_util
 
 from .categories import category_hints, guess_category
 from .const import (
+    CATEGORY_COLORS,
     CONF_CLEANUP_TIME,
     CONF_CLEANUP_WEEKDAY,
     CONF_MIN_AGE_DAYS,
@@ -125,6 +126,7 @@ class EinkaufslisteManager:
         self.recipes: list[dict[str, Any]] = []
         self.persons: list[dict[str, Any]] = []
         self.photos: dict[str, dict[str, Any]] = {}  # Produktname (klein) -> Foto
+        self.seen: dict[str, dict[str, str]] = {}  # Benutzer -> Geschäft -> zuletzt angeschaut
         self.barcodes: dict[str, dict[str, Any]] = {}  # Barcode -> gelernter Artikel
         self.photo_dir = Path(hass.config.path("einkaufsliste_fotos"))
         self.history: dict[str, dict[str, Any]] = {}
@@ -160,7 +162,8 @@ class EinkaufslisteManager:
                 for n, c, i in DEFAULT_STORES
             ]
             self.categories = [
-                {"id": _new_id(), "name": n, "icon": i} for n, i in DEFAULT_CATEGORIES
+                {"id": _new_id(), "name": n, "icon": i, "color": CATEGORY_COLORS[k % len(CATEGORY_COLORS)]}
+                for k, (n, i) in enumerate(DEFAULT_CATEGORIES)
             ]
             self.last_cleanup = _now_iso()
             self._schedule_save()
@@ -175,6 +178,9 @@ class EinkaufslisteManager:
             item.setdefault("for_whom", None)
             item.setdefault("recipe_id", None)
         self.photos = data.get("photos", {})
+        self.seen = data.get("seen", {})
+        for k, cat in enumerate(self.categories):  # ältere Daten: Farben nachrüsten
+            cat.setdefault("color", CATEGORY_COLORS[k % len(CATEGORY_COLORS)])
         self.barcodes = data.get("barcodes", {})
         if "persons" in data:
             self.persons = data["persons"]
@@ -198,6 +204,7 @@ class EinkaufslisteManager:
             "persons": self.persons,
             "photos": self.photos,
             "barcodes": self.barcodes,
+            "seen": self.seen,
             "history": self.history,
             "last_cleanup": self.last_cleanup,
         }
@@ -245,6 +252,7 @@ class EinkaufslisteManager:
             "persons": self.persons,
             "photos": {k: v.get("updated") for k, v in self.photos.items()},
             "category_hints": category_hints(self.categories),
+            "seen": self.seen,
             "history": history[:300],
             "settings": {
                 "cleanup_weekday": self.cleanup_weekday,
@@ -394,6 +402,7 @@ class EinkaufslisteManager:
         recipe_id: str | None = None,
         notify: bool = True,
         barcode: str | None = None,
+        added_by_id: str | None = None,
     ) -> dict[str, Any]:
         """Artikel hinzufügen.
 
@@ -422,6 +431,7 @@ class EinkaufslisteManager:
                     checked_by=None,
                     added_at=_now_iso(),
                     added_by=added_by,
+                    added_by_id=added_by_id,
                 )
             if category_id:
                 existing["category_id"] = category_id
@@ -445,6 +455,7 @@ class EinkaufslisteManager:
             "recipe_id": recipe_id,
             "checked": False,
             "added_by": added_by,
+            "added_by_id": added_by_id,
             "added_at": _now_iso(),
             "checked_by": None,
             "checked_at": None,
@@ -484,6 +495,9 @@ class EinkaufslisteManager:
         item.update(new)
         if old_name.lower() != new["name"].lower():
             self._move_photo(old_name, new["name"])
+            for entry in self.barcodes.values():  # gelernte Barcodes mitziehen
+                if entry.get("name", "").lower() == old_name.lower():
+                    entry["name"] = new["name"]
         if "category_id" in fields:
             item["category_id"] = self._check_category(fields["category_id"])
         if "quantity" in fields:
@@ -496,7 +510,11 @@ class EinkaufslisteManager:
 
     @callback
     def set_checked(
-        self, item_id: str, checked: bool | None = None, by: str | None = None
+        self,
+        item_id: str,
+        checked: bool | None = None,
+        by: str | None = None,
+        by_id: str | None = None,
     ) -> dict[str, Any]:
         """Abhaken oder wieder auf die Liste nehmen (None = umschalten)."""
         item = self.get_item(item_id)
@@ -519,6 +537,7 @@ class EinkaufslisteManager:
                 checked_by=None,
                 added_at=_now_iso(),
                 added_by=by,
+                added_by_id=by_id,
             )
             self._remember(item)
             self._fire_added(item, True)
@@ -628,6 +647,19 @@ class EinkaufslisteManager:
         self.learn_barcode(code, item["name"], item["store_id"], item["category_id"])
         self._schedule_save()
         return {"code": code, "name": item["name"]}
+
+    # ------------------------------------------------------------------ Gesehen
+    @callback
+    def mark_seen(self, user_id: str, store: str) -> None:
+        """Merkt sich, wann jemand ein Geschäft (oder „all“) zuletzt angeschaut hat."""
+        now = _now_iso()
+        mine = self.seen.setdefault(user_id, {})
+        if store == "all":
+            for key in [s["id"] for s in self.stores] + ["none", "all"]:
+                mine[key] = now
+        else:
+            mine[store] = now
+        self._changed()
 
     # ------------------------------------------------------------------ Aufräumen
     @callback
@@ -853,6 +885,8 @@ class EinkaufslisteManager:
             pass
         else:
             entry["icon"] = _icon(icon, "mdi:tag-outline")
+            if kind == "categories":
+                entry["color"] = _clean(color) or CATEGORY_COLORS[len(self.categories) % len(CATEGORY_COLORS)]
         self._list(kind).append(entry)
         self._changed()
         return entry
@@ -875,7 +909,7 @@ class EinkaufslisteManager:
             if zone and not zone.startswith("zone."):
                 raise ValueError("Das ist keine Zone.")
             entry["zone"] = zone
-        if "color" in fields and kind == "stores":
+        if "color" in fields and kind in ("stores", "categories"):
             entry["color"] = _clean(fields["color"]) or entry.get("color")
         if "icon" in fields and kind != "persons":
             entry["icon"] = _icon(fields["icon"], entry.get("icon") or "mdi:tag-outline")

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "1.8.1"
+VERSION = "1.9.0"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
@@ -58,6 +58,12 @@ DEFAULT_CATEGORIES = [
     ("Drogerie", "mdi:lotion"),
     ("Haushalt", "mdi:spray-bottle"),
     ("Sonstiges", "mdi:dots-horizontal"),
+]
+
+# Farben für die Kategorien (Streifen am Artikel), der Reihe nach vergeben
+CATEGORY_COLORS = [
+    "#43a047", "#ff9800", "#fdd835", "#e53935", "#29b6f6", "#8d6e63",
+    "#ec407a", "#1e88e5", "#ab47bc", "#26a69a", "#9e9e9e",
 ]
 
 HISTORY_LIMIT = 400

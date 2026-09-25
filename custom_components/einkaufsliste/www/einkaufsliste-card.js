@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.8.1";
+const EL_VERSION = "1.9.0";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -19,7 +19,12 @@ const stripMdi = (icon) => String(icon || "").replace(/^mdi:/, "");
 function fmtSince(iso) {
   const d = new Date(iso);
   const diff = dayDiff(new Date(), d);
-  if (diff <= 0) return "heute";
+  if (diff <= 0) {
+    const min = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (min < 1) return "gerade eben";
+    if (min < 60) return `vor ${min} Min`;
+    return `vor ${Math.floor(min / 60)} Std`;
+  }
   if (diff === 1) return "gestern";
   if (diff < 7) return `seit ${WD_SHORT[pyWd(d)]}`;
   return `seit ${fmtDay(d)}`;
@@ -197,6 +202,22 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .item .meta { font-size:.75em; color:var(--secondary-text-color); display:flex; flex-wrap:wrap; gap:2px 8px; margin-top:1px; }
 .chip { --c:#888; display:inline-flex; align-items:center; gap:4px; }
 .chip::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--c); }
+.item { border-left:4px solid var(--cc, transparent); padding-left:0; }
+.item .txt { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+.item .qty { border:0; font:inherit; font-size:.85em; cursor:pointer; color:inherit; }
+.item.new { background:color-mix(in srgb, var(--primary-color,#03a9f4) 7%, transparent); }
+.newbadge { font-size:.9em; }
+.bubble { background:var(--error-color,#e53935); color:#fff; border-radius:999px; font-size:.72em; font-weight:700; padding:1px 6px; margin-left:2px; }
+.menurow, .qtyrow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:4px 8px 8px 44px; }
+.menubtn { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--divider-color, rgba(127,127,127,.35)); background:transparent; border-radius:999px; padding:6px 10px; cursor:pointer; font-size:.85em; --mdc-icon-size:18px; }
+.qbtn { width:40px; height:40px; border-radius:50%; border:1.5px solid var(--primary-color,#03a9f4); background:transparent; color:var(--primary-color,#03a9f4); font-size:1.3em; cursor:pointer; }
+.qbtn[disabled] { opacity:.3; }
+.qval { min-width:44px; text-align:center; font-weight:600; font-size:1.1em; }
+ha-card.compact .item { padding:1px 2px; }
+ha-card.compact .item .meta { display:none; }
+ha-card.compact .item .check { padding:3px; }
+ha-card.compact .ghead { padding:3px 4px 0; }
+ha-card.compact .group { margin-top:4px; }
 .item .acts { display:flex; opacity:.55; }
 .delrow { padding:4px 0; border-bottom:1px solid var(--divider-color, rgba(127,127,127,.15)); }
 .delname { min-width:0; }
@@ -287,6 +308,7 @@ class EinkaufslisteCard extends HTMLElement {
       show_settings: true,
       show_recipes: true,
       auto_store: true,
+      compact: false,
       ...config,
     };
     if (!this._config.store) this._config.store = "all";
@@ -342,10 +364,15 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   connectedCallback() {
+    clearInterval(this._clock);
+    this._clock = setInterval(() => {
+      if (this._view === "list" && !this._editing && this._data) this._renderList(); // „vor 5 Min“ aktuell halten
+    }, 60000);
     if (this._hass && !this._unsub && !this._subscribing) this._subscribe();
   }
 
   disconnectedCallback() {
+    clearInterval(this._clock);
     if (this._unsub) { this._unsub(); this._unsub = null; }
   }
 
@@ -355,7 +382,13 @@ class EinkaufslisteCard extends HTMLElement {
     this._subscribing = true;
     try {
       const unsub = await this._hass.connection.subscribeMessage(
-        (data) => { this._data = data; this._error = null; this._renderAll(); this._autoStore(); },
+        (data) => {
+          this._data = data;
+          this._error = null;
+          if (!this._seenSnap && this._mySeen()) this._seenSnap = { ...this._mySeen() };
+          this._renderAll();
+          this._autoStore();
+        },
         { type: "einkaufsliste/subscribe" }
       );
       if (!this.isConnected) unsub(); else this._unsub = unsub;
@@ -441,6 +474,7 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("inName").addEventListener("input", () => { if (!this.$("inName").value.trim()) this._pendingBarcode = null; this._onNameInput(); this._updateTools(); if (!this._editing) this._renderList(); });
     root.addEventListener("click", (e) => this._onClick(e), true);
     this._setupTabScroll(this.$("tabs"));
+    this._setupLongPress(this.$("list"));
     root.addEventListener("change", (e) => this._onChange(e));
     root.addEventListener("input", (e) => this._onInput(e));
     root.addEventListener("submit", (e) => {
@@ -448,6 +482,43 @@ class EinkaufslisteCard extends HTMLElement {
       if (e.target.classList?.contains("editrow")) { e.preventDefault(); this._saveEdit(); }
     });
     this._renderAll();
+  }
+
+  // 👆 Lange drücken (oder Rechtsklick) auf einen Artikel öffnet sein Menü
+  _setupLongPress(list) {
+    let timer = null, startX = 0, startY = 0;
+    const open = (itemEl) => {
+      const id = itemEl?.dataset.id;
+      if (!id) return;
+      navigator.vibrate?.(30);
+      this._menuId = this._menuId === id ? null : id;
+      this._moving = null;
+      this._qtyEdit = null;
+      this._longPressed = true;
+      setTimeout(() => { this._longPressed = false; }, 400);
+      this._renderList();
+    };
+    list.addEventListener("pointerdown", (e) => {
+      const itemEl = e.target.closest(".item");
+      if (!itemEl || e.target.closest("[data-act]")) return;
+      startX = e.clientX; startY = e.clientY;
+      clearTimeout(timer);
+      timer = setTimeout(() => open(itemEl), 500);
+    });
+    const cancel = () => clearTimeout(timer);
+    list.addEventListener("pointerup", cancel);
+    list.addEventListener("pointercancel", cancel);
+    list.addEventListener("pointerleave", cancel);
+    list.addEventListener("pointermove", (e) => {
+      if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) cancel();
+    });
+    list.addEventListener("contextmenu", (e) => {
+      const itemEl = e.target.closest(".item");
+      if (!itemEl) return;
+      e.preventDefault();
+      clearTimeout(timer);
+      if (!this._longPressed) open(itemEl);
+    });
   }
 
   // Geschäfte-Leiste am PC: Mausrad und Ziehen mit der Maus scrollen waagerecht
@@ -529,6 +600,7 @@ class EinkaufslisteCard extends HTMLElement {
     const titleText = this._fixedStore && this._store(this._fixedStore)
       ? `${c.title || ""}${c.title ? " · " : ""}${this._store(this._fixedStore).name}` : (c.title || "");
     const showTitle = c.show_title !== false && !!titleText;
+    this.shadowRoot.querySelector("ha-card").classList.toggle("compact", !!c.compact);
     this.$("title").textContent = showTitle ? titleText : "";
     this.$("titleIcon").hidden = !showTitle;
     const err = this.$("error");
@@ -573,13 +645,17 @@ class EinkaufslisteCard extends HTMLElement {
   _renderTabs() {
     const tabs = this.$("tabs");
     const d = this._data;
-    if (this._fixedStore) { tabs.hidden = true; return; }
+    if (this._fixedStore) { tabs.hidden = true; this._markSeen(); return; }
     tabs.hidden = false;
     const openCount = (fn) => d.items.filter((i) => !i.checked && fn(i)).length;
     const active = this._activeTab;
-    const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span></button>`];
+    const bubble = (fn, isActive) => {
+      const n = isActive ? 0 : this._newCount(fn);
+      return n ? `<span class="bubble">+${n}</span>` : "";
+    };
+    const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
     for (const s of d.stores) {
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""}" style="--c:${esc(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id)}</span></button>`);
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""}" style="--c:${esc(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id)}</span>${bubble((i) => i.store_id === s.id, active === s.id || active === "all")}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
@@ -587,6 +663,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     const left = tabs.scrollLeft;
     tabs.innerHTML = parts.join("");
+    this._markSeen();
     tabs.scrollLeft = left;
   }
 
@@ -643,19 +720,42 @@ class EinkaufslisteCard extends HTMLElement {
       }
     }
     const who = c.show_added_by && item.added_by ? `<span class="who">(${esc(this._who(item.added_by))})</span>` : "";
-    const qty = item.quantity ? `<span class="qty">${esc(item.quantity)}</span>` : "";
+    const qty = item.quantity ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(item.quantity)}</button>` : "";
     const icon = item.checked ? "mdi:checkbox-marked-circle-outline" : "mdi:checkbox-blank-circle-outline";
+    const cat = this._cat(item.category_id);
+    const isNew = this._isNew(item);
     return `
-      <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""}" data-id="${item.id}">
+      <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""}" data-id="${item.id}" style="--cc:${esc(cat?.color || "transparent")}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
-          <div class="line"><span class="name">${esc(item.name)}</span>${qty}${who}${this._hasPhoto(item.name) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(item.name)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
+          <div class="line">${isNew ? `<span class="newbadge" title="Neu seit deinem letzten Blick">✨</span>` : ""}<span class="name">${esc(item.name)}</span>${qty}${who}${this._hasPhoto(item.name) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(item.name)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
-        <div class="acts">
-          ${!item.checked && this._data.stores.length > 1 ? `<button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button>` : ""}
-          <button class="iconbtn" data-act="edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
-        </div>
+      </div>`;
+  }
+
+  _menuHtml(item) {
+    const b = (act, icon, label) => `<button class="menubtn" data-act="${act}" data-id="${item.id}"><ha-icon icon="${icon}"></ha-icon>${label}</button>`;
+    return `
+      <div class="menurow" data-id="${item.id}">
+        ${b("menu-edit", "mdi:pencil-outline", "Bearbeiten")}
+        ${!item.checked && this._data.stores.length > 1 ? b("menu-move", "mdi:swap-horizontal", "Verschieben") : ""}
+        ${b("menu-qty", "mdi:numeric", "Menge")}
+        ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(item.name) ? "Foto ändern" : "Foto")}
+        ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", "Barcode") : ""}
+        <button class="iconbtn" data-act="menu-close" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
+      </div>`;
+  }
+
+  _qtyHtml(item) {
+    const m = String(item.quantity || "").match(/^(\d+)\s*(x|stk\.?|stück)?$/i);
+    const n = m ? Number(m[1]) : 1;
+    return `
+      <div class="qtyrow" data-id="${item.id}">
+        <button class="qbtn" data-act="qty-minus" ${n <= 1 ? "disabled" : ""}>−</button>
+        <span class="qval">${n}x</span>
+        <button class="qbtn" data-act="qty-plus">＋</button>
+        <button class="iconbtn" data-act="qty-done" title="Fertig"><ha-icon icon="mdi:check"></ha-icon></button>
       </div>`;
   }
 
@@ -725,7 +825,10 @@ class EinkaufslisteCard extends HTMLElement {
     const filter = (this.$("inName").value || "").trim().toLowerCase();
     let done = items.filter((i) => i.checked);
     if (filter) done = done.filter((i) => i.name.toLowerCase().includes(filter));
-    const row = (i) => (this._editing === i.id ? this._editHtml(i) : this._itemHtml(i) + (this._moving === i.id ? this._moveHtml(i) : ""));
+    const row = (i) => (this._editing === i.id ? this._editHtml(i) : this._itemHtml(i)
+      + (this._menuId === i.id ? this._menuHtml(i) : "")
+      + (this._qtyEdit === i.id ? this._qtyHtml(i) : "")
+      + (this._moving === i.id ? this._moveHtml(i) : ""));
     const byName = (a, b) => a.name.localeCompare(b.name, "de");
     const html = [];
 
@@ -818,7 +921,9 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="srow" data-kind="${kind}" data-id="${e.id}">
         ${kind === "stores"
           ? `<input type="color" value="${esc(e.color || "#607d8b")}" data-field="color" title="Farbe">`
-          : `<ha-icon class="prev" icon="${esc(kind === "persons" ? "mdi:account-outline" : e.icon || "mdi:tag-outline")}"></ha-icon>`}
+          : kind === "categories"
+            ? `<input type="color" value="${esc(e.color || "#9e9e9e")}" data-field="color" title="Farbe">`
+            : `<ha-icon class="prev" icon="${esc(kind === "persons" ? "mdi:account-outline" : e.icon || "mdi:tag-outline")}"></ha-icon>`}
         <input class="grow" value="${esc(e.name)}" data-field="name">
         ${kind === "categories" ? this._iconField(e.icon, 'data-field="icon"') : ""}
         <button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
@@ -1019,6 +1124,53 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // ---------------------------------------------------------------- Fotos
+  // ✨ Neu seit deinem letzten Blick
+  _mySeen() {
+    const uid = this._hass?.user?.id;
+    return (uid && this._data?.seen?.[uid]) || null;
+  }
+
+  _isNewFor(item, seen) {
+    if (!seen || item.checked) return false;
+    const me = this._hass?.user;
+    if (item.added_by_id ? item.added_by_id === me?.id : item.added_by && item.added_by === this._myName()) return false;
+    const t = seen[item.store_id || "none"] || seen.all;
+    return !!t && item.added_at > t;
+  }
+
+  _isNew(item) {
+    return this._isNewFor(item, this._seenSnap || this._mySeen());
+  }
+
+  _myName() {
+    const uid = this._hass?.user?.id;
+    const person = Object.values(this._hass?.states || {}).find((st) => st.entity_id?.startsWith("person.") && st.attributes.user_id === uid);
+    return person?.attributes.friendly_name || this._hass?.user?.name;
+  }
+
+  _newCount(fn) {
+    const seen = this._mySeen();
+    return this._data.items.filter((i) => fn(i) && this._isNewFor(i, seen)).length;
+  }
+
+  _markSeen() {
+    if (!this._data || this._view !== "list" || !this.isConnected) return;
+    const uid = this._hass?.user?.id;
+    if (!uid) return;
+    const tab = this._activeTab;
+    const seen = this._mySeen();
+    if (!seen) {
+      // erstes Mal: alles bisherige gilt als gesehen
+      if (!this._seenInit) { this._seenInit = true; this._ws({ type: "einkaufsliste/seen", store: "all" }).catch(() => {}); }
+      return;
+    }
+    const fn = tab === "all" ? () => true : tab === "none" ? (i) => !i.store_id : (i) => i.store_id === tab;
+    if (this._newCount(fn) && this._seenSending !== tab) {
+      this._seenSending = tab;
+      this._ws({ type: "einkaufsliste/seen", store: tab }).catch(() => {}).finally(() => { this._seenSending = null; });
+    }
+  }
+
   _hasPhoto(name) {
     return !!(name && this._data?.photos && this._data.photos[String(name).toLowerCase()]);
   }
@@ -1337,6 +1489,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       case "tab":
         this._tab = el.dataset.tab;
+        this._seenSnap = { ...(this._mySeen() || {}) };
         this._renderAll();
         break;
       case "toggle":
@@ -1394,6 +1547,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       case "barcode-assign": {
         const item = this._data.items.find((i) => i.id === el.dataset.id);
+        this._menuId = null;
         this._startAppScan((code) => {
           this._ws({ type: "einkaufsliste/barcode/assign", item_id: item.id, code })
             .then(() => this._toast(`▥ Barcode gespeichert – beim nächsten Scan erkenne ich „${item.name}“ sofort!`))
@@ -1401,6 +1555,56 @@ class EinkaufslisteCard extends HTMLElement {
         }, `▥ Barcode für „${item.name}“`);
         break;
       }
+      case "menu-close":
+        this._menuId = null;
+        this._renderList();
+        break;
+      case "menu-edit":
+        this._menuId = null;
+        this._editing = el.dataset.id;
+        this._renderList();
+        break;
+      case "menu-move":
+        this._menuId = null;
+        this._moving = el.dataset.id;
+        this._renderList();
+        break;
+      case "menu-qty":
+        this._menuId = null;
+        this._qtyEdit = el.dataset.id;
+        this._renderList();
+        break;
+      case "menu-photo": {
+        const item = this._data.items.find((i) => i.id === el.dataset.id);
+        this._menuId = null;
+        this._renderList();
+        this._takePhoto(item.name, null);
+        break;
+      }
+      case "qty-edit": {
+        const item = this._data.items.find((i) => i.id === id);
+        if (/^\d+\s*(x|stk\.?|stück)?$/i.test(item?.quantity || "")) {
+          this._qtyEdit = this._qtyEdit === id ? null : id;
+        } else {
+          this._editing = id; // z. B. „500 g“ -> normal bearbeiten
+        }
+        this._renderList();
+        break;
+      }
+      case "qty-minus":
+      case "qty-plus": {
+        const itemId = el.closest(".qtyrow").dataset.id;
+        const item = this._data.items.find((i) => i.id === itemId);
+        const m = String(item?.quantity || "").match(/^(\d+)/);
+        let n = m ? Number(m[1]) : 1;
+        n = act === "qty-plus" ? n + 1 : Math.max(1, n - 1);
+        this._ws({ type: "einkaufsliste/item/update", item_id: itemId, quantity: `${n}x` }).catch(() => {});
+        break;
+      }
+      case "qty-done":
+        this._qtyEdit = null;
+        this._renderList();
+        break;
       case "move":
         this._moving = this._moving === id ? null : id;
         this._renderList();
@@ -1605,6 +1809,7 @@ const EDITOR_LABELS = {
   show_dates: "Datum & Aufräum-Tag anzeigen",
   show_recipes: "Rezepte-Knopf anzeigen",
   auto_store: "📍 Automatisch zum Geschäft springen, bei dem ich gerade bin",
+  compact: "📱 Kompakt-Modus (kleinere Zeilen, ohne Zusatz-Infos)",
   show_settings: "Zahnrad für Einstellungen anzeigen",
 };
 
@@ -1636,6 +1841,7 @@ class EinkaufslisteCardEditor extends HTMLElement {
       { name: "show_dates", selector: { boolean: {} } },
       { name: "show_recipes", selector: { boolean: {} } },
       { name: "auto_store", selector: { boolean: {} } },
+      { name: "compact", selector: { boolean: {} } },
       { name: "show_settings", selector: { boolean: {} } },
     ];
   }

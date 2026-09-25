@@ -26,7 +26,7 @@
 | 📸 **Fotos** | Ein Foto zum Artikel („genau diese Marke!“), auswählbar direkt beim Eintragen. |
 | 🔍 **Barcode** | In der Home-Assistant-App den Strichcode scannen. Der Name wird automatisch ausgefüllt. |
 | 📖 **Kategorie raten** | Tippst du „Joghurt“, springt die Kategorie von selbst auf Kühlregal, bei „Pizza“ auf TK-Ware. Dafür gibt es ein eingebautes Wörterbuch mit rund 250 Produkten. Wählst du selbst etwas aus, hat das Vorrang. |
-| 🔁 **„War aus!“** | Gab's bei Aldi nicht? Tipp am Artikel auf **⇄** und dann auf **Netto**, und der Artikel wandert rüber. |
+| 🔁 **„War aus!“** | Gab's bei Aldi nicht? Artikel lange drücken → **⇄ Verschieben** → **Netto**, und der Artikel wandert rüber. |
 | 📍 **Nächstes Geschäft** | Bist du bei einem Geschäft, springt die Liste automatisch auf dessen Reiter. Jeder sieht dabei sein eigenes Geschäft. |
 | ✨ **Ordentliche Namen** | Aus „  milch “ wird automatisch „Milch“. |
 | 🔎 **Merkt sich Produkte** | Beim Tippen kommen Vorschläge, Geschäft und Kategorie werden automatisch ausgefüllt. Die erledigten Artikel werden dabei gleich mitgefiltert. |
@@ -111,6 +111,18 @@ Was du gewählt hast, steht direkt am Symbol, zum Beispiel **🔢 2x · 👤 Oma
 
 ---
 
+## 👆 Bedienung in der Liste
+
+- **⭕ Kreis antippen:** abhaken
+- **Artikel lange drücken** (am PC: Rechtsklick): Es öffnet sich ein Menü mit ✏️ **Bearbeiten** · ⇄ **Verschieben** („War aus!“) · 🔢 **Menge** · 📷 **Foto** · ▥ **Barcode**
+- **Auf die Menge tippen** (zum Beispiel „2x“): Es erscheint **[−] 2x [＋]** zum schnellen Ändern
+- **✨ und rote Blase:** Artikel, die **andere** eingetragen haben, seit du zuletzt geschaut hast, bekommen ein ✨. Am Geschäfts-Reiter steht dann zum Beispiel **„+2“**. Tippst du den Reiter an, verschwindet die Blase, aber **nur bei dir**. Jeder hat seine eigene, wie bei WhatsApp. 🔴
+- **Farbstreifen:** Jede Kategorie hat ihre Farbe (links am Artikel). Die Farben änderst du im ⚙️ Zahnrad bei den Kategorien.
+- **Zeit:** Bei Artikeln von heute steht „gerade eben“, „vor 5 Min“ oder „vor 2 Std“.
+- **📱 Kompakt-Modus:** Im Karten-Editor einschalten. Dann gibt's kleinere Zeilen ohne Zusatz-Infos, und mehr passt auf den Bildschirm.
+
+---
+
 ## 🍽️ Rezepte
 
 1. In der Karte oben auf das **⚙️-Zahnrad** tippen und dort bei **Rezepte** auf **Neues Rezept** tippen. Bearbeiten und Löschen geht dort über den ✏️-Stift.
@@ -148,7 +160,7 @@ Die Liste springt automatisch auf den Reiter des Geschäfts, bei dem **du** gera
 
 Damit keiner mehr die falschen Nudeln mitbringt. 😄
 1. **Direkt beim Eintragen:** Tippe in der Symbol-Leiste unter dem Eingabefeld auf **📷** und wähle ein Foto aus. Das Symbol wird blau. Tippst du jetzt auf den **grünen Haken ✅**, kommt das Foto gleich mit. (Nochmal aufs blaue 📷 tippen, und das Foto ist wieder raus.)
-2. **Oder später:** Beim Artikel auf den **✏️ Stift** tippen und dann auf **📷 Foto**. Das Foto wählst du aus der Galerie.
+2. **Oder später:** Den Artikel **lange drücken** und auf **📷 Foto** tippen. Das Foto wählst du aus der Galerie.
 3. Fertig! Hinter dem Artikel erscheint ein kleines **📷**. Tippst du darauf, geht das Foto groß auf. Noch ein Tipp, und es ist wieder zu.
 
 - Das Foto **bleibt beim Produkt**, auch nach dem Abhaken und Wieder-Reinnehmen. Einmal knipsen reicht.
@@ -167,7 +179,7 @@ Damit keiner mehr die falschen Nudeln mitbringt. 😄
 4. Passt alles? Dann auf den **grünen Haken ✅** tippen. Fertig! 🎉
 
 - Weil die **App** die Kamera öffnet (nicht der Browser), klappt das auch über `http://`. Du musst **nichts umstellen**.
-- **Barcode für einen Artikel, der schon auf der Liste steht:** ✏️ **Bearbeiten → ▥ Barcode zuordnen** → Packung scannen. Ab dann erkennt der Scanner ihn sofort, auch ohne Internet.
+- **Barcode für einen Artikel, der schon auf der Liste steht:** Artikel **lange drücken → ▥ Barcode** (oder ✏️ Bearbeiten → ▥ Barcode zuordnen) → Packung scannen. Ab dann erkennt der Scanner ihn sofort, auch ohne Internet.
 - Den Barcode-Knopf gibt es nur in der **Home-Assistant-App** (Android/iPhone). Am PC-Browser ist er ausgeblendet.
 - Die Produktnamen kommen aus den freien Datenbanken **Open Food Facts**, **Open Beauty Facts** und **Open Products Facts**. Dafür braucht dein Home Assistant **Internet**.
 - **Kennt die Datenbank ein Produkt nicht,** tippst du den Namen einmal selbst ein. Die Liste **merkt sich** das, und beim nächsten Scan weiß sie es sofort. 🧠 Das gilt auch, wenn du einen gefundenen Namen änderst, zum Beispiel „Milch“ statt „Weihenstephan H-Milch 1,5 %“.
@@ -198,6 +210,7 @@ Alles lässt sich bequem im visuellen Editor einstellen. Für YAML-Fans:
 | `show_checked` | `true` | Bereich „Erledigt – schon mal gekauft“ anzeigen |
 | `show_dates` | `true` | „seit Di“ und das 🧹-Datum anzeigen |
 | `show_recipes` | `true` | Kochmützen-Knopf für Rezepte anzeigen |
+| `compact` | `false` | 📱 Kompakt-Modus: kleinere Zeilen ohne Zusatz-Infos |
 | `auto_store` | `true` | 📍 Automatisch zum Geschäft springen, bei dem man gerade ist |
 | `show_settings` | `true` | Zahnrad für Geschäfte und Kategorien anzeigen (zum Beispiel fürs Kinder-Tablet ausschalten) |
 

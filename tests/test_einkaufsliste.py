@@ -605,3 +605,35 @@ async def test_assign_barcode_to_existing_item(hass, setup, hass_ws_client):
     assert res["found"] and res["source"] == "gemerkt" and res["name"] == "Milch" and res["store_id"] == aldi
     await client.send_json({"id": 3, "type": "einkaufsliste/barcode/assign", "item_id": item["id"], "code": "abc"})
     assert not (await client.receive_json())["success"]
+
+
+async def test_category_colors_and_seen(hass, setup, hass_ws_client, hass_admin_user):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    assert all(c.get("color", "").startswith("#") for c in m.categories)
+    tk = m.find_category("TK-Ware")
+    await client.send_json({"id": 1, "type": "einkaufsliste/group/update", "kind": "categories", "group_id": tk, "color": "#123456"})
+    assert (await client.receive_json())["success"]
+    assert m.category_by_id(tk)["color"] == "#123456"
+    new = m.add_group("categories", "Tierbedarf", icon="dog")
+    assert new["color"].startswith("#")
+
+    aldi = m.find_store("Aldi")
+    await client.send_json({"id": 2, "type": "einkaufsliste/seen", "store": aldi})
+    assert (await client.receive_json())["success"]
+    assert aldi in m.seen[hass_admin_user.id]
+    await client.send_json({"id": 3, "type": "einkaufsliste/seen", "store": "all"})
+    assert (await client.receive_json())["success"]
+    assert {"all", "none", aldi} <= set(m.seen[hass_admin_user.id])
+    assert m.as_dict()["seen"][hass_admin_user.id]["all"]
+
+    await client.send_json({"id": 4, "type": "einkaufsliste/item/add", "name": "Eis"})
+    item = (await client.receive_json())["result"]
+    assert item["added_by_id"] == hass_admin_user.id
+
+
+async def test_rename_keeps_barcode(hass, setup):
+    m = mgr(hass)
+    item = m.add_item("❓ Unbekannt", barcode="4001234567890")
+    m.update_item(item["id"], name="Hafermilch")
+    assert m.barcodes["4001234567890"]["name"] == "Hafermilch"

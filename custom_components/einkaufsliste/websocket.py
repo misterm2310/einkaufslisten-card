@@ -37,6 +37,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_photo_remove,
         ws_barcode_lookup,
         ws_barcode_assign,
+        ws_seen,
         ws_group_add,
         ws_group_update,
         ws_group_remove,
@@ -135,6 +136,7 @@ def ws_item_add(hass, connection, msg):
             for_whom=msg.get("for_whom"),
             added_by=who,
             barcode=msg.get("barcode"),
+            added_by_id=connection.user.id if connection.user else None,
         ),
     )
 
@@ -171,7 +173,9 @@ def ws_item_toggle(hass, connection, msg):
         hass,
         connection,
         msg,
-        lambda m: m.set_checked(msg["item_id"], msg.get("checked"), who),
+        lambda m: m.set_checked(
+            msg["item_id"], msg.get("checked"), who, connection.user.id if connection.user else None
+        ),
     )
 
 
@@ -382,3 +386,12 @@ async def ws_barcode_lookup(hass, connection, msg):
 @callback
 def ws_barcode_assign(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.assign_barcode(msg["item_id"], msg["code"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/seen", vol.Required("store"): str}
+)
+@callback
+def ws_seen(hass, connection, msg):
+    user_id = connection.user.id if connection.user else "unbekannt"
+    _run(hass, connection, msg, lambda m: m.mark_seen(user_id, msg["store"]))
