@@ -11,7 +11,6 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .barcode import async_lookup
 from .const import DOMAIN, SIGNAL_UPDATED
 from .manager import EinkaufslisteManager, person_name_for_user
 
@@ -32,10 +31,6 @@ def async_register(hass: HomeAssistant) -> None:
         ws_recipe_update,
         ws_recipe_remove,
         ws_recipe_apply,
-        ws_photo_set,
-        ws_photo_get,
-        ws_photo_remove,
-        ws_barcode_lookup,
         ws_group_add,
         ws_group_update,
         ws_group_remove,
@@ -115,7 +110,6 @@ def ws_subscribe(hass, connection, msg):
         vol.Optional("quantity"): OPT_STR,
         vol.Optional("note"): OPT_STR,
         vol.Optional("for_whom"): OPT_STR,
-        vol.Optional("barcode"): OPT_STR,
     }
 )
 @callback
@@ -133,7 +127,6 @@ def ws_item_add(hass, connection, msg):
             note=msg.get("note"),
             for_whom=msg.get("for_whom"),
             added_by=who,
-            barcode=msg.get("barcode"),
         ),
     )
 
@@ -314,57 +307,3 @@ def ws_recipe_remove(hass, connection, msg):
 def ws_recipe_apply(hass, connection, msg):
     who = _user_name(hass, connection)
     _run(hass, connection, msg, lambda m: m.apply_recipe(msg["recipe_id"], who))
-
-
-async def _run_async(hass, connection, msg, coro_factory) -> None:
-    manager = _manager(hass)
-    if manager is None:
-        connection.send_error(
-            msg["id"], "not_loaded", "Die Integration „Einkaufsliste“ ist nicht eingerichtet."
-        )
-        return
-    try:
-        result = await coro_factory(manager)
-    except ValueError as err:
-        connection.send_error(msg["id"], "invalid", str(err))
-        return
-    connection.send_result(msg["id"], result)
-
-
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): "einkaufsliste/photo/set",
-        vol.Required("name"): str,
-        vol.Required("data"): str,
-    }
-)
-@websocket_api.async_response
-async def ws_photo_set(hass, connection, msg):
-    await _run_async(hass, connection, msg, lambda m: m.async_set_photo(msg["name"], msg["data"]))
-
-
-@websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/photo/get", vol.Required("name"): str}
-)
-@websocket_api.async_response
-async def ws_photo_get(hass, connection, msg):
-    async def _get(m):
-        return {"data": await m.async_get_photo(msg["name"])}
-
-    await _run_async(hass, connection, msg, _get)
-
-
-@websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/photo/remove", vol.Required("name"): str}
-)
-@websocket_api.async_response
-async def ws_photo_remove(hass, connection, msg):
-    await _run_async(hass, connection, msg, lambda m: m.async_remove_photo(msg["name"]))
-
-
-@websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/barcode/lookup", vol.Required("code"): str}
-)
-@websocket_api.async_response
-async def ws_barcode_lookup(hass, connection, msg):
-    await _run_async(hass, connection, msg, lambda m: async_lookup(hass, m, msg["code"]))
