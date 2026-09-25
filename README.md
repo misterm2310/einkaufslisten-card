@@ -92,17 +92,17 @@ type: custom:einkaufsliste-card
 
 ```
 [ Was brauchen wir?        ] [✅]
-  ▥   📷   🔢   📝   👤
+  🔢   📝   👤   📷   ▥
 [🛒 Geschäft ] [📦 Kategorie ]
 ```
 
 1. Den Namen eintippen, zum Beispiel „Milch“. Die **Kategorie** wird meistens schon von selbst ausgewählt. 📖
 2. Mehr Angaben? Einfach das passende **Symbol** antippen, dann geht nur dieses Feld auf:
-   - **▥ Barcode scannen** (nur in der Home-Assistant-App)
-   - **📷 Foto** aus der Galerie
    - **🔢 Menge**: Schnellknöpfe **[1x] [2x] [3x] [4x] [6x] [10x]** oder ✏️ für eine eigene Menge wie „500 g“
    - **📝 Notiz**, zum Beispiel „Bio“
    - **👤 Für wen?**: Einfach die Person antippen (nur, wenn Personen angelegt sind)
+   - **📷 Foto** aus der Galerie
+   - **▥ Barcode scannen** (nur in der Home-Assistant-App)
 3. Auf den **grünen Haken ✅** tippen. Fertig!
 
 Doch nicht? Rechts in der Leiste erscheint ein roter **Radiergummi 🧽**. Ein Tipp darauf leert alle Felder auf einmal.
