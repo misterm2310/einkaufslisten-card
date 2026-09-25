@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.5.0";
+const EL_VERSION = "1.5.1";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -182,6 +182,10 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .chip { --c:#888; display:inline-flex; align-items:center; gap:4px; }
 .chip::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--c); }
 .item .acts { display:flex; opacity:.55; }
+.delrow { padding:4px 0; border-bottom:1px solid var(--divider-color, rgba(127,127,127,.15)); }
+.delname { min-width:0; }
+.delname b { display:block; font-weight:500; word-break:break-word; }
+.delname small { color:var(--secondary-text-color); font-size:.78em; }
 .moverow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:6px 8px 8px 44px; }
 .moverow .movetxt { font-size:.8em; color:var(--secondary-text-color); width:100%; }
 .moverow .tab { padding:4px 10px; font-size:.85em; }
@@ -618,7 +622,6 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="acts">
           ${!item.checked && this._data.stores.length > 1 ? `<button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button>` : ""}
           <button class="iconbtn" data-act="edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
-          <button class="iconbtn" data-act="remove" title="Ganz löschen"><ha-icon icon="mdi:close"></ha-icon></button>
         </div>
       </div>`;
   }
@@ -845,6 +848,12 @@ class EinkaufslisteCard extends HTMLElement {
         ${(d.persons || []).length ? "" : `<p class="hint">Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet.</p>`}
       </div>
       <div class="sec">
+        <h3><ha-icon icon="mdi:delete-outline"></ha-icon>Artikel ganz löschen</h3>
+        <p class="hint">Hier verschwinden Artikel endgültig, auch aus „Erledigt“ und samt Foto.</p>
+        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="delSearch" placeholder="Artikel suchen …" value="${esc(this._delFilter || "")}"></div>
+        <div id="delList"></div>
+      </div>
+      <div class="sec">
         <h3><ha-icon icon="mdi:broom"></ha-icon>Aufräumen</h3>
         <p>Jeden <b>${WD_LONG[s.cleanup_weekday]}</b> um <b>${s.cleanup_time} Uhr</b> werden alle offenen Artikel <b>abgehakt</b>, die mindestens <b>${s.min_age_days} Tage</b> auf der Liste stehen. Gelöscht wird nichts – so kannst du sie später mit einem Tipp wieder auf die Liste nehmen.</p>
         <p class="hint">Tag & Uhrzeit ändern: Einstellungen → Geräte & Dienste → Einkaufsliste → Konfigurieren</p>
@@ -854,6 +863,30 @@ class EinkaufslisteCard extends HTMLElement {
         </div>
       </div>
       <p class="hint" style="text-align:right">Einkaufsliste v${EL_VERSION}</p>`;
+    this._renderDelList();
+  }
+
+  _renderDelList() {
+    const box = this.$("delList");
+    if (!box || !this._data) return;
+    const q = (this._delFilter || "").trim().toLowerCase();
+    const items = this._data.items
+      .filter((i) => !q || i.name.toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+    if (!items.length) {
+      box.innerHTML = `<p class="hint">${q ? `Nichts gefunden zu „${esc(q)}“.` : "Die Liste ist leer."}</p>`;
+      return;
+    }
+    const shown = items.slice(0, 60);
+    box.innerHTML = shown.map((i) => {
+      const st = this._store(i.store_id);
+      const info = [st ? st.name : "Egal wo", i.checked ? "erledigt" : "offen", i.note, i.for_whom && `für ${i.for_whom}`]
+        .filter(Boolean).map(esc).join(" · ");
+      return `<div class="srow delrow" data-id="${i.id}">
+        <div class="grow delname"><b>${esc(i.name)}</b><small>${info}</small></div>
+        <button class="iconbtn" data-act="item-delete" title="Ganz löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
+      </div>`;
+    }).join("") + (items.length > shown.length ? `<p class="hint">… und ${items.length - shown.length} weitere – tipp oben was ein, um zu suchen.</p>` : "");
   }
 
   // ---------------------------------------------------------------- Rezepte
@@ -1046,6 +1079,11 @@ class EinkaufslisteCard extends HTMLElement {
 
   _onInput(e) {
     const t = e.target;
+    if (t.id === "delSearch") {
+      this._delFilter = t.value;
+      this._renderDelList();
+      return;
+    }
     if (t.classList?.contains("icon")) {
       const prev = t.closest(".srow")?.querySelector(".prev");
       const val = stripMdi(t.value).trim();
@@ -1118,10 +1156,13 @@ class EinkaufslisteCard extends HTMLElement {
           .catch(() => {})
           .finally(() => { this._pending.delete(id); this._renderAll(); });
         break;
-      case "remove": {
-        const item = this._data.items.find((i) => i.id === id);
-        if (item?.checked && !confirm(`„${item.name}“ ganz löschen? Dann ist es auch aus „Erledigt“ weg.`)) return;
-        this._ws({ type: "einkaufsliste/item/remove", item_id: id }).catch(() => {});
+      case "item-delete": {
+        const itemId = el.closest(".delrow").dataset.id;
+        const item = this._data.items.find((i) => i.id === itemId);
+        if (!item || !confirm(`„${item.name}“ endgültig löschen? Dann ist es auch aus „Erledigt“ weg.`)) return;
+        this._ws({ type: "einkaufsliste/item/remove", item_id: itemId })
+          .then(() => { this._toast(`🗑️ „${item.name}“ gelöscht`); setTimeout(() => this._renderDelList(), 50); })
+          .catch(() => {});
         break;
       }
       case "edit":

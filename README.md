@@ -44,7 +44,7 @@ Jeder Artikel bleibt also **mindestens eine Woche** offen. Unter jedem Artikel z
 
 > 💡 Nimmst du einen Artikel wieder auf die Liste, fängt die Woche von vorne an.
 > 💡 Hat Home Assistant zur Aufräumzeit geschlafen (Neustart, Update), wird das Aufräumen beim nächsten Start nachgeholt.
-> 🗑️ Richtig löschen kannst du einen Artikel nur von Hand, über das ✕ neben dem Artikel.
+> 🗑️ Richtig löschen kannst du einen Artikel nur von Hand: **⚙️ Zahnrad → Artikel ganz löschen**. Dort gibt es auch ein Suchfeld.
 
 Tag, Uhrzeit und Mindestalter stellst du hier ein:
 **Einstellungen → Geräte & Dienste → Einkaufsliste → Konfigurieren**
@@ -128,7 +128,7 @@ Damit keiner mehr die falschen Nudeln mitbringt. 😄
 - Auch **Rezept-Zutaten** können ein Foto haben: Das geht im Rezept über den 📷-Knopf neben der Zutat.
 - Fotos werden noch auf dem Handy **automatisch verkleinert**, auf ungefähr 100 KB.
 - Gespeichert wird alles **nur bei dir** unter `/config/einkaufsliste_fotos` und mit deinen Backups gesichert.
-- Löschst du einen Artikel ganz (✕), ist auch das Foto weg. Außer eine Rezept-Zutat braucht es noch.
+- Löschst du einen Artikel ganz (⚙️ → Artikel ganz löschen), ist auch das Foto weg. Außer eine Rezept-Zutat braucht es noch.
 
 ---
 
