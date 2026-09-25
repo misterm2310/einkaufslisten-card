@@ -88,6 +88,27 @@ type: custom:einkaufsliste-card
 
 ---
 
+## ✍️ Artikel eintragen
+
+```
+[ Was brauchen wir?        ] [✅]
+  ▥   📷   🔢   📝   👤
+[🛒 Geschäft ] [📦 Kategorie ]
+```
+
+1. Den Namen eintippen, zum Beispiel „Milch“. Die **Kategorie** wird meistens schon von selbst ausgewählt. 📖
+2. Mehr Angaben? Einfach das passende **Symbol** antippen, dann geht nur dieses Feld auf:
+   - **▥ Barcode scannen** (nur in der Home-Assistant-App)
+   - **📷 Foto** aus der Galerie
+   - **🔢 Menge**, zum Beispiel „2x“ oder „500 g“
+   - **📝 Notiz**, zum Beispiel „Bio“
+   - **👤 Für wen?** (nur, wenn Personen angelegt sind)
+3. Auf den **grünen Haken ✅** tippen. Fertig!
+
+Hat ein Symbol einen **blauen Punkt**, ist dort schon etwas ausgefüllt. Nach dem Eintragen klappt alles wieder zu. ✨
+
+---
+
 ## 🍽️ Rezepte
 
 1. In der Karte oben auf das **⚙️-Zahnrad** tippen und dort bei **Rezepte** auf **Neues Rezept** tippen. Bearbeiten und Löschen geht dort über den ✏️-Stift.
@@ -124,7 +145,7 @@ Die Liste springt automatisch auf den Reiter des Geschäfts, bei dem **du** gera
 ## 📸 Fotos zum Artikel
 
 Damit keiner mehr die falschen Nudeln mitbringt. 😄
-1. **Direkt beim Eintragen:** Tippe neben dem Eingabefeld auf das **📷-Symbol** und wähle ein Foto aus. Das Symbol wird blau. Tippst du jetzt auf den **grünen Haken ✅**, kommt das Foto gleich mit. (Nochmal aufs blaue 📷 tippen, und das Foto ist wieder raus.)
+1. **Direkt beim Eintragen:** Tippe in der Symbol-Leiste unter dem Eingabefeld auf **📷** und wähle ein Foto aus. Das Symbol wird blau. Tippst du jetzt auf den **grünen Haken ✅**, kommt das Foto gleich mit. (Nochmal aufs blaue 📷 tippen, und das Foto ist wieder raus.)
 2. **Oder später:** Beim Artikel auf den **✏️ Stift** tippen und dann auf **📷 Foto**. Das Foto wählst du aus der Galerie.
 3. Fertig! Hinter dem Artikel erscheint ein kleines **📷**. Tippst du darauf, geht das Foto groß auf. Noch ein Tipp, und es ist wieder zu.
 
@@ -138,7 +159,7 @@ Damit keiner mehr die falschen Nudeln mitbringt. 😄
 
 ## 🔍 Barcode scannen (in der Home-Assistant-App)
 
-1. In der **Home-Assistant-App** neben dem Eingabefeld auf das **Barcode-Symbol** tippen.
+1. In der **Home-Assistant-App** in der Symbol-Leiste unter dem Eingabefeld auf **▥ (Barcode)** tippen.
 2. Der **Scanner der App** geht auf. Halte den Strichcode der Packung in den Rahmen.
 3. Die Karte füllt den **Namen** (mit Marke) und, wenn möglich, die **Kategorie** aus.
 4. Passt alles? Dann auf den **grünen Haken ✅** tippen. Fertig! 🎉

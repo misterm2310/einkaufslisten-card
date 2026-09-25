@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.6.1";
+const EL_VERSION = "1.7.0";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -152,13 +152,17 @@ button { font:inherit; color:inherit; }
 .tab .n { opacity:.7; font-size:.85em; }
 .tab.active { background:var(--c); border-color:var(--c); color:#fff; }
 .tab.active .dot { background:#fff; }
-form.add { display:grid; grid-template-columns: 1fr 64px 40px 44px; gap:6px; margin:2px 2px 6px; }
-.scanbtn { border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px !important; justify-content:center; }
-form.add.hasscan { grid-template-columns: 1fr 58px 40px 40px 44px; }
-#inQty { padding-left:6px; padding-right:6px; font-size:.88em; }
-.scanbtn.busy ha-icon { animation: pulse 1s infinite; }
+form.add { display:grid; grid-template-columns: 1fr 48px; gap:6px; margin:2px 2px 6px; }
+form.add .toolbar { grid-column: 1 / -1; display:flex; gap:4px; margin:-2px 0 0; }
+.tool { background:none; border:0; border-radius:10px; padding:6px 10px; cursor:pointer; color:var(--secondary-text-color); display:inline-flex; align-items:center; line-height:0; position:relative; --mdc-icon-size:22px; }
+.tool:hover { background:var(--secondary-background-color, rgba(127,127,127,.1)); }
+.tool.on { color:var(--primary-color,#03a9f4); background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); }
+.tool.filled::after { content:""; position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%; background:var(--primary-color,#03a9f4); }
+form.add .extras { grid-column: 1 / -1; display:flex; flex-direction:column; gap:6px; }
+form.add .extras:not(:has(> :not([hidden]))) { display:none; }
+.tool.busy ha-icon { animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity:.3; } }
-.scanbtn.on { color:var(--primary-color,#03a9f4); border-color:var(--primary-color,#03a9f4) !important; }
+
 .photobtn { background:none; border:0; cursor:pointer; padding:0 2px; color:var(--primary-color,#03a9f4); line-height:0; --mdc-icon-size:17px; align-self:center; }
 .photorow { display:flex; flex-wrap:wrap; gap:6px; }
 .photorow .btn { padding:6px 10px; font-size:.85em; }
@@ -386,13 +390,18 @@ class EinkaufslisteCard extends HTMLElement {
           <div class="tabs" id="tabs"></div>
           <form class="add" id="addForm" autocomplete="off">
             <input id="inName" list="hist" placeholder="Was brauchen wir?" enterkeyhint="done">
-            <input id="inQty" placeholder="Menge">
-            <button class="iconbtn scanbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
-            <button class="iconbtn scanbtn" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon></button>
             <button class="primary addbtn" type="submit" title="Hinzufügen"><ha-icon icon="mdi:check-bold"></ha-icon></button>
-            <div class="row2">
-              <input id="inNote" placeholder="📝 Notiz (z. B. Bio)">
-              <select id="inFor" title="Für wen?"></select>
+            <div class="toolbar">
+              <button class="tool" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
+              <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon></button>
+              <button class="tool" id="tQty" type="button" data-act="tool" data-field="inQty" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon></button>
+              <button class="tool" id="tNote" type="button" data-act="tool" data-field="inNote" title="Notiz"><ha-icon icon="mdi:note-text-outline"></ha-icon></button>
+              <button class="tool" id="tFor" type="button" data-act="tool" data-field="inFor" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon></button>
+            </div>
+            <div class="extras">
+              <input id="inQty" placeholder="🔢 Menge, z. B. 2x oder 500 g" hidden>
+              <input id="inNote" placeholder="📝 Notiz, z. B. Bio" hidden>
+              <select id="inFor" title="Für wen?" hidden></select>
             </div>
             <div class="row2 sel">
               <select id="inStore" title="Geschäft"></select>
@@ -412,6 +421,10 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("addForm").addEventListener("submit", (e) => this._onAdd(e));
     this.$("newPhotoFile").addEventListener("change", (e) => this._onNewPhotoFile(e));
     this.$("inCat").addEventListener("change", () => { this._catManual = !!this.$("inCat").value; });
+    for (const id of ["inQty", "inNote", "inFor"]) {
+      this.$(id).addEventListener("input", () => this._updateTools());
+      this.$(id).addEventListener("change", () => this._updateTools());
+    }
     this.$("photoFile").addEventListener("change", (e) => this._onPhotoFile(e));
     this.$("inName").addEventListener("input", () => { if (!this.$("inName").value.trim()) this._pendingBarcode = null; this._onNameInput(); if (!this._editing) this._renderList(); });
     root.addEventListener("click", (e) => this._onClick(e), true);
@@ -570,17 +583,16 @@ class EinkaufslisteCard extends HTMLElement {
     const st = this.$("inStore");
     const ct = this.$("inCat");
     this.$("addForm").classList.toggle("fixed", !!this._fixedStore);
-    const scan = this._hasAppScanner();
-    this.$("btnScan").hidden = !scan;
-    this.$("addForm").classList.toggle("hasscan", scan);
+    this.$("btnScan").hidden = !this._hasAppScanner();
+    this._updateTools();
     st.hidden = !!this._fixedStore;
     const prevStore = st.value;
     const prevCat = ct.value;
     const pf = this.$("inFor");
     const prevFor = pf.value;
     pf.innerHTML = this._personOptions(null);
-    pf.hidden = !(d.persons || []).length;
-    this.$("inNote").style.gridColumn = pf.hidden ? "1 / span 2" : "";
+    this.$("tFor").hidden = !(d.persons || []).length;
+    if (this.$("tFor").hidden) pf.hidden = true;
     if ((d.persons || []).some((p) => p.name === prevFor)) pf.value = prevFor;
     st.innerHTML = this._selectOptions(d.stores, null, "🛒 Egal wo");
     ct.innerHTML = this._selectOptions(d.categories, null, "📦 Ohne Kategorie");
@@ -1020,9 +1032,29 @@ class EinkaufslisteCard extends HTMLElement {
     }
   }
 
+  // Symbol-Leiste: ein Tipp öffnet/schließt genau ein Feld
+  _toggleTool(fieldId) {
+    const field = this.$(fieldId);
+    const open = field.hidden;
+    field.hidden = !open;
+    if (open) field.focus();
+    this._updateTools();
+  }
+
+  _updateTools() {
+    for (const [tool, fieldId] of [["tQty", "inQty"], ["tNote", "inNote"], ["tFor", "inFor"]]) {
+      const btn = this.$(tool);
+      const field = this.$(fieldId);
+      if (!btn || !field) continue;
+      btn.classList.toggle("on", !field.hidden);
+      btn.classList.toggle("filled", !!field.value);
+    }
+  }
+
   _updateNewPhotoBtn() {
     const btn = this.$("btnNewPhoto");
     btn.classList.toggle("on", !!this._newPhoto);
+    btn.classList.toggle("filled", !!this._newPhoto);
     btn.title = this._newPhoto ? "Foto ist dabei – antippen zum Entfernen" : "Foto zum Artikel";
     btn.querySelector("ha-icon").setAttribute("icon", this._newPhoto ? "mdi:camera" : "mdi:camera-plus-outline");
   }
@@ -1209,6 +1241,8 @@ class EinkaufslisteCard extends HTMLElement {
       for (const id of ["inName", "inQty", "inNote", "inFor", "inCat"]) this.$(id).value = "";
       this._catManual = false;
       this._pendingBarcode = null;
+      for (const id of ["inQty", "inNote", "inFor"]) this.$(id).hidden = true;
+      this._updateTools();
       this._renderList();
       this.$("inName").focus();
     } catch (_) { /* Meldung kam schon */ }
@@ -1259,6 +1293,9 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "scan":
         this._startAppScan();
+        break;
+      case "tool":
+        this._toggleTool(el.dataset.field);
         break;
       case "move":
         this._moving = this._moving === id ? null : id;
