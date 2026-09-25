@@ -453,6 +453,11 @@ class EinkaufslisteManager:
             checked = not item["checked"]
         if checked == item["checked"]:
             return item
+        if checked and item.get("recipe_id"):
+            # Rezept-Zutaten verschwinden beim Abhaken ganz von der Liste
+            self.items.remove(item)
+            self._changed()
+            return {**item, "checked": True, "checked_at": _now_iso(), "checked_by": by, "removed": True}
         if checked:
             item.update(checked=True, checked_at=_now_iso(), checked_by=by)
         else:
@@ -486,6 +491,7 @@ class EinkaufslisteManager:
     ) -> list[dict[str, Any]]:
         """Hakt alte Einträge automatisch ab – gelöscht wird nichts.
 
+        Rezept-Zutaten werden dabei ganz entfernt (wie beim normalen Abhaken).
         Ein offener Artikel wird abgehakt, wenn er am Aufräum-Tag mindestens
         `min_age_days` Tage auf der Liste steht. Beispiel: Dienstag eingetragen,
         Aufräumen sonntags -> der erste Sonntag (5 Tage) lässt ihn offen,
@@ -495,13 +501,18 @@ class EinkaufslisteManager:
         min_age = self.min_age_days if min_age_days is None else int(min_age_days)
         done: list[dict[str, Any]] = []
         now = _now_iso()
+        keep: list[dict[str, Any]] = []
         for item in self.items:
+            keep.append(item)
             if item["checked"]:
                 continue
             added = _local_date(item.get("added_at")) or ref_date
             if force or (ref_date - added).days >= min_age:
                 item.update(checked=True, checked_at=now, checked_by=None)
                 done.append(item)
+                if item.get("recipe_id"):
+                    keep.pop()  # Rezept-Zutaten verschwinden statt abgehakt zu bleiben
+        self.items = keep
         if scheduled:
             self.last_cleanup = now
         if done or scheduled:

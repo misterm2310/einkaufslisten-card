@@ -92,7 +92,9 @@ Rezept-Zutaten kommen **zusätzlich** auf die Liste, als eigener Eintrag. Steht 
 
 Tippst du zweimal auf dasselbe Rezept, kommt nichts doppelt dazu.
 
-Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags Fisch), auch bei den erledigten.
+Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags Fisch).
+
+✅ **Hakst du eine Rezept-Zutat ab, verschwindet sie ganz.** Sie taucht also nicht unten bei „Erledigt“ auf. Das gilt auch beim automatischen Aufräumen. Normale Artikel bleiben wie gewohnt unter „Erledigt“ stehen.
 
 ---
 

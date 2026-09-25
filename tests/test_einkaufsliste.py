@@ -221,11 +221,13 @@ async def test_recipes(hass, setup, hass_ws_client, hass_admin_user):
     assert len(mozz) == 2 and {bool(i["recipe_id"]) for i in mozz} == {True, False}
     assert len(m.items) == 6
 
-    # abhaken und wieder reinnehmen -> bleibt beim Rezept
+    # Rezept-Zutat abhaken -> verschwindet ganz, normaler Mozzarella bleibt
     rm = next(i for i in mozz if i["recipe_id"])
+    normal = next(i for i in mozz if not i["recipe_id"])
     m.set_checked(rm["id"], True)
-    m.set_checked(rm["id"], False, "Ben")
-    assert rm["recipe_id"] == recipe["id"] and rm["added_by"] == "Ben"
+    assert rm not in m.items and len(m.items) == 5
+    m.set_checked(normal["id"], True)
+    assert normal in m.items and normal["checked"]
 
     # doppelte Zutat im Rezept -> Fehler
     await client.send_json(
@@ -234,20 +236,29 @@ async def test_recipes(hass, setup, hass_ws_client, hass_admin_user):
     )
     assert not (await client.receive_json())["success"]
 
-    # per Aktion
-    for i in m.items:
+    # per Aktion: alles abhaken -> Rezept-Zutaten weg, normale bleiben abgehakt
+    for i in list(m.items):
         m.set_checked(i["id"], True)
+    assert all(not i["recipe_id"] for i in m.items)
+    assert sorted(i["name"] for i in m.items) == ["Mozzarella", "Spinat"]
     res = await hass.services.async_call(
         DOMAIN, "add_recipe", {"name": "freitags fisch"}, blocking=True, return_response=True
     )
     assert res["added"] == 4 and len(m.items) == 6
 
+    # automatisches Aufräumen: Rezept-Zutaten verschwinden, normale werden abgehakt
+    m.add_item("Brot")
+    m.cleanup(force=True)
+    assert sorted(i["name"] for i in m.items) == ["Brot", "Mozzarella", "Spinat"]
+    assert all(i["checked"] for i in m.items)
+
+    m.apply_recipe(recipe["id"])
     # Rezept löschen: offene Rezept-Einträge werden normale Artikel, wenn es sie nicht
     # schon normal gibt (Mozzarella + Spinat gibt es normal -> Rezept-Doppel fliegen raus)
     await client.send_json({"id": 7, "type": "einkaufsliste/recipe/remove", "recipe_id": recipe["id"]})
     assert (await client.receive_json())["success"]
     assert all(i["recipe_id"] is None for i in m.items)
-    assert sorted(i["name"] for i in m.items) == ["Fertig-Salat", "Fischstäbchen", "Mozzarella", "Spinat"]
+    assert sorted(i["name"] for i in m.items) == ["Brot", "Fertig-Salat", "Fischstäbchen", "Mozzarella", "Spinat"]
 
 
 async def test_services(hass, setup):
