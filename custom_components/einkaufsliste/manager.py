@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 from collections.abc import Callable
 from datetime import date, datetime, timedelta
 import logging
+from pathlib import Path
 from typing import Any
 import uuid
 
@@ -106,6 +109,8 @@ class EinkaufslisteManager:
         self.items: list[dict[str, Any]] = []
         self.recipes: list[dict[str, Any]] = []
         self.persons: list[dict[str, Any]] = []
+        self.photos: dict[str, dict[str, Any]] = {}  # Produktname (klein) -> Foto
+        self.photo_dir = Path(hass.config.path("einkaufsliste_fotos"))
         self.history: dict[str, dict[str, Any]] = {}
         self.last_cleanup: str | None = None
         self._unsub_time: Callable[[], None] | None = None
@@ -153,10 +158,9 @@ class EinkaufslisteManager:
         for item in self.items:  # ältere Daten auffüllen
             item.setdefault("for_whom", None)
             item.setdefault("recipe_id", None)
-        if "photos" in data or "barcodes" in data:
-            # Foto-/Barcode-Funktion wurde wieder entfernt: Reste aufräumen
-            self._schedule_save()
-            self.hass.async_create_task(self._async_remove_old_photos())
+        self.photos = data.get("photos", {})
+        if "barcodes" in data:
+            self._schedule_save()  # alte Barcode-Daten beim nächsten Speichern weg
         if "persons" in data:
             self.persons = data["persons"]
         else:
@@ -170,12 +174,6 @@ class EinkaufslisteManager:
             if names:
                 self._schedule_save()
 
-    async def _async_remove_old_photos(self) -> None:
-        import shutil  # noqa: PLC0415
-
-        folder = self.hass.config.path("einkaufsliste_fotos")
-        await self.hass.async_add_executor_job(shutil.rmtree, folder, True)
-
     def _to_storage(self) -> dict[str, Any]:
         return {
             "stores": self.stores,
@@ -183,6 +181,7 @@ class EinkaufslisteManager:
             "items": self.items,
             "recipes": self.recipes,
             "persons": self.persons,
+            "photos": self.photos,
             "history": self.history,
             "last_cleanup": self.last_cleanup,
         }
@@ -228,6 +227,7 @@ class EinkaufslisteManager:
             "items": self.items,
             "recipes": self.recipes,
             "persons": self.persons,
+            "photos": {k: v.get("updated") for k, v in self.photos.items()},
             "history": history[:300],
             "settings": {
                 "cleanup_weekday": self.cleanup_weekday,
@@ -457,7 +457,10 @@ class EinkaufslisteManager:
             raise ValueError(
                 f"„{new['name']}“ gibt es schon – unterscheide ihn über Notiz, „für wen“ oder Geschäft."
             )
+        old_name = item["name"]
         item.update(new)
+        if old_name.lower() != new["name"].lower():
+            self._move_photo(old_name, new["name"])
         if "category_id" in fields:
             item["category_id"] = self._check_category(fields["category_id"])
         if "quantity" in fields:
@@ -503,7 +506,81 @@ class EinkaufslisteManager:
     def remove_item(self, item_id: str) -> None:
         item = self.get_item(item_id)
         self.items.remove(item)
+        if not self._name_in_use(item["name"]):
+            # Artikel ganz gelöscht -> Foto kommt mit weg
+            self.hass.async_create_task(self.async_remove_photo(item["name"]))
         self._changed()
+
+    # ------------------------------------------------------------------ Fotos
+    def _name_in_use(self, name: str) -> bool:
+        key = name.lower()
+        return any(i["name"].lower() == key for i in self.items) or any(
+            ri["name"].lower() == key for r in self.recipes for ri in r["items"]
+        )
+
+    def _move_photo(self, old: str, new: str) -> None:
+        old_key, new_key = old.lower(), new.lower()
+        if old_key in self.photos and new_key not in self.photos and not self._name_in_use(old):
+            self.photos[new_key] = self.photos.pop(old_key)
+
+    def _photo_path(self, photo_id: str) -> Path:
+        return self.photo_dir / f"{photo_id}.jpg"
+
+    async def async_set_photo(self, name: str, data: str) -> dict[str, Any]:
+        """Foto zu einem Produkt speichern (Base64, vom Handy schon verkleinert)."""
+        name = _clean(name)
+        if not name:
+            raise ValueError("Zu welchem Artikel gehört das Foto?")
+        if "," in data[:100]:
+            data = data.split(",", 1)[1]
+        try:
+            raw = base64.b64decode(data, validate=True)
+        except (binascii.Error, ValueError) as err:
+            raise ValueError("Das Foto konnte nicht gelesen werden.") from err
+        if len(raw) > 3 * 1024 * 1024:
+            raise ValueError("Das Foto ist zu groß (max. 3 MB).")
+        if not (raw[:3] == b"\xff\xd8\xff" or raw[:8] == b"\x89PNG\r\n\x1a\n" or raw[8:12] == b"WEBP"):
+            raise ValueError("Das ist kein Foto (JPG/PNG/WebP).")
+        photo_id = _new_id()
+        path = self._photo_path(photo_id)
+
+        def _write() -> None:
+            self.photo_dir.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(raw)
+
+        await self.hass.async_add_executor_job(_write)
+        old = self.photos.get(name.lower())
+        self.photos[name.lower()] = {"id": photo_id, "updated": _now_iso(), "name": name}
+        if old:
+            await self._async_delete_file(old["id"])
+        self._changed()
+        return {"name": name, "updated": self.photos[name.lower()]["updated"]}
+
+    async def async_get_photo(self, name: str) -> str:
+        entry = self.photos.get((_clean(name) or "").lower())
+        if entry is None:
+            raise ValueError("Zu diesem Artikel gibt es kein Foto.")
+        path = self._photo_path(entry["id"])
+
+        def _read() -> bytes | None:
+            return path.read_bytes() if path.exists() else None
+
+        raw = await self.hass.async_add_executor_job(_read)
+        if raw is None:
+            raise ValueError("Das Foto ist nicht mehr da.")
+        mime = "image/png" if raw[:4] == b"\x89PNG" else "image/webp" if raw[8:12] == b"WEBP" else "image/jpeg"
+        return f"data:{mime};base64,{base64.b64encode(raw).decode()}"
+
+    async def async_remove_photo(self, name: str) -> None:
+        entry = self.photos.pop((_clean(name) or "").lower(), None)
+        if entry is None:
+            return
+        await self._async_delete_file(entry["id"])
+        self._changed()
+
+    async def _async_delete_file(self, photo_id: str) -> None:
+        path = self._photo_path(photo_id)
+        await self.hass.async_add_executor_job(lambda: path.unlink(missing_ok=True))
 
     # ------------------------------------------------------------------ Aufräumen
     @callback

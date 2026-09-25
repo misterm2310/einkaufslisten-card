@@ -21,6 +21,7 @@
 | 🍽️ **Rezepte** | Leg ein Rezept an, zum Beispiel „Freitags Fisch“ mit allen Zutaten. Ein Tipp auf **Auf die Liste** setzt alle Zutaten auf die Liste. |
 | 🧹 **Automatisch aufräumen** | An einem festen Tag wird alles **abgehakt**, was mindestens 7 Tage drinsteht. **Gelöscht wird nichts.** |
 | ⚡ **Live-Sync** | Trägt jemand etwas ein, steht es sofort auf allen Handys. Ohne Neuladen. |
+| 📸 **Fotos** | Ein Foto zum Artikel („genau diese Marke!“), auswählbar direkt beim Eintragen. |
 | 🔎 **Merkt sich Produkte** | Beim Tippen kommen Vorschläge, Geschäft und Kategorie werden automatisch ausgefüllt. Die erledigten Artikel werden dabei gleich mitgefiltert. |
 
 ---
@@ -96,6 +97,21 @@ Tippst du zweimal auf dasselbe Rezept, kommt nichts doppelt dazu.
 Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags Fisch).
 
 ✅ **Hakst du eine Rezept-Zutat ab, verschwindet sie ganz.** Sie taucht also nicht unten bei „Erledigt“ auf. Das gilt auch beim automatischen Aufräumen. Normale Artikel bleiben wie gewohnt unter „Erledigt“ stehen.
+
+---
+
+## 📸 Fotos zum Artikel
+
+Damit keiner mehr die falschen Nudeln mitbringt. 😄
+1. **Direkt beim Eintragen:** Tippe neben dem Eingabefeld auf das **📷-Symbol** und wähle ein Foto aus. Das Symbol wird blau. Tippst du jetzt auf **＋**, kommt das Foto gleich mit. (Nochmal aufs blaue 📷 tippen, und das Foto ist wieder raus.)
+2. **Oder später:** Beim Artikel auf den **✏️ Stift** tippen und dann auf **📷 Foto**. Das Foto wählst du aus der Galerie.
+3. Fertig! Hinter dem Artikel erscheint ein kleines **📷**. Tippst du darauf, geht das Foto groß auf. Noch ein Tipp, und es ist wieder zu.
+
+- Das Foto **bleibt beim Produkt**, auch nach dem Abhaken und Wieder-Reinnehmen. Einmal knipsen reicht.
+- Auch **Rezept-Zutaten** können ein Foto haben: Das geht im Rezept über den 📷-Knopf neben der Zutat.
+- Fotos werden noch auf dem Handy **automatisch verkleinert**, auf ungefähr 100 KB.
+- Gespeichert wird alles **nur bei dir** unter `/config/einkaufsliste_fotos` und mit deinen Backups gesichert.
+- Löschst du einen Artikel ganz (✕), ist auch das Foto weg. Außer eine Rezept-Zutat braucht es noch.
 
 ---
 

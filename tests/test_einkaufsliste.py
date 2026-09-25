@@ -439,26 +439,52 @@ async def test_persons_seeded_from_old_data(hass, hass_storage):
     assert [p["name"] for p in mgr(hass).persons] == ["Oma", "Ben"]
 
 
-async def test_old_photo_data_is_cleaned_up(hass, hass_storage, tmp_path):
-    import os
+JPEG = bytes.fromhex("ffd8ffe000104a46494600010100000100010000ffd9")
 
-    await hass.config.async_set_time_zone(TZ)
-    folder = hass.config.path("einkaufsliste_fotos")
-    os.makedirs(folder, exist_ok=True)
-    open(os.path.join(folder, "x.jpg"), "wb").write(b"x")
-    hass_storage["einkaufsliste.data"] = {
-        "version": 1, "key": "einkaufsliste.data",
-        "data": {"stores": [], "categories": [], "items": [], "history": {}, "persons": [],
-                 "last_cleanup": dt_util.utcnow().isoformat(),
-                 "photos": {"milch": {"id": "x"}}, "barcodes": {"123": {"name": "Milch"}}},
-    }
-    assert await async_setup_component(hass, "http", {})
-    hass.config.components.update({"frontend", "lovelace"})
-    entry = MockConfigEntry(domain=DOMAIN, options={"cleanup_weekday": 6, "cleanup_time": "03:00:00", "min_age_days": 7})
-    entry.add_to_hass(hass)
-    with patch("custom_components.einkaufsliste.frontend.add_extra_js_url"):
-        assert await hass.config_entries.async_setup(entry.entry_id)
+
+async def test_photos(hass, setup, hass_ws_client):
+    import base64
+
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    item = m.add_item("Nudeln")
+    data = "data:image/jpeg;base64," + base64.b64encode(JPEG).decode()
+    await client.send_json({"id": 1, "type": "einkaufsliste/photo/set", "name": "Nudeln", "data": data})
+    res = await client.receive_json()
+    assert res["success"], res
+    assert "nudeln" in m.as_dict()["photos"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/photo/get", "name": "nudeln"})
+    res = await client.receive_json()
+    assert res["result"]["data"].startswith("data:image/jpeg;base64,")
+
+    # kein Bild -> Fehler
+    await client.send_json({"id": 3, "type": "einkaufsliste/photo/set", "name": "Nudeln", "data": base64.b64encode(b"hallo").decode()})
+    assert not (await client.receive_json())["success"]
+
+    # Foto bleibt beim Produkt: abhaken + wieder rein
+    m.set_checked(item["id"], True)
+    m.set_checked(item["id"], False)
+    assert "nudeln" in m.photos
+
+    # Umbenennen nimmt das Foto mit
+    m.update_item(item["id"], name="Spaghetti")
+    assert "spaghetti" in m.photos and "nudeln" not in m.photos
+    photo_file = m._photo_path(m.photos["spaghetti"]["id"])
+    assert photo_file.exists()
+
+    # Ganz löschen -> Foto weg
+    m.remove_item(item["id"])
     await hass.async_block_till_done()
-    assert not os.path.exists(folder)
-    await mgr(hass).async_save_now()
-    assert "photos" not in hass_storage["einkaufsliste.data"]["data"]
+    assert "spaghetti" not in m.photos and not photo_file.exists()
+
+
+async def test_photo_kept_for_recipe(hass, setup):
+    import base64
+
+    m = mgr(hass)
+    item = m.add_item("Mozzarella")
+    m.add_recipe("Pizza", [{"name": "Mozzarella"}])
+    await m.async_set_photo("Mozzarella", base64.b64encode(JPEG).decode())
+    m.remove_item(item["id"])
+    await hass.async_block_till_done()
+    assert "mozzarella" in m.photos  # Rezept braucht es noch
