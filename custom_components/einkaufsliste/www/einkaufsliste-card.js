@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "1.2.1";
+const EL_VERSION = "1.2.2";
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
@@ -59,8 +59,12 @@ button { font:inherit; color:inherit; }
 .iconbtn:hover { background:var(--secondary-background-color, rgba(127,127,127,.12)); color:var(--primary-text-color); }
 .iconbtn[disabled] { opacity:.3; pointer-events:none; }
 .iconbtn.on { color:var(--primary-color,#03a9f4); }
-.tabs { display:flex; gap:6px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:none; }
-.tabs::-webkit-scrollbar { display:none; }
+.tabs { display:flex; gap:6px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:thin; cursor:grab; user-select:none; -webkit-overflow-scrolling:touch; }
+.tabs.dragging { cursor:grabbing; }
+.tabs.dragging .tab { pointer-events:none; }
+.tabs::-webkit-scrollbar { height:4px; }
+.tabs::-webkit-scrollbar-thumb { background:var(--divider-color, rgba(127,127,127,.35)); border-radius:4px; }
+@media (hover:none) { .tabs { scrollbar-width:none; } .tabs::-webkit-scrollbar { display:none; } }
 .tab { --c: var(--primary-color,#03a9f4); flex:0 0 auto; border:1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background:transparent; border-radius:999px; padding:5px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.9em; }
 .tab .dot { width:9px; height:9px; border-radius:50%; background:var(--c); }
 .tab .n { opacity:.7; font-size:.85em; }
@@ -260,7 +264,8 @@ class EinkaufslisteCard extends HTMLElement {
     const root = this.shadowRoot;
     this.$("addForm").addEventListener("submit", (e) => this._onAdd(e));
     this.$("inName").addEventListener("input", () => { this._onNameInput(); if (!this._editing) this._renderList(); });
-    root.addEventListener("click", (e) => this._onClick(e));
+    root.addEventListener("click", (e) => this._onClick(e), true);
+    this._setupTabScroll(this.$("tabs"));
     root.addEventListener("change", (e) => this._onChange(e));
     root.addEventListener("input", (e) => this._onInput(e));
     root.addEventListener("submit", (e) => {
@@ -268,6 +273,36 @@ class EinkaufslisteCard extends HTMLElement {
       if (e.target.classList?.contains("editrow")) { e.preventDefault(); this._saveEdit(); }
     });
     this._renderAll();
+  }
+
+  // Geschäfte-Leiste am PC: Mausrad und Ziehen mit der Maus scrollen waagerecht
+  _setupTabScroll(el) {
+    el.addEventListener("wheel", (e) => {
+      if (el.scrollWidth <= el.clientWidth) return;
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      const atStart = el.scrollLeft <= 0 && delta < 0;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 && delta > 0;
+      if (atStart || atEnd) return; // am Rand: Seite normal weiterscrollen lassen
+      el.scrollLeft += delta;
+      e.preventDefault();
+    }, { passive: false });
+    let startX = 0, startLeft = 0, down = false;
+    el.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      down = true; this._dragged = false; startX = e.clientX; startLeft = el.scrollLeft;
+    });
+    window.addEventListener("pointermove", (e) => {
+      if (!down) return;
+      const dx = e.clientX - startX;
+      if (!this._dragged && Math.abs(dx) > 5) { this._dragged = true; el.classList.add("dragging"); }
+      if (this._dragged) el.scrollLeft = startLeft - dx;
+    });
+    window.addEventListener("pointerup", () => {
+      if (!down) return;
+      down = false;
+      el.classList.remove("dragging");
+      setTimeout(() => { this._dragged = false; }, 0);
+    });
   }
 
   // ---------------------------------------------------------------- Helfer
@@ -328,10 +363,11 @@ class EinkaufslisteCard extends HTMLElement {
     const btnR = this.$("btnRecipes");
     btnS.hidden = !c.show_settings || !d;
     btnR.hidden = !c.show_recipes || !d;
-    btnS.classList.toggle("on", this._view === "settings");
-    btnR.classList.toggle("on", this._view === "recipes" || this._view === "recipe");
-    btnS.querySelector("ha-icon").setAttribute("icon", this._view === "settings" ? "mdi:close" : "mdi:cog-outline");
-    btnR.querySelector("ha-icon").setAttribute("icon", this._view === "recipes" || this._view === "recipe" ? "mdi:close" : "mdi:chef-hat");
+    const inSettings = this._view === "settings" || this._view === "recipe";
+    btnS.classList.toggle("on", inSettings);
+    btnR.classList.toggle("on", this._view === "recipes");
+    btnS.querySelector("ha-icon").setAttribute("icon", inSettings ? "mdi:close" : "mdi:cog-outline");
+    btnR.querySelector("ha-icon").setAttribute("icon", this._view === "recipes" ? "mdi:close" : "mdi:chef-hat");
     if (!d) { this.$("listView").hidden = true; this.$("footer").hidden = true; return; }
 
     const open = d.items.filter((i) => !i.checked && (this._fixedStore ? i.store_id === this._fixedStore : true));
@@ -349,11 +385,13 @@ class EinkaufslisteCard extends HTMLElement {
       if (!this._editing) this._renderList();
     } else {
       const ov = this.$("otherView");
-      const busy = ov.contains(this.shadowRoot.activeElement);
+      const switched = this._renderedView !== this._view;
+      const busy = !switched && ov.contains(this.shadowRoot.activeElement);
       if (this._view === "settings" && !busy) this._renderSettings();
       if (this._view === "recipes") this._renderRecipes();
       if (this._view === "recipe" && !this._draftRendered) this._renderRecipeEditor();
     }
+    this._renderedView = this._view;
     this._renderFooter();
   }
 
@@ -372,7 +410,9 @@ class EinkaufslisteCard extends HTMLElement {
     if (none || active === "none") {
       parts.push(`<button class="tab ${active === "none" ? "active" : ""}" style="--c:#888" data-act="tab" data-tab="none"><span class="dot"></span>Egal wo <span class="n">${openCount((i) => !i.store_id)}</span></button>`);
     }
+    const left = tabs.scrollLeft;
     tabs.innerHTML = parts.join("");
+    tabs.scrollLeft = left;
   }
 
   _renderSelects() {
@@ -615,6 +655,16 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>
       </div>
       <div class="sec">
+        <h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</h3>
+        ${(d.recipes || []).map((r) => `
+          <div class="recipe" data-id="${r.id}">
+            <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
+            <div class="rname"><b>${esc(r.name)}</b><small>${r.items.length} Zutaten</small></div>
+            <button class="iconbtn" data-act="recipe-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
+          </div>`).join("")}
+        <div class="btnrow"><button class="btn" data-act="recipe-new"><ha-icon icon="mdi:plus"></ha-icon>Neues Rezept</button></div>
+      </div>
+      <div class="sec">
         <h3><ha-icon icon="mdi:account-group-outline"></ha-icon>Personen (für „Für wen?“)</h3>
         ${(d.persons || []).map((e, i) => row("persons", e, i, d.persons.length)).join("")}
         <form class="srow" data-addkind="persons">
@@ -641,7 +691,7 @@ class EinkaufslisteCard extends HTMLElement {
     const recipes = this._data.recipes || [];
     const html = [`<div class="sec"><h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</h3>`];
     if (!recipes.length) {
-      html.push(`<div class="empty"><ha-icon icon="mdi:pot-steam-outline"></ha-icon>Noch keine Rezepte. Leg dein erstes an – z. B. „Freitags Fisch“! 🐟</div>`);
+      html.push(`<div class="empty"><ha-icon icon="mdi:pot-steam-outline"></ha-icon>Noch keine Rezepte. 🐟<br>Anlegen und bearbeiten kannst du sie über das ⚙️-Zahnrad.</div>`);
     }
     for (const r of recipes) {
       const names = r.items.map((i) => i.name + (i.for_whom ? ` (für ${i.for_whom})` : "")).join(", ");
@@ -649,11 +699,10 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="recipe" data-id="${r.id}">
           <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
           <div class="rname"><b>${esc(r.name)}</b><small>${r.items.length} Zutaten · ${esc(names)}</small></div>
-          <button class="iconbtn" data-act="recipe-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
           <button class="primary" data-act="recipe-apply" title="Alle Zutaten auf die Liste"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button>
         </div>`);
     }
-    html.push(`<div class="btnrow"><button class="btn" data-act="recipe-new"><ha-icon icon="mdi:plus"></ha-icon>Neues Rezept</button></div></div>`);
+    html.push(`</div>`);
     this.$("otherView").innerHTML = html.join("");
   }
 
@@ -726,7 +775,7 @@ class EinkaufslisteCard extends HTMLElement {
       else await this._ws({ type: "einkaufsliste/recipe/add", ...msg });
       this._toast(`Rezept „${msg.name}“ gespeichert 👨‍🍳`);
       this._draft = null;
-      this._view = "recipes";
+      this._view = "settings";
       this._renderAll();
     } catch (_) { /* Meldung kam schon */ }
   }
@@ -777,6 +826,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _onClick(e) {
+    if (this._dragged) { e.stopPropagation(); e.preventDefault(); return; } // war nur Ziehen
     const el = e.target.closest("[data-act]");
     if (!el) return;
     const act = el.dataset.act;
@@ -787,7 +837,7 @@ class EinkaufslisteCard extends HTMLElement {
     switch (act) {
       case "view": {
         const v = el.dataset.view;
-        const current = this._view === "recipe" ? "recipes" : this._view;
+        const current = this._view === "recipe" ? "settings" : this._view;
         this._view = current === v ? "list" : v;
         this._draft = null;
         this._renderAll();
@@ -907,7 +957,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "recipe-cancel":
         this._draft = null;
-        this._view = "recipes";
+        this._view = "settings";
         this._renderAll();
         break;
       case "recipe-save":
@@ -916,7 +966,7 @@ class EinkaufslisteCard extends HTMLElement {
       case "recipe-delete": {
         if (!confirm(`Rezept „${this._draft.name}“ wirklich löschen?`)) return;
         this._ws({ type: "einkaufsliste/recipe/remove", recipe_id: this._draft.id })
-          .then(() => { this._draft = null; this._view = "recipes"; this._renderAll(); }).catch(() => {});
+          .then(() => { this._draft = null; this._view = "settings"; this._renderAll(); }).catch(() => {});
         break;
       }
     }

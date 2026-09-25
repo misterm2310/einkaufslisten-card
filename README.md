@@ -81,11 +81,11 @@ type: custom:einkaufsliste-card
 
 ## 🍽️ Rezepte
 
-1. In der Karte oben auf die **Kochmütze 👨‍🍳** tippen.
-2. **Neues Rezept** anlegen, zum Beispiel „Freitags Fisch“.
+1. In der Karte oben auf das **⚙️-Zahnrad** tippen und dort bei **Rezepte** auf **Neues Rezept** tippen. Bearbeiten und Löschen geht dort über den ✏️-Stift.
+2. Einen Namen vergeben, zum Beispiel „Freitags Fisch“.
 3. Die Zutaten eintragen. Pro Zutat kannst du Menge, Notiz, „für wen“, Geschäft und Kategorie angeben. Lässt du Geschäft und Kategorie auf **„Wie zuletzt“**, wird genommen, was bei diesem Produkt zuletzt benutzt wurde.
 4. **Speichern**.
-5. Ab jetzt reicht ein Tipp auf **Auf die Liste**, und alle Zutaten stehen drauf.
+5. Zum Einkaufen oben auf die **Kochmütze 👨‍🍳** tippen. Ein Tipp auf **Auf die Liste**, und alle Zutaten stehen drauf.
 
 Rezept-Zutaten kommen **zusätzlich** auf die Liste, als eigener Eintrag. Steht zum Beispiel schon Mozzarella für den normalen Einkauf drauf, bekommst du einen zweiten Eintrag:
 - **Mozzarella**
