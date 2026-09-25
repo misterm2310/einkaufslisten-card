@@ -73,7 +73,8 @@ Kopiere den Ordner `custom_components/einkaufsliste` nach `/config/custom_compon
 type: custom:einkaufsliste-card
 ```
 
-> 🙌 Du musst **keine** Ressource von Hand eintragen, die Integration bringt die Karte automatisch mit.
+> 🙌 Du musst **keine** Ressource von Hand eintragen. Die Integration trägt die Karte beim Start selbst unter **Einstellungen → Dashboards → Ressourcen** ein und hält sie bei Updates aktuell.
+> Hast du sie früher schon von Hand eingetragen, ist das kein Problem: Der Eintrag wird einfach übernommen.
 > Sieht die Karte nach einem Update komisch aus? Dann in der App einmal **nach unten ziehen** oder im Browser den Cache leeren (Strg+F5).
 
 ---

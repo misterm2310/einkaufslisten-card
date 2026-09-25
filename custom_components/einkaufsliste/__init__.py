@@ -3,12 +3,8 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-
 import voluptuous as vol
 
-from homeassistant.components.frontend import add_extra_js_url
-from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import (
@@ -22,7 +18,8 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from . import websocket as ws
-from .const import CARD_FILENAME, DOMAIN, STATIC_URL, VERSION
+from .const import DOMAIN
+from .frontend import async_setup_frontend
 from .manager import EinkaufslisteManager, person_name_for_user
 
 _LOGGER = logging.getLogger(__name__)
@@ -59,12 +56,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Einmalig: Karte bereitstellen, Websocket + Aktionen anmelden."""
     hass.data.setdefault(DOMAIN, {})
 
-    # Die Dashboard-Karte wird direkt von der Integration ausgeliefert –
-    # keine extra Ressource nötig.
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(STATIC_URL, str(Path(__file__).parent / "www"), False)]
-    )
-    add_extra_js_url(hass, f"{STATIC_URL}/{CARD_FILENAME}?v={VERSION}")
+    # Die Dashboard-Karte wird direkt von der Integration ausgeliefert und
+    # automatisch als Ressource eingetragen – nichts von Hand nötig.
+    await async_setup_frontend(hass)
 
     ws.async_register(hass)
     _register_services(hass)

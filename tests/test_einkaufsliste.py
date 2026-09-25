@@ -23,14 +23,14 @@ TZ = "Europe/Berlin"
 async def setup(hass: HomeAssistant):
     await hass.config.async_set_time_zone(TZ)
     assert await async_setup_component(hass, "http", {})
-    hass.config.components.add("frontend")
+    hass.config.components.update({"frontend", "lovelace"})
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Einkaufsliste",
         options={"cleanup_weekday": 6, "cleanup_time": "03:00:00", "min_age_days": 7},
     )
     entry.add_to_hass(hass)
-    with patch("custom_components.einkaufsliste.add_extra_js_url") as js:
+    with patch("custom_components.einkaufsliste.frontend.add_extra_js_url") as js:
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     assert js.called
@@ -343,10 +343,10 @@ async def test_old_data_is_upgraded(hass, hass_storage):
         },
     }
     assert await async_setup_component(hass, "http", {})
-    hass.config.components.add("frontend")
+    hass.config.components.update({"frontend", "lovelace"})
     entry = MockConfigEntry(domain=DOMAIN, options={"cleanup_weekday": 6, "cleanup_time": "03:00:00", "min_age_days": 7, "only_checked": True})
     entry.add_to_hass(hass)
-    with patch("custom_components.einkaufsliste.add_extra_js_url"):
+    with patch("custom_components.einkaufsliste.frontend.add_extra_js_url"):
         assert await hass.config_entries.async_setup(entry.entry_id)
     item = mgr(hass).items[0]
     assert item["for_whom"] is None and item["recipe_id"] is None
@@ -355,7 +355,7 @@ async def test_old_data_is_upgraded(hass, hass_storage):
 
 async def test_config_flow(hass):
     await hass.config.async_set_time_zone(TZ)
-    hass.config.components.update({"frontend", "http", "websocket_api"})
+    hass.config.components.update({"frontend", "http", "websocket_api", "lovelace"})
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     assert result["type"] == "form"
     with patch("custom_components.einkaufsliste.async_setup", return_value=True), patch(
@@ -367,3 +367,28 @@ async def test_config_flow(hass):
         )
     assert result["type"] == "create_entry"
     assert result["options"] == {"cleanup_weekday": 5, "cleanup_time": "04:30:00", "min_age_days": 14}
+
+
+async def test_card_is_registered_as_resource(hass, hass_storage):
+    """Die Karte trägt sich selbst als Dashboard-Ressource ein (und passt alte an)."""
+    await hass.config.async_set_time_zone(TZ)
+    hass_storage["lovelace_resources"] = {
+        "version": 1,
+        "key": "lovelace_resources",
+        "data": {"items": [{"id": "handmade", "type": "module", "url": "/einkaufsliste_files/einkaufsliste-card.js"}]},
+    }
+    assert await async_setup_component(hass, "http", {})
+    assert await async_setup_component(hass, "lovelace", {})
+    hass.config.components.add("frontend")
+    entry = MockConfigEntry(domain=DOMAIN, options={"cleanup_weekday": 6, "cleanup_time": "03:00:00", "min_age_days": 7})
+    entry.add_to_hass(hass)
+    with patch("custom_components.einkaufsliste.frontend.add_extra_js_url") as js:
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    assert not js.called
+    from homeassistant.components.lovelace.const import LOVELACE_DATA
+    from custom_components.einkaufsliste.const import VERSION
+
+    items = hass.data[LOVELACE_DATA].resources.async_items()
+    urls = [i["url"] for i in items if "einkaufsliste" in i["url"]]
+    assert urls == [f"/einkaufsliste_files/einkaufsliste-card.js?v={VERSION}"]  # kein Doppel
