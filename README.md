@@ -178,6 +178,8 @@ Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags 
 
 **📤 Rezept weitergeben:** Knopf **Teilen** bei der Kochmütze → Zutaten, Backofen-Einstellung und Zubereitung als Text (ohne „für wen“), per **WhatsApp**, über das Teilen-Menü des Handys oder zum **Kopieren**.
 
+**🔎 Rezept-Suche:** Oben bei der Kochmütze 👨‍🍳 (und in ⚙️ → Rezepte) gibt es ein Suchfeld. Es funktioniert wie die Vorschläge in der Liste: Rezepte, deren Name (oder ein Wort darin) mit den getippten Buchstaben **anfängt**, stehen oben. Danach kommen Rezepte, bei denen die Buchstaben irgendwo im Namen stecken. Außerdem findet die Suche **Zutaten**: „Zucchini“ zeigt auch die Lasagne, mit „🥕 enthält Zucchini“. Bei Tippfehlern („Lasange“) kommt „🤓 Meintest du das?“. Das ✕ leert die Suche.
+
 **🧂 Grundvorrat:** Im Rezept-Editor den Salzstreuer 🧂 antippen, bevor du die Zutat mit ✔ übernimmst (z. B. Salz, Pfeffer, Öl). Bei „Was davon brauchst du?“ sind solche Zutaten **nicht** angehakt und stehen klein mit „🧂 haben wir immer“ da.
 
 ---

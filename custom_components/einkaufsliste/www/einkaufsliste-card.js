@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.7.3";
+const EL_VERSION = "2.7.4";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -532,6 +532,9 @@ ha-card.compact .group { margin-top:4px; }
 .btn.primary { border:0; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
 .recipe { display:flex; align-items:center; gap:8px; padding:8px 6px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); margin:6px 2px; }
 .recipe .rname { flex:1; min-width:0; }
+.recipe mark { background:none; color:var(--primary-color,#03a9f4); font-weight:700; }
+.rsearch { margin:4px 2px 8px; }
+.rsearch input[type=search]::-webkit-search-cancel-button { display:none; }
 .recipe .rname b { display:block; word-break:break-word; }
 .recipe .rname small { color:var(--secondary-text-color); font-size:.78em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
@@ -1618,12 +1621,8 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="picker" hidden></div>
         <p class="hint">Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>` },
       { key: "recipes", icon: "mdi:chef-hat", title: "Rezepte", info: recipes.length ? (recipes.length === 1 ? "1 Rezept" : `${recipes.length} Rezepte`) : "noch keine", html: () => `
-        ${recipes.map((r) => `
-          <div class="recipe" data-id="${r.id}">
-            <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
-            <div class="rname"><b>${esc(r.name)}${this._recipePhotoBtn(r)}</b><small>${r.items.length} Zutaten${r.steps ? " · 📖 Anleitung" : " · ohne Anleitung"}${(r.heat || []).length ? " · 🔥 Backofen & Co." : ""}</small></div>
-            <button class="iconbtn" data-act="recipe-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
-          </div>`).join("")}
+        ${recipes.length ? this._recipeSearchHtml("recipeSearchS") : ""}
+        <div id="setRecipeList"></div>
         <div class="btnrow"><button class="btn" data-act="recipe-new"><ha-icon icon="mdi:plus"></ha-icon>Neues Rezept</button></div>` },
       { key: "persons", icon: "mdi:account-group-outline", title: "Personen", info: persons.length ? `${persons.length} für „Für wen?“` : "noch keine", html: () => `
         ${persons.map((e, i) => row("persons", e, i, persons.length)).join("")}
@@ -1674,6 +1673,7 @@ class EinkaufslisteCard extends HTMLElement {
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
     if (cur.key === "products") { this._renderProducts(); this._loadProducts(); }
+    if (cur.key === "recipes") this._renderSetRecipeList();
     this._renderDelList();
   }
 
@@ -1829,20 +1829,82 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // ---------------------------------------------------------------- Rezepte
+  // 🔎 Rezept-Suche: Anfangsbuchstaben zuerst, dann „steckt drin“, dann Zutaten, dann Tippfehler
+  _recipeMatches(q) {
+    const recipes = [...(this._data.recipes || [])].sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" }));
+    q = (q || "").trim().toLowerCase();
+    if (!q) return recipes.map((r) => ({ r, sc: 0 }));
+    const starts = (low) => low.startsWith(q) || low.split(/[\s\-–,/()]+/).some((w) => w.startsWith(q));
+    const out = [];
+    const rest = [];
+    for (const r of recipes) {
+      const low = r.name.toLowerCase();
+      if (starts(low)) { out.push({ r, sc: 0 }); continue; }
+      // ein einzelner Buchstabe zählt nur am Wortanfang – sonst findet „z“ auch Pi-z-za und Sal-z
+      if (q.length > 1 && low.includes(q)) { out.push({ r, sc: 1 }); continue; }
+      const ing = r.items.find((i) => starts(i.name.toLowerCase()))
+        || (q.length > 2 ? r.items.find((i) => i.name.toLowerCase().includes(q)) : null);
+      if (ing) { out.push({ r, sc: 2, via: ing.name }); continue; }
+      rest.push(r);
+    }
+    // 🤓 Tippfehler-Hilfe: „Lasange“ -> „Meintest du Lasagne?“
+    if (q.length >= 4 && !out.some((m) => m.sc <= 1)) {
+      const maxD = q.length > 6 ? 2 : 1;
+      for (const r of rest) {
+        const low = r.name.toLowerCase();
+        let d = 9;
+        for (const w of [low, ...low.split(/[\s\-–,/()]+/)]) {
+          if (!w) continue;
+          d = Math.min(d, editDistance(q, w), q.length < w.length ? editDistance(q, w.slice(0, q.length)) : 9);
+        }
+        if (d <= maxD) out.push({ r, sc: 3 + d, fuzzy: true });
+      }
+    }
+    return out.sort((a, b) => a.sc - b.sc);
+  }
+
+  _markHit(name, q) {
+    const at = q ? name.toLowerCase().indexOf(q) : -1;
+    return at < 0 ? esc(name) : esc(name.slice(0, at)) + "<mark>" + esc(name.slice(at, at + q.length)) + "</mark>" + esc(name.slice(at + q.length));
+  }
+
+  _recipeSearchHtml(id) {
+    return `<div class="srow rsearch"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="${id}" type="search" placeholder="Rezept oder Zutat suchen …" value="${esc(this._recipeFilter || "")}" autocomplete="off"><button class="iconbtn rclear" data-act="recipe-search-clear" title="Suche löschen" ${this._recipeFilter ? "" : "hidden"}><ha-icon icon="mdi:close"></ha-icon></button></div>`;
+  }
+
   _renderRecipes() {
     this._parkForm();
-    const recipes = [...(this._data.recipes || [])].sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" }));
-    const html = [`<div class="sec"><h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</h3>`];
-    if (!recipes.length) {
+    const ov = this.$("otherView");
+    const count = (this._data.recipes || []).length;
+    // Suchfeld nur einmal bauen – sonst springt beim Tippen der Cursor raus
+    if (!ov.querySelector("#recipeList") || !!ov.querySelector("#recipeSearch") !== count > 0) {
+      ov.innerHTML = `<div class="sec"><h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</h3>${
+        count ? this._recipeSearchHtml("recipeSearch") : ""}<div id="recipeList"></div></div>`;
+    }
+    this._renderRecipeList();
+  }
+
+  _renderRecipeList() {
+    const box = this.$("recipeList");
+    if (!box) return;
+    const q = (this._recipeFilter || "").trim().toLowerCase();
+    this.shadowRoot.querySelectorAll(".rclear").forEach((b) => { b.hidden = !q; });
+    const html = [];
+    if (!(this._data.recipes || []).length) {
       html.push(`<div class="empty"><ha-icon icon="mdi:pot-steam-outline"></ha-icon>Noch keine Rezepte. 🐟<br>Anlegen und bearbeiten kannst du sie über das ⚙️-Zahnrad.</div>`);
     }
+    const found = this._recipeMatches(q);
+    if (q && !found.length) html.push(`<div class="empty"><ha-icon icon="mdi:magnify-close"></ha-icon>Nix gefunden für „${esc(q)}“. 🕵️<br>Weniger Buchstaben probieren?</div>`);
     const onList = (r) => this._data.items.filter((i) => i.recipe_id === r.id && !i.checked).length;
-    for (const r of recipes) {
+    for (const { r, via, fuzzy } of found) {
       const names = r.items.map((i) => i.name + (i.for_whom ? ` (für ${i.for_whom})` : "")).join(", ");
+      const sub = fuzzy ? `🤓 Meintest du das? · ${r.items.length} Zutaten`
+        : via ? `🥕 enthält ${this._markHit(via, q)} · ${r.items.length} Zutaten`
+        : `${r.items.length} Zutaten · ${esc(names)}`;
       html.push(`
         <div class="recipe" data-id="${r.id}">
           <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
-          <div class="rname"><b>${esc(r.name)}${this._recipePhotoBtn(r)}</b><small>${r.items.length} Zutaten · ${esc(names)}</small></div>
+          <div class="rname"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._recipePhotoBtn(r)}</b><small>${sub}</small></div>
           <div class="rbtns">
             <button class="primary" data-act="recipe-apply" title="Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button>
             ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Alle offenen Zutaten dieses Rezepts von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon>Von der Liste (${onList(r)})</button>` : ""}
@@ -1854,8 +1916,23 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="btn" data-act="recipe-share"><ha-icon icon="mdi:share-variant-outline"></ha-icon>Teilen</button>
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`);
     }
-    html.push(`</div>`);
-    this.$("otherView").innerHTML = html.join("");
+    box.innerHTML = html.join("");
+  }
+
+  // ⚙️ Rezepte in den Einstellungen – gleiche Suche
+  _renderSetRecipeList() {
+    const box = this.$("setRecipeList");
+    if (!box) return;
+    const q = (this._recipeFilter || "").trim().toLowerCase();
+    this.shadowRoot.querySelectorAll(".rclear").forEach((b) => { b.hidden = !q; });
+    const found = this._recipeMatches(q);
+    box.innerHTML = (q && !found.length ? `<p class="hint">Nix gefunden für „${esc(q)}“ 🕵️</p>` : "") + found.map(({ r, via, fuzzy }) => `
+      <div class="recipe" data-id="${r.id}">
+        <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
+        <div class="rname"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._recipePhotoBtn(r)}</b><small>${
+          fuzzy ? "🤓 Meintest du das? · " : via ? `🥕 enthält ${this._markHit(via, q)} · ` : ""}${r.items.length} Zutaten${r.steps ? " · 📖 Anleitung" : " · ohne Anleitung"}${(r.heat || []).length ? " · 🔥 Backofen & Co." : ""}</small></div>
+        <button class="iconbtn" data-act="recipe-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
+      </div>`).join("");
   }
 
   // 🍳 Erst fragen: Welche Zutaten sollen auf die Liste?
@@ -2926,6 +3003,11 @@ class EinkaufslisteCard extends HTMLElement {
       this._renderDelList();
       return;
     }
+    if (t.id === "recipeSearch" || t.id === "recipeSearchS") {
+      this._recipeFilter = t.value;
+      if (t.id === "recipeSearch") this._renderRecipeList(); else this._renderSetRecipeList();
+      return;
+    }
     if (t.id === "prodSearch") {
       this._prodFilter = t.value;
       this._renderProducts();
@@ -3400,6 +3482,13 @@ class EinkaufslisteCard extends HTMLElement {
       case "recipe-new":
         this._openRecipe(null);
         break;
+      case "recipe-search-clear": {
+        this._recipeFilter = "";
+        const inp = this.$("recipeSearch") || this.$("recipeSearchS");
+        if (inp) { inp.value = ""; inp.focus(); }
+        if (this.$("recipeList")) this._renderRecipeList(); else this._renderSetRecipeList();
+        break;
+      }
       case "recipe-edit":
         this._openRecipe(this._recipe(el.closest(".recipe").dataset.id));
         break;
