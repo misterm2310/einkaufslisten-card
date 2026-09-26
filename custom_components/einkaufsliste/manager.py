@@ -81,16 +81,14 @@ def _nice(text: Any) -> str | None:
     return text
 
 
-def product_key(name: str | None, note: str | None = None, for_whom: str | None = None) -> str:
-    """Ein Produkt = Name + Notiz + Für wen („Käse · Gouda“ ≠ „Käse · Leerdammer“ ≠ „Käse für Oma“).
+def product_key(name: str | None, note: str | None = None) -> str:
+    """Ein Produkt = Name + Notiz („Käse · Gouda“ ≠ „Käse · Leerdammer“) – für Fotos und Barcodes.
 
-    Danach richten sich Fotos und Barcodes.
+    „Für wen“ spielt hier absichtlich keine Rolle: Leerdammer bleibt Leerdammer, egal für wen –
+    gleiche Packung, gleicher Barcode, gleiches Foto.
     """
     name = (_clean(name) or "").lower()
     note = (_clean(note) or "").lower()
-    who = (_clean(for_whom) or "").lower()
-    if who:
-        return f"{name}|{note}|{who}"
     return f"{name}|{note}" if note else name
 
 
@@ -295,7 +293,7 @@ class EinkaufslisteManager:
         out: dict[str, list[str]] = {}
         for code, entry in self.barcodes.items():
             if entry.get("name"):
-                out.setdefault(product_key(entry["name"], entry.get("note"), entry.get("for_whom")), []).append(code)
+                out.setdefault(product_key(entry["name"], entry.get("note")), []).append(code)
         return out
 
     # ------------------------------------------------------------------ Verlauf
@@ -599,13 +597,13 @@ class EinkaufslisteManager:
         old_name = item["name"]
         before = dict(item)
         item.update(new)
-        old_key = product_key(old_name, before.get("note"), before.get("for_whom"))
-        new_key = product_key(item["name"], item.get("note"), item.get("for_whom"))
+        old_key = product_key(old_name, before.get("note"))
+        new_key = product_key(item["name"], item.get("note"))
         if old_key != new_key:
             self._move_photo(old_key, new_key)
             for entry in self.barcodes.values():  # gelernte Barcodes mitziehen
-                if product_key(entry.get("name"), entry.get("note"), entry.get("for_whom")) == old_key:
-                    entry.update(name=item["name"], note=item.get("note"), for_whom=item.get("for_whom"))
+                if product_key(entry.get("name"), entry.get("note")) == old_key:
+                    entry.update(name=item["name"], note=item.get("note"))
         if "category_id" in fields:
             item["category_id"] = self._check_category(fields["category_id"])
         if "quantity" in fields:
@@ -745,7 +743,7 @@ class EinkaufslisteManager:
         item = self.get_item(item_id)
         self.items.remove(item)
         self._log("remove", item)
-        key = product_key(item["name"], item.get("note"), item.get("for_whom"))
+        key = product_key(item["name"], item.get("note"))
         if not self._name_in_use(key):
             # Artikel ganz gelöscht -> Foto kommt mit weg
             self.hass.async_create_task(self.async_remove_photo(key))
@@ -755,8 +753,8 @@ class EinkaufslisteManager:
     def _name_in_use(self, key: str) -> bool:
         """Wird dieses Produkt (Name + Notiz) noch irgendwo gebraucht?"""
         key = key.lower()
-        return any(product_key(i["name"], i.get("note"), i.get("for_whom")) == key for i in self.items) or any(
-            product_key(ri["name"], ri.get("note"), ri.get("for_whom")) == key for r in self.recipes for ri in r["items"]
+        return any(product_key(i["name"], i.get("note")) == key for i in self.items) or any(
+            product_key(ri["name"], ri.get("note")) == key for r in self.recipes for ri in r["items"]
         )
 
     def _move_photo(self, old: str, new: str) -> None:
@@ -834,11 +832,11 @@ class EinkaufslisteManager:
         note: str | None = None,
         for_whom: str | None = None,
     ) -> None:
-        """Merkt sich, welcher Artikel (Name + Notiz + Für wen) zu einem Barcode gehört."""
+        """Merkt sich, welcher Artikel (Name + Notiz) zu einem Barcode gehört."""
+        del for_whom  # die Packung weiß nicht, für wen sie ist
         self.barcodes[code] = {
             "name": name,
             "note": _clean(note),
-            "for_whom": _clean(for_whom),
             "store_id": store_id,
             "category_id": category_id,
             "updated": _now_iso(),
@@ -855,7 +853,7 @@ class EinkaufslisteManager:
             code, item["name"], item["store_id"], item["category_id"], item.get("note"), item.get("for_whom")
         )
         self._schedule_save()
-        return {"code": code, "name": item["name"], "note": item.get("note"), "for_whom": item.get("for_whom")}
+        return {"code": code, "name": item["name"], "note": item.get("note")}
 
     # ------------------------------------------------------------------ Gesehen
     @callback

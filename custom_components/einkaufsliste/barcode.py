@@ -91,7 +91,6 @@ async def async_lookup(hass: HomeAssistant, manager: Any, code: str) -> dict[str
             "source": "gemerkt",
             "name": known["name"],
             "note": known.get("note"),
-            "for_whom": known.get("for_whom"),
             "store_id": known.get("store_id") if manager.store_by_id(known.get("store_id")) else None,
             "category_id": known.get("category_id")
             if manager.category_by_id(known.get("category_id"))

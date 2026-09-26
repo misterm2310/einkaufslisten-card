@@ -604,7 +604,7 @@ async def test_assign_barcode_to_existing_item(hass, setup, hass_ws_client, aioc
     item = m.add_item("Milch", store_id=aldi, category_id=m.find_category("Kühlregal & Milch"))
     await client.send_json({"id": 1, "type": "einkaufsliste/barcode/assign", "item_id": item["id"], "code": "4 000417 025005"})
     res = await client.receive_json()
-    assert res["success"] and res["result"] == {"code": "4000417025005", "name": "Milch", "note": None, "for_whom": None}
+    assert res["success"] and res["result"] == {"code": "4000417025005", "name": "Milch", "note": None}
     await client.send_json({"id": 2, "type": "einkaufsliste/barcode/lookup", "code": "4000417025005"})
     res = (await client.receive_json())["result"]
     assert res["found"] and res["source"] == "gemerkt" and res["name"] == "Milch" and res["store_id"] == aldi
@@ -806,8 +806,10 @@ async def test_photo_and_barcode_per_note(hass, setup, hass_ws_client):
     m.remove_item(gouda["id"])
     await hass.async_block_till_done()
     assert "käse|maasdamer" in m.photos
-    # Für wen zählt auch
-    oma = m.add_item("Käse", for_whom="Oma", barcode="333")
-    assert m.as_dict()["barcodes_by_name"]["käse||oma"] == ["333"]
-    assert "käse||oma" not in m.photos
+    # Für wen spielt für Foto/Barcode keine Rolle: gleiche Packung
+    oma = m.add_item("Käse", note="Maasdamer", for_whom="Oma")
+    assert oma["id"] != leer["id"]  # aber eigene Zeile auf der Liste
+    assert m.as_dict()["barcodes_by_name"]["käse|maasdamer"] == ["111"]
     m.remove_item(oma["id"])
+    await hass.async_block_till_done()
+    assert "käse|maasdamer" in m.photos  # der andere Maasdamer braucht das Foto noch

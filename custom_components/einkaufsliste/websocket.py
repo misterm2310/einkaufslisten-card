@@ -149,7 +149,7 @@ def ws_item_add(hass, connection, msg):
             barcode=msg.get("barcode"),
             added_by_id=connection.user.id if connection.user else None,
         )
-        _auto_photo(hass, m, msg.get("barcode"), product_key(item["name"], item.get("note"), item.get("for_whom")))
+        _auto_photo(hass, m, msg.get("barcode"), product_key(item["name"], item.get("note")))
         return item
 
     _run(hass, connection, msg, _add)
@@ -434,7 +434,7 @@ async def ws_barcode_lookup(hass, connection, msg):
 def ws_barcode_assign(hass, connection, msg):
     def _assign(m):
         result = m.assign_barcode(msg["item_id"], msg["code"])
-        _auto_photo(hass, m, result["code"], product_key(result["name"], result.get("note"), result.get("for_whom")))
+        _auto_photo(hass, m, result["code"], product_key(result["name"], result.get("note")))
         return result
 
     _run(hass, connection, msg, _assign)
