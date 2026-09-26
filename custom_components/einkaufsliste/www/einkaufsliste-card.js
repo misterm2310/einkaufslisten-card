@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.3.2";
+const EL_VERSION = "2.4.0";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -202,6 +202,8 @@ form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .item.unknown .name { color:var(--warning-color,#ff9800); animation: pulse 1.6s infinite; }
 .tool .tval { font-size:.8em; font-weight:600; margin-left:3px; line-height:1; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chipbox { display:flex; flex-direction:column; gap:6px; }
+.ritem .rsugg { grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:6px; }
+.ritem .rsugg[hidden] { display:none; }
 form.add .sugg { grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:6px; margin-top:-2px; }
 .sug { border:1.5px solid color-mix(in srgb, var(--primary-color,#03a9f4) 45%, transparent); background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); color:var(--primary-text-color); border-radius:999px; padding:7px 12px; cursor:pointer; font-size:.95em; display:inline-flex; align-items:center; gap:4px; }
 .sug b { color:var(--primary-color,#03a9f4); }
@@ -331,6 +333,8 @@ ha-card.compact .group { margin-top:4px; }
 .recipe .rname b { display:block; word-break:break-word; }
 .recipe .rname small { color:var(--secondary-text-color); font-size:.78em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
+.recipe .rbtns { display:flex; flex-direction:column; gap:4px; align-items:stretch; }
+.recipe .rbtns .btn { padding:6px 10px; font-size:.8em; justify-content:center; }
 .rpick { margin:-2px 2px 10px; padding:8px; border-radius:0 0 12px 12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-top:0; background:var(--secondary-background-color, rgba(127,127,127,.06)); }
 .rpick .phead { display:flex; justify-content:space-between; align-items:center; font-weight:600; font-size:.9em; padding:2px 4px 6px; }
 .rpick .phead span { font-weight:400; }
@@ -798,19 +802,16 @@ class EinkaufslisteCard extends HTMLElement {
   // 🔎 Eigene Vorschläge beim Tippen (datalist klappt in der HA-App am Handy nicht)
   // Jede Variante aus der Liste (Menge, Notiz, für wen, Geschäft) ist ein eigener Vorschlag –
   // antippen übernimmt alles davon ins Formular.
-  _renderSuggest() {
-    const box = this.$("sugg");
-    if (!box) return;
-    const q = (this.$("inName").value || "").trim().toLowerCase();
-    this._suggMap = new Map();
-    if (!q || !this._data) { box.hidden = true; box.innerHTML = ""; return; }
+  // Vorschläge suchen (für das Eingabefeld oben und für Rezept-Zutaten)
+  _suggestList(q, { recipe = false } = {}) {
+    if (!q || !this._data) return [];
     const score = (low) => (low.startsWith(q) || low.split(/\s+/).some((w) => w.startsWith(q)) ? 0 : low.includes(q) ? 1 : -1);
     const cands = [];
     const seenVariant = new Set();
     const names = new Set();
     // zuerst Artikel aus der Liste: aktueller Reiter vor anderen, abgehakt vor offen
     const items = [...this._data.items].sort((a, b) =>
-      (this._matchesTab(b) - this._matchesTab(a)) || (b.checked - a.checked)
+      (recipe ? 0 : this._matchesTab(b) - this._matchesTab(a)) || (b.checked - a.checked)
       || String(b.added_at || "").localeCompare(String(a.added_at || "")));
     for (const i of items) {
       if (i.recipe_id) continue;
@@ -832,14 +833,15 @@ class EinkaufslisteCard extends HTMLElement {
       cands.push({ sc, name: h.name, hist: h });
     }
     cands.sort((a, b) => a.sc - b.sc);
-    const list = cands.slice(0, 8);
-    if (!list.length) { box.hidden = true; box.innerHTML = ""; return; }
+    return cands.slice(0, 8);
+  }
+
+  _suggestChips(list, q, act, { recipe = false } = {}) {
     const mark = (name) => {
       const at = name.toLowerCase().indexOf(q);
       return at < 0 ? esc(name) : esc(name.slice(0, at)) + "<b>" + esc(name.slice(at, at + q.length)) + "</b>" + esc(name.slice(at + q.length));
     };
-    box.innerHTML = list.map((c, n) => {
-      this._suggMap.set(String(n), c);
+    return list.map((c, n) => {
       const i = c.item;
       const bits = [];
       if (i) {
@@ -847,13 +849,59 @@ class EinkaufslisteCard extends HTMLElement {
         if (i.note) bits.push("📝 " + esc(i.note));
         if (i.for_whom) bits.push("👤 " + esc(i.for_whom));
         const st = i.store_id && this._store(i.store_id);
-        if (st && this._activeTab === "all") bits.push(esc(st.name));
-        if (!i.checked) bits.push("steht drauf");
+        if (st && (recipe || this._activeTab === "all")) bits.push(esc(st.name));
+        if (!i.checked && !recipe) bits.push("steht drauf");
       }
-      return `<button type="button" class="sug" data-act="suggest" data-n="${n}"><span>${mark(c.name)}</span>${
+      return `<button type="button" class="sug" data-act="${act}" data-n="${n}"><span>${mark(c.name)}</span>${
         bits.length ? `<span class="on">· ${bits.join(" · ")}</span>` : ""}</button>`;
     }).join("");
+  }
+
+  // 🔎 Eigene Vorschläge beim Tippen (datalist klappt in der HA-App am Handy nicht)
+  // Jede Variante aus der Liste (Menge, Notiz, für wen, Geschäft) ist ein eigener Vorschlag –
+  // antippen übernimmt alles davon ins Formular.
+  _renderSuggest() {
+    const box = this.$("sugg");
+    if (!box) return;
+    const q = (this.$("inName").value || "").trim().toLowerCase();
+    const list = this._suggestList(q);
+    this._suggMap = new Map(list.map((c, n) => [String(n), c]));
+    if (!list.length) { box.hidden = true; box.innerHTML = ""; return; }
+    box.innerHTML = this._suggestChips(list, q, "suggest");
     box.hidden = false;
+  }
+
+  // 🍳 Dieselben Vorschläge im Rezept-Editor – antippen füllt die ganze Zutat aus
+  _renderRecipeSuggest(row) {
+    const box = row?.querySelector(".rsugg");
+    if (!box) return;
+    const q = (row.querySelector("[data-rf=name]").value || "").trim().toLowerCase();
+    const list = this._suggestList(q, { recipe: true })
+      .filter((c) => !(c.name.toLowerCase() === q && !c.item)); // genau getippt und nichts dazu -> kein Vorschlag nötig
+    this._rsuggMap = new Map(list.map((c, n) => [String(n), c]));
+    this._rsuggRow = row;
+    if (!list.length) { box.hidden = true; box.innerHTML = ""; return; }
+    box.innerHTML = this._suggestChips(list, q, "rsuggest", { recipe: true });
+    box.hidden = false;
+  }
+
+  _applyRecipeSuggest(row, c) {
+    const set = (rf, v) => { const el = row.querySelector(`[data-rf=${rf}]`); if (el) el.value = v || ""; };
+    set("name", c.name);
+    const src = c.item || c.hist || {};
+    if (c.item) {
+      set("quantity", c.item.quantity);
+      set("note", c.item.note);
+      const f = row.querySelector("[data-rf=for_whom]");
+      if (f && c.item.for_whom && ![...f.options].some((o) => o.value === c.item.for_whom)) {
+        const o = document.createElement("option"); o.value = o.textContent = c.item.for_whom; f.appendChild(o);
+      }
+      set("for_whom", c.item.for_whom);
+    }
+    if (src.store_id && this._store(src.store_id)) set("store_id", src.store_id);
+    if (src.category_id && this._cat(src.category_id)) set("category_id", src.category_id);
+    const box = row.querySelector(".rsugg");
+    if (box) { box.hidden = true; box.innerHTML = ""; }
   }
 
   _applySuggest(c) {
@@ -897,7 +945,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (grp && grp.length > 1) {
       for (const g of grp) { const st = this._store(g.store_id); if (st) meta.push(`<span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>`); }
     } else if (this._activeTab === "all" && store) meta.push(`<span class="chip" style="--c:${esc(store.color)}">${esc(store.name)}</span>`);
-    if (item.for_whom) meta.push(`<span>👤 für ${esc(item.for_whom)}</span>`);
+    if (c.show_added_by && item.added_by) meta.push(`<span title="Eingetragen von">✍️ ${esc(this._who(item.added_by))}</span>`);
     if (item.note) meta.push(`<span>📝 ${esc(item.note)}</span>`);
     if (recipe) meta.push(`<span>🍽️ ${esc(recipe.name)}</span>`);
     const pk = this._pk(item.name, item.note);
@@ -912,7 +960,8 @@ class EinkaufslisteCard extends HTMLElement {
         if (auto) meta.push(`<span title="Wird an diesem Tag automatisch abgehakt">🧹 ${fmtDay(auto)}</span>`);
       }
     }
-    const who = c.show_added_by && item.added_by ? `<span class="who">(${esc(this._who(item.added_by))})</span>` : "";
+    // hinter dem Namen: für wen es ist (wer es eingetragen hat, steht klein darunter)
+    const who = item.for_whom ? `<span class="who forwhom">(für ${esc(item.for_whom)})</span>` : "";
     const qty = item.quantity ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(item.quantity)}</button>` : "";
     const icon = item.checked ? "mdi:checkbox-marked-circle-outline" : "mdi:checkbox-blank-circle-outline";
     const cat = this._cat(item.category_id);
@@ -1466,13 +1515,17 @@ class EinkaufslisteCard extends HTMLElement {
     if (!recipes.length) {
       html.push(`<div class="empty"><ha-icon icon="mdi:pot-steam-outline"></ha-icon>Noch keine Rezepte. 🐟<br>Anlegen und bearbeiten kannst du sie über das ⚙️-Zahnrad.</div>`);
     }
+    const onList = (r) => this._data.items.filter((i) => i.recipe_id === r.id && !i.checked).length;
     for (const r of recipes) {
       const names = r.items.map((i) => i.name + (i.for_whom ? ` (für ${i.for_whom})` : "")).join(", ");
       html.push(`
         <div class="recipe" data-id="${r.id}">
           <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
           <div class="rname"><b>${esc(r.name)}</b><small>${r.items.length} Zutaten · ${esc(names)}</small></div>
-          <button class="primary" data-act="recipe-apply" title="Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button>
+          <div class="rbtns">
+            <button class="primary" data-act="recipe-apply" title="Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button>
+            ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Alle offenen Zutaten dieses Rezepts von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon>Von der Liste (${onList(r)})</button>` : ""}
+          </div>
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`);
     }
     html.push(`</div>`);
@@ -1518,10 +1571,11 @@ class EinkaufslisteCard extends HTMLElement {
     this._draftRendered = true;
     const rows = dr.items.map((it, n) => `
       <div class="ritem" data-n="${n}">
-        <input data-rf="name" value="${esc(it.name || "")}" list="hist" placeholder="Zutat, z. B. Fischstäbchen">
+        <input data-rf="name" value="${esc(it.name || "")}" placeholder="Zutat, z. B. Fischstäbchen" autocomplete="off">
         <input data-rf="quantity" value="${esc(it.quantity || "")}" placeholder="Menge">
         <button class="iconbtn ${this._hasPhoto(this._pk(it.name, it.note)) ? "on" : ""}" type="button" data-act="ritem-photo" title="Foto"><ha-icon icon="${this._hasPhoto(this._pk(it.name, it.note)) ? "mdi:camera" : "mdi:camera-plus-outline"}"></ha-icon></button>
         <button class="iconbtn" type="button" data-act="ritem-remove" title="Zutat entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
+        <div class="sugg rsugg" hidden></div>
         <div class="two">
           <input data-rf="note" value="${esc(it.note || "")}" placeholder="📝 Notiz">
           <select data-rf="for_whom">${this._personOptions(it.for_whom)}</select>
@@ -2025,6 +2079,10 @@ class EinkaufslisteCard extends HTMLElement {
       this._renderDelList();
       return;
     }
+    if (t.dataset?.rf === "name" && t.closest(".ritem")) {
+      this._renderRecipeSuggest(t.closest(".ritem"));
+      return;
+    }
     if (t.id === "logSearch") {
       this._logF.q = t.value;
       this._logMax = 150;
@@ -2348,6 +2406,12 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderList();
         break;
       }
+      case "rsuggest": {
+        const c = this._rsuggMap?.get(el.dataset.n);
+        const row = el.closest(".ritem");
+        if (c && row) this._applyRecipeSuggest(row, c);
+        break;
+      }
       case "suggest": {
         const inp = this.$("inName");
         const c = this._suggMap?.get(el.dataset.n);
@@ -2435,6 +2499,14 @@ class EinkaufslisteCard extends HTMLElement {
         this._pickRecipe = r.id;
         this._pickSel = new Set(r.items.map((it, n) => (open.has(it.name.toLowerCase()) ? -1 : n)).filter((n) => n >= 0));
         this._renderRecipes();
+        break;
+      }
+      case "recipe-unapply": {
+        const r = this._recipe(el.closest(".recipe").dataset.id);
+        if (!r || !confirm(`Alle offenen Zutaten von „${r.name}“ von der Liste nehmen?`)) break;
+        this._ws({ type: "einkaufsliste/recipe/unapply", recipe_id: r.id })
+          .then((res) => this._toast(`🧺 ${res.removed} Zutaten von „${r.name}“ von der Liste genommen`))
+          .catch(() => {});
         break;
       }
       case "pick-toggle": {
@@ -2557,7 +2629,7 @@ const EDITOR_LABELS = {
   show_title: "Titel oben anzeigen",
   store: "Welche Geschäfte zeigen?",
   show_checked: "Erledigte Artikel anzeigen",
-  show_added_by: "Name „(X)“ hinter dem Artikel",
+  show_added_by: "✍️ Wer eingetragen hat (klein unter dem Artikel)",
   added_by_style: "Name anzeigen als",
   show_dates: "Datum & Aufräum-Tag anzeigen",
   show_recipes: "Rezepte-Knopf anzeigen",

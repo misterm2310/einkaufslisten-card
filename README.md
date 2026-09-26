@@ -17,7 +17,7 @@
 | 👨‍👩‍👧‍👦 **Für die ganze Familie** | Jeder, der sich in Home Assistant anmelden kann, kann mitmachen. |
 | ⭕ **Abhaken per Kreis** | Nur ein Tipp auf den Kreis hakt ab. Ein Tipp auf den Namen macht nichts, das verhindert Verdrücker. |
 | ♻️ **Nichts geht verloren** | Abgehakte Artikel bleiben unten unter „Erledigt – schon mal gekauft“. Tippst du den Kreis nochmal an, steht der Artikel wieder auf der Liste. Die Kategorien sind dort eingeklappt, ein Tipp klappt sie auf. |
-| 🏷️ **„(X)“ hinter dem Artikel** | Dahinter steht, wer den Artikel eingetragen oder wieder auf die Liste genommen hat. |
+| 🏷️ **Für wen & wer** | Hinter dem Artikel steht, **für wen** er ist, zum Beispiel *Käse (für Oma)*. Klein darunter steht, **wer** ihn eingetragen oder wieder auf die Liste genommen hat: *✍️ Anna*. |
 | 📝 **Notiz & 👤 Für wen** | Beides kannst du direkt beim Eintragen angeben, zum Beispiel *Käse · 📝 gerieben · 👤 für Oma*. |
 | 🚫 **Keine Doppelten** | Jeder Artikel steht nur einmal auf der Liste. Ein zweites Mal geht nur mit **anderer Notiz**, **anderem „für wen“** oder **anderem Geschäft** (z. B. Milch bei Aldi und Milch bei Netto). |
 | 🍽️ **Rezepte** | Leg ein Rezept an, zum Beispiel „Freitags Fisch“ mit allen Zutaten. Ein Tipp auf **Auf die Liste**, dann hakst du an, **welche Zutaten** du brauchst. |
@@ -145,6 +145,10 @@ Rezept-Zutaten kommen **zusätzlich** auf die Liste, als eigener Eintrag. Steht 
 
 Tippst du zweimal auf dasselbe Rezept, kommt nichts doppelt dazu.
 
+**🧺 Von der Liste nehmen:** Stehen Zutaten eines Rezepts auf der Liste, gibt es neben **Auf die Liste** den Knopf **„Von der Liste (3)“**. Ein Tipp nimmt alle offenen Zutaten **dieses** Rezepts auf einmal runter. Andere Rezepte und normale Artikel bleiben stehen.
+
+**🔎 Vorschläge im Rezept:** Beim Tippen einer Zutat kommen dieselben Vorschläge wie oben in der Liste, zum Beispiel „**Mi**lch · 2 L · 📝 laktosefrei · Aldi“. Ein Tipp füllt die ganze Zutat aus, mit Menge, Notiz, Für wen, Geschäft und Kategorie.
+
 Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags Fisch).
 
 ✅ **Hakst du eine Rezept-Zutat ab, verschwindet sie ganz.** Sie taucht also nicht unten bei „Erledigt“ auf. Das gilt auch beim automatischen Aufräumen. Normale Artikel bleiben wie gewohnt unter „Erledigt“ stehen.
@@ -239,7 +243,7 @@ Alles lässt sich bequem im visuellen Editor einstellen. Für YAML-Fans:
 | `show_title` | `true` | `false` blendet den Titel oben aus |
 | `title` | `Einkaufsliste` | Überschrift |
 | `store` | `all` | `all` zeigt alle Geschäfte mit Reitern. Wählst du im Editor ein Geschäft aus, zeigt die Karte **nur dieses Geschäft**. |
-| `show_added_by` | `true` | „(Name)“ hinter dem Artikel anzeigen |
+| `show_added_by` | `true` | „✍️ Name“ (wer eingetragen hat) klein unter dem Artikel anzeigen |
 | `added_by_style` | `name` | `name` (Max Mustermann), `first` (Max) oder `initials` (MM) |
 | `show_checked` | `true` | Bereich „Erledigt – schon mal gekauft“ anzeigen |
 | `show_dates` | `true` | „seit Di“ und das 🧹-Datum anzeigen |

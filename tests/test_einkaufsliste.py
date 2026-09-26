@@ -813,3 +813,18 @@ async def test_photo_and_barcode_per_note(hass, setup, hass_ws_client):
     m.remove_item(oma["id"])
     await hass.async_block_till_done()
     assert "käse|maasdamer" in m.photos  # der andere Maasdamer braucht das Foto noch
+
+
+async def test_recipe_unapply(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    fisch = m.add_recipe("Fisch", items=[{"name": "Lachs"}, {"name": "Zitrone"}])
+    pasta = m.add_recipe("Pasta", items=[{"name": "Nudeln"}])
+    m.add_item("Zitrone")  # normaler Artikel bleibt
+    m.apply_recipe(fisch["id"])
+    m.apply_recipe(pasta["id"])
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/unapply", "recipe_id": fisch["id"]})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["removed"] == 2
+    assert sorted((i["name"], bool(i["recipe_id"])) for i in m.items) == [("Nudeln", True), ("Zitrone", False)]
+    assert m.get_log()["entries"][0]["a"] == "remove" and m.get_log()["entries"][0]["v"] == "recipe"

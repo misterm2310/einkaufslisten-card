@@ -1074,6 +1074,21 @@ class EinkaufslisteManager:
         self._changed()
         return {"added": added, "already": already}
 
+    @callback
+    def unapply_recipe(self, recipe_id: str) -> dict[str, Any]:
+        """Alle offenen Zutaten eines Rezepts wieder von der Liste nehmen."""
+        recipe = self.recipe_by_id(recipe_id)
+        if recipe is None:
+            raise ValueError("Dieses Rezept gibt es nicht (mehr).")
+        gone = [i for i in self.items if i.get("recipe_id") == recipe_id and not i["checked"]]
+        with self._via("recipe"):
+            for item in gone:
+                self.items.remove(item)
+                self._log("remove", item, f"Rezept „{recipe['name']}“ von der Liste genommen")
+        if gone:
+            self._changed()
+        return {"removed": len(gone)}
+
     # ------------------------------------------------------ Geschäfte/Kategorien
     def _list(self, kind: str) -> list[dict[str, Any]]:
         if kind == "stores":

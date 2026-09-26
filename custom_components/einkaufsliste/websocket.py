@@ -33,6 +33,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_recipe_update,
         ws_recipe_remove,
         ws_recipe_apply,
+        ws_recipe_unapply,
         ws_photo_set,
         ws_photo_get,
         ws_photo_remove,
@@ -367,6 +368,14 @@ def ws_recipe_remove(hass, connection, msg):
 def ws_recipe_apply(hass, connection, msg):
     who = _user_name(hass, connection)
     _run(hass, connection, msg, lambda m: m.apply_recipe(msg["recipe_id"], who, msg.get("items")))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/recipe/unapply", vol.Required("recipe_id"): str}
+)
+@callback
+def ws_recipe_unapply(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.unapply_recipe(msg["recipe_id"]))
 
 
 async def _run_async(hass, connection, msg, coro_factory) -> None:
