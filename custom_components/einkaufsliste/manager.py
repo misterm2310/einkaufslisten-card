@@ -81,6 +81,19 @@ def _nice(text: Any) -> str | None:
     return text
 
 
+def product_key(name: str | None, note: str | None = None, for_whom: str | None = None) -> str:
+    """Ein Produkt = Name + Notiz + Für wen („Käse · Gouda“ ≠ „Käse · Leerdammer“ ≠ „Käse für Oma“).
+
+    Danach richten sich Fotos und Barcodes.
+    """
+    name = (_clean(name) or "").lower()
+    note = (_clean(note) or "").lower()
+    who = (_clean(for_whom) or "").lower()
+    if who:
+        return f"{name}|{note}|{who}"
+    return f"{name}|{note}" if note else name
+
+
 def _key(
     name: str | None,
     note: str | None,
@@ -281,9 +294,8 @@ class EinkaufslisteManager:
     def _barcodes_by_name(self) -> dict[str, list[str]]:
         out: dict[str, list[str]] = {}
         for code, entry in self.barcodes.items():
-            name = (entry.get("name") or "").lower()
-            if name:
-                out.setdefault(name, []).append(code)
+            if entry.get("name"):
+                out.setdefault(product_key(entry["name"], entry.get("note"), entry.get("for_whom")), []).append(code)
         return out
 
     # ------------------------------------------------------------------ Verlauf
@@ -504,7 +516,7 @@ class EinkaufslisteManager:
         category_id = self._check_category(category_id)
         quantity, note, for_whom = _clean(quantity), _clean(note), _clean(for_whom)
         if _clean(barcode):
-            self.learn_barcode(str(barcode).strip(), name, store_id, category_id)
+            self.learn_barcode(str(barcode).strip(), name, store_id, category_id, note, for_whom)
 
         # Rezept-Zutaten kommen zusätzlich auf die Liste (eigener Eintrag pro Rezept)
         recipe_id = recipe_id if self.recipe_by_id(recipe_id) else None
@@ -587,11 +599,13 @@ class EinkaufslisteManager:
         old_name = item["name"]
         before = dict(item)
         item.update(new)
-        if old_name.lower() != new["name"].lower():
-            self._move_photo(old_name, new["name"])
+        old_key = product_key(old_name, before.get("note"), before.get("for_whom"))
+        new_key = product_key(item["name"], item.get("note"), item.get("for_whom"))
+        if old_key != new_key:
+            self._move_photo(old_key, new_key)
             for entry in self.barcodes.values():  # gelernte Barcodes mitziehen
-                if entry.get("name", "").lower() == old_name.lower():
-                    entry["name"] = new["name"]
+                if product_key(entry.get("name"), entry.get("note"), entry.get("for_whom")) == old_key:
+                    entry.update(name=item["name"], note=item.get("note"), for_whom=item.get("for_whom"))
         if "category_id" in fields:
             item["category_id"] = self._check_category(fields["category_id"])
         if "quantity" in fields:
@@ -731,16 +745,18 @@ class EinkaufslisteManager:
         item = self.get_item(item_id)
         self.items.remove(item)
         self._log("remove", item)
-        if not self._name_in_use(item["name"]):
+        key = product_key(item["name"], item.get("note"), item.get("for_whom"))
+        if not self._name_in_use(key):
             # Artikel ganz gelöscht -> Foto kommt mit weg
-            self.hass.async_create_task(self.async_remove_photo(item["name"]))
+            self.hass.async_create_task(self.async_remove_photo(key))
         self._changed()
 
     # ------------------------------------------------------------------ Fotos
-    def _name_in_use(self, name: str) -> bool:
-        key = name.lower()
-        return any(i["name"].lower() == key for i in self.items) or any(
-            ri["name"].lower() == key for r in self.recipes for ri in r["items"]
+    def _name_in_use(self, key: str) -> bool:
+        """Wird dieses Produkt (Name + Notiz) noch irgendwo gebraucht?"""
+        key = key.lower()
+        return any(product_key(i["name"], i.get("note"), i.get("for_whom")) == key for i in self.items) or any(
+            product_key(ri["name"], ri.get("note"), ri.get("for_whom")) == key for r in self.recipes for ri in r["items"]
         )
 
     def _move_photo(self, old: str, new: str) -> None:
@@ -810,11 +826,19 @@ class EinkaufslisteManager:
     # ------------------------------------------------------------------ Barcodes
     @callback
     def learn_barcode(
-        self, code: str, name: str, store_id: str | None, category_id: str | None
+        self,
+        code: str,
+        name: str,
+        store_id: str | None,
+        category_id: str | None,
+        note: str | None = None,
+        for_whom: str | None = None,
     ) -> None:
-        """Merkt sich, welcher Artikel zu einem Barcode gehört."""
+        """Merkt sich, welcher Artikel (Name + Notiz + Für wen) zu einem Barcode gehört."""
         self.barcodes[code] = {
             "name": name,
+            "note": _clean(note),
+            "for_whom": _clean(for_whom),
             "store_id": store_id,
             "category_id": category_id,
             "updated": _now_iso(),
@@ -827,9 +851,11 @@ class EinkaufslisteManager:
         code = "".join(ch for ch in str(code or "") if ch.isdigit())
         if not code:
             raise ValueError("Das ist kein gültiger Barcode.")
-        self.learn_barcode(code, item["name"], item["store_id"], item["category_id"])
+        self.learn_barcode(
+            code, item["name"], item["store_id"], item["category_id"], item.get("note"), item.get("for_whom")
+        )
         self._schedule_save()
-        return {"code": code, "name": item["name"]}
+        return {"code": code, "name": item["name"], "note": item.get("note"), "for_whom": item.get("for_whom")}
 
     # ------------------------------------------------------------------ Gesehen
     @callback

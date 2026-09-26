@@ -13,7 +13,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .barcode import async_auto_photo, async_lookup
 from .const import DOMAIN, SIGNAL_UPDATED
-from .manager import EinkaufslisteManager, person_name_for_user
+from .manager import EinkaufslisteManager, person_name_for_user, product_key
 
 OPT_STR = vol.Any(None, str)
 
@@ -149,7 +149,7 @@ def ws_item_add(hass, connection, msg):
             barcode=msg.get("barcode"),
             added_by_id=connection.user.id if connection.user else None,
         )
-        _auto_photo(hass, m, msg.get("barcode"), item["name"])
+        _auto_photo(hass, m, msg.get("barcode"), product_key(item["name"], item.get("note"), item.get("for_whom")))
         return item
 
     _run(hass, connection, msg, _add)
@@ -434,7 +434,7 @@ async def ws_barcode_lookup(hass, connection, msg):
 def ws_barcode_assign(hass, connection, msg):
     def _assign(m):
         result = m.assign_barcode(msg["item_id"], msg["code"])
-        _auto_photo(hass, m, result["code"], result["name"])
+        _auto_photo(hass, m, result["code"], product_key(result["name"], result.get("note"), result.get("for_whom")))
         return result
 
     _run(hass, connection, msg, _assign)

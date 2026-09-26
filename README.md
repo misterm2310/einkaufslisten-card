@@ -172,6 +172,7 @@ Damit keiner mehr die falschen Nudeln mitbringt. 😄
 3. Fertig! Hinter dem Artikel erscheint ein kleines **📷**. Tippst du darauf, geht das Foto groß auf. Noch ein Tipp, und es ist wieder zu.
 
 - Das Foto **bleibt beim Produkt**, auch nach dem Abhaken und Wieder-Reinnehmen. Einmal knipsen reicht.
+- **Produkt = Name + Notiz + Für wen.** „Käse · Leerdammer“, „Käse · Gouda“ und „Käse für Oma“ haben also jeweils ihr **eigenes** Foto und ihren **eigenen** Barcode.
 - Auch **Rezept-Zutaten** können ein Foto haben: Das geht im Rezept über den 📷-Knopf neben der Zutat.
 - Fotos werden noch auf dem Handy **automatisch verkleinert**, auf ungefähr 100 KB.
 - Gespeichert wird alles **nur bei dir** unter `/config/einkaufsliste_fotos` und mit deinen Backups gesichert.

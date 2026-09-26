@@ -604,7 +604,7 @@ async def test_assign_barcode_to_existing_item(hass, setup, hass_ws_client, aioc
     item = m.add_item("Milch", store_id=aldi, category_id=m.find_category("Kühlregal & Milch"))
     await client.send_json({"id": 1, "type": "einkaufsliste/barcode/assign", "item_id": item["id"], "code": "4 000417 025005"})
     res = await client.receive_json()
-    assert res["success"] and res["result"] == {"code": "4000417025005", "name": "Milch"}
+    assert res["success"] and res["result"] == {"code": "4000417025005", "name": "Milch", "note": None, "for_whom": None}
     await client.send_json({"id": 2, "type": "einkaufsliste/barcode/lookup", "code": "4000417025005"})
     res = (await client.receive_json())["result"]
     assert res["found"] and res["source"] == "gemerkt" and res["name"] == "Milch" and res["store_id"] == aldi
@@ -777,3 +777,37 @@ async def test_move_keeps_both_stores(hass, setup, hass_ws_client):
     lauch = next(i for i in m.items if i["name"] == "Lauch")
     m.move_item(lauch["id"], netto)
     assert [i["store_id"] for i in m.items if i["name"] == "Lauch"] == [netto]
+
+
+async def test_photo_and_barcode_per_note(hass, setup, hass_ws_client):
+    import base64
+
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    leer = m.add_item("Käse", note="Leerdammer", barcode="111")
+    gouda = m.add_item("Käse", note="Gouda")
+    data = base64.b64encode(JPEG).decode()
+    await client.send_json({"id": 1, "type": "einkaufsliste/photo/set", "name": "Käse|Leerdammer", "data": data})
+    assert (await client.receive_json())["success"]
+    d = m.as_dict()
+    assert "käse|leerdammer" in d["photos"] and "käse|gouda" not in d["photos"]
+    assert d["barcodes_by_name"] == {"käse|leerdammer": ["111"]}
+    await client.send_json({"id": 2, "type": "einkaufsliste/barcode/lookup", "code": "111"})
+    res = (await client.receive_json())["result"]
+    assert res["name"] == "Käse" and res["note"] == "Leerdammer"
+    # Barcode für Gouda zuordnen -> getrennt
+    m.assign_barcode(gouda["id"], "222")
+    assert m.as_dict()["barcodes_by_name"]["käse|gouda"] == ["222"]
+    # Notiz ändern: Foto + Barcode ziehen mit
+    m.update_item(leer["id"], note="Maasdamer")
+    d = m.as_dict()
+    assert "käse|maasdamer" in d["photos"] and d["barcodes_by_name"]["käse|maasdamer"] == ["111"]
+    # Gouda löschen nimmt das Leerdammer-/Maasdamer-Foto nicht mit
+    m.remove_item(gouda["id"])
+    await hass.async_block_till_done()
+    assert "käse|maasdamer" in m.photos
+    # Für wen zählt auch
+    oma = m.add_item("Käse", for_whom="Oma", barcode="333")
+    assert m.as_dict()["barcodes_by_name"]["käse||oma"] == ["333"]
+    assert "käse||oma" not in m.photos
+    m.remove_item(oma["id"])

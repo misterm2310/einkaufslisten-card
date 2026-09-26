@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.3.0";
+const EL_VERSION = "2.3.1";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -900,7 +900,8 @@ class EinkaufslisteCard extends HTMLElement {
     if (item.for_whom) meta.push(`<span>👤 für ${esc(item.for_whom)}</span>`);
     if (item.note) meta.push(`<span>📝 ${esc(item.note)}</span>`);
     if (recipe) meta.push(`<span>🍽️ ${esc(recipe.name)}</span>`);
-    const codes = this._barcodesOf(item.name);
+    const pk = this._pk(item.name, item.note, item.for_whom);
+    const codes = this._barcodesOf(pk);
     if (codes.length) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥</span>`);
     if (c.show_dates) {
       if (item.checked) {
@@ -920,7 +921,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""}" data-id="${item.id}" style="--cc:${esc(cat?.color || "transparent")}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
-          <div class="line">${isNew ? `<span class="newbadge" title="Neu seit deinem letzten Blick">✨</span>` : ""}<span class="name">${esc(item.name)}</span>${qty}${who}${this._hasPhoto(item.name) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(item.name)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
+          <div class="line">${isNew ? `<span class="newbadge" title="Neu seit deinem letzten Blick">✨</span>` : ""}<span class="name">${esc(item.name)}</span>${qty}${who}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
         ${!item.checked && this._data.stores.length > 1 ? `<div class="acts"><button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button></div>` : ""}
@@ -934,8 +935,8 @@ class EinkaufslisteCard extends HTMLElement {
         ${b("menu-edit", "mdi:pencil-outline", "Bearbeiten")}
         ${!item.checked && this._data.stores.length > 1 ? b("menu-move", "mdi:swap-horizontal", "Verschieben") : ""}
         ${b("menu-qty", "mdi:numeric", "Menge")}
-        ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(item.name) ? "Foto ändern" : "Foto")}
-        ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", this._barcodesOf(item.name).length ? "Barcode ✓" : "Barcode") : ""}
+        ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(this._pk(item.name, item.note, item.for_whom)) ? "Foto ändern" : "Foto")}
+        ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", this._barcodesOf(this._pk(item.name, item.note, item.for_whom)).length ? "Barcode ✓" : "Barcode") : ""}
         <button class="iconbtn" data-act="menu-close" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
       </div>`;
   }
@@ -974,10 +975,10 @@ class EinkaufslisteCard extends HTMLElement {
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
         <div class="full photorow">
-          <button type="button" class="btn" data-act="photo-take" data-name="${esc(item.name)}"><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${this._hasPhoto(item.name) ? "Foto ändern" : "Foto"}</button>
+          <button type="button" class="btn" data-act="photo-take" data-name="${esc(this._pk(item.name, item.note, item.for_whom))}"><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${this._hasPhoto(this._pk(item.name, item.note, item.for_whom)) ? "Foto ändern" : "Foto"}</button>
           ${this._hasAppScanner() ? `<button type="button" class="btn" data-act="barcode-assign" data-id="${item.id}"><ha-icon icon="mdi:barcode-scan"></ha-icon>Barcode zuordnen</button>` : ""}
-          ${this._hasPhoto(item.name) ? `<button type="button" class="btn" data-act="photo-view" data-name="${esc(item.name)}"><ha-icon icon="mdi:image-outline"></ha-icon>Ansehen</button>
-          <button type="button" class="btn danger" data-act="photo-remove" data-name="${esc(item.name)}"><ha-icon icon="mdi:image-remove-outline"></ha-icon>Foto löschen</button>` : ""}
+          ${this._hasPhoto(this._pk(item.name, item.note, item.for_whom)) ? `<button type="button" class="btn" data-act="photo-view" data-name="${esc(this._pk(item.name, item.note, item.for_whom))}"><ha-icon icon="mdi:image-outline"></ha-icon>Ansehen</button>
+          <button type="button" class="btn danger" data-act="photo-remove" data-name="${esc(this._pk(item.name, item.note, item.for_whom))}"><ha-icon icon="mdi:image-remove-outline"></ha-icon>Foto löschen</button>` : ""}
         </div>
         <div class="btns">
           <button type="button" class="textbtn" data-act="edit-cancel">Abbrechen</button>
@@ -1519,7 +1520,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="ritem" data-n="${n}">
         <input data-rf="name" value="${esc(it.name || "")}" list="hist" placeholder="Zutat, z. B. Fischstäbchen">
         <input data-rf="quantity" value="${esc(it.quantity || "")}" placeholder="Menge">
-        <button class="iconbtn ${this._hasPhoto(it.name) ? "on" : ""}" type="button" data-act="ritem-photo" title="Foto"><ha-icon icon="${this._hasPhoto(it.name) ? "mdi:camera" : "mdi:camera-plus-outline"}"></ha-icon></button>
+        <button class="iconbtn ${this._hasPhoto(this._pk(it.name, it.note, it.for_whom)) ? "on" : ""}" type="button" data-act="ritem-photo" title="Foto"><ha-icon icon="${this._hasPhoto(this._pk(it.name, it.note, it.for_whom)) ? "mdi:camera" : "mdi:camera-plus-outline"}"></ha-icon></button>
         <button class="iconbtn" type="button" data-act="ritem-remove" title="Zutat entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
         <div class="two">
           <input data-rf="note" value="${esc(it.note || "")}" placeholder="📝 Notiz">
@@ -1641,8 +1642,26 @@ class EinkaufslisteCard extends HTMLElement {
     if (tab !== "all" && this._newCount(fn)) sendSeen("b:" + tab);
   }
 
-  _barcodesOf(name) {
-    return (name && this._data?.barcodes_by_name?.[String(name).toLowerCase()]) || [];
+  // Ein Produkt = Name + Notiz (Käse · Gouda ≠ Käse · Leerdammer) – für Fotos und Barcodes
+  // Ein Produkt = Name + Notiz + Für wen – danach richten sich Fotos und Barcodes
+  _pk(name, note, forWhom) {
+    const n = String(name || "").trim().toLowerCase();
+    const t = String(note || "").trim().toLowerCase();
+    const w = String(forWhom || "").trim().toLowerCase();
+    if (w) return `${n}|${t}|${w}`;
+    return t ? `${n}|${t}` : n;
+  }
+
+  _pkLabel(key) {
+    const k = String(key).toLowerCase();
+    const item = this._data?.items.find((i) => this._pk(i.name, i.note, i.for_whom) === k);
+    if (item) return [item.name, item.note, item.for_whom && `für ${item.for_whom}`].filter(Boolean).join(" · ");
+    const [n, t, w] = String(key).split("|");
+    return [n, t, w && `für ${w}`].filter(Boolean).join(" · ");
+  }
+
+  _barcodesOf(key) {
+    return (key && this._data?.barcodes_by_name?.[String(key).toLowerCase()]) || [];
   }
 
   _hasPhoto(name) {
@@ -1773,7 +1792,7 @@ class EinkaufslisteCard extends HTMLElement {
       this._toast("📸 Foto wird gespeichert …");
       await this._ws({ type: "einkaufsliste/photo/set", name: target.name, data });
       this._photoCache.delete(target.name.toLowerCase());
-      this._toast(`📸 Foto für „${target.name}“ gespeichert`);
+      this._toast(`📸 Foto für „${this._pkLabel(target.name)}“ gespeichert`);
       if (target.button) {
         target.button.classList.add("on");
         target.button.querySelector("ha-icon")?.setAttribute("icon", "mdi:camera");
@@ -1795,7 +1814,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._photoCache.set(key, cached);
       } catch (_) { return; }
     }
-    showPhotoOverlay(cached.data, name);
+    showPhotoOverlay(cached.data, this._pkLabel(name));
   }
 
   // ---------------------------------------------------------------- Barcode (Scanner der HA-App)
@@ -1906,6 +1925,8 @@ class EinkaufslisteCard extends HTMLElement {
             type: "einkaufsliste/item/add",
             via: "scan",
             name,
+            ...(res.found && res.note ? { note: res.note } : {}),
+            ...(res.found && res.for_whom ? { for_whom: res.for_whom } : {}),
             store_id: (res.store_id && this._store(res.store_id) ? res.store_id : defaultStore) || null,
             category_id: guess && this._cat(guess) ? guess : null,
             barcode: res.code || code,
@@ -1937,7 +1958,9 @@ class EinkaufslisteCard extends HTMLElement {
       onCode: async (code) => {
         const res = await this._lookup(code);
         if (!res.found) return "🤔 Diesen Barcode kenne ich noch nicht";
-        const open = this._data.items.filter((i) => !i.checked && i.name.toLowerCase() === res.name.toLowerCase());
+        const want = this._pk(res.name, res.note, res.for_whom);
+        let open = this._data.items.filter((i) => !i.checked && this._pk(i.name, i.note, i.for_whom) === want);
+        if (!open.length && !res.note && !res.for_whom) open = this._data.items.filter((i) => !i.checked && i.name.toLowerCase() === res.name.toLowerCase());
         const item = open.find((i) => i.store_id === store.id) || open[0];
         if (!item) return `ℹ️ ${res.name} steht nicht auf der Liste`;
         try {
@@ -1962,12 +1985,19 @@ class EinkaufslisteCard extends HTMLElement {
       const nameEl = this.$("inName");
       if (res.found) {
         nameEl.value = res.name;
+        if (res.note) { this.$("inNote").value = res.note; this.$("inNote").hidden = false; }
+        if (res.for_whom) {
+          const f = this.$("inFor");
+          if (![...f.options].some((o) => o.value === res.for_whom)) { const o = document.createElement("option"); o.value = o.textContent = res.for_whom; f.appendChild(o); }
+          f.value = res.for_whom;
+          this._renderForChips();
+        }
         this._catManual = false;
         if (res.category_id && this._cat(res.category_id)) this.$("inCat").value = res.category_id;
         else this._onNameInput();
         if (res.store_id && !this._fixedStore && this._activeTab === "all" && this._store(res.store_id)) this.$("inStore").value = res.store_id;
         this._toast(res.source === "gemerkt"
-          ? `🔍 Kenn ich: „${res.name}“ – tippe ✅ zum Hinzufügen`
+          ? `🔍 Kenn ich: „${res.name}${res.note ? ` · ${res.note}` : ""}“ – tippe ✅ zum Hinzufügen`
           : `🔍 Gefunden: „${res.name}“ – Name passt? Dann ✅ tippen`);
       } else {
         nameEl.value = "";
@@ -2055,7 +2085,7 @@ class EinkaufslisteCard extends HTMLElement {
         const data = this._newPhoto;
         this._newPhoto = null;
         this._updateNewPhotoBtn();
-        await this._savePhoto({ name: item?.name || name, button: this.$("btnNewPhoto"), quiet: true }, data);
+        await this._savePhoto({ name: this._pk(item?.name || name, item ? item.note : msg.note, item ? item.for_whom : msg.for_whom), button: this.$("btnNewPhoto"), quiet: true }, data);
         this._updateNewPhotoBtn();
       }
       for (const id of ["inName", "inQty", "inNote", "inFor", "inCat"]) this.$(id).value = "";
@@ -2243,7 +2273,7 @@ class EinkaufslisteCard extends HTMLElement {
         const item = this._data.items.find((i) => i.id === el.dataset.id);
         this._menuId = null;
         this._renderList();
-        this._takePhoto(item.name, null);
+        this._takePhoto(this._pk(item.name, item.note, item.for_whom), null);
         break;
       }
       case "qty-edit": {
@@ -2305,14 +2335,15 @@ class EinkaufslisteCard extends HTMLElement {
         this._takePhoto(el.dataset.name, null);
         break;
       case "photo-remove":
-        if (!confirm(`Foto von „${el.dataset.name}“ löschen?`)) return;
+        if (!confirm(`Foto von „${this._pkLabel(el.dataset.name)}“ löschen?`)) return;
         this._ws({ type: "einkaufsliste/photo/remove", name: el.dataset.name })
           .then(() => { this._toast("Foto gelöscht 🗑️"); this._editing = null; this._renderList(); }).catch(() => {});
         break;
       case "ritem-photo": {
-        const name = el.closest(".ritem").querySelector("[data-rf=name]").value.trim();
+        const row = el.closest(".ritem");
+        const name = row.querySelector("[data-rf=name]").value.trim();
         if (!name) { this._toast("Erst den Namen der Zutat eintragen 😉"); return; }
-        this._takePhoto(name, el);
+        this._takePhoto(this._pk(name, row.querySelector("[data-rf=note]")?.value, row.querySelector("[data-rf=for_whom]")?.value), el);
         break;
       }
       case "edit-cancel":
