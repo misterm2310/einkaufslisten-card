@@ -1010,3 +1010,22 @@ async def test_recipe_items_sorted_abc(hass, setup):
         ("Äpfel", None), ("Butter", None), ("Käse", "Emmentaler"), ("Käse", "Gouda"), ("Zwiebel", None)]
     m.update_recipe(r["id"], items=[{"name": "Salz"}, {"name": "Mehl"}])
     assert [i["name"] for i in r["items"]] == ["Mehl", "Salz"]
+
+
+async def test_recipe_multiple_photos(hass, setup):
+    """📷 Rezepte können mehrere Fotos haben – und beim Löschen gehen alle mit."""
+    import base64
+
+    m = mgr(hass)
+    r = m.add_recipe("Kuchen", [{"name": "Mehl"}])
+    key = f"rezept#{r['id']}"
+    data = base64.b64encode(JPEG).decode()
+    await m.async_set_photo(key, data)
+    await m.async_set_photo(key, data, add=True)
+    await m.async_set_photo(key, data, add=True)
+    assert m.as_dict()["photo_counts"][key] == 3
+    await m.async_remove_photo(key, 1)
+    assert m.as_dict()["photo_counts"][key] == 2
+    m.remove_recipe(r["id"])
+    await hass.async_block_till_done()
+    assert key not in m.photos
