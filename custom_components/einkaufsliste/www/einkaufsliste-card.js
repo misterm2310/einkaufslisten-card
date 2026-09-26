@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.4.0";
+const EL_VERSION = "2.4.1";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -945,15 +945,17 @@ class EinkaufslisteCard extends HTMLElement {
     if (grp && grp.length > 1) {
       for (const g of grp) { const st = this._store(g.store_id); if (st) meta.push(`<span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>`); }
     } else if (this._activeTab === "all" && store) meta.push(`<span class="chip" style="--c:${esc(store.color)}">${esc(store.name)}</span>`);
-    if (c.show_added_by && item.added_by) meta.push(`<span title="Eingetragen von">✍️ ${esc(this._who(item.added_by))}</span>`);
+    // Reihenfolge unter dem Namen: Geschäft · Notiz · Barcode · wer eingetragen · wer abgehakt · (Rezept, Zeit)
     if (item.note) meta.push(`<span>📝 ${esc(item.note)}</span>`);
-    if (recipe) meta.push(`<span>🍽️ ${esc(recipe.name)}</span>`);
     const pk = this._pk(item.name, item.note);
     const codes = this._barcodesOf(pk);
     if (codes.length) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥</span>`);
+    if (c.show_added_by && item.added_by) meta.push(`<span title="Eingetragen von">✍️ ${esc(this._who(item.added_by))}</span>`);
+    if (c.show_dates && item.checked) meta.push(`<span title="Abgehakt von">✓ ${item.checked_by ? esc(this._who(item.checked_by)) : "automatisch"}</span>`);
+    if (recipe) meta.push(`<span>🍽️ ${esc(recipe.name)}</span>`);
     if (c.show_dates) {
       if (item.checked) {
-        meta.push(`<span>✓ ${item.checked_by ? esc(this._who(item.checked_by)) : "automatisch"}</span>`);
+        // (wer abgehakt hat, steht schon oben)
       } else {
         meta.push(`<span>${fmtSince(item.added_at)}</span>`);
         const auto = this._autoCheckDate(item);
