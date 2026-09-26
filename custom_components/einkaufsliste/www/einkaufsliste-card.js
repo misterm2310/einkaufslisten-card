@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.6.1";
+const EL_VERSION = "2.7.0";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -45,6 +45,35 @@ const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); retur
 const dayDiff = (a, b) => Math.round((startOfDay(a) - startOfDay(b)) / DAY);
 const fmtDay = (d) => `${WD_SHORT[pyWd(d)]} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
 const stripMdi = (icon) => String(icon || "").replace(/^mdi:/, "");
+// 🔢 „3 milch“ / „milch 3x“ / „250g nudeln“ -> Name + Menge (wie in Home Assistant)
+const QTY_UNITS = { x: "x", "×": "x", stk: "x", "stück": "x", st: "x", g: "g", gr: "g", gramm: "g", kg: "kg", ml: "ml",
+  l: "L", ltr: "L", liter: "L", el: "EL", tl: "TL", pck: "Pck.", pkt: "Pck.", "päckchen": "Pck.", packung: "Pck.",
+  prise: "Prise", dose: "Dose", dosen: "Dosen", becher: "Becher", bund: "Bund", flasche: "Flasche", flaschen: "Flaschen" };
+function splitQty(text) {
+  const t = String(text || "").trim().replace(/\s+/g, " ");
+  const units = Object.keys(QTY_UNITS).sort((a, b) => b.length - a.length).map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const fmt = (n, u) => { const c = u ? QTY_UNITS[u.toLowerCase()] : "x"; return !c || c === "x" ? `${n}x` : `${n} ${c}`; };
+  let m = t.match(new RegExp(`^(\\d+(?:[.,]\\d+)?)\\s*(?:(${units})\\.?(?=\\s)|(?=\\s))\\s*(.+)$`, "i"));
+  if (m && /[a-zäöüß]/i.test(m[3])) return { name: m[3], qty: fmt(m[1], m[2]) };
+  m = t.match(new RegExp(`^(.+?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(${units})?\\.?$`, "i"));
+  if (m && /[a-zäöüß]/i.test(m[1]) && (m[3] || Number(m[2].replace(",", ".")) <= 50)) return { name: m[1], qty: fmt(m[2], m[3]) };
+  return { name: t, qty: null };
+}
+
+// Wie viele Buchstaben unterscheiden sich? (für die Tippfehler-Hilfe)
+function editDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (Math.abs(m - n) > 2) return 9;
+  const d = Array.from({ length: m + 1 }, (_, i) => Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+  }
+  return d[m][n];
+}
+
 function fmtSince(iso) {
   const d = new Date(iso);
   const diff = dayDiff(new Date(), d);
@@ -162,6 +191,138 @@ function showPhotoOverlay(src, title) {
   document.body.appendChild(overlay);
 }
 
+// ---------------------------------------------------------------- Overlays (über allem)
+const OV_BTN = "background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:12px;padding:10px 14px;font:500 15px Roboto,sans-serif;cursor:pointer;";
+const OV_BTN_MAIN = "background:#43a047;color:#fff;border:0;border-radius:12px;padding:10px 16px;font:600 15px Roboto,sans-serif;cursor:pointer;";
+
+function makeOverlay() {
+  const ov = document.createElement("div");
+  Object.assign(ov.style, {
+    position: "fixed", inset: "0", background: "rgba(0,0,0,.9)", zIndex: "10000",
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    padding: "16px", boxSizing: "border-box", color: "#fff", font: "15px Roboto, sans-serif",
+    touchAction: "none",
+  });
+  document.body.appendChild(ov);
+  return ov;
+}
+
+function ovButton(label, main = false) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = label;
+  b.style.cssText = main ? OV_BTN_MAIN : OV_BTN;
+  return b;
+}
+
+/**
+ * ✂️ Foto drehen & zuschneiden, bevor es gespeichert wird.
+ * Gibt ein verkleinertes JPEG (data-URL) zurück – oder null bei „Abbrechen“.
+ */
+async function editImage(file, max = 900, quality = 0.8) {
+  const img = await loadImage(file);
+  return new Promise((resolve) => {
+    const ov = makeOverlay();
+    ov.style.background = "#000";
+    let rot = 0;
+    let src = null; // gedrehtes Bild (Arbeitskopie)
+    const wrap = document.createElement("div");
+    Object.assign(wrap.style, { position: "relative", lineHeight: "0", userSelect: "none" });
+    const canvas = document.createElement("canvas");
+    Object.assign(canvas.style, { borderRadius: "8px", maxWidth: "100%" });
+    const box = document.createElement("div");
+    Object.assign(box.style, {
+      position: "absolute", border: "2px solid #fff", boxShadow: "0 0 0 9999px rgba(0,0,0,.55)",
+      cursor: "move", boxSizing: "border-box", touchAction: "none",
+    });
+    const handle = document.createElement("div");
+    Object.assign(handle.style, {
+      position: "absolute", right: "-12px", bottom: "-12px", width: "26px", height: "26px",
+      borderRadius: "50%", background: "#43a047", border: "3px solid #fff", cursor: "nwse-resize", touchAction: "none",
+    });
+    box.appendChild(handle);
+    wrap.append(canvas, box);
+    const hint = document.createElement("div");
+    hint.textContent = "Rahmen verschieben, grünen Punkt ziehen = Ausschnitt ändern";
+    Object.assign(hint.style, { color: "#bbb", fontSize: "13px", margin: "12px 0 10px", textAlign: "center" });
+    const row = document.createElement("div");
+    Object.assign(row.style, { display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" });
+    const bL = ovButton("↺ Drehen"), bR = ovButton("↻ Drehen"), bFull = ovButton("⤢ Ganzes Bild");
+    const bCancel = ovButton("Abbrechen"), bOk = ovButton("✔ Übernehmen", true);
+    row.append(bL, bR, bFull, bCancel, bOk);
+    ov.append(wrap, hint, row);
+    let crop = { x: 0, y: 0, w: 0, h: 0 };
+
+    const render = () => {
+      const w0 = img.naturalWidth, h0 = img.naturalHeight;
+      const big = Math.min(1, 1600 / Math.max(w0, h0));
+      const sw = Math.round(w0 * big), sh = Math.round(h0 * big);
+      src = document.createElement("canvas");
+      const swap = rot % 2 === 1;
+      src.width = swap ? sh : sw;
+      src.height = swap ? sw : sh;
+      const c = src.getContext("2d");
+      c.translate(src.width / 2, src.height / 2);
+      c.rotate((rot * Math.PI) / 2);
+      c.drawImage(img, -sw / 2, -sh / 2, sw, sh);
+      const maxW = Math.min(window.innerWidth - 32, 700), maxH = window.innerHeight * 0.62;
+      const k = Math.min(maxW / src.width, maxH / src.height, 1);
+      canvas.width = Math.round(src.width * k);
+      canvas.height = Math.round(src.height * k);
+      canvas.getContext("2d").drawImage(src, 0, 0, canvas.width, canvas.height);
+      crop = { x: 0, y: 0, w: canvas.width, h: canvas.height };
+      place();
+    };
+    const place = () => Object.assign(box.style, { left: `${crop.x}px`, top: `${crop.y}px`, width: `${crop.w}px`, height: `${crop.h}px` });
+    const clamp = () => {
+      crop.w = Math.max(40, Math.min(crop.w, canvas.width));
+      crop.h = Math.max(40, Math.min(crop.h, canvas.height));
+      crop.x = Math.max(0, Math.min(crop.x, canvas.width - crop.w));
+      crop.y = Math.max(0, Math.min(crop.y, canvas.height - crop.h));
+      place();
+    };
+    let drag = null;
+    const down = (mode) => (e) => {
+      e.preventDefault(); e.stopPropagation();
+      drag = { mode, x: e.clientX, y: e.clientY, start: { ...crop } };
+      (e.target).setPointerCapture?.(e.pointerId);
+    };
+    box.addEventListener("pointerdown", down("move"));
+    handle.addEventListener("pointerdown", down("size"));
+    const moveFn = (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (drag.mode === "move") { crop.x = drag.start.x + dx; crop.y = drag.start.y + dy; }
+      else { crop.w = Math.min(drag.start.w + dx, canvas.width - drag.start.x); crop.h = Math.min(drag.start.h + dy, canvas.height - drag.start.y); }
+      clamp();
+    };
+    const upFn = () => { drag = null; };
+    window.addEventListener("pointermove", moveFn);
+    window.addEventListener("pointerup", upFn);
+    const finish = (val) => {
+      window.removeEventListener("pointermove", moveFn);
+      window.removeEventListener("pointerup", upFn);
+      ov.remove();
+      resolve(val);
+    };
+    bL.onclick = () => { rot = (rot + 3) % 4; render(); };
+    bR.onclick = () => { rot = (rot + 1) % 4; render(); };
+    bFull.onclick = () => { crop = { x: 0, y: 0, w: canvas.width, h: canvas.height }; place(); };
+    bCancel.onclick = () => finish(null);
+    bOk.onclick = () => {
+      const k = src.width / canvas.width;
+      const cw = crop.w * k, ch = crop.h * k;
+      const scale = Math.min(1, max / Math.max(cw, ch));
+      const out = document.createElement("canvas");
+      out.width = Math.max(1, Math.round(cw * scale));
+      out.height = Math.max(1, Math.round(ch * scale));
+      out.getContext("2d").drawImage(src, crop.x * k, crop.y * k, cw, ch, 0, 0, out.width, out.height);
+      finish(out.toDataURL("image/jpeg", quality));
+    };
+    render();
+  });
+}
+
 const STYLE = `
 :host { display:block; }
 ha-card { display:block; padding:12px 12px 8px; overflow:hidden; }
@@ -170,6 +331,10 @@ button { font:inherit; color:inherit; }
 .head { display:flex; align-items:center; gap:4px; margin:0 2px 8px; min-height:36px; }
 .title { display:flex; align-items:center; gap:8px; font-size:1.25em; font-weight:600; flex:1; min-width:0; }
 .title span.t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.live { width:9px; height:9px; border-radius:50%; background:var(--success-color,#43a047); flex:0 0 auto; box-shadow:0 0 0 3px color-mix(in srgb, var(--success-color,#43a047) 25%, transparent); }
+.live.off { background:var(--error-color,#db4437); box-shadow:0 0 0 3px color-mix(in srgb, var(--error-color,#db4437) 25%, transparent); animation: pulse 1.2s infinite; }
+.updbar { margin:0 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 14%, transparent); font-size:.88em; display:flex; align-items:center; gap:8px; }
+.updbar b { flex:1; }
 .badge { background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border-radius:999px; padding:1px 9px; font-size:.75em; font-weight:600; }
 .iconbtn { background:none; border:0; cursor:pointer; padding:6px; border-radius:50%; display:inline-flex; color:var(--secondary-text-color); line-height:0; }
 .iconbtn:hover { background:var(--secondary-background-color, rgba(127,127,127,.12)); color:var(--primary-text-color); }
@@ -206,11 +371,13 @@ form.add .sugg { grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:6px; mar
 .sug { border:1.5px solid color-mix(in srgb, var(--primary-color,#03a9f4) 45%, transparent); background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); color:var(--primary-text-color); border-radius:999px; padding:7px 12px; cursor:pointer; font-size:.95em; display:inline-flex; align-items:center; gap:4px; }
 .sug b { color:var(--primary-color,#03a9f4); }
 .sug .on { font-size:.75em; opacity:.7; }
+.sug.fuzzy { border-style:dashed; }
 .chips { display:flex; flex-wrap:wrap; gap:6px; }
 .chip2 { border:1.5px solid var(--divider-color, rgba(127,127,127,.35)); background:transparent; border-radius:999px; padding:7px 14px; cursor:pointer; font-size:.95em; min-width:44px; }
 .chip2.sel { background:var(--primary-color,#03a9f4); border-color:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
 @keyframes pulse { 50% { opacity:.3; } }
 
+.photobtn .pcount { font-size:10px; font-weight:700; margin-left:1px; }
 .photobtn { background:none; border:0; cursor:pointer; padding:0 2px; color:var(--primary-color,#03a9f4); line-height:0; --mdc-icon-size:17px; align-self:center; }
 .photorow { display:flex; flex-wrap:wrap; gap:6px; }
 .photorow .btn { padding:6px 10px; font-size:.85em; }
@@ -255,15 +422,15 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .qbtn[disabled] { opacity:.3; }
 .qval { min-width:44px; text-align:center; font-weight:600; font-size:1.1em; }
 ha-card.shop form.add { display:none; }
-ha-card.shop .item { padding:14px 6px; font-size:1.3em; }
+ha-card.shop .item { padding:11px 5px; font-size:1.2em; }
 ha-card.shop .item .name { font-weight:600; }
-ha-card.shop .item .check { padding:10px; --mdc-icon-size:44px; }
-ha-card.shop .item .meta { font-size:.62em; }
-ha-card.shop .item .acts { opacity:1; --mdc-icon-size:30px; }
-ha-card.shop .item .acts .iconbtn { padding:10px; }
+ha-card.shop .item .check { padding:9px; --mdc-icon-size:38px; }
+ha-card.shop .item .meta { font-size:.66em; }
+ha-card.shop .item .acts { opacity:1; --mdc-icon-size:26px; }
+ha-card.shop .item .acts .iconbtn { padding:8px; }
 ha-card.shop .item .qty { font-size:.8em; padding:2px 10px; }
 ha-card.shop .ghead { font-size:.95em; padding:10px 4px 4px; }
-ha-card.shop .tab { padding:10px 16px; font-size:1.1em; }
+ha-card.shop .tab { padding:9px 15px; font-size:1.05em; }
 ha-card.shop .shopbar { font-size:1.05em; padding:10px 12px; }
 .shopbar { display:flex; align-items:center; gap:8px; margin:2px 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--success-color,#43a047) 14%, transparent); font-size:.9em; }
 .shopbar b { flex:1; }
@@ -312,6 +479,10 @@ ha-card.compact .group { margin-top:4px; }
 .sechead { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
 .sechead h3 { margin:0; }
 .sechead .back { padding:6px 10px; }
+.prodrow { cursor:pointer; }
+.prodrow .pmeta { display:flex; flex-wrap:wrap; gap:2px 8px; }
+.prodedit { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:6px 0; }
+.prodedit .btnrow, .prodedit .hint { grid-column:1/-1; }
 .logfilter { display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px; margin:4px 0; }
 .logday { font-size:.78em; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--secondary-text-color); margin:10px 2px 2px; }
 .logrow { display:flex; gap:8px; align-items:flex-start; padding:6px 4px; border-bottom:1px solid var(--divider-color, rgba(127,127,127,.12)); font-size:.9em; }
@@ -342,6 +513,10 @@ ha-card.compact .group { margin-top:4px; }
 .recipe .rname b { display:block; word-break:break-word; }
 .recipe .rname small { color:var(--secondary-text-color); font-size:.78em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
+.rtools { display:flex; gap:6px; justify-content:flex-end; margin:-2px 4px 8px; }
+.rtools .btn { padding:5px 10px; font-size:.8em; }
+.pickrow.basic .pname { font-size:.85em; }
+.pickrow .pbasic { font-size:.72em; color:var(--secondary-text-color); white-space:nowrap; }
 .recipe .rbtns { display:flex; flex-direction:column; gap:4px; align-items:stretch; }
 .recipe .rbtns .btn { padding:6px 10px; font-size:.8em; justify-content:center; }
 .rpick { margin:-2px 2px 10px; padding:8px; border-radius:0 0 12px 12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-top:0; background:var(--secondary-background-color, rgba(127,127,127,.06)); }
@@ -359,6 +534,7 @@ ha-card.compact .group { margin-top:4px; }
 .rpick .pbtns .primary { padding:9px 14px; }
 .rpick .pbtns .primary[disabled] { opacity:.4; cursor:default; }
 .rsub { margin-top:14px !important; flex-wrap:wrap; }
+.rsteps { width:100%; box-sizing:border-box; font:inherit; font-size:.92em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; resize:vertical; }
 .rimportbtn { margin-left:auto; padding:5px 10px; font-size:.8em; font-weight:400; }
 .rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.9em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; resize:vertical; }
 .rimport .btnrow { justify-content:flex-end; }
@@ -415,6 +591,28 @@ class EinkaufslisteCard extends HTMLElement {
     if (!this._built) this._build();
     if (!this._unsub && !this._subscribing && this.isConnected) this._subscribe();
     this._autoStore();
+    this._updateLive();
+  }
+
+  // 🟢 Live-Anzeige: verbunden und Liste abonniert = grün, sonst rot
+  _updateLive() {
+    const dot = this.$("liveDot");
+    if (!dot) return;
+    const ok = this._hass?.connected !== false && !!this._unsub && !this._error;
+    dot.classList.toggle("off", !ok);
+    dot.title = ok ? "Verbunden – alles ist aktuell" : "Keine Verbindung – Änderungen kommen gerade nicht an";
+  }
+
+  // 🔄 Update-Hinweis: Karte (Handy-Speicher) und Integration haben verschiedene Versionen
+  _renderUpdateBar() {
+    const bar = this.$("updBar");
+    if (!bar) return;
+    const server = this._data?.version;
+    const show = !!server && server !== EL_VERSION;
+    bar.hidden = !show;
+    if (show) {
+      bar.innerHTML = `🔄 <b>Neue Version ${esc(server)} ist da (hier läuft noch ${EL_VERSION}).</b><button class="btn" data-act="reload">Neu laden</button>`;
+    }
   }
 
   // 📍 Nächstes Geschäft: springt auf den Reiter des Geschäfts, bei dem DU gerade bist
@@ -486,6 +684,7 @@ class EinkaufslisteCard extends HTMLElement {
         { type: "einkaufsliste/subscribe" }
       );
       if (!this.isConnected) unsub(); else this._unsub = unsub;
+      this._updateLive();
     } catch (err) {
       this._error = err?.code === "unknown_command" || err?.code === "not_loaded"
         ? "Die Integration „Einkaufsliste“ ist noch nicht eingerichtet. Einstellungen → Geräte & Dienste → Integration hinzufügen → Einkaufsliste."
@@ -515,12 +714,13 @@ class EinkaufslisteCard extends HTMLElement {
       <style>${STYLE}</style>
       <ha-card>
         <div class="head">
-          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant"></ha-icon><span class="t" id="title"></span><span class="badge" id="count" hidden></span></div>
+          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant"></ha-icon><span class="t" id="title"></span><span class="badge" id="count" hidden></span><span class="live" id="liveDot" title="Verbindung"></span></div>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon></button>
           <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon></button>
           <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon></button>
         </div>
         <div class="error" id="error" hidden></div>
+        <div class="updbar" id="updBar" hidden></div>
         <div id="listView">
           <div class="tabs" id="tabs"></div>
           <form class="add" id="addForm" autocomplete="off">
@@ -533,6 +733,7 @@ class EinkaufslisteCard extends HTMLElement {
               <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon></button>
               <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon></button>
               <button class="tool" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
+              <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat – haben wir immer (z. B. Salz, Öl)" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon></button>
               <button class="tool tclear" id="tClear" type="button" data-act="clear-form" title="Alles leeren" hidden><ha-icon icon="mdi:eraser"></ha-icon></button>
             </div>
             <div class="extras">
@@ -541,6 +742,7 @@ class EinkaufslisteCard extends HTMLElement {
                 <input id="inQty" placeholder="🔢 Menge, z. B. 500 g" hidden>
               </div>
               <input id="inNote" placeholder="📝 Notiz, z. B. Bio" hidden>
+              <div class="chips" id="noteChips" hidden></div>
               <div id="forBox" class="chipbox" hidden><div class="chips" id="forChips"></div></div>
               <select id="inFor" title="Für wen?" hidden></select>
             </div>
@@ -719,6 +921,8 @@ class EinkaufslisteCard extends HTMLElement {
     btnShop.querySelector("ha-icon").setAttribute("icon", shop ? "mdi:cart-off" : "mdi:cart-outline");
     this.$("title").textContent = showTitle ? titleText : "";
     this.$("titleIcon").hidden = !showTitle;
+    this._renderUpdateBar();
+    this._updateLive();
     const err = this.$("error");
     err.hidden = !this._error;
     err.textContent = this._error || "";
@@ -848,6 +1052,21 @@ class EinkaufslisteCard extends HTMLElement {
       names.add(low);
       cands.push({ sc, name: h.name, hist: h });
     }
+    // 🤓 Tippfehler-Hilfe: „Mlich“ -> „Meintest du Milch?“
+    if (q.length >= 4 && !cands.some((c) => c.sc === 0)) {
+      const maxD = q.length > 6 ? 2 : 1;
+      const pool = new Map();
+      for (const h of this._data.history || []) pool.set(h.name.toLowerCase(), { name: h.name, hist: h });
+      for (const i of this._data.items) if (!i.recipe_id && !pool.has(i.name.toLowerCase())) pool.set(i.name.toLowerCase(), { name: i.name, item: i });
+      const fuzzy = [];
+      for (const [low, c] of pool) {
+        if (names.has(low) || low === q) continue;
+        const d = Math.min(editDistance(q, low), q.length < low.length ? editDistance(q, low.slice(0, q.length)) : 9);
+        if (d <= maxD) fuzzy.push({ ...c, sc: 2 + d, fuzzy: true });
+      }
+      fuzzy.sort((a, b) => a.sc - b.sc);
+      cands.push(...fuzzy.slice(0, 2));
+    }
     cands.sort((a, b) => a.sc - b.sc);
     return cands.slice(0, 8);
   }
@@ -868,6 +1087,7 @@ class EinkaufslisteCard extends HTMLElement {
         if (st && (recipe || this._activeTab === "all")) bits.push(esc(st.name));
         if (!i.checked && !recipe) bits.push("steht drauf");
       }
+      if (c.fuzzy) return `<button type="button" class="sug fuzzy" data-act="${act}" data-n="${n}"><span>Meintest du <b>${esc(c.name)}</b>?</span></button>`;
       return `<button type="button" class="sug" data-act="${act}" data-n="${n}"><span>${mark(c.name)}</span>${
         bits.length ? `<span class="on">· ${bits.join(" · ")}</span>` : ""}</button>`;
     }).join("");
@@ -955,7 +1175,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""}" data-id="${item.id}" style="--cc:${esc(cat?.color || "transparent")}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
-          <div class="line">${isNew ? `<span class="newbadge" title="Neu seit deinem letzten Blick">✨</span>` : ""}<span class="name">${esc(item.name)}</span>${qty}${who}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
+          <div class="line">${isNew ? `<span class="newbadge" title="Neu seit deinem letzten Blick">✨</span>` : ""}<span class="name">${esc(item.name)}</span>${qty}${who}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
         ${!item.checked && this._data.stores.length > 1 ? `<div class="acts"><button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button></div>` : ""}
@@ -969,19 +1189,39 @@ class EinkaufslisteCard extends HTMLElement {
         ${b("menu-edit", "mdi:pencil-outline", "Bearbeiten")}
         ${!item.checked && this._data.stores.length > 1 ? b("menu-move", "mdi:swap-horizontal", "Verschieben") : ""}
         ${b("menu-qty", "mdi:numeric", "Menge")}
-        ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(this._pk(item.name, item.note)) ? "Foto ändern" : "Foto")}
+        ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(this._pk(item.name, item.note)) ? "Fotos" : "Foto")}
         ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", this._barcodesOf(this._pk(item.name, item.note)).length ? "Barcode ✓" : "Barcode") : ""}
+        ${this._barcodesOf(this._pk(item.name, item.note)).length ? b("menu-info", "mdi:information-outline", "Infos") : ""}
         <button class="iconbtn" data-act="menu-close" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
       </div>`;
   }
 
+  // 🔢 Menge zerlegen: „250 g“ -> {n: 250, unit: "g"}, „3x“ -> {n: 3, unit: "x"}
+  _parseQty(q) {
+    const m = String(q || "1x").trim().match(/^(\d+(?:[.,]\d+)?)\s*([A-Za-zÄÖÜäöü.]+)?$/);
+    if (!m) return null;
+    return { n: Number(m[1].replace(",", ".")), unit: m[2] || "x", comma: m[1].includes(",") };
+  }
+
+  _fmtQty(n, unit) {
+    const num = Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100).replace(".", ",");
+    return unit === "x" ? `${num}x` : `${num} ${unit}`;
+  }
+
+  _qtyStepFor(item) {
+    const p = this._parseQty(item.quantity);
+    if (!p) return 1;
+    if (/^(g|ml|mg)$/i.test(p.unit)) return p.n > 0 ? p.n : 100; // 250 g -> 500 g -> 750 g
+    return Number.isInteger(p.n) ? 1 : 0.5; // 1 L -> 2 L, 1,5 L -> 2 L
+  }
+
   _qtyHtml(item) {
-    const m = String(item.quantity || "").match(/^(\d+)\s*(x|stk\.?|stück)?$/i);
-    const n = m ? Number(m[1]) : 1;
+    const p = this._parseQty(item.quantity) || { n: 1, unit: "x" };
+    const step = (this._qtyStep ||= {})[item.id] || (this._qtyStep[item.id] = this._qtyStepFor(item));
     return `
       <div class="qtyrow" data-id="${item.id}">
-        <button class="qbtn" data-act="qty-minus" ${n <= 1 ? "disabled" : ""}>−</button>
-        <span class="qval">${n}x</span>
+        <button class="qbtn" data-act="qty-minus" ${p.n <= step ? "disabled" : ""}>−</button>
+        <span class="qval">${esc(this._fmtQty(p.n, p.unit))}</span>
         <button class="qbtn" data-act="qty-plus">＋</button>
         <button class="iconbtn" data-act="qty-done" title="Fertig"><ha-icon icon="mdi:check"></ha-icon></button>
       </div>`;
@@ -1216,6 +1456,8 @@ class EinkaufslisteCard extends HTMLElement {
 
   _toggle(id) {
     if (!id || this._pending.has(id)) return;
+    const it = this._data?.items.find((i) => i.id === id);
+    if (it && !it.checked) { try { navigator.vibrate?.(35); } catch (_) { /* egal */ } }
     this._pending.add(id);
     this.shadowRoot.querySelector(`.item[data-id="${id}"]`)?.classList.add("pending");
     this._ws({ type: "einkaufsliste/item/toggle", item_id: id })
@@ -1353,6 +1595,10 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
         <p class="hint">${persons.length ? "Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“." : "Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet."}</p>` },
+      { key: "products", icon: "mdi:package-variant-closed", title: "Produkte", info: "Katalog: Fotos, Barcodes …", html: () => `
+        <p class="hint">Alle Produkte, die die Liste kennt. Antippen = ändern. Umbenennen zieht Fotos, Barcodes, Artikel und Rezepte mit.</p>
+        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen …" value="${esc(this._prodFilter || "")}"></div>
+        <div id="prodList"><p class="hint">Lade Produkte …</p></div>` },
       { key: "log", icon: "mdi:history", title: "Verlauf", info: "wer, wann, was, wie", html: () => this._logSectionHtml() },
       { key: "cleanup", icon: "mdi:broom", title: "Aufräumen", info: `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
         <p>Jeden <b>${WD_LONG[s.cleanup_weekday]}</b> um <b>${s.cleanup_time} Uhr</b> werden alle offenen Artikel <b>abgehakt</b>, die mindestens <b>${s.min_age_days} Tage</b> auf der Liste stehen. Gelöscht wird nichts – so kannst du sie später mit einem Tipp wieder auf die Liste nehmen.</p>
@@ -1389,6 +1635,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${cur.html()}
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
+    if (cur.key === "products") { this._renderProducts(); this._loadProducts(); }
     this._renderDelList();
   }
 
@@ -1471,6 +1718,55 @@ class EinkaufslisteCard extends HTMLElement {
     box.innerHTML = html.join("");
   }
 
+  // 📦 Produkt-Katalog (nur hier in den Einstellungen)
+  async _loadProducts() {
+    if (this._prodLoading) return;
+    this._prodLoading = true;
+    try { this._products = await this._ws({ type: "einkaufsliste/products" }); } catch (_) { /* Meldung kam schon */ }
+    this._prodLoading = false;
+    this._renderProducts();
+  }
+
+  _renderProducts() {
+    const box = this.$("prodList");
+    if (!box || !this._products) return;
+    const q = (this._prodFilter || "").trim().toLowerCase();
+    const list = this._products.filter((p) => !q || `${p.name} ${p.note || ""}`.toLowerCase().includes(q));
+    if (!list.length) { box.innerHTML = `<p class="hint">${q ? `Nichts gefunden zu „${esc(q)}“.` : "Noch keine Produkte."}</p>`; return; }
+    const shown = list.slice(0, 80);
+    box.innerHTML = shown.map((p) => {
+      const cat = this._cat(p.category_id), st = this._store(p.store_id);
+      const bits = [
+        st ? `<span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>` : "",
+        cat ? `<span>${esc(cat.name)}</span>` : "",
+        p.barcodes.length ? `<span>▥ ${p.barcodes.length}</span>` : "",
+        p.photos ? `<span>📷 ${p.photos}</span>` : "",
+        p.count ? `<span>${p.count}× eingetragen</span>` : "",
+        p.open ? `<span>🛒 steht drauf</span>` : "",
+      ].filter(Boolean).join("");
+      if (this._prodEdit === p.key) {
+        return `<div class="prodedit" data-key="${esc(p.key)}">
+          <input id="peName" value="${esc(p.name)}" placeholder="Name">
+          <input id="peNote" value="${esc(p.note || "")}" placeholder="📝 Notiz / Sorte">
+          <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
+          <select id="peStore">${this._selectOptions(this._data.stores, p.store_id, "🛒 Kein Standard-Geschäft")}</select>
+          ${p.barcodes.length ? `<div class="hint">▥ Barcodes: ${p.barcodes.map(esc).join(", ")}</div>` : ""}
+          <div class="btnrow">
+            ${p.photos ? `<button class="btn" data-act="prod-photos"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Fotos</button>` : ""}
+            <button class="btn danger" data-act="prod-forget" title="Fotos, Barcodes und Verlauf vergessen"><ha-icon icon="mdi:delete-outline"></ha-icon>Vergessen</button>
+            <span style="flex:1"></span>
+            <button class="btn" data-act="prod-cancel">Abbrechen</button>
+            <button class="btn primary" data-act="prod-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
+          </div>
+        </div>`;
+      }
+      return `<div class="srow delrow prodrow" data-act="prod-edit" data-key="${esc(p.key)}">
+        <div class="grow delname"><b>${esc(p.name)}${p.note ? ` · ${esc(p.note)}` : ""}</b><small class="pmeta">${bits || "–"}</small></div>
+        <ha-icon icon="mdi:chevron-right"></ha-icon>
+      </div>`;
+    }).join("") + (list.length > shown.length ? `<p class="hint">… und ${list.length - shown.length} weitere – oben suchen.</p>` : "");
+  }
+
   _renderDelList() {
     const box = this.$("delList");
     if (!box || !this._data) return;
@@ -1513,6 +1809,10 @@ class EinkaufslisteCard extends HTMLElement {
             <button class="primary" data-act="recipe-apply" title="Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button>
             ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Alle offenen Zutaten dieses Rezepts von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon>Von der Liste (${onList(r)})</button>` : ""}
           </div>
+        </div>
+        <div class="rtools" data-id="${r.id}">
+          ${r.steps ? `<button class="btn" data-act="recipe-cook"><ha-icon icon="mdi:fire"></ha-icon>Kochen</button>` : ""}
+          <button class="btn" data-act="recipe-share"><ha-icon icon="mdi:share-variant-outline"></ha-icon>Teilen</button>
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`);
     }
     html.push(`</div>`);
@@ -1526,10 +1826,10 @@ class EinkaufslisteCard extends HTMLElement {
     const rows = r.items.map((it, n) => {
       const on = sel.has(n);
       const info = [it.quantity, it.note, it.for_whom ? "für " + it.for_whom : ""].filter(Boolean).map(esc).join(" · ");
-      return `<div class="pickrow ${on ? "on" : ""}" data-act="pick-toggle" data-n="${n}">
+      return `<div class="pickrow ${on ? "on" : ""} ${it.basic ? "basic" : ""}" data-act="pick-toggle" data-n="${n}">
         <ha-icon icon="${on ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"}"></ha-icon>
         <span class="pname">${esc(it.name)}${info ? `<small>${info}</small>` : ""}</span>
-        ${open.has(it.name.toLowerCase()) ? `<span class="phint">steht schon drauf</span>` : ""}
+        ${open.has(it.name.toLowerCase()) ? `<span class="phint">steht schon drauf</span>` : it.basic ? `<span class="pbasic">🧂 haben wir immer</span>` : ""}
       </div>`;
     }).join("");
     return `<div class="rpick" data-id="${r.id}">
@@ -1545,7 +1845,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   _openRecipe(recipe) {
     this._draft = recipe
-      ? { id: recipe.id, name: recipe.name, icon: recipe.icon, items: recipe.items.map((i) => ({ ...i })) }
+      ? { id: recipe.id, name: recipe.name, icon: recipe.icon, steps: recipe.steps || "", items: recipe.items.map((i) => ({ ...i })) }
       : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [] };
     this._view = "recipe";
     this._draftRendered = false;
@@ -1575,6 +1875,8 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="redithint" id="rEditHint" hidden>✏️ Du bearbeitest eine Zutat – ✔ speichert sie. <button class="linkbtn" data-act="ritem-edit-cancel">Abbrechen</button></div>
         <div id="rFormSlot"></div>
         <div id="rItems"></div>
+        <h3 class="rsub"><ha-icon icon="mdi:chef-hat"></ha-icon>Zubereitung</h3>
+        <textarea id="rSteps" class="rsteps" rows="5" placeholder="Ein Schritt pro Zeile, z. B.&#10;Nudeln 10 Minuten kochen&#10;Soße anrühren">${esc(dr.steps || "")}</textarea>
         <p class="hint">Eintragen geht genau wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, 📝 Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode (auch „📦 Mehrere scannen“) – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie, die bei diesem Produkt zuletzt benutzt wurden.</p>
         <div class="btnrow" style="justify-content:space-between">
           ${dr.id ? `<button class="btn danger" data-act="recipe-delete"><ha-icon icon="mdi:trash-can-outline"></ha-icon>Löschen</button>` : "<span></span>"}
@@ -1629,6 +1931,8 @@ class EinkaufslisteCard extends HTMLElement {
       }
       const nameEl = this.$("rName");
       if (res.name && !nameEl.value.trim()) nameEl.value = res.name;
+      const stepsEl = this.$("rSteps");
+      if (res.steps && stepsEl && !stepsEl.value.trim()) stepsEl.value = res.steps;
       const hasPhoto = dr.photoData || (dr.id && !dr.photoRemove && this._hasPhoto(this._recipePhotoKey(dr.id)));
       if (res.image && !hasPhoto) { dr.photoData = res.image; dr.photoRemove = false; }
       ta.value = "";
@@ -1657,6 +1961,7 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("inName").placeholder = "Zutat, z. B. Fischstäbchen";
     this.$("btnScan").classList.remove("instore");
     this.$("btnScan").title = "Barcode scannen";
+    this.$("tBasic").hidden = false;
     this.$("rEditHint").hidden = true;
   }
 
@@ -1667,6 +1972,7 @@ class EinkaufslisteCard extends HTMLElement {
     home.insertBefore(form, this.$("list"));
     this._formMode = null;
     this._rEditIdx = null;
+    this.$("tBasic").hidden = true;
     this.$("inName").placeholder = "Was brauchen wir?";
     this._clearForm();
     this._lastTab = null; // Auswahl-Felder neu aufbauen (Geschäft passend zum Reiter)
@@ -1688,6 +1994,7 @@ class EinkaufslisteCard extends HTMLElement {
         `<span class="chip" style="--c:${esc(st?.color || "#888")}">${esc(st?.name || "Wie zuletzt")}</span>`,
         it.note ? `<span>📝 ${esc(it.note)}</span>` : "",
         it.barcode || this._barcodesOf(pk).length ? `<span class="bc">▥</span>` : "",
+        it.basic ? `<span>🧂 Grundvorrat</span>` : "",
         cat ? `<span>${esc(cat.name)}</span>` : "",
       ].filter(Boolean).join("");
       return `<div class="item rrow ${this._rEditIdx === n ? "editing" : ""}" data-n="${n}" style="--cc:${esc(cat?.color || "transparent")}">
@@ -1703,16 +2010,19 @@ class EinkaufslisteCard extends HTMLElement {
 
   async _addRecipeIngredient() {
     const dr = this._draft;
-    const raw = this.$("inName").value.trim();
-    const name = raw.charAt(0).toUpperCase() + raw.slice(1);
+    let raw = this.$("inName").value.trim();
     const val = (id) => this.$(id).value.trim() || null;
+    let qty = val("inQty");
+    if (!qty) { const sp = splitQty(raw); raw = sp.name; qty = sp.qty; } // „250g nudeln“ -> Nudeln · 250 g
+    const name = raw.charAt(0).toUpperCase() + raw.slice(1);
     const ing = {
       name,
-      quantity: val("inQty"),
+      quantity: qty,
       note: val("inNote") ? val("inNote").charAt(0).toUpperCase() + val("inNote").slice(1) : null,
       for_whom: this.$("inFor").value || null,
       store_id: this.$("inStore").value || null,
       category_id: this.$("inCat").value || null,
+      basic: !!this._rBasic,
     };
     const idx = this._rEditIdx;
     if (this._pendingBarcode) ing.barcode = this._pendingBarcode;
@@ -1754,6 +2064,7 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("inStore").value = it.store_id || "";
     this.$("inCat").value = it.category_id || "";
     this._catManual = !!it.category_id;
+    this._setBasic(it.basic);
     this._renderQtyChips();
     this._renderForChips();
     this._updateTools();
@@ -1766,6 +2077,7 @@ class EinkaufslisteCard extends HTMLElement {
     const dr = this._draft;
     dr.name = this.$("rName").value;
     dr.icon = this.$("rIcon").value;
+    if (this.$("rSteps")) dr.steps = this.$("rSteps").value;
   }
 
   async _saveRecipe() {
@@ -1774,10 +2086,11 @@ class EinkaufslisteCard extends HTMLElement {
     const items = dr.items.filter((i) => i.name).map((i) => {
       const o = { name: i.name };
       for (const k of ["quantity", "note", "for_whom", "store_id", "category_id", "barcode"]) if (i[k]) o[k] = i[k];
+      if (i.basic) o.basic = true;
       return o;
     });
     if (this.$("inName").value.trim() && !confirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
-    const msg = { name: dr.name.trim(), icon: dr.icon || null, items };
+    const msg = { name: dr.name.trim(), icon: dr.icon || null, items, steps: (dr.steps || "").trim() || null };
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {
       const saved = dr.id
@@ -1809,6 +2122,8 @@ class EinkaufslisteCard extends HTMLElement {
     const me = this._hass?.user;
     if (item.added_by_id ? item.added_by_id === me?.id : item.added_by && item.added_by === this._myName()) return false;
     const t = seen[item.store_id || "none"] || seen.all;
+    // ✨ höchstens 24 Stunden lang
+    if (Date.now() - Date.parse(item.added_at || 0) > 864e5) return false;
     return !!t && item.added_at > t;
   }
 
@@ -1910,7 +2225,9 @@ class EinkaufslisteCard extends HTMLElement {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      this._newPhoto = await shrinkImage(file, 900, 0.8);
+      const data = await editImage(file, 900, 0.8);
+      if (!data) return;
+      this._newPhoto = data;
       this._updateNewPhotoBtn();
       this._toast("📸 Foto gemerkt – kommt beim Hinzufügen mit");
     } catch (_) {
@@ -1919,6 +2236,42 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // Symbol-Leiste: ein Tipp öffnet/schließt genau ein Feld
+  // 📝 Notiz-Vorschläge: eure häufigsten Notizen (zum getippten Produkt zuerst)
+  _renderNoteChips() {
+    const box = this.$("noteChips");
+    const input = this.$("inNote");
+    if (!box || !input) return;
+    if (input.hidden || !this._data) { box.hidden = true; return; }
+    const name = (this.$("inName").value || "").trim().toLowerCase();
+    const typed = input.value.trim().toLowerCase();
+    const score = new Map();
+    const all = [...this._data.items, ...(this._data.recipes || []).flatMap((r) => r.items)];
+    for (const i of all) {
+      const n = String(i.note || "").trim();
+      if (!n) continue;
+      const k = n.toLowerCase();
+      const e = score.get(k) || { text: n, count: 0, same: 0 };
+      e.count++;
+      if (name && i.name.toLowerCase() === name) e.same++;
+      score.set(k, e);
+    }
+    const list = [...score.values()]
+      .filter((e) => e.text.toLowerCase() !== typed && (!typed || e.text.toLowerCase().startsWith(typed)))
+      .sort((a, b) => b.same - a.same || b.count - a.count)
+      .slice(0, 6);
+    box.hidden = !list.length;
+    const key = list.map((e) => e.text).join("|");
+    if (box._key === key) return;
+    box._key = key;
+    box.innerHTML = list.map((e) => `<button type="button" class="chip2" data-act="note-chip" data-v="${esc(e.text)}">📝 ${esc(e.text)}</button>`).join("");
+  }
+
+  _setBasic(on) {
+    this._rBasic = !!on;
+    const b = this.$("tBasic");
+    if (b) b.classList.toggle("on", this._rBasic);
+  }
+
   _toggleTool(boxId) {
     const box = this.$(boxId);
     const open = box.hidden;
@@ -1935,6 +2288,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   _clearForm() {
     for (const id of ["inName", "inQty", "inNote", "inFor", "inCat"]) this.$(id).value = "";
+    this._setBasic(false);
     this._renderSuggest();
     for (const id of ["qtyBox", "inQty", "inNote", "forBox"]) this.$(id).hidden = true;
     const tab = this._activeTab;
@@ -1965,6 +2319,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _updateTools() {
+    this._renderNoteChips();
     const clear = this.$("tClear");
     if (clear) {
       const any = ["inName", "inQty", "inNote", "inFor"].some((id) => this.$(id)?.value.trim())
@@ -2007,11 +2362,12 @@ class EinkaufslisteCard extends HTMLElement {
     if (!file || !target) return;
     let data;
     try {
-      data = await shrinkImage(file, 900, 0.8);
+      data = await editImage(file, 900, 0.8);
     } catch (_) {
       this._toast("Das Foto konnte nicht gelesen werden 🙈");
       return;
     }
+    if (!data) return; // abgebrochen
     if (target.recipeDraft && this._draft) {
       // Rezept-Foto: wird beim Speichern mitgespeichert
       this._draft.photoData = data;
@@ -2026,8 +2382,9 @@ class EinkaufslisteCard extends HTMLElement {
   async _savePhoto(target, data) {
     try {
       this._toast("📸 Foto wird gespeichert …");
-      await this._ws({ type: "einkaufsliste/photo/set", name: target.name, data });
-      this._photoCache.delete(target.name.toLowerCase());
+      await this._ws({ type: "einkaufsliste/photo/set", name: target.name, data, add: !!target.add });
+      for (const k of [...this._photoCache.keys()]) if (k.startsWith(target.name.toLowerCase())) this._photoCache.delete(k);
+      if (target.onDone) { target.onDone(); return; }
       this._toast(`📸 Foto für „${this._pkLabel(target.name)}“ gespeichert`);
       if (target.button) {
         target.button.classList.add("on");
@@ -2041,18 +2398,221 @@ class EinkaufslisteCard extends HTMLElement {
     } catch (_) { /* Meldung kam schon */ }
   }
 
-  async _openPhoto(name, title) {
-    const key = String(name).toLowerCase();
+  async _photoData(key, index) {
     const updated = this._data?.photos?.[key];
-    let cached = this._photoCache.get(key);
-    if (!cached || cached.updated !== updated) {
+    const ck = `${key}#${index}`;
+    const cached = this._photoCache.get(ck);
+    if (cached && cached.updated === updated) return cached.data;
+    const res = await this._ws({ type: "einkaufsliste/photo/get", name: key, index });
+    this._photoCache.set(ck, { updated, data: res.data });
+    return res.data;
+  }
+
+  // 📷 Foto-Galerie: blättern, weitere Fotos dazu, einzelne löschen
+  async _openPhoto(name, title, start = 0) {
+    const key = String(name).toLowerCase();
+    const label = title || this._pkLabel(name);
+    const count = () => (this._data?.photo_counts?.[key] || (this._data?.photos?.[key] ? 1 : 0));
+    if (!count()) return;
+    let idx = Math.min(start, count() - 1);
+    const ov = makeOverlay();
+    const img = document.createElement("img");
+    Object.assign(img.style, { maxWidth: "100%", maxHeight: "66vh", borderRadius: "14px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
+    const cap = document.createElement("div");
+    Object.assign(cap.style, { font: "500 17px Roboto, sans-serif", marginTop: "12px", textAlign: "center" });
+    const nav = document.createElement("div");
+    Object.assign(nav.style, { display: "flex", gap: "8px", alignItems: "center", margin: "10px 0" });
+    const prev = ovButton("‹"), next = ovButton("›"), pos = document.createElement("span");
+    pos.style.minWidth = "48px"; pos.style.textAlign = "center";
+    nav.append(prev, pos, next);
+    const row = document.createElement("div");
+    Object.assign(row.style, { display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" });
+    const bAdd = ovButton("➕ Foto dazu"), bDel = ovButton("🗑️ Dieses löschen"), bClose = ovButton("Schließen", true);
+    row.append(bAdd, bDel, bClose);
+    ov.append(img, cap, nav, row);
+    const show = async () => {
+      const n = count();
+      if (!n) { close(); return; }
+      idx = Math.max(0, Math.min(idx, n - 1));
+      pos.textContent = `${idx + 1} / ${n}`;
+      nav.style.visibility = n > 1 ? "visible" : "hidden";
+      cap.textContent = label;
+      bAdd.style.display = n >= 6 || key.startsWith("rezept#") ? "none" : "";
+      try { img.src = await this._photoData(key, idx); } catch (_) { close(); }
+    };
+    const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+    const onKey = (e) => {
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowLeft") { idx--; show(); }
+      if (e.key === "ArrowRight") { idx++; show(); }
+    };
+    document.addEventListener("keydown", onKey);
+    prev.onclick = () => { idx = (idx - 1 + count()) % count(); show(); };
+    next.onclick = () => { idx = (idx + 1) % count(); show(); };
+    // wischen zum Blättern
+    let sx = null;
+    img.addEventListener("pointerdown", (e) => { sx = e.clientX; });
+    img.addEventListener("pointerup", (e) => {
+      if (sx == null) return;
+      const dx = e.clientX - sx; sx = null;
+      if (Math.abs(dx) > 40 && count() > 1) { idx += dx < 0 ? 1 : -1; idx = (idx + count()) % count(); show(); }
+    });
+    bClose.onclick = close;
+    bDel.onclick = async () => {
+      if (!confirm("Dieses Foto löschen?")) return;
       try {
-        const res = await this._ws({ type: "einkaufsliste/photo/get", name });
-        cached = { updated, data: res.data };
-        this._photoCache.set(key, cached);
-      } catch (_) { return; }
+        await this._ws({ type: "einkaufsliste/photo/remove", name: key, index: idx });
+        for (const k of [...this._photoCache.keys()]) if (k.startsWith(key + "#")) this._photoCache.delete(k);
+        this._toast("Foto gelöscht 🗑️");
+        setTimeout(show, 300);
+      } catch (_) { /* Meldung kam schon */ }
+    };
+    bAdd.onclick = () => {
+      this._photoTarget = { name: key, add: true, onDone: () => { this._toast("📸 Foto dazu gespeichert"); idx = count(); setTimeout(show, 400); } };
+      this._pickFile("photoFile");
+    };
+    show();
+  }
+
+  // 👨‍🍳 Koch-Modus: Schritt für Schritt, groß, Bildschirm bleibt an
+  async _cookMode(r) {
+    const steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
+    if (!steps.length) return;
+    let idx = 0;
+    let lock = null;
+    try { lock = await navigator.wakeLock?.request("screen"); } catch (_) { lock = null; }
+    const ov = makeOverlay();
+    ov.style.background = "#111";
+    ov.style.justifyContent = "space-between";
+    const head = document.createElement("div");
+    Object.assign(head.style, { width: "100%", maxWidth: "700px", display: "flex", alignItems: "center", gap: "10px" });
+    const title = document.createElement("div");
+    title.textContent = `👨‍🍳 ${r.name}`;
+    Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
+    const bIng = ovButton("🥕 Zutaten"), bClose = ovButton("✕");
+    head.append(title, bIng, bClose);
+    const body = document.createElement("div");
+    Object.assign(body.style, { width: "100%", maxWidth: "700px", flex: "1", display: "flex", flexDirection: "column", justifyContent: "center", overflowY: "auto", touchAction: "pan-y" });
+    const pos = document.createElement("div");
+    Object.assign(pos.style, { color: "#aaa", font: "600 16px Roboto,sans-serif", marginBottom: "12px" });
+    const text = document.createElement("div");
+    Object.assign(text.style, { font: "500 clamp(22px, 6vw, 34px)/1.35 Roboto,sans-serif", whiteSpace: "pre-wrap" });
+    const ing = document.createElement("div");
+    Object.assign(ing.style, { display: "none", font: "17px/1.6 Roboto,sans-serif", color: "#ddd", marginTop: "18px" });
+    ing.innerHTML = r.items.map((i) => `• ${esc([i.quantity, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="color:#999">(${esc(i.note)})</span>` : ""}`).join("<br>");
+    body.append(pos, text, ing);
+    const nav = document.createElement("div");
+    Object.assign(nav.style, { width: "100%", maxWidth: "700px", display: "flex", gap: "10px" });
+    const bPrev = ovButton("‹ Zurück"), bNext = ovButton("Weiter ›", true);
+    for (const b of [bPrev, bNext]) Object.assign(b.style, { flex: "1", padding: "16px", fontSize: "18px" });
+    nav.append(bPrev, bNext);
+    ov.append(head, body, nav);
+    const show = () => {
+      pos.textContent = `Schritt ${idx + 1} von ${steps.length}`;
+      text.textContent = steps[idx];
+      bPrev.style.visibility = idx ? "visible" : "hidden";
+      bNext.textContent = idx < steps.length - 1 ? "Weiter ›" : "✔ Fertig – guten Appetit!";
+    };
+    const close = () => { try { lock?.release?.(); } catch (_) { /* egal */ } ov.remove(); document.removeEventListener("keydown", onKey); };
+    const onKey = (e) => {
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowRight" && idx < steps.length - 1) { idx++; show(); }
+      if (e.key === "ArrowLeft" && idx) { idx--; show(); }
+    };
+    document.addEventListener("keydown", onKey);
+    bPrev.onclick = () => { if (idx) { idx--; show(); } };
+    bNext.onclick = () => { if (idx < steps.length - 1) { idx++; show(); } else close(); };
+    bClose.onclick = close;
+    bIng.onclick = () => { ing.style.display = ing.style.display === "none" ? "block" : "none"; };
+    show();
+  }
+
+  _recipeText(r) {
+    const lines = [`🍳 ${r.name}`, "", "Zutaten:"];
+    for (const i of r.items) {
+      lines.push(`• ${[i.quantity, i.name].filter(Boolean).join(" ")}${i.note ? ` (${i.note})` : ""}${i.for_whom ? ` – für ${i.for_whom}` : ""}`);
     }
-    showPhotoOverlay(cached.data, title || this._pkLabel(name));
+    const steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
+    if (steps.length) {
+      lines.push("", "Zubereitung:");
+      steps.forEach((st, n) => lines.push(`${n + 1}. ${st}`));
+    }
+    return lines.join("\n");
+  }
+
+  // 📤 Rezept weitergeben: WhatsApp, Teilen-Menü des Handys oder kopieren
+  _shareRecipe(r) {
+    const text = this._recipeText(r);
+    const ov = makeOverlay();
+    ov.style.touchAction = "auto";
+    const card = document.createElement("div");
+    Object.assign(card.style, { background: "#1e1e1e", borderRadius: "16px", padding: "18px", maxWidth: "460px", width: "100%" });
+    const h = document.createElement("div");
+    h.textContent = `📤 „${r.name}“ weitergeben`;
+    Object.assign(h.style, { font: "600 18px Roboto,sans-serif", marginBottom: "10px" });
+    const pre = document.createElement("textarea");
+    pre.value = text;
+    pre.readOnly = true;
+    Object.assign(pre.style, { width: "100%", height: "38vh", boxSizing: "border-box", background: "#111", color: "#eee", border: "1px solid #333", borderRadius: "10px", padding: "10px", font: "14px/1.45 Roboto,sans-serif" });
+    const row = document.createElement("div");
+    Object.assign(row.style, { display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "12px" });
+    const wa = document.createElement("a");
+    wa.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    wa.target = "_blank";
+    wa.rel = "noopener";
+    wa.textContent = "WhatsApp";
+    wa.style.cssText = OV_BTN_MAIN + "text-decoration:none;display:inline-block;";
+    const bShare = ovButton("Teilen …"), bCopy = ovButton("Kopieren"), bClose = ovButton("Schließen");
+    if (!navigator.share) bShare.style.display = "none";
+    bShare.onclick = () => navigator.share({ title: r.name, text }).catch(() => {});
+    bCopy.onclick = async () => {
+      let ok = false;
+      try { await navigator.clipboard.writeText(text); ok = true; } catch (_) {
+        pre.select();
+        try { ok = document.execCommand("copy"); } catch (__) { ok = false; }
+      }
+      this._toast(ok ? "📋 Rezept kopiert – jetzt einfach einfügen" : "Kopieren ging nicht – bitte Text markieren und kopieren");
+    };
+    bClose.onclick = () => ov.remove();
+    row.append(wa, bShare, bCopy, bClose);
+    card.append(h, pre, row);
+    ov.appendChild(card);
+    ov.addEventListener("click", (e) => { if (e.target === ov) ov.remove(); });
+  }
+
+  // ℹ️ Produkt-Infos – nur auf Nachfrage (lange drücken → Infos)
+  async _showProductInfo(item) {
+    const codes = this._barcodesOf(this._pk(item.name, item.note));
+    if (!codes.length) { this._toast("Für Infos braucht das Produkt einen Barcode ▥"); return; }
+    let info;
+    try {
+      this._toast("ℹ️ Infos werden geladen …");
+      info = await this._ws({ type: "einkaufsliste/barcode/info", code: codes[0] });
+    } catch (_) { return; }
+    const ov = makeOverlay();
+    ov.style.justifyContent = "flex-start";
+    ov.style.overflowY = "auto";
+    ov.style.touchAction = "auto";
+    const card = document.createElement("div");
+    Object.assign(card.style, { background: "#1e1e1e", borderRadius: "16px", padding: "18px", maxWidth: "460px", width: "100%", marginTop: "4vh", lineHeight: "1.45" });
+    const ns = { A: "#038141", B: "#85bb2f", C: "#fecb02", D: "#ee8100", E: "#e63e11" };
+    const list = (arr) => (arr?.length ? arr.map((x) => esc(x)).join(", ") : "–");
+    card.innerHTML = info.found ? `
+      <div style="font:600 19px Roboto,sans-serif;margin-bottom:2px">${esc(info.name || item.name)}</div>
+      <div style="color:#bbb;margin-bottom:12px">${esc([info.brand, info.quantity].filter(Boolean).join(" · ") || "")}</div>
+      ${info.nutriscore ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="background:${ns[info.nutriscore]};color:#fff;font:700 22px Roboto,sans-serif;border-radius:10px;padding:4px 14px">${info.nutriscore}</span><span>Nutri-Score</span></div>` : `<div style="color:#bbb;margin-bottom:12px">Kein Nutri-Score bekannt</div>`}
+      <div><b>⚠️ Allergene:</b> ${list(info.allergens)}</div>
+      <div><b>Kann Spuren enthalten:</b> ${list(info.traces)}</div>
+      ${info.labels?.length ? `<div><b>🏷️</b> ${list(info.labels)}</div>` : ""}
+      ${info.ingredients ? `<details style="margin-top:10px"><summary style="cursor:pointer">Zutaten anzeigen</summary><div style="color:#ccc;font-size:13px;margin-top:6px">${esc(info.ingredients)}</div></details>` : ""}
+      <div style="color:#888;font-size:12px;margin-top:12px">Quelle: ${esc(info.source)} · Barcode ${esc(info.code)} · Angaben ohne Gewähr</div>`
+      : `<div style="font:600 17px Roboto,sans-serif">Keine Infos gefunden 🤷</div><div style="color:#bbb;margin-top:6px">Die Produkt-Datenbank kennt Barcode ${esc(codes[0])} (noch) nicht.</div>`;
+    const b = ovButton("Schließen", true);
+    b.style.marginTop = "14px";
+    b.onclick = () => ov.remove();
+    card.appendChild(b);
+    ov.appendChild(card);
+    ov.addEventListener("click", (e) => { if (e.target === ov) ov.remove(); });
   }
 
   // ---------------------------------------------------------------- Barcode (Scanner der HA-App)
@@ -2278,6 +2838,11 @@ class EinkaufslisteCard extends HTMLElement {
       this._renderDelList();
       return;
     }
+    if (t.id === "prodSearch") {
+      this._prodFilter = t.value;
+      this._renderProducts();
+      return;
+    }
     if (t.id === "logSearch") {
       this._logF.q = t.value;
       this._logMax = 150;
@@ -2312,8 +2877,9 @@ class EinkaufslisteCard extends HTMLElement {
       if (v) msg[key] = v;
     }
     if (this._pendingBarcode) { msg.barcode = this._pendingBarcode; msg.via = "scan"; }
+    if (!msg.quantity) { const sp = splitQty(name); if (sp.qty) { msg.name = sp.name; msg.quantity = sp.qty; } }
     // Steht das schon bei einem anderen Geschäft offen? Dann erst fragen: verschieben oder zusätzlich?
-    const other = this._openElsewhere({ name, note: msg.note, for_whom: msg.for_whom }, msg.store_id);
+    const other = this._openElsewhere({ name: msg.name, note: msg.note, for_whom: msg.for_whom }, msg.store_id);
     if (other) {
       this._conflict = { kind: "add", other: other.id, store: msg.store_id, msg };
       this._renderList();
@@ -2354,6 +2920,10 @@ class EinkaufslisteCard extends HTMLElement {
     const srow = el.closest(".srow");
 
     switch (act) {
+      case "reload":
+        try { caches?.keys?.().then((ks) => ks.forEach((k) => caches.delete(k))); } catch (_) { /* egal */ }
+        setTimeout(() => location.reload(), 150);
+        break;
       case "shopmode":
         this._shopMode = !this._shopMode;
         try { localStorage.setItem("einkaufsliste_shopmode", this._shopMode ? "1" : "0"); } catch (_) { /* egal */ }
@@ -2464,6 +3034,27 @@ class EinkaufslisteCard extends HTMLElement {
         this._toast("🧽 Alles geleert");
         this.$("inName").focus();
         break;
+      case "basic-toggle":
+        this._setBasic(!this._rBasic);
+        this._toast(this._rBasic ? "🧂 Grundvorrat: wird bei „Auf die Liste“ nicht vorausgewählt" : "🧂 Kein Grundvorrat");
+        break;
+      case "recipe-cook": {
+        const r = this._recipe(el.closest(".rtools").dataset.id);
+        if (r) this._cookMode(r);
+        break;
+      }
+      case "recipe-share": {
+        const r = this._recipe(el.closest(".rtools").dataset.id);
+        if (r) this._shareRecipe(r);
+        break;
+      }
+      case "note-chip": {
+        const n = this.$("inNote");
+        n.value = el.dataset.v;
+        this._updateTools();
+        this.$("inName").focus();
+        break;
+      }
       case "qty-chip": {
         const q = this.$("inQty");
         q.value = q.value === el.dataset.v ? "" : el.dataset.v;
@@ -2514,19 +3105,29 @@ class EinkaufslisteCard extends HTMLElement {
         this._qtyEdit = el.dataset.id;
         this._renderList();
         break;
+      case "menu-info": {
+        const item = this._data.items.find((i) => i.id === el.dataset.id);
+        this._menuId = null;
+        this._renderList();
+        if (item) this._showProductInfo(item);
+        break;
+      }
       case "menu-photo": {
         const item = this._data.items.find((i) => i.id === el.dataset.id);
         this._menuId = null;
         this._renderList();
-        this._takePhoto(this._pk(item.name, item.note), null);
+        const pk = this._pk(item.name, item.note);
+        if (this._hasPhoto(pk)) this._openPhoto(pk);
+        else this._takePhoto(pk, null);
         break;
       }
       case "qty-edit": {
         const item = this._data.items.find((i) => i.id === id);
-        if (/^\d+\s*(x|stk\.?|stück)?$/i.test(item?.quantity || "")) {
+        if (this._parseQty(item?.quantity)) {
           this._qtyEdit = this._qtyEdit === id ? null : id;
+          if (this._qtyStep) delete this._qtyStep[id];
         } else {
-          this._editing = id; // z. B. „500 g“ -> normal bearbeiten
+          this._editing = id; // z. B. „ein paar“ -> normal bearbeiten
         }
         this._renderList();
         break;
@@ -2535,10 +3136,10 @@ class EinkaufslisteCard extends HTMLElement {
       case "qty-plus": {
         const itemId = el.closest(".qtyrow").dataset.id;
         const item = this._data.items.find((i) => i.id === itemId);
-        const m = String(item?.quantity || "").match(/^(\d+)/);
-        let n = m ? Number(m[1]) : 1;
-        n = act === "qty-plus" ? n + 1 : Math.max(1, n - 1);
-        this._ws({ type: "einkaufsliste/item/update", item_id: itemId, quantity: `${n}x` }).catch(() => {});
+        const p = this._parseQty(item?.quantity) || { n: 1, unit: "x" };
+        const step = (this._qtyStep ||= {})[itemId] || this._qtyStepFor(item);
+        const n = act === "qty-plus" ? p.n + step : Math.max(step, p.n - step);
+        this._ws({ type: "einkaufsliste/item/update", item_id: itemId, quantity: this._fmtQty(n, p.unit) }).catch(() => {});
         break;
       }
       case "qty-done":
@@ -2615,6 +3216,35 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderSettings();
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
         break;
+      case "prod-edit":
+        this._prodEdit = el.dataset.key;
+        this._renderProducts();
+        break;
+      case "prod-cancel":
+        this._prodEdit = null;
+        this._renderProducts();
+        break;
+      case "prod-photos":
+        this._openPhoto(el.closest(".prodedit").dataset.key);
+        break;
+      case "prod-save": {
+        const key = el.closest(".prodedit").dataset.key;
+        const msg = {
+          type: "einkaufsliste/product/update", key,
+          name: this.$("peName").value.trim(), note: this.$("peNote").value.trim() || null,
+          category_id: this.$("peCat").value || null, store_id: this.$("peStore").value || null,
+        };
+        if (!msg.name) { this.$("peName").classList.add("shake"); break; }
+        this._ws(msg).then(() => { this._toast("📦 Produkt gespeichert"); this._prodEdit = null; this._loadProducts(); }).catch(() => {});
+        break;
+      }
+      case "prod-forget": {
+        const key = el.closest(".prodedit").dataset.key;
+        if (!confirm("Dieses Produkt vergessen? Fotos, Barcodes und Vorschläge sind dann weg. Artikel auf der Liste bleiben stehen.")) break;
+        this._ws({ type: "einkaufsliste/product/remove", key })
+          .then(() => { this._toast("🧹 Produkt vergessen"); this._prodEdit = null; this._loadProducts(); }).catch(() => {});
+        break;
+      }
       case "log-more":
         this._logMax = (this._logMax || 150) + 150;
         this._renderLogList();
@@ -2680,7 +3310,7 @@ class EinkaufslisteCard extends HTMLElement {
         if (this._pickRecipe === r.id) { this._pickRecipe = null; this._renderRecipes(); break; }
         const open = new Set(this._data.items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
         this._pickRecipe = r.id;
-        this._pickSel = new Set(r.items.map((it, n) => (open.has(it.name.toLowerCase()) ? -1 : n)).filter((n) => n >= 0));
+        this._pickSel = new Set(r.items.map((it, n) => (open.has(it.name.toLowerCase()) || it.basic ? -1 : n)).filter((n) => n >= 0));
         this._renderRecipes();
         break;
       }

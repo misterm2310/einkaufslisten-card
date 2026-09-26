@@ -20,6 +20,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .categories import category_hints, guess_category
+from .quantity import norm_qty, split_qty
 from .const import (
     CATEGORY_COLORS,
     CONF_CLEANUP_TIME,
@@ -31,6 +32,8 @@ from .const import (
     EVENT_CLEANUP,
     EVENT_ITEM_ADDED,
     HISTORY_LIMIT,
+    MAX_PHOTOS,
+    VERSION,
     PERSON_COLORS,
     LOG_DAY_CHOICES,
     LOG_DEFAULT_DAYS,
@@ -97,6 +100,15 @@ def _note(text: Any) -> str | None:
     """Notiz immer mit Großbuchstaben am Anfang („bio“ -> „Bio“)."""
     text = _clean(text)
     return text[:1].upper() + text[1:] if text else None
+
+
+def _clean_steps(text: Any) -> str | None:
+    """Zubereitung: ein Schritt pro Zeile, leere Zeilen raus."""
+    if not text:
+        return None
+    lines = [" ".join(line.split()) for line in str(text).splitlines()]
+    lines = [line for line in lines if line]
+    return "\n".join(lines)[:8000] or None
 
 
 def recipe_photo_key(recipe_id: str) -> str:
@@ -208,9 +220,13 @@ class EinkaufslisteManager:
             item.setdefault("for_whom", None)
             item.setdefault("recipe_id", None)
             item["note"] = _note(item.get("note"))
+            item["quantity"] = norm_qty(item.get("quantity"))
         for recipe in self.recipes:
+            recipe.setdefault("steps", None)
             for entry in recipe.get("items", []):
                 entry["note"] = _note(entry.get("note"))
+                entry["quantity"] = norm_qty(entry.get("quantity"))
+                entry.setdefault("basic", False)
         self.photos = data.get("photos", {})
         self.seen = data.get("seen", {})
         for mine in self.seen.values():  # älter als v2.2.0: Blasen-Zeiten („b:…“) nachrüsten
@@ -295,6 +311,8 @@ class EinkaufslisteManager:
             "recipes": self.recipes,
             "persons": self.persons,
             "photos": {k: v.get("updated") for k, v in self.photos.items()},
+            "photo_counts": {k: 1 + len(v["more"]) for k, v in self.photos.items() if v.get("more")},
+            "version": VERSION,
             "category_hints": category_hints(self.categories),
             "seen": self.seen,
             "history": history[:300],
@@ -313,6 +331,128 @@ class EinkaufslisteManager:
             if entry.get("name"):
                 out.setdefault(product_key(entry["name"], entry.get("note")), []).append(code)
         return out
+
+    # ------------------------------------------------------------------ Produkt-Katalog
+    def products(self) -> list[dict[str, Any]]:
+        """Alle bekannten Produkte (Name + Notiz) mit Foto-, Barcode- und Verlaufs-Infos."""
+        out: dict[str, dict[str, Any]] = {}
+
+        def entry(name: str, note: str | None) -> dict[str, Any]:
+            key = product_key(name, note)
+            if key not in out:
+                hist = self.history.get(name.lower()) or {}
+                out[key] = {
+                    "key": key,
+                    "name": name,
+                    "note": note,
+                    "category_id": hist.get("category_id"),
+                    "store_id": hist.get("store_id"),
+                    "count": hist.get("count", 0),
+                    "last_used": hist.get("last_used"),
+                    "barcodes": [],
+                    "photos": 0,
+                    "open": 0,
+                    "items": 0,
+                }
+            return out[key]
+
+        for hist in self.history.values():
+            entry(hist["name"], None)
+        for item in self.items:
+            e = entry(item["name"], item.get("note"))
+            e["items"] += 1
+            if not item["checked"]:
+                e["open"] += 1
+            if item.get("category_id") and not e["category_id"]:
+                e["category_id"] = item["category_id"]
+        for recipe in self.recipes:
+            for ri in recipe["items"]:
+                entry(ri["name"], ri.get("note"))
+        for code, bc in self.barcodes.items():
+            if bc.get("name"):
+                entry(bc["name"], bc.get("note"))["barcodes"].append(code)
+        for key, ph in self.photos.items():
+            if key.startswith("rezept#"):
+                continue
+            name, _, note = (ph.get("name") or key).partition("|")
+            e = out.get(key) or entry(name, note or None)
+            e["photos"] = len(self._photo_ids(ph))
+        # Einträge nur aus dem Verlauf, die es auch mit Notiz gibt, nicht doppelt zeigen
+        names_with_note = {e["name"].lower() for e in out.values() if e["note"]}
+        result = [
+            e for e in out.values()
+            if e["note"] or e["name"].lower() not in names_with_note
+            or e["items"] or e["barcodes"] or e["photos"]
+        ]
+        return sorted(result, key=lambda e: (e["name"].lower(), (e["note"] or "").lower()))
+
+    @callback
+    def update_product(
+        self,
+        key: str,
+        name: str | None = None,
+        note: str | None = None,
+        category_id: str | None = None,
+        store_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Produkt im Katalog ändern – zieht Artikel, Rezepte, Fotos, Barcodes und Verlauf mit."""
+        key = (key or "").lower()
+        prod = next((p for p in self.products() if p["key"] == key), None)
+        if prod is None:
+            raise ValueError("Dieses Produkt gibt es nicht (mehr).")
+        new_name = _nice(name) if name is not None else prod["name"]
+        if not new_name:
+            raise ValueError("Der Name darf nicht leer sein.")
+        new_note = _note(note) if note is not None else prod["note"]
+        new_key = product_key(new_name, new_note)
+        cat = self._check_category(category_id) if category_id is not None else None
+        store = self._check_store(store_id) if store_id is not None else None
+        for thing in self.items + [ri for r in self.recipes for ri in r["items"]]:
+            if product_key(thing["name"], thing.get("note")) == key:
+                thing["name"], thing["note"] = new_name, new_note
+                if category_id is not None:
+                    thing["category_id"] = cat
+        for bc in self.barcodes.values():
+            if product_key(bc.get("name"), bc.get("note")) == key:
+                bc.update(name=new_name, note=new_note)
+                if category_id is not None:
+                    bc["category_id"] = cat
+                if store_id is not None:
+                    bc["store_id"] = store
+        if new_key != key and key in self.photos and new_key not in self.photos:
+            self.photos[new_key] = self.photos.pop(key)
+            self.photos[new_key]["name"] = new_key
+        old_hist = self.history.get(prod["name"].lower())
+        if old_hist is not None:
+            if new_name.lower() != prod["name"].lower():
+                self.history.pop(prod["name"].lower(), None)
+                old_hist["name"] = new_name
+                self.history.setdefault(new_name.lower(), old_hist)
+            target = self.history[new_name.lower()]
+            if category_id is not None:
+                target["category_id"] = cat
+            if store_id is not None:
+                target["store_id"] = store
+        elif category_id is not None or store_id is not None:
+            self.history[new_name.lower()] = {
+                "name": new_name, "count": 0, "store_id": store, "category_id": cat, "last_used": _now_iso(),
+            }
+        self._changed()
+        return next((p for p in self.products() if p["key"] == new_key), {"key": new_key})
+
+    async def async_forget_product(self, key: str) -> None:
+        """Produkt vergessen: Fotos, Barcodes und Verlauf weg (Artikel auf der Liste bleiben)."""
+        key = (key or "").lower()
+        prod = next((p for p in self.products() if p["key"] == key), None)
+        if prod is None:
+            return
+        for code in [c for c, bc in self.barcodes.items() if product_key(bc.get("name"), bc.get("note")) == key]:
+            self.barcodes.pop(code, None)
+        others = [p for p in self.products() if p["name"].lower() == prod["name"].lower() and p["key"] != key]
+        if not others:
+            self.history.pop(prod["name"].lower(), None)
+        await self.async_remove_photo(key)
+        self._changed()
 
     # ------------------------------------------------------------------ Verlauf
     @contextmanager
@@ -525,12 +665,14 @@ class EinkaufslisteManager:
         „für wen“ und gleichem Geschäft, wird kein zweiter angelegt: Ist er abgehakt, kommt er wieder
         auf die Liste (Haken raus), sonst werden nur die Angaben aktualisiert.
         """
+        if not _clean(quantity):
+            name, quantity = split_qty(name)  # „3 milch“ -> Milch · 3x
         name = _nice(name)
         if not name:
             raise ValueError("Ohne Namen geht's nicht – was soll denn gekauft werden?")
         store_id = self._check_store(store_id)
         category_id = self._check_category(category_id)
-        quantity, note, for_whom = _clean(quantity), _note(note), _clean(for_whom)
+        quantity, note, for_whom = norm_qty(_clean(quantity)), _note(note), _clean(for_whom)
         if _clean(barcode):
             self.learn_barcode(str(barcode).strip(), name, store_id, category_id, note, for_whom)
 
@@ -625,7 +767,7 @@ class EinkaufslisteManager:
         if "category_id" in fields:
             item["category_id"] = self._check_category(fields["category_id"])
         if "quantity" in fields:
-            item["quantity"] = _clean(fields["quantity"])
+            item["quantity"] = norm_qty(_clean(fields["quantity"]))
         key = item["name"].lower()
         if key in self.history:
             self.history[key].update(store_id=item["store_id"], category_id=item["category_id"])
@@ -783,8 +925,15 @@ class EinkaufslisteManager:
     def _photo_path(self, photo_id: str) -> Path:
         return self.photo_dir / f"{photo_id}.jpg"
 
-    async def async_set_photo(self, name: str, data: str) -> dict[str, Any]:
-        """Foto zu einem Produkt speichern (Base64, vom Handy schon verkleinert)."""
+    @staticmethod
+    def _photo_ids(entry: dict[str, Any]) -> list[str]:
+        return [entry["id"], *entry.get("more", [])]
+
+    async def async_set_photo(self, name: str, data: str, add: bool = False) -> dict[str, Any]:
+        """Foto zu einem Produkt speichern (Base64, vom Handy schon verkleinert).
+
+        add=True: zusätzliches Foto (z. B. Rückseite), sonst wird das Haupt-Foto ersetzt.
+        """
         name = _clean(name)
         if not name:
             raise ValueError("Zu welchem Artikel gehört das Foto?")
@@ -806,18 +955,28 @@ class EinkaufslisteManager:
             path.write_bytes(raw)
 
         await self.hass.async_add_executor_job(_write)
-        old = self.photos.get(name.lower())
-        self.photos[name.lower()] = {"id": photo_id, "updated": _now_iso(), "name": name}
-        if old:
-            await self._async_delete_file(old["id"])
+        key = name.lower()
+        old = self.photos.get(key)
+        if old and add:
+            if len(self._photo_ids(old)) >= MAX_PHOTOS:
+                await self._async_delete_file(photo_id)
+                raise ValueError(f"Mehr als {MAX_PHOTOS} Fotos pro Produkt gehen nicht.")
+            old.setdefault("more", []).append(photo_id)
+            old["updated"] = _now_iso()
+        else:
+            self.photos[key] = {"id": photo_id, "updated": _now_iso(), "name": name, "more": old.get("more", []) if old else []}
+            if old:
+                await self._async_delete_file(old["id"])
         self._changed()
-        return {"name": name, "updated": self.photos[name.lower()]["updated"]}
+        entry = self.photos[key]
+        return {"name": name, "updated": entry["updated"], "count": len(self._photo_ids(entry))}
 
-    async def async_get_photo(self, name: str) -> str:
+    async def async_get_photo(self, name: str, index: int = 0) -> str:
         entry = self.photos.get((_clean(name) or "").lower())
         if entry is None:
             raise ValueError("Zu diesem Artikel gibt es kein Foto.")
-        path = self._photo_path(entry["id"])
+        ids = self._photo_ids(entry)
+        path = self._photo_path(ids[max(0, min(int(index or 0), len(ids) - 1))])
 
         def _read() -> bytes | None:
             return path.read_bytes() if path.exists() else None
@@ -828,11 +987,23 @@ class EinkaufslisteManager:
         mime = "image/png" if raw[:4] == b"\x89PNG" else "image/webp" if raw[8:12] == b"WEBP" else "image/jpeg"
         return f"data:{mime};base64,{base64.b64encode(raw).decode()}"
 
-    async def async_remove_photo(self, name: str) -> None:
-        entry = self.photos.pop((_clean(name) or "").lower(), None)
+    async def async_remove_photo(self, name: str, index: int | None = None) -> None:
+        """Foto(s) löschen: index=None alle, sonst nur dieses eine."""
+        key = (_clean(name) or "").lower()
+        entry = self.photos.get(key)
         if entry is None:
             return
-        await self._async_delete_file(entry["id"])
+        ids = self._photo_ids(entry)
+        if index is None or len(ids) <= 1:
+            self.photos.pop(key, None)
+            for pid in ids:
+                await self._async_delete_file(pid)
+        else:
+            index = max(0, min(int(index), len(ids) - 1))
+            gone = ids.pop(index)
+            entry["id"], entry["more"] = ids[0], ids[1:]
+            entry["updated"] = _now_iso()
+            await self._async_delete_file(gone)
         self._changed()
 
     async def _async_delete_file(self, photo_id: str) -> None:
@@ -970,16 +1141,20 @@ class EinkaufslisteManager:
         out = []
         seen = set()
         for raw in items:
-            name = _nice(raw.get("name"))
+            raw_name, qty = raw.get("name"), raw.get("quantity")
+            if not _clean(qty):
+                raw_name, qty = split_qty(raw_name)
+            name = _nice(raw_name)
             if not name:
                 continue
             entry = {
                 "name": name,
-                "quantity": _clean(raw.get("quantity")),
+                "quantity": norm_qty(_clean(qty)),
                 "note": _note(raw.get("note")),
                 "for_whom": _clean(raw.get("for_whom")),
                 "store_id": self._check_store(raw.get("store_id")),
                 "category_id": self._check_category(raw.get("category_id")),
+                "basic": bool(raw.get("basic")),  # 🧂 Grundvorrat („haben wir immer“)
             }
             key = _key(entry["name"], entry["note"], entry["for_whom"], entry["store_id"])
             if key in seen:
@@ -1002,13 +1177,18 @@ class EinkaufslisteManager:
 
     @callback
     def add_recipe(
-        self, name: str, items: list[dict[str, Any]] | None = None, icon: str | None = None
+        self,
+        name: str,
+        items: list[dict[str, Any]] | None = None,
+        icon: str | None = None,
+        steps: str | None = None,
     ) -> dict[str, Any]:
         recipe = {
             "id": _new_id(),
             "name": self._recipe_name(name),
             "icon": _icon(icon, "mdi:silverware-fork-knife"),
             "items": self._recipe_items(items or []),
+            "steps": _clean_steps(steps),
         }
         self.recipes.append(recipe)
         self._changed()
@@ -1025,6 +1205,8 @@ class EinkaufslisteManager:
             recipe["icon"] = _icon(fields["icon"], recipe.get("icon", "mdi:silverware-fork-knife"))
         if "items" in fields:
             recipe["items"] = self._recipe_items(fields["items"])
+        if "steps" in fields:
+            recipe["steps"] = _clean_steps(fields["steps"])
         self._changed()
         return recipe
 

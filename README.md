@@ -113,6 +113,14 @@ Was du gewählt hast, steht direkt am Symbol, zum Beispiel **🔢 2x · 👤 Oma
 
 ---
 
+**Noch schneller eintragen:**
+- **🔢 Menge gleich mittippen:** „3 milch“, „milch 3x“ oder „500g mehl“ – daraus wird **Milch · 3x** bzw. **Mehl · 500 g**.
+- **📏 Einheiten werden aufgeräumt:** „1l“, „1 Liter“ → **1 L**, „500gr“ → **500 g**, „3 stk“ → **3x**.
+- **🤓 Tippfehler-Hilfe:** Bei „Mlich“ kommt der Vorschlag **„Meintest du Milch?“**.
+- **📝 Notiz-Vorschläge:** Beim 📝 erscheinen eure häufigsten Notizen als Knöpfe (zum getippten Produkt zuerst).
+
+---
+
 ## 👆 Bedienung in der Liste
 
 - **⭕ Kreis antippen:** abhaken
@@ -127,6 +135,11 @@ Was du gewählt hast, steht direkt am Symbol, zum Beispiel **🔢 2x · 👤 Oma
 - **🛒 Laden-Modus:** Oben auf den **Einkaufswagen** tippen. Die Zeilen und Kreise werden groß, das Eingabefeld verschwindet, und oben steht „Laden-Modus“. Nochmal tippen (oder **Beenden**) schaltet zurück. Jedes Handy merkt sich das für sich.
 - **🔗 Doppelt-Finder:** Stehen zwei Artikel mit fast gleichem Namen beim selben Geschäft, zum Beispiel „Tomate“ und „Tomaten“, erscheint oben eine Frage. **Zusammenlegen** macht daraus einen Artikel, und Mengen wie 2x + 3x werden zu **5x** zusammengezählt. **Passt so** fragt bei diesem Paar nie wieder.
 - **▥ am Artikel:** Steht klein unter dem Namen ein **▥**, ist für dieses Produkt ein Barcode hinterlegt. Im Lange-drücken-Menü steht dann **„Barcode ✓“**.
+- **[−] [＋] mit Einheiten:** Auf die Menge tippen – das geht auch bei **250 g → 500 g → 750 g** oder **1 L → 2 L**.
+- **📳 Vibration:** Beim Abhaken vibriert das Handy kurz (wenn es das kann).
+- **✨ hält höchstens 24 Stunden**, danach verschwindet es von selbst.
+- **🟢 Live-Punkt** neben dem Titel: grün = verbunden, rot = gerade keine Verbindung.
+- **🔄 Update-Hinweis:** Hat das Handy noch eine alte Version im Speicher, erscheint oben „Neue Version … ist da“ mit **Neu laden**.
 - **📱 Kompakt-Modus:** Im Karten-Editor einschalten. Dann gibt's kleinere Zeilen ohne Zusatz-Infos, und mehr passt auf den Bildschirm.
 
 ---
@@ -159,6 +172,14 @@ Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags 
 
 ---
 
+**👨‍🍳 Zubereitung & Koch-Modus:** Im Rezept-Editor gibt es das Feld **Zubereitung** (ein Schritt pro Zeile). Beim Link-Einfügen wird die Anleitung gleich mit übernommen. Bei der Kochmütze erscheint dann **🔥 Kochen**: Schritt für Schritt in großer Schrift, mit **‹ Zurück / Weiter ›** und den Zutaten zum Aufklappen. Der Bildschirm soll dabei anbleiben (klappt nur, wenn der Browser das erlaubt – über `http://` meistens nicht).
+
+**📤 Rezept weitergeben:** Knopf **Teilen** bei der Kochmütze → Zutaten und Zubereitung als Text, per **WhatsApp**, über das Teilen-Menü des Handys oder zum **Kopieren**.
+
+**🧂 Grundvorrat:** Im Rezept-Editor den Salzstreuer 🧂 antippen, bevor du die Zutat mit ✔ übernimmst (z. B. Salz, Pfeffer, Öl). Bei „Was davon brauchst du?“ sind solche Zutaten **nicht** angehakt und stehen klein mit „🧂 haben wir immer“ da.
+
+---
+
 ## 📍 Nächstes Geschäft zuerst
 
 Die Liste springt automatisch auf den Reiter des Geschäfts, bei dem **du** gerade bist.
@@ -185,6 +206,12 @@ Damit keiner mehr die falschen Nudeln mitbringt. 😄
 - Fotos werden noch auf dem Handy **automatisch verkleinert**, auf ungefähr 100 KB.
 - Gespeichert wird alles **nur bei dir** unter `/config/einkaufsliste_fotos` und mit deinen Backups gesichert.
 - Löschst du einen Artikel ganz (⚙️ → Artikel ganz löschen), ist auch das Foto weg. Außer eine Rezept-Zutat braucht es noch.
+
+---
+
+**Mehr Fotos & zuschneiden:**
+- Nach dem Auswählen geht ein kleiner Editor auf: **↺ ↻ drehen**, Rahmen verschieben, **grünen Punkt ziehen = Ausschnitt**, dann **✔ Übernehmen**.
+- Ein Produkt kann **bis zu 6 Fotos** haben (Vorderseite, Rückseite, Regal …). Tipp aufs 📷 → blättern mit ‹ › oder wischen, **➕ Foto dazu**, **🗑️ Dieses löschen**. Die kleine Zahl am 📷 zeigt, wie viele es sind.
 
 ---
 
@@ -216,6 +243,12 @@ Bist du bei einem Geschäft, das eine **📍 Zone** hat, wird der ▥-Knopf **gr
 
 ---
 
+**Beim Scannen neu:**
+- **Marke als Notiz:** Aus „Wagner Pizza Salami“ wird **Pizza Salami · 📝 Wagner**.
+- **ℹ️ Produkt-Infos nur auf Wunsch:** Artikel lange drücken → **Infos** zeigt Nutri-Score, Allergene, Spuren, Siegel und Zutaten (aus Open Food Facts & Co., ohne Gewähr). Sonst wird davon nichts angezeigt.
+
+---
+
 ## 👨‍👩‍👧‍👦 Die Familie dazuholen
 
 - Jedes Familienmitglied braucht einen **eigenen Home-Assistant-Benutzer** (Einstellungen → Personen → Benutzer). Admin-Rechte sind **nicht** nötig.
@@ -230,6 +263,9 @@ Bist du bei einem Geschäft, das eine **📍 Zone** hat, wird der ▥-Knopf **gr
 ## ⚙️ Die Einstellungen (Zahnrad)
 
 Ein Tipp aufs **⚙️** zeigt eine aufgeräumte Übersicht mit Kacheln: **Geschäfte · Kategorien · Rezepte · Personen · Verlauf · Aufräumen · Artikel löschen**. Tipp auf eine Kachel, und nur dieser Bereich geht auf. Mit **← Übersicht** geht's zurück.
+
+### 📦 Produkte (Katalog)
+Alle Produkte, die die Liste kennt – mit Kategorie, Standard-Geschäft, Anzahl Fotos und Barcodes. Suchen, antippen, ändern: Umbenennen oder eine andere Notiz zieht **Artikel, Rezepte, Fotos, Barcodes und Vorschläge** mit. **Vergessen** löscht Fotos, Barcodes und Vorschläge (Artikel auf der Liste bleiben stehen).
 
 ### 📋 Verlauf: wer hat wann was wie gemacht?
 - Alles steht drin, das Neueste oben, nach Tagen sortiert: **eingetragen**, **wieder drauf**, **abgehakt**, **geändert** (mit Details wie „Menge 2x → 4x“), **verschoben** („Aldi → Netto“) und **gelöscht**.

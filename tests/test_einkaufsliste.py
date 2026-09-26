@@ -214,7 +214,7 @@ async def test_recipes(hass, setup, hass_ws_client, hass_admin_user):
         {"id": 3, "type": "einkaufsliste/recipe/update", "recipe_id": recipe["id"],
          "items": recipe["items"] + [{"name": "Mozzarella"}]}
     )
-    assert (await client.receive_json())["success"]
+    r3 = await client.receive_json(); assert r3["success"], r3
 
     # nochmal anwenden -> keine Duplikate, nur der neue Mozzarella kommt dazu
     await client.send_json({"id": 4, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"]})
@@ -569,12 +569,12 @@ async def test_barcode_lookup(hass, setup, hass_ws_client, aioclient_mock):
 
     await client.send_json({"id": 1, "type": "einkaufsliste/barcode/lookup", "code": "4008400402222"})
     res = (await client.receive_json())["result"]
-    assert res["found"] and res["name"] == "Wagner Pizza Salami" and res["source"] == "Open Food Facts"
+    assert res["found"] and res["name"] == "Pizza Salami" and res["note"] == "Wagner" and res["source"] == "Open Food Facts"
     assert res["category_id"] == m.find_category("TK-Ware")
 
     await client.send_json({"id": 2, "type": "einkaufsliste/barcode/lookup", "code": "4005900000000"})
     res = (await client.receive_json())["result"]
-    assert res["name"] == "Nivea Duschgel" and res["category_id"] == m.find_category("Drogerie")
+    assert res["name"] == "Duschgel" and res["note"] == "Nivea" and res["category_id"] == m.find_category("Drogerie")
 
     await client.send_json({"id": 3, "type": "einkaufsliste/barcode/lookup", "code": "1111111111116"})
     res = (await client.receive_json())["result"]
@@ -922,3 +922,63 @@ async def test_person_colors(hass, setup, hass_ws_client):
     await client.send_json({"id": 1, "type": "einkaufsliste/group/update", "kind": "persons", "group_id": a["id"], "color": "#123456"})
     assert (await client.receive_json())["success"]
     assert m.persons[0]["color"] == "#123456"
+
+
+async def test_quantity_in_name_and_units(hass, setup):
+    m = mgr(hass)
+    a = m.add_item("3 milch")
+    assert a["name"] == "Milch" and a["quantity"] == "3x"
+    b = m.add_item("Mehl 500gr")
+    assert b["name"] == "Mehl" and b["quantity"] == "500 g"
+    c = m.add_item("Cola", quantity="1,5 liter")
+    assert c["quantity"] == "1,5 L"
+    d = m.add_item("Xbox 360")
+    assert d["name"] == "Xbox 360" and d["quantity"] is None
+    m.update_item(a["id"], quantity="2 stk")
+    assert a["quantity"] == "2x"
+    r = m.add_recipe("Kuchen", items=[{"name": "250g Butter"}, {"name": "Salz", "basic": True}], steps="Teig rühren\n\n Backen  ")
+    assert r["items"][0]["name"] == "Butter" and r["items"][0]["quantity"] == "250 g"
+    assert r["items"][1]["basic"] is True and r["steps"] == "Teig rühren\nBacken"
+    assert m.as_dict()["version"]
+
+
+async def test_multiple_photos_and_catalog(hass, setup, hass_ws_client):
+    import base64
+
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    item = m.add_item("Käse", note="Gouda", barcode="123")
+    data = base64.b64encode(JPEG).decode()
+    for n, add in ((1, False), (2, True), (3, True)):
+        await client.send_json({"id": n, "type": "einkaufsliste/photo/set", "name": "käse|gouda", "data": data, "add": add})
+        assert (await client.receive_json())["success"]
+    assert m.as_dict()["photo_counts"]["käse|gouda"] == 3
+    await client.send_json({"id": 4, "type": "einkaufsliste/photo/get", "name": "käse|gouda", "index": 2})
+    assert (await client.receive_json())["result"]["data"].startswith("data:image/jpeg")
+    await client.send_json({"id": 5, "type": "einkaufsliste/photo/remove", "name": "käse|gouda", "index": 0})
+    assert (await client.receive_json())["success"]
+    assert m.as_dict()["photo_counts"]["käse|gouda"] == 2
+
+    await client.send_json({"id": 6, "type": "einkaufsliste/products"})
+    prods = (await client.receive_json())["result"]
+    gouda = next(p for p in prods if p["key"] == "käse|gouda")
+    assert gouda["barcodes"] == ["123"] and gouda["photos"] == 2 and gouda["open"] == 1
+    tk = m.find_category("TK-Ware")
+    await client.send_json({"id": 7, "type": "einkaufsliste/product/update", "key": "käse|gouda", "note": "Alter Gouda", "category_id": tk})
+    res = await client.receive_json()
+    assert res["success"], res
+    assert item["note"] == "Alter Gouda" and item["category_id"] == tk
+    assert "käse|alter gouda" in m.photos and m.barcodes["123"]["note"] == "Alter Gouda"
+    await client.send_json({"id": 8, "type": "einkaufsliste/product/remove", "key": "käse|alter gouda"})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert "käse|alter gouda" not in m.photos and "123" not in m.barcodes
+    assert item in m.items  # Artikel bleibt auf der Liste
+
+
+def test_steps_from_schema():
+    from custom_components.einkaufsliste.recipe_import import parse_html
+
+    page = """<script type="application/ld+json">{"@type":"Recipe","name":"X","recipeIngredient":["1 Ei"],
+      "recipeInstructions":[{"@type":"HowToStep","text":"Ei kochen."},{"@type":"HowToSection","itemListElement":[{"@type":"HowToStep","text":"Schälen."}]}]}</script>"""
+    assert parse_html(page)["steps"] == "Ei kochen.\nSchälen."

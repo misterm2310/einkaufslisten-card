@@ -62,19 +62,31 @@ def guess_category(tags: list[str], source: str, categories: list[dict[str, Any]
     return None
 
 
-def _product_name(product: dict[str, Any]) -> str | None:
-    name = (
-        product.get("product_name_de")
-        or product.get("product_name")
-        or product.get("generic_name_de")
-        or ""
-    ).strip()
+def _product_name(product: dict[str, Any]) -> tuple[str | None, str | None]:
+    """(Name, Marke) – die Marke kommt als Notiz: „Pizza Salami · Wagner“."""
+    name = " ".join(
+        (
+            product.get("product_name_de")
+            or product.get("product_name")
+            or product.get("generic_name_de")
+            or ""
+        ).split()
+    )
     brand = (product.get("brands") or "").split(",")[0].strip()
     if not name and not brand:
-        return None
-    if brand and brand.lower() not in name.lower():
-        return f"{brand} {name}".strip()
-    return name
+        return None, None
+    if not name:
+        return brand, None
+    if brand:
+        # Marke vorne/hinten aus dem Namen nehmen („Wagner Pizza Salami“ -> „Pizza Salami“)
+        low, b = name.lower(), brand.lower()
+        if low.startswith(b + " "):
+            name = name[len(brand):].strip(" -–,")
+        elif low.endswith(" " + b):
+            name = name[: -len(brand)].strip(" -–,")
+        if not name or name.lower() == b:
+            return brand, None
+    return name, brand or None
 
 
 async def async_lookup(hass: HomeAssistant, manager: Any, code: str) -> dict[str, Any]:
@@ -117,7 +129,7 @@ async def async_lookup(hass: HomeAssistant, manager: Any, code: str) -> dict[str
         if not isinstance(data, dict) or data.get("status") != 1:
             continue
         product = data.get("product") or {}
-        name = _product_name(product)
+        name, brand = _product_name(product)
         if not name:
             continue
         return {
@@ -125,6 +137,7 @@ async def async_lookup(hass: HomeAssistant, manager: Any, code: str) -> dict[str
             "found": True,
             "source": source,
             "name": name,
+            "note": brand,
             "store_id": None,
             "category_id": guess_category(
                 product.get("categories_tags") or [], source, manager.categories
@@ -200,3 +213,67 @@ async def async_auto_photo(hass: HomeAssistant, manager: Any, code: str, name: s
         _LOGGER.debug("Produktfoto abgelehnt: %s", err)
         return False
     return True
+
+
+# ℹ️ Produkt-Infos (nur auf Nachfrage: beim Draufdrücken aufs Produkt)
+INFO_FIELDS = "product_name,product_name_de,brands,quantity,nutriscore_grade,nova_group,allergens_tags,traces_tags,labels_tags,ingredients_text_de,ingredients_text"
+ALLERGENS_DE = {
+    "gluten": "Gluten", "milk": "Milch", "eggs": "Eier", "nuts": "Schalenfrüchte (Nüsse)",
+    "peanuts": "Erdnüsse", "soybeans": "Soja", "fish": "Fisch", "crustaceans": "Krebstiere",
+    "molluscs": "Weichtiere", "celery": "Sellerie", "mustard": "Senf", "sesame-seeds": "Sesam",
+    "sulphur-dioxide-and-sulphites": "Schwefeldioxid/Sulfite", "lupin": "Lupinen",
+}
+LABELS_DE = {
+    "organic": "Bio", "eu-organic": "EU-Bio", "vegan": "Vegan", "vegetarian": "Vegetarisch",
+    "gluten-free": "Glutenfrei", "no-lactose": "Laktosefrei", "lactose-free": "Laktosefrei",
+    "fair-trade": "Fairtrade", "palm-oil-free": "Ohne Palmöl",
+}
+
+
+def _tags(tags: list[str] | None, names: dict[str, str]) -> list[str]:
+    out: list[str] = []
+    for tag in tags or []:
+        key = str(tag).split(":", 1)[-1]
+        label = names.get(key)
+        if label and label not in out:
+            out.append(label)
+    return out
+
+
+async def async_product_info(hass: HomeAssistant, code: str) -> dict[str, Any]:
+    code = _clean_code(code)
+    if not code:
+        raise ValueError("Zu diesem Produkt ist kein Barcode hinterlegt.")
+    session = async_get_clientsession(hass)
+    for source, base in SOURCES:
+        try:
+            async with asyncio.timeout(8):
+                resp = await session.get(
+                    f"{base}/api/v2/product/{code}.json",
+                    params={"fields": INFO_FIELDS},
+                    headers={"User-Agent": USER_AGENT},
+                )
+                if resp.status != 200:
+                    continue
+                data = await resp.json(content_type=None)
+        except (TimeoutError, aiohttp.ClientError, ValueError):
+            continue
+        if not isinstance(data, dict) or data.get("status") != 1:
+            continue
+        p = data.get("product") or {}
+        grade = str(p.get("nutriscore_grade") or "").lower()
+        return {
+            "found": True,
+            "code": code,
+            "source": source,
+            "name": _product_name(p)[0],
+            "brand": (p.get("brands") or "").split(",")[0].strip() or None,
+            "quantity": p.get("quantity") or None,
+            "nutriscore": grade.upper() if grade in ("a", "b", "c", "d", "e") else None,
+            "nova": p.get("nova_group") or None,
+            "allergens": _tags(p.get("allergens_tags"), ALLERGENS_DE),
+            "traces": _tags(p.get("traces_tags"), ALLERGENS_DE),
+            "labels": _tags(p.get("labels_tags"), LABELS_DE),
+            "ingredients": (p.get("ingredients_text_de") or p.get("ingredients_text") or "")[:1500] or None,
+        }
+    return {"found": False, "code": code}

@@ -11,7 +11,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .barcode import async_auto_photo, async_lookup
+from .barcode import async_auto_photo, async_lookup, async_product_info
 from .recipe_import import async_import
 from .const import DOMAIN, SIGNAL_UPDATED
 from .manager import EinkaufslisteManager, person_name_for_user, product_key
@@ -41,6 +41,10 @@ def async_register(hass: HomeAssistant) -> None:
         ws_photo_remove,
         ws_barcode_lookup,
         ws_barcode_assign,
+        ws_barcode_info,
+        ws_products,
+        ws_product_update,
+        ws_product_remove,
         ws_seen,
         ws_group_add,
         ws_group_update,
@@ -320,6 +324,7 @@ RECIPE_ITEM = vol.Schema(
         vol.Optional("store_id"): OPT_STR,
         vol.Optional("category_id"): OPT_STR,
         vol.Optional("barcode"): OPT_STR,
+        vol.Optional("basic"): bool,
     }
 )
 
@@ -330,11 +335,12 @@ RECIPE_ITEM = vol.Schema(
         vol.Required("name"): str,
         vol.Optional("icon"): OPT_STR,
         vol.Optional("items", default=[]): [RECIPE_ITEM],
+        vol.Optional("steps"): OPT_STR,
     }
 )
 @callback
 def ws_recipe_add(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: m.add_recipe(msg["name"], msg["items"], msg.get("icon")))
+    _run(hass, connection, msg, lambda m: m.add_recipe(msg["name"], msg["items"], msg.get("icon"), msg.get("steps")))
 
 
 @websocket_api.websocket_command(
@@ -344,11 +350,12 @@ def ws_recipe_add(hass, connection, msg):
         vol.Optional("name"): str,
         vol.Optional("icon"): OPT_STR,
         vol.Optional("items"): [RECIPE_ITEM],
+        vol.Optional("steps"): OPT_STR,
     }
 )
 @callback
 def ws_recipe_update(hass, connection, msg):
-    fields = _pick(msg, "name", "icon", "items")
+    fields = _pick(msg, "name", "icon", "items", "steps")
     _run(hass, connection, msg, lambda m: m.update_recipe(msg["recipe_id"], **fields))
 
 
@@ -389,6 +396,49 @@ async def ws_recipe_import(hass, connection, msg):
     await _run_async(hass, connection, msg, lambda m: async_import(hass, m, msg["text"]))
 
 
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/barcode/info", vol.Required("code"): str}
+)
+@websocket_api.async_response
+async def ws_barcode_info(hass, connection, msg):
+    await _run_async(hass, connection, msg, lambda m: async_product_info(hass, msg["code"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/products"})
+@callback
+def ws_products(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.products())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/product/update",
+        vol.Required("key"): str,
+        vol.Optional("name"): str,
+        vol.Optional("note"): OPT_STR,
+        vol.Optional("category_id"): OPT_STR,
+        vol.Optional("store_id"): OPT_STR,
+    }
+)
+@callback
+def ws_product_update(hass, connection, msg):
+    fields = _pick(msg, "name", "note", "category_id", "store_id")
+    if "note" in fields and fields["note"] is None:
+        fields["note"] = ""
+    for k in ("category_id", "store_id"):
+        if k in fields and fields[k] is None:
+            fields[k] = ""
+    _run(hass, connection, msg, lambda m: m.update_product(msg["key"], **fields))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/product/remove", vol.Required("key"): str}
+)
+@websocket_api.async_response
+async def ws_product_remove(hass, connection, msg):
+    await _run_async(hass, connection, msg, lambda m: m.async_forget_product(msg["key"]))
+
+
 async def _run_async(hass, connection, msg, coro_factory) -> None:
     manager = _manager(hass)
     if manager is None:
@@ -409,30 +459,39 @@ async def _run_async(hass, connection, msg, coro_factory) -> None:
         vol.Required("type"): "einkaufsliste/photo/set",
         vol.Required("name"): str,
         vol.Required("data"): str,
+        vol.Optional("add", default=False): bool,
     }
 )
 @websocket_api.async_response
 async def ws_photo_set(hass, connection, msg):
-    await _run_async(hass, connection, msg, lambda m: m.async_set_photo(msg["name"], msg["data"]))
+    await _run_async(hass, connection, msg, lambda m: m.async_set_photo(msg["name"], msg["data"], msg["add"]))
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/photo/get", vol.Required("name"): str}
+    {
+        vol.Required("type"): "einkaufsliste/photo/get",
+        vol.Required("name"): str,
+        vol.Optional("index", default=0): vol.Coerce(int),
+    }
 )
 @websocket_api.async_response
 async def ws_photo_get(hass, connection, msg):
     async def _get(m):
-        return {"data": await m.async_get_photo(msg["name"])}
+        return {"data": await m.async_get_photo(msg["name"], msg["index"])}
 
     await _run_async(hass, connection, msg, _get)
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/photo/remove", vol.Required("name"): str}
+    {
+        vol.Required("type"): "einkaufsliste/photo/remove",
+        vol.Required("name"): str,
+        vol.Optional("index"): vol.Coerce(int),
+    }
 )
 @websocket_api.async_response
 async def ws_photo_remove(hass, connection, msg):
-    await _run_async(hass, connection, msg, lambda m: m.async_remove_photo(msg["name"]))
+    await _run_async(hass, connection, msg, lambda m: m.async_remove_photo(msg["name"], msg.get("index")))
 
 
 @websocket_api.websocket_command(

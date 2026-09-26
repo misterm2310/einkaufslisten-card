@@ -152,8 +152,32 @@ def parse_html(page: str) -> dict[str, Any]:
             "name": _nice(html.unescape(str(recipe.get("name") or "")))[:60] or None,
             "items": items,
             "image_url": _image_url(recipe.get("image")),
+            "steps": _steps(recipe.get("recipeInstructions")),
         }
-    return {"name": None, "items": [], "image_url": None}
+    return {"name": None, "items": [], "image_url": None, "steps": None}
+
+
+def _steps(node: Any) -> str | None:
+    """👨‍🍳 Zubereitung aus schema.org holen (Text, HowToStep oder HowToSection)."""
+    out: list[str] = []
+
+    def walk(n: Any) -> None:
+        if isinstance(n, str):
+            for part in re.split(r"[\r\n]+", html.unescape(re.sub(r"<[^>]+>", " ", n))):
+                part = " ".join(part.split())
+                if part:
+                    out.append(part)
+        elif isinstance(n, list):
+            for sub in n:
+                walk(sub)
+        elif isinstance(n, dict):
+            if n.get("itemListElement"):
+                walk(n["itemListElement"])
+            else:
+                walk(n.get("text") or n.get("name") or "")
+
+    walk(node)
+    return "\n".join(out)[:8000] or None
 
 
 def _is_local(host: str) -> bool:
@@ -187,7 +211,7 @@ async def async_import(hass: HomeAssistant, manager: Any, text: str) -> dict[str
     text = (text or "").strip()
     if not text:
         raise ValueError("Da steht ja noch nichts drin 😉")
-    result: dict[str, Any] = {"name": None, "items": [], "image": None, "source": "text"}
+    result: dict[str, Any] = {"name": None, "items": [], "image": None, "source": "text", "steps": None}
     first = text.split()[0]
     if re.match(r"^https?://", first, re.IGNORECASE) and len(text.split()) == 1:
         parsed = urlparse(first)
@@ -203,7 +227,7 @@ async def async_import(hass: HomeAssistant, manager: Any, text: str) -> dict[str
         info = parse_html(page)
         if not info["items"]:
             raise ValueError("Auf der Seite habe ich keine Zutaten-Liste gefunden. Kopier sie lieber als Text rein.")
-        result.update(source="link", name=info["name"], items=info["items"])
+        result.update(source="link", name=info["name"], items=info["items"], steps=info.get("steps"))
         img_url = info.get("image_url")
         if isinstance(img_url, str) and img_url.startswith("http"):
             img = await _download(session, img_url, MAX_IMAGE)
