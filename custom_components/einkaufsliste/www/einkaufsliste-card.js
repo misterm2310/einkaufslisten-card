@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.7.5";
+const EL_VERSION = "2.7.6";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -505,6 +505,8 @@ ha-card.compact .group { margin-top:4px; }
 .prodrow .pmeta { display:flex; flex-wrap:wrap; gap:2px 8px; }
 .prodedit { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:6px 0; }
 .prodedit .btnrow, .prodedit .hint { grid-column:1/-1; }
+.subtabs { display:flex; gap:6px; flex-wrap:wrap; margin:2px 0 8px; }
+.subtabs .tab ha-icon { --mdc-icon-size:18px; }
 .logfilter { display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px; margin:4px 0; }
 .logday { font-size:.78em; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--secondary-text-color); margin:10px 2px 2px; }
 .logrow { display:flex; gap:8px; align-items:flex-start; padding:6px 4px; border-bottom:1px solid var(--divider-color, rgba(127,127,127,.12)); font-size:.9em; }
@@ -1632,10 +1634,18 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
         <p class="hint">${persons.length ? "Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“." : "Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet."}</p>` },
-      { key: "products", icon: "mdi:package-variant-closed", title: "Produkte", info: "Katalog: Fotos, Barcodes …", html: () => `
+      { key: "products", icon: "mdi:package-variant-closed", title: "Produkte", info: "Katalog, Fotos, Barcodes, löschen", html: () => `
+        <div class="subtabs">
+          <button class="tab ${this._prodTab !== "delete" ? "active" : ""}" data-act="prod-tab" data-tab="catalog"><ha-icon icon="mdi:package-variant-closed"></ha-icon>Katalog</button>
+          <button class="tab ${this._prodTab === "delete" ? "active" : ""}" data-act="prod-tab" data-tab="delete" style="--c:var(--error-color,#db4437)"><ha-icon icon="mdi:delete-outline"></ha-icon>Artikel löschen</button>
+        </div>
+        ${this._prodTab === "delete" ? `
+        <p class="hint">Hier verschwinden Artikel endgültig, auch aus „Erledigt“ und samt Foto.</p>
+        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="delSearch" placeholder="Artikel suchen …" value="${esc(this._delFilter || "")}"></div>
+        <div id="delList"></div>` : `
         <p class="hint">Alle Produkte, die die Liste kennt. Antippen = ändern. Umbenennen zieht Fotos, Barcodes, Artikel und Rezepte mit.</p>
         <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen …" value="${esc(this._prodFilter || "")}"></div>
-        <div id="prodList"><p class="hint">Lade Produkte …</p></div>` },
+        <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
       { key: "log", icon: "mdi:history", title: "Verlauf", info: "wer, wann, was, wie", html: () => this._logSectionHtml() },
       { key: "cleanup", icon: "mdi:broom", title: "Aufräumen", info: `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
         <p>Jeden <b>${WD_LONG[s.cleanup_weekday]}</b> um <b>${s.cleanup_time} Uhr</b> werden alle offenen Artikel <b>abgehakt</b>, die mindestens <b>${s.min_age_days} Tage</b> auf der Liste stehen. Gelöscht wird nichts – so kannst du sie später mit einem Tipp wieder auf die Liste nehmen.</p>
@@ -1644,10 +1654,6 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="btn" data-act="cleanup-now"><ha-icon icon="mdi:broom"></ha-icon>Jetzt aufräumen</button>
           <button class="btn" data-act="check-all"><ha-icon icon="mdi:checkbox-multiple-marked-circle-outline"></ha-icon>Alles abhaken</button>
         </div>` },
-      { key: "delete", icon: "mdi:delete-outline", title: "Artikel löschen", info: "endgültig, mit Suche", html: () => `
-        <p class="hint">Hier verschwinden Artikel endgültig, auch aus „Erledigt“ und samt Foto.</p>
-        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="delSearch" placeholder="Artikel suchen …" value="${esc(this._delFilter || "")}"></div>
-        <div id="delList"></div>` },
     ];
     const cur = sections.find((x) => x.key === this._setSec);
     if (!cur) {
@@ -1672,7 +1678,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${cur.html()}
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
-    if (cur.key === "products") { this._renderProducts(); this._loadProducts(); }
+    if (cur.key === "products" && this._prodTab !== "delete") { this._renderProducts(); this._loadProducts(); }
     if (cur.key === "recipes") this._renderSetRecipeList();
     this._renderDelList();
   }
@@ -3481,6 +3487,10 @@ class EinkaufslisteCard extends HTMLElement {
       }
       case "recipe-new":
         this._openRecipe(null);
+        break;
+      case "prod-tab":
+        this._prodTab = el.dataset.tab;
+        this._renderSettings();
         break;
       case "recipe-search-clear": {
         this._recipeFilter = "";

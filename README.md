@@ -49,7 +49,7 @@ Jeder Artikel bleibt also **mindestens eine Woche** offen. Unter jedem Artikel z
 
 > 💡 Nimmst du einen Artikel wieder auf die Liste, fängt die Woche von vorne an.
 > 💡 Hat Home Assistant zur Aufräumzeit geschlafen (Neustart, Update), wird das Aufräumen beim nächsten Start nachgeholt.
-> 🗑️ Richtig löschen kannst du einen Artikel nur von Hand: **⚙️ Zahnrad → Artikel ganz löschen**. Dort gibt es auch ein Suchfeld.
+> 🗑️ Richtig löschen kannst du einen Artikel nur von Hand: **⚙️ Zahnrad → Produkte → Artikel löschen**. Dort gibt es auch ein Suchfeld.
 
 Tag, Uhrzeit und Mindestalter stellst du hier ein:
 **Einstellungen → Geräte & Dienste → Einkaufsliste → Konfigurieren**
@@ -209,7 +209,7 @@ Damit keiner mehr die falschen Nudeln mitbringt. 😄
 - Auch **Rezept-Zutaten** können ein Foto haben: Das geht im Rezept über den 📷-Knopf neben der Zutat.
 - Fotos werden noch auf dem Handy **automatisch verkleinert**, auf ungefähr 100 KB.
 - Gespeichert wird alles **nur bei dir** unter `/config/einkaufsliste_fotos` und mit deinen Backups gesichert.
-- Löschst du einen Artikel ganz (⚙️ → Artikel ganz löschen), ist auch das Foto weg. Außer eine Rezept-Zutat braucht es noch.
+- Löschst du einen Artikel ganz (⚙️ → Produkte → Artikel löschen), ist auch das Foto weg. Außer eine Rezept-Zutat braucht es noch.
 
 ---
 
@@ -266,11 +266,13 @@ Bist du bei einem Geschäft, das eine **📍 Zone** hat, wird der ▥-Knopf **gr
 
 ## ⚙️ Die Einstellungen (Zahnrad)
 
-Ein Tipp aufs **⚙️** zeigt eine aufgeräumte Übersicht mit Kacheln: **Geschäfte · Kategorien · Rezepte · Personen · Verlauf · Aufräumen · Artikel löschen**. Tipp auf eine Kachel, und nur dieser Bereich geht auf. Mit **← Übersicht** geht's zurück.
+Ein Tipp aufs **⚙️** zeigt eine aufgeräumte Übersicht mit Kacheln: **Geschäfte · Kategorien · Rezepte · Personen · Produkte · Verlauf · Aufräumen**. Tipp auf eine Kachel, und nur dieser Bereich geht auf. Mit **← Übersicht** geht's zurück.
 
 In der Rezept-Übersicht (⚙️ → Rezepte) steht bei jedem Rezept, ob es eine **📖 Anleitung** und **🔥 Backofen-Einstellungen** hat.
 
 ### 📦 Produkte (Katalog)
+Oben gibt es zwei Knöpfe: **Katalog** und **Artikel löschen** (Artikel endgültig löschen, mit Suche).
+
 Alle Produkte, die die Liste kennt – mit Kategorie, Standard-Geschäft, Anzahl Fotos und Barcodes. Suchen, antippen, ändern: Umbenennen oder eine andere Notiz zieht **Artikel, Rezepte, Fotos, Barcodes und Vorschläge** mit. **Vergessen** löscht Fotos, Barcodes und Vorschläge (Artikel auf der Liste bleiben stehen).
 
 ### 📋 Verlauf: wer hat wann was wie gemacht?
