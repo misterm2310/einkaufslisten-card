@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.6.0";
+const EL_VERSION = "2.6.1";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -235,6 +235,11 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .item .name { font-weight:500; word-break:break-word; }
 .item .qty { font-size:.85em; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:6px; padding:0 6px; }
 .item .who { font-size:.85em; color:var(--secondary-text-color); }
+.item .forwhom.colored { color:var(--pc); background:color-mix(in srgb, var(--pc) 14%, transparent); border:1px solid color-mix(in srgb, var(--pc) 45%, transparent); border-radius:999px; padding:0 8px; font-weight:600; }
+.pchip { border-color:color-mix(in srgb, var(--pc) 55%, transparent) !important; display:inline-flex; align-items:center; gap:6px; }
+.pchip .pdot { width:10px; height:10px; border-radius:50%; background:var(--pc); }
+.pchip.sel { background:var(--pc) !important; border-color:var(--pc) !important; color:#fff; }
+.pchip.sel .pdot { background:#fff; }
 .item .meta { font-size:.75em; color:var(--secondary-text-color); display:flex; flex-wrap:wrap; gap:2px 8px; margin-top:1px; }
 .chip { --c:#888; display:inline-flex; align-items:center; gap:4px; }
 .chip::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--c); }
@@ -250,10 +255,16 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .qbtn[disabled] { opacity:.3; }
 .qval { min-width:44px; text-align:center; font-weight:600; font-size:1.1em; }
 ha-card.shop form.add { display:none; }
-ha-card.shop .item { padding:9px 4px; font-size:1.12em; }
-ha-card.shop .item .check { padding:8px; --mdc-icon-size:34px; }
-ha-card.shop .item .meta { font-size:.7em; }
-ha-card.shop .tab { padding:8px 14px; font-size:1em; }
+ha-card.shop .item { padding:14px 6px; font-size:1.3em; }
+ha-card.shop .item .name { font-weight:600; }
+ha-card.shop .item .check { padding:10px; --mdc-icon-size:44px; }
+ha-card.shop .item .meta { font-size:.62em; }
+ha-card.shop .item .acts { opacity:1; --mdc-icon-size:30px; }
+ha-card.shop .item .acts .iconbtn { padding:10px; }
+ha-card.shop .item .qty { font-size:.8em; padding:2px 10px; }
+ha-card.shop .ghead { font-size:.95em; padding:10px 4px 4px; }
+ha-card.shop .tab { padding:10px 16px; font-size:1.1em; }
+ha-card.shop .shopbar { font-size:1.05em; padding:10px 12px; }
 .shopbar { display:flex; align-items:center; gap:8px; margin:2px 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--success-color,#43a047) 14%, transparent); font-size:.9em; }
 .shopbar b { flex:1; }
 .dupbar { margin:4px 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--warning-color,#ff9800) 14%, transparent); font-size:.9em; }
@@ -935,7 +946,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
     }
     // hinter dem Namen: für wen es ist (wer es eingetragen hat, steht klein darunter)
-    const who = item.for_whom ? `<span class="who forwhom">(für ${esc(item.for_whom)})</span>` : "";
+    const who = item.for_whom ? this._forWhomHtml(item.for_whom) : "";
     const qty = item.quantity ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(item.quantity)}</button>` : "";
     const icon = item.checked ? "mdi:checkbox-marked-circle-outline" : "mdi:checkbox-blank-circle-outline";
     const cat = this._cat(item.category_id);
@@ -1283,7 +1294,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="srow" data-kind="${kind}" data-id="${e.id}">
         ${kind === "stores"
           ? `<input type="color" value="${esc(e.color || "#607d8b")}" data-field="color" title="Farbe">`
-          : kind === "categories"
+          : kind === "categories" || kind === "persons"
             ? `<input type="color" value="${esc(e.color || "#9e9e9e")}" data-field="color" title="Farbe">`
             : `<ha-icon class="prev" icon="${esc(kind === "persons" ? "mdi:account-outline" : e.icon || "mdi:tag-outline")}"></ha-icon>`}
         <input class="grow" value="${esc(e.name)}" data-field="name">
@@ -1306,7 +1317,7 @@ class EinkaufslisteCard extends HTMLElement {
       .map((st) => ({ id: st.entity_id, name: st.attributes.friendly_name || st.entity_id }))
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
     const persons = d.persons || [];
-    const recipes = d.recipes || [];
+    const recipes = [...(d.recipes || [])].sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" }));
     const sections = [
       { key: "stores", icon: "mdi:store-outline", title: "Geschäfte", info: d.stores.length === 1 ? "1 Geschäft" : `${d.stores.length} Geschäfte`, html: () => `
         ${d.stores.map((e, i) => row("stores", e, i, d.stores.length)).join("")}
@@ -1486,7 +1497,7 @@ class EinkaufslisteCard extends HTMLElement {
   // ---------------------------------------------------------------- Rezepte
   _renderRecipes() {
     this._parkForm();
-    const recipes = this._data.recipes || [];
+    const recipes = [...(this._data.recipes || [])].sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" }));
     const html = [`<div class="sec"><h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</h3>`];
     if (!recipes.length) {
       html.push(`<div class="empty"><ha-icon icon="mdi:pot-steam-outline"></ha-icon>Noch keine Rezepte. 🐟<br>Anlegen und bearbeiten kannst du sie über das ⚙️-Zahnrad.</div>`);
@@ -1681,7 +1692,7 @@ class EinkaufslisteCard extends HTMLElement {
       ].filter(Boolean).join("");
       return `<div class="item rrow ${this._rEditIdx === n ? "editing" : ""}" data-n="${n}" style="--cc:${esc(cat?.color || "transparent")}">
         <div class="txt">
-          <div class="line"><span class="name">${esc(it.name)}</span>${it.quantity ? `<span class="qty">${esc(it.quantity)}</span>` : ""}${it.for_whom ? `<span class="who">(für ${esc(it.for_whom)})</span>` : ""}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
+          <div class="line"><span class="name">${esc(it.name)}</span>${it.quantity ? `<span class="qty">${esc(it.quantity)}</span>` : ""}${it.for_whom ? this._forWhomHtml(it.for_whom) : ""}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
           <div class="meta">${meta}</div>
         </div>
         <button class="iconbtn" data-act="ritem-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
@@ -1866,6 +1877,17 @@ class EinkaufslisteCard extends HTMLElement {
     return String(key).split("|").filter(Boolean).join(" · ");
   }
 
+  // 👤 Jede Person hat ihre Farbe (in den Einstellungen änderbar)
+  _personColor(name) {
+    const p = (this._data?.persons || []).find((x) => x.name.toLowerCase() === String(name || "").toLowerCase());
+    return p?.color || null;
+  }
+
+  _forWhomHtml(name) {
+    const c = this._personColor(name);
+    return `<span class="who forwhom ${c ? "colored" : ""}"${c ? ` style="--pc:${esc(c)}"` : ""}>${c ? "" : "("}für ${esc(name)}${c ? "" : ")"}</span>`;
+  }
+
   _barcodesOf(key) {
     return (key && this._data?.barcodes_by_name?.[String(key).toLowerCase()]) || [];
   }
@@ -1938,7 +1960,7 @@ class EinkaufslisteCard extends HTMLElement {
   _renderForChips() {
     const val = this.$("inFor").value;
     this.$("forChips").innerHTML = (this._data?.persons || [])
-      .map((p) => `<button type="button" class="chip2 ${p.name === val ? "sel" : ""}" data-act="for-chip" data-v="${esc(p.name)}">👤 ${esc(p.name)}</button>`)
+      .map((p) => `<button type="button" class="chip2 pchip ${p.name === val ? "sel" : ""}" style="--pc:${esc(p.color || "#9e9e9e")}" data-act="for-chip" data-v="${esc(p.name)}"><span class="pdot"></span>${esc(p.name)}</button>`)
       .join("");
   }
 

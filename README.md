@@ -222,6 +222,7 @@ Bist du bei einem Geschäft, das eine **📍 Zone** hat, wird der ▥-Knopf **gr
 - Der Name in Klammern kommt von der **Person**, die mit dem Benutzer verknüpft ist (Einstellungen → Personen). Ist keine Person verknüpft, wird der Benutzername genommen.
 - Die Personen für das Feld **„Für wen?“** trägst du selbst ein: in der Karte auf das **⚙️-Zahnrad** tippen und bei **Personen** hinzufügen (z. B. Oma, Papa, Kita). Dann wählst du sie beim Eintragen einfach aus der Liste aus, am PC und am Handy gleich.
 - Solange keine Personen angelegt sind, ist das Feld „Für wen?“ ausgeblendet.
+- **🎨 Jede Person hat ihre Farbe:** Neue Personen bekommen automatisch eine eigene Farbe, änderbar im ⚙️ bei **Personen**. Hinter dem Artikel steht dann ein farbiges Schild „für Oma“, und die Schnellknöpfe bei 👤 haben dieselbe Farbe.
 - Benennst du eine Person um, wird der Name automatisch überall mitgeändert.
 
 ---
@@ -235,6 +236,8 @@ Ein Tipp aufs **⚙️** zeigt eine aufgeräumte Übersicht mit Kacheln: **Gesch
 - Das Zeichen vorne zeigt, **wie** es passiert ist: ✍️ in der Karte · ▥ gescannt · 🍳 Rezept · 🔗 zusammengelegt · 🧹 automatisch aufgeräumt · 🤖 Automation/Dienst.
 - **Filter:** nach Person, Geschäft und Aktion, dazu eine **Suche** nach dem Artikel.
 - **Aufheben für:** 7, 30, 90 (Standard), 180 oder 365 Tage. Ältere Einträge verschwinden von selbst. Mit **„Verlauf leeren“** ist alles auf einmal weg.
+
+Rezepte stehen überall **von A bis Z** sortiert.
 
 ---
 

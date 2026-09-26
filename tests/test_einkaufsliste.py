@@ -911,3 +911,14 @@ async def test_note_capitalized(hass, setup):
     assert item["note"] == "Leerdammer"
     r = m.add_recipe("Toast", items=[{"name": "Käse", "note": "scheiben"}])
     assert r["items"][0]["note"] == "Scheiben"
+
+
+async def test_person_colors(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    a = m.add_group("persons", "Oma")
+    b = m.add_group("persons", "Opa")
+    assert a["color"].startswith("#") and a["color"] != b["color"]
+    await client.send_json({"id": 1, "type": "einkaufsliste/group/update", "kind": "persons", "group_id": a["id"], "color": "#123456"})
+    assert (await client.receive_json())["success"]
+    assert m.persons[0]["color"] == "#123456"

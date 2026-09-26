@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.6.0"
+VERSION = "2.6.1"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
@@ -72,3 +72,6 @@ HISTORY_LIMIT = 400
 LOG_DEFAULT_DAYS = 90
 LOG_DAY_CHOICES = (7, 30, 90, 180, 365)
 LOG_LIMIT = 5000
+
+# 👤 Farben für Personen („für wen“) – jede Person bekommt automatisch eine eigene
+PERSON_COLORS = ["#e53935", "#1e88e5", "#43a047", "#fb8c00", "#8e24aa", "#00897b", "#d81b60", "#6d4c41", "#3949ab", "#c0ca33"]

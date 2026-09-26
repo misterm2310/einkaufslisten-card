@@ -31,6 +31,7 @@ from .const import (
     EVENT_CLEANUP,
     EVENT_ITEM_ADDED,
     HISTORY_LIMIT,
+    PERSON_COLORS,
     LOG_DAY_CHOICES,
     LOG_DEFAULT_DAYS,
     LOG_LIMIT,
@@ -233,6 +234,8 @@ class EinkaufslisteManager:
             self.persons = [{"id": _new_id(), "name": n} for n in names]
             if names:
                 self._schedule_save()
+        for k, person in enumerate(self.persons):  # ältere Daten: Farben nachrüsten
+            person.setdefault("color", PERSON_COLORS[k % len(PERSON_COLORS)])
 
     def _to_storage(self) -> dict[str, Any]:
         return {
@@ -1138,7 +1141,7 @@ class EinkaufslisteManager:
             entry["icon"] = _icon(icon, "mdi:cart")
             entry["zone"] = None
         elif kind == "persons":
-            pass
+            entry["color"] = _clean(color) or PERSON_COLORS[len(self.persons) % len(PERSON_COLORS)]
         else:
             entry["icon"] = _icon(icon, "mdi:tag-outline")
             if kind == "categories":
@@ -1165,7 +1168,7 @@ class EinkaufslisteManager:
             if zone and not zone.startswith("zone."):
                 raise ValueError("Das ist keine Zone.")
             entry["zone"] = zone
-        if "color" in fields and kind in ("stores", "categories"):
+        if "color" in fields and kind in ("stores", "categories", "persons"):
             entry["color"] = _clean(fields["color"]) or entry.get("color")
         if "icon" in fields and kind != "persons":
             entry["icon"] = _icon(fields["icon"], entry.get("icon") or "mdi:tag-outline")
