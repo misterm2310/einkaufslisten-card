@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.5.0";
+const EL_VERSION = "2.6.0";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -347,7 +347,12 @@ ha-card.compact .group { margin-top:4px; }
 .rpick .pbtns { display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
 .rpick .pbtns .primary { padding:9px 14px; }
 .rpick .pbtns .primary[disabled] { opacity:.4; cursor:default; }
-.rsub { margin-top:14px !important; }
+.rsub { margin-top:14px !important; flex-wrap:wrap; }
+.rimportbtn { margin-left:auto; padding:5px 10px; font-size:.8em; font-weight:400; }
+.rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.9em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; resize:vertical; }
+.rimport .btnrow { justify-content:flex-end; }
+#rPhotoRow { margin:4px 2px 2px; }
+#rPhotoRow .btn.on { color:var(--primary-color,#03a9f4); }
 .redithint { font-size:.85em; padding:6px 10px; border-radius:10px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); margin:4px 2px; }
 .rrow .iconbtn { align-self:center; }
 .rrow.editing { outline:2px solid var(--primary-color,#03a9f4); }
@@ -1325,7 +1330,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${recipes.map((r) => `
           <div class="recipe" data-id="${r.id}">
             <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
-            <div class="rname"><b>${esc(r.name)}</b><small>${r.items.length} Zutaten</small></div>
+            <div class="rname"><b>${esc(r.name)}${this._recipePhotoBtn(r)}</b><small>${r.items.length} Zutaten</small></div>
             <button class="iconbtn" data-act="recipe-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
           </div>`).join("")}
         <div class="btnrow"><button class="btn" data-act="recipe-new"><ha-icon icon="mdi:plus"></ha-icon>Neues Rezept</button></div>` },
@@ -1492,7 +1497,7 @@ class EinkaufslisteCard extends HTMLElement {
       html.push(`
         <div class="recipe" data-id="${r.id}">
           <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
-          <div class="rname"><b>${esc(r.name)}</b><small>${r.items.length} Zutaten · ${esc(names)}</small></div>
+          <div class="rname"><b>${esc(r.name)}${this._recipePhotoBtn(r)}</b><small>${r.items.length} Zutaten · ${esc(names)}</small></div>
           <div class="rbtns">
             <button class="primary" data-act="recipe-apply" title="Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button>
             ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Alle offenen Zutaten dieses Rezepts von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon>Von der Liste (${onList(r)})</button>` : ""}
@@ -1549,7 +1554,13 @@ class EinkaufslisteCard extends HTMLElement {
           ${this._iconField(dr.icon, 'id="rIcon"')}
         </div>
         <div class="picker" hidden></div>
-        <h3 class="rsub"><ha-icon icon="mdi:food-apple-outline"></ha-icon>Zutaten</h3>
+        <div class="photorow" id="rPhotoRow"></div>
+        <h3 class="rsub"><ha-icon icon="mdi:food-apple-outline"></ha-icon>Zutaten
+          <button class="btn rimportbtn" data-act="rimport-toggle"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon>Rezept einfügen</button></h3>
+        <div class="rimport" id="rImport" hidden>
+          <textarea id="rImportText" rows="6" placeholder="Zutaten-Liste hier einfügen – eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;½ l Milch&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch)."></textarea>
+          <div class="btnrow"><button class="btn" data-act="rimport-toggle">Abbrechen</button><button class="primary addbtn btn" data-act="rimport-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
+        </div>
         <div class="redithint" id="rEditHint" hidden>✏️ Du bearbeitest eine Zutat – ✔ speichert sie. <button class="linkbtn" data-act="ritem-edit-cancel">Abbrechen</button></div>
         <div id="rFormSlot"></div>
         <div id="rItems"></div>
@@ -1564,6 +1575,58 @@ class EinkaufslisteCard extends HTMLElement {
       </div>`;
     this._enterRecipeForm();
     this._renderRecipeItems();
+    this._renderRecipePhoto();
+  }
+
+  // 📷 Foto vom Rezept (fertiges Gericht, Kochbuch-Seite …)
+  _recipePhotoKey(id) { return `rezept#${id}`.toLowerCase(); }
+
+  _recipePhotoBtn(r) {
+    const key = this._recipePhotoKey(r.id);
+    return this._hasPhoto(key)
+      ? ` <button class="photobtn" data-act="photo-view" data-name="${esc(key)}" data-title="${esc(r.name)}" title="Rezept-Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : "";
+  }
+
+  _renderRecipePhoto() {
+    const box = this.$("rPhotoRow");
+    const dr = this._draft;
+    if (!box || !dr) return;
+    const saved = dr.id && !dr.photoRemove && this._hasPhoto(this._recipePhotoKey(dr.id));
+    const has = !!dr.photoData || saved;
+    box.innerHTML = `
+      <button type="button" class="btn ${has ? "on" : ""}" data-act="rphoto-take"><ha-icon icon="${has ? "mdi:camera" : "mdi:camera-plus-outline"}"></ha-icon>${has ? "Rezept-Foto ändern" : "Rezept-Foto"}</button>
+      ${has ? `<button type="button" class="btn" data-act="rphoto-view"><ha-icon icon="mdi:image-outline"></ha-icon>Ansehen</button>
+      <button type="button" class="btn danger" data-act="rphoto-remove"><ha-icon icon="mdi:image-remove-outline"></ha-icon>Löschen</button>` : ""}`;
+  }
+
+  async _importRecipe() {
+    const ta = this.$("rImportText");
+    const text = (ta?.value || "").trim();
+    if (!text) { ta?.classList.remove("shake"); void ta?.offsetWidth; ta?.classList.add("shake"); return; }
+    const btn = this.shadowRoot.querySelector('[data-act="rimport-go"]');
+    btn?.classList.add("busy");
+    try {
+      const res = await this._ws({ type: "einkaufsliste/recipe/import", text });
+      const dr = this._draft;
+      let added = 0;
+      for (const it of res.items) {
+        const ing = { name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null,
+          store_id: it.store_id || null, category_id: it.category_id || null };
+        if (dr.items.some((a) => this._gkey(a) === this._gkey(ing))) continue;
+        dr.items.push(ing);
+        added++;
+      }
+      const nameEl = this.$("rName");
+      if (res.name && !nameEl.value.trim()) nameEl.value = res.name;
+      const hasPhoto = dr.photoData || (dr.id && !dr.photoRemove && this._hasPhoto(this._recipePhotoKey(dr.id)));
+      if (res.image && !hasPhoto) { dr.photoData = res.image; dr.photoRemove = false; }
+      ta.value = "";
+      this.$("rImport").hidden = true;
+      this._renderRecipeItems();
+      this._renderRecipePhoto();
+      this._toast(`📋 ${added} Zutaten übernommen${res.image && !hasPhoto ? " – samt Foto 📷" : ""}. Kurz drüberschauen, dann Speichern!`);
+    } catch (_) { /* Meldung kam schon */ }
+    btn?.classList.remove("busy");
   }
 
   // Das Eingabe-Formular der Liste wandert in den Rezept-Editor – so ist alles genau gleich
@@ -1635,7 +1698,7 @@ class EinkaufslisteCard extends HTMLElement {
     const ing = {
       name,
       quantity: val("inQty"),
-      note: val("inNote"),
+      note: val("inNote") ? val("inNote").charAt(0).toUpperCase() + val("inNote").slice(1) : null,
       for_whom: this.$("inFor").value || null,
       store_id: this.$("inStore").value || null,
       category_id: this.$("inCat").value || null,
@@ -1706,8 +1769,16 @@ class EinkaufslisteCard extends HTMLElement {
     const msg = { name: dr.name.trim(), icon: dr.icon || null, items };
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {
-      if (dr.id) await this._ws({ type: "einkaufsliste/recipe/update", recipe_id: dr.id, ...msg });
-      else await this._ws({ type: "einkaufsliste/recipe/add", ...msg });
+      const saved = dr.id
+        ? await this._ws({ type: "einkaufsliste/recipe/update", recipe_id: dr.id, ...msg })
+        : await this._ws({ type: "einkaufsliste/recipe/add", ...msg });
+      const rid = saved?.id || dr.id;
+      if (rid && dr.photoData) {
+        await this._ws({ type: "einkaufsliste/photo/set", name: this._recipePhotoKey(rid), data: dr.photoData }).catch(() => {});
+        this._photoCache.delete(this._recipePhotoKey(rid));
+      } else if (rid && dr.photoRemove && this._hasPhoto(this._recipePhotoKey(rid))) {
+        await this._ws({ type: "einkaufsliste/photo/remove", name: this._recipePhotoKey(rid) }).catch(() => {});
+      }
       this._toast(`Rezept „${msg.name}“ gespeichert 👨‍🍳`);
       this._draft = null;
       this._view = "settings";
@@ -1919,6 +1990,14 @@ class EinkaufslisteCard extends HTMLElement {
       this._toast("Das Foto konnte nicht gelesen werden 🙈");
       return;
     }
+    if (target.recipeDraft && this._draft) {
+      // Rezept-Foto: wird beim Speichern mitgespeichert
+      this._draft.photoData = data;
+      this._draft.photoRemove = false;
+      this._renderRecipePhoto();
+      this._toast("📷 Rezept-Foto ausgewählt – wird beim Speichern mitgespeichert");
+      return;
+    }
     this._savePhoto(target, data);
   }
 
@@ -1940,7 +2019,7 @@ class EinkaufslisteCard extends HTMLElement {
     } catch (_) { /* Meldung kam schon */ }
   }
 
-  async _openPhoto(name) {
+  async _openPhoto(name, title) {
     const key = String(name).toLowerCase();
     const updated = this._data?.photos?.[key];
     let cached = this._photoCache.get(key);
@@ -1951,7 +2030,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._photoCache.set(key, cached);
       } catch (_) { return; }
     }
-    showPhotoOverlay(cached.data, this._pkLabel(name));
+    showPhotoOverlay(cached.data, title || this._pkLabel(name));
   }
 
   // ---------------------------------------------------------------- Barcode (Scanner der HA-App)
@@ -2473,7 +2552,7 @@ class EinkaufslisteCard extends HTMLElement {
         }
         break;
       case "photo-view":
-        this._openPhoto(el.dataset.name);
+        this._openPhoto(el.dataset.name, el.dataset.title);
         break;
       case "photo-take":
         this._takePhoto(el.dataset.name, null);
@@ -2623,6 +2702,31 @@ class EinkaufslisteCard extends HTMLElement {
           }).catch(() => {});
         break;
       }
+      case "rphoto-take":
+        this._photoTarget = { recipeDraft: true };
+        this._pickFile("photoFile");
+        break;
+      case "rphoto-view": {
+        const dr = this._draft;
+        if (dr?.photoData) showPhotoOverlay(dr.photoData, this.$("rName")?.value || dr.name || "Rezept");
+        else if (dr?.id) this._openPhoto(this._recipePhotoKey(dr.id));
+        break;
+      }
+      case "rphoto-remove":
+        if (!this._draft || !confirm("Rezept-Foto löschen? (Wird beim Speichern übernommen.)")) break;
+        this._draft.photoData = null;
+        this._draft.photoRemove = true;
+        this._renderRecipePhoto();
+        break;
+      case "rimport-toggle": {
+        const box = this.$("rImport");
+        box.hidden = !box.hidden;
+        if (!box.hidden) this.$("rImportText").focus();
+        break;
+      }
+      case "rimport-go":
+        this._importRecipe();
+        break;
       case "ritem-edit":
         this._editRecipeIngredient(Number(el.closest(".rrow").dataset.n));
         break;

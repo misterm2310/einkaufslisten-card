@@ -18,7 +18,7 @@
 | ⭕ **Abhaken per Kreis** | Nur ein Tipp auf den Kreis hakt ab. Ein Tipp auf den Namen macht nichts, das verhindert Verdrücker. |
 | ♻️ **Nichts geht verloren** | Abgehakte Artikel bleiben unten unter „Erledigt – schon mal gekauft“. Tippst du den Kreis nochmal an, steht der Artikel wieder auf der Liste. Die Kategorien sind dort eingeklappt, ein Tipp klappt sie auf. |
 | 🏷️ **Für wen & wer** | Hinter dem Artikel steht, **für wen** er ist, zum Beispiel *Käse (für Oma)*. Klein darunter steht, **wer** ihn eingetragen oder wieder auf die Liste genommen hat: *✍️ Anna*. |
-| 📝 **Notiz & 👤 Für wen** | Beides kannst du direkt beim Eintragen angeben, zum Beispiel *Käse · 📝 gerieben · 👤 für Oma*. |
+| 📝 **Notiz & 👤 Für wen** | Beides kannst du direkt beim Eintragen angeben, zum Beispiel *Käse · 📝 Gerieben · 👤 für Oma*. Die Notiz beginnt automatisch mit einem Großbuchstaben. |
 | 🚫 **Keine Doppelten** | Jeder Artikel steht nur einmal auf der Liste. Ein zweites Mal geht nur mit **anderer Notiz**, **anderem „für wen“** oder **anderem Geschäft** (z. B. Milch bei Aldi und Milch bei Netto). |
 | 🍽️ **Rezepte** | Leg ein Rezept an, zum Beispiel „Freitags Fisch“ mit allen Zutaten. Ein Tipp auf **Auf die Liste**, dann hakst du an, **welche Zutaten** du brauchst. |
 | 🧹 **Automatisch aufräumen** | An einem festen Tag wird alles **abgehakt**, was mindestens 7 Tage drinsteht. **Gelöscht wird nichts.** |
@@ -138,6 +138,8 @@ Was du gewählt hast, steht direkt am Symbol, zum Beispiel **🔢 2x · 👤 Oma
 3. Die Zutaten eintragen, und zwar **genau wie oben in der Liste**: Name tippen (mit Vorschlägen), in der Symbol-Leiste 🔢 Menge · 📝 Notiz · 👤 Für wen · 📷 Foto · ▥ Barcode, dann auf den **grünen Haken ✔**. Die Zutat erscheint darunter. Mit ✏️ bearbeitest du sie, mit 🗑️ fliegt sie raus.
    - **▥ Scannen:** Die Packung füllt die Zutat aus, und der Barcode gehört ab dem Speichern zu diesem Produkt. Mit **„📦 Mehrere scannen“** wird jede Packung sofort eine Zutat.
    - Lässt du Geschäft und Kategorie auf **„Wie zuletzt“**, wird genommen, was bei diesem Produkt zuletzt benutzt wurde. Kennt die Liste das Produkt noch nicht, rät sie die Kategorie aus dem Wörterbuch.
+   - **📋 Rezept einfügen:** Oben bei „Zutaten“ auf **„Rezept einfügen“** tippen und eine Zutaten-Liste hineinkopieren (eine Zutat pro Zeile, zum Beispiel „200 g Mehl“, „3 Eier“, „½ l Milch“), oder einfach einen **Rezept-Link**, etwa von Chefkoch. **Übernehmen** trägt alle Zutaten mit Menge und Notiz ins Rezept ein. Beim Link kommen auch der Rezept-Name und das Foto mit. Kurz drüberschauen, dann Speichern. Ehrlich gesagt: Die großen Rezept-Seiten klappen fast immer, bei kleinen Blogs findet die Liste manchmal nichts. Dann einfach den Text kopieren.
+   - **📷 Rezept-Foto:** Unter dem Namen auf **„Rezept-Foto“** tippen (Galerie). Das Foto wird beim Speichern mitgespeichert. Danach steht bei der Kochmütze 👨‍🍳 und in den Einstellungen ein kleines **📷 neben dem Rezept-Namen**, und alle können es mit einem Tipp ansehen.
 4. **Speichern**.
 5. Zum Einkaufen oben auf die **Kochmütze 👨‍🍳** tippen. Ein Tipp auf **Auf die Liste**, dann fragt die Liste: **„Was davon brauchst du?“** Hake die Zutaten an, die fehlen (was schon auf der Liste steht, ist nicht angehakt), und tipp auf **„✅ 3 auf die Liste“**.
 

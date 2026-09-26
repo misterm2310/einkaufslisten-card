@@ -92,6 +92,17 @@ def product_key(name: str | None, note: str | None = None) -> str:
     return f"{name}|{note}" if note else name
 
 
+def _note(text: Any) -> str | None:
+    """Notiz immer mit Großbuchstaben am Anfang („bio“ -> „Bio“)."""
+    text = _clean(text)
+    return text[:1].upper() + text[1:] if text else None
+
+
+def recipe_photo_key(recipe_id: str) -> str:
+    """Rezept-Fotos liegen bei den Produkt-Fotos, aber mit eigenem Schlüssel."""
+    return f"rezept#{recipe_id}".lower()
+
+
 def _key(
     name: str | None,
     note: str | None,
@@ -195,6 +206,10 @@ class EinkaufslisteManager:
         for item in self.items:  # ältere Daten auffüllen
             item.setdefault("for_whom", None)
             item.setdefault("recipe_id", None)
+            item["note"] = _note(item.get("note"))
+        for recipe in self.recipes:
+            for entry in recipe.get("items", []):
+                entry["note"] = _note(entry.get("note"))
         self.photos = data.get("photos", {})
         self.seen = data.get("seen", {})
         for mine in self.seen.values():  # älter als v2.2.0: Blasen-Zeiten („b:…“) nachrüsten
@@ -512,7 +527,7 @@ class EinkaufslisteManager:
             raise ValueError("Ohne Namen geht's nicht – was soll denn gekauft werden?")
         store_id = self._check_store(store_id)
         category_id = self._check_category(category_id)
-        quantity, note, for_whom = _clean(quantity), _clean(note), _clean(for_whom)
+        quantity, note, for_whom = _clean(quantity), _note(note), _clean(for_whom)
         if _clean(barcode):
             self.learn_barcode(str(barcode).strip(), name, store_id, category_id, note, for_whom)
 
@@ -575,7 +590,7 @@ class EinkaufslisteManager:
         item = self.get_item(item_id)
         new = {
             "name": _nice(fields.get("name", item["name"])),
-            "note": _clean(fields.get("note", item.get("note"))),
+            "note": _note(fields.get("note", item.get("note"))),
             "for_whom": _clean(fields.get("for_whom", item.get("for_whom"))),
         }
         if not new["name"]:
@@ -836,7 +851,7 @@ class EinkaufslisteManager:
         del for_whom  # die Packung weiß nicht, für wen sie ist
         self.barcodes[code] = {
             "name": name,
-            "note": _clean(note),
+            "note": _note(note),
             "store_id": store_id,
             "category_id": category_id,
             "updated": _now_iso(),
@@ -958,7 +973,7 @@ class EinkaufslisteManager:
             entry = {
                 "name": name,
                 "quantity": _clean(raw.get("quantity")),
-                "note": _clean(raw.get("note")),
+                "note": _note(raw.get("note")),
                 "for_whom": _clean(raw.get("for_whom")),
                 "store_id": self._check_store(raw.get("store_id")),
                 "category_id": self._check_category(raw.get("category_id")),
@@ -1030,6 +1045,8 @@ class EinkaufslisteManager:
             if not item["checked"] and twin is None:
                 keep.append(item)
         self.items = keep
+        if recipe_photo_key(recipe_id) in self.photos:
+            self.hass.async_create_task(self.async_remove_photo(recipe_photo_key(recipe_id)))
         self._changed()
 
     @callback

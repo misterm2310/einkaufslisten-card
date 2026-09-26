@@ -843,3 +843,71 @@ async def test_recipe_barcode_and_guess(hass, setup, hass_ws_client):
     cats = {i["name"]: i["category_id"] for i in m.items}
     assert cats["Pizza Salami"] == m.find_category("TK-Ware")
     assert cats["Joghurt"] == m.find_category("Kühlregal & Milch")
+
+
+def test_parse_ingredient_lines():
+    from custom_components.einkaufsliste.recipe_import import parse_html, parse_text
+
+    items = parse_text("""Zutaten für 4 Portionen:
+- 200 g Mehl (Type 405)
+• 3 Eier
+½ l Milch
+1 Prise Salz
+Zwiebel, fein gehackt
+2 EL Zucker
+Zubereitung:""")
+    assert [(i["name"], i["quantity"], i["note"]) for i in items] == [
+        ("Mehl", "200 g", "Type 405"),
+        ("Eier", "3x", None),
+        ("Milch", "1/2 l", None),
+        ("Salz", "1 Prise", None),
+        ("Zwiebel", None, "Fein gehackt"),
+        ("Zucker", "2 EL", None),
+    ]
+    assert [i["name"] for i in parse_text("Milch, Eier, 2 Butter")] == ["Milch", "Eier", "Butter"]
+    page = """<html><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage"},
+      {"@type":"Recipe","name":"Pfannkuchen","image":["https://img.example.com/p.jpg"],
+       "recipeIngredient":["250 g Mehl","3 Eier","500 ml Milch"]}]}</script></html>"""
+    info = parse_html(page)
+    assert info["name"] == "Pfannkuchen" and info["image_url"] == "https://img.example.com/p.jpg"
+    assert [i["name"] for i in info["items"]] == ["Mehl", "Eier", "Milch"]
+
+
+async def test_recipe_import_ws(hass, setup, hass_ws_client, aioclient_mock):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    page = """<script type="application/ld+json">{"@type":"Recipe","name":"Pizza","image":"https://img.example.com/pizza.jpg",
+      "recipeIngredient":["1 Pizza Salami","200 g Mozzarella"]}</script>"""
+    aioclient_mock.get("https://rezepte.example.com/pizza", text=page)
+    aioclient_mock.get("https://img.example.com/pizza.jpg", content=JPEG)
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/import", "text": "https://rezepte.example.com/pizza"})
+    res = await client.receive_json()
+    assert res["success"], res
+    r = res["result"]
+    assert r["name"] == "Pizza" and r["source"] == "link" and r["image"].startswith("data:image/jpeg;base64,")
+    assert r["items"][0]["name"] == "Pizza Salami" and r["items"][0]["category_id"] == m.find_category("TK-Ware")
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/import", "text": "http://192.168.1.10/x"})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 3, "type": "einkaufsliste/recipe/import", "text": "3 Eier\n1 l Milch"})
+    res = (await client.receive_json())["result"]
+    assert [i["name"] for i in res["items"]] == ["Eier", "Milch"] and res["image"] is None
+
+    # Rezept-Foto verschwindet mit dem Rezept
+    import base64
+    recipe = m.add_recipe("Pizza", items=[{"name": "Teig"}])
+    key = f"rezept#{recipe['id']}".lower()
+    await m.async_set_photo(key, base64.b64encode(JPEG).decode())
+    assert key in m.photos
+    m.remove_recipe(recipe["id"])
+    await hass.async_block_till_done()
+    assert key not in m.photos
+
+
+async def test_note_capitalized(hass, setup):
+    m = mgr(hass)
+    item = m.add_item("Käse", note="gouda")
+    assert item["note"] == "Gouda"
+    m.update_item(item["id"], note="leerdammer")
+    assert item["note"] == "Leerdammer"
+    r = m.add_recipe("Toast", items=[{"name": "Käse", "note": "scheiben"}])
+    assert r["items"][0]["note"] == "Scheiben"

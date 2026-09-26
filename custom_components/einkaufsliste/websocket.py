@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .barcode import async_auto_photo, async_lookup
+from .recipe_import import async_import
 from .const import DOMAIN, SIGNAL_UPDATED
 from .manager import EinkaufslisteManager, person_name_for_user, product_key
 
@@ -34,6 +35,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_recipe_remove,
         ws_recipe_apply,
         ws_recipe_unapply,
+        ws_recipe_import,
         ws_photo_set,
         ws_photo_get,
         ws_photo_remove,
@@ -377,6 +379,14 @@ def ws_recipe_apply(hass, connection, msg):
 @callback
 def ws_recipe_unapply(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.unapply_recipe(msg["recipe_id"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/recipe/import", vol.Required("text"): str}
+)
+@websocket_api.async_response
+async def ws_recipe_import(hass, connection, msg):
+    await _run_async(hass, connection, msg, lambda m: async_import(hass, m, msg["text"]))
 
 
 async def _run_async(hass, connection, msg, coro_factory) -> None:
