@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.7.0";
+const EL_VERSION = "2.7.1";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -189,6 +189,55 @@ function showPhotoOverlay(src, title) {
   overlay.addEventListener("click", close);
   document.addEventListener("keydown", onKey);
   document.body.appendChild(overlay);
+}
+
+// 🔥 Backofen & Co.
+const HEAT_DEVICES = {
+  "Backofen": { icon: "🔥", modes: ["Ober-/Unterhitze", "Umluft", "Heißluft", "Grill", "Umluft + Grill", "Unterhitze", "Pizzastufe"], unit: "°C" },
+  "Heißluftfritteuse": { icon: "🍟", modes: ["Heißluft", "Backen", "Grillen", "Aufwärmen"], unit: "°C" },
+  "Mikrowelle": { icon: "📡", modes: ["Mikrowelle", "Mikrowelle + Grill", "Auftauen"], unit: "W" },
+  "Herd": { icon: "🍳", modes: ["Stufe niedrig", "Stufe mittel", "Stufe hoch", "Köcheln"], unit: "" },
+  "Grill": { icon: "🥩", modes: ["Direkt", "Indirekt"], unit: "°C" },
+  "Dampfgarer": { icon: "♨️", modes: ["Dampf", "Kombi"], unit: "°C" },
+};
+
+function heatText(h) {
+  const dev = HEAT_DEVICES[h.device] || { icon: "🔥", unit: "°C" };
+  return [
+    `${dev.icon} ${h.device || "Backofen"}`,
+    h.mode,
+    h.temp ? `${h.temp}${dev.unit ? ` ${dev.unit}` : ""}` : "",
+    h.minutes ? `${h.minutes} Min` : "",
+    h.preheat ? "vorheizen" : "",
+    h.note,
+  ].filter(Boolean).join(" · ");
+}
+
+// 💡 Bildschirm anlassen: erst Wake Lock (nur über https), sonst ein winziges stummes Video in Dauerschleife
+async function keepAwake() {
+  let lock = null;
+  try { lock = await navigator.wakeLock?.request("screen"); } catch (_) { lock = null; }
+  let video = null;
+  if (!lock) {
+    video = document.createElement("video");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("muted", "");
+    video.muted = true;
+    video.loop = true;
+    Object.assign(video.style, { position: "fixed", width: "1px", height: "1px", opacity: "0.01", left: "0", bottom: "0", pointerEvents: "none" });
+    for (const [type, file] of [["video/webm", "nosleep.webm"], ["video/mp4", "nosleep.mp4"]]) {
+      const src = document.createElement("source");
+      src.type = type;
+      src.src = `${EL_BASE}/${file}?v=${EL_VERSION}`;
+      video.appendChild(src);
+    }
+    document.body.appendChild(video);
+    try { await video.play(); } catch (_) { /* manche Geräte erlauben das nicht */ }
+  }
+  return () => {
+    try { lock?.release?.(); } catch (_) { /* egal */ }
+    if (video) { video.pause(); video.remove(); }
+  };
 }
 
 // ---------------------------------------------------------------- Overlays (über allem)
@@ -515,6 +564,13 @@ ha-card.compact .group { margin-top:4px; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
 .rtools { display:flex; gap:6px; justify-content:flex-end; margin:-2px 4px 8px; }
 .rtools .btn { padding:5px 10px; font-size:.8em; }
+.rtools .rheat { flex:1; align-self:center; font-size:.78em; color:var(--secondary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.heatrow { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border-radius:12px; background:color-mix(in srgb, #ff7043 10%, transparent); border:1px solid color-mix(in srgb, #ff7043 35%, transparent); margin:6px 0; }
+.heatrow .hnums { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.heatrow .hfoot { grid-column:1/-1; display:flex; align-items:center; gap:8px; }
+.heatrow .hfoot input[type=text] { flex:1; }
+.heatrow input[type=checkbox] { width:auto; }
+.heatrow label { display:flex; align-items:center; gap:4px; font-size:.85em; white-space:nowrap; }
 .pickrow.basic .pname { font-size:.85em; }
 .pickrow .pbasic { font-size:.72em; color:var(--secondary-text-color); white-space:nowrap; }
 .recipe .rbtns { display:flex; flex-direction:column; gap:4px; align-items:stretch; }
@@ -611,7 +667,12 @@ class EinkaufslisteCard extends HTMLElement {
     const show = !!server && server !== EL_VERSION;
     bar.hidden = !show;
     if (show) {
-      bar.innerHTML = `🔄 <b>Neue Version ${esc(server)} ist da (hier läuft noch ${EL_VERSION}).</b><button class="btn" data-act="reload">Neu laden</button>`;
+      const num = (v) => String(v).split(".").map((x) => Number(x) || 0);
+      const [a, b] = [num(server), num(EL_VERSION)];
+      const serverNewer = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+      bar.innerHTML = serverNewer > 0
+        ? `🔄 <b>Neue Version ${esc(server)} ist da (hier läuft noch ${EL_VERSION}).</b><button class="btn" data-act="reload">Neu laden</button>`
+        : `🔄 <b>Die Karte ist schon ${EL_VERSION}, Home Assistant noch ${esc(server)} – bitte Home Assistant neu starten.</b>`;
     }
   }
 
@@ -1811,7 +1872,8 @@ class EinkaufslisteCard extends HTMLElement {
           </div>
         </div>
         <div class="rtools" data-id="${r.id}">
-          ${r.steps ? `<button class="btn" data-act="recipe-cook"><ha-icon icon="mdi:fire"></ha-icon>Kochen</button>` : ""}
+          ${(r.heat || []).length ? `<span class="rheat">${esc(heatText(r.heat[0]))}</span>` : ""}
+          ${r.steps || (r.heat || []).length ? `<button class="btn" data-act="recipe-cook"><ha-icon icon="mdi:fire"></ha-icon>Kochen</button>` : ""}
           <button class="btn" data-act="recipe-share"><ha-icon icon="mdi:share-variant-outline"></ha-icon>Teilen</button>
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`);
     }
@@ -1845,8 +1907,8 @@ class EinkaufslisteCard extends HTMLElement {
 
   _openRecipe(recipe) {
     this._draft = recipe
-      ? { id: recipe.id, name: recipe.name, icon: recipe.icon, steps: recipe.steps || "", items: recipe.items.map((i) => ({ ...i })) }
-      : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [] };
+      ? { id: recipe.id, name: recipe.name, icon: recipe.icon, steps: recipe.steps || "", heat: (recipe.heat || []).map((h) => ({ ...h })), items: recipe.items.map((i) => ({ ...i })) }
+      : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [], heat: [] };
     this._view = "recipe";
     this._draftRendered = false;
     this._renderAll();
@@ -1875,6 +1937,9 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="redithint" id="rEditHint" hidden>✏️ Du bearbeitest eine Zutat – ✔ speichert sie. <button class="linkbtn" data-act="ritem-edit-cancel">Abbrechen</button></div>
         <div id="rFormSlot"></div>
         <div id="rItems"></div>
+        <h3 class="rsub"><ha-icon icon="mdi:stove"></ha-icon>Backofen &amp; Co.</h3>
+        <div id="rHeat"></div>
+        <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
         <h3 class="rsub"><ha-icon icon="mdi:chef-hat"></ha-icon>Zubereitung</h3>
         <textarea id="rSteps" class="rsteps" rows="5" placeholder="Ein Schritt pro Zeile, z. B.&#10;Nudeln 10 Minuten kochen&#10;Soße anrühren">${esc(dr.steps || "")}</textarea>
         <p class="hint">Eintragen geht genau wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, 📝 Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode (auch „📦 Mehrere scannen“) – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie, die bei diesem Produkt zuletzt benutzt wurden.</p>
@@ -1888,6 +1953,7 @@ class EinkaufslisteCard extends HTMLElement {
       </div>`;
     this._enterRecipeForm();
     this._renderRecipeItems();
+    this._renderHeat();
     this._renderRecipePhoto();
   }
 
@@ -1942,6 +2008,42 @@ class EinkaufslisteCard extends HTMLElement {
       this._toast(`📋 ${added} Zutaten übernommen${res.image && !hasPhoto ? " – samt Foto 📷" : ""}. Kurz drüberschauen, dann Speichern!`);
     } catch (_) { /* Meldung kam schon */ }
     btn?.classList.remove("busy");
+  }
+
+  // 🔥 Backofen & Co. im Rezept-Editor
+  _renderHeat() {
+    const box = this.$("rHeat");
+    if (!box) return;
+    const rows = this._draft.heat || [];
+    const opt = (v, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(v)}</option>`;
+    box.innerHTML = rows.map((h, n) => {
+      const dev = HEAT_DEVICES[h.device] || HEAT_DEVICES.Backofen;
+      const modes = [...dev.modes];
+      if (h.mode && !modes.includes(h.mode)) modes.push(h.mode);
+      return `<div class="heatrow" data-n="${n}">
+        <select data-hf="device">${Object.keys(HEAT_DEVICES).map((d) => `<option value="${d}" ${d === (h.device || "Backofen") ? "selected" : ""}>${HEAT_DEVICES[d].icon} ${d}</option>`).join("")}</select>
+        <select data-hf="mode"><option value="">– Modus –</option>${modes.map((m) => opt(m, h.mode)).join("")}</select>
+        <div class="hnums">
+          <input data-hf="temp" type="number" inputmode="numeric" min="0" value="${esc(h.temp ?? "")}" placeholder="${dev.unit === "W" ? "Watt" : dev.unit ? "°C" : "–"}">
+          <input data-hf="minutes" type="number" inputmode="numeric" min="0" value="${esc(h.minutes ?? "")}" placeholder="Minuten">
+        </div>
+        <label><input data-hf="preheat" type="checkbox" ${h.preheat ? "checked" : ""}> vorheizen</label>
+        <div class="hfoot">
+          <input data-hf="note" type="text" value="${esc(h.note || "")}" placeholder="Hinweis, z. B. mittlere Schiene">
+          <button class="iconbtn" data-act="heat-remove" title="Entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
+        </div>
+      </div>`;
+    }).join("") || `<p class="hint">Noch nichts – z. B. Backofen · Ober-/Unterhitze · 200 °C · 25 Min.</p>`;
+  }
+
+  _readHeat() {
+    const box = this.$("rHeat");
+    if (!box || !this._draft) return;
+    this._draft.heat = [...box.querySelectorAll(".heatrow")].map((row) => {
+      const v = (f) => row.querySelector(`[data-hf=${f}]`);
+      return { device: v("device").value, mode: v("mode").value || null, temp: v("temp").value || null,
+        minutes: v("minutes").value || null, preheat: v("preheat").checked, note: v("note").value.trim() || null };
+    });
   }
 
   // Das Eingabe-Formular der Liste wandert in den Rezept-Editor – so ist alles genau gleich
@@ -2078,6 +2180,7 @@ class EinkaufslisteCard extends HTMLElement {
     dr.name = this.$("rName").value;
     dr.icon = this.$("rIcon").value;
     if (this.$("rSteps")) dr.steps = this.$("rSteps").value;
+    this._readHeat();
   }
 
   async _saveRecipe() {
@@ -2090,7 +2193,10 @@ class EinkaufslisteCard extends HTMLElement {
       return o;
     });
     if (this.$("inName").value.trim() && !confirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
-    const msg = { name: dr.name.trim(), icon: dr.icon || null, items, steps: (dr.steps || "").trim() || null };
+    const heat = (dr.heat || []).filter((h) => h.mode || h.temp || h.minutes || h.note)
+      .map((h) => ({ device: h.device || "Backofen", mode: h.mode || null, temp: h.temp ? Number(h.temp) : null,
+        minutes: h.minutes ? Number(h.minutes) : null, preheat: !!h.preheat, note: h.note || null }));
+    const msg = { name: dr.name.trim(), icon: dr.icon || null, items, steps: (dr.steps || "").trim() || null, heat };
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {
       const saved = dr.id
@@ -2477,43 +2583,45 @@ class EinkaufslisteCard extends HTMLElement {
   // 👨‍🍳 Koch-Modus: Schritt für Schritt, groß, Bildschirm bleibt an
   async _cookMode(r) {
     const steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
-    if (!steps.length) return;
+    const heat = r.heat || [];
+    if (!steps.length && !heat.length) return;
+    if (!steps.length) steps.push("Alles bereit? Dann los! 👨‍🍳");
     let idx = 0;
-    let lock = null;
-    try { lock = await navigator.wakeLock?.request("screen"); } catch (_) { lock = null; }
+    const release = await keepAwake();
     const ov = makeOverlay();
-    ov.style.background = "#111";
-    ov.style.justifyContent = "space-between";
+    Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
+      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 90px)" });
+    const wrapW = { width: "100%", maxWidth: "700px" };
     const head = document.createElement("div");
-    Object.assign(head.style, { width: "100%", maxWidth: "700px", display: "flex", alignItems: "center", gap: "10px" });
+    Object.assign(head.style, { ...wrapW, display: "flex", alignItems: "center", gap: "10px" });
     const title = document.createElement("div");
     title.textContent = `👨‍🍳 ${r.name}`;
     Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
     const bIng = ovButton("🥕 Zutaten"), bClose = ovButton("✕");
     head.append(title, bIng, bClose);
-    const body = document.createElement("div");
-    Object.assign(body.style, { width: "100%", maxWidth: "700px", flex: "1", display: "flex", flexDirection: "column", justifyContent: "center", overflowY: "auto", touchAction: "pan-y" });
+    const heatBox = document.createElement("div");
+    Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
+    heatBox.innerHTML = heat.map((h) => `<div style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 17px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
     const pos = document.createElement("div");
-    Object.assign(pos.style, { color: "#aaa", font: "600 16px Roboto,sans-serif", marginBottom: "12px" });
+    Object.assign(pos.style, { ...wrapW, color: "#aaa", font: "600 16px Roboto,sans-serif", margin: "28px 0 10px" });
     const text = document.createElement("div");
-    Object.assign(text.style, { font: "500 clamp(22px, 6vw, 34px)/1.35 Roboto,sans-serif", whiteSpace: "pre-wrap" });
-    const ing = document.createElement("div");
-    Object.assign(ing.style, { display: "none", font: "17px/1.6 Roboto,sans-serif", color: "#ddd", marginTop: "18px" });
-    ing.innerHTML = r.items.map((i) => `• ${esc([i.quantity, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="color:#999">(${esc(i.note)})</span>` : ""}`).join("<br>");
-    body.append(pos, text, ing);
+    Object.assign(text.style, { ...wrapW, font: "500 clamp(22px, 6vw, 34px)/1.35 Roboto,sans-serif", whiteSpace: "pre-wrap", minHeight: "4.2em" });
     const nav = document.createElement("div");
-    Object.assign(nav.style, { width: "100%", maxWidth: "700px", display: "flex", gap: "10px" });
+    Object.assign(nav.style, { ...wrapW, display: "flex", gap: "10px", marginTop: "22px" });
     const bPrev = ovButton("‹ Zurück"), bNext = ovButton("Weiter ›", true);
     for (const b of [bPrev, bNext]) Object.assign(b.style, { flex: "1", padding: "16px", fontSize: "18px" });
     nav.append(bPrev, bNext);
-    ov.append(head, body, nav);
+    const ing = document.createElement("div");
+    Object.assign(ing.style, { ...wrapW, display: "none", font: "17px/1.6 Roboto,sans-serif", color: "#ddd", marginTop: "22px" });
+    ing.innerHTML = r.items.map((i) => `• ${esc([i.quantity, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="color:#999">(${esc(i.note)})</span>` : ""}`).join("<br>");
+    ov.append(head, heatBox, pos, text, nav, ing);
     const show = () => {
       pos.textContent = `Schritt ${idx + 1} von ${steps.length}`;
       text.textContent = steps[idx];
       bPrev.style.visibility = idx ? "visible" : "hidden";
       bNext.textContent = idx < steps.length - 1 ? "Weiter ›" : "✔ Fertig – guten Appetit!";
     };
-    const close = () => { try { lock?.release?.(); } catch (_) { /* egal */ } ov.remove(); document.removeEventListener("keydown", onKey); };
+    const close = () => { release(); ov.remove(); document.removeEventListener("keydown", onKey); };
     const onKey = (e) => {
       if (e.key === "Escape") close();
       if (e.key === "ArrowRight" && idx < steps.length - 1) { idx++; show(); }
@@ -2530,7 +2638,11 @@ class EinkaufslisteCard extends HTMLElement {
   _recipeText(r) {
     const lines = [`🍳 ${r.name}`, "", "Zutaten:"];
     for (const i of r.items) {
-      lines.push(`• ${[i.quantity, i.name].filter(Boolean).join(" ")}${i.note ? ` (${i.note})` : ""}${i.for_whom ? ` – für ${i.for_whom}` : ""}`);
+      lines.push(`• ${[i.quantity, i.name].filter(Boolean).join(" ")}${i.note ? ` (${i.note})` : ""}`);
+    }
+    if ((r.heat || []).length) {
+      lines.push("", "Garen:");
+      for (const h of r.heat) lines.push(`• ${heatText(h)}`);
     }
     const steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
     if (steps.length) {
@@ -3034,6 +3146,16 @@ class EinkaufslisteCard extends HTMLElement {
         this._toast("🧽 Alles geleert");
         this.$("inName").focus();
         break;
+      case "heat-add":
+        this._readHeat();
+        (this._draft.heat ||= []).push({ device: "Backofen", mode: "Ober-/Unterhitze", temp: null, minutes: null, preheat: false, note: null });
+        this._renderHeat();
+        break;
+      case "heat-remove":
+        this._readHeat();
+        this._draft.heat.splice(Number(el.closest(".heatrow").dataset.n), 1);
+        this._renderHeat();
+        break;
       case "basic-toggle":
         this._setBasic(!this._rBasic);
         this._toast(this._rBasic ? "🧂 Grundvorrat: wird bei „Auf die Liste“ nicht vorausgewählt" : "🧂 Kein Grundvorrat");
@@ -3415,6 +3537,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   _onChange(e) {
     const t = e.target;
+    if (t.dataset?.hf === "device") { this._readHeat(); const n = Number(t.closest(".heatrow").dataset.n); this._draft.heat[n].mode = HEAT_DEVICES[t.value]?.modes[0] || null; this._renderHeat(); return; }
     const logKey = { logWho: "who", logStore: "store", logAct: "act" }[t.id];
     if (logKey) {
       this._logF[logKey] = t.value;

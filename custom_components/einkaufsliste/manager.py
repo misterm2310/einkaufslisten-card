@@ -111,6 +111,33 @@ def _clean_steps(text: Any) -> str | None:
     return "\n".join(lines)[:8000] or None
 
 
+def _clean_heat(rows: Any) -> list[dict[str, Any]]:
+    """🔥 Backofen & Co.: Gerät, Modus, Grad, Minuten, Vorheizen, Hinweis – höchstens 6 Zeilen."""
+    out: list[dict[str, Any]] = []
+    for raw in rows or []:
+        if not isinstance(raw, dict):
+            continue
+
+        def num(v: Any, hi: int) -> int | None:
+            try:
+                n = int(float(str(v).replace(",", ".")))
+            except (TypeError, ValueError):
+                return None
+            return n if 0 < n <= hi else None
+
+        row = {
+            "device": (_clean(raw.get("device")) or "Backofen")[:30],
+            "mode": (_clean(raw.get("mode")) or "")[:40] or None,
+            "temp": num(raw.get("temp"), 1500),
+            "minutes": num(raw.get("minutes"), 1440),
+            "preheat": bool(raw.get("preheat")),
+            "note": (_clean(raw.get("note")) or "")[:60] or None,
+        }
+        if row["mode"] or row["temp"] or row["minutes"] or row["note"]:
+            out.append(row)
+    return out[:6]
+
+
 def recipe_photo_key(recipe_id: str) -> str:
     """Rezept-Fotos liegen bei den Produkt-Fotos, aber mit eigenem Schlüssel."""
     return f"rezept#{recipe_id}".lower()
@@ -223,6 +250,7 @@ class EinkaufslisteManager:
             item["quantity"] = norm_qty(item.get("quantity"))
         for recipe in self.recipes:
             recipe.setdefault("steps", None)
+            recipe.setdefault("heat", [])
             for entry in recipe.get("items", []):
                 entry["note"] = _note(entry.get("note"))
                 entry["quantity"] = norm_qty(entry.get("quantity"))
@@ -1182,6 +1210,7 @@ class EinkaufslisteManager:
         items: list[dict[str, Any]] | None = None,
         icon: str | None = None,
         steps: str | None = None,
+        heat: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         recipe = {
             "id": _new_id(),
@@ -1189,6 +1218,7 @@ class EinkaufslisteManager:
             "icon": _icon(icon, "mdi:silverware-fork-knife"),
             "items": self._recipe_items(items or []),
             "steps": _clean_steps(steps),
+            "heat": _clean_heat(heat),
         }
         self.recipes.append(recipe)
         self._changed()
@@ -1207,6 +1237,8 @@ class EinkaufslisteManager:
             recipe["items"] = self._recipe_items(fields["items"])
         if "steps" in fields:
             recipe["steps"] = _clean_steps(fields["steps"])
+        if "heat" in fields:
+            recipe["heat"] = _clean_heat(fields["heat"])
         self._changed()
         return recipe
 

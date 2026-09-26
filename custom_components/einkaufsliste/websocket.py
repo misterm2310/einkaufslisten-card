@@ -315,6 +315,17 @@ def ws_reorder(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.reorder(msg["kind"], msg["ids"]))
 
 
+HEAT_ROW = vol.Schema(
+    {
+        vol.Optional("device"): OPT_STR,
+        vol.Optional("mode"): OPT_STR,
+        vol.Optional("temp"): vol.Any(None, vol.Coerce(float)),
+        vol.Optional("minutes"): vol.Any(None, vol.Coerce(float)),
+        vol.Optional("preheat"): bool,
+        vol.Optional("note"): OPT_STR,
+    }
+)
+
 RECIPE_ITEM = vol.Schema(
     {
         vol.Required("name"): str,
@@ -336,11 +347,12 @@ RECIPE_ITEM = vol.Schema(
         vol.Optional("icon"): OPT_STR,
         vol.Optional("items", default=[]): [RECIPE_ITEM],
         vol.Optional("steps"): OPT_STR,
+        vol.Optional("heat"): [HEAT_ROW],
     }
 )
 @callback
 def ws_recipe_add(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: m.add_recipe(msg["name"], msg["items"], msg.get("icon"), msg.get("steps")))
+    _run(hass, connection, msg, lambda m: m.add_recipe(msg["name"], msg["items"], msg.get("icon"), msg.get("steps"), msg.get("heat")))
 
 
 @websocket_api.websocket_command(
@@ -351,11 +363,12 @@ def ws_recipe_add(hass, connection, msg):
         vol.Optional("icon"): OPT_STR,
         vol.Optional("items"): [RECIPE_ITEM],
         vol.Optional("steps"): OPT_STR,
+        vol.Optional("heat"): [HEAT_ROW],
     }
 )
 @callback
 def ws_recipe_update(hass, connection, msg):
-    fields = _pick(msg, "name", "icon", "items", "steps")
+    fields = _pick(msg, "name", "icon", "items", "steps", "heat")
     _run(hass, connection, msg, lambda m: m.update_recipe(msg["recipe_id"], **fields))
 
 

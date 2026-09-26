@@ -982,3 +982,19 @@ def test_steps_from_schema():
     page = """<script type="application/ld+json">{"@type":"Recipe","name":"X","recipeIngredient":["1 Ei"],
       "recipeInstructions":[{"@type":"HowToStep","text":"Ei kochen."},{"@type":"HowToSection","itemListElement":[{"@type":"HowToStep","text":"Schälen."}]}]}</script>"""
     assert parse_html(page)["steps"] == "Ei kochen.\nSchälen."
+
+
+async def test_recipe_heat(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/add", "name": "Pizza",
+                            "heat": [{"device": "Backofen", "mode": "Ober-/Unterhitze", "temp": 220, "minutes": "12", "preheat": True},
+                                     {"device": "Heißluftfritteuse", "temp": None, "minutes": None}]})
+    res = await client.receive_json()
+    assert res["success"], res
+    heat = res["result"]["heat"]
+    assert heat == [{"device": "Backofen", "mode": "Ober-/Unterhitze", "temp": 220, "minutes": 12, "preheat": True, "note": None}]
+    rid = res["result"]["id"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/update", "recipe_id": rid, "heat": []})
+    assert (await client.receive_json())["success"]
+    assert m.recipe_by_id(rid)["heat"] == []
