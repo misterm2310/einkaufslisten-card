@@ -164,7 +164,9 @@ Tippst du zweimal auf dasselbe Rezept, kommt nichts doppelt dazu.
 
 **🧺 Von der Liste nehmen:** Stehen Zutaten eines Rezepts auf der Liste, gibt es neben **Auf die Liste** den Knopf **„Von der Liste (3)“**. Ein Tipp nimmt alle offenen Zutaten **dieses** Rezepts auf einmal runter. Andere Rezepte und normale Artikel bleiben stehen.
 
-**🔎 Vorschläge im Rezept:** Beim Tippen einer Zutat kommen dieselben Vorschläge wie oben in der Liste, zum Beispiel „**Mi**lch · 2 L · 📝 laktosefrei · Aldi“. Ein Tipp übernimmt Menge, Notiz, Für wen, Geschäft und Kategorie.
+**🔤 Zutaten A–Z:** Die Zutaten eines Rezepts stehen immer alphabetisch sortiert (Ä wie A). Das gilt im Editor, bei der Kochmütze, bei „Was davon brauchst du?“, im Koch-Modus und beim Teilen. Alte Rezepte werden beim ersten Start automatisch sortiert.
+
+**🔎 Vorschläge im Rezept:** Beim Tippen einer Zutat kommen dieselben Vorschläge wie oben in der Liste, zum Beispiel „**Mi**lch · 2 L · 📝 laktosefrei · Aldi“. Ein Tipp übernimmt Menge, Notiz, Für wen, Geschäft und Kategorie. Auch **Zutaten aus Rezepten** kommen als Vorschlag (mit „🍽️ Rezeptname“), selbst wenn sie noch nie auf der Liste standen. Das gilt oben in der Liste genauso.
 
 Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags Fisch).
 

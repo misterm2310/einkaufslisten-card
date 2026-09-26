@@ -85,6 +85,16 @@ def _nice(text: Any) -> str | None:
     return text
 
 
+def _abc(entry: dict[str, Any]) -> tuple[str, str]:
+    """🔤 Sortier-Schlüssel A–Z wie im Telefonbuch: Ä wie A, ß wie ss, groß/klein egal."""
+    def fold(text: Any) -> str:
+        text = str(text or "").casefold()
+        for a, b in (("ä", "a"), ("ö", "o"), ("ü", "u"), ("ß", "ss")):
+            text = text.replace(a, b)
+        return text
+    return fold(entry.get("name")), fold(entry.get("note"))
+
+
 def product_key(name: str | None, note: str | None = None) -> str:
     """Ein Produkt = Name + Notiz („Käse · Gouda“ ≠ „Käse · Leerdammer“) – für Fotos und Barcodes.
 
@@ -258,6 +268,7 @@ class EinkaufslisteManager:
                 entry["note"] = _note(entry.get("note"))
                 entry["quantity"] = norm_qty(entry.get("quantity"))
                 entry.setdefault("basic", False)
+            recipe["items"] = sorted(recipe.get("items", []), key=_abc)  # 🔤 Zutaten A–Z
         self.photos = data.get("photos", {})
         self.seen = data.get("seen", {})
         for mine in self.seen.values():  # älter als v2.2.0: Blasen-Zeiten („b:…“) nachrüsten
@@ -1195,7 +1206,7 @@ class EinkaufslisteManager:
             code = "".join(ch for ch in str(raw.get("barcode") or "") if ch.isdigit())
             if code:  # im Rezept gescannt -> Barcode gehört ab jetzt zu diesem Produkt
                 self.learn_barcode(code, name, entry["store_id"], entry["category_id"], entry["note"])
-        return out
+        return sorted(out, key=_abc)  # 🔤 Zutaten immer A–Z
 
     def _recipe_name(self, name: str | None, skip_id: str | None = None) -> str:
         name = _nice(name)

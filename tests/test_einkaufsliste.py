@@ -661,7 +661,7 @@ async def test_recipe_apply_only_selected(hass, setup, hass_ws_client):
     await client.send_json({"id": 1, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"], "items": [0, 2]})
     res = await client.receive_json()
     assert res["success"] and res["result"]["added"] == 2
-    assert sorted(i["name"] for i in m.items if i["recipe_id"]) == ["Mehl", "Milch"]
+    assert sorted(i["name"] for i in m.items if i["recipe_id"]) == ["Eier", "Milch"]  # A–Z: Eier, Mehl, Milch
     await client.send_json({"id": 2, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"], "items": []})
     assert not (await client.receive_json())["success"]
 
@@ -1000,3 +1000,13 @@ async def test_recipe_heat(hass, setup, hass_ws_client):
     await client.send_json({"id": 2, "type": "einkaufsliste/recipe/update", "recipe_id": rid, "heat": []})
     assert (await client.receive_json())["success"]
     assert m.recipe_by_id(rid)["heat"] == []
+
+
+async def test_recipe_items_sorted_abc(hass, setup):
+    """🔤 Rezept-Zutaten stehen immer A–Z (Ä wie A, groß/klein egal)."""
+    m = mgr(hass)
+    r = m.add_recipe("Auflauf", [{"name": "zwiebel"}, {"name": "Äpfel"}, {"name": "Käse", "note": "Gouda"}, {"name": "Käse", "note": "Emmentaler"}, {"name": "Butter"}])
+    assert [(i["name"], i["note"]) for i in r["items"]] == [
+        ("Äpfel", None), ("Butter", None), ("Käse", "Emmentaler"), ("Käse", "Gouda"), ("Zwiebel", None)]
+    m.update_recipe(r["id"], items=[{"name": "Salz"}, {"name": "Mehl"}])
+    assert [i["name"] for i in r["items"]] == ["Mehl", "Salz"]

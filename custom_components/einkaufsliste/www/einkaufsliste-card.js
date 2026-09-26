@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.7.6";
+const EL_VERSION = "2.7.7";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -61,6 +61,10 @@ function splitQty(text) {
 }
 
 // Wie viele Buchstaben unterscheiden sich? (für die Tippfehler-Hilfe)
+// 🔤 Zutaten A–Z (Ä wie A, groß/klein egal) – genau wie im Backend
+const abcSort = (list) => list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "de", { sensitivity: "base" })
+  || (a.note || "").localeCompare(b.note || "", "de", { sensitivity: "base" }));
+
 function editDistance(a, b) {
   const m = a.length, n = b.length;
   if (Math.abs(m - n) > 2) return 9;
@@ -1095,12 +1099,28 @@ class EinkaufslisteCard extends HTMLElement {
       names.add(low);
       cands.push({ sc, name: h.name, hist: h });
     }
+    // 🍽️ Zutaten aus Rezepten – auch wenn sie noch nie auf der Liste waren
+    for (const r of this._data.recipes || []) {
+      for (const ri of r.items || []) {
+        const low = ri.name.toLowerCase();
+        if (names.has(low)) continue;
+        const sc = score(low);
+        if (sc < 0) continue;
+        names.add(low);
+        cands.push({ sc: sc + 0.5, name: ri.name, fromRecipe: r.name,
+          item: { name: ri.name, note: ri.note || null, store_id: ri.store_id || null, category_id: ri.category_id || null, checked: true } });
+      }
+    }
     // 🤓 Tippfehler-Hilfe: „Mlich“ -> „Meintest du Milch?“
     if (q.length >= 4 && !cands.some((c) => c.sc === 0)) {
       const maxD = q.length > 6 ? 2 : 1;
       const pool = new Map();
       for (const h of this._data.history || []) pool.set(h.name.toLowerCase(), { name: h.name, hist: h });
       for (const i of this._data.items) if (!i.recipe_id && !pool.has(i.name.toLowerCase())) pool.set(i.name.toLowerCase(), { name: i.name, item: i });
+      for (const r of this._data.recipes || []) for (const ri of r.items || []) {
+        const low = ri.name.toLowerCase();
+        if (!pool.has(low)) pool.set(low, { name: ri.name, fromRecipe: r.name, item: { name: ri.name, note: ri.note || null, store_id: ri.store_id || null, category_id: ri.category_id || null, checked: true } });
+      }
       const fuzzy = [];
       for (const [low, c] of pool) {
         if (names.has(low) || low === q) continue;
@@ -1129,6 +1149,7 @@ class EinkaufslisteCard extends HTMLElement {
         const st = i.store_id && this._store(i.store_id);
         if (st && (recipe || this._activeTab === "all")) bits.push(esc(st.name));
         if (!i.checked && !recipe) bits.push("steht drauf");
+        if (c.fromRecipe) bits.push("🍽️ " + esc(c.fromRecipe));
       }
       if (c.fuzzy) return `<button type="button" class="sug fuzzy" data-act="${act}" data-n="${n}"><span>Meintest du <b>${esc(c.name)}</b>?</span></button>`;
       return `<button type="button" class="sug" data-act="${act}" data-n="${n}"><span>${mark(c.name)}</span>${
@@ -1967,7 +1988,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   _openRecipe(recipe) {
     this._draft = recipe
-      ? { id: recipe.id, name: recipe.name, icon: recipe.icon, steps: recipe.steps || "", heat: (recipe.heat || []).map((h) => ({ ...h })), items: recipe.items.map((i) => ({ ...i })) }
+      ? { id: recipe.id, name: recipe.name, icon: recipe.icon, steps: recipe.steps || "", heat: (recipe.heat || []).map((h) => ({ ...h })), items: abcSort(recipe.items.map((i) => ({ ...i }))) }
       : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [], heat: [] };
     this._view = "recipe";
     this._draftRendered = false;
@@ -2055,6 +2076,7 @@ class EinkaufslisteCard extends HTMLElement {
         dr.items.push(ing);
         added++;
       }
+      abcSort(dr.items);
       const nameEl = this.$("rName");
       if (res.name && !nameEl.value.trim()) nameEl.value = res.name;
       const stepsEl = this.$("rSteps");
@@ -2198,6 +2220,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     if (idx != null && dr.items[idx]) dr.items[idx] = ing;
     else dr.items.push(ing);
+    abcSort(dr.items);
     const photo = this._newPhoto;
     this._rEditIdx = null;
     this.$("rEditHint").hidden = true;
