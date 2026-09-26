@@ -27,6 +27,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_item_update,
         ws_item_toggle,
         ws_item_remove,
+        ws_item_move,
         ws_cleanup,
         ws_recipe_add,
         ws_recipe_update,
@@ -200,6 +201,21 @@ def ws_item_toggle(hass, connection, msg):
             msg["item_id"], msg.get("checked"), who, connection.user.id if connection.user else None
         ),
     )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/item/move",
+        vol.Optional("via"): vol.In(VIA),
+        vol.Required("item_id"): str,
+        vol.Required("store_id"): str,
+    }
+)
+@callback
+def ws_item_move(hass, connection, msg):
+    who = _user_name(hass, connection)
+    uid = connection.user.id if connection.user else None
+    _run(hass, connection, msg, lambda m: m.move_item(msg["item_id"], msg["store_id"], who, uid))
 
 
 @websocket_api.websocket_command(

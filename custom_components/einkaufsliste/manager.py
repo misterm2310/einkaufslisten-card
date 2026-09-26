@@ -667,6 +667,66 @@ class EinkaufslisteManager:
         return item
 
     @callback
+    def move_item(
+        self, item_id: str, store_id: str | None, by: str | None = None, by_id: str | None = None
+    ) -> dict[str, Any]:
+        """⇄ „War aus“: beim alten Geschäft abhaken, beim neuen offen auf die Liste.
+
+        Beide Einträge bleiben erhalten (der alte unten bei „Erledigt“), damit man ihn
+        beim nächsten Mal in jedem Geschäft wieder antippen kann.
+        """
+        item = self.get_item(item_id)
+        target = self._check_store(store_id)
+        if target is None:
+            raise ValueError("Wohin soll der Artikel?")
+        if target == item["store_id"]:
+            return item
+        now = _now_iso()
+        source_name = (self.store_by_id(item["store_id"]) or {}).get("name", "Egal wo")
+        target_name = self.store_by_id(target)["name"]
+        twin = self._find_same(
+            item["name"], item.get("note"), item.get("for_whom"), target, item.get("recipe_id")
+        )
+        # alter Laden: abhaken (Rezept-Zutaten verschwinden wie beim normalen Abhaken)
+        if not item["checked"]:
+            if item.get("recipe_id"):
+                self.items.remove(item)
+            else:
+                item.update(checked=True, checked_at=now, checked_by=by)
+        # neuer Laden: offen
+        if twin is not None:
+            if twin["checked"]:
+                twin.update(
+                    checked=False, checked_at=None, checked_by=None,
+                    added_at=now, added_by=by, added_by_id=by_id,
+                )
+            if item.get("quantity"):
+                twin["quantity"] = item["quantity"]
+            new = twin
+        else:
+            new = {
+                "id": _new_id(),
+                "name": item["name"],
+                "store_id": target,
+                "category_id": item.get("category_id"),
+                "quantity": item.get("quantity"),
+                "note": item.get("note"),
+                "for_whom": item.get("for_whom"),
+                "recipe_id": item.get("recipe_id"),
+                "checked": False,
+                "added_by": by,
+                "added_by_id": by_id,
+                "added_at": now,
+                "checked_by": None,
+                "checked_at": None,
+            }
+            self.items.append(new)
+        self._remember(new)
+        self._log("move", new, f"{source_name} → {target_name}", who=by)
+        self._changed()
+        return new
+
+    @callback
     def remove_item(self, item_id: str) -> None:
         item = self.get_item(item_id)
         self.items.remove(item)

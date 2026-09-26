@@ -749,3 +749,31 @@ async def test_log(hass, setup, hass_ws_client, hass_admin_user, freezer):
     # Barcodes am Produkt sichtbar
     m.assign_barcode(m.items[0]["id"], "4001")
     assert m.as_dict()["barcodes_by_name"][m.items[0]["name"].lower()] == ["4001"]
+
+
+async def test_move_keeps_both_stores(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi, netto = m.find_store("Aldi"), m.find_store("Netto")
+    brot = m.add_item("Brot", store_id=netto, quantity="2x")
+    await client.send_json({"id": 1, "type": "einkaufsliste/item/move", "item_id": brot["id"], "store_id": aldi})
+    res = await client.receive_json()
+    assert res["success"], res
+    new = res["result"]
+    assert new["store_id"] == aldi and not new["checked"] and new["quantity"] == "2x"
+    assert brot["checked"] and brot["store_id"] == netto  # bleibt bei Netto unter „Erledigt“
+    assert len([i for i in m.items if i["name"] == "Brot"]) == 2
+
+    # zurück nach Netto: der alte Netto-Eintrag kommt wieder, kein dritter
+    await client.send_json({"id": 2, "type": "einkaufsliste/item/move", "item_id": new["id"], "store_id": netto})
+    res = (await client.receive_json())["result"]
+    assert res["id"] == brot["id"] and not brot["checked"] and m.get_item(new["id"])["checked"]
+    assert len([i for i in m.items if i["name"] == "Brot"]) == 2
+    assert m.get_log()["entries"][0]["a"] == "move" and m.get_log()["entries"][0]["d"] == "Aldi → Netto"
+
+    # Rezept-Zutat: verschwindet beim alten Laden
+    recipe = m.add_recipe("Suppe", items=[{"name": "Lauch", "store_id": aldi}])
+    m.apply_recipe(recipe["id"])
+    lauch = next(i for i in m.items if i["name"] == "Lauch")
+    m.move_item(lauch["id"], netto)
+    assert [i["store_id"] for i in m.items if i["name"] == "Lauch"] == [netto]

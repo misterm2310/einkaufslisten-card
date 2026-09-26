@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.2.1";
+const EL_VERSION = "2.3.0";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -893,7 +893,10 @@ class EinkaufslisteCard extends HTMLElement {
     const store = this._store(item.store_id);
     const recipe = this._recipe(item.recipe_id);
     const meta = [];
-    if (this._activeTab === "all" && store) meta.push(`<span class="chip" style="--c:${esc(store.color)}">${esc(store.name)}</span>`);
+    const grp = this._grpMap?.get(item.id);
+    if (grp && grp.length > 1) {
+      for (const g of grp) { const st = this._store(g.store_id); if (st) meta.push(`<span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>`); }
+    } else if (this._activeTab === "all" && store) meta.push(`<span class="chip" style="--c:${esc(store.color)}">${esc(store.name)}</span>`);
     if (item.for_whom) meta.push(`<span>👤 für ${esc(item.for_whom)}</span>`);
     if (item.note) meta.push(`<span>📝 ${esc(item.note)}</span>`);
     if (recipe) meta.push(`<span>🍽️ ${esc(recipe.name)}</span>`);
@@ -1011,11 +1014,16 @@ class EinkaufslisteCard extends HTMLElement {
     if (!d) return;
     const list = this.$("list");
     const items = d.items.filter((i) => this._matchesTab(i));
-    const open = items.filter((i) => !i.checked);
+    const allView = this._activeTab === "all" && !this._fixedStore;
+    this._grpMap = new Map();
+    const rawOpen = items.filter((i) => !i.checked);
+    const open = allView ? this._groupStores(rawOpen) : rawOpen;
     const filter = (this.$("inName").value || "").trim().toLowerCase();
     let done = items.filter((i) => i.checked);
     if (filter) done = done.filter((i) => i.name.toLowerCase().includes(filter));
+    if (allView) done = this._groupStores(done);
     const row = (i) => (this._editing === i.id ? this._editHtml(i) : this._itemHtml(i)
+      + (this._wherePick?.id === i.id ? this._whereHtml(i) : "")
       + (this._menuId === i.id ? this._menuHtml(i) : "")
       + (this._qtyEdit === i.id ? this._qtyHtml(i) : "")
       + (this._moving === i.id ? this._moveHtml(i) : ""));
@@ -1024,7 +1032,8 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._shopMode) {
       html.push(`<div class="shopbar"><ha-icon icon="mdi:cart"></ha-icon><b>Laden-Modus – einfach abhaken 🛒</b><button class="btn" data-act="shopmode">Beenden</button></div>`);
     }
-    const dup = filter ? null : this._findDuplicate(open);
+    if (this._conflict) html.push(this._conflictHtml());
+    const dup = filter ? null : this._findDuplicate(rawOpen);
     if (dup) {
       const [a, b] = dup;
       const st = this._store(a.store_id);
@@ -1040,7 +1049,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
 
     if (this._config.show_checked && (done.length || filter)) {
-      const total = items.filter((i) => i.checked).length;
+      const total = allView ? this._groupStores(items.filter((i) => i.checked)).length : items.filter((i) => i.checked).length;
       html.push(`<div class="group">
         <div class="ghead donehead ${this._doneOpen || filter ? "" : "closed"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
         ${this._doneOpen || filter ? `<div class="donehint">Tipp auf den Kreis, um es wieder auf die Liste zu nehmen.</div>${
@@ -1093,6 +1102,90 @@ class EinkaufslisteCard extends HTMLElement {
       await this._ws({ type: "einkaufsliste/item/remove", item_id: drop.id, via: "merge" });
       this._toast(`🔗 Zusammengelegt zu „${keep.name}“${upd.quantity ? ` (${upd.quantity})` : ""}`);
     } catch (_) { /* Meldung kam schon */ }
+  }
+
+  // 🔗 Gleiches Produkt in mehreren Geschäften (für „Alle“ und das Verschieben)
+  _gkey(i) {
+    return [String(i.name || "").trim().toLowerCase(), String(i.note || "").trim().toLowerCase(),
+      String(i.for_whom || "").trim().toLowerCase(), i.recipe_id || ""].join("|");
+  }
+
+  _siblings(item, checked) {
+    const k = this._gkey(item);
+    return this._data.items.filter((i) => i.checked === checked && this._gkey(i) === k);
+  }
+
+  _openElsewhere(item, storeId) {
+    if (!storeId || !this._data) return null;
+    const k = this._gkey(item);
+    return this._data.items.find((i) => !i.checked && i.store_id && i.store_id !== storeId && this._gkey(i) === k) || null;
+  }
+
+  _storeOrder(a, b) {
+    const idx = (i) => { const n = this._data.stores.findIndex((s) => s.id === i.store_id); return n < 0 ? 999 : n; };
+    return idx(a) - idx(b);
+  }
+
+  // „Alle“: gleiche Produkte aus verschiedenen Geschäften zu einer Zeile zusammenfassen
+  _groupStores(list) {
+    const map = new Map();
+    for (const i of list) {
+      const k = this._gkey(i);
+      if (!map.has(k)) map.set(k, []);
+      map.get(k).push(i);
+    }
+    const reps = [];
+    for (const arr of map.values()) {
+      arr.sort((a, b) => this._storeOrder(a, b));
+      const rep = arr.find((i) => i.id === this._wherePick?.id) || arr[0];
+      this._grpMap.set(rep.id, arr);
+      reps.push(rep);
+    }
+    return reps;
+  }
+
+  _whereHtml(item) {
+    const grp = this._grpMap?.get(item.id) || [item];
+    const buy = !item.checked;
+    return `<div class="moverow whererow" data-id="${item.id}">
+      <span class="movetxt">${buy ? "Wo gekauft?" : "Wieder drauf bei:"}</span>
+      ${grp.map((i) => { const st = this._store(i.store_id); return `<button class="tab" style="--c:${esc(st?.color || "#888")}" data-act="where-go" data-item="${i.id}"><span class="dot"></span>${esc(st?.name || "Egal wo")}</button>`; }).join("")}
+      <button class="iconbtn" data-act="where-cancel" title="Abbrechen"><ha-icon icon="mdi:close"></ha-icon></button>
+    </div>`;
+  }
+
+  _conflictHtml() {
+    const c = this._conflict;
+    const other = c && this._data.items.find((i) => i.id === c.other && !i.checked);
+    const target = c && this._store(c.store);
+    if (!other || !target) { this._conflict = null; return ""; }
+    const from = this._store(other.store_id);
+    return `<div class="dupbar conflict">🛒 <b>„${esc(other.name)}“</b> steht schon bei <b>${esc(from?.name || "?")}</b> offen.
+      <div class="dbtns">
+        <button class="btn" data-act="conflict-cancel">Abbrechen</button>
+        <button class="btn" data-act="conflict-extra"><ha-icon icon="mdi:plus"></ha-icon>Zusätzlich bei ${esc(target.name)}</button>
+        <button class="primary addbtn" data-act="conflict-move"><ha-icon icon="mdi:swap-horizontal"></ha-icon>Nach ${esc(target.name)} verschieben</button>
+      </div></div>`;
+  }
+
+  // Wieder auf die Liste nehmen – aber erst fragen, wenn es woanders schon offen ist
+  _readd(item) {
+    const other = this._openElsewhere(item, item.store_id);
+    if (other) {
+      this._conflict = { kind: "readd", other: other.id, store: item.store_id, item: item.id };
+      this._renderList();
+      return;
+    }
+    this._toggle(item.id);
+  }
+
+  _toggle(id) {
+    if (!id || this._pending.has(id)) return;
+    this._pending.add(id);
+    this.shadowRoot.querySelector(`.item[data-id="${id}"]`)?.classList.add("pending");
+    this._ws({ type: "einkaufsliste/item/toggle", item_id: id })
+      .catch(() => {})
+      .finally(() => { this._pending.delete(id); this._renderAll(); });
   }
 
   _renderFooter() {
@@ -1944,6 +2037,18 @@ class EinkaufslisteCard extends HTMLElement {
       if (v) msg[key] = v;
     }
     if (this._pendingBarcode) { msg.barcode = this._pendingBarcode; msg.via = "scan"; }
+    // Steht das schon bei einem anderen Geschäft offen? Dann erst fragen: verschieben oder zusätzlich?
+    const other = this._openElsewhere({ name, note: msg.note, for_whom: msg.for_whom }, msg.store_id);
+    if (other) {
+      this._conflict = { kind: "add", other: other.id, store: msg.store_id, msg };
+      this._renderList();
+      return;
+    }
+    await this._doAdd(msg);
+  }
+
+  async _doAdd(msg) {
+    const name = msg.name;
     try {
       const item = await this._ws(msg);
       if (this._newPhoto) {
@@ -2007,14 +2112,59 @@ class EinkaufslisteCard extends HTMLElement {
         this._seenSnap = { ...(this._mySeen() || {}) };
         this._renderAll();
         break;
-      case "toggle":
+      case "toggle": {
         if (!id || this._pending.has(id)) return;
-        this._pending.add(id);
-        itemEl.classList.add("pending");
-        this._ws({ type: "einkaufsliste/item/toggle", item_id: id })
-          .catch(() => {})
-          .finally(() => { this._pending.delete(id); this._renderAll(); });
+        const item = this._data.items.find((i) => i.id === id);
+        if (!item) return;
+        if (this._activeTab === "all" && !this._fixedStore && this._siblings(item, item.checked).length > 1) {
+          // mehrere Geschäfte in einer Zeile: erst fragen, welches
+          this._wherePick = this._wherePick?.id === id ? null : { id };
+          this._renderList();
+          return;
+        }
+        if (item.checked) this._readd(item);
+        else this._toggle(id);
         break;
+      }
+      case "where-go": {
+        const target = this._data.items.find((i) => i.id === el.dataset.item);
+        this._wherePick = null;
+        if (!target) { this._renderList(); break; }
+        if (target.checked) this._readd(target);
+        else this._toggle(target.id);
+        break;
+      }
+      case "where-cancel":
+        this._wherePick = null;
+        this._renderList();
+        break;
+      case "conflict-cancel":
+        this._conflict = null;
+        this._renderList();
+        break;
+      case "conflict-extra": {
+        const c = this._conflict;
+        this._conflict = null;
+        if (c?.kind === "add") this._doAdd(c.msg);
+        else if (c?.kind === "readd") this._toggle(c.item);
+        this._renderList();
+        break;
+      }
+      case "conflict-move": {
+        const c = this._conflict;
+        this._conflict = null;
+        if (!c) break;
+        const target = this._store(c.store);
+        this._ws({ type: "einkaufsliste/item/move", item_id: c.other, store_id: c.store })
+          .then(() => {
+            this._toast(`🔁 Verschoben – jetzt bei ${target?.name || "?"} offen`);
+            if (c.kind === "add") return this._doAdd(c.msg);
+            return null;
+          })
+          .catch(() => {})
+          .finally(() => this._renderAll());
+        break;
+      }
       case "item-delete": {
         const itemId = el.closest(".delrow").dataset.id;
         const item = this._data.items.find((i) => i.id === itemId);
@@ -2133,8 +2283,9 @@ class EinkaufslisteCard extends HTMLElement {
         const item = this._data.items.find((i) => i.id === itemId);
         const target = this._store(el.dataset.store);
         this._moving = null;
-        this._ws({ type: "einkaufsliste/item/update", item_id: itemId, store_id: target.id })
-          .then(() => this._toast(`🔁 ${item?.name || "Artikel"} wandert zu ${target.name}`))
+        const from = this._store(item?.store_id);
+        this._ws({ type: "einkaufsliste/item/move", item_id: itemId, store_id: target.id })
+          .then(() => this._toast(`🔁 ${item?.name || "Artikel"}: ${from ? `bei ${from.name} abgehakt, ` : ""}jetzt bei ${target.name} offen`))
           .catch(() => this._renderList());
         break;
       }
