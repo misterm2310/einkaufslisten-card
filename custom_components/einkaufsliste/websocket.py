@@ -321,6 +321,7 @@ HEAT_ROW = vol.Schema(
         vol.Optional("mode"): OPT_STR,
         vol.Optional("temp"): vol.Any(None, vol.Coerce(float)),
         vol.Optional("minutes"): vol.Any(None, vol.Coerce(float)),
+        vol.Optional("minutes_to"): vol.Any(None, vol.Coerce(float)),
         vol.Optional("preheat"): bool,
         vol.Optional("note"): OPT_STR,
     }

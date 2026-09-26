@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.7.2";
+const EL_VERSION = "2.7.3";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -207,7 +207,7 @@ function heatText(h) {
     `${dev.icon} ${h.device || "Backofen"}`,
     h.mode,
     h.temp ? `${h.temp}${dev.unit ? ` ${dev.unit}` : ""}` : "",
-    h.minutes ? `${h.minutes} Min` : "",
+    h.minutes ? `${h.minutes}${h.minutes_to ? `–${h.minutes_to}` : ""} Min` : "",
     h.preheat ? "vorheizen" : "",
     h.note,
   ].filter(Boolean).join(" · ");
@@ -543,6 +543,10 @@ ha-card.compact .group { margin-top:4px; }
 .heatrow .hfoot { grid-column:1/-1; display:flex; align-items:center; gap:8px; }
 .heatrow .hfoot input[type=text] { flex:1; }
 .heatrow input[type=checkbox] { width:auto; }
+.heatrow .hnums { grid-column:1/-1; grid-template-columns:1fr 2fr !important; }
+.heatrow .hmin { display:flex; align-items:center; gap:4px; }
+.heatrow .hmin input { flex:1; min-width:0; }
+.heatrow .hmin span { opacity:.6; }
 .heatrow label { display:flex; align-items:center; gap:4px; font-size:.85em; white-space:nowrap; }
 .pickrow.basic .pname { font-size:.85em; }
 .pickrow .pbasic { font-size:.72em; color:var(--secondary-text-color); white-space:nowrap; }
@@ -1617,7 +1621,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${recipes.map((r) => `
           <div class="recipe" data-id="${r.id}">
             <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
-            <div class="rname"><b>${esc(r.name)}${this._recipePhotoBtn(r)}</b><small>${r.items.length} Zutaten</small></div>
+            <div class="rname"><b>${esc(r.name)}${this._recipePhotoBtn(r)}</b><small>${r.items.length} Zutaten${r.steps ? " · 📖 Anleitung" : " · ohne Anleitung"}${(r.heat || []).length ? " · 🔥 Backofen & Co." : ""}</small></div>
             <button class="iconbtn" data-act="recipe-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
           </div>`).join("")}
         <div class="btnrow"><button class="btn" data-act="recipe-new"><ha-icon icon="mdi:plus"></ha-icon>Neues Rezept</button></div>` },
@@ -1998,7 +2002,7 @@ class EinkaufslisteCard extends HTMLElement {
         <select data-hf="mode"><option value="">– Modus –</option>${modes.map((m) => opt(m, h.mode)).join("")}</select>
         <div class="hnums">
           <input data-hf="temp" type="number" inputmode="numeric" min="0" value="${esc(h.temp ?? "")}" placeholder="${dev.unit === "W" ? "Watt" : dev.unit ? "°C" : "–"}">
-          <input data-hf="minutes" type="number" inputmode="numeric" min="0" value="${esc(h.minutes ?? "")}" placeholder="Minuten">
+          <span class="hmin"><input data-hf="minutes" type="number" inputmode="numeric" min="0" value="${esc(h.minutes ?? "")}" placeholder="Min"><span>–</span><input data-hf="minutes_to" type="number" inputmode="numeric" min="0" value="${esc(h.minutes_to ?? "")}" placeholder="bis"></span>
         </div>
         <label><input data-hf="preheat" type="checkbox" ${h.preheat ? "checked" : ""}> vorheizen</label>
         <div class="hfoot">
@@ -2015,7 +2019,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._draft.heat = [...box.querySelectorAll(".heatrow")].map((row) => {
       const v = (f) => row.querySelector(`[data-hf=${f}]`);
       return { device: v("device").value, mode: v("mode").value || null, temp: v("temp").value || null,
-        minutes: v("minutes").value || null, preheat: v("preheat").checked, note: v("note").value.trim() || null };
+        minutes: v("minutes").value || null, minutes_to: v("minutes_to").value || null, preheat: v("preheat").checked, note: v("note").value.trim() || null };
     });
   }
 
@@ -2168,7 +2172,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (this.$("inName").value.trim() && !confirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
     const heat = (dr.heat || []).filter((h) => h.mode || h.temp || h.minutes || h.note)
       .map((h) => ({ device: h.device || "Backofen", mode: h.mode || null, temp: h.temp ? Number(h.temp) : null,
-        minutes: h.minutes ? Number(h.minutes) : null, preheat: !!h.preheat, note: h.note || null }));
+        minutes: h.minutes ? Number(h.minutes) : null, minutes_to: h.minutes_to ? Number(h.minutes_to) : null, preheat: !!h.preheat, note: h.note || null }));
     const msg = { name: dr.name.trim(), icon: dr.icon || null, items, steps: (dr.steps || "").trim() || null, heat };
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {

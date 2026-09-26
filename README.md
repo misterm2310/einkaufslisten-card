@@ -174,7 +174,7 @@ Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags 
 
 **👨‍🍳 Zubereitung & Koch-Modus:** Im Rezept-Editor gibt es das Feld **Zubereitung** (ein Schritt pro Zeile). Beim Link-Einfügen wird die Anleitung gleich mit übernommen. Bei der Kochmütze erscheint dann **🔥 Kochen**: Schritt für Schritt in großer Schrift, mit **‹ Zurück / Weiter ›** und den Zutaten zum Aufklappen.
 
-**🔥 Backofen & Co.:** Im Rezept-Editor unter **Backofen & Co.** trägst du die Einstellungen ein: Gerät (Backofen, Heißluftfritteuse, Mikrowelle, Herd, Grill, Dampfgarer), Modus (z. B. Ober-/Unterhitze, Umluft), Grad (bzw. Watt), Minuten, Vorheizen und einen Hinweis („mittlere Schiene“). Mehrere Einstellungen gehen auch (erst 220 °C, dann 180 °C). Im Koch-Modus stehen sie groß oben, bei der Kochmütze klein unter dem Rezept, und beim Teilen kommen sie mit.
+**🔥 Backofen & Co.:** Im Rezept-Editor unter **Backofen & Co.** trägst du die Einstellungen ein: Gerät (Backofen, Heißluftfritteuse, Mikrowelle, Herd, Grill, Dampfgarer), Modus (z. B. Ober-/Unterhitze, Umluft), Grad (bzw. Watt), Minuten (auch „von–bis“, z. B. 15–20 Min), Vorheizen und einen Hinweis („mittlere Schiene“). Mehrere Einstellungen gehen auch (erst 220 °C, dann 180 °C). Im Koch-Modus stehen sie groß oben, bei der Kochmütze klein unter dem Rezept, und beim Teilen kommen sie mit.
 
 **📤 Rezept weitergeben:** Knopf **Teilen** bei der Kochmütze → Zutaten, Backofen-Einstellung und Zubereitung als Text (ohne „für wen“), per **WhatsApp**, über das Teilen-Menü des Handys oder zum **Kopieren**.
 
@@ -265,6 +265,8 @@ Bist du bei einem Geschäft, das eine **📍 Zone** hat, wird der ▥-Knopf **gr
 ## ⚙️ Die Einstellungen (Zahnrad)
 
 Ein Tipp aufs **⚙️** zeigt eine aufgeräumte Übersicht mit Kacheln: **Geschäfte · Kategorien · Rezepte · Personen · Verlauf · Aufräumen · Artikel löschen**. Tipp auf eine Kachel, und nur dieser Bereich geht auf. Mit **← Übersicht** geht's zurück.
+
+In der Rezept-Übersicht (⚙️ → Rezepte) steht bei jedem Rezept, ob es eine **📖 Anleitung** und **🔥 Backofen-Einstellungen** hat.
 
 ### 📦 Produkte (Katalog)
 Alle Produkte, die die Liste kennt – mit Kategorie, Standard-Geschäft, Anzahl Fotos und Barcodes. Suchen, antippen, ändern: Umbenennen oder eine andere Notiz zieht **Artikel, Rezepte, Fotos, Barcodes und Vorschläge** mit. **Vergessen** löscht Fotos, Barcodes und Vorschläge (Artikel auf der Liste bleiben stehen).

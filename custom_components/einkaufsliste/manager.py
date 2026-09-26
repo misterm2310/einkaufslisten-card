@@ -130,9 +130,12 @@ def _clean_heat(rows: Any) -> list[dict[str, Any]]:
             "mode": (_clean(raw.get("mode")) or "")[:40] or None,
             "temp": num(raw.get("temp"), 1500),
             "minutes": num(raw.get("minutes"), 1440),
+            "minutes_to": num(raw.get("minutes_to"), 1440),  # „15–20 Min“
             "preheat": bool(raw.get("preheat")),
             "note": (_clean(raw.get("note")) or "")[:60] or None,
         }
+        if row["minutes_to"] and (not row["minutes"] or row["minutes_to"] <= row["minutes"]):
+            row["minutes_to"] = None
         if row["mode"] or row["temp"] or row["minutes"] or row["note"]:
             out.append(row)
     return out[:6]
