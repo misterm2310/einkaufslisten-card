@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.7.1";
+const EL_VERSION = "2.7.2";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -211,33 +211,6 @@ function heatText(h) {
     h.preheat ? "vorheizen" : "",
     h.note,
   ].filter(Boolean).join(" · ");
-}
-
-// 💡 Bildschirm anlassen: erst Wake Lock (nur über https), sonst ein winziges stummes Video in Dauerschleife
-async function keepAwake() {
-  let lock = null;
-  try { lock = await navigator.wakeLock?.request("screen"); } catch (_) { lock = null; }
-  let video = null;
-  if (!lock) {
-    video = document.createElement("video");
-    video.setAttribute("playsinline", "");
-    video.setAttribute("muted", "");
-    video.muted = true;
-    video.loop = true;
-    Object.assign(video.style, { position: "fixed", width: "1px", height: "1px", opacity: "0.01", left: "0", bottom: "0", pointerEvents: "none" });
-    for (const [type, file] of [["video/webm", "nosleep.webm"], ["video/mp4", "nosleep.mp4"]]) {
-      const src = document.createElement("source");
-      src.type = type;
-      src.src = `${EL_BASE}/${file}?v=${EL_VERSION}`;
-      video.appendChild(src);
-    }
-    document.body.appendChild(video);
-    try { await video.play(); } catch (_) { /* manche Geräte erlauben das nicht */ }
-  }
-  return () => {
-    try { lock?.release?.(); } catch (_) { /* egal */ }
-    if (video) { video.pause(); video.remove(); }
-  };
 }
 
 // ---------------------------------------------------------------- Overlays (über allem)
@@ -2587,7 +2560,6 @@ class EinkaufslisteCard extends HTMLElement {
     if (!steps.length && !heat.length) return;
     if (!steps.length) steps.push("Alles bereit? Dann los! 👨‍🍳");
     let idx = 0;
-    const release = await keepAwake();
     const ov = makeOverlay();
     Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
       paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 90px)" });
@@ -2621,7 +2593,7 @@ class EinkaufslisteCard extends HTMLElement {
       bPrev.style.visibility = idx ? "visible" : "hidden";
       bNext.textContent = idx < steps.length - 1 ? "Weiter ›" : "✔ Fertig – guten Appetit!";
     };
-    const close = () => { release(); ov.remove(); document.removeEventListener("keydown", onKey); };
+    const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
     const onKey = (e) => {
       if (e.key === "Escape") close();
       if (e.key === "ArrowRight" && idx < steps.length - 1) { idx++; show(); }
