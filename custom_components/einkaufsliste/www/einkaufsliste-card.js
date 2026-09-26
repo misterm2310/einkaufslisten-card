@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.4.1";
+const EL_VERSION = "2.5.0";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -202,8 +202,6 @@ form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .item.unknown .name { color:var(--warning-color,#ff9800); animation: pulse 1.6s infinite; }
 .tool .tval { font-size:.8em; font-weight:600; margin-left:3px; line-height:1; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chipbox { display:flex; flex-direction:column; gap:6px; }
-.ritem .rsugg { grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:6px; }
-.ritem .rsugg[hidden] { display:none; }
 form.add .sugg { grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:6px; margin-top:-2px; }
 .sug { border:1.5px solid color-mix(in srgb, var(--primary-color,#03a9f4) 45%, transparent); background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); color:var(--primary-text-color); border-radius:999px; padding:7px 12px; cursor:pointer; font-size:.95em; display:inline-flex; align-items:center; gap:4px; }
 .sug b { color:var(--primary-color,#03a9f4); }
@@ -349,9 +347,10 @@ ha-card.compact .group { margin-top:4px; }
 .rpick .pbtns { display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
 .rpick .pbtns .primary { padding:9px 14px; }
 .rpick .pbtns .primary[disabled] { opacity:.4; cursor:default; }
-.ritem { display:grid; grid-template-columns: 1fr 64px 34px 34px; gap:5px; padding:8px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:6px 0; }
-.ritem .two { grid-column: 1 / -1; display:grid; grid-template-columns:1fr 1fr; gap:5px; }
-.ritem input, .ritem select { padding:7px 8px; font-size:.88em; }
+.rsub { margin-top:14px !important; }
+.redithint { font-size:.85em; padding:6px 10px; border-radius:10px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); margin:4px 2px; }
+.rrow .iconbtn { align-self:center; }
+.rrow.editing { outline:2px solid var(--primary-color,#03a9f4); }
 [hidden] { display:none !important; }
 `;
 
@@ -724,6 +723,7 @@ class EinkaufslisteCard extends HTMLElement {
     cnt.textContent = open.length;
 
     const isList = this._view === "list";
+    if (this._view !== "recipe") this._parkForm();
     this.$("listView").hidden = !isList;
     this.$("otherView").hidden = isList;
     if (isList) {
@@ -869,39 +869,6 @@ class EinkaufslisteCard extends HTMLElement {
     if (!list.length) { box.hidden = true; box.innerHTML = ""; return; }
     box.innerHTML = this._suggestChips(list, q, "suggest");
     box.hidden = false;
-  }
-
-  // 🍳 Dieselben Vorschläge im Rezept-Editor – antippen füllt die ganze Zutat aus
-  _renderRecipeSuggest(row) {
-    const box = row?.querySelector(".rsugg");
-    if (!box) return;
-    const q = (row.querySelector("[data-rf=name]").value || "").trim().toLowerCase();
-    const list = this._suggestList(q, { recipe: true })
-      .filter((c) => !(c.name.toLowerCase() === q && !c.item)); // genau getippt und nichts dazu -> kein Vorschlag nötig
-    this._rsuggMap = new Map(list.map((c, n) => [String(n), c]));
-    this._rsuggRow = row;
-    if (!list.length) { box.hidden = true; box.innerHTML = ""; return; }
-    box.innerHTML = this._suggestChips(list, q, "rsuggest", { recipe: true });
-    box.hidden = false;
-  }
-
-  _applyRecipeSuggest(row, c) {
-    const set = (rf, v) => { const el = row.querySelector(`[data-rf=${rf}]`); if (el) el.value = v || ""; };
-    set("name", c.name);
-    const src = c.item || c.hist || {};
-    if (c.item) {
-      set("quantity", c.item.quantity);
-      set("note", c.item.note);
-      const f = row.querySelector("[data-rf=for_whom]");
-      if (f && c.item.for_whom && ![...f.options].some((o) => o.value === c.item.for_whom)) {
-        const o = document.createElement("option"); o.value = o.textContent = c.item.for_whom; f.appendChild(o);
-      }
-      set("for_whom", c.item.for_whom);
-    }
-    if (src.store_id && this._store(src.store_id)) set("store_id", src.store_id);
-    if (src.category_id && this._cat(src.category_id)) set("category_id", src.category_id);
-    const box = row.querySelector(".rsugg");
-    if (box) { box.hidden = true; box.innerHTML = ""; }
   }
 
   _applySuggest(c) {
@@ -1304,6 +1271,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   // ---------------------------------------------------------------- Einstellungen
   _renderSettings() {
+    this._parkForm();
     const d = this._data;
     const s = d.settings;
     const row = (kind, e, i, len) => `
@@ -1512,6 +1480,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   // ---------------------------------------------------------------- Rezepte
   _renderRecipes() {
+    this._parkForm();
     const recipes = this._data.recipes || [];
     const html = [`<div class="sec"><h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</h3>`];
     if (!recipes.length) {
@@ -1561,30 +1530,16 @@ class EinkaufslisteCard extends HTMLElement {
   _openRecipe(recipe) {
     this._draft = recipe
       ? { id: recipe.id, name: recipe.name, icon: recipe.icon, items: recipe.items.map((i) => ({ ...i })) }
-      : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [{ name: "" }] };
+      : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [] };
     this._view = "recipe";
     this._draftRendered = false;
     this._renderAll();
   }
 
   _renderRecipeEditor() {
-    const d = this._data;
     const dr = this._draft;
     this._draftRendered = true;
-    const rows = dr.items.map((it, n) => `
-      <div class="ritem" data-n="${n}">
-        <input data-rf="name" value="${esc(it.name || "")}" placeholder="Zutat, z. B. Fischstäbchen" autocomplete="off">
-        <input data-rf="quantity" value="${esc(it.quantity || "")}" placeholder="Menge">
-        <button class="iconbtn ${this._hasPhoto(this._pk(it.name, it.note)) ? "on" : ""}" type="button" data-act="ritem-photo" title="Foto"><ha-icon icon="${this._hasPhoto(this._pk(it.name, it.note)) ? "mdi:camera" : "mdi:camera-plus-outline"}"></ha-icon></button>
-        <button class="iconbtn" type="button" data-act="ritem-remove" title="Zutat entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
-        <div class="sugg rsugg" hidden></div>
-        <div class="two">
-          <input data-rf="note" value="${esc(it.note || "")}" placeholder="📝 Notiz">
-          <select data-rf="for_whom">${this._personOptions(it.for_whom)}</select>
-          <select data-rf="store_id">${this._selectOptions(d.stores, it.store_id, "🛒 Wie zuletzt")}</select>
-          <select data-rf="category_id">${this._selectOptions(d.categories, it.category_id, "📦 Wie zuletzt")}</select>
-        </div>
-      </div>`).join("");
+    this._parkForm();
     this.$("otherView").innerHTML = `
       <div class="sec">
         <h3><ha-icon icon="mdi:chef-hat"></ha-icon>${dr.id ? "Rezept bearbeiten" : "Neues Rezept"}</h3>
@@ -1594,9 +1549,11 @@ class EinkaufslisteCard extends HTMLElement {
           ${this._iconField(dr.icon, 'id="rIcon"')}
         </div>
         <div class="picker" hidden></div>
-        <div id="rItems">${rows}</div>
-        <div class="btnrow"><button class="btn" data-act="ritem-add"><ha-icon icon="mdi:plus"></ha-icon>Zutat hinzufügen</button></div>
-        <p class="hint">„Wie zuletzt“ = Geschäft & Kategorie, die bei diesem Produkt zuletzt benutzt wurden.</p>
+        <h3 class="rsub"><ha-icon icon="mdi:food-apple-outline"></ha-icon>Zutaten</h3>
+        <div class="redithint" id="rEditHint" hidden>✏️ Du bearbeitest eine Zutat – ✔ speichert sie. <button class="linkbtn" data-act="ritem-edit-cancel">Abbrechen</button></div>
+        <div id="rFormSlot"></div>
+        <div id="rItems"></div>
+        <p class="hint">Eintragen geht genau wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, 📝 Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode (auch „📦 Mehrere scannen“) – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie, die bei diesem Produkt zuletzt benutzt wurden.</p>
         <div class="btnrow" style="justify-content:space-between">
           ${dr.id ? `<button class="btn danger" data-act="recipe-delete"><ha-icon icon="mdi:trash-can-outline"></ha-icon>Löschen</button>` : "<span></span>"}
           <span style="display:flex;gap:6px">
@@ -1605,23 +1562,147 @@ class EinkaufslisteCard extends HTMLElement {
           </span>
         </div>
       </div>`;
+    this._enterRecipeForm();
+    this._renderRecipeItems();
+  }
+
+  // Das Eingabe-Formular der Liste wandert in den Rezept-Editor – so ist alles genau gleich
+  _enterRecipeForm() {
+    const form = this.$("addForm");
+    const slot = this.$("rFormSlot");
+    if (!form || !slot) return;
+    slot.appendChild(form);
+    this._formMode = "recipe";
+    this._rEditIdx = null;
+    form.classList.remove("fixed");
+    this._clearForm();
+    this.$("inStore").hidden = false;
+    this.$("inStore").value = "";
+    this.$("inStore").options[0].textContent = "🛒 Wie zuletzt";
+    this.$("inCat").options[0].textContent = "📦 Wie zuletzt";
+    this.$("inName").placeholder = "Zutat, z. B. Fischstäbchen";
+    this.$("btnScan").classList.remove("instore");
+    this.$("btnScan").title = "Barcode scannen";
+    this.$("rEditHint").hidden = true;
+  }
+
+  _parkForm() {
+    const form = this.$("addForm");
+    const home = this.$("listView");
+    if (!form || !home || form.parentElement === home) return;
+    home.insertBefore(form, this.$("list"));
+    this._formMode = null;
+    this._rEditIdx = null;
+    this.$("inName").placeholder = "Was brauchen wir?";
+    this._clearForm();
+    this._lastTab = null; // Auswahl-Felder neu aufbauen (Geschäft passend zum Reiter)
+  }
+
+  _renderRecipeItems() {
+    const box = this.$("rItems");
+    if (!box) return;
+    const items = this._draft.items;
+    if (!items.length) {
+      box.innerHTML = `<p class="hint">Noch keine Zutaten – oben eintragen und ✔ tippen. 🥕</p>`;
+      return;
+    }
+    box.innerHTML = items.map((it, n) => {
+      const st = this._store(it.store_id);
+      const cat = this._cat(it.category_id);
+      const pk = this._pk(it.name, it.note);
+      const meta = [
+        `<span class="chip" style="--c:${esc(st?.color || "#888")}">${esc(st?.name || "Wie zuletzt")}</span>`,
+        it.note ? `<span>📝 ${esc(it.note)}</span>` : "",
+        it.barcode || this._barcodesOf(pk).length ? `<span class="bc">▥</span>` : "",
+        cat ? `<span>${esc(cat.name)}</span>` : "",
+      ].filter(Boolean).join("");
+      return `<div class="item rrow ${this._rEditIdx === n ? "editing" : ""}" data-n="${n}" style="--cc:${esc(cat?.color || "transparent")}">
+        <div class="txt">
+          <div class="line"><span class="name">${esc(it.name)}</span>${it.quantity ? `<span class="qty">${esc(it.quantity)}</span>` : ""}${it.for_whom ? `<span class="who">(für ${esc(it.for_whom)})</span>` : ""}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
+          <div class="meta">${meta}</div>
+        </div>
+        <button class="iconbtn" data-act="ritem-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
+        <button class="iconbtn" data-act="ritem-remove" title="Zutat entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
+      </div>`;
+    }).join("");
+  }
+
+  async _addRecipeIngredient() {
+    const dr = this._draft;
+    const raw = this.$("inName").value.trim();
+    const name = raw.charAt(0).toUpperCase() + raw.slice(1);
+    const val = (id) => this.$(id).value.trim() || null;
+    const ing = {
+      name,
+      quantity: val("inQty"),
+      note: val("inNote"),
+      for_whom: this.$("inFor").value || null,
+      store_id: this.$("inStore").value || null,
+      category_id: this.$("inCat").value || null,
+    };
+    const idx = this._rEditIdx;
+    if (this._pendingBarcode) ing.barcode = this._pendingBarcode;
+    else if (idx != null && dr.items[idx]?.barcode) ing.barcode = dr.items[idx].barcode;
+    const same = (a) => this._gkey(a) === this._gkey(ing) && (a.store_id || "") === (ing.store_id || "");
+    if (dr.items.some((a, n) => n !== idx && same(a))) {
+      this._toast(`„${name}“ steht schon im Rezept 😉`);
+      const el = this.$("inName");
+      el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
+      return;
+    }
+    if (idx != null && dr.items[idx]) dr.items[idx] = ing;
+    else dr.items.push(ing);
+    const photo = this._newPhoto;
+    this._rEditIdx = null;
+    this.$("rEditHint").hidden = true;
+    this._clearForm();
+    this.$("inStore").value = "";
+    this._renderRecipeItems();
+    this.$("inName").focus();
+    if (photo) await this._savePhoto({ name: this._pk(ing.name, ing.note), button: null, quiet: true, keepEdit: true }, photo);
+    this._renderRecipeItems();
+  }
+
+  _editRecipeIngredient(n) {
+    const it = this._draft.items[n];
+    if (!it) return;
+    this._clearForm();
+    this._rEditIdx = n;
+    this.$("inName").value = it.name || "";
+    this.$("inQty").value = it.quantity || "";
+    this.$("inNote").value = it.note || "";
+    this.$("inNote").hidden = !it.note;
+    const f = this.$("inFor");
+    if (it.for_whom && ![...f.options].some((o) => o.value === it.for_whom)) {
+      const o = document.createElement("option"); o.value = o.textContent = it.for_whom; f.appendChild(o);
+    }
+    f.value = it.for_whom || "";
+    this.$("inStore").value = it.store_id || "";
+    this.$("inCat").value = it.category_id || "";
+    this._catManual = !!it.category_id;
+    this._renderQtyChips();
+    this._renderForChips();
+    this._updateTools();
+    this.$("rEditHint").hidden = false;
+    this._renderRecipeItems();
+    this.$("inName").focus();
   }
 
   _readDraft() {
     const dr = this._draft;
     dr.name = this.$("rName").value;
     dr.icon = this.$("rIcon").value;
-    dr.items = [...this.shadowRoot.querySelectorAll(".ritem")].map((row) => {
-      const o = {};
-      row.querySelectorAll("[data-rf]").forEach((el) => { o[el.dataset.rf] = el.value.trim() || null; });
-      return o;
-    });
   }
 
   async _saveRecipe() {
     this._readDraft();
     const dr = this._draft;
-    const items = dr.items.filter((i) => i.name);
+    const items = dr.items.filter((i) => i.name).map((i) => {
+      const o = { name: i.name };
+      for (const k of ["quantity", "note", "for_whom", "store_id", "category_id", "barcode"]) if (i[k]) o[k] = i[k];
+      return o;
+    });
+    if (this.$("inName").value.trim() && !confirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
     const msg = { name: dr.name.trim(), icon: dr.icon || null, items };
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {
@@ -1850,6 +1931,8 @@ class EinkaufslisteCard extends HTMLElement {
       if (target.button) {
         target.button.classList.add("on");
         target.button.querySelector("ha-icon")?.setAttribute("icon", "mdi:camera");
+      } else if (target.keepEdit) {
+        /* Rezept-Editor bleibt offen */
       } else {
         this._editing = null;
         this._renderList();
@@ -1938,7 +2021,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   // ▥ antippen: im Laden = abhaken, zu Hause = eintragen
   _scanButton() {
-    const near = this._lastNear && this._store(this._lastNear);
+    const near = this._formMode !== "recipe" && this._lastNear && this._store(this._lastNear);
     if (near) return this._scanCheckOff(near);
     this._appScan({
       title: "🛒 Barcode scannen",
@@ -1974,6 +2057,19 @@ class EinkaufslisteCard extends HTMLElement {
           stats.unknown++;
         }
         const guess = res.category_id || guessCategory(name, this._data?.category_hints);
+        if (this._formMode === "recipe" && this._draft) {
+          // 🍳 im Rezept-Editor: gescannte Packung wird eine Zutat
+          const ing = {
+            name, quantity: null, note: (res.found && res.note) || null, for_whom: null,
+            store_id: res.store_id && this._store(res.store_id) ? res.store_id : null,
+            category_id: guess && this._cat(guess) ? guess : null, barcode: res.code || code,
+          };
+          if (this._draft.items.some((a) => this._gkey(a) === this._gkey(ing))) return `ℹ️ ${name} ist schon im Rezept`;
+          this._draft.items.push(ing);
+          stats.added++;
+          this._renderRecipeItems();
+          return res.found ? `✅ ${name} ist im Rezept` : `❓ Unbekannt – später umbenennen`;
+        }
         try {
           await this._hass.callWS({
             type: "einkaufsliste/item/add",
@@ -1997,7 +2093,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   _seriesDone(stats) {
     if (!stats.added) return;
-    this._toast(`📦 ${stats.added} Artikel eingetragen${stats.unknown ? ` – ${stats.unknown}× ❓ bitte noch umbenennen` : ""}`);
+    this._toast(`📦 ${stats.added} ${this._formMode === "recipe" ? "Zutaten ins Rezept übernommen" : "Artikel eingetragen"}${stats.unknown ? ` – ${stats.unknown}× ❓ bitte noch umbenennen` : ""}`);
   }
 
   // ✅ Im Laden: gescannte Packung wird auf der Liste abgehakt
@@ -2081,10 +2177,6 @@ class EinkaufslisteCard extends HTMLElement {
       this._renderDelList();
       return;
     }
-    if (t.dataset?.rf === "name" && t.closest(".ritem")) {
-      this._renderRecipeSuggest(t.closest(".ritem"));
-      return;
-    }
     if (t.id === "logSearch") {
       this._logF.q = t.value;
       this._logMax = 150;
@@ -2107,6 +2199,7 @@ class EinkaufslisteCard extends HTMLElement {
       el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
       return;
     }
+    if (this._formMode === "recipe") { this._addRecipeIngredient(); return; }
     const msg = {
       type: "einkaufsliste/item/add",
       name,
@@ -2390,13 +2483,6 @@ class EinkaufslisteCard extends HTMLElement {
         this._ws({ type: "einkaufsliste/photo/remove", name: el.dataset.name })
           .then(() => { this._toast("Foto gelöscht 🗑️"); this._editing = null; this._renderList(); }).catch(() => {});
         break;
-      case "ritem-photo": {
-        const row = el.closest(".ritem");
-        const name = row.querySelector("[data-rf=name]").value.trim();
-        if (!name) { this._toast("Erst den Namen der Zutat eintragen 😉"); return; }
-        this._takePhoto(this._pk(name, row.querySelector("[data-rf=note]")?.value), el);
-        break;
-      }
       case "edit-cancel":
         this._editing = null;
         this._renderList();
@@ -2406,12 +2492,6 @@ class EinkaufslisteCard extends HTMLElement {
         if (this._openDoneCats.has(key)) this._openDoneCats.delete(key);
         else this._openDoneCats.add(key);
         this._renderList();
-        break;
-      }
-      case "rsuggest": {
-        const c = this._rsuggMap?.get(el.dataset.n);
-        const row = el.closest(".ritem");
-        if (c && row) this._applyRecipeSuggest(row, c);
         break;
       }
       case "suggest": {
@@ -2543,17 +2623,23 @@ class EinkaufslisteCard extends HTMLElement {
           }).catch(() => {});
         break;
       }
-      case "ritem-add":
-        this._readDraft();
-        this._draft.items.push({ name: "" });
-        this._renderRecipeEditor();
-        this.shadowRoot.querySelector(".ritem:last-child input")?.focus();
+      case "ritem-edit":
+        this._editRecipeIngredient(Number(el.closest(".rrow").dataset.n));
         break;
-      case "ritem-remove":
-        this._readDraft();
-        this._draft.items.splice(Number(el.closest(".ritem").dataset.n), 1);
-        this._renderRecipeEditor();
+      case "ritem-edit-cancel":
+        this._rEditIdx = null;
+        this._clearForm();
+        this.$("inStore").value = "";
+        this.$("rEditHint").hidden = true;
+        this._renderRecipeItems();
         break;
+      case "ritem-remove": {
+        const n = Number(el.closest(".rrow").dataset.n);
+        this._draft.items.splice(n, 1);
+        if (this._rEditIdx === n) { this._rEditIdx = null; this.$("rEditHint").hidden = true; this._clearForm(); this.$("inStore").value = ""; }
+        this._renderRecipeItems();
+        break;
+      }
       case "recipe-cancel":
         this._draft = null;
         this._view = "settings";

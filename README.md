@@ -135,7 +135,9 @@ Was du gewählt hast, steht direkt am Symbol, zum Beispiel **🔢 2x · 👤 Oma
 
 1. In der Karte oben auf das **⚙️-Zahnrad** tippen und dort bei **Rezepte** auf **Neues Rezept** tippen. Bearbeiten und Löschen geht dort über den ✏️-Stift.
 2. Einen Namen vergeben, zum Beispiel „Freitags Fisch“.
-3. Die Zutaten eintragen. Pro Zutat kannst du Menge, Notiz, „für wen“, Geschäft und Kategorie angeben. Lässt du Geschäft und Kategorie auf **„Wie zuletzt“**, wird genommen, was bei diesem Produkt zuletzt benutzt wurde.
+3. Die Zutaten eintragen, und zwar **genau wie oben in der Liste**: Name tippen (mit Vorschlägen), in der Symbol-Leiste 🔢 Menge · 📝 Notiz · 👤 Für wen · 📷 Foto · ▥ Barcode, dann auf den **grünen Haken ✔**. Die Zutat erscheint darunter. Mit ✏️ bearbeitest du sie, mit 🗑️ fliegt sie raus.
+   - **▥ Scannen:** Die Packung füllt die Zutat aus, und der Barcode gehört ab dem Speichern zu diesem Produkt. Mit **„📦 Mehrere scannen“** wird jede Packung sofort eine Zutat.
+   - Lässt du Geschäft und Kategorie auf **„Wie zuletzt“**, wird genommen, was bei diesem Produkt zuletzt benutzt wurde. Kennt die Liste das Produkt noch nicht, rät sie die Kategorie aus dem Wörterbuch.
 4. **Speichern**.
 5. Zum Einkaufen oben auf die **Kochmütze 👨‍🍳** tippen. Ein Tipp auf **Auf die Liste**, dann fragt die Liste: **„Was davon brauchst du?“** Hake die Zutaten an, die fehlen (was schon auf der Liste steht, ist nicht angehakt), und tipp auf **„✅ 3 auf die Liste“**.
 
@@ -147,7 +149,7 @@ Tippst du zweimal auf dasselbe Rezept, kommt nichts doppelt dazu.
 
 **🧺 Von der Liste nehmen:** Stehen Zutaten eines Rezepts auf der Liste, gibt es neben **Auf die Liste** den Knopf **„Von der Liste (3)“**. Ein Tipp nimmt alle offenen Zutaten **dieses** Rezepts auf einmal runter. Andere Rezepte und normale Artikel bleiben stehen.
 
-**🔎 Vorschläge im Rezept:** Beim Tippen einer Zutat kommen dieselben Vorschläge wie oben in der Liste, zum Beispiel „**Mi**lch · 2 L · 📝 laktosefrei · Aldi“. Ein Tipp füllt die ganze Zutat aus, mit Menge, Notiz, Für wen, Geschäft und Kategorie.
+**🔎 Vorschläge im Rezept:** Beim Tippen einer Zutat kommen dieselben Vorschläge wie oben in der Liste, zum Beispiel „**Mi**lch · 2 L · 📝 laktosefrei · Aldi“. Ein Tipp übernimmt Menge, Notiz, Für wen, Geschäft und Kategorie.
 
 Unter jedem Artikel steht klein, zu welchem Rezept er gehört (🍽️ Freitags Fisch).
 

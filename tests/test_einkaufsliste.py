@@ -828,3 +828,18 @@ async def test_recipe_unapply(hass, setup, hass_ws_client):
     assert res["success"] and res["result"]["removed"] == 2
     assert sorted((i["name"], bool(i["recipe_id"])) for i in m.items) == [("Nudeln", True), ("Zitrone", False)]
     assert m.get_log()["entries"][0]["a"] == "remove" and m.get_log()["entries"][0]["v"] == "recipe"
+
+
+async def test_recipe_barcode_and_guess(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/add", "name": "Pizza-Abend",
+                            "items": [{"name": "Pizza Salami", "barcode": "4008400402222"}, {"name": "Joghurt"}]})
+    res = await client.receive_json()
+    assert res["success"], res
+    assert "barcode" not in res["result"]["items"][0]
+    assert m.barcodes["4008400402222"]["name"] == "Pizza Salami"
+    m.apply_recipe(res["result"]["id"])
+    cats = {i["name"]: i["category_id"] for i in m.items}
+    assert cats["Pizza Salami"] == m.find_category("TK-Ware")
+    assert cats["Joghurt"] == m.find_category("Kühlregal & Milch")

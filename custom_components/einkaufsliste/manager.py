@@ -968,6 +968,9 @@ class EinkaufslisteManager:
                 raise ValueError(f"„{name}“ steht doppelt im Rezept.")
             seen.add(key)
             out.append(entry)
+            code = "".join(ch for ch in str(raw.get("barcode") or "") if ch.isdigit())
+            if code:  # im Rezept gescannt -> Barcode gehört ab jetzt zu diesem Produkt
+                self.learn_barcode(code, name, entry["store_id"], entry["category_id"], entry["note"])
         return out
 
     def _recipe_name(self, name: str | None, skip_id: str | None = None) -> str:
@@ -1051,7 +1054,7 @@ class EinkaufslisteManager:
             hist = self.history_for(entry["name"]) or {}
             store_id = entry["store_id"] or hist.get("store_id")
             store_id = store_id if self.store_by_id(store_id) else None
-            cat_id = entry["category_id"] or hist.get("category_id")
+            cat_id = entry["category_id"] or hist.get("category_id") or self.guess_category(entry["name"])
             same = self._find_same(
                 entry["name"], entry["note"], entry["for_whom"], store_id, recipe_id
             )

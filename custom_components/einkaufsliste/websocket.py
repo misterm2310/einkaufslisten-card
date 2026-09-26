@@ -317,6 +317,7 @@ RECIPE_ITEM = vol.Schema(
         vol.Optional("for_whom"): OPT_STR,
         vol.Optional("store_id"): OPT_STR,
         vol.Optional("category_id"): OPT_STR,
+        vol.Optional("barcode"): OPT_STR,
     }
 )
 
