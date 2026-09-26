@@ -152,6 +152,9 @@ async def test_cleanup_checks_instead_of_deleting(hass, setup, freezer):
 async def test_scheduler_fires_on_sunday(hass, setup, freezer):
     m = mgr(hass)
     freezer.move_to(datetime(2026, 9, 22, 18, 0, tzinfo=tz()))
+    # Zeitplan neu starten, damit er von der eingefrorenen Zeit ausgeht (nicht vom echten Datum)
+    m.async_stop()
+    m.async_start_scheduler()
     item = m.add_item("Nudeln")
     events = []
     hass.bus.async_listen("einkaufsliste_cleanup", lambda e: events.append(e))
@@ -630,8 +633,16 @@ async def test_category_colors_and_seen(hass, setup, hass_ws_client, hass_admin_
     assert (await client.receive_json())["success"]
     assert {"all", "none", aldi} <= set(m.seen[hass_admin_user.id])
     assert m.as_dict()["seen"][hass_admin_user.id]["all"]
+    # „Alle“ anschauen lässt die Blasen stehen, erst der erste Besuch („init“) setzt sie
+    assert "b:" + aldi not in m.seen[hass_admin_user.id]
+    await client.send_json({"id": 4, "type": "einkaufsliste/seen", "store": "b:" + aldi})
+    assert (await client.receive_json())["success"]
+    assert "b:" + aldi in m.seen[hass_admin_user.id]
+    await client.send_json({"id": 5, "type": "einkaufsliste/seen", "store": "init"})
+    assert (await client.receive_json())["success"]
+    assert "b:none" in m.seen[hass_admin_user.id]
 
-    await client.send_json({"id": 4, "type": "einkaufsliste/item/add", "name": "Eis"})
+    await client.send_json({"id": 6, "type": "einkaufsliste/item/add", "name": "Eis"})
     item = (await client.receive_json())["result"]
     assert item["added_by_id"] == hass_admin_user.id
 
@@ -688,3 +699,53 @@ async def test_auto_photo_from_barcode(hass, setup, hass_ws_client, aioclient_mo
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done(wait_background_tasks=True)
     assert "tee" not in m.photos
+
+
+async def test_log(hass, setup, hass_ws_client, hass_admin_user, freezer):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi, netto = m.find_store("Aldi"), m.find_store("Netto")
+    await client.send_json({"id": 1, "type": "einkaufsliste/item/add", "name": "Milch", "store_id": aldi, "via": "scan"})
+    item = (await client.receive_json())["result"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/item/update", "item_id": item["id"], "quantity": "2x"})
+    assert (await client.receive_json())["success"]
+    await client.send_json({"id": 3, "type": "einkaufsliste/item/update", "item_id": item["id"], "store_id": netto})
+    assert (await client.receive_json())["success"]
+    await client.send_json({"id": 4, "type": "einkaufsliste/item/toggle", "item_id": item["id"]})
+    assert (await client.receive_json())["success"]
+    recipe = m.add_recipe("Kuchen", items=[{"name": "Mehl"}])
+    await client.send_json({"id": 5, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"]})
+    assert (await client.receive_json())["success"]
+    m.cleanup(force=True)
+    await client.send_json({"id": 6, "type": "einkaufsliste/log/get"})
+    res = (await client.receive_json())["result"]
+    assert res["days"] == 90
+    got = [(e["a"], e["n"], e["v"]) for e in reversed(res["entries"])]
+    assert got == [
+        ("add", "Milch", "scan"),
+        ("edit", "Milch", "card"),
+        ("move", "Milch", "card"),
+        ("check", "Milch", "card"),
+        ("add", "Mehl", "recipe"),
+        ("check", "Mehl", "cleanup"),
+    ]
+    entries = list(reversed(res["entries"]))
+    assert entries[1]["d"] == "Menge – → 2x" and entries[2]["d"] == "Aldi → Netto"
+    assert entries[0]["w"] and entries[0]["s"] == aldi
+
+    # Aufbewahrung: alte Einträge fliegen raus
+    await client.send_json({"id": 7, "type": "einkaufsliste/log/settings", "days": 7})
+    assert (await client.receive_json())["success"]
+    freezer.tick(timedelta(days=8))
+    assert m.get_log()["entries"] == []
+    await client.send_json({"id": 8, "type": "einkaufsliste/log/settings", "days": 5})
+    assert not (await client.receive_json())["success"]
+
+    m.add_item("Brot")
+    await client.send_json({"id": 9, "type": "einkaufsliste/log/clear"})
+    assert (await client.receive_json())["success"]
+    assert m.log == []
+
+    # Barcodes am Produkt sichtbar
+    m.assign_barcode(m.items[0]["id"], "4001")
+    assert m.as_dict()["barcodes_by_name"][m.items[0]["name"].lower()] == ["4001"]

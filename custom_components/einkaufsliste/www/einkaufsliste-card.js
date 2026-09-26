@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.1.0";
+const EL_VERSION = "2.2.0";
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
 const DUP_SYNONYMS = (() => {
@@ -26,6 +26,15 @@ const DUP_SYNONYMS = (() => {
 const EL_BASE = "/einkaufsliste_files";
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
+const LOG_ACT = {
+  add: { label: "✍️ eingetragen", verb: "hat % eingetragen" },
+  readd: { label: "♻️ wieder drauf", verb: "hat % wieder auf die Liste genommen" },
+  check: { label: "✅ abgehakt", verb: "hat % abgehakt" },
+  edit: { label: "✏️ geändert", verb: "hat % geändert" },
+  move: { label: "⇄ verschoben", verb: "hat % verschoben" },
+  remove: { label: "🗑️ gelöscht", verb: "hat % gelöscht" },
+};
+const LOG_VIA = { card: "✍️", scan: "▥", recipe: "🍳", merge: "🔗", cleanup: "🧹", service: "🤖" };
 const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 const pyWd = (d) => (d.getDay() + 6) % 7;
 const DAY = 86400000;
@@ -284,6 +293,21 @@ ha-card.compact .group { margin-top:4px; }
 .error { background: color-mix(in srgb, var(--error-color,#db4437) 15%, transparent); color:var(--primary-text-color); border-radius:10px; padding:10px; margin:4px 2px 8px; font-size:.9em; }
 .sec { margin:4px 2px 16px; }
 .sec h3 { display:flex; align-items:center; gap:6px; font-size:1em; margin:6px 0 8px; }
+.tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:8px; }
+.tile { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:12px; border-radius:14px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
+.tile:hover { border-color:var(--primary-color,#03a9f4); }
+.tile ha-icon { color:var(--primary-color,#03a9f4); margin-bottom:4px; }
+.tile small { color:var(--secondary-text-color); font-size:.78em; }
+.sechead { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.sechead h3 { margin:0; }
+.sechead .back { padding:6px 10px; }
+.logfilter { display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px; margin:4px 0; }
+.logday { font-size:.78em; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--secondary-text-color); margin:10px 2px 2px; }
+.logrow { display:flex; gap:8px; align-items:flex-start; padding:6px 4px; border-bottom:1px solid var(--divider-color, rgba(127,127,127,.12)); font-size:.9em; }
+.logrow .lt { color:var(--secondary-text-color); font-variant-numeric:tabular-nums; min-width:38px; }
+.logrow .lv { min-width:20px; text-align:center; }
+.logrow .lx { flex:1; min-width:0; }
+.logrow .lx small { display:block; color:var(--secondary-text-color); font-size:.8em; }
 .srow { display:flex; align-items:center; gap:6px; margin:5px 0; }
 .srow input.grow { flex:1; min-width:80px; }
 .srow input[type=color] { width:40px; height:38px; padding:2px; flex:0 0 auto; cursor:pointer; }
@@ -726,13 +750,14 @@ class EinkaufslisteCard extends HTMLElement {
       const n = isActive ? 0 : this._newCount(fn);
       return n ? `<span class="bubble">+${n}</span>` : "";
     };
+    const noneFn = (i) => !i.store_id;
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
     for (const s of d.stores) {
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""}" style="--c:${esc(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id)}</span>${bubble((i) => i.store_id === s.id, active === s.id || active === "all")}</button>`);
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""}" style="--c:${esc(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id)}</span>${bubble((i) => i.store_id === s.id, active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
-      parts.push(`<button class="tab ${active === "none" ? "active" : ""}" style="--c:#888" data-act="tab" data-tab="none"><span class="dot"></span>Egal wo <span class="n">${openCount((i) => !i.store_id)}</span></button>`);
+      parts.push(`<button class="tab ${active === "none" ? "active" : ""}" style="--c:#888" data-act="tab" data-tab="none"><span class="dot"></span>Egal wo <span class="n">${openCount(noneFn)}</span>${bubble(noneFn, active === "none")}</button>`);
     }
     const left = tabs.scrollLeft;
     tabs.innerHTML = parts.join("");
@@ -872,6 +897,8 @@ class EinkaufslisteCard extends HTMLElement {
     if (item.for_whom) meta.push(`<span>👤 für ${esc(item.for_whom)}</span>`);
     if (item.note) meta.push(`<span>📝 ${esc(item.note)}</span>`);
     if (recipe) meta.push(`<span>🍽️ ${esc(recipe.name)}</span>`);
+    const codes = this._barcodesOf(item.name);
+    if (codes.length) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥ …${esc(codes[0].slice(-4))}${codes.length > 1 ? ` +${codes.length - 1}` : ""}</span>`);
     if (c.show_dates) {
       if (item.checked) {
         meta.push(`<span>✓ ${item.checked_by ? esc(this._who(item.checked_by)) : "automatisch"}</span>`);
@@ -905,7 +932,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${!item.checked && this._data.stores.length > 1 ? b("menu-move", "mdi:swap-horizontal", "Verschieben") : ""}
         ${b("menu-qty", "mdi:numeric", "Menge")}
         ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(item.name) ? "Foto ändern" : "Foto")}
-        ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", "Barcode") : ""}
+        ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", this._barcodesOf(item.name).length ? "Barcode ✓" : "Barcode") : ""}
         <button class="iconbtn" data-act="menu-close" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
       </div>`;
   }
@@ -1062,8 +1089,8 @@ class EinkaufslisteCard extends HTMLElement {
     if (!keep.note && drop.note) upd.note = drop.note;
     else if (keep.note && drop.note && keep.note !== drop.note) upd.note = `${keep.note}, ${drop.note}`;
     try {
-      if (Object.keys(upd).length) await this._ws({ type: "einkaufsliste/item/update", item_id: keep.id, ...upd });
-      await this._ws({ type: "einkaufsliste/item/remove", item_id: drop.id });
+      if (Object.keys(upd).length) await this._ws({ type: "einkaufsliste/item/update", item_id: keep.id, via: "merge", ...upd });
+      await this._ws({ type: "einkaufsliste/item/remove", item_id: drop.id, via: "merge" });
       this._toast(`🔗 Zusammengelegt zu „${keep.name}“${upd.quantity ? ` (${upd.quantity})` : ""}`);
     } catch (_) { /* Meldung kam schon */ }
   }
@@ -1160,19 +1187,18 @@ class EinkaufslisteCard extends HTMLElement {
       .filter((st) => st.entity_id.startsWith("zone.") && st.entity_id !== "zone.home")
       .map((st) => ({ id: st.entity_id, name: st.attributes.friendly_name || st.entity_id }))
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
-    this.$("otherView").innerHTML = `
-      <div class="sec">
-        <h3><ha-icon icon="mdi:store-outline"></ha-icon>Geschäfte</h3>
+    const persons = d.persons || [];
+    const recipes = d.recipes || [];
+    const sections = [
+      { key: "stores", icon: "mdi:store-outline", title: "Geschäfte", info: d.stores.length === 1 ? "1 Geschäft" : `${d.stores.length} Geschäfte`, html: () => `
         ${d.stores.map((e, i) => row("stores", e, i, d.stores.length)).join("")}
         <form class="srow" data-addkind="stores">
           <input type="color" value="#607d8b" name="color" title="Farbe">
           <input class="grow" name="name" placeholder="Neues Geschäft, z. B. Kaufland">
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
-        <p class="hint">📍 Hat ein Geschäft eine <b>Zone</b>, springt die Liste automatisch auf dieses Geschäft, sobald du dort bist. Zonen legst du unter Einstellungen → Bereiche & Zonen an.</p>
-      </div>
-      <div class="sec">
-        <h3><ha-icon icon="mdi:shape-outline"></ha-icon>Kategorien</h3>
+        <p class="hint">📍 Hat ein Geschäft eine <b>Zone</b>, springt die Liste automatisch auf dieses Geschäft, sobald du dort bist. Zonen legst du unter Einstellungen → Bereiche & Zonen an.</p>` },
+      { key: "categories", icon: "mdi:shape-outline", title: "Kategorien", info: d.categories.length === 1 ? "1 Kategorie" : `${d.categories.length} Kategorien`, html: () => `
         ${d.categories.map((e, i) => row("categories", e, i, d.categories.length)).join("")}
         <form class="srow" data-addkind="categories">
           <ha-icon class="prev" icon="mdi:tag-plus-outline"></ha-icon>
@@ -1181,45 +1207,139 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
         <div class="picker" hidden></div>
-        <p class="hint">Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>
-      </div>
-      <div class="sec">
-        <h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</h3>
-        ${(d.recipes || []).map((r) => `
+        <p class="hint">Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>` },
+      { key: "recipes", icon: "mdi:chef-hat", title: "Rezepte", info: recipes.length ? (recipes.length === 1 ? "1 Rezept" : `${recipes.length} Rezepte`) : "noch keine", html: () => `
+        ${recipes.map((r) => `
           <div class="recipe" data-id="${r.id}">
             <ha-icon icon="${esc(r.icon || "mdi:silverware-fork-knife")}"></ha-icon>
             <div class="rname"><b>${esc(r.name)}</b><small>${r.items.length} Zutaten</small></div>
             <button class="iconbtn" data-act="recipe-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
           </div>`).join("")}
-        <div class="btnrow"><button class="btn" data-act="recipe-new"><ha-icon icon="mdi:plus"></ha-icon>Neues Rezept</button></div>
-      </div>
-      <div class="sec">
-        <h3><ha-icon icon="mdi:account-group-outline"></ha-icon>Personen (für „Für wen?“)</h3>
-        ${(d.persons || []).map((e, i) => row("persons", e, i, d.persons.length)).join("")}
+        <div class="btnrow"><button class="btn" data-act="recipe-new"><ha-icon icon="mdi:plus"></ha-icon>Neues Rezept</button></div>` },
+      { key: "persons", icon: "mdi:account-group-outline", title: "Personen", info: persons.length ? `${persons.length} für „Für wen?“` : "noch keine", html: () => `
+        ${persons.map((e, i) => row("persons", e, i, persons.length)).join("")}
         <form class="srow" data-addkind="persons">
           <ha-icon class="prev" icon="mdi:account-plus-outline"></ha-icon>
           <input class="grow" name="name" placeholder="Neue Person, z. B. Oma">
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
-        ${(d.persons || []).length ? "" : `<p class="hint">Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet.</p>`}
-      </div>
-      <div class="sec">
-        <h3><ha-icon icon="mdi:delete-outline"></ha-icon>Artikel ganz löschen</h3>
-        <p class="hint">Hier verschwinden Artikel endgültig, auch aus „Erledigt“ und samt Foto.</p>
-        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="delSearch" placeholder="Artikel suchen …" value="${esc(this._delFilter || "")}"></div>
-        <div id="delList"></div>
-      </div>
-      <div class="sec">
-        <h3><ha-icon icon="mdi:broom"></ha-icon>Aufräumen</h3>
+        <p class="hint">${persons.length ? "Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“." : "Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet."}</p>` },
+      { key: "log", icon: "mdi:history", title: "Verlauf", info: "wer, wann, was, wie", html: () => this._logSectionHtml() },
+      { key: "cleanup", icon: "mdi:broom", title: "Aufräumen", info: `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
         <p>Jeden <b>${WD_LONG[s.cleanup_weekday]}</b> um <b>${s.cleanup_time} Uhr</b> werden alle offenen Artikel <b>abgehakt</b>, die mindestens <b>${s.min_age_days} Tage</b> auf der Liste stehen. Gelöscht wird nichts – so kannst du sie später mit einem Tipp wieder auf die Liste nehmen.</p>
         <p class="hint">Tag & Uhrzeit ändern: Einstellungen → Geräte & Dienste → Einkaufsliste → Konfigurieren</p>
         <div class="btnrow">
           <button class="btn" data-act="cleanup-now"><ha-icon icon="mdi:broom"></ha-icon>Jetzt aufräumen</button>
           <button class="btn" data-act="check-all"><ha-icon icon="mdi:checkbox-multiple-marked-circle-outline"></ha-icon>Alles abhaken</button>
+        </div>` },
+      { key: "delete", icon: "mdi:delete-outline", title: "Artikel löschen", info: "endgültig, mit Suche", html: () => `
+        <p class="hint">Hier verschwinden Artikel endgültig, auch aus „Erledigt“ und samt Foto.</p>
+        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="delSearch" placeholder="Artikel suchen …" value="${esc(this._delFilter || "")}"></div>
+        <div id="delList"></div>` },
+    ];
+    const cur = sections.find((x) => x.key === this._setSec);
+    if (!cur) {
+      this.$("otherView").innerHTML = `
+        <div class="sec">
+          <h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3>
+          <div class="tiles">${sections.map((x) => `
+            <button class="tile" data-act="set-sec" data-sec="${x.key}">
+              <ha-icon icon="${x.icon}"></ha-icon><b>${x.title}</b><small>${esc(x.info)}</small>
+            </button>`).join("")}
+          </div>
         </div>
-      </div>
-      <p class="hint" style="text-align:right">Einkaufsliste v${EL_VERSION}</p>`;
+        <p class="hint" style="text-align:right">Einkaufsliste v${EL_VERSION}</p>`;
+      return;
+    }
+    this.$("otherView").innerHTML = `
+      <div class="sec">
+        <div class="sechead">
+          <button class="btn back" data-act="set-sec" data-sec=""><ha-icon icon="mdi:arrow-left"></ha-icon>Übersicht</button>
+          <h3><ha-icon icon="${cur.icon}"></ha-icon>${cur.title}</h3>
+        </div>
+        ${cur.html()}
+      </div>`;
+    if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
     this._renderDelList();
+  }
+
+  // 📋 Verlauf: wer hat wann was wie gemacht?
+  _logSectionHtml() {
+    const f = (this._logF ||= { who: "", store: "", act: "", q: "" });
+    const opt = (v, label, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(label)}</option>`;
+    const names = [...new Set((this._logData?.entries || []).map((e) => e.w).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
+    const days = this._logData?.days || 90;
+    return `
+      <div class="logfilter">
+        <select id="logWho" title="Person">${opt("", "👤 Alle", f.who)}${opt("~auto", "🤖 Automatisch", f.who)}${names.map((n) => opt(n, n, f.who)).join("")}</select>
+        <select id="logStore" title="Geschäft">${opt("", "🏪 Alle", f.store)}${this._data.stores.map((st) => opt(st.id, st.name, f.store)).join("")}${opt("~none", "Egal wo", f.store)}</select>
+        <select id="logAct" title="Aktion">${opt("", "⚡ Alles", f.act)}${Object.entries(LOG_ACT).map(([k, v]) => opt(k, v.label, f.act)).join("")}</select>
+      </div>
+      <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="logSearch" placeholder="Artikel suchen …" value="${esc(f.q)}"></div>
+      <div id="logList"><p class="hint">Lade Verlauf …</p></div>
+      <div class="srow" style="margin-top:12px">
+        <ha-icon class="prev" icon="mdi:calendar-clock"></ha-icon>
+        <span class="grow hint">Aufheben für</span>
+        <select id="logDays" style="width:auto">${[7, 30, 90, 180, 365].map((n) => `<option value="${n}" ${n === days ? "selected" : ""}>${n} Tage</option>`).join("")}</select>
+      </div>
+      <div class="btnrow"><button class="btn" data-act="log-clear"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Verlauf leeren</button></div>
+      <p class="hint">Zeichen: ✍️ in der Karte · ▥ gescannt · 🍳 Rezept · 🔗 zusammengelegt · 🧹 automatisch aufgeräumt · 🤖 Automation/Dienst</p>`;
+  }
+
+  async _loadLog() {
+    if (this._logLoading) return;
+    this._logLoading = true;
+    try {
+      this._logData = await this._ws({ type: "einkaufsliste/log/get" });
+    } catch (_) { /* Meldung kam schon */ }
+    this._logLoading = false;
+    if (this._view !== "settings" || this._setSec !== "log") return;
+    // Personen-Auswahl auffrischen, ohne den Rest neu zu malen
+    const who = this.$("logWho");
+    if (who && !this.shadowRoot.activeElement?.closest?.(".logfilter")) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = this._logSectionHtml();
+      who.innerHTML = tmp.querySelector("#logWho").innerHTML;
+    }
+    this._renderLogList();
+  }
+
+  _renderLogList() {
+    const box = this.$("logList");
+    if (!box || !this._logData) return;
+    const f = this._logF;
+    const q = f.q.trim().toLowerCase();
+    const list = this._logData.entries.filter((e) =>
+      (!f.who || (f.who === "~auto" ? !e.w : e.w === f.who))
+      && (!f.store || (f.store === "~none" ? !e.s : e.s === f.store))
+      && (!f.act || e.a === f.act)
+      && (!q || String(e.n || "").toLowerCase().includes(q)));
+    if (!list.length) {
+      box.innerHTML = `<p class="hint">${this._logData.entries.length ? "Nichts gefunden – probier einen anderen Filter. 🔍" : "Noch nichts passiert. Sobald jemand etwas einträgt, steht es hier. ✍️"}</p>`;
+      return;
+    }
+    const max = this._logMax || 150;
+    const shown = list.slice(0, max);
+    const now = new Date();
+    let lastDay = "";
+    const html = [];
+    for (const e of shown) {
+      const d = new Date(e.t);
+      const diff = dayDiff(now, d);
+      const day = diff === 0 ? "Heute" : diff === 1 ? "Gestern" : `${WD_LONG[pyWd(d)]}, ${fmtDay(d).slice(3)}`;
+      if (day !== lastDay) { html.push(`<div class="logday">${day}</div>`); lastDay = day; }
+      const act = LOG_ACT[e.a] || { label: e.a, verb: e.a };
+      const via = LOG_VIA[e.v] || "🤖";
+      const who = e.w ? `<b>${esc(this._who(e.w))}</b>` : (e.v === "cleanup" ? "<b>Aufräumen</b>" : "<b>Automatisch</b>");
+      const st = this._store(e.s);
+      html.push(`<div class="logrow">
+        <span class="lt">${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}</span>
+        <span class="lv" title="${esc(e.v || "")}">${via}</span>
+        <span class="lx">${who} ${act.verb.replace("%", `<b>${esc(e.n || "?")}</b>`)}${st ? ` <span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>` : ""}${e.d ? `<small>${esc(e.d)}</small>` : ""}</span>
+      </div>`);
+    }
+    if (list.length > shown.length) html.push(`<div class="btnrow"><button class="btn" data-act="log-more">Mehr anzeigen (${list.length - shown.length} weitere)</button></div>`);
+    box.innerHTML = html.join("");
   }
 
   _renderDelList() {
@@ -1389,9 +1509,20 @@ class EinkaufslisteCard extends HTMLElement {
     return person?.attributes.friendly_name || this._hass?.user?.name;
   }
 
+  // 🔴 Blase: zählt, was andere eingetragen haben, seit DU diesen Reiter zuletzt angetippt hast
+  // (wie bei WhatsApp – bloß „Alle“ anschauen lässt die Blasen der Geschäfte stehen)
   _newCount(fn) {
     const seen = this._mySeen();
-    return this._data.items.filter((i) => fn(i) && this._isNewFor(i, seen)).length;
+    if (!seen) return 0;
+    const me = this._hass?.user;
+    const myName = this._myName();
+    return this._data.items.filter((i) => {
+      if (!fn(i) || i.checked) return false;
+      if (i.added_by_id ? i.added_by_id === me?.id : i.added_by && i.added_by === myName) return false;
+      const key = i.store_id || "none";
+      const t = seen["b:" + key] || seen["b:all"];
+      return !!t && i.added_at > t;
+    }).length;
   }
 
   _markSeen() {
@@ -1402,14 +1533,23 @@ class EinkaufslisteCard extends HTMLElement {
     const seen = this._mySeen();
     if (!seen) {
       // erstes Mal: alles bisherige gilt als gesehen
-      if (!this._seenInit) { this._seenInit = true; this._ws({ type: "einkaufsliste/seen", store: "all" }).catch(() => {}); }
+      if (!this._seenInit) { this._seenInit = true; this._ws({ type: "einkaufsliste/seen", store: "init" }).catch(() => {}); }
       return;
     }
     const fn = tab === "all" ? () => true : tab === "none" ? (i) => !i.store_id : (i) => i.store_id === tab;
-    if (this._newCount(fn) && this._seenSending !== tab) {
-      this._seenSending = tab;
-      this._ws({ type: "einkaufsliste/seen", store: tab }).catch(() => {}).finally(() => { this._seenSending = null; });
-    }
+    const sendSeen = (key) => {
+      if (this._seenSending?.has(key)) return;
+      (this._seenSending ||= new Set()).add(key);
+      this._ws({ type: "einkaufsliste/seen", store: key }).catch(() => {}).finally(() => this._seenSending.delete(key));
+    };
+    // ✨ angeschaut
+    if (this._data.items.some((i) => fn(i) && this._isNewFor(i, seen)) || (tab === "all" && !seen.all)) sendSeen(tab);
+    // 🔴 Blase: nur der Reiter, der gerade offen ist (nicht „Alle“)
+    if (tab !== "all" && this._newCount(fn)) sendSeen("b:" + tab);
+  }
+
+  _barcodesOf(name) {
+    return (name && this._data?.barcodes_by_name?.[String(name).toLowerCase()]) || [];
   }
 
   _hasPhoto(name) {
@@ -1671,6 +1811,7 @@ class EinkaufslisteCard extends HTMLElement {
         try {
           await this._hass.callWS({
             type: "einkaufsliste/item/add",
+            via: "scan",
             name,
             store_id: (res.store_id && this._store(res.store_id) ? res.store_id : defaultStore) || null,
             category_id: guess && this._cat(guess) ? guess : null,
@@ -1707,7 +1848,7 @@ class EinkaufslisteCard extends HTMLElement {
         const item = open.find((i) => i.store_id === store.id) || open[0];
         if (!item) return `ℹ️ ${res.name} steht nicht auf der Liste`;
         try {
-          await this._hass.callWS({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: true });
+          await this._hass.callWS({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: true, via: "scan" });
           stats.checked++;
           return `✅ ${item.name} abgehakt`;
         } catch (err) {
@@ -1770,6 +1911,12 @@ class EinkaufslisteCard extends HTMLElement {
       this._renderDelList();
       return;
     }
+    if (t.id === "logSearch") {
+      this._logF.q = t.value;
+      this._logMax = 150;
+      this._renderLogList();
+      return;
+    }
     if (t.classList?.contains("icon")) {
       const prev = t.closest(".srow")?.querySelector(".prev");
       const val = stripMdi(t.value).trim();
@@ -1796,7 +1943,7 @@ class EinkaufslisteCard extends HTMLElement {
       const v = this.$(id).value.trim();
       if (v) msg[key] = v;
     }
-    if (this._pendingBarcode) msg.barcode = this._pendingBarcode;
+    if (this._pendingBarcode) { msg.barcode = this._pendingBarcode; msg.via = "scan"; }
     try {
       const item = await this._ws(msg);
       if (this._newPhoto) {
@@ -1850,6 +1997,7 @@ class EinkaufslisteCard extends HTMLElement {
         const v = el.dataset.view;
         const current = this._view === "recipe" ? "settings" : this._view;
         this._view = current === v ? "list" : v;
+        if (this._view === "settings" && current !== "settings") this._setSec = null;
         this._draft = null;
         this._renderAll();
         break;
@@ -2042,6 +2190,19 @@ class EinkaufslisteCard extends HTMLElement {
         this._doneOpen = !this._doneOpen;
         this._renderList();
         break;
+      case "set-sec":
+        this._setSec = el.dataset.sec || null;
+        this._renderSettings();
+        this.$("otherView").scrollIntoView?.({ block: "nearest" });
+        break;
+      case "log-more":
+        this._logMax = (this._logMax || 150) + 150;
+        this._renderLogList();
+        break;
+      case "log-clear":
+        if (!confirm("Den ganzen Verlauf löschen? Das geht nicht rückgängig.")) break;
+        this._ws({ type: "einkaufsliste/log/clear" }).then(() => { this._toast("🧽 Verlauf geleert"); this._loadLog(); }).catch(() => {});
+        break;
       case "cleanup-now":
         this._ws({ type: "einkaufsliste/cleanup" })
           .then((r) => this._toast(r.checked ? `${r.checked} alte Artikel abgehakt 🧹` : "Nix zu tun – alles noch frisch! ✨")).catch(() => {});
@@ -2165,6 +2326,18 @@ class EinkaufslisteCard extends HTMLElement {
 
   _onChange(e) {
     const t = e.target;
+    const logKey = { logWho: "who", logStore: "store", logAct: "act" }[t.id];
+    if (logKey) {
+      this._logF[logKey] = t.value;
+      this._logMax = 150;
+      this._renderLogList();
+      return;
+    }
+    if (t.id === "logDays") {
+      this._ws({ type: "einkaufsliste/log/settings", days: Number(t.value) })
+        .then(() => { this._toast(`📋 Verlauf wird ${t.value} Tage aufgehoben`); this._loadLog(); }).catch(() => {});
+      return;
+    }
     const srow = t.closest(".srow[data-kind]");
     if (!srow || !t.dataset.field) return;
     const msg = { type: "einkaufsliste/group/update", kind: srow.dataset.kind, group_id: srow.dataset.id };

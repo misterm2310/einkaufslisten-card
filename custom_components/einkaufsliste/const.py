@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
@@ -67,3 +67,8 @@ CATEGORY_COLORS = [
 ]
 
 HISTORY_LIMIT = 400
+
+# 📋 Verlauf: wie lange er aufgehoben wird (Tage) und wie viele Einträge höchstens
+LOG_DEFAULT_DAYS = 90
+LOG_DAY_CHOICES = (7, 30, 90, 180, 365)
+LOG_LIMIT = 5000

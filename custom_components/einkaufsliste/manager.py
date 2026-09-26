@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import base64
 import binascii
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 import logging
 from pathlib import Path
@@ -30,6 +31,9 @@ from .const import (
     EVENT_CLEANUP,
     EVENT_ITEM_ADDED,
     HISTORY_LIMIT,
+    LOG_DAY_CHOICES,
+    LOG_DEFAULT_DAYS,
+    LOG_LIMIT,
     SAVE_DELAY,
     SIGNAL_UPDATED,
     STORAGE_KEY,
@@ -131,6 +135,9 @@ class EinkaufslisteManager:
         self.photo_dir = Path(hass.config.path("einkaufsliste_fotos"))
         self.history: dict[str, dict[str, Any]] = {}
         self.last_cleanup: str | None = None
+        self.log: list[dict[str, Any]] = []  # 📋 Verlauf, das Neueste hinten
+        self.log_days: int = LOG_DEFAULT_DAYS
+        self._actor: dict[str, Any] = {}
         self._unsub_time: Callable[[], None] | None = None
 
     # ------------------------------------------------------------------ Optionen
@@ -179,9 +186,15 @@ class EinkaufslisteManager:
             item.setdefault("recipe_id", None)
         self.photos = data.get("photos", {})
         self.seen = data.get("seen", {})
+        for mine in self.seen.values():  # älter als v2.2.0: Blasen-Zeiten („b:…“) nachrüsten
+            if not any(k.startswith("b:") for k in mine):
+                for key, value in list(mine.items()):
+                    mine["b:" + key] = value
         for k, cat in enumerate(self.categories):  # ältere Daten: Farben nachrüsten
             cat.setdefault("color", CATEGORY_COLORS[k % len(CATEGORY_COLORS)])
         self.barcodes = data.get("barcodes", {})
+        self.log = data.get("log", [])
+        self.log_days = int(data.get("log_days", LOG_DEFAULT_DAYS))
         if "persons" in data:
             self.persons = data["persons"]
         else:
@@ -207,6 +220,8 @@ class EinkaufslisteManager:
             "seen": self.seen,
             "history": self.history,
             "last_cleanup": self.last_cleanup,
+            "log": self.log,
+            "log_days": self.log_days,
         }
 
     def _schedule_save(self) -> None:
@@ -254,6 +269,7 @@ class EinkaufslisteManager:
             "category_hints": category_hints(self.categories),
             "seen": self.seen,
             "history": history[:300],
+            "barcodes_by_name": self._barcodes_by_name(),
             "settings": {
                 "cleanup_weekday": self.cleanup_weekday,
                 "cleanup_time": "%02d:%02d" % self.cleanup_time,
@@ -261,6 +277,77 @@ class EinkaufslisteManager:
                 "next_cleanup": self.next_cleanup().isoformat(),
             },
         }
+
+    def _barcodes_by_name(self) -> dict[str, list[str]]:
+        out: dict[str, list[str]] = {}
+        for code, entry in self.barcodes.items():
+            name = (entry.get("name") or "").lower()
+            if name:
+                out.setdefault(name, []).append(code)
+        return out
+
+    # ------------------------------------------------------------------ Verlauf
+    @contextmanager
+    def acting(self, who: str | None, who_id: str | None, via: str | None) -> Iterator[None]:
+        """Merkt sich für die Dauer eines Befehls, wer ihn wie ausgelöst hat (für den Verlauf)."""
+        old = self._actor
+        self._actor = {"who": who, "who_id": who_id, "via": via or old.get("via")}
+        try:
+            yield
+        finally:
+            self._actor = old
+
+    @contextmanager
+    def _via(self, via: str) -> Iterator[None]:
+        old = self._actor
+        self._actor = {**old, "via": via}
+        try:
+            yield
+        finally:
+            self._actor = old
+
+    def _log(
+        self,
+        action: str,
+        item: dict[str, Any],
+        detail: str | None = None,
+        who: str | None = None,
+    ) -> None:
+        actor = self._actor
+        self.log.append(
+            {
+                "t": _now_iso(),
+                "a": action,
+                "n": item.get("name"),
+                "s": item.get("store_id"),
+                "w": who if who is not None else actor.get("who"),
+                "v": actor.get("via") or "service",
+                **({"d": detail} if detail else {}),
+            }
+        )
+        if len(self.log) > LOG_LIMIT or len(self.log) % 50 == 0:
+            self._prune_log()
+
+    def _prune_log(self) -> None:
+        cutoff = (dt_util.utcnow() - timedelta(days=self.log_days)).isoformat()
+        self.log = [e for e in self.log if e.get("t", "") >= cutoff][-LOG_LIMIT:]
+
+    def get_log(self) -> dict[str, Any]:
+        self._prune_log()
+        return {"days": self.log_days, "entries": list(reversed(self.log))}
+
+    def set_log_days(self, days: int) -> dict[str, Any]:
+        days = int(days)
+        if days not in LOG_DAY_CHOICES:
+            raise ValueError("Diese Aufbewahrungszeit gibt es nicht.")
+        self.log_days = days
+        self._prune_log()
+        self._schedule_save()
+        return {"days": days}
+
+    def clear_log(self) -> None:
+        self.log = []
+        self._schedule_save()
 
     # ------------------------------------------------------------------ Suchen
     def get_item(self, item_id: str) -> dict[str, Any]:
@@ -435,8 +522,13 @@ class EinkaufslisteManager:
                 )
             if category_id:
                 existing["category_id"] = category_id
+            old_qty = existing.get("quantity")
             if quantity:
                 existing["quantity"] = quantity
+            if readded:
+                self._log("readd", existing, who=added_by)
+            elif quantity and quantity != old_qty:
+                self._log("edit", existing, f"Menge {old_qty or '–'} → {quantity}", who=added_by)
             self._remember(existing)
             if notify:
                 self._changed()
@@ -461,6 +553,7 @@ class EinkaufslisteManager:
             "checked_at": None,
         }
         self.items.append(item)
+        self._log("add", item, who=added_by)
         self._remember(item)
         if notify:
             self._changed()
@@ -492,6 +585,7 @@ class EinkaufslisteManager:
                 f"„{new['name']}“ gibt es schon – unterscheide ihn über Notiz, „für wen“ oder Geschäft."
             )
         old_name = item["name"]
+        before = dict(item)
         item.update(new)
         if old_name.lower() != new["name"].lower():
             self._move_photo(old_name, new["name"])
@@ -505,8 +599,35 @@ class EinkaufslisteManager:
         key = item["name"].lower()
         if key in self.history:
             self.history[key].update(store_id=item["store_id"], category_id=item["category_id"])
+        self._log_changes(before, item)
         self._changed()
         return item
+
+    def _log_changes(self, before: dict[str, Any], item: dict[str, Any]) -> None:
+        def store_name(sid: str | None) -> str:
+            st = self.store_by_id(sid)
+            return st["name"] if st else "Egal wo"
+
+        def cat_name(cid: str | None) -> str:
+            cat = self.category_by_id(cid)
+            return cat["name"] if cat else "ohne"
+
+        parts: list[str] = []
+        if before["name"] != item["name"]:
+            parts.append(f"Name {before['name']} → {item['name']}")
+        for key, label in (("quantity", "Menge"), ("note", "Notiz"), ("for_whom", "Für wen")):
+            if (before.get(key) or None) != (item.get(key) or None):
+                parts.append(f"{label} {before.get(key) or '–'} → {item.get(key) or '–'}")
+        if before.get("category_id") != item.get("category_id"):
+            parts.append(f"Kategorie {cat_name(before.get('category_id'))} → {cat_name(item.get('category_id'))}")
+        moved = before.get("store_id") != item.get("store_id")
+        if moved and not parts:
+            self._log("move", item, f"{store_name(before.get('store_id'))} → {store_name(item.get('store_id'))}")
+            return
+        if moved:
+            parts.append(f"Geschäft {store_name(before.get('store_id'))} → {store_name(item.get('store_id'))}")
+        if parts:
+            self._log("edit", item, " · ".join(parts))
 
     @callback
     def set_checked(
@@ -522,6 +643,7 @@ class EinkaufslisteManager:
             checked = not item["checked"]
         if checked == item["checked"]:
             return item
+        self._log("check" if checked else "readd", item, who=by)
         if checked and item.get("recipe_id"):
             # Rezept-Zutaten verschwinden beim Abhaken ganz von der Liste
             self.items.remove(item)
@@ -548,6 +670,7 @@ class EinkaufslisteManager:
     def remove_item(self, item_id: str) -> None:
         item = self.get_item(item_id)
         self.items.remove(item)
+        self._log("remove", item)
         if not self._name_in_use(item["name"]):
             # Artikel ganz gelöscht -> Foto kommt mit weg
             self.hass.async_create_task(self.async_remove_photo(item["name"]))
@@ -654,11 +777,14 @@ class EinkaufslisteManager:
         """Merkt sich, wann jemand ein Geschäft (oder „all“) zuletzt angeschaut hat."""
         now = _now_iso()
         mine = self.seen.setdefault(user_id, {})
-        if store == "all":
+        if store in ("all", "init"):
+            # „all“ = ✨ überall angeschaut; „init“ (erster Besuch) = zusätzlich alle 🔴 Blasen weg
             for key in [s["id"] for s in self.stores] + ["none", "all"]:
                 mine[key] = now
+                if store == "init":
+                    mine["b:" + key] = now
         else:
-            mine[store] = now
+            mine[str(store)[:80]] = now
         self._changed()
 
     # ------------------------------------------------------------------ Aufräumen
@@ -690,6 +816,8 @@ class EinkaufslisteManager:
             added = _local_date(item.get("added_at")) or ref_date
             if force or (ref_date - added).days >= min_age:
                 item.update(checked=True, checked_at=now, checked_by=None)
+                with self._via("cleanup"):
+                    self._log("check", item, who="")
                 done.append(item)
                 if item.get("recipe_id"):
                     keep.pop()  # Rezept-Zutaten verschwinden statt abgehakt zu bleiben
@@ -847,17 +975,18 @@ class EinkaufslisteManager:
                 already += 1
             else:
                 added += 1
-            self.add_item(
-                entry["name"],
-                store_id=store_id,
-                category_id=cat_id if self.category_by_id(cat_id) else None,
-                quantity=entry["quantity"],
-                note=entry["note"],
-                for_whom=entry["for_whom"],
-                added_by=added_by,
-                recipe_id=recipe_id,
-                notify=False,
-            )
+            with self._via("recipe"):
+                self.add_item(
+                    entry["name"],
+                    store_id=store_id,
+                    category_id=cat_id if self.category_by_id(cat_id) else None,
+                    quantity=entry["quantity"],
+                    note=entry["note"],
+                    for_whom=entry["for_whom"],
+                    added_by=added_by,
+                    recipe_id=recipe_id,
+                    notify=False,
+                )
         self._changed()
         return {"added": added, "already": already}
 

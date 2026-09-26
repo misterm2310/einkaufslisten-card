@@ -42,6 +42,9 @@ def async_register(hass: HomeAssistant) -> None:
         ws_group_update,
         ws_group_remove,
         ws_reorder,
+        ws_log_get,
+        ws_log_settings,
+        ws_log_clear,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -70,11 +73,19 @@ def _run(
         )
         return
     try:
-        result = func(manager)
+        with manager.acting(
+            _user_name(hass, connection),
+            connection.user.id if connection.user else None,
+            msg.get("via") or "card",
+        ):
+            result = func(manager)
     except ValueError as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return
     connection.send_result(msg["id"], result)
+
+
+VIA = ("card", "scan", "merge", "recipe")
 
 
 def _pick(msg: dict[str, Any], *keys: str) -> dict[str, Any]:
@@ -111,6 +122,7 @@ def ws_subscribe(hass, connection, msg):
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "einkaufsliste/item/add",
+        vol.Optional("via"): vol.In(VIA),
         vol.Required("name"): str,
         vol.Optional("store_id"): OPT_STR,
         vol.Optional("category_id"): OPT_STR,
@@ -153,6 +165,7 @@ def _auto_photo(hass, manager, code, name) -> None:
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "einkaufsliste/item/update",
+        vol.Optional("via"): vol.In(VIA),
         vol.Required("item_id"): str,
         vol.Optional("name"): str,
         vol.Optional("store_id"): OPT_STR,
@@ -171,6 +184,7 @@ def ws_item_update(hass, connection, msg):
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "einkaufsliste/item/toggle",
+        vol.Optional("via"): vol.In(VIA),
         vol.Required("item_id"): str,
         vol.Optional("checked"): bool,
     }
@@ -189,7 +203,11 @@ def ws_item_toggle(hass, connection, msg):
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/item/remove", vol.Required("item_id"): str}
+    {
+        vol.Required("type"): "einkaufsliste/item/remove",
+        vol.Optional("via"): vol.In(VIA),
+        vol.Required("item_id"): str,
+    }
 )
 @callback
 def ws_item_remove(hass, connection, msg):
@@ -413,3 +431,23 @@ def ws_barcode_assign(hass, connection, msg):
 def ws_seen(hass, connection, msg):
     user_id = connection.user.id if connection.user else "unbekannt"
     _run(hass, connection, msg, lambda m: m.mark_seen(user_id, msg["store"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/log/get"})
+@callback
+def ws_log_get(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.get_log())
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/log/settings", vol.Required("days"): vol.Coerce(int)}
+)
+@callback
+def ws_log_settings(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.set_log_days(msg["days"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/log/clear"})
+@callback
+def ws_log_clear(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.clear_log())
