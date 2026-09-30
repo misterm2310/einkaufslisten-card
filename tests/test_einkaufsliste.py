@@ -2174,3 +2174,63 @@ async def test_purchases(hass, setup):
     with pytest.raises(ValueError):
         m.get_purchases()
     assert m._to_storage()["purchases"] == m.purchases
+
+
+# ------------------------------------------------------------------ v2.40: neue Funktionen
+
+async def test_offer_without_end_expires_after_14_days(hass: HomeAssistant, setup) -> None:
+    """🏷️ Angebot ohne Enddatum läuft nach 14 Tagen ab."""
+    m = mgr(hass)
+    it = m.add_item("Kaffee", store_id=None)
+    jac = m.take_offer({"p": 4.99, "r": "Lidl", "d": "Jacobs"}, item_id=it["id"], store_id=None)
+    assert jac["offer"].get("taken") and jac["orig"]["name"] == "Kaffee"
+    now = dt_util.utcnow()
+    assert m.expire_offers(now + timedelta(days=10)) == 0
+    assert m.expire_offers(now + timedelta(days=15)) >= 1
+
+
+async def test_error_log(hass: HomeAssistant, setup) -> None:
+    """🐞 Fehler-Protokoll: gleiche Meldung zählt hoch, Limit, Leeren."""
+    m = mgr(hass)
+    m.log_error("x", "kaputt")
+    m.log_error("x", "kaputt")
+    m.log_error("y", "anders")
+    got = m.get_errors()["errors"]
+    assert got[0]["w"] == "y" and got[1]["n"] == 2
+    assert m._to_storage()["errors"] == m.errors
+    for i in range(100):
+        m.log_error("z", f"e{i}")
+    assert len(m.errors) <= 60
+    assert m.clear_errors()["errors"] == []
+
+
+async def test_import_table_csv(hass: HomeAssistant, setup) -> None:
+    """🔁 Import aus CSV/TSV-Exporten (Beispieldaten, keine echten Bring!/AnyList-Exporte)."""
+    from custom_components.einkaufsliste.transfer import import_text
+    m = mgr(hass)
+    csv_text = "Name,Menge,Notiz,Erledigt\nMilch,2 l,Bio,\nBrot,,,ja\nÄpfel,1 kg,,nein\n"
+    assert import_text(m, csv_text) == {"added": 2, "skipped": 1}
+    milch = next(i for i in m.items if i["name"] == "Milch")
+    assert milch["quantity"].lower() == "2 l" and milch["note"] == "Bio"
+    tsv = "Item\tSpecification\nEier\t10 Stück\n"
+    assert import_text(m, tsv)["added"] == 1
+    # normaler Text bleibt normaler Text
+    assert import_text(m, "- Nudeln\n- Reis")["added"] == 2
+
+
+async def test_merge_products(hass: HomeAssistant, setup) -> None:
+    """🧲 Produkte zusammenführen."""
+    m = mgr(hass)
+    m.add_item("Tomaten", store_id=None)
+    m.add_item("Tomate", store_id=None)
+    res = await m.async_merge_products("tomaten", "tomate")
+    assert res["into"]
+    assert sum(1 for i in m.items if i["name"].lower().startswith("tomat") and not i["checked"]) == 1
+    with pytest.raises(ValueError):
+        await m.async_merge_products("tomate", "tomate")
+
+
+async def test_photo_keys(hass: HomeAssistant, setup) -> None:
+    from custom_components.einkaufsliste.manager import recipe_step_photo_key, purchase_photo_key
+    assert recipe_step_photo_key("abc", 2) == "rezept#abc#s2"
+    assert purchase_photo_key("p1") == "bon#p1"

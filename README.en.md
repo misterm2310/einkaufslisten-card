@@ -30,6 +30,7 @@
 | ⏲️ **Cooking times** | Cheat sheet by appliance: 🍲 stove, 🔥 oven, 💨 air fryer. |
 | 🧹 **Cleanup** | Once a week old items get **checked off**, nothing is deleted. |
 | 🔒 **PIN** | Settings (the gear) only with a PIN – the list stays open for everyone. |
+| 📸 **Text from photo** | Photograph a shopping note or receipt; the card reads the text right on the device (handwriting only with luck – text can be corrected first). Also: 🩺 health light, 🐞 error log, 🧲 merge products. |
 
 Plus lots of small things: photos per product, nicknames (“Kleenex” = tissues), learned typos, store brands when scanning, duplicate finder, history, backup, a mascot 🛒😊 and more.
 

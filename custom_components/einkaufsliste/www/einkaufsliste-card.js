@@ -2,15 +2,17 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.39.1";
+const EL_VERSION = "2.40.0";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["🏷️ <b>Angebote feiner abgestimmt:</b> Ein Artikel, der erst durch ein Angebot entstanden ist, verschwindet mit dem Angebot – 1 Tag nach Ablauf („⌛ Angebot vorbei“) wird er gelöscht und <b>dein ursprüngliches Produkt kommt wieder auf die Liste</b> (mit dem alten Eingabe-Datum). Hängt das Angebot an <b>deinem Produkt</b>, bleibt es bestehen – nur das Angebot fällt weg.",
-   "🏷️ <b>Offers fine-tuned:</b> an item that was created by an offer disappears with the offer – 1 day after it ends (“⌛ Offer over”) it is deleted and <b>your original product goes back on the list</b> (with its old entry date). If the offer is attached to <b>your own product</b>, it stays – only the offer goes away."],
-  ["🏷️ <b>Angebote überarbeitet (2.39.0):</b> Das Angebot steht in einem <b>eigenen Feld</b> („🏷️ 1,19 € bis Sa.“, bei späterem Start „ab Mo.“) – die Notiz bleibt unberührt. Beim Übernehmen kommt der <b>Angebotsname</b> auf die Liste und das <b>ursprüngliche Produkt wird abgehakt</b>; Artikel aus Angeboten sind beim Abhaken <b>ganz gelöscht</b>.",
-   "🏷️ <b>Offers reworked (2.39.0):</b> the offer sits in its <b>own field</b> (“🏷️ 1.19 € until Sat”, “from Mon” if it starts later) – the note stays untouched. When you take an offer, the <b>offer's name</b> goes on the list and the <b>original product is checked off</b>; items from offers are <b>deleted completely</b> when checked off."],
-  ["▥ <b>Barcode beim Eintragen:</b> Neben dem Foto-Symbol gibt es ein <b>▥ mit Plus</b> – damit gibst du einem neuen Produkt gleich beim Eintragen einen Barcode (HA-App und Offline-App).",
-   "▥ <b>Barcode when adding:</b> next to the photo icon there's a <b>▥ with a plus</b> – give a new product a barcode right when you add it (HA app and offline app)."],
+  ["📸 <b>Text aus Foto (Neu in 2.40.0):</b> Mit dem <b>📋-Symbol unter dem Eingabefeld</b> Einkaufszettel einlesen, dazu Rezept oder <b>Kassenbon</b> fotografieren – die Karte liest den Text direkt auf deinem Gerät (nichts wird hochgeladen). Gedruckter Text klappt gut, <b>Handschrift nur mit Glück</b> – darum kannst du alles vor dem Übernehmen korrigieren. Beim Einkaufs-Protokoll füllt „📷 Kassenbon lesen“ Betrag, Geschäft und Tag aus, das Bon-Foto hängt am Eintrag.",
+   "📸 <b>Text from photo (new in 2.40.0):</b> the <b>📋 icon below the input field</b> reads a shopping note; also recipes and <b>receipts</b> – the card reads the text right on your device (nothing is uploaded). Printed text works well, <b>handwriting only with luck</b> – so you can correct everything before adding it. In the purchase log “📷 Read receipt” fills in amount, store and day; the receipt photo stays attached to the entry."],
+  ["🩺 <b>Gesundheits-Ampel &amp; 🐞 Fehler-Protokoll:</b> In den Einstellungen zeigt eine Ampel, ob alles in Ordnung ist. Technische Fehler landen im Fehler-Protokoll – mit „Kopieren“-Knopf, falls du mal Hilfe brauchst.",
+   "🩺 <b>Health light &amp; 🐞 error log:</b> in the settings a traffic light shows whether everything is fine. Technical errors go to the error log – with a “Copy” button in case you need help."],
+  ["🧲 <b>Produkte zusammenführen, Laden-Modus automatisch, Kostüme, Schritt-Fotos:</b> Doppelte Produkte werden eins (inkl. Fotos &amp; Gedächtnis). Der Laden-Modus kann sich beim Betreten eines Geschäfts selbst einschalten (pro Gerät, optional). Das Maskottchen trägt je nach Jahreszeit ein Kostüm. Im Kochmodus kann jeder Schritt ein Foto haben. Fotos, die du offline machst, werden nachgeschickt. Angebote ohne Enddatum laufen nach 14 Tagen ab. Import aus Bring!/AnyList-Tabellen (CSV).",
+   "🧲 <b>Merge products, automatic shop mode, costumes, step photos:</b> duplicate products become one (incl. photos &amp; memory). Shop mode can switch itself on when you enter a store (per device, optional). The mascot wears a costume by season. In cooking mode each step can have a photo. Photos taken offline are sent later. Offers without an end date expire after 14 days. Import from Bring!/AnyList tables (CSV)."],
+  ["📖 <b>Anleitung leichter finden:</b> Ein Knopf „📖 Anleitung“ steht jetzt unten neben „Abmelden“, und beim ersten Start gibt es einen kleinen Tipp bzw. einen Einrichtungs-Assistenten.",
+   "📖 <b>Guide easier to find:</b> there's now a “📖 Guide” button at the bottom next to “Log out”, and on first start a small tip or a setup assistant."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -984,6 +986,14 @@ button { font:inherit; color:inherit; }
 .live.off { background:var(--error-color,#db4437); box-shadow:0 0 0 3px color-mix(in srgb, var(--error-color,#db4437) 25%, transparent); animation: pulse 1.2s infinite; }
 .updbar { margin:0 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 14%, transparent); font-size:.88em; display:flex; align-items:center; gap:8px; }
 .updbar b { flex:1; }
+.tipbtn { font:inherit; font-size:.95em; border:0; border-radius:10px; padding:6px 10px; cursor:pointer; background:color-mix(in srgb, var(--primary-color,#03a9f4) 25%, transparent); color:var(--primary-text-color); }
+.guidebtn { margin-left:auto; font:inherit; font-size:1em; display:inline-flex; align-items:center; gap:4px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:5px 10px; background:none; color:var(--primary-text-color); cursor:pointer; }
+.wizard { margin:0 2px 10px; padding:12px; border-radius:14px; border:1px solid color-mix(in srgb, var(--primary-color,#03a9f4) 45%, transparent); background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); }
+.wizard h4 { margin:0 0 4px; font-size:1.05em; }
+.wizard ol { list-style:none; margin:8px 0; padding:0; display:grid; gap:6px; counter-reset:wz; }
+.wizard li { counter-increment:wz; display:flex; align-items:center; gap:8px; }
+.wizard li::before { content:counter(wz); flex:none; width:24px; height:24px; border-radius:50%; background:var(--primary-color,#03a9f4); color:#fff; display:grid; place-items:center; font-weight:700; font-size:.85em; }
+.wizard li span { flex:1; }
 .badge { background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border-radius:999px; padding:1px 9px; font-size:.75em; font-weight:600; }
 .iconbtn { background:none; border:0; cursor:pointer; padding:6px; border-radius:50%; display:inline-flex; color:var(--secondary-text-color); line-height:0; }
 .iconbtn:hover { background:var(--secondary-background-color, rgba(127,127,127,.12)); color:var(--primary-text-color); }
@@ -1207,6 +1217,16 @@ ha-card.compact .group { margin-top:4px; }
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
 .offgone { opacity:.75; }
+.health { display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 10px; padding:10px 12px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-left-width:5px; background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
+.health.ok { border-left-color:#43a047; } .health.warn { border-left-color:#fb8c00; } .health.bad { border-left-color:#e53935; } .health.wait { border-left-color:#9e9e9e; }
+.health small { display:block; color:var(--secondary-text-color); }
+.errrow { padding:6px 8px; border-radius:10px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:4px 0; font-size:.9em; word-break:break-word; }
+.errrow small { color:var(--secondary-text-color); display:block; }
+.sprow { display:flex; align-items:center; gap:6px; margin:4px 0; }
+.sprow .sptxt { flex:1; font-size:.9em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pemerge { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; border-radius:10px; border:1px dashed var(--divider-color, rgba(127,127,127,.4)); }
+.pemerge select { flex:1; min-width:140px; }
+.iinstead { opacity:.8; font-style:italic; }
 .offinfo { color:color-mix(in srgb, #e53935 70%, var(--primary-text-color)); font-weight:600; }
 #btnNewBarcode.plus::before { content:"+"; position:absolute; top:1px; right:4px; font:700 13px/1 Roboto,sans-serif; }
 .chip2.offsearch { border-style:dashed; }
@@ -1382,9 +1402,111 @@ const GAR = [
   ]],
 ];
 
+// 🔎 Texterkennung (OCR): Tesseract läuft im Browser – das Foto verlässt das Gerät nicht.
+// Die Dateien (ca. 5 MB) werden erst geladen, wenn jemand „Text aus Foto“ benutzt.
+const elOcr = { T: null, worker: null, log: null, timer: 0 };
+function elOcrLib() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  return (elOcr.T ||= new Promise((ok, fail) => {
+    const sc = document.createElement("script");
+    sc.src = `${EL_BASE}/ocr/tesseract.min.js?v=${EL_VERSION}`;
+    sc.onload = () => (window.Tesseract ? ok(window.Tesseract) : fail(new Error("Texterkennung nicht gefunden")));
+    sc.onerror = () => { elOcr.T = null; fail(new Error("Texterkennung konnte nicht geladen werden")); };
+    document.head.append(sc);
+  }));
+}
+async function elOcrRead(dataUrl, onProgress) {
+  const T = await elOcrLib();
+  elOcr.log = onProgress || null;
+  clearTimeout(elOcr.timer);
+  if (!elOcr.worker) {
+    elOcr.worker = await T.createWorker("deu", 1, {
+      workerPath: `${EL_BASE}/ocr/worker.min.js`,
+      corePath: `${EL_BASE}/ocr/tesseract-core-simd-lstm.wasm.js`,
+      langPath: `${EL_BASE}/ocr`, gzip: true, cacheMethod: "none", workerBlobURL: false,
+      logger: (m) => elOcr.log?.(m),
+    });
+  }
+  try {
+    const { data } = await elOcr.worker.recognize(dataUrl);
+    return String(data?.text || "");
+  } finally {
+    elOcr.timer = setTimeout(() => { elOcr.worker?.terminate?.().catch?.(() => {}); elOcr.worker = null; }, 120000); // Speicher wieder freigeben
+  }
+}
+
+// 🧾 Kassenbon lesen: Betrag („zu zahlen“, „Summe“ …), Datum und Geschäft herausfischen
+function elReceiptInfo(text, stores = [], today = new Date()) {
+  const lines = String(text || "").split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  const moneyRx = /(\d{1,3}(?:\.\d{3})+,\d{2}|\d+\s?[,.]\s?\d{2})(?!\d)/g;
+  const money = (l) => [...l.matchAll(moneyRx)].map((m) => {
+    let v = m[1].replace(/\s/g, "");
+    v = v.includes(",") ? v.replace(/\./g, "").replace(",", ".") : v;
+    return parseFloat(v);
+  }).filter((n) => n > 0 && n < 10000);
+  const strong = /(zu zahlen|zahlbetrag|gesamtbetrag|gesamtsumme|endbetrag|summe|total|gesamt|betrag)/i;
+  const skip = /(gegeben|r[üu]e?ckgeld|zur[üu]ck|wechselgeld|mwst|mehrwertsteuer|\bust\b|steuer|netto|brutto|rabatt|ersparnis|gespart|pfand|punkte|payback)/i;
+  const card = /(girocard|\bec\b|karte|visa|master|maestro|kreditkarte|bar\b)/i;
+  const pickMax = (rx, notRx) => {
+    const all = lines.filter((l) => rx.test(l) && !(notRx && notRx.test(l))).flatMap(money);
+    return all.length ? Math.max(...all) : null;
+  };
+  let amount = pickMax(strong, skip), sure = true;
+  if (amount == null) amount = pickMax(card, /(gegeben|r[üu]e?ckgeld|wechselgeld)/i);
+  if (amount == null) {
+    const all = lines.filter((l) => !skip.test(l)).flatMap(money);
+    amount = all.length ? Math.max(...all) : null;
+    sure = false;
+  }
+  let day = null;
+  const dm = String(text || "").match(/(\d{2})[.\-/](\d{2})[.\-/](\d{4}|\d{2})(?!\d)/);
+  if (dm) {
+    const y = dm[3].length === 2 ? 2000 + Number(dm[3]) : Number(dm[3]);
+    const d = new Date(y, Number(dm[2]) - 1, Number(dm[1]), 12);
+    const ago = (today - d) / 86400000;
+    if (!Number.isNaN(d.getTime()) && ago >= 0 && ago <= 120) day = `${y}-${dm[2]}-${dm[1]}`;
+  }
+  const flat = String(text || "").toLowerCase().replace(/[^a-zäöüß0-9]/g, "");
+  let store = null;
+  for (const st of stores) {
+    const n = String(st.name || "").toLowerCase().replace(/[^a-zäöüß0-9]/g, "");
+    if (n.length >= 3 && flat.includes(n) && (!store || n.length > store.n)) store = { id: st.id, n: n.length };
+  }
+  return { amount, sure, day, store: store?.id || null };
+}
+
+// 🍳 Rezept-Seite lesen: Name, Zutaten und Schritte trennen (an den Überschriften „Zutaten“ / „Zubereitung“)
+function elOcrRecipeParts(text) {
+  const raw = String(text || "").replace(/\r/g, "");
+  const lines = raw.split("\n");
+  const isIng = (l) => /^\W*zutaten\b/i.test(l.trim());
+  const isSteps = (l) => /^\W*(zubereitung|zubereiten|anleitung|so geht'?s|arbeitsschritte)\b/i.test(l.trim());
+  let ing = -1, st = -1;
+  lines.forEach((l, n) => { if (ing < 0 && isIng(l)) ing = n; if (st < 0 && isSteps(l)) st = n; });
+  const name = (lines.find((l) => l.trim() && !isIng(l) && !isSteps(l)) || "").trim().replace(/^[^A-Za-zÄÖÜäöü0-9]+|[^A-Za-zÄÖÜäöü0-9)!?.]+$/g, "");
+  const cut = (from, to) => lines.slice(from, to < 0 ? undefined : to).filter((l) => l.trim());
+  let ingLines = [], stepText = "";
+  if (ing >= 0) ingLines = cut(ing + 1, st > ing ? st : -1);
+  if (st >= 0) {
+    const body = lines.slice(st + 1).join("\n").trim();
+    const paras = body.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
+    stepText = (paras.length > 1 ? paras : body.split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ])/).map((x) => x.replace(/\s*\n\s*/g, " ").trim())).filter(Boolean).join("\n");
+  }
+  if (ing < 0 && st < 0) ingLines = lines.filter((l) => l.trim()).slice(1);
+  return { name, ingredients: ingLines.map((l) => l.replace(/^[\s\-–—•*·|]+/, "").trim()).filter((l) => l.length > 1).join("\n"), steps: stepText };
+}
+
 // 📋 Text kopieren – mit Ersatzweg, falls das Handy die Zwischenablage sperrt (z. B. ohne https)
 function elCopy(text, inp) {
-  const old = () => { try { inp?.select(); document.execCommand?.("copy"); } catch (_) { /* egal */ } };
+  const old = () => {
+    try {
+      let tmp = null;
+      if (!inp) { tmp = document.createElement("textarea"); tmp.value = text; tmp.style.cssText = "position:fixed;opacity:0;top:0;left:0"; document.body.appendChild(tmp); }
+      (inp || tmp).select();
+      document.execCommand?.("copy");
+      tmp?.remove();
+    } catch (_) { /* egal */ }
+  };
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text).catch(old);
   old();
   return Promise.resolve();
@@ -1502,7 +1624,8 @@ function mascotDeco(now = new Date()) {
   const e = easterDate(now.getFullYear()), diff = Math.round((startOfDay(now) - startOfDay(e)) / DAY);
   if (diff >= -3 && diff <= 1) return "bunny";
   if (m === 10 && d >= 29) return "pumpkin";
-  return null;
+  // 👗 Sonst das Kostüm der Jahreszeit: Frühling = Blume, Sommer = Sonnenbrille, Herbst = Blatt, Winter = Schal
+  return m >= 3 && m <= 5 ? "spring" : m >= 6 && m <= 8 ? "summer" : m >= 9 && m <= 11 ? "autumn" : "winter";
 }
 function mascotSvg(mood, deco) {
   const eyes = mood === "sleep"
@@ -1525,6 +1648,10 @@ function mascotSvg(mood, deco) {
     bunny: `<ellipse cx="14" cy="4.6" rx="1.5" ry="4" fill="#f8bbd0" stroke="currentColor" stroke-width=".7"/><ellipse cx="21" cy="4.6" rx="1.5" ry="4" fill="#f8bbd0" stroke="currentColor" stroke-width=".7"/>`,
     party: `<path d="M15 9.4l2.6-7.2 2.6 7.2z" fill="#ab47bc"/><circle cx="17.6" cy="2" r="1" fill="#fdd835"/>`,
     pumpkin: `<ellipse cx="29" cy="24.6" rx="2.6" ry="2.2" fill="#fb8c00"/><path d="M29 22.4v-1.2" stroke="#43a047" stroke-width=".9"/>`,
+    spring: `<g transform="translate(9.6 6.6)"><circle cx="0" cy="-1.5" r="1.2" fill="#f48fb1"/><circle cx="1.5" cy="0" r="1.2" fill="#f48fb1"/><circle cx="0" cy="1.5" r="1.2" fill="#f48fb1"/><circle cx="-1.5" cy="0" r="1.2" fill="#f48fb1"/><circle cx="0" cy="0" r="1" fill="#fdd835"/></g>`,
+    summer: `<rect x="11.2" y="11.6" width="5.6" height="3.4" rx="1.3" fill="#263238"/><rect x="18.2" y="11.6" width="5.6" height="3.4" rx="1.3" fill="#263238"/><path d="M16.8 12.8h1.4" stroke="#263238" stroke-width="1"/>`,
+    autumn: `<path d="M8.6 7.4q3.2-4.2 6.4.2q-3.2 3.4-6.4-.2z" fill="#ef6c00"/><path d="M8.8 7.2l4.2-2.4" stroke="#8d4a00" stroke-width=".6"/>`,
+    winter: `<path d="M7.4 9.2h23.2" stroke="#e53935" stroke-width="2.4" stroke-linecap="round"/><path d="M28 9.8v5.2" stroke="#e53935" stroke-width="2.3" stroke-linecap="round"/><path d="M11 9.2v.1M15 9.2v.1M19 9.2v.1M23 9.2v.1" stroke="#fff" stroke-width="1" stroke-linecap="round"/>`,
   }[deco] || "";
   return `<svg class="mascot ${mood}" viewBox="0 0 34 30" width="30" height="27" aria-hidden="true">
     <path d="M2 4.5h3.6l1.6 3.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1541,7 +1668,9 @@ const storeZones = (store) => (Array.isArray(store?.zones) ? store.zones : store
 const QUEUE_TYPES = new Set(["einkaufsliste/item/toggle", "einkaufsliste/item/add", "einkaufsliste/item/update",
   "einkaufsliste/item/remove", "einkaufsliste/item/move", "einkaufsliste/item/out",
   "einkaufsliste/recipe/add", "einkaufsliste/recipe/update", "einkaufsliste/recipe/remove",
-  "einkaufsliste/recipe/apply", "einkaufsliste/recipe/unapply", "einkaufsliste/barcode/assign"]);
+  "einkaufsliste/recipe/apply", "einkaufsliste/recipe/unapply", "einkaufsliste/barcode/assign",
+  "einkaufsliste/photo/set"]); // 📸 Fotos werden vorgemerkt, wenn kein Netz da ist (siehe PHOTO_QUEUE_MAX)
+const PHOTO_QUEUE_MAX = 3 * 1024 * 1024; // so viele Foto-Daten (Zeichen) dürfen höchstens vorgemerkt warten
 const QUEUE_KEY = "einkaufsliste_queue";
 const elQueue = (() => { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]"); } catch (_) { return []; } })();
 const elFlush = { busy: false };
@@ -1579,6 +1708,11 @@ function applyQueued(data, list, hass) {
       case "einkaufsliste/barcode/assign":
         if (it) rememberCode(data, it.name, it.note, m.code);
         break;
+      case "einkaufsliste/photo/set": { // 📸 vorgemerktes Foto schon anzeigen (steht noch in der Warteschlange)
+        const k = String(m.name || "").toLowerCase();
+        data.photos = { ...(data.photos || {}), [k]: (data.photos || {})[k] || "queued" };
+        break;
+      }
       case "einkaufsliste/item/add": {
         // gleicher Artikel schon da? Dann macht Home Assistant daraus keinen zweiten – hier genauso
         const low = (x) => String(x || "").trim().toLowerCase();
@@ -1749,7 +1883,7 @@ class EinkaufslisteCard extends HTMLElement {
   _nearStore() {
     if (!this._hass || !this._data) return null;
     const uid = this._hass.user?.id;
-    const person = Object.values(this._hass.states).find(
+    const person = Object.values(this._hass.states || {}).find(
       (st) => st.entity_id.startsWith("person.") && st.attributes.user_id === uid
     );
     if (!person) return null;
@@ -1781,9 +1915,21 @@ class EinkaufslisteCard extends HTMLElement {
     if (near) {
       this._tab = near;
       this._toast(`📍 Du bist bei ${this._store(near)?.name} – hier ist deine Liste dafür`);
+      if (this._flag("einkaufsliste_auto_shop") && !this._shopMode) { // 🛒 Opt-in: im Laden geht der Laden-Modus von selbst an
+        this._shopMode = true;
+        this._shopAuto = true;
+        try { localStorage.setItem("einkaufsliste_shopmode", "1"); } catch (_) { /* egal */ }
+        this._toast("🛒 Laden-Modus ist an – viel Spaß beim Einkaufen!");
+      }
     } else if (prev && this._tab === prev) {
       this._tab = "all";
     }
+    if (!near && this._shopAuto && this._shopMode) { // Laden verlassen: nur ausschalten, was von selbst anging
+      this._shopMode = false;
+      try { localStorage.setItem("einkaufsliste_shopmode", "0"); } catch (_) { /* egal */ }
+      this._toast("✍️ Laden-Modus aus – bis zum nächsten Einkauf");
+    }
+    if (!near) this._shopAuto = false;
     this._renderAll();
   }
 
@@ -1836,6 +1982,9 @@ class EinkaufslisteCard extends HTMLElement {
     return this._hass.callWS(msg).catch((err) => {
       if (QUEUE_TYPES.has(msg.type) && this._hass?.connected === false) return this._queueMsg(msg);
       this._toast(err?.message || "Da ist was schiefgelaufen 🙈");
+      if (err?.code !== "invalid" && err?.code !== "error" && msg.type !== "einkaufsliste/errors/report") { // 🐞 Server hat es nicht gesehen: ins Fehler-Protokoll
+        this._hass?.callWS?.({ type: "einkaufsliste/errors/report", where: "Karte: " + msg.type.replace("einkaufsliste/", ""), message: String(err?.message || err?.code || err).slice(0, 380) }).catch(() => {});
+      }
       throw err;
     });
   }
@@ -1847,6 +1996,13 @@ class EinkaufslisteCard extends HTMLElement {
       // gewünschten Zustand festhalten – so wird beim Nachschicken nichts doppelt umgeschaltet
       const it = this._data?.items.find((i) => i.id === m.item_id);
       if (it) m.checked = !it.checked;
+    }
+    if (m.type === "einkaufsliste/photo/set") {
+      const used = elQueue.reduce((n, x) => n + (x.type === "einkaufsliste/photo/set" ? String(x.data || "").length : 0), 0);
+      if (used + String(m.data || "").length > PHOTO_QUEUE_MAX) {
+        this._toast("📴 Zu viele Fotos warten schon aufs Netz – bitte erst wieder online gehen.");
+        return Promise.reject(new Error("photo queue full"));
+      }
     }
     if (m.type === "einkaufsliste/item/add" || m.type === "einkaufsliste/recipe/add" || m.type === "einkaufsliste/recipe/apply") {
       m._tmp = "tmp_" + Math.random().toString(36).slice(2, 10);
@@ -1923,6 +2079,8 @@ class EinkaufslisteCard extends HTMLElement {
         </div>
         <div class="error" id="error" hidden></div>
         <div class="updbar" id="updBar" hidden></div>
+        <div class="updbar" id="tipBar" hidden></div>
+        <div class="wizard" id="wizard" hidden></div>
         <div id="listView">
           <div class="tabs" id="tabs"></div>
           <form class="add" id="addForm" autocomplete="off">
@@ -1936,6 +2094,7 @@ class EinkaufslisteCard extends HTMLElement {
               <button class="tool plus" id="btnNewBarcode" type="button" data-act="new-barcode" title="Barcode zum neuen Produkt" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
               <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon></button>
               <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat – haben wir immer (z. B. Salz, Öl)" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon></button>
+              <button class="tool" id="btnOcrList" type="button" data-act="ocr-list" title="Liste aus Foto einlesen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon></button>
               <button class="tool tclear" id="tClear" type="button" data-act="clear-form" title="Alles leeren" hidden><ha-icon icon="mdi:eraser"></ha-icon></button>
             </div>
             <div class="extras">
@@ -2173,7 +2332,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._view === "settings") {
       if (this._storeSel) this._storeSel = null;
       else if (this._setSec) {
-        const parents = { check: "tools", transfer: "tools", log: "tools", cleanup: "tools", app: "appx", mascot: "appx", spend: "appx", pin: "appx" };
+        const parents = { check: "tools", errors: "tools", transfer: "tools", log: "tools", cleanup: "tools", app: "appx", mascot: "appx", autoshop: "appx", spend: "appx", pin: "appx" };
         this._setSec = parents[this._setSec] || null;
       } else this._view = "list";
       this._renderAll();
@@ -2218,6 +2377,7 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("btnSpend").hidden = !d?.settings?.spend || this._view !== "list" || !!this._shopMode; // 🧾 nur wenn in ⚙️ eingeschaltet
     this.$("titleIcon").title = `📖 Anleitung – antippen${titleText ? ` · ${titleText}` : ""}`;
     this._renderUpdateBar();
+    this._renderTip();
     this._updateLive();
     const err = this.$("error");
     err.hidden = !this._error;
@@ -2508,6 +2668,7 @@ class EinkaufslisteCard extends HTMLElement {
     else if (!item.store_id && this._activeTab !== "none") meta.push(EGAL_CHIP); // 🤷 überall zu haben
     // Reihenfolge unter dem Namen: Geschäft · Notiz · Barcode · wer eingetragen · wer abgehakt · (Rezept, Zeit)
     if (item.note) meta.push(`<span class="inote">📝 ${esc(item.note)}</span>`);
+    if (!item.checked && item.from_offer && item.orig?.name) meta.push(`<span class="iinstead" title="Dein ursprüngliches Produkt ist abgehakt – es kommt zurück, wenn das Angebot ohne Kauf endet">↩️ <span>statt</span> <span translate="no">${esc(item.orig.name)}</span></span>`); // „statt Kaffee“
     if (!item.checked && item.out_at && Date.now() - new Date(item.out_at) < 3 * DAY)
       meta.push(`<span class="iout" title="Beim letzten Einkauf nicht bekommen">⇄ war aus (${WD_SHORT[pyWd(new Date(item.out_at))]})</span>`);
     const pk = this._pk(item.name, item.note);
@@ -2987,13 +3148,48 @@ class EinkaufslisteCard extends HTMLElement {
     if (was && mood === "happy") box.firstElementChild.classList.add("hop"); // Liste leer? Einmal kurz hüpfen 🎉
   }
 
+  // 💡 Erster Start auf diesem Gerät: einmaliger Hinweis auf die Anleitung – und bei ganz neuer Liste ein kleiner Einrichtungs-Assistent
+  _flag(key, set) {
+    try {
+      if (set) localStorage.setItem(key, "1");
+      return localStorage.getItem(key) === "1";
+    } catch (_) { return !!set; }
+  }
+
+  _renderTip() {
+    const tip = this.$("tipBar"), wiz = this.$("wizard");
+    if (!tip || !wiz) return;
+    const d = this._data;
+    const list = !!d && this._view === "list" && !this._shopMode;
+    // 👋 Ganz neu (nichts eingetragen, nichts gelernt, keine Rezepte) und noch nicht weggeklickt: Assistent
+    const fresh = list && !(d.items || []).length && !(d.history || []).length && !(d.recipes || []).length && !this._flag("einkaufsliste_wizard_done");
+    wiz.hidden = !fresh;
+    if (fresh) {
+      wiz.innerHTML = `<h4>👋 Willkommen bei der Einkaufsliste!</h4>
+        <div class="hint">Vier kleine Schritte – du kannst alles auch später machen:</div>
+        <ol>
+          <li><span>Deine Geschäfte ansehen und anpassen</span><button class="tipbtn" data-act="wizard-go" data-to="stores">🏪 Öffnen</button></li>
+          <li><span>Ein Geschäft mit dem Standort verknüpfen (optional)</span><button class="tipbtn" data-act="wizard-go" data-to="stores">📍 Öffnen</button></li>
+          <li><span>Das erste Produkt eintragen</span><button class="tipbtn" data-act="wizard-go" data-to="add">✍️ Los</button></li>
+          <li><span>Die Anleitung durchblättern</span><button class="tipbtn" data-act="wizard-go" data-to="guide">📖 Lesen</button></li>
+        </ol>
+        <div class="btnrow"><button class="btn" data-act="wizard-done">Fertig – nicht mehr zeigen</button></div>`;
+    }
+    const showTip = list && !fresh && !this._flag("einkaufsliste_tip_guide");
+    tip.hidden = !showTip;
+    if (showTip) {
+      tip.innerHTML = `<b>💡 Tipp: Oben links auf den Wagen 🛒 tippen – dort steht die Anleitung.</b><button class="tipbtn" data-act="tip-guide">📖 Zeig mir</button><button class="tipbtn" data-act="tip-ok">Okay</button>`;
+    }
+  }
+
   _renderFooter() {
     const f = this.$("footer");
     const s = this._data?.settings;
     if (!s || this._view !== "list") { f.hidden = true; return; }
     f.hidden = false;
     const next = new Date(s.next_cleanup);
-    f.innerHTML = `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`;
+    f.innerHTML = `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`
+      + (window.__elOfflineApp ? "" : `<button class="guidebtn" type="button" data-act="guide" title="Anleitung öffnen"><ha-icon icon="mdi:book-open-page-variant-outline"></ha-icon>Anleitung</button>`); // 📖 fester Platz unten (in der Offline-App steht er neben „Abmelden“)
   }
 
   // ---------------------------------------------------------------- Icon-Suche
@@ -3194,6 +3390,7 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">Sucht nach kaputten oder unvollständigen Einträgen: Produkte ohne Kategorie, Artikel ohne Geschäft, fehlende oder übrige Fotos, Barcodes ohne Produkt und Verweise auf Gelöschtes. Jeder Fund steht einzeln da – mit Haken und wie repariert wird. Repariert wird nur, was du anhakst.</p>
         <div class="btnrow"><button class="btn primary" data-act="check-run"><ha-icon icon="mdi:magnify"></ha-icon>Jetzt prüfen</button></div>
         <div id="checkRes"></div>` },
+      { key: "errors", parent: "tools", icon: "mdi:bug-outline", title: "Fehler-Protokoll", info: (this._data.settings?.errors || 0) ? `${this._data.settings.errors} Meldungen` : "keine Fehler 🎉", html: () => this._errorsHtml() },
       { key: "transfer", parent: "tools", icon: "mdi:database-import-outline", title: "Import & Sicherung", info: "Rezepte, andere Apps, Backup", html: () => this._xferHtml() },
       { key: "app", parent: "appx", icon: "mdi:cellphone-arrow-down", title: "Offline-App", info: "Liste auch ohne Netz", html: () => `
         <p class="hint">Eine eigene kleine App nur für die Einkaufsliste. Sie öffnet sich auch <b>ohne Netz</b> (z. B. im Funkloch im Geschäft), zeigt den letzten Stand, lässt dich abhaken und eintragen und schickt alles nach, sobald wieder Netz da ist.</p>
@@ -3210,10 +3407,16 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">Kopieren, im Handy-Browser einfügen, fertig. Die Adresse funktioniert zu Hause und unterwegs.</p>`
           : `<p class="hint">⚠️ Home Assistant kennt keine https-Adresse für unterwegs. Mit <b>Nabu Casa</b> (Einstellungen → Home Assistant Cloud → Fernzugriff) oder einer eigenen https-Adresse (Einstellungen → System → Netzwerk) klappt es.</p>`}` },
       { key: "mascot", parent: "appx", icon: "mdi:emoticon-happy-outline", title: "Maskottchen", info: this._data.settings?.mascot ? "an – für alle" : "aus", html: () => `
-        <p class="hint">Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Antippen öffnet wie gewohnt die Anleitung.</p>
+        <p class="hint">Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen öffnet wie gewohnt die Anleitung.</p>
         <div class="mascotprev">${mascotSvg("happy", null)}${mascotSvg("busy", null)}${mascotSvg("full", null)}${mascotSvg("sleep", null)}</div>
+        <div class="mascotprev">${["spring", "summer", "autumn", "winter"].map((x) => mascotSvg("happy", x)).join("")}</div>
         <p><b>${this._data.settings?.mascot ? "🛒😊 Das Maskottchen ist an." : "Das Maskottchen ist aus."}</b> Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App.</p>
         <div class="btnrow"><button class="btn primary" data-act="mascot-toggle"><ha-icon icon="${this._data.settings?.mascot ? "mdi:emoticon-neutral-outline" : "mdi:emoticon-happy-outline"}"></ha-icon>${this._data.settings?.mascot ? "Ausschalten" : "Einschalten"}</button></div>` },
+      ...(window.__elOfflineApp ? [] : [{ key: "autoshop", parent: "appx", icon: "mdi:map-marker-radius-outline", title: "Laden-Modus automatisch", info: this._flag("einkaufsliste_auto_shop") ? "an – nur dieses Gerät" : "aus", html: () => `
+        <p class="hint">Kommst du in die 📍 Zone eines Geschäfts, geht der Laden-Modus von selbst an – und wieder aus, sobald du den Laden verlässt. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</p>
+        <p><b>${this._flag("einkaufsliste_auto_shop") ? "📍 Automatisch ist an." : "Automatisch ist aus."}</b></p>
+        <p class="hint">Der Schalter gilt nur für <b>dieses Gerät</b>. Es braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant.</p>
+        <div class="btnrow"><button class="btn primary" data-act="autoshop-toggle"><ha-icon icon="mdi:map-marker-radius-outline"></ha-icon>${this._flag("einkaufsliste_auto_shop") ? "Ausschalten" : "Einschalten"}</button></div>` }]),
       { key: "spend", parent: "appx", icon: "mdi:receipt-text-outline", title: "Einkaufs-Protokoll", info: this._data.settings?.spend ? "an – für alle" : "aus", html: () => `
         <p class="hint">Merkt sich nach jedem Einkauf, wer wann wo für wie viel eingekauft hat. Die Auswertung zeigt Summen pro Geschäft und pro Monat, mit Filtern nach Person, Geschäft und Datum. Unabhängig von den Listen – der Betrag wird von Hand eingetragen.</p>
         <p><b>${this._data.settings?.spend ? "🧾 Das Einkaufs-Protokoll ist an." : "Das Einkaufs-Protokoll ist aus."}</b></p>
@@ -3244,10 +3447,12 @@ class EinkaufslisteCard extends HTMLElement {
       this.$("otherView").innerHTML = `
         <div class="sec">
           <h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3>
+          <button class="health wait" id="healthBar" data-act="set-sec" data-sec="check"><span>⚪</span><span><b>Prüfe …</b></span></button>
           <div class="tiles">${sections.filter((x) => !x.parent).map(tile).join("")}
           </div>
         </div>
         <p class="hint" style="text-align:right">Einkaufsliste v${EL_VERSION}</p>`;
+      this._loadHealth();
       return;
     }
     const parent = cur.parent && sections.find((x) => x.key === cur.parent);
@@ -3267,6 +3472,7 @@ class EinkaufslisteCard extends HTMLElement {
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
     if (cur.key === "stats") this._loadStats();
+    if (cur.key === "errors") this._loadErrors();
     if (cur.key === "products" && this._prodTab !== "delete") { this._renderProducts(); this._loadProducts(); }
     if (cur.key === "recipes" && this._recTab !== "groups") this._renderSetRecipeList();
     if (cur.key === "transfer" && this._xferTab === "apps") this._loadTodoLists();
@@ -3505,6 +3711,63 @@ class EinkaufslisteCard extends HTMLElement {
     } catch (_) { /* Meldung kam schon */ }
   }
 
+  // 🚦 Daten-Gesundheit: Ampel oben in den Einstellungen (prüft im Hintergrund, repariert nichts)
+  async _loadHealth(force) {
+    if (this._healthBusy) return;
+    if (!force && this._health && Date.now() - this._health.at < 5 * 60 * 1000) { this._paintHealth(); return; }
+    this._healthBusy = true;
+    try {
+      const res = await this._hass.callWS({ type: "einkaufsliste/check", fix: false });
+      this._health = { at: Date.now(), n: (res.items || []).length };
+    } catch (_) {
+      this._health = { at: Date.now(), n: -1 };
+    }
+    this._healthBusy = false;
+    this._paintHealth();
+  }
+
+  _paintHealth() {
+    const box = this.$("healthBar");
+    if (!box || !this._health) return;
+    const n = this._health.n;
+    const recent = this._data?.settings?.errors_24h || 0;
+    let cls = "ok", icon = "🟢", title = "Alles in Ordnung", sub = "Keine kaputten Einträge gefunden.", sec = "check";
+    if (n < 0) { cls = "wait"; icon = "⚪"; title = "Konnte nicht prüfen"; sub = "Tippen, um es noch einmal zu versuchen."; }
+    else if (n > 5) { cls = "bad"; icon = "🔴"; title = `${n} Sachen brauchen einen Blick`; sub = "Tippen – dort kannst du alles reparieren."; }
+    else if (n > 0) { cls = "warn"; icon = "🟡"; title = n === 1 ? "1 kleine Sache gefunden" : `${n} kleine Sachen gefunden`; sub = "Tippen – dort kannst du es reparieren."; }
+    else if (recent) { cls = "warn"; icon = "🟡"; title = recent === 1 ? "1 Fehlermeldung in den letzten 24 Stunden" : `${recent} Fehlermeldungen in den letzten 24 Stunden`; sub = "Tippen, um sie zu lesen."; sec = "errors"; }
+    box.className = `health ${cls}`;
+    box.dataset.sec = sec;
+    box.innerHTML = `<span style="font-size:1.4em">${icon}</span><span><b>${title}</b><small>${sub}</small></span>`;
+  }
+
+  // 🐞 Fehler-Protokoll: technische Fehler lesen und kopieren
+  _errorsHtml() {
+    return `
+      <p class="hint">Hier landet, was technisch schiefgegangen ist (z. B. Foto-Upload, E-Mail-Import, Nachschicken). Bei einem Problem: auf „Kopieren“ tippen und den Text weitergeben – dann lässt sich der Fehler viel schneller finden.</p>
+      <div class="btnrow"><button class="btn primary" data-act="errors-copy"><ha-icon icon="mdi:content-copy"></ha-icon>Kopieren</button><button class="btn" data-act="errors-clear"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Leeren</button></div>
+      <div id="errBox"><p class="hint">Lade …</p></div>
+      <p class="hint">Bitte vor dem Weitergeben kurz lesen – in den Texten können Artikelnamen stehen.</p>`;
+  }
+
+  async _loadErrors() {
+    try {
+      this._errData = await this._ws({ type: "einkaufsliste/errors/get" });
+    } catch (_) { return; }
+    const box = this.$("errBox");
+    if (!box || this._setSec !== "errors") return;
+    const list = this._errData.errors || [];
+    box.innerHTML = list.length
+      ? list.map((e) => `<div class="errrow"><small>${esc(new Date(e.t).toLocaleString())} · <span translate="no">${esc(e.w)}</span>${e.n > 1 ? ` · ${e.n}×` : ""}</small><span translate="no">${esc(e.m)}</span></div>`).join("")
+      : `<p>✅ <b>Keine Fehler.</b> Alles läuft rund. 🎉</p>`;
+  }
+
+  _errorsText() {
+    const d = this._errData || {};
+    const lines = (d.errors || []).map((e) => `${new Date(e.t).toLocaleString()} [${e.w}]${e.n > 1 ? ` (${e.n}x)` : ""} ${e.m}`);
+    return `Einkaufsliste v${d.version || EL_VERSION} (Karte v${EL_VERSION})\n${lines.length ? lines.join("\n") : "keine Fehler"}`;
+  }
+
   // 📋 Verlauf: wer hat wann was wie gemacht?
   _logSectionHtml() {
     const f = (this._logF ||= { who: "", store: "", act: "", q: "" });
@@ -3712,8 +3975,13 @@ class EinkaufslisteCard extends HTMLElement {
           ${(() => { const t = Object.entries(this._data.typos || {}).filter(([, r]) => r.toLowerCase() === p.name.toLowerCase()).map(([w]) => w);
             return t.length ? `<div class="bclist" title="Diese Tippfehler korrigiert die Liste von selbst">${t.map((w) => `<span class="bcchip">🧠 ${esc(w)}<button type="button" class="iconbtn" data-act="typo-forget" data-w="${esc(w)}" title="Vergessen"><ha-icon icon="mdi:close"></ha-icon></button></span>`).join("")}</div>` : ""; })()}
           ${p.barcodes.length ? `<div class="bclist">${p.barcodes.map((code) => `<span class="bcchip">▥ ${esc(code)}<button type="button" class="iconbtn" data-act="bc-remove" data-code="${esc(code)}" title="Diesen Barcode löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></span>`).join("")}</div>` : ""}
+          ${this._prodMerge === p.key ? `<div class="pemerge">
+            <span class="hint" style="width:100%">🧲 „${esc(p.name)}${p.note ? ` · ${esc(p.note)}` : ""}“ geht in diesem Produkt auf – Artikel, Rezepte, Fotos und Barcodes ziehen mit um, der alte Name wird ein Spitzname:</span>
+            <select id="peMerge">${this._products.filter((x) => x.key !== p.key).map((x) => `<option value="${esc(x.key)}">${esc(x.name)}${x.note ? ` · ${esc(x.note)}` : ""}</option>`).join("")}</select>
+            <button class="btn primary" data-act="prod-merge-go"><ha-icon icon="mdi:call-merge"></ha-icon>Jetzt zusammenführen</button></div>` : ""}
           <div class="btnrow">
             ${p.photos ? `<button class="btn" data-act="prod-photos"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Fotos</button>` : ""}
+            <button class="btn" data-act="prod-merge" title="Dieses Produkt in ein anderes aufgehen lassen (z. B. Tomaten → Tomate)"><ha-icon icon="mdi:call-merge"></ha-icon>Zusammenführen</button>
             <button class="btn danger" data-act="prod-forget" title="Produkt mit Fotos, Barcodes und Vorschlag löschen – auch von der Einkaufsliste"><ha-icon icon="mdi:delete-outline"></ha-icon>Ganz löschen</button>
             <span style="flex:1"></span>
             <button class="btn" data-act="prod-cancel">Abbrechen</button>
@@ -3964,7 +4232,7 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="btn rimportbtn" data-act="rimport-toggle"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon>Rezept einfügen</button></h3>
         <div class="rimport" id="rImport" hidden>
           <textarea id="rImportText" rows="6" placeholder="Zutaten-Liste hier einfügen – eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;½ l Milch&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch)."></textarea>
-          <div class="btnrow"><button class="btn" data-act="rimport-toggle">Abbrechen</button><button class="primary addbtn btn" data-act="rimport-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
+          <div class="btnrow"><button class="btn" data-act="rimport-photo"><ha-icon icon="mdi:camera-outline"></ha-icon>📷 Aus Foto</button><button class="btn" data-act="rimport-toggle">Abbrechen</button><button class="primary addbtn btn" data-act="rimport-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
         </div>
         <div class="redithint" id="rEditHint" hidden>✏️ Du bearbeitest eine Zutat – ✔ speichert sie. <button class="linkbtn" data-act="ritem-edit-cancel">Abbrechen</button></div>
         <div id="rFormSlot"></div>
@@ -3974,6 +4242,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
         <h3 class="rsub"><ha-icon icon="mdi:chef-hat"></ha-icon>Zubereitung</h3>
         <textarea id="rSteps" class="rsteps" rows="5" placeholder="Ein Schritt pro Zeile, z. B.&#10;Nudeln 10 Minuten kochen&#10;Soße anrühren">${esc(dr.steps || "")}</textarea>
+        <div id="rStepPhotos"></div>
         <p class="hint">Eintragen geht genau wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, 📝 Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode (auch „📦 Mehrere scannen“) – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie, die bei diesem Produkt zuletzt benutzt wurden.</p>
         <div class="btnrow" style="justify-content:space-between">
           ${dr.id ? `<button class="btn danger" data-act="recipe-delete"><ha-icon icon="mdi:trash-can-outline"></ha-icon>Löschen</button>` : "<span></span>"}
@@ -3987,12 +4256,35 @@ class EinkaufslisteCard extends HTMLElement {
     this._renderRecipeItems();
     this._renderHeat();
     this._renderRecipePhoto();
+    this._renderStepPhotos();
+    this.$("rSteps")?.addEventListener("input", () => { clearTimeout(this._spT); this._spT = setTimeout(() => this._renderStepPhotos(), 400); });
     this._groupAuto = !dr.group; // ohne Gruppe: aus dem Namen vorschlagen
     this._autoGroup();
   }
 
   // 📷 Foto vom Rezept (fertiges Gericht, Kochbuch-Seite …)
   _recipePhotoKey(id) { return `rezept#${id}`.toLowerCase(); }
+
+  // 📷 Fotos je Kochschritt: Schritt n (0 = erster) – gezählt wie im Koch-Modus (eine Zeile = ein Schritt)
+  _stepPhotoKey(id, n) { return `rezept#${id}#s${n}`.toLowerCase(); }
+  _stepLines(text) { return String(text || "").split(/\n+/).map((x) => x.trim()).filter(Boolean); }
+
+  _renderStepPhotos() {
+    const box = this.$("rStepPhotos");
+    const dr = this._draft;
+    if (!box || !dr) return;
+    const lines = this._stepLines(this.$("rSteps")?.value);
+    if (!lines.length) { box.innerHTML = ""; return; }
+    if (!dr.id) { box.innerHTML = `<p class="hint">📷 Fotos zu einzelnen Schritten gehen, sobald das Rezept einmal gespeichert ist.</p>`; return; }
+    box.innerHTML = `<p class="hint">📷 Fotos zu den Schritten (erscheinen im Koch-Modus):</p>` + lines.map((t, n) => {
+      const key = this._stepPhotoKey(dr.id, n);
+      const has = this._hasPhoto(key);
+      const cnt = this._photoCount(key);
+      return `<div class="sprow"><span class="sptxt" translate="no">${n + 1}. ${esc(t.length > 60 ? t.slice(0, 60) + "…" : t)}</span>
+        ${has ? `<button type="button" class="btn" data-act="sphoto-view" data-n="${n}"><ha-icon icon="mdi:image-outline"></ha-icon>${cnt}</button>` : ""}
+        <button type="button" class="btn" data-act="sphoto-take" data-n="${n}" ${cnt >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${has ? "Dazu" : "Foto"}</button></div>`;
+    }).join("") + `<p class="hint">Die Fotos hängen an der Schrittnummer – ändert sich die Reihenfolge, bitte kurz prüfen.</p>`;
+  }
 
   _recipePhotoBtn(r) {
     const key = this._recipePhotoKey(r.id);
@@ -4455,6 +4747,69 @@ class EinkaufslisteCard extends HTMLElement {
     }
   }
 
+  // 🔎 „Text aus Foto“: Foto machen/wählen (mit Drehen & Zuschneiden) → Text lesen → weiter mit onText(text, foto)
+  _ocrStart(title, onText) {
+    this._photoTarget = { ocr: async (data) => {
+      const text = await this._ocrText(data, title);
+      if (text != null) onText(text, data);
+    } };
+    this._pickFile("photoFile");
+  }
+
+  async _ocrText(data, title) {
+    const ov = makeOverlay();
+    ov.innerHTML = `<div style="max-width:340px;width:100%;text-align:center"><div style="font:600 18px Roboto,sans-serif;margin-bottom:10px">${esc(elT(title))}</div>
+      <div class="ocrstat" style="color:#ccc;margin-bottom:10px">${esc(elT("Einen Moment …"))}</div>
+      <div style="background:#333;border-radius:8px;height:10px;overflow:hidden"><i class="ocrbar" style="display:block;height:100%;width:3%;background:#43a047"></i></div>
+      <div style="color:#999;font-size:13px;margin-top:10px">${esc(elT("Das Foto bleibt auf deinem Gerät – die Texterkennung läuft direkt hier."))}</div></div>`;
+    const stat = ov.querySelector(".ocrstat"), bar = ov.querySelector(".ocrbar");
+    const names = { "loading tesseract core": "Texterkennung wird geladen …", "initializing tesseract": "Wird vorbereitet …", "initializing api": "Wird vorbereitet …",
+      "loading language traineddata": "Sprache wird geladen …", "initializing": "Wird vorbereitet …", "recognizing text": "Text wird gelesen …" };
+    try {
+      return await elOcrRead(data, (m) => {
+        if (!ov.isConnected) return;
+        stat.textContent = elT(names[m.status] || "Einen Moment …") + (m.status === "recognizing text" ? ` ${Math.round((m.progress || 0) * 100)} %` : "");
+        bar.style.width = `${Math.max(3, Math.round((m.progress || 0) * 100))}%`;
+      });
+    } catch (err) {
+      this._toast("🔎 Die Texterkennung hat nicht geklappt 🙈");
+      this._hass?.callWS?.({ type: "einkaufsliste/errors/report", where: "Karte: Text aus Foto", message: String(err?.message || err).slice(0, 380) }).catch(() => {});
+      return null;
+    } finally {
+      ov.remove();
+    }
+  }
+
+  // 🛒 Liste aus einem Foto (handgeschrieben oder gedruckt): Text prüfen, dann auf die Liste
+  _ocrList() {
+    this._ocrStart("🔎 Liste wird gelesen", (raw) => {
+      const text = String(raw).split("\n").map((l) => l.replace(/^[\s\-–—•*·|_~=\\/\[\]()]+/, "").replace(/[|_~=\\]+/g, " ").trim())
+        .filter((l) => /[A-Za-zÄÖÜäöüß0-9]/.test(l) && l.length >= 2).join("\n");
+      const ov = makeOverlay();
+      Object.assign(ov.style, { overflowY: "auto", justifyContent: "flex-start", touchAction: "pan-y" });
+      const tab = this._activeTab;
+      const cur = this._fixedStore || (tab !== "all" && tab !== "none" && this._store(tab) ? tab : "");
+      ov.innerHTML = `<div style="max-width:460px;width:100%"><div style="font:600 19px Roboto,sans-serif;margin-bottom:6px">${esc(elT("🛒 Das habe ich gelesen"))}</div>
+        <div style="color:#bbb;font-size:14px;margin-bottom:8px">${esc(elT("Eine Zeile = ein Artikel. Bitte kurz prüfen und verbessern – Handschrift ist für die Texterkennung schwer."))}</div>
+        <textarea rows="10" style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee">${esc(text)}</textarea>
+        <select style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee;margin-top:8px">
+          <option value="">${esc(elT("🤷 Egal wo"))}</option>${this._data.stores.map((st) => `<option value="${esc(st.id)}" ${st.id === cur ? "selected" : ""}>${esc(st.name)}</option>`).join("")}</select>
+        <div class="abtn" style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px"></div></div>`;
+      const ta = ov.querySelector("textarea"), sel = ov.querySelector("select");
+      const cancel = ovButton(elT("Abbrechen")), ok = ovButton(elT("➕ Auf die Liste"), true);
+      cancel.onclick = () => ov.remove();
+      ok.onclick = async () => {
+        if (!ta.value.trim()) return;
+        try {
+          const res = await this._ws({ type: "einkaufsliste/import/text", text: ta.value, store_id: sel.value || null });
+          this._toast(`✅ ${res.added} ${res.added === 1 ? "Artikel" : "Artikel"} eingetragen`);
+          ov.remove();
+        } catch (_) { /* Meldung kam schon */ }
+      };
+      ov.querySelector(".abtn").append(cancel, ok);
+    });
+  }
+
   _takePhoto(name, button) {
     this._photoTarget = { name, button };
     this._pickFile("photoFile");
@@ -4680,12 +5035,13 @@ class EinkaufslisteCard extends HTMLElement {
     if (!file || !target) return;
     let data;
     try {
-      data = await editImage(file, 900, 0.8);
+      data = await editImage(file, target.ocr ? 1800 : 900, target.ocr ? 0.9 : 0.8);
     } catch (_) {
       this._toast("Das Foto konnte nicht gelesen werden 🙈");
       return;
     }
     if (!data) return; // abgebrochen
+    if (target.ocr) { this._photoTarget = null; target.ocr(data); return; } // 🔎 „Text aus Foto“: das Foto geht an die Texterkennung
     if (target.recipeDraft && this._draft) {
       // Rezept-Foto: wird beim Speichern mitgespeichert
       (this._draft.newPhotos ||= []).push(data);
@@ -4706,6 +5062,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       await this._ws({ type: "einkaufsliste/photo/set", name: target.name, data, add: !!add });
       for (const k of [...this._photoCache.keys()]) if (k.startsWith(target.name.toLowerCase())) this._photoCache.delete(k);
+      if (this._hass?.connected === false) this._toast("📴 Foto vorgemerkt – wird hochgeladen, sobald wieder Netz da ist");
       if (target.onDone) { target.onDone(); return; }
       this._toast(`📸 Foto für „${this._pkLabel(target.name)}“ gespeichert`);
       if (target.button) {
@@ -4727,6 +5084,10 @@ class EinkaufslisteCard extends HTMLElement {
 
   async _photoData(key, index) {
     const updated = this._data?.photos?.[key];
+    if (updated === "queued") { // 📸 noch nicht hochgeladen: das Foto steckt in der Warteschlange
+      const q = elQueue.find((x) => x.type === "einkaufsliste/photo/set" && String(x.name).toLowerCase() === key);
+      if (q) return q.data.includes(",") ? q.data : `data:image/jpeg;base64,${q.data}`;
+    }
     const ck = `${key}#${index}`;
     const cached = this._photoCache.get(ck);
     if (cached && cached.updated === updated) return cached.data;
@@ -4844,7 +5205,7 @@ class EinkaufslisteCard extends HTMLElement {
     const f = (this._spendF ||= { who: "", store: "", quick: "month", from: "", to: "" });
     const stores = this._data.stores;
     const start = this._tab && this._tab !== "all" && this._store(this._tab) ? this._tab : (this._spendLastStore || stores[0]?.id || "");
-    let cur = tab, entries = [], loaded = false;
+    let cur = tab, entries = [], loaded = false, bon = this._spendBon || null; // 🧾📷 Bon-Foto, das mitgespeichert wird
     const range = () => {
       const now = new Date();
       if (f.quick === "month") return [iso(new Date(now.getFullYear(), now.getMonth(), 1)), iso(now)];
@@ -4870,6 +5231,8 @@ class EinkaufslisteCard extends HTMLElement {
           <select id="spStore">${stores.map((st) => opt(st.id, st.name, start)).join("")}</select>
           <label class="sp-l">Betrag in €</label>
           <input id="spAmount" inputmode="decimal" placeholder="z. B. 23,40" autocomplete="off">
+          <div class="sp-row" style="margin-top:8px"><button class="sp-q" data-sp="scan" style="flex:1">📷 Kassenbon lesen</button></div>
+          <div class="sp-hint" id="spBon">${bon ? "📎 Bon-Foto ist dabei – wird mitgespeichert." : "Tipp: Bon fotografieren – Betrag, Datum und Geschäft werden vorgeschlagen."}</div>
           <label class="sp-l">Datum</label>
           <input id="spDay" type="date" value="${iso(new Date())}" max="${iso(new Date())}">
           <div class="sp-err" id="spErr" hidden></div>
@@ -4898,7 +5261,7 @@ class EinkaufslisteCard extends HTMLElement {
           ${byMonth.size ? `<h3>📅 Pro Monat</h3>${[...byMonth.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([m, c]) =>
             `<div class="sp-month"><div class="sp-bt"><span>${esc(monthName(m))}</span><b>${eur(c.sum)}</b></div><small translate="no">${[...c.st.entries()].sort((a, b) => b[1] - a[1]).map(([id, v]) => `${esc(stName(id))} ${eur(v)}`).join(" · ")}</small></div>`).join("")}` : ""}
           <h3>🧾 Einkäufe</h3>
-          ${list.length ? list.map((e) => `<div class="sp-e"><div><b translate="no">${esc(this._store(e.s)?.name || e.sn)}</b><br><small>${esc(dayName(e.t))}${e.w ? ` · <span translate="no">${esc(e.w)}</span>` : ""}</small></div><span>${eur(e.a)}</span><button class="sp-x" data-sp="del" data-id="${esc(e.id)}" title="Löschen">✖</button></div>`).join("") : `<p class="sp-hint">Nichts gefunden – ändere den Filter oder trag einen Einkauf ein.</p>`}`;
+          ${list.length ? list.map((e) => `<div class="sp-e"><div><b translate="no">${esc(this._store(e.s)?.name || e.sn)}</b><br><small>${esc(dayName(e.t))}${e.w ? ` · <span translate="no">${esc(e.w)}</span>` : ""}</small></div><span>${eur(e.a)}</span><button class="sp-x" data-sp="bon" data-id="${esc(e.id)}" title="${this._hasPhoto("bon#" + e.id) ? "Bon-Foto ansehen" : "Bon-Foto dazu"}">${this._hasPhoto("bon#" + e.id) ? "📷" : "➕📷"}</button><button class="sp-x" data-sp="del" data-id="${esc(e.id)}" title="Löschen">✖</button></div>`).join("") : `<p class="sp-hint">Nichts gefunden – ändere den Filter oder trag einen Einkauf ein.</p>`}`;
       }
       ov.innerHTML = `<style>
         .sp { width:100%; max-width:560px; color:#eee; font:15px/1.5 Roboto, sans-serif; }
@@ -4919,7 +5282,7 @@ class EinkaufslisteCard extends HTMLElement {
         .sp-bt { display:flex; justify-content:space-between; gap:10px; }
         .sp-b { background:#2a2a2a; border-radius:6px; height:10px; margin:4px 0 2px; overflow:hidden; } .sp-b i { display:block; height:100%; border-radius:6px; }
         .sp-bar, .sp-month { margin:8px 0; }
-        .sp-e { display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #2a2a2a; }
+        .sp-e { display:grid; grid-template-columns:1fr auto auto auto; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #2a2a2a; }
         .sp-x { background:none; border:0; color:#888; cursor:pointer; font-size:15px; padding:6px; }
       </style>
       <div class="sp">
@@ -4940,11 +5303,32 @@ class EinkaufslisteCard extends HTMLElement {
       if (act === "close") ov.remove();
       else if (act === "tab") { cur = b.dataset.t; draw(); if (cur === "stats") load(); }
       else if (act === "quick") { f.quick = b.dataset.q; draw(); }
-      else if (act === "save") {
+      else if (act === "scan") {
+        this._ocrStart("🔎 Kassenbon wird gelesen", (text, data) => {
+          const info = elReceiptInfo(text, stores);
+          bon = this._spendBon = data;
+          const q = (id) => ov.querySelector(id);
+          if (info.amount != null && q("#spAmount")) q("#spAmount").value = info.amount.toFixed(2).replace(".", ",");
+          if (info.store && q("#spStore")) q("#spStore").value = info.store;
+          if (info.day && q("#spDay")) q("#spDay").value = info.day;
+          if (q("#spBon")) q("#spBon").textContent = info.amount == null
+            ? "📎 Bon-Foto ist dabei. Den Betrag konnte ich nicht lesen – bitte selbst eintragen."
+            : `📎 Bon-Foto ist dabei. Erkannt: ${info.amount.toFixed(2).replace(".", ",")} €${info.sure ? "" : " (unsicher)"} – bitte kurz prüfen.`;
+        });
+      } else if (act === "bon") {
+        const key = "bon#" + b.dataset.id;
+        if (this._hasPhoto(key)) this._openPhoto(key, "🧾 Kassenbon");
+        else {
+          this._photoTarget = { name: key, keepEdit: true, onDone: () => { this._toast("📸 Bon-Foto gespeichert"); setTimeout(() => draw(), 600); } };
+          this._pickFile("photoFile");
+        }
+      } else if (act === "save") {
         const store = ov.querySelector("#spStore").value, amount = ov.querySelector("#spAmount").value, day = ov.querySelector("#spDay").value;
         const err = ov.querySelector("#spErr");
         try {
-          await this._hass.callWS({ type: "einkaufsliste/purchases/add", store_id: store, amount, day });
+          const entry = await this._hass.callWS({ type: "einkaufsliste/purchases/add", store_id: store, amount, day });
+          if (bon && entry?.id) await this._ws({ type: "einkaufsliste/photo/set", name: "bon#" + entry.id, data: bon }).catch(() => {});
+          bon = this._spendBon = null;
         } catch (e) { err.textContent = e?.message || "Das hat nicht geklappt."; err.hidden = false; return; }
         this._spendLastStore = store;
         this._toast("🧾 Eingetragen");
@@ -5009,7 +5393,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Beim Tippen kommen bis zu <b>2 Vorschläge</b>. Antippen übernimmt alles vom letzten Mal (Menge, Notiz, für wen, Geschäft).</li>
         <li>Die Menge geht auch direkt: <b>3 Milch</b> oder <b>500 g Mehl</b>. Die Liste merkt sich die Einheit: <b>2 Backpulver</b> wird zu 2 Pck.</li>
         <li><b>Mehrere auf einmal:</b> <b>Milch, 6 Eier, Brot</b> → ✔ → 3 Sachen auf der Liste.</li>
-        <li>Die Knöpfe darunter: 🔢 Menge · 📝 Notiz (z. B. Sorte) · 👤 Für wen · 📷 Foto · 🧽 alles leeren.</li>
+        <li>Die Knöpfe darunter: 🔢 Menge · 📝 Notiz (z. B. Sorte) · 👤 Für wen · 📷 Foto · 📋 Liste aus Foto einlesen · 🧽 alles leeren.</li>
         <li>Darunter <b>„Welches Geschäft?“</b> – oder „Egal wo“. Meist ist es schon richtig ausgewählt (so wie zuletzt).</li>
         <li>Daneben die <b>Kategorie</b> – die sucht sich die Liste meist selbst aus. Passt sie nicht, einfach ändern.</li>
         <li>Einen <b>Namen</b> tippen (z. B. von dir) zeigt, was für diese Person auf der Liste steht.</li>
@@ -5020,6 +5404,15 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Gekauftes rutscht nach unten zu <b>„Erledigt – schon mal gekauft“</b>.</li>
         <li>Dort den Kreis antippen = <b>wieder auf der Liste</b>. So musst du nichts neu tippen.</li>
         <li>Einmal pro Woche wird automatisch aufgeräumt: Alte Sachen werden abgehakt, <b>gelöscht wird nichts</b>.</li></ul>`)}
+      ${sec("📸", "Text aus Foto & neue Helfer", `<ul>
+        <li><b>📋 unter dem Eingabefeld:</b> Einkaufszettel fotografieren, Text prüfen, übernehmen. Gedruckt klappt gut, Handschrift nur mit Glück – darum kannst du den Text vorher korrigieren.</li>
+        <li><b>Kassenbon:</b> im Einkaufs-Protokoll „📷 Kassenbon lesen“ – Betrag, Geschäft und Tag werden vorgeschlagen.</li>
+        <li><b>🧲 Zusammenführen:</b> im Produkt-Editor zwei gleiche Produkte zu einem machen.</li>
+        <li><b>🩺 Ampel &amp; 🐞 Fehler-Protokoll:</b> in den Einstellungen – zeigt, ob alles läuft.</li>
+        <li><b>🛍️ Laden-Modus automatisch:</b> schaltet sich beim Betreten eines Geschäfts ein (pro Gerät, optional).</li>
+        <li><b>Rezepte:</b> Fotos pro Schritt im Kochmodus; Rezept per „📷 Aus Foto“ einlesen.</li>
+        <li><b>Offline:</b> Fotos, die du ohne Netz machst, werden später nachgeschickt.</li>
+      </ul>`)}
       ${sec("🏪", "Geschäfte & Reiter", `<ul>
         <li>Oben die Reiter: <b>Alle</b>, Aldi, Netto … Die Zahl zeigt, wie viel dort offen ist.</li>
         <li>Die <b>rote Blase</b> heißt: Da ist was Neues dazugekommen, seit du zuletzt geschaut hast.</li>
@@ -5168,7 +5561,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>While typing you get up to <b>2 suggestions</b>. Tapping one takes over everything from last time (quantity, note, for whom, store).</li>
         <li>Quantities work directly too: <b>3 milk</b> or <b>500 g flour</b>. The list remembers the unit: <b>2 baking powder</b> becomes 2 packs.</li>
         <li><b>Several at once:</b> <b>milk, 6 eggs, bread</b> → ✔ → 3 things on the list.</li>
-        <li>The buttons below: 🔢 quantity · 📝 note (e.g. variety) · 👤 for whom · 📷 photo · 🧽 clear everything.</li>
+        <li>The buttons below: 🔢 quantity · 📝 note (e.g. variety) · 👤 for whom · 📷 photo · 📋 read a list from a photo · 🧽 clear everything.</li>
         <li>Below that <b>“Which store?”</b> – or “Anywhere”. Usually it's already picked correctly (like last time).</li>
         <li>Next to it the <b>category</b> – the list usually picks it itself. If it's wrong, just change it.</li>
         <li>Typing a <b>name</b> (e.g. yours) shows what's on the list for that person.</li>
@@ -5179,6 +5572,15 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Bought things slide down to <b>“Done – bought before”</b>.</li>
         <li>Tap the circle there = <b>back on the list</b>. No need to type anything again.</li>
         <li>Once a week the list tidies itself up: old things get checked off, <b>nothing gets deleted</b>.</li></ul>`)}
+      ${sec("📸", "Text from photo & new helpers", `<ul>
+        <li><b>📋 below the input field:</b> photograph a shopping note, check the text, add it. Printed text works well, handwriting only with luck – so you can correct the text first.</li>
+        <li><b>Receipt:</b> in the purchase log “📷 Read receipt” – amount, store and day are suggested.</li>
+        <li><b>🧲 Merge:</b> in the product editor turn two identical products into one.</li>
+        <li><b>🩺 Health light &amp; 🐞 error log:</b> in the settings – shows whether everything runs.</li>
+        <li><b>🛍️ Automatic shop mode:</b> switches on when you enter a store (per device, optional).</li>
+        <li><b>Recipes:</b> a photo per step in cooking mode; read a recipe with “📷 From photo”.</li>
+        <li><b>Offline:</b> photos taken without network are sent later.</li>
+      </ul>`)}
       ${sec("🏪", "Stores & tabs", `<ul>
         <li>At the top the tabs: <b>All</b> and your stores. The number shows how much is still open there.</li>
         <li>The <b>red bubble</b> means: something new was added since you last looked.</li>
@@ -5255,6 +5657,8 @@ class EinkaufslisteCard extends HTMLElement {
     Object.assign(pos.style, { ...wrapW, color: "#aaa", font: "600 16px Roboto,sans-serif", margin: "28px 0 10px" });
     const text = document.createElement("div");
     Object.assign(text.style, { ...wrapW, font: "500 clamp(22px, 6vw, 34px)/1.35 Roboto,sans-serif", whiteSpace: "pre-wrap", minHeight: "4.2em" });
+    const pic = document.createElement("div"); // 📷 Foto zum Schritt (falls eins da ist)
+    Object.assign(pic.style, { ...wrapW, display: "none", marginTop: "14px", textAlign: "center" });
     const nav = document.createElement("div");
     Object.assign(nav.style, { ...wrapW, display: "flex", gap: "10px", marginTop: "22px" });
     const bPrev = ovButton("‹ Zurück"), bNext = ovButton("Weiter ›", true);
@@ -5263,10 +5667,24 @@ class EinkaufslisteCard extends HTMLElement {
     const ing = document.createElement("div");
     Object.assign(ing.style, { ...wrapW, display: "none", font: "17px/1.6 Roboto,sans-serif", color: "#ddd", marginTop: "22px" });
     ing.innerHTML = r.items.map((i) => `• ${esc([i.quantity, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:6px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}`).join("<br>");
-    ov.append(head, heatBox, pos, text, nav, ing);
+    ov.append(head, heatBox, pos, text, pic, nav, ing);
     const show = () => {
       pos.textContent = `Schritt ${idx + 1} von ${steps.length}`;
       text.textContent = steps[idx];
+      pic.style.display = "none";
+      pic.innerHTML = "";
+      const skey = r.id && r.steps ? this._stepPhotoKey(r.id, idx) : "";
+      if (skey && this._hasPhoto(skey)) {
+        const at = idx;
+        this._photoData(skey, 0).then((src) => {
+          if (at !== idx) return; // inzwischen weitergeblättert
+          const img = document.createElement("img");
+          img.src = src;
+          Object.assign(img.style, { maxWidth: "100%", maxHeight: "40vh", borderRadius: "14px" });
+          pic.append(img);
+          pic.style.display = "block";
+        }).catch(() => { /* kein Foto – kein Problem */ });
+      }
       bPrev.style.visibility = idx ? "visible" : "hidden";
       bNext.textContent = idx < steps.length - 1 ? "Weiter ›" : "✔ Fertig – guten Appetit!";
     };
@@ -5731,7 +6149,9 @@ class EinkaufslisteCard extends HTMLElement {
       return;
     }
     if (h.category_id && this._cat(h.category_id)) this.$("inCat").value = h.category_id;
-    if (!this._fixedStore && this._activeTab === "all" && h.store_id && this._store(h.store_id)) this.$("inStore").value = h.store_id;
+    // 🧠 Bevorzugt dort, wo du es meist wirklich abhakst – sonst wie beim letzten Mal
+    const usual = h.usual && this._store(h.usual) ? h.usual : h.store_id && this._store(h.store_id) ? h.store_id : null;
+    if (!this._fixedStore && this._activeTab === "all" && usual) this.$("inStore").value = usual;
   }
 
   // 🏷️ Gruppe aus dem Namen vorschlagen – nur solange keine Gruppe selbst gewählt wurde
@@ -5835,7 +6255,7 @@ class EinkaufslisteCard extends HTMLElement {
       const cat = (h?.category_id && this._cat(h.category_id) ? h.category_id : null) || guessCategory(low, this._data.category_hints);
       const msg = {
         type: "einkaufsliste/item/add", name,
-        store_id: tabStore || (h?.store_id && this._store(h.store_id) ? h.store_id : null) || chosen,
+        store_id: tabStore || (h?.usual && this._store(h.usual) ? h.usual : null) || (h?.store_id && this._store(h.store_id) ? h.store_id : null) || chosen,
         category_id: cat && this._cat(cat) ? cat : null,
       };
       if (sp.qty) msg.quantity = sp.bare ? sp.num : sp.qty; // nur Zahl -> Home Assistant nimmt die gemerkte Einheit
@@ -5891,6 +6311,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "shopmode":
         this._shopMode = !this._shopMode;
+        this._shopAuto = false; // von Hand geschaltet: die Automatik lässt es in Ruhe
         try { localStorage.setItem("einkaufsliste_shopmode", this._shopMode ? "1" : "0"); } catch (_) { /* egal */ }
         this._menuId = null;
         this._toast(this._shopMode ? "🛒 Laden-Modus an – viel Spaß beim Einkaufen!" : "✍️ Laden-Modus aus");
@@ -6238,6 +6659,26 @@ class EinkaufslisteCard extends HTMLElement {
       case "gar":
         showGarTable();
         break;
+      case "ocr-list":
+        this._ocrList();
+        break;
+      case "rimport-photo":
+        this._ocrStart("🔎 Rezept wird gelesen", (text) => {
+          const parts = elOcrRecipeParts(text);
+          const nameEl = this.$("rName"), stepsEl = this.$("rSteps"), ta = this.$("rImportText");
+          if (nameEl && parts.name && !nameEl.value.trim()) { nameEl.value = parts.name; this._autoGroup?.(); }
+          if (stepsEl && parts.steps && !stepsEl.value.trim()) { stepsEl.value = parts.steps; this._renderStepPhotos?.(); }
+          if (ta) { this.$("rImport").hidden = false; ta.value = parts.ingredients; ta.focus(); }
+          this._toast("📷 Gelesen – bitte die Zutaten prüfen und auf „Übernehmen“ tippen");
+        });
+        break;
+      case "errors-copy":
+        elCopy(this._errorsText(), null).then(() => this._toast("📋 Fehler-Protokoll kopiert"));
+        break;
+      case "errors-clear":
+        if (!elConfirm("Das Fehler-Protokoll leeren?")) break;
+        this._ws({ type: "einkaufsliste/errors/clear" }).then((res) => { this._errData = res; this._loadErrors(); this._toast("🧹 Fehler-Protokoll geleert"); }).catch(() => {});
+        break;
       case "app-copy": {
         const inp = this.$("appUrl");
         const url = inp?.value || "";
@@ -6388,6 +6829,21 @@ class EinkaufslisteCard extends HTMLElement {
         this._ws(msg).then(() => { this._toast("📦 Produkt gespeichert"); this._prodEdit = null; this._loadProducts(); }).catch(() => {});
         break;
       }
+      case "prod-merge":
+        this._prodMerge = this._prodMerge === el.closest(".prodedit").dataset.key ? null : el.closest(".prodedit").dataset.key;
+        this._renderProducts();
+        break;
+      case "prod-merge-go": {
+        const from = el.closest(".prodedit").dataset.key;
+        const into = this.$("peMerge")?.value;
+        const a = (this._products || []).find((x) => x.key === from), b = (this._products || []).find((x) => x.key === into);
+        if (!a || !b) break;
+        const an = a.name + (a.note ? ` · ${a.note}` : ""), bn = b.name + (b.note ? ` · ${b.note}` : "");
+        if (!elConfirm(`„${an}“ in „${bn}“ aufgehen lassen?\n\nArtikel, Rezepte, Fotos und Barcodes ziehen um. Das lässt sich nicht rückgängig machen.`)) break;
+        this._ws({ type: "einkaufsliste/product/merge", from_key: from, into_key: into })
+          .then(() => { this._toast(`🧲 „${an}“ ist jetzt bei „${bn}“`); this._prodMerge = null; this._prodEdit = null; this._loadProducts(); }).catch(() => {});
+        break;
+      }
       case "prod-forget": {
         const key = el.closest(".prodedit").dataset.key;
         const prod = (this._products || []).find((x) => x.key === key);
@@ -6491,6 +6947,36 @@ class EinkaufslisteCard extends HTMLElement {
       }
       case "recipe-new":
         this._openRecipe(null);
+        break;
+      case "autoshop-toggle": {
+        let on = this._flag("einkaufsliste_auto_shop");
+        try { localStorage.setItem("einkaufsliste_auto_shop", on ? "0" : "1"); } catch (_) { /* egal */ }
+        on = !on;
+        this._toast(on ? "📍 Laden-Modus automatisch: an" : "Laden-Modus automatisch: aus");
+        this._renderAll();
+        break;
+      }
+      case "tip-guide":
+        this._flag("einkaufsliste_tip_guide", true);
+        this._renderTip();
+        this._showGuide();
+        break;
+      case "tip-ok":
+        this._flag("einkaufsliste_tip_guide", true);
+        this._renderTip();
+        break;
+      case "wizard-done":
+        this._flag("einkaufsliste_wizard_done", true);
+        this._flag("einkaufsliste_tip_guide", true);
+        this._renderTip();
+        break;
+      case "wizard-go":
+        if (el.dataset.to === "guide") { this._flag("einkaufsliste_tip_guide", true); this._showGuide(); }
+        else if (el.dataset.to === "add") { this.$("inName")?.focus(); this.$("inName")?.scrollIntoView({ block: "center" }); }
+        else {
+          if (this._data?.settings?.pin && !pinUnlocked()) { this._unlockSettings(); break; } // 🔒 erst die PIN
+          this._view = "settings"; this._setSec = "stores"; this._renderAll();
+        }
         break;
       case "guide":
         this._showGuide();
@@ -6668,6 +7154,19 @@ class EinkaufslisteCard extends HTMLElement {
             this._view = "list";
             this._renderAll();
           }).catch(() => {});
+        break;
+      }
+      case "sphoto-take": {
+        const dr = this._draft;
+        if (!dr?.id) break;
+        this._photoTarget = { name: this._stepPhotoKey(dr.id, el.dataset.n), keepEdit: true,
+          onDone: () => { this._toast("📸 Foto zum Schritt gespeichert"); setTimeout(() => this._renderStepPhotos(), 500); } };
+        this._pickFile("photoFile");
+        break;
+      }
+      case "sphoto-view": {
+        const dr = this._draft;
+        if (dr?.id) this._openPhoto(this._stepPhotoKey(dr.id, el.dataset.n), `${dr.name || "Rezept"} – Schritt ${Number(el.dataset.n) + 1}`, 0, () => this._renderStepPhotos());
         break;
       }
       case "rphoto-take":

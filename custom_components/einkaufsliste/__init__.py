@@ -17,6 +17,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
+from . import errors as error_log
 from . import websocket as ws
 from .const import DOMAIN
 from .frontend import async_setup_frontend
@@ -81,6 +82,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     manager.mail.start()
     manager.offers = Offers(hass, manager)  # 🏷️ Angebote aus Prospekten (inoffiziell, standardmäßig aus)
     manager.offers.start()
+    handler = error_log.attach(manager)  # 🐞 Fehler-Protokoll
+    entry.async_on_unload(lambda: error_log.detach(handler))
     entry.async_on_unload(manager.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

@@ -42,7 +42,7 @@ body { padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset
 .pill.off { background:color-mix(in srgb, var(--error-color) 18%, transparent); }
 .bar button { font:inherit; color:inherit; background:none; border:0; text-decoration:underline; cursor:pointer; }
 .foot[hidden] { display:none; }
-.foot { display:flex; justify-content:center; margin:28px 6px 8px; font-size:13px; color:var(--secondary-text-color); }
+.foot { display:flex; justify-content:center; gap:10px; margin:28px 6px 8px; font-size:13px; color:var(--secondary-text-color); }
 .foot button { font:inherit; color:inherit; background:none; text-decoration:underline; border:1px solid var(--divider-color); border-radius:10px; padding:8px 18px; cursor:pointer; }
 .login { max-width:420px; margin:16vh auto 0; text-align:center; padding:0 20px; }
 .login img { width:96px; height:96px; border-radius:22px; }
@@ -573,12 +573,13 @@ function update() {
     // 🚪 Abmelden ganz unten – damit man beim Abhaken nicht aus Versehen draufkommt
     const foot = document.createElement("div");
     foot.className = "foot";
-    foot.innerHTML = `<button id="logoutBtn">${T("Abmelden", "Log out")}</button>`;
+    foot.innerHTML = `<button id="guideBtn">${T("📖 Anleitung", "📖 Guide")}</button><button id="logoutBtn">${T("Abmelden", "Log out")}</button>`;
     wrap.append(foot);
     // 🚪 Abmelden nur unten in der Einkaufsliste und auf der ersten Seite der Einstellungen
     const showFoot = () => { foot.hidden = !(card._view === "list" || (card._view === "settings" && !card._setSec)); };
     window.addEventListener("einkaufsliste-nav", () => setTimeout(showFoot, 0));
     showFoot();
+    document.getElementById("guideBtn").addEventListener("click", () => card._showGuide?.());
     document.getElementById("logoutBtn").addEventListener("click", () => {
       if (confirm(T("Abmelden? Noch nicht gesendete Änderungen gehen verloren.", "Log out? Changes not sent yet will be lost."))) logout(false);
     });

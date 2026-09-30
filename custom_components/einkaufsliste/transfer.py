@@ -301,9 +301,59 @@ def import_recipe_file(manager: EinkaufslisteManager, text: str, filename: str |
 _DONE = re.compile(r"^\s*(?:[☑✅✔✓]|\[x\]|- \[x\])", re.IGNORECASE)
 _BULLET = re.compile(r"^\s*(?:- \[ \]|\[ \]|[-–•*·▪►☐□]+|\d+[.)](?=\s))\s*")
 
+_NAME_COLS = ("name", "artikel", "item", "produkt", "product", "titel", "title", "zutat", "bezeichnung")
+_QTY_COLS = ("menge", "quantity", "amount", "anzahl", "qty", "specification", "spezifikation", "detail", "details")
+_NOTE_COLS = ("notiz", "note", "notes", "notizen", "hinweis", "beschreibung", "description")
+_DONE_COLS = ("erledigt", "checked", "completed", "done", "status", "abgehakt")
+_DONE_VALUES = {"1", "true", "yes", "ja", "x", "✓", "✔", "checked", "completed", "done", "erledigt"}
+
+
+def _table_rows(text: str) -> list[dict[str, str]] | None:
+    """Erkennt CSV/TSV-Exporte (z. B. Bring!, AnyList) an der Kopfzeile. Sonst None = normaler Text."""
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if len(lines) < 2:
+        return None
+    head = lines[0]
+    delim = next((d for d in ("\t", ";", ",") if d in head), None)
+    if not delim:
+        return None
+    cols = [c.strip().strip('"').lower() for c in head.split(delim)]
+    if not any(c in _NAME_COLS for c in cols):
+        return None
+    reader = csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delim)
+    rows = []
+    for row in reader:
+        rows.append({(k or "").strip().lower(): (v or "").strip() for k, v in row.items() if isinstance(v, (str, type(None)))})
+    return rows
+
+
+def _import_table(manager: EinkaufslisteManager, rows: list[dict[str, str]], store_id: str | None) -> dict[str, Any]:
+    def pick(row: dict[str, str], names: tuple[str, ...]) -> str:
+        return next((row[n] for n in names if row.get(n)), "")
+
+    added = skipped = 0
+    for row in rows:
+        name = pick(row, _NAME_COLS)
+        if not name or len(name) > 80:
+            continue
+        if pick(row, _DONE_COLS).lower() in _DONE_VALUES:
+            skipped += 1
+            continue
+        manager.add_item(name, store_id=store_id, quantity=pick(row, _QTY_COLS)[:30] or None,
+                         note=pick(row, _NOTE_COLS)[:120] or None,
+                         added_by=manager._actor.get("who"), added_by_id=manager._actor.get("who_id"), notify=False)
+        added += 1
+    if added:
+        manager._changed()
+    return {"added": added, "skipped": skipped}
+
 
 def import_text(manager: EinkaufslisteManager, text: str, store_id: str | None = None) -> dict[str, Any]:
     """Liste als Text (z. B. „Teilen“ aus Bring! oder Google Keep): eine Zeile = ein Artikel. Erledigtes (☑) wird übersprungen."""
+    text = (text or "").lstrip("\ufeff")
+    table = _table_rows(text)
+    if table is not None:
+        return _import_table(manager, table, store_id)
     added = skipped = 0
     for raw in re.split(r"[\r\n]+", text or ""):
         line = raw.strip()

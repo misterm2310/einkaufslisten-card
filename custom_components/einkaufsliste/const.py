@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.39.1"
+VERSION = "2.40.0"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
@@ -88,6 +88,8 @@ CATEGORY_COLORS = [
 ]
 
 HISTORY_LIMIT = 400
+ERROR_LIMIT = 60  # 🐞 so viele Fehlermeldungen merkt sich das Fehler-Protokoll höchstens
+OFFER_OPEN_DAYS = 14  # 🏷️ Angebote ohne Enddatum gelten nach so vielen Tagen (ab Übernahme) als abgelaufen
 PURCHASE_LIMIT = 20000  # 🧾 so viele Einkäufe merkt sich das Protokoll höchstens
 
 # 📋 Verlauf: wie lange er aufgehoben wird (Tage) und wie viele Einträge höchstens

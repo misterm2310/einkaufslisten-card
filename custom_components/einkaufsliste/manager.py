@@ -37,6 +37,8 @@ from .const import (
     EVENT_CLEANUP,
     EVENT_ITEM_ADDED,
     HISTORY_LIMIT,
+    ERROR_LIMIT,
+    OFFER_OPEN_DAYS,
     PURCHASE_LIMIT,
     MAX_PHOTOS,
     RECIPE_GROUPS,
@@ -192,6 +194,20 @@ def _clean_heat(rows: Any) -> list[dict[str, Any]]:
     return out[:6]
 
 
+def purchase_photo_key(purchase_id: str) -> str:
+    """🧾📷 Bon-Foto zu einem Protokoll-Eintrag: Schlüssel „bon#<id>“ bei den Produkt-Fotos."""
+    return f"bon#{purchase_id}".lower()
+
+
+def recipe_step_photo_key(recipe_id: str, step: int) -> str:
+    """📷 Foto zu einem Kochschritt (0 = erster Schritt): liegt bei den Produkt-Fotos, Schlüssel „rezept#<id>#s<n>“."""
+    return f"rezept#{recipe_id}#s{int(step)}".lower()
+
+
+def recipe_step_count(recipe: dict[str, Any]) -> int:
+    return len([ln for ln in re.split(r"\n+", str(recipe.get("steps") or "")) if ln.strip()])
+
+
 def recipe_photo_key(recipe_id: str) -> str:
     """Rezept-Fotos liegen bei den Produkt-Fotos, aber mit eigenem Schlüssel."""
     return f"rezept#{recipe_id}".lower()
@@ -267,6 +283,7 @@ class EinkaufslisteManager:
         self.last_cleanup: str | None = None
         self.log: list[dict[str, Any]] = []  # 📋 Verlauf, das Neueste hinten
         self.log_days: int = LOG_DEFAULT_DAYS
+        self.errors: list[dict[str, Any]] = []  # 🐞 Fehler-Protokoll: {"t","w","m","n"} – das Neueste hinten
         self.missed_hidden: dict[str, str] = {}  # 📈 „Oft nicht bekommen“ weggeklickt: "name|geschäft" -> seit wann
         self._actor = {}
         self._unsub_time: Callable[[], None] | None = None
@@ -362,6 +379,7 @@ class EinkaufslisteManager:
         self.log = data.get("log", [])
         self.log_days = int(data.get("log_days", LOG_DEFAULT_DAYS))
         self.missed_hidden = dict(data.get("missed_hidden") or {})
+        self.errors = [e for e in (data.get("errors") or []) if isinstance(e, dict)][-ERROR_LIMIT:]
         if "persons" in data:
             self.persons = data["persons"]
         else:
@@ -412,6 +430,7 @@ class EinkaufslisteManager:
             "log": self.log,
             "log_days": self.log_days,
             "missed_hidden": self.missed_hidden,
+            "errors": self.errors,
         }
 
     def _schedule_save(self) -> None:
@@ -478,6 +497,8 @@ class EinkaufslisteManager:
                 "todo_sync": self._todo_sync_info(),
                 "mail_import": self._mail_import_info(),
                 "offers": self._offers_info(),
+                "errors": len(self.errors),
+                "errors_24h": self._errors_since(timedelta(hours=24)),
             },
             "missed": self.missed_counts(),
             "offers": self.offers_data if (self.offers_cfg or {}).get("enabled") else {},
@@ -541,9 +562,10 @@ class EinkaufslisteManager:
         if created:
             item["from_offer"] = True  # erst durch das Angebot entstanden: verschwindet mit dem Angebot
             if original is not None:  # dein ursprüngliches Produkt merken, damit es danach zurückkommt
-                item["orig"] = {"id": original["id"], "added_at": original.get("added_at"),
+                item["orig"] = {"id": original["id"], "name": original["name"], "added_at": original.get("added_at"),
                                 "added_by": original.get("added_by"), "added_by_id": original.get("added_by_id")}
-        item["offer"] = {"to": offer.get("to"), "from": offer.get("from"), "r": offer.get("r"), "p": offer.get("p")}
+        item["offer"] = {"to": offer.get("to"), "from": offer.get("from"), "r": offer.get("r"), "p": offer.get("p"),
+                         "taken": _now_iso()}  # „taken“: ohne Enddatum zählen die 14 Tage ab hier
         self._log("update", item, f"Angebot {offer.get('r') or ''} {self.offer_note(offer)}".strip(), who=by)
         if original is not None and not original["checked"]:
             self.set_checked(original["id"], True, by, by_id)  # das eigentliche Produkt ist „erledigt“
@@ -571,9 +593,14 @@ class EinkaufslisteManager:
                         item.pop("offer", None)
                     n += 1
                 continue
-            if not off.get("to"):
-                continue
-            to = dt_util.parse_datetime(str(off["to"]))
+            if off.get("to"):
+                to = dt_util.parse_datetime(str(off["to"]))
+            else:  # 📅 ohne Enddatum: nach 14 Tagen (ab Übernahme) wie abgelaufen
+                taken = dt_util.parse_datetime(str(off.get("taken") or ""))
+                if taken is None:
+                    off["taken"] = now.isoformat()  # alte Angebote ohne Datum: ab jetzt zählen
+                    continue
+                to = taken + timedelta(days=OFFER_OPEN_DAYS)
             if to is None or to > now:
                 continue
             part = off.get("part") or ""
@@ -726,6 +753,9 @@ class EinkaufslisteManager:
         self.purchases = [e for e in self.purchases if e["id"] != purchase_id]
         if len(self.purchases) == before:
             raise ValueError("Diesen Eintrag gibt es nicht (mehr).")
+        bon = purchase_photo_key(purchase_id)  # 🧾📷 Bon-Foto geht mit dem Eintrag
+        if bon in self.photos:
+            self.hass.async_create_task(self.async_remove_photo(bon))
         self._changed()
 
     def set_todo_sync(self, entity_id: str | None, store_id: str | None = None, mode: str | None = None) -> None:
@@ -871,7 +901,7 @@ class EinkaufslisteManager:
                     e["scanned"] = True
                     e["scanned_at"] = max(e.get("scanned_at") or "", bc.get("updated") or "")
         for key, ph in self.photos.items():
-            if key.startswith("rezept#"):
+            if key.startswith(("rezept#", "bon#")):
                 continue
             name, _, note = (ph.get("name") or key).partition("|")
             e = out.get(key) or entry(name, note or None)
@@ -994,6 +1024,14 @@ class EinkaufslisteManager:
         stores = hist.setdefault("stores", [])
         if store_id not in stores:
             stores.append(store_id)
+        # 🧠 Wo wird es wirklich gekauft? Jedes Abhaken zählt – das Geschäft mit den meisten Haken (ab 2×) ist „meist dort“
+        bought = hist.setdefault("bought", {})
+        bought[store_id] = int(bought.get(store_id, 0)) + 1
+        best = max(bought.items(), key=lambda kv: kv[1])
+        if best[1] >= 2 and sum(1 for v in bought.values() if v == best[1]) == 1 and self.store_by_id(best[0]):
+            hist["usual"] = best[0]
+        else:
+            hist.pop("usual", None)
 
     def confirm_scanned(self, key: str) -> None:
         """📷 „Passt so“: neu gescanntes Produkt ist geprüft."""
@@ -1099,6 +1137,79 @@ class EinkaufslisteManager:
         self._changed()
         return {"removed": len(gone), "recipes": in_recipes}
 
+    async def async_merge_products(self, from_key: str, into_key: str) -> dict[str, Any]:
+        """🧲 Zwei Produkte zu einem machen („Tomaten“ -> „Tomate“): Artikel, Rezept-Zutaten, Barcodes, Fotos,
+        Spitznamen und Gedächtnis ziehen um. Der alte Name wird ein Spitzname, damit er künftig beim richtigen landet."""
+        from_key, into_key = (from_key or "").lower(), (into_key or "").lower()
+        if from_key == into_key:
+            raise ValueError("Das ist dasselbe Produkt – zum Zusammenführen brauche ich zwei verschiedene.")
+        prods = {p["key"]: p for p in self.products()}
+        src, dst = prods.get(from_key), prods.get(into_key)
+        if src is None or dst is None:
+            raise ValueError("Eines der beiden Produkte gibt es nicht (mehr).")
+        name, note = dst["name"], dst["note"]
+        moved = merged = 0
+        for item in list(self.items):
+            if item.get("recipe_id") or product_key(item["name"], item.get("note")) != from_key:
+                continue
+            same = self._find_same(name, note, item.get("for_whom"), item.get("store_id"), None, skip_id=item["id"])
+            if same is not None:  # gibt es dort schon: nicht doppelt – ein offener Eintrag holt den erledigten zurück
+                if not item["checked"] and same["checked"]:
+                    self.set_checked(same["id"], False, None, None)
+                self.items.remove(item)
+                merged += 1
+                continue
+            before = dict(item)
+            item["name"], item["note"] = name, note
+            self._log_changes(before, item)
+            moved += 1
+        for recipe in self.recipes:
+            for ri in recipe["items"]:
+                if product_key(ri["name"], ri.get("note")) == from_key:
+                    ri["name"], ri["note"] = name, note
+                    moved += 1
+            recipe["items"] = sorted(recipe["items"], key=_abc)
+        for bc in self.barcodes.values():
+            if bc.get("name") and product_key(bc["name"], bc.get("note")) == from_key:
+                bc["name"], bc["note"] = name, note
+        for a, t in self.aliases.items():
+            if product_key(t["name"], t.get("note")) == from_key:
+                self.aliases[a] = {"name": name, "note": note}
+        if not src["note"] and src["name"].lower() != name.lower() and src["name"].lower() not in self.aliases:
+            self.aliases[src["name"].lower()] = {"name": name, "note": note}  # 🏷️ „Tomaten“ landet künftig bei „Tomate“
+        # 📷 Fotos: zum Ziel dazu (höchstens MAX_PHOTOS), der Rest wird gelöscht
+        photo = self.photos.pop(from_key, None)
+        if photo is not None:
+            ids = self._photo_ids(photo)
+            target = self.photos.get(into_key)
+            if target is None:
+                self.photos[into_key] = {"id": ids[0], "updated": _now_iso(), "name": dst["name"] + (f"|{note}" if note else ""),
+                                         "more": ids[1:MAX_PHOTOS]}
+                ids = ids[MAX_PHOTOS:]
+            else:
+                room = MAX_PHOTOS - len(self._photo_ids(target))
+                target.setdefault("more", []).extend(ids[:max(room, 0)])
+                target["updated"] = _now_iso()
+                ids = ids[max(room, 0):]
+            for photo_id in ids:
+                await self._async_delete_file(photo_id)
+        # 🧠 Gedächtnis: Zählung, Geschäfte und „meist dort“ zusammenlegen
+        old_hist = self.history.get(src["name"].lower())
+        new_hist = self.history.get(name.lower())
+        others = [p for p in self.products() if p["name"].lower() == src["name"].lower() and p["key"] != from_key]
+        if old_hist and new_hist is not None and old_hist is not new_hist:
+            new_hist["count"] = new_hist.get("count", 0) + old_hist.get("count", 0)
+            for sid in old_hist.get("stores", []):
+                if sid not in new_hist.setdefault("stores", []):
+                    new_hist["stores"].append(sid)
+            for sid, n in (old_hist.get("bought") or {}).items():
+                bought = new_hist.setdefault("bought", {})
+                bought[sid] = int(bought.get(sid, 0)) + int(n)
+            if not others:
+                self.history.pop(src["name"].lower(), None)
+        self._changed()
+        return {"moved": moved, "merged": merged, "into": name}
+
     @callback
     def mark_out(self, item_id: str) -> dict[str, Any]:
         """⇄ „Nächstes Mal wieder hier“: Artikel bleibt offen, bekommt „war aus (Tag)“,
@@ -1131,6 +1242,32 @@ class EinkaufslisteManager:
             self.history.pop(prod["name"].lower(), None)
         await self.async_remove_photo(key)
         self._changed()
+
+    # ------------------------------------------------------------------ Fehler-Protokoll
+    def log_error(self, where: str, text: str) -> None:
+        """🐞 Merkt sich einen technischen Fehler (für ⚙️ → Fehler-Protokoll). Gleiche Meldung nacheinander zählt hoch."""
+        where = str(where or "?")[:60]
+        text = str(text or "?").strip()[:400]
+        now = _now_iso()
+        if self.errors and self.errors[-1].get("w") == where and self.errors[-1].get("m") == text:
+            self.errors[-1]["n"] = int(self.errors[-1].get("n", 1)) + 1
+            self.errors[-1]["t"] = now
+        else:
+            self.errors.append({"t": now, "w": where, "m": text, "n": 1})
+            del self.errors[:-ERROR_LIMIT]
+        self._schedule_save()
+
+    def _errors_since(self, span: timedelta) -> int:
+        limit = dt_util.utcnow() - span
+        return sum(1 for e in self.errors if (dt_util.parse_datetime(str(e.get("t") or "")) or limit) > limit)
+
+    def get_errors(self) -> dict[str, Any]:
+        return {"errors": list(reversed(self.errors)), "version": VERSION}
+
+    def clear_errors(self) -> dict[str, Any]:
+        self.errors = []
+        self._schedule_save()
+        return self.get_errors()
 
     # ------------------------------------------------------------------ Verlauf
     # 👤 Wer gerade etwas tut – pro Befehl getrennt (ContextVar), damit sich gleichzeitige Befehle nicht vermischen
@@ -1855,11 +1992,25 @@ class EinkaufslisteManager:
         for key, entry in list(self.photos.items()):
             ids = self._photo_ids(entry)
             used |= set(ids)
-            label = recipe_keys.get(key) or (entry.get("name") or key).replace("|", " · ")
-            if key.startswith("rezept#") and key not in recipe_keys:
+            if key.startswith("bon#"):  # 🧾📷 Bon-Foto: gehört zu einem Eintrag im Einkaufs-Protokoll
+                if key[4:] not in {str(e["id"]).lower() for e in self.purchases}:
+                    add(f"photo_bon:{key}", f"📷 {len(ids)} Bon-Foto(s) gehören zu einem Einkauf, den es nicht mehr gibt",
+                        "Fotos löschen", lambda _v, key=key: self.async_remove_photo(key))
+                continue
+            base, _sep, step_part = key.partition("#s") if key.startswith("rezept#") and "#s" in key else (key, "", "")
+            label = recipe_keys.get(base) or (entry.get("name") or key).replace("|", " · ")
+            if step_part.isdigit() and base in recipe_keys:
+                label = f"{label} – Schritt {int(step_part) + 1}"
+            if key.startswith("rezept#") and base not in recipe_keys:
                 add(f"photo_recipe:{key}", f"📷 {len(ids)} Foto(s) gehören zu einem Rezept, das es nicht mehr gibt",
                     "Fotos löschen", lambda _v, key=key: self.async_remove_photo(key))
                 continue
+            if step_part.isdigit():
+                recipe = recipes.get(base.split("#", 1)[1])
+                if recipe is not None and int(step_part) >= recipe_step_count(recipe):
+                    add(f"photo_step:{key}", f"📷 {label}: den Schritt gibt es nicht mehr (Zubereitung wurde kürzer)",
+                        "Foto löschen", lambda _v, key=key: self.async_remove_photo(key))
+                    continue
             missing = [pid for pid in ids if pid not in files]
             if missing:
                 def drop(_v, key=key, entry=entry, ids=ids):
@@ -2226,8 +2377,9 @@ class EinkaufslisteManager:
             if not item["checked"] and twin is None:
                 keep.append(item)
         self.items = keep
-        if recipe_photo_key(recipe_id) in self.photos:
-            self.hass.async_create_task(self.async_remove_photo(recipe_photo_key(recipe_id)))
+        base = recipe_photo_key(recipe_id)
+        for pkey in [k for k in self.photos if k == base or k.startswith(base + "#")]:  # Rezept-Fotos und Schritt-Fotos
+            self.hass.async_create_task(self.async_remove_photo(pkey))
         self._changed()
 
     @callback

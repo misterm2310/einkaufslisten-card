@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -19,6 +20,7 @@ from .transfer import async_todo_text, import_recipe_file, import_text, todo_lis
 from .manager import AUTO_CATEGORY, EinkaufslisteManager, person_name_for_user, product_key
 
 OPT_STR = vol.Any(None, str)
+_LOGGER = logging.getLogger(__name__)
 
 
 @callback
@@ -83,6 +85,10 @@ def async_register(hass: HomeAssistant) -> None:
         ws_offers_take,
         ws_product_add,
         ws_stats,
+        ws_errors_get,
+        ws_errors_clear,
+        ws_errors_report,
+        ws_product_merge,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -119,6 +125,10 @@ def _run(
             result = func(manager)
     except ValueError as err:
         connection.send_error(msg["id"], "invalid", str(err))
+        return
+    except Exception as err:  # noqa: BLE001 – etwas ging technisch schief: ins Fehler-Protokoll, die Karte bekommt eine Meldung
+        _LOGGER.error("Befehl %s ging schief", msg.get("type"), exc_info=True)
+        connection.send_error(msg["id"], "error", f"Das ging schief ({type(err).__name__}) – Details stehen im Fehler-Protokoll.")
         return
     connection.send_result(msg["id"], result)
 
@@ -696,6 +706,10 @@ async def _run_async(hass, connection, msg, coro_factory) -> None:
     except ValueError as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.error("Befehl %s ging schief", msg.get("type"), exc_info=True)
+        connection.send_error(msg["id"], "error", f"Das ging schief ({type(err).__name__}) – Details stehen im Fehler-Protokoll.")
+        return
     connection.send_result(msg["id"], result)
 
 
@@ -892,3 +906,42 @@ def ws_missed_hide(hass, connection, msg):
 @callback
 def ws_log_clear(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.clear_log())
+
+
+# ------------------------------------------------------------------ 🐞 Fehler-Protokoll
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/errors/get"})
+@callback
+def ws_errors_get(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.get_errors())
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/errors/clear"})
+@callback
+def ws_errors_clear(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.clear_errors())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/errors/report",
+        vol.Required("where"): vol.All(str, vol.Length(max=60)),
+        vol.Required("message"): vol.All(str, vol.Length(max=400)),
+    }
+)
+@callback
+def ws_errors_report(hass, connection, msg):
+    """Die Karte oder die Offline-App meldet einen Fehler, den nur sie sieht (z. B. Foto-Upload)."""
+    _run(hass, connection, msg, lambda m: m.log_error(msg["where"], msg["message"]))
+
+
+# ------------------------------------------------------------------ 🧲 Produkte zusammenführen
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/product/merge",
+        vol.Required("from_key"): str,
+        vol.Required("into_key"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_product_merge(hass, connection, msg):
+    await _run_async(hass, connection, msg, lambda m: m.async_merge_products(msg["from_key"], msg["into_key"]))
