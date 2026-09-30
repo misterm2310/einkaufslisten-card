@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.40.0";
+const EL_VERSION = "2.40.1";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
   ["📸 <b>Text aus Foto (Neu in 2.40.0):</b> Mit dem <b>📋-Symbol unter dem Eingabefeld</b> Einkaufszettel einlesen, dazu Rezept oder <b>Kassenbon</b> fotografieren – die Karte liest den Text direkt auf deinem Gerät (nichts wird hochgeladen). Gedruckter Text klappt gut, <b>Handschrift nur mit Glück</b> – darum kannst du alles vor dem Übernehmen korrigieren. Beim Einkaufs-Protokoll füllt „📷 Kassenbon lesen“ Betrag, Geschäft und Tag aus, das Bon-Foto hängt am Eintrag.",
@@ -586,12 +586,12 @@ const elInHaApp = (hass) => !!(
 const elIsPc = () => !!window.matchMedia?.("(hover: hover) and (pointer: fine)").matches && !(navigator.maxTouchPoints > 0);
 
 // 🖥️ Am PC: Fenster mit großer Fläche – Bild reinziehen, Strg + V oder klicken. Gibt eine Datei, "browse" oder null
-function askPhotoDrop() {
+function askPhotoDrop(title = "🖼️ Foto hinzufügen") {
   return new Promise((resolve) => {
     const ov = makeOverlay();
     ov.style.background = "rgba(0,0,0,.7)";
     ov.innerHTML = `<div style="width:100%;max-width:460px;background:#222;border-radius:18px;padding:18px;box-shadow:0 4px 24px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:12px">
-      <div style="font:600 17px Roboto,sans-serif;text-align:center">🖼️ Foto hinzufügen</div>
+      <div style="font:600 17px Roboto,sans-serif;text-align:center">${esc(elT(title))}</div>
       <div data-zone style="border:2px dashed rgba(255,255,255,.45);border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;line-height:1.5;transition:background .15s">
         <div style="font-size:34px">📥</div>
         <div><b>Bild hier reinziehen</b></div>
@@ -641,7 +641,7 @@ function askPhotoDrop() {
   });
 }
 
-function askPhotoSource(camera = true) {
+function askPhotoSource(camera = true, heading = "Foto – woher?") {
   return new Promise((resolve) => {
     const ov = makeOverlay();
     ov.style.justifyContent = "flex-end";
@@ -649,7 +649,7 @@ function askPhotoSource(camera = true) {
     const box = document.createElement("div");
     box.style.cssText = "width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;padding:16px;margin-bottom:10px;background:#222;border-radius:18px;box-shadow:0 4px 24px rgba(0,0,0,.5)";
     const title = document.createElement("div");
-    title.textContent = "Foto – woher?";
+    title.textContent = elT(heading);
     title.style.cssText = "font:600 16px Roboto,sans-serif;text-align:center;opacity:.85";
     box.appendChild(title);
     const done = (v) => { ov.remove(); resolve(v); };
@@ -1020,7 +1020,8 @@ form.add .extras { grid-column: 1 / -1; display:flex; flex-direction:column; gap
 form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .tool.busy ha-icon { animation: pulse 1s infinite; }
 .tool.hasval { color:var(--primary-color,#03a9f4); }
-.tool.tclear { margin-left:auto; color:var(--error-color,#db4437); }
+#btnOcrList { margin-left:auto; } /* 📋 ganz rechts; kommt das Radiergummi, rutscht es einen nach links */
+.tool.tclear { color:var(--error-color,#db4437); }
 #btnScan { position:relative; }
 /* 📝 Notiz am Artikel: dezent hervorgehoben – etwas kräftiger, zarter Farbhauch */
 .item .meta .inote, .pickrow .inote { color:var(--primary-text-color); font-weight:500; background:color-mix(in srgb, #f9a825 16%, transparent); border-radius:6px; padding:0 6px; }
@@ -4694,11 +4695,11 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 📷 Foto holen: erst fragen woher (Kamera, Galerie, Einfügen), dann wie gewohnt weiter
-  async _pickFile(id) {
+  async _pickFile(id, heading) {
     const input = this.$(id);
     const browse = () => { input.removeAttribute("capture"); input.value = ""; input.click(); };
     if (elIsPc()) { // 🖥️ PC: Fenster zum Reinziehen / Strg + V / Auswählen
-      const r = await askPhotoDrop();
+      const r = await askPhotoDrop(heading || undefined);
       if (r === "browse") browse();
       else if (r) this._photoFromFile(id, r);
       return;
@@ -4706,7 +4707,7 @@ class EinkaufslisteCard extends HTMLElement {
     // 📱 HA-App über http (zu Hause im WLAN): Kamera geht da nicht – also gleich die Galerie, ohne Menü
     const camera = window.isSecureContext || !elInHaApp(this._hass);
     if (!camera && !elCanPaste()) { browse(); return; }
-    const how = await askPhotoSource(camera);
+    const how = await askPhotoSource(camera, heading || undefined);
     if (!how) return;
     if (how === "paste") {
       let file = null;
@@ -4748,12 +4749,12 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 🔎 „Text aus Foto“: Foto machen/wählen (mit Drehen & Zuschneiden) → Text lesen → weiter mit onText(text, foto)
-  _ocrStart(title, onText) {
+  _ocrStart(title, onText, heading) {
     this._photoTarget = { ocr: async (data) => {
       const text = await this._ocrText(data, title);
       if (text != null) onText(text, data);
     } };
-    this._pickFile("photoFile");
+    this._pickFile("photoFile", heading);
   }
 
   async _ocrText(data, title) {
@@ -4807,7 +4808,7 @@ class EinkaufslisteCard extends HTMLElement {
         } catch (_) { /* Meldung kam schon */ }
       };
       ov.querySelector(".abtn").append(cancel, ok);
-    });
+    }, "📋 Einkaufsliste abfotografieren");
   }
 
   _takePhoto(name, button) {
@@ -5314,7 +5315,7 @@ class EinkaufslisteCard extends HTMLElement {
           if (q("#spBon")) q("#spBon").textContent = info.amount == null
             ? "📎 Bon-Foto ist dabei. Den Betrag konnte ich nicht lesen – bitte selbst eintragen."
             : `📎 Bon-Foto ist dabei. Erkannt: ${info.amount.toFixed(2).replace(".", ",")} €${info.sure ? "" : " (unsicher)"} – bitte kurz prüfen.`;
-        });
+        }, "🧾 Kassenbon abfotografieren");
       } else if (act === "bon") {
         const key = "bon#" + b.dataset.id;
         if (this._hasPhoto(key)) this._openPhoto(key, "🧾 Kassenbon");
@@ -6670,7 +6671,7 @@ class EinkaufslisteCard extends HTMLElement {
           if (stepsEl && parts.steps && !stepsEl.value.trim()) { stepsEl.value = parts.steps; this._renderStepPhotos?.(); }
           if (ta) { this.$("rImport").hidden = false; ta.value = parts.ingredients; ta.focus(); }
           this._toast("📷 Gelesen – bitte die Zutaten prüfen und auf „Übernehmen“ tippen");
-        });
+        }, "🍳 Rezept abfotografieren");
         break;
       case "errors-copy":
         elCopy(this._errorsText(), null).then(() => this._toast("📋 Fehler-Protokoll kopiert"));
