@@ -1365,5 +1365,9 @@
 "Packung scannen, dann den Namen bestätigen.": "Scan the package, then confirm the name.",
 "📦▥ „{}“ ist im Katalog – mit Barcode": "📦▥ “{0}” is in the catalog – with barcode",
 "{} Produkte ganz löschen? Weg sind dann: Fotos, Barcodes und Vorschläge dieser Produkte. Sie stehen weder auf der Einkaufsliste noch in einem Rezept.": "Delete {0} products completely? Gone then: photos, barcodes and suggestions of these products. They are neither on the shopping list nor in a recipe.",
-"🗑️ {} Produkte gelöscht": "🗑️ {0} products deleted"
+"🗑️ {} Produkte gelöscht": "🗑️ {0} products deleted",
+"Geräte. Der Standort bleibt dabei bei jedem selbst: Der Laden-Modus geht nur an, wenn": "devices. Location stays personal: shop mode only turns on when",
+"Handy in die Zone kommt.": "phone enters the zone.",
+"Es braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant.": "It needs a 📍 zone at the store (Stores → Location) and your phone as a person in Home Assistant.",
+"📍 Laden-Modus automatisch: an – für alle": "📍 Shop mode automatic: on – for everyone"
 }

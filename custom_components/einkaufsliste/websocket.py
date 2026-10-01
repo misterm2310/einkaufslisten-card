@@ -67,6 +67,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_mail_import,
         ws_mascot,
         ws_spend_set,
+        ws_auto_shop_set,
         ws_spend_auto_set,
         ws_purchases_get,
         ws_purchases_add,
@@ -604,6 +605,13 @@ def ws_mail_import(hass, connection, msg):
     """📧 „Per E-Mail auf die Liste“ einstellen (ohne entry_id = aus)."""
     _run(hass, connection, msg, lambda m: m.set_mail_import(msg.get("entry_id") or None, msg.get("store_id") or None,
                                                          msg.get("senders"), msg.get("after")))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/autoshop/set", vol.Required("on"): bool})
+@callback
+def ws_auto_shop_set(hass, connection, msg):
+    """📍 Laden-Modus automatisch für alle an/aus."""
+    _run(hass, connection, msg, lambda m: m.set_auto_shop(msg["on"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/mascot/set", vol.Required("on"): bool})

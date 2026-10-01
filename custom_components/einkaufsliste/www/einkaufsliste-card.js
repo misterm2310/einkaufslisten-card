@@ -2,17 +2,13 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.42.0";
+const EL_VERSION = "2.43.0";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["⚙️ <b>Einstellungen neu sortiert:</b> Eine <b>Liste mit Überschriften</b> (Meine Liste · Extras · Daten · Gesundheit · App &amp; Info), nur eine Ebene tief – dazu ein <b>Suchfeld</b> ganz oben. Alle Ein/Aus-Schalter (Protokoll, Maskottchen, Laden-Modus automatisch …) stehen auf der Seite <b>Extras</b>.",
-   "⚙️ <b>Settings re-sorted:</b> a <b>list with headings</b> (My list · Extras · Data · Health · App &amp; info), only one level deep – plus a <b>search field</b> at the top. All on/off switches (log, mascot, shop mode automatic …) are on the <b>Extras</b> page."],
-  ["📖 <b>Zwei Anleitungen:</b> Vorne (Einkaufswagen oder Knopf „Anleitung“) steht die Anleitung für <b>Einkaufen und Rezepte</b>. Die Anleitung für die <b>Einstellungen</b> gibt es nur in den Einstellungen (Knopf „Anleitung Einstellungen“ unten).",
-   "📖 <b>Two guides:</b> up front (shopping cart or the “Guide” button) is the guide for <b>shopping and recipes</b>. The guide for the <b>settings</b> is only inside the settings (button “Settings guide” at the bottom)."],
-  ["📦 <b>Katalog:</b> Neuer Filter „🗓️ Seit 3 Monaten nicht gekauft“ – zum Ansehen und Aufräumen (auch alle auf einmal löschen). Und „▥ Per Barcode“: neues Produkt scannen, Namen bestätigen, fertig.",
-   "📦 <b>Catalog:</b> new filter “🗓️ Not bought for 3 months” – to look through and tidy up (delete all at once too). And “▥ By barcode”: scan a new product, confirm the name, done."],
-  ["🎉 <b>Protokoll fragt von selbst (Option), ✨ auf allen Geräten, Gesundheits-Sensor:</b> Ist alles abgehakt, geht „Einkauf eintragen“ von selbst auf (Schalter unter Extras). Tippst du auf ✨, ist es bei allen weg. <code>sensor.einkaufsliste_gesundheit</code> zeigt die Ampel in Home Assistant.",
-   "🎉 <b>Log asks by itself (option), ✨ on all devices, health sensor:</b> once everything is checked off, “log purchase” opens by itself (switch under Extras). Tap ✨ and it is gone for everyone. <code>sensor.einkaufsliste_gesundheit</code> shows the health light in Home Assistant."],
+  ["🗂️ <b>Einstellungen zugeklappt:</b> Die Überschriften (Meine Liste · Extras · Daten · Gesundheit · App &amp; Info) sind erst zu. Antippen öffnet sie – wird eine zweite geöffnet, geht die vorherige zu. Die Suche klappt passende Überschriften von selbst auf. Die Seite „Extras (Schalter)“ ist wieder weg: Angebote, Protokoll, Laden-Modus und Maskottchen haben jeweils ihre eigene Seite.",
+   "🗂️ <b>Settings collapsed:</b> the headings (My list · Extras · Data · Health · App &amp; info) start closed. Tap one to open it – opening another closes the previous one. The search opens matching headings by itself. The “Extras (switches)” page is gone again: offers, log, shop mode and mascot each have their own page."],
+  ["📍 <b>Laden-Modus automatisch gilt jetzt für alle</b> (wie das Maskottchen) und ist auch in der Offline-App da. Der Standort bleibt bei jedem selbst: Er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.",
+   "📍 <b>Shop mode automatic now applies to everyone</b> (like the mascot) and is in the offline app too. Location stays personal: it only turns on when <b>your</b> phone enters the zone."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -1155,7 +1151,8 @@ ha-card.compact .group { margin-top:4px; }
 .error { background: color-mix(in srgb, var(--error-color,#db4437) 15%, transparent); color:var(--primary-text-color); border-radius:10px; padding:10px; margin:4px 2px 8px; font-size:.9em; }
 .sec { margin:4px 2px 16px; }
 .sec h3 { display:flex; align-items:center; gap:6px; font-size:1em; margin:6px 0 8px; }
-.lgroup { margin:14px 0 4px; font-size:.9em; color:var(--secondary-text-color); font-weight:600; }
+.lgroup { display:flex; align-items:center; width:100%; margin:6px 0 2px; padding:10px 8px; box-sizing:border-box; font:inherit; font-size:1em; color:var(--primary-text-color); font-weight:600; background:var(--secondary-background-color, rgba(127,127,127,.12)); border:0; border-radius:10px; cursor:pointer; text-align:left; }
+.lgroup .chev { flex:none; color:var(--secondary-text-color); }
 .lrow { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; margin:3px 0; border-radius:12px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
 .lrow:hover { border-color:var(--primary-color,#03a9f4); }
 .lrow > ha-icon:first-child { color:var(--primary-color,#03a9f4); }
@@ -1940,7 +1937,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (near) {
       this._tab = near;
       this._toast(`📍 Du bist bei ${this._store(near)?.name} – hier ist deine Liste dafür`);
-      if (this._flag("einkaufsliste_auto_shop") && !this._shopMode) { // 🛒 Opt-in: im Laden geht der Laden-Modus von selbst an
+      if (this._data?.settings?.auto_shop && !this._shopMode) { // 🛒 Opt-in: im Laden geht der Laden-Modus von selbst an
         this._shopMode = true;
         this._shopAuto = true;
         try { localStorage.setItem("einkaufsliste_shopmode", "1"); } catch (_) { /* egal */ }
@@ -3429,7 +3426,6 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon>Per Barcode</button></div>
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
-      { key: "extras", icon: "mdi:toggle-switch-outline", title: "Extras (Schalter)", info: "Angebote, Protokoll, Laden-Modus, Maskottchen", html: () => this._extrasHtml() },
       { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_VERSION}`, html: () => this._newsHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
       { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
@@ -3462,11 +3458,11 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="mascotprev">${["spring", "summer", "autumn", "winter"].map((x) => mascotSvg("happy", x)).join("")}</div>
         <p><b>${this._data.settings?.mascot ? "🛒😊 Das Maskottchen ist an." : "Das Maskottchen ist aus."}</b> Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App.</p>
         <div class="btnrow"><button class="btn primary" data-act="mascot-toggle"><ha-icon icon="${this._data.settings?.mascot ? "mdi:emoticon-neutral-outline" : "mdi:emoticon-happy-outline"}"></ha-icon>${this._data.settings?.mascot ? "Ausschalten" : "Einschalten"}</button></div>` },
-      ...(window.__elOfflineApp ? [] : [{ key: "autoshop", icon: "mdi:map-marker-radius-outline", title: "Laden-Modus automatisch", info: this._flag("einkaufsliste_auto_shop") ? "an – nur dieses Gerät" : "aus", html: () => `
+      { key: "autoshop", icon: "mdi:map-marker-radius-outline", title: "Laden-Modus automatisch", info: this._data.settings?.auto_shop ? "an – für alle" : "aus", html: () => `
         <p class="hint">Kommst du in die 📍 Zone eines Geschäfts, geht der Laden-Modus von selbst an – und wieder aus, sobald du den Laden verlässt. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</p>
-        <p><b>${this._flag("einkaufsliste_auto_shop") ? "📍 Automatisch ist an." : "Automatisch ist aus."}</b></p>
-        <p class="hint">Der Schalter gilt nur für <b>dieses Gerät</b>. Es braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant.</p>
-        <div class="btnrow"><button class="btn primary" data-act="autoshop-toggle"><ha-icon icon="mdi:map-marker-radius-outline"></ha-icon>${this._flag("einkaufsliste_auto_shop") ? "Ausschalten" : "Einschalten"}</button></div>` }]),
+        <p><b>${this._data.settings?.auto_shop ? "📍 Automatisch ist an." : "Automatisch ist aus."}</b> Der Schalter gilt für <b>alle</b> Geräte. Der Standort bleibt dabei bei jedem selbst: Der Laden-Modus geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</p>
+        <p class="hint">Es braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant.</p>
+        <div class="btnrow"><button class="btn primary" data-act="autoshop-toggle"><ha-icon icon="mdi:map-marker-radius-outline"></ha-icon>${this._data.settings?.auto_shop ? "Ausschalten" : "Einschalten"}</button></div>` },
       { key: "spend", icon: "mdi:receipt-text-outline", title: "Einkaufs-Protokoll", info: this._data.settings?.spend ? "an – für alle" : "aus", html: () => `
         <p class="hint">Merkt sich nach jedem Einkauf, wer wann wo für wie viel eingekauft hat. Die Auswertung zeigt Summen pro Geschäft und pro Monat, mit Filtern nach Person, Geschäft und Datum. Unabhängig von den Listen – der Betrag wird von Hand eingetragen.</p>
         <p><b>${this._data.settings?.spend ? "🧾 Das Einkaufs-Protokoll ist an." : "Das Einkaufs-Protokoll ist aus."}</b></p>
@@ -3535,7 +3531,7 @@ class EinkaufslisteCard extends HTMLElement {
   _settingsListHtml(sections) {
     const groups = [
       ["📋 Meine Liste", ["stores", "categories", "persons", "products", "recipes"]],
-      ["🎛️ Extras", ["extras", "offers", "spend", "autoshop", "mascot"]],
+      ["🎛️ Extras", ["offers", "spend", "autoshop", "mascot"]],
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
       ["📱 App & Info", ["app", "theme", "pin", "news", "credits"]],
@@ -3543,7 +3539,7 @@ class EinkaufslisteCard extends HTMLElement {
     const kw = {
       stores: "laden markt zone standort icon eigenmarken", categories: "kategorie farbe reihenfolge", persons: "für wen namen familie",
       products: "katalog barcode foto löschen zusammenführen scan alt monate", recipes: "rezept gruppen kochen zutaten",
-      extras: "schalter ein aus an schalten", offers: "angebote marktguru preise plz", spend: "protokoll bon kasse kosten einkauf",
+      offers: "angebote marktguru preise plz", spend: "protokoll bon kasse kosten einkauf",
       autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
       log: "verlauf wer wann", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel", errors: "fehler protokoll kopieren",
       stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", pin: "pin schutz sperre", news: "neu version", credits: "über danke lizenz github",
@@ -3554,27 +3550,11 @@ class EinkaufslisteCard extends HTMLElement {
       const rows = keys.map((k) => byKey[k]).filter(Boolean)
         .filter((x) => !q || `${x.title} ${x.info} ${kw[x.key] || ""}`.toLowerCase().includes(q))
         .map((x) => `<button class="lrow" data-act="set-sec" data-sec="${x.key}"><ha-icon icon="${x.icon}"></ha-icon><span class="grow"><b>${x.title}</b><small>${esc(x.info)}</small></span><ha-icon class="chev" icon="mdi:chevron-right"></ha-icon></button>`).join("");
-      return rows ? `<h4 class="lgroup">${title}</h4>${rows}` : "";
+      if (!rows) return "";
+      const open = !!q || this._setOpen === title; // 🗂️ zugeklappt; bei der Suche klappen passende Überschriften von selbst auf
+      return `<button class="lgroup" data-act="set-grp" data-grp="${esc(title)}" aria-expanded="${open}"><span class="grow">${title}</span><ha-icon class="chev" icon="mdi:chevron-${open ? "up" : "down"}"></ha-icon></button>${open ? rows : ""}`;
     }).join("");
     return out || `<p class="hint">Nichts gefunden zu „${esc(q)}“.</p>`;
-  }
-
-  // 🎛️ Alle Ein/Aus-Schalter auf einer Seite
-  _extrasHtml() {
-    const s = this._data.settings || {};
-    const admin = !!this._hass?.user?.is_admin;
-    const sw = (on, act, icon, title, desc) => `
-      <div class="swrow"><ha-icon icon="${icon}"></ha-icon><div class="grow"><b>${title}</b><small>${desc}</small></div>
-        <button class="sw ${on ? "on" : ""}" data-act="${act}" role="switch" aria-checked="${on ? "true" : "false"}" title="${on ? "Ausschalten" : "Einschalten"}"><i></i></button></div>`;
-    const off = s.offers?.enabled;
-    return `
-      <p class="hint">Alle Schalter an einem Ort. Antippen = ein- oder ausschalten.</p>
-      ${sw(!!s.spend, "spend-toggle", "mdi:receipt-text-outline", "🧾 Einkaufs-Protokoll", "Wer hat wann wo für wie viel eingekauft · gilt für alle")}
-      ${s.spend ? sw(!!s.spend_auto, "spend-auto-toggle", "mdi:party-popper", "🎉 Protokoll fragt automatisch", "Wenn alles abgehakt ist, geht „Einkauf eintragen“ von selbst auf · gilt für alle") : ""}
-      ${window.__elOfflineApp ? "" : sw(this._flag("einkaufsliste_auto_shop"), "autoshop-toggle", "mdi:map-marker-radius-outline", "📍 Laden-Modus automatisch", "Geht in der Zone eines Geschäfts von selbst an · nur dieses Gerät")}
-      ${sw(!!s.mascot, "mascot-toggle", "mdi:emoticon-happy-outline", "🛒😊 Maskottchen", "Einkaufswagen mit Gesicht statt Symbol · gilt für alle")}
-      <div class="swrow"><ha-icon icon="mdi:tag-outline"></ha-icon><div class="grow"><b>🏷️ Angebote</b><small>${off ? "an · Marktguru" : "aus · inoffiziell"} – braucht Postleitzahl, darum eigene Seite</small></div>
-        ${admin ? `<button class="btn" data-act="set-sec" data-sec="offers">${off ? "Einstellen" : "Einrichten"}</button>` : `<small>🔒 Admin</small>`}</div>`;
   }
 
   // 🔒 PIN fürs Zahnrad
@@ -5577,7 +5557,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Kassenbon:</b> nicht über das 📋, sondern im Einkaufs-Protokoll mit „📷 Kassenbon lesen“ – Betrag, Geschäft und Tag werden vorgeschlagen.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt-Editor zwei gleiche Produkte zu einem machen.</li>
         <li><b>🩺 Ampel &amp; 🐞 Fehler-Protokoll:</b> in den Einstellungen – zeigt, ob alles läuft.</li>
-        <li><b>🛍️ Laden-Modus automatisch:</b> schaltet sich beim Betreten eines Geschäfts ein (pro Gerät, optional).</li>
+        <li><b>🛍️ Laden-Modus automatisch:</b> schaltet sich beim Betreten eines Geschäfts ein (gilt für alle Geräte, optional – der Standort bleibt bei jedem selbst).</li>
         <li><b>Rezepte:</b> Fotos pro Schritt im Kochmodus. Ein Rezept von einer Kochbuch-Seite liest du <b>im Rezept-Editor</b> mit „📷 Aus Foto“ ein – nicht über das 📋.</li>
         <li><b>Offline:</b> Fotos, die du ohne Netz machst, werden später nachgeschickt.</li>
       </ul>`)}
@@ -5671,7 +5651,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="elg-top"><h2>⚙️ How the settings work</h2></div>
       <p class="elg-sub">Tap a heading to open it. This guide is only for people who can open the settings. The guide for shopping and recipes is behind the <b>shopping cart at the top left</b>.</p>
       ${sec("🔍", "Finding things", `<ul>
-        <li>The settings are a <b>list with headings</b>, only one level deep: tap a row, change something, tap <b>Overview</b> to go back.</li>
+        <li>The settings are a <b>list with headings</b>, only one level deep: tap a heading (it opens, the previous one closes), tap a row, change something, tap <b>Overview</b> to go back.</li>
         <li>The <b>search field</b> at the top finds rows by their name or topic, e.g. “photo”, “mail”, “backup” or “sensor”.</li>
         <li>The bar at the top shows the <b>health light</b> 🟢🟡🔴. Tap it to open “All OK?”.</li></ul>`, true)}
       ${sec("📋", "My list", `<ul>
@@ -5683,10 +5663,10 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>➕ New product / ▥ By barcode:</b> adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
         <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
         <li><b>Recipes:</b> a recipe tab and a groups tab (Fish, Meat, Pastry …).</li></ul>`)}
-      ${sec("🎛️", "Extras (switches)", `<ul>
-        <li>All on/off switches on <b>one page</b>: 🧾 purchase log, 🎉 log asks automatically, 📍 shop mode automatic, 🛒😊 mascot.</li>
-        <li><b>Applies to everyone:</b> purchase log, auto-ask and mascot. <b>Only this device:</b> shop mode automatic.</li>
-        <li><b>🏷️ Offers</b> need a postcode, so they have their own page (admins only). They come unofficially from Marktguru and can stop working at any time.</li></ul>`)}
+      ${sec("🎛️", "Extras", `<ul>
+        <li>Each row has its <b>own page</b> with an on/off button: 🏷️ offers, 🧾 purchase log, 📍 shop mode automatic, 🛒😊 mascot.</li>
+        <li><b>Applies to all devices:</b> purchase log, auto-ask, shop mode automatic and mascot. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
+        <li><b>🏷️ Offers</b> need a postcode (admins only). They come unofficially from Marktguru and can stop working at any time.</li></ul>`)}
       ${sec("💾", "Data", `<ul>
         <li><b>Import &amp; backup:</b> recipes from a file · other apps (Bring!/AnyList tables as CSV, and an Alexa/to-do list) · 📧 e-mail · backup. Admins only.</li>
         <li><b>History:</b> who did what and when, with filters and search. How many days it is kept is set there.</li>
@@ -5707,7 +5687,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="elg-top"><h2>⚙️ So funktionieren die Einstellungen</h2></div>
       <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung ist nur für alle, die ins Zahnrad kommen. Die Anleitung fürs Einkaufen und die Rezepte steht hinter dem <b>Einkaufswagen oben links</b>.</p>
       ${sec("🔍", "Wie finde ich etwas?", `<ul>
-        <li>Die Einstellungen sind eine <b>Liste mit Überschriften</b> und nur eine Ebene tief: Zeile antippen, etwas ändern, mit <b>Übersicht</b> wieder zurück.</li>
+        <li>Die Einstellungen sind eine <b>Liste mit Überschriften</b> und nur eine Ebene tief: Überschrift antippen (sie klappt auf, die vorherige zu), Zeile antippen, etwas ändern, mit <b>Übersicht</b> wieder zurück.</li>
         <li>Das <b>Suchfeld</b> oben findet Zeilen nach Name oder Thema, z. B. „Foto“, „Mail“, „Sicherung“ oder „Sensor“.</li>
         <li>Der Balken ganz oben zeigt die <b>Gesundheits-Ampel</b> 🟢🟡🔴. Antippen öffnet „Alles ok?“.</li></ul>`, true)}
       ${sec("📋", "Meine Liste", `<ul>
@@ -5719,10 +5699,10 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>➕ Neues Produkt / ▥ Per Barcode:</b> legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
         <li><b>Rezepte:</b> ein Reiter für die Rezepte, einer für die Gruppen (Fisch, Fleisch, Gebäck …).</li></ul>`)}
-      ${sec("🎛️", "Extras (Schalter)", `<ul>
-        <li>Alle Ein/Aus-Schalter auf <b>einer Seite</b>: 🧾 Einkaufs-Protokoll, 🎉 Protokoll fragt automatisch, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen.</li>
-        <li><b>Gilt für alle:</b> Protokoll, automatisch fragen und Maskottchen. <b>Nur dieses Gerät:</b> Laden-Modus automatisch.</li>
-        <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl, darum haben sie eine eigene Seite (nur Admins). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren.</li></ul>`)}
+      ${sec("🎛️", "Extras", `<ul>
+        <li>Jede Zeile hat ihre <b>eigene Seite</b> mit einem Ein/Ausschalten-Knopf: 🏷️ Angebote, 🧾 Einkaufs-Protokoll, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen.</li>
+        <li><b>Gilt für alle Geräte:</b> Protokoll, automatisch fragen, Laden-Modus automatisch und Maskottchen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
+        <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl (nur Admins). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren.</li></ul>`)}
       ${sec("💾", "Daten", `<ul>
         <li><b>Import &amp; Sicherung:</b> Rezepte aus Datei · andere Apps (Bring!/AnyList-Tabellen als CSV und eine Alexa-/To-do-Liste) · 📧 E-Mail · Sicherung. Nur für Admins.</li>
         <li><b>Verlauf:</b> wer hat wann was gemacht, mit Filtern und Suche. Wie viele Tage er bleibt, stellst du dort ein.</li>
@@ -5831,7 +5811,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Receipt:</b> not via the 📋, but in the purchase log with “📷 Read receipt” – amount, store and day are suggested.</li>
         <li><b>🧲 Merge:</b> in the product editor turn two identical products into one.</li>
         <li><b>🩺 Health light &amp; 🐞 error log:</b> in the settings – shows whether everything runs.</li>
-        <li><b>🛍️ Automatic shop mode:</b> switches on when you enter a store (per device, optional).</li>
+        <li><b>🛍️ Automatic shop mode:</b> switches on when you enter a store (applies to all devices, optional – location stays personal).</li>
         <li><b>Recipes:</b> a photo per step in cooking mode. To read a recipe from a cookbook page use “📷 From photo” <b>in the recipe editor</b> – not the 📋.</li>
         <li><b>Offline:</b> photos taken without network are sent later.</li>
       </ul>`)}
@@ -7052,6 +7032,10 @@ class EinkaufslisteCard extends HTMLElement {
         this._recTab = el.dataset.tab;
         this._renderSettings();
         break;
+      case "set-grp": // 🗂️ eine Überschrift auf = die vorherige zu
+        this._setOpen = this._setOpen === el.dataset.grp ? null : el.dataset.grp;
+        this._renderSettings();
+        break;
       case "set-sec":
         if (el.dataset.sec !== "stores") this._storeSel = null;
         this._setSec = el.dataset.sec || null;
@@ -7251,11 +7235,9 @@ class EinkaufslisteCard extends HTMLElement {
         this._openRecipe(null);
         break;
       case "autoshop-toggle": {
-        let on = this._flag("einkaufsliste_auto_shop");
-        try { localStorage.setItem("einkaufsliste_auto_shop", on ? "0" : "1"); } catch (_) { /* egal */ }
-        on = !on;
-        this._toast(on ? "📍 Laden-Modus automatisch: an" : "Laden-Modus automatisch: aus");
-        this._renderAll();
+        const on = !this._data.settings?.auto_shop; // 📍 gilt für alle Geräte (wie das Maskottchen)
+        this._ws({ type: "einkaufsliste/autoshop/set", on })
+          .then(() => { this._toast(on ? "📍 Laden-Modus automatisch: an – für alle" : "Laden-Modus automatisch: aus"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
         break;
       }
       case "tip-guide":

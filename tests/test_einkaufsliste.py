@@ -2296,3 +2296,11 @@ async def test_products_last_bought(hass: HomeAssistant, setup) -> None:
     m.set_checked(it["id"], True, by="x")
     p = next(p for p in m.products() if p["name"] == "Butter")
     assert p["last_bought"] and p["last_added"]
+
+
+async def test_auto_shop_setting(hass: HomeAssistant, setup) -> None:
+    """📍 Laden-Modus automatisch: ein Schalter für alle Geräte."""
+    m = mgr(hass)
+    assert m.auto_shop is False
+    m.set_auto_shop(True)
+    assert m._to_storage()["auto_shop"] is True and m.as_dict()["settings"]["auto_shop"] is True

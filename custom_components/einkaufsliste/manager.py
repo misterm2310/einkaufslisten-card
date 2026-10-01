@@ -273,6 +273,7 @@ class EinkaufslisteManager:
         self.pin_hash: str | None = None  # 🔒 PIN für die Einstellungen (nur als Prüfsumme gespeichert)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
+        self.auto_shop: bool = False  # 📍 Laden-Modus geht in der Zone von selbst an – ein Schalter für alle Geräte
         self.spend_auto: bool = False  # 🧾 Protokoll von selbst anbieten, wenn alles abgehakt ist (Option, standardmäßig aus)
         self.health_cache: dict[str, Any] = {}  # 🩺 letztes Ergebnis für den Gesundheits-Sensor
         self.purchases: list[dict[str, Any]] = []  # 🧾 {"id","t","s","sn","w","wi","a"} – wer, wann, wo, wie viel
@@ -370,6 +371,7 @@ class EinkaufslisteManager:
         self.mascot = bool(data.get("mascot", False))
         self.spend = bool(data.get("spend", False))
         self.spend_auto = bool(data.get("spend_auto", False))
+        self.auto_shop = bool(data.get("auto_shop", False))
         self.purchases = list(data.get("purchases") or [])
         self.todo_sync = data.get("todo_sync") or None
         self.mail_import = data.get("mail_import") or None
@@ -425,6 +427,7 @@ class EinkaufslisteManager:
             "mascot": self.mascot,
             "spend": self.spend,
             "spend_auto": self.spend_auto,
+            "auto_shop": self.auto_shop,
             "purchases": self.purchases,
             "todo_sync": self.todo_sync,
             "mail_import": self.mail_import,
@@ -499,6 +502,7 @@ class EinkaufslisteManager:
                 "mascot": self.mascot,
                 "spend": self.spend,
                 "spend_auto": self.spend_auto,
+                "auto_shop": self.auto_shop,
                 "todo_sync": self._todo_sync_info(),
                 "mail_import": self._mail_import_info(),
                 "offers": self._offers_info(),
@@ -708,6 +712,11 @@ class EinkaufslisteManager:
     def set_spend(self, on: bool) -> None:
         """🧾 Einkaufs-Protokoll für alle an- oder ausschalten (die Einträge bleiben erhalten)."""
         self.spend = bool(on)
+        self._changed()
+
+    def set_auto_shop(self, on: bool) -> None:
+        """📍 Laden-Modus automatisch für alle an- oder ausschalten."""
+        self.auto_shop = bool(on)
         self._changed()
 
     def set_spend_auto(self, on: bool) -> None:
