@@ -2,13 +2,11 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.43.0";
+const EL_VERSION = "2.43.1";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["🗂️ <b>Einstellungen zugeklappt:</b> Die Überschriften (Meine Liste · Extras · Daten · Gesundheit · App &amp; Info) sind erst zu. Antippen öffnet sie – wird eine zweite geöffnet, geht die vorherige zu. Die Suche klappt passende Überschriften von selbst auf. Die Seite „Extras (Schalter)“ ist wieder weg: Angebote, Protokoll, Laden-Modus und Maskottchen haben jeweils ihre eigene Seite.",
-   "🗂️ <b>Settings collapsed:</b> the headings (My list · Extras · Data · Health · App &amp; info) start closed. Tap one to open it – opening another closes the previous one. The search opens matching headings by itself. The “Extras (switches)” page is gone again: offers, log, shop mode and mascot each have their own page."],
-  ["📍 <b>Laden-Modus automatisch gilt jetzt für alle</b> (wie das Maskottchen) und ist auch in der Offline-App da. Der Standort bleibt bei jedem selbst: Er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.",
-   "📍 <b>Shop mode automatic now applies to everyone</b> (like the mascot) and is in the offline app too. Location stays personal: it only turns on when <b>your</b> phone enters the zone."],
+  ["📷 <b>Fotos laden zuverlässiger:</b> Kommt ein Foto nicht an, fragt die Karte nach 5 Sekunden von selbst nochmal (bis zu 3-mal). Solange es lädt, steht „Foto lädt …“ da; klappt es gar nicht, gibt es einen Knopf „Nochmal“ und einen Eintrag im Fehler-Protokoll.",
+   "📷 <b>Photos load more reliably:</b> if a photo does not arrive, the card asks again by itself after 5 seconds (up to 3 times). While it loads you see “Photo loading …”; if it still fails there is a “Try again” button and an entry in the error log."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -5230,9 +5228,23 @@ class EinkaufslisteCard extends HTMLElement {
     const ck = `${key}#${index}`;
     const cached = this._photoCache.get(ck);
     if (cached && cached.updated === updated) return cached.data;
-    const res = await this._ws({ type: "einkaufsliste/photo/get", name: key, index });
-    this._photoCache.set(ck, { updated, data: res.data });
-    return res.data;
+    // 📷 Antwort kommt manchmal nie an: nach 5 Sekunden neu fragen (bis zu 3 Versuche), statt ewig zu warten
+    let lastErr = null;
+    for (let n = 0; n < 3; n++) {
+      try {
+        const res = await Promise.race([
+          this._hass.callWS({ type: "einkaufsliste/photo/get", name: key, index }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error("keine Antwort nach 5 Sekunden")), 5000)),
+        ]);
+        this._photoCache.set(ck, { updated, data: res.data });
+        return res.data;
+      } catch (err) {
+        lastErr = err;
+        if (err?.code === "invalid" || err?.code === "error" || err?.code === "not_found") break; // der Server hat geantwortet: nochmal fragen hilft nicht
+      }
+    }
+    this._hass?.callWS?.({ type: "einkaufsliste/errors/report", where: "Karte: photo/get (Foto lädt nicht)", message: String(lastErr?.message || lastErr?.code || lastErr).slice(0, 380) }).catch(() => {});
+    throw lastErr;
   }
 
   // 📷 Foto-Galerie: blättern, weitere Fotos dazu, einzelne löschen
@@ -5265,7 +5277,12 @@ class EinkaufslisteCard extends HTMLElement {
     const full = document.createElement("div");
     Object.assign(full.style, { color: "#ffcc80", fontSize: "14px", margin: "0 0 8px", textAlign: "center" });
     row.append(bAdd, ...(canDelete ? [bDel] : []), bClose);
-    ov.append(img, cap, nav, full, sort, row);
+    let loadId = 0;
+    const note = document.createElement("div"); // 📷 „lädt …“ bzw. Fehlermeldung statt leerer Fläche
+    Object.assign(note.style, { font: "500 16px Roboto, sans-serif", margin: "24px 0", textAlign: "center" });
+    const retry = ovButton("🔄 Nochmal");
+    retry.style.display = "none";
+    ov.append(note, retry, img, cap, nav, full, sort, row);
     const show = async () => {
       const n = count();
       if (!n) { close(); return; }
@@ -5281,7 +5298,22 @@ class EinkaufslisteCard extends HTMLElement {
       bLeft.style.display = idx > 0 ? "" : "none";
       bMain.style.display = idx > 0 ? "" : "none";
       bRight.style.display = idx < n - 1 ? "" : "none";
-      try { img.src = await this._photoData(key, idx); } catch (_) { close(); }
+      const my = ++loadId;
+      img.style.display = "none";
+      note.style.display = "";
+      note.textContent = "📷 Foto lädt …";
+      retry.style.display = "none";
+      try {
+        const src = await this._photoData(key, idx);
+        if (my !== loadId) return; // inzwischen weitergeblättert
+        img.src = src;
+        img.style.display = "";
+        note.style.display = "none";
+      } catch (err) {
+        if (my !== loadId) return;
+        note.textContent = err?.message && !/keine Antwort/.test(err.message) ? `😕 ${err.message}` : "😕 Foto nicht ladbar";
+        retry.style.display = "";
+      }
     };
     const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
     const onKey = (e) => {
@@ -5290,6 +5322,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (e.key === "ArrowRight") { idx++; show(); }
     };
     document.addEventListener("keydown", onKey);
+    retry.onclick = () => show();
     prev.onclick = () => { idx = (idx - 1 + count()) % count(); show(); };
     next.onclick = () => { idx = (idx + 1) % count(); show(); };
     // wischen zum Blättern

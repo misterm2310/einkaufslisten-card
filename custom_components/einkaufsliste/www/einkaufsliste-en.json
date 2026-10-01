@@ -1369,5 +1369,8 @@
 "Geräte. Der Standort bleibt dabei bei jedem selbst: Der Laden-Modus geht nur an, wenn": "devices. Location stays personal: shop mode only turns on when",
 "Handy in die Zone kommt.": "phone enters the zone.",
 "Es braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant.": "It needs a 📍 zone at the store (Stores → Location) and your phone as a person in Home Assistant.",
-"📍 Laden-Modus automatisch: an – für alle": "📍 Shop mode automatic: on – for everyone"
+"📍 Laden-Modus automatisch: an – für alle": "📍 Shop mode automatic: on – for everyone",
+"📷 Foto lädt …": "📷 Photo loading …",
+"😕 Foto nicht ladbar": "😕 Photo could not be loaded",
+"🔄 Nochmal": "🔄 Try again"
 }
