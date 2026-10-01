@@ -135,6 +135,15 @@
     "sensor": {
       "zuletzt_eingetragen": {
         "name": "Last added"
+      },
+      "gesundheit": {
+        "name": "Health",
+        "state": {
+          "ok": "All good",
+          "hinweis": "Notice",
+          "problem": "Problem",
+          "unbekannt": "Unknown"
+        }
       }
     },
     "binary_sensor": {

@@ -16,7 +16,7 @@ from .barcode import async_auto_photo, async_lookup, async_product_info
 from .recipe_import import async_import
 from .const import DOMAIN, SIGNAL_UPDATED
 from .mail_import import mail_sources
-from .transfer import async_todo_text, import_recipe_file, import_text, todo_lists
+from .transfer import async_todo_text, import_recipe_file, import_text, import_text_by_store, todo_lists
 from .manager import AUTO_CATEGORY, EinkaufslisteManager, person_name_for_user, product_key
 
 OPT_STR = vol.Any(None, str)
@@ -67,6 +67,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_mail_import,
         ws_mascot,
         ws_spend_set,
+        ws_spend_auto_set,
         ws_purchases_get,
         ws_purchases_add,
         ws_purchases_remove,
@@ -535,11 +536,19 @@ def ws_recipe_import_file(hass, connection, msg):
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/import/text", vol.Required("text"): str, vol.Optional("store_id"): OPT_STR}
+    {
+        vol.Required("type"): "einkaufsliste/import/text",
+        vol.Required("text"): str,
+        vol.Optional("store_id"): OPT_STR,
+        vol.Optional("by_store"): bool,  # 📸 Geschäfts-Überschriften im Text beachten
+    }
 )
 @callback
 def ws_import_text(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: import_text(m, msg["text"], msg.get("store_id") or None))
+    if msg.get("by_store"):
+        _run(hass, connection, msg, lambda m: import_text_by_store(m, msg["text"], msg.get("store_id") or None))
+    else:
+        _run(hass, connection, msg, lambda m: import_text(m, msg["text"], msg.get("store_id") or None))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/import/todo_lists"})
@@ -609,6 +618,13 @@ def ws_mascot(hass, connection, msg):
 def ws_spend_set(hass, connection, msg):
     """🧾 Einkaufs-Protokoll für alle an/aus."""
     _run(hass, connection, msg, lambda m: m.set_spend(msg["on"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/spend/auto", vol.Required("on"): bool})
+@callback
+def ws_spend_auto_set(hass, connection, msg):
+    """🧾 Option: Protokoll von selbst anbieten, wenn alles abgehakt ist."""
+    _run(hass, connection, msg, lambda m: m.set_spend_auto(msg["on"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/purchases/get"})

@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_call_later, async_track_time_interval
 
 from .const import DOMAIN, SIGNAL_UPDATED, VERSION
 from .manager import EinkaufslisteManager
@@ -20,7 +22,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     manager: EinkaufslisteManager = hass.data[DOMAIN]["manager"]
-    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry)])
+    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry), GesundheitSensor(manager, entry)])
 
     # 🏪 Ein Sensor pro Geschäft – neue Geschäfte bekommen ihren Sensor automatisch, gelöschte verschwinden
     known: dict[str, GeschaeftSensor] = {}
@@ -221,3 +223,41 @@ class OffeneArtikelSensor(SensorEntity):
             "artikel": artikel,
             "naechstes_aufraeumen": self._m.next_cleanup().isoformat(),
         }
+
+
+class GesundheitSensor(_Base):
+    """sensor.einkaufsliste_gesundheit – die Ampel aus ⚙️: ok / hinweis / problem (zum Beispiel für eine Benachrichtigung)"""
+
+    _attr_translation_key = "gesundheit"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ["ok", "hinweis", "problem", "unbekannt"]
+
+    def __init__(self, manager: EinkaufslisteManager, entry: ConfigEntry) -> None:
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_gesundheit"
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+
+        async def _check(_now=None) -> None:
+            await self._m.async_health()
+            self.async_write_ha_state()
+
+        # kurz nach dem Start und danach alle 30 Minuten (die Prüfung ist leicht, kostet aber etwas)
+        self.async_on_remove(async_call_later(self.hass, 30, _check))
+        self.async_on_remove(async_track_time_interval(self.hass, _check, timedelta(minutes=30)))
+
+    @property
+    def native_value(self) -> str:
+        return self._m.health_cache.get("level") or "unbekannt"
+
+    @property
+    def icon(self) -> str:
+        return {"ok": "mdi:heart-pulse", "hinweis": "mdi:alert-circle-outline", "problem": "mdi:alert-octagon"}.get(
+            self.native_value, "mdi:help-circle-outline"
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        c = self._m.health_cache
+        return {"probleme": c.get("probleme"), "fehler_24h": c.get("fehler_24h"), "geprueft": c.get("geprueft")}

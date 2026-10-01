@@ -373,6 +373,22 @@ def import_text(manager: EinkaufslisteManager, text: str, store_id: str | None =
     return {"added": added, "skipped": skipped}
 
 
+def import_text_by_store(manager: EinkaufslisteManager, text: str, default_store: str | None = None) -> dict[str, Any]:
+    """📸 Einkaufszettel aus einem Foto: Steht „Aldi“ / „Aldi:“ als Überschrift (oder „Netto: Milch, Brot“ in einer Zeile),
+    gehören die Zeilen darunter zu diesem Geschäft – bis zur nächsten Überschrift. Alles andere kommt ins gewählte Geschäft."""
+    from .mail_import import mail_groups  # noqa: PLC0415 – gleiche Regeln wie beim E-Mail-Import
+
+    added = skipped = 0
+    stores: set[str] = set()
+    for store_id, part in mail_groups(manager, text or "", None, default_store):
+        res = import_text(manager, part, store_id)
+        added += res.get("added", 0)
+        skipped += res.get("skipped", 0)
+        if res.get("added"):
+            stores.add(store_id or "")
+    return {"added": added, "skipped": skipped, "stores": len(stores)}
+
+
 def todo_lists(hass: HomeAssistant) -> list[dict[str, Any]]:
     """Alle To-do-Listen in HA (HA-Einkaufsliste, Bring!, Google Tasks, Todoist …)."""
     return [{"entity_id": s.entity_id, "name": s.name, "open": int(s.state) if str(s.state).isdigit() else None}

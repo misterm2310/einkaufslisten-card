@@ -2,17 +2,17 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.40.2";
+const EL_VERSION = "2.41.0";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["📸 <b>Text aus Foto (Neu in 2.40.0):</b> Die Karte liest Text direkt auf deinem Gerät (nichts wird hochgeladen) – an <b>drei Stellen</b>: Das <b>📋-Symbol unter dem Eingabefeld</b> liest nur einen <b>Einkaufszettel</b>. Ein <b>Rezept</b> liest du im Rezept-Editor mit „📷 Aus Foto“ ein, einen <b>Kassenbon</b> im Einkaufs-Protokoll mit „📷 Kassenbon lesen“ (Betrag, Geschäft und Tag; das Bon-Foto hängt am Eintrag). Gedruckter Text klappt gut, <b>Handschrift nur mit Glück</b> – darum kannst du alles vor dem Übernehmen korrigieren.",
-   "📸 <b>Text from photo (new in 2.40.0):</b> the card reads text right on your device (nothing is uploaded) – in <b>three places</b>: the <b>📋 icon below the input field</b> reads a <b>shopping note</b> only. A <b>recipe</b> is read in the recipe editor with “📷 From photo”, a <b>receipt</b> in the purchase log with “📷 Read receipt” (amount, store and day; the receipt photo stays attached to the entry). Printed text works well, <b>handwriting only with luck</b> – so you can correct everything before adding it."],
-  ["🩺 <b>Gesundheits-Ampel &amp; 🐞 Fehler-Protokoll:</b> In den Einstellungen zeigt eine Ampel, ob alles in Ordnung ist. Technische Fehler landen im Fehler-Protokoll – mit „Kopieren“-Knopf, falls du mal Hilfe brauchst.",
-   "🩺 <b>Health light &amp; 🐞 error log:</b> in the settings a traffic light shows whether everything is fine. Technical errors go to the error log – with a “Copy” button in case you need help."],
-  ["🧲 <b>Produkte zusammenführen, Laden-Modus automatisch, Kostüme, Schritt-Fotos:</b> Doppelte Produkte werden eins (inkl. Fotos &amp; Gedächtnis). Der Laden-Modus kann sich beim Betreten eines Geschäfts selbst einschalten (pro Gerät, optional). Das Maskottchen trägt je nach Jahreszeit ein Kostüm. Im Kochmodus kann jeder Schritt ein Foto haben. Fotos, die du offline machst, werden nachgeschickt. Angebote ohne Enddatum laufen nach 14 Tagen ab. Import aus Bring!/AnyList-Tabellen (CSV).",
-   "🧲 <b>Merge products, automatic shop mode, costumes, step photos:</b> duplicate products become one (incl. photos &amp; memory). Shop mode can switch itself on when you enter a store (per device, optional). The mascot wears a costume by season. In cooking mode each step can have a photo. Photos taken offline are sent later. Offers without an end date expire after 14 days. Import from Bring!/AnyList tables (CSV)."],
-  ["📖 <b>Anleitung leichter finden:</b> Ein Knopf „📖 Anleitung“ steht jetzt unten neben „Abmelden“, und beim ersten Start gibt es einen kleinen Tipp bzw. einen Einrichtungs-Assistenten.",
-   "📖 <b>Guide easier to find:</b> there's now a “📖 Guide” button at the bottom next to “Log out”, and on first start a small tip or a setup assistant."],
+  ["🎉 <b>Protokoll fragt von selbst (optional):</b> In den Einstellungen → 🧾 Einkaufs-Protokoll kannst du „Automatisch fragen“ einschalten. Ist dann alles auf der Liste abgehakt, geht der Dialog „Einkauf eintragen“ von selbst auf – mit dem Geschäft schon ausgewählt.",
+   "🎉 <b>Log asks by itself (optional):</b> in Settings → 🧾 Purchase log you can switch on “Ask automatically”. Once everything on the list is checked off, the “log purchase” dialog opens by itself – with the store already chosen."],
+  ["✨ <b>„Neu“-Markierung auf allen Geräten:</b> Tippst du auf ✨, ist sie bei allen weg. 🧾 <b>Kassenbon:</b> Findet die Karte mehrere mögliche Beträge, kannst du den richtigen antippen. 📋 <b>Einkaufszettel-Foto:</b> Überschriften wie „Aldi“ oder „Aldi:“ ordnen die Artikel dem Geschäft zu.",
+   "✨ <b>“New” marker on all devices:</b> tap ✨ and it disappears for everyone. 🧾 <b>Receipt:</b> if the card finds several possible amounts, tap the right one. 📋 <b>Shopping-note photo:</b> headings like “Aldi” or “Aldi:” assign the items to that store."],
+  ["🩺 <b>Neuer Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> zeigt die Gesundheits-Ampel (ok / hinweis / problem) – nutzbar in Automationen, z. B. für eine Meldung aufs Handy.",
+   "🩺 <b>New sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> shows the health light (ok / hinweis / problem) – usable in automations, e.g. for a phone notification."],
+  ["📸 <b>Text aus Foto:</b> Die Karte liest Text direkt auf deinem Gerät (nichts wird hochgeladen): 📋 Einkaufszettel, Rezept („📷 Aus Foto“) und Kassenbon („📷 Kassenbon lesen“). Handschrift klappt nur mit Glück – alles ist vor dem Übernehmen korrigierbar.",
+   "📸 <b>Text from photo:</b> the card reads text right on your device (nothing is uploaded): 📋 shopping note, recipe (“📷 From photo”) and receipt (“📷 Read receipt”). Handwriting only works with luck – everything can be corrected before adding."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -1095,7 +1095,7 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .item .txt { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 .item .qty { border:0; font:inherit; font-size:.85em; cursor:pointer; color:inherit; }
 .item.new { background:color-mix(in srgb, var(--primary-color,#03a9f4) 7%, transparent); }
-.newbadge { font-size:.9em; }
+.newbadge { font-size:.9em; cursor:pointer; padding:0 2px; }
 .bubble { background:var(--error-color,#e53935); color:#fff; border-radius:999px; font-size:.72em; font-weight:700; padding:1px 6px; margin-left:2px; }
 .menurow, .qtyrow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:4px 8px 8px 44px; }
 .menubtn.has { color:color-mix(in srgb, var(--mc) 68%, var(--primary-text-color)); border-color:color-mix(in srgb, var(--mc) 55%, transparent); background:color-mix(in srgb, var(--mc) 13%, transparent); }
@@ -1443,7 +1443,7 @@ async function elOcrRead(dataUrl, onProgress) {
 function elReceiptInfo(text, stores = [], today = new Date()) {
   const lines = String(text || "").split(/\n+/).map((l) => l.trim()).filter(Boolean);
   const moneyRx = /(\d{1,3}(?:\.\d{3})+,\d{2}|\d+\s?[,.]\s?\d{2})(?!\d)/g;
-  const money = (l) => [...l.matchAll(moneyRx)].map((m) => {
+  const money = (l) => [...l.replace(/\d{1,2}[.\-/]\d{1,2}[.\-/]\d{2,4}|\d{1,2}:\d{2}(?::\d{2})?/g, " ").matchAll(moneyRx)].map((m) => { // Datum und Uhrzeit sind keine Beträge
     let v = m[1].replace(/\s/g, "");
     v = v.includes(",") ? v.replace(/\./g, "").replace(",", ".") : v;
     return parseFloat(v);
@@ -1455,6 +1455,12 @@ function elReceiptInfo(text, stores = [], today = new Date()) {
     const all = lines.filter((l) => rx.test(l) && !(notRx && notRx.test(l))).flatMap(money);
     return all.length ? Math.max(...all) : null;
   };
+  // 🎯 Weitere Kandidaten zum Antippen: erst „Summe“-Zeilen, dann Kartenzeilen, dann die größten übrigen Beträge
+  const cands = [];
+  const addC = (arr) => arr.forEach((v) => { if (!cands.some((c) => Math.abs(c - v) < 0.005)) cands.push(v); });
+  addC(lines.filter((l) => strong.test(l) && !skip.test(l)).flatMap(money).sort((a, b) => b - a));
+  addC(lines.filter((l) => card.test(l) && !/(gegeben|r[üu]e?ckgeld|wechselgeld)/i.test(l)).flatMap(money).sort((a, b) => b - a));
+  addC(lines.filter((l) => !skip.test(l)).flatMap(money).sort((a, b) => b - a).slice(0, 4));
   let amount = pickMax(strong, skip), sure = true;
   if (amount == null) amount = pickMax(card, /(gegeben|r[üu]e?ckgeld|wechselgeld)/i);
   if (amount == null) {
@@ -1476,7 +1482,7 @@ function elReceiptInfo(text, stores = [], today = new Date()) {
     const n = String(st.name || "").toLowerCase().replace(/[^a-zäöüß0-9]/g, "");
     if (n.length >= 3 && flat.includes(n) && (!store || n.length > store.n)) store = { id: st.id, n: n.length };
   }
-  return { amount, sure, day, store: store?.id || null };
+  return { amount, sure, day, store: store?.id || null, alts: cands.filter((v) => v !== amount && Math.abs(v - (amount ?? -1)) > 0.005).slice(0, 3) };
 }
 
 // 🍳 Rezept-Seite lesen: Name, Zutaten und Schritte trennen (an den Überschriften „Zutaten“ / „Zubereitung“)
@@ -1953,13 +1959,32 @@ class EinkaufslisteCard extends HTMLElement {
 
   getCardSize() { return 3 + Math.min(10, (this._data?.items?.filter((i) => !i.checked).length || 0)); }
 
+  // 🧾 Liste komplett abgehakt (von mir, gerade eben) + Option an -> Protokoll anbieten
+  _autoSpend(openBefore) {
+    const s = this._data?.settings, t = this._myChecks;
+    const open = this._data.items.filter((i) => !i.checked).length;
+    if (open > 0) return;
+    if (openBefore <= 0 || !t?.last || Date.now() - t.last > 15000) return; // nur direkt nach meinem Abhaken
+    const stores = t.stores || {};
+    const best = Object.keys(stores).sort((a, b) => stores[b] - stores[a])[0];
+    this._myChecks = null;
+    if (!s?.spend || !s?.spend_auto) return;
+    if (Date.now() - (this._spendAutoAt || 0) < 600000) return; // höchstens alle 10 Minuten
+    this._spendAutoAt = Date.now();
+    if (best && this._store(best)) this._spendLastStore = best;
+    this._spendAutoPrompt = true;
+    setTimeout(() => this._showSpend(), 900);
+  }
+
   async _subscribe() {
     this._subscribing = true;
     try {
       const unsub = await this._hass.connection.subscribeMessage(
         (data) => {
           if (elQueue.length) applyQueued(data, elQueue, this._hass); // Gemerktes gleich wieder drüberlegen
+          const openBefore = this._data ? this._data.items.filter((i) => !i.checked).length : -1;
           this._data = data;
+          this._autoSpend(openBefore);
           this._error = null;
           if (!this._seenSnap && this._mySeen()) this._seenSnap = { ...this._mySeen() };
           this._renderAll();
@@ -2707,7 +2732,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""}" data-id="${item.id}" style="--cc:${esc(cat?.color || "transparent")}${recipe && this._rgroup(recipe.group)?.color ? `;--rc:${esc(this._rgroup(recipe.group).color)}` : ""}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
-          <div class="line">${isNew ? `<span class="newbadge" title="Neu seit deinem letzten Blick">✨</span>` : ""}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${qty}${who}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
+          <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${qty}${who}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
         ${!item.checked && this._data.stores.length > 1 ? `<div class="acts"><button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button></div>` : ""}
@@ -3128,6 +3153,13 @@ class EinkaufslisteCard extends HTMLElement {
     if (it && !it.checked) { try { navigator.vibrate?.(35); } catch (_) { /* egal */ } }
     this._pending.add(id);
     this.shadowRoot.querySelector(`.item[data-id="${id}"]`)?.classList.add("pending");
+    // 🧾 Merken, wo ich abgehakt habe – für den automatischen Protokoll-Vorschlag
+    if (it && !it.checked) {
+      const t = this._myChecks ||= {};
+      const s = it.store_id || this._fixedStore || (this._activeTab !== "all" && this._activeTab !== "none" ? this._activeTab : "");
+      t.last = Date.now();
+      t.stores = { ...(t.stores || {}), [s]: ((t.stores || {})[s] || 0) + 1 };
+    }
     // 🤷 „Egal wo“ im Reiter eines Geschäfts abgehakt -> gehört ab jetzt zu diesem Geschäft
     const here = this._fixedStore || (this._activeTab !== "all" && this._activeTab !== "none" ? this._activeTab : null);
     const atStore = it && !it.checked && !it.store_id && here && this._store(here) ? here : null;
@@ -3426,6 +3458,9 @@ class EinkaufslisteCard extends HTMLElement {
         <p><b>${this._data.settings?.spend ? "🧾 Das Einkaufs-Protokoll ist an." : "Das Einkaufs-Protokoll ist aus."}</b></p>
         <p class="hint">Der Schalter gilt für alle. Ist es an, sehen und pflegen es alle in der Familie – den 🧾-Knopf oben in der Karte und hier im Verlauf.</p>
         <div class="btnrow"><button class="btn primary" data-act="spend-toggle"><ha-icon icon="mdi:receipt-text-outline"></ha-icon>${this._data.settings?.spend ? "Ausschalten" : "Einschalten"}</button>${this._data.settings?.spend ? `<button class="btn" data-act="spend"><ha-icon icon="mdi:open-in-new"></ha-icon>Öffnen</button>` : ""}</div>
+        ${this._data.settings?.spend ? `<p><b>${this._data.settings?.spend_auto ? "🎉 Automatisch fragen: an" : "Automatisch fragen: aus"}</b></p>
+        <p class="hint">Wenn alles auf der Liste abgehakt ist, geht der Einkauf-eintragen-Dialog von selbst auf – mit dem Geschäft schon ausgewählt. Gilt für alle.</p>
+        <div class="btnrow"><button class="btn" data-act="spend-auto-toggle"><ha-icon icon="mdi:party-popper"></ha-icon>${this._data.settings?.spend_auto ? "Ausschalten" : "Einschalten"}</button></div>` : ""}
         <p class="hint">Ausschalten versteckt nur die Anzeige – die bisherigen Einträge bleiben gespeichert.</p>` },
       ...(window.__elOfflineApp ? [{ key: "theme", parent: "appx", icon: "mdi:theme-light-dark", title: "Hell / Dunkel", info: { light: "☀️ Hell", dark: "🌙 Dunkel" }[elAppTheme()] || "🌓 Automatisch", html: () => `
         <p class="hint">Nur für die Offline-App auf diesem Gerät. „Automatisch“ richtet sich nach dem Handy – so wie Home Assistant auch.</p>
@@ -4607,8 +4642,35 @@ class EinkaufslisteCard extends HTMLElement {
     return !!t && item.added_at > t;
   }
 
+  // ✨ Neu: Artikel von jemand anderem, höchstens 24 Stunden alt – bleibt, bis du ihn abhakst oder das ✨ antippst
+  // (egal wie oft du die Liste öffnest oder den Reiter wechselst). „Angetippt“ merkt sich Home Assistant – auf allen deinen Geräten.
+  _newBase() {
+    // Ab wann zählt etwas als neu? Beim ersten Mal auf diesem Gerät: ab dem letzten Blick (sonst ab jetzt) – nie rückwirkend
+    const uid = this._hass?.user?.id || "x";
+    const key = "einkaufsliste_new_base_" + uid;
+    try {
+      let v = localStorage.getItem(key);
+      if (!v) {
+        v = this._mySeen()?.all || new Date().toISOString();
+        localStorage.setItem(key, v);
+      }
+      return v;
+    } catch (_) { return this._mySeen()?.all || ""; }
+  }
+
   _isNew(item) {
-    return this._isNewFor(item, this._seenSnap || this._mySeen());
+    if (item.checked || !this._data) return false;
+    const me = this._hass?.user;
+    if (item.added_by_id ? item.added_by_id === me?.id : item.added_by && item.added_by === this._myName()) return false;
+    if (Date.now() - Date.parse(item.added_at || 0) > 864e5) return false;
+    const seen = this._mySeen();
+    if (!seen || !(item.added_at > this._newBase())) return false;
+    return !seen["n:" + item.id] && !this._ackLocal?.has(item.id);
+  }
+
+  _ackNew(id) {
+    (this._ackLocal ||= new Set()).add(id); // sofort weg – Home Assistant merkt es sich für alle Geräte
+    this._ws({ type: "einkaufsliste/seen", store: "n:" + id }).catch(() => {});
   }
 
   _myName() {
@@ -4794,7 +4856,7 @@ class EinkaufslisteCard extends HTMLElement {
       const tab = this._activeTab;
       const cur = this._fixedStore || (tab !== "all" && tab !== "none" && this._store(tab) ? tab : "");
       ov.innerHTML = `<div style="max-width:460px;width:100%"><div style="font:600 19px Roboto,sans-serif;margin-bottom:6px">${esc(elT("🛒 Das habe ich gelesen"))}</div>
-        <div style="color:#bbb;font-size:14px;margin-bottom:8px">${esc(elT("Eine Zeile = ein Artikel. Bitte kurz prüfen und verbessern – Handschrift ist für die Texterkennung schwer."))}</div>
+        <div style="color:#bbb;font-size:14px;margin-bottom:8px">${esc(elT("Eine Zeile = ein Artikel. Steht eine Zeile wie „Aldi“ oder „Aldi:“ davor, gehören die Artikel darunter zu diesem Geschäft. Bitte kurz prüfen und verbessern – Handschrift ist für die Texterkennung schwer."))}</div>
         <textarea rows="10" style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee">${esc(text)}</textarea>
         <select style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee;margin-top:8px">
           <option value="">${esc(elT("🤷 Egal wo"))}</option>${this._data.stores.map((st) => `<option value="${esc(st.id)}" ${st.id === cur ? "selected" : ""}>${esc(st.name)}</option>`).join("")}</select>
@@ -4805,7 +4867,7 @@ class EinkaufslisteCard extends HTMLElement {
       ok.onclick = async () => {
         if (!ta.value.trim()) return;
         try {
-          const res = await this._ws({ type: "einkaufsliste/import/text", text: ta.value, store_id: sel.value || null });
+          const res = await this._ws({ type: "einkaufsliste/import/text", text: ta.value, store_id: sel.value || null, by_store: true }); // 🏪 „Aldi:“ als Überschrift beachten
           this._toast(`✅ ${res.added} ${res.added === 1 ? "Artikel" : "Artikel"} eingetragen`);
           ov.remove();
         } catch (_) { /* Meldung kam schon */ }
@@ -5208,6 +5270,7 @@ class EinkaufslisteCard extends HTMLElement {
   // 🧾 Einkaufs-Protokoll: wer hat wann wo wie viel bezahlt – nur da, wenn es in ⚙️ eingeschaltet ist
   async _showSpend(tab = "add") {
     if (!this._data?.settings?.spend) return;
+    const autoAsk = !!this._spendAutoPrompt; this._spendAutoPrompt = false; // 🎉 von selbst aufgegangen?
     const ov = makeOverlay();
     Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
       paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
@@ -5240,12 +5303,13 @@ class EinkaufslisteCard extends HTMLElement {
       const [from, to] = range();
       let body;
       if (cur === "add") {
-        body = `<p class="sp-hint">Nach dem Einkauf: Wo warst du und wie viel hat es gekostet? Wer und wann trägt die Liste selbst ein.</p>
+        body = `${autoAsk ? `<p class="sp-hint"><b>🎉 Alles abgehakt – Einkauf eintragen?</b></p>` : ""}<p class="sp-hint">Nach dem Einkauf: Wo warst du und wie viel hat es gekostet? Wer und wann trägt die Liste selbst ein.</p>
           <label class="sp-l">Geschäft</label>
           <select id="spStore">${stores.map((st) => opt(st.id, st.name, start)).join("")}</select>
           <label class="sp-l">Betrag in €</label>
           <input id="spAmount" inputmode="decimal" placeholder="z. B. 23,40" autocomplete="off">
           <div class="sp-row" style="margin-top:8px"><button class="sp-q" data-sp="scan" style="flex:1">📷 Kassenbon lesen</button></div>
+          <div class="sp-row" id="spAlts" style="margin-top:6px" hidden></div>
           <div class="sp-hint" id="spBon">${bon ? "📎 Bon-Foto ist dabei – wird mitgespeichert." : "Tipp: Bon fotografieren – Betrag, Datum und Geschäft werden vorgeschlagen."}</div>
           <label class="sp-l">Datum</label>
           <input id="spDay" type="date" value="${iso(new Date())}" max="${iso(new Date())}">
@@ -5317,6 +5381,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (act === "close") ov.remove();
       else if (act === "tab") { cur = b.dataset.t; draw(); if (cur === "stats") load(); }
       else if (act === "quick") { f.quick = b.dataset.q; draw(); }
+      else if (act === "alt") { const a = ov.querySelector("#spAmount"); if (a) a.value = b.dataset.v; }
       else if (act === "scan") {
         this._ocrStart("🔎 Kassenbon wird gelesen", (text, data) => {
           const info = elReceiptInfo(text, stores);
@@ -5328,6 +5393,12 @@ class EinkaufslisteCard extends HTMLElement {
           if (q("#spBon")) q("#spBon").textContent = info.amount == null
             ? "📎 Bon-Foto ist dabei. Den Betrag konnte ich nicht lesen – bitte selbst eintragen."
             : `📎 Bon-Foto ist dabei. Erkannt: ${info.amount.toFixed(2).replace(".", ",")} €${info.sure ? "" : " (unsicher)"} – bitte kurz prüfen.`;
+          const alts = q("#spAlts"); // 🎯 war es vielleicht einer von diesen?
+          if (alts) {
+            const fmt = (v) => v.toFixed(2).replace(".", ",");
+            alts.hidden = !info.alts?.length;
+            alts.innerHTML = info.alts?.length ? `<span style="align-self:center;font-size:13px;opacity:.75">${esc(elT("Oder war es:"))}</span>` + info.alts.map((v) => `<button class="sp-q" type="button" data-sp="alt" data-v="${fmt(v)}">${fmt(v)} €</button>`).join("") : "";
+          }
         }, "🧾 Kassenbon abfotografieren");
       } else if (act === "bon") {
         const key = "bon#" + b.dataset.id;
@@ -5430,7 +5501,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("🏪", "Geschäfte & Reiter", `<ul>
         <li>Oben die Reiter: <b>Alle</b>, Aldi, Netto … Die Zahl zeigt, wie viel dort offen ist.</li>
         <li>Die <b>rote Blase</b> heißt: Da ist was Neues dazugekommen, seit du zuletzt geschaut hast.</li>
-        <li><b>✨</b> am Artikel = neu (verschwindet nach 24 Stunden).</li>
+        <li><b>✨</b> am Artikel = neu von jemand anderem. Es bleibt, bis du den Artikel <b>abhakst</b> oder das <b>✨ antippst</b> – höchstens 24 Stunden.</li>
         <li><b>⇄</b> am Artikel = war aus: <b>„Nächstes Mal wieder hier“</b> (bleibt offen, alle sehen „war aus“) oder gleich in ein anderes Geschäft schieben. Geschäfte mit ✓ führen das Produkt auch.</li>
         <li><b>🤷 „Egal wo“</b> = kein festes Geschäft: steht in jedem Geschäfts-Reiter mit drin. Mit ⇄ in ein Geschäft schieben = zieht einfach um.</li>
         <li><b>🔁 Gibt's auch hier</b> (im Reiter eines Geschäfts): Sachen, die bei einem anderen Geschäft stehen, die es aber auch hier gibt. Antippen holt sie her.</li>
@@ -5459,6 +5530,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Rezept-Fotos:</b> Im Rezept-Editor Fotos zum Rezept hinzufügen. In der Rezeptliste öffnet das <b>📷</b> neben dem Namen die Fotos.</li>
         <li><b>Foto zu einem Koch-Schritt:</b> Im Rezept-Editor stehen unter der Zubereitung alle Schritte. Bei jedem Schritt <b>„Foto“</b> bzw. <b>„Dazu“</b> tippen (geht, sobald das Rezept einmal gespeichert ist). Im <b>Koch-Modus</b> erscheint das Foto bei genau diesem Schritt. Die Fotos hängen an der Schrittnummer – ändert sich die Reihenfolge, bitte kurz prüfen.</li>
         <li><b>Kassenbon-Foto:</b> Im Einkaufs-Protokoll hängt beim Eintragen „📷 Kassenbon lesen“ das Bon-Foto automatisch an. Bei einem Eintrag ohne Foto gibt es das Symbol <b>➕📷</b>, mit Foto öffnet das <b>📷</b> es.</li>
+        <li><b>🎉 Automatisch fragen (Option):</b> In den Einstellungen beim Einkaufs-Protokoll einschaltbar (gilt für alle). Ist alles auf der Liste abgehakt, geht „Einkauf eintragen“ von selbst auf – mit dem Geschäft schon ausgewählt. Höchstens alle 10 Minuten.</li>
         <li><b>Ohne Netz:</b> Fotos, die du in der Offline-App ohne Netz machst, werden vorgemerkt („📴 Foto vorgemerkt“) und hochgeladen, sobald wieder Netz da ist. Sehr große Fotos (über ca. 3 MB) gehen nur mit Netz.</li>
         <li><b>Verwalten &amp; löschen:</b> Nur in ⚙️ → <b>Produkte</b> (Reihenfolge, Hauptfoto, einzeln löschen) und im Rezept-Editor – nicht in der Einkaufsliste selbst.</li>
         <li><b>Foto einlesen (Text):</b> Das ist etwas anderes als ein Foto ablegen. Dazu siehe „Text aus Foto &amp; neue Helfer“.</li></ul>`)}
@@ -5606,7 +5678,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("🏪", "Stores & tabs", `<ul>
         <li>At the top the tabs: <b>All</b> and your stores. The number shows how much is still open there.</li>
         <li>The <b>red bubble</b> means: something new was added since you last looked.</li>
-        <li><b>✨</b> on the item = new (disappears after 24 hours).</li>
+        <li><b>✨</b> on the item = new from someone else. It stays until you <b>check the item off</b> or <b>tap the ✨</b> – 24 hours at most.</li>
         <li><b>⇄</b> on the item = was out: <b>“Here again next time”</b> (stays open, everyone sees “was out”) or move it straight to another store. Stores with ✓ carry the product too.</li>
         <li><b>🔁 Also available here</b> (in a store's tab): things listed at another store that this store has too. Tap to bring them here.</li>
         <li>No connection in the store? Just keep checking things off. The dot at the top turns <b>orange ⏳</b> and everything is sent once there's a connection again.</li></ul>`)}
@@ -5634,6 +5706,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Recipe photos:</b> Add photos to a recipe in the recipe editor. In the recipe list the <b>📷</b> next to the name opens them.</li>
         <li><b>Photo for a cooking step:</b> In the recipe editor all steps are listed below the instructions. Tap <b>“Photo”</b> or <b>“Add”</b> at a step (works once the recipe has been saved). In <b>cooking mode</b> the photo shows up at exactly that step. The photos are tied to the step number – if you change the order, please check them.</li>
         <li><b>Receipt photo:</b> In the purchase log “📷 Read receipt” attaches the receipt photo automatically. An entry without a photo has a <b>➕📷</b> symbol; with a photo the <b>📷</b> opens it.</li>
+        <li><b>🎉 Ask automatically (option):</b> can be switched on in the settings under the purchase log (applies to everyone). Once everything on the list is checked off, “log purchase” opens by itself – with the store already chosen. At most every 10 minutes.</li>
         <li><b>Without network:</b> Photos you take in the offline app without network are queued (“📴 Photo queued”) and uploaded as soon as the network is back. Very large photos (over about 3 MB) need a connection.</li>
         <li><b>Manage &amp; delete:</b> Only in ⚙️ → <b>Products</b> (order, main photo, delete one) and in the recipe editor – not in the shopping list itself.</li>
         <li><b>Reading text from a photo:</b> That is something different from storing a photo. See “Text from photo &amp; new helpers”.</li></ul>`)}
@@ -6372,6 +6445,10 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderAll();
         break;
       }
+      case "new-ack":
+        this._ackNew(el.dataset.id);
+        this._renderList();
+        break;
       case "tab":
         this._tab = el.dataset.tab;
         this._seenSnap = { ...(this._mySeen() || {}) };
@@ -7016,6 +7093,10 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "spend-toggle":
         this._ws({ type: "einkaufsliste/spend/set", on: !this._data.settings?.spend })
+          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
+        break;
+      case "spend-auto-toggle":
+        this._ws({ type: "einkaufsliste/spend/auto", on: !this._data.settings?.spend_auto })
           .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
         break;
       case "check-run":

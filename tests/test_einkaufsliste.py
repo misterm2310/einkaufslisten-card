@@ -2234,3 +2234,43 @@ async def test_photo_keys(hass: HomeAssistant, setup) -> None:
     from custom_components.einkaufsliste.manager import recipe_step_photo_key, purchase_photo_key
     assert recipe_step_photo_key("abc", 2) == "rezept#abc#s2"
     assert purchase_photo_key("p1") == "bon#p1"
+
+
+async def test_seen_item_ack_pruned(hass: HomeAssistant, setup) -> None:
+    """✨ „n:<Artikel>“ = angetippt; alte Merker (> 2 Tage) werden aufgeräumt."""
+    m = mgr(hass)
+    m.seen["u1"] = {"n:alt": (dt_util.utcnow() - timedelta(days=3)).isoformat()}
+    m.mark_seen("u1", "n:neu")
+    assert "n:neu" in m.seen["u1"] and "n:alt" not in m.seen["u1"]
+
+
+async def test_health_summary(hass: HomeAssistant, setup) -> None:
+    """🩺 Gesundheits-Ampel für den Sensor."""
+    m = mgr(hass)
+    res = await m.async_health()
+    assert res["level"] in ("ok", "hinweis", "problem") and res["probleme"] >= 0
+    m.log_error("x", "kaputt")
+    res = await m.async_health()
+    assert res["fehler_24h"] == 1 and res["level"] != "ok"
+    state = hass.states.get("sensor.einkaufsliste_gesundheit")
+    assert state is not None
+
+
+async def test_spend_auto_option(hass: HomeAssistant, setup) -> None:
+    m = mgr(hass)
+    assert m.spend_auto is False
+    m.set_spend_auto(True)
+    assert m._to_storage()["spend_auto"] is True and m.as_dict()["settings"]["spend_auto"] is True
+
+
+async def test_import_text_by_store(hass: HomeAssistant, setup) -> None:
+    """📸 Zettel mit Geschäfts-Überschriften."""
+    from custom_components.einkaufsliste.transfer import import_text_by_store
+    m = mgr(hass)
+    aldi, netto = m.find_store("Aldi"), m.find_store("Netto")
+    res = import_text_by_store(m, "Aldi\nMilch\nBrot\nNetto:\nEier\nDM: Zahnpasta, Seife\nButter", netto)
+    assert res["added"] == 6
+    by = {i["name"]: i["store_id"] for i in m.items}
+    assert by["Milch"] == aldi and by["Brot"] == aldi and by["Eier"] == netto
+    assert by["Zahnpasta"] == m.find_store("DM") and by["Seife"] == m.find_store("DM")
+    assert by["Butter"] == m.find_store("DM")  # gilt bis zur nächsten Überschrift

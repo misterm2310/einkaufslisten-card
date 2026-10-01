@@ -273,6 +273,8 @@ class EinkaufslisteManager:
         self.pin_hash: str | None = None  # 🔒 PIN für die Einstellungen (nur als Prüfsumme gespeichert)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
+        self.spend_auto: bool = False  # 🧾 Protokoll von selbst anbieten, wenn alles abgehakt ist (Option, standardmäßig aus)
+        self.health_cache: dict[str, Any] = {}  # 🩺 letztes Ergebnis für den Gesundheits-Sensor
         self.purchases: list[dict[str, Any]] = []  # 🧾 {"id","t","s","sn","w","wi","a"} – wer, wann, wo, wie viel
         self.todo_sync: dict[str, Any] | None = None  # 🔁 {"entity_id", "store_id", "count"} – To-do-Liste herüberholen
         self.offers_cfg: dict[str, Any] | None = None  # 🏷️ {"enabled", "zip", "stores", "hours", "key", "last", "ok", "error", "count"}
@@ -367,6 +369,7 @@ class EinkaufslisteManager:
         self.pin_hash = data.get("pin")
         self.mascot = bool(data.get("mascot", False))
         self.spend = bool(data.get("spend", False))
+        self.spend_auto = bool(data.get("spend_auto", False))
         self.purchases = list(data.get("purchases") or [])
         self.todo_sync = data.get("todo_sync") or None
         self.mail_import = data.get("mail_import") or None
@@ -421,6 +424,7 @@ class EinkaufslisteManager:
             "pin": self.pin_hash,
             "mascot": self.mascot,
             "spend": self.spend,
+            "spend_auto": self.spend_auto,
             "purchases": self.purchases,
             "todo_sync": self.todo_sync,
             "mail_import": self.mail_import,
@@ -494,6 +498,7 @@ class EinkaufslisteManager:
                 "app_url": self._app_url(),
                 "mascot": self.mascot,
                 "spend": self.spend,
+                "spend_auto": self.spend_auto,
                 "todo_sync": self._todo_sync_info(),
                 "mail_import": self._mail_import_info(),
                 "offers": self._offers_info(),
@@ -703,6 +708,11 @@ class EinkaufslisteManager:
     def set_spend(self, on: bool) -> None:
         """🧾 Einkaufs-Protokoll für alle an- oder ausschalten (die Einträge bleiben erhalten)."""
         self.spend = bool(on)
+        self._changed()
+
+    def set_spend_auto(self, on: bool) -> None:
+        """🧾 Option: Protokoll von selbst anbieten, sobald alles abgehakt ist (gilt für alle)."""
+        self.spend_auto = bool(on)
         self._changed()
 
     def get_purchases(self) -> dict[str, Any]:
@@ -2173,7 +2183,31 @@ class EinkaufslisteManager:
                     mine["b:" + key] = now
         else:
             mine[str(store)[:80]] = now
+        # ✨ „n:<Artikel>“ = dieser Artikel wurde als gesehen angetippt – nach 2 Tagen ist das nicht mehr nötig
+        limit = (dt_util.utcnow() - timedelta(days=2)).isoformat()
+        for key in [k for k, v in mine.items() if k.startswith("n:") and str(v) < limit]:
+            del mine[key]
         self._changed()
+
+    # ------------------------------------------------------------------ 🩺 Gesundheit (für den Sensor)
+    async def async_health(self) -> dict[str, Any]:
+        """Prüft wie „Alles ok?“ (ohne etwas zu reparieren) und merkt sich das Ergebnis: ok / hinweis / problem."""
+        try:
+            res = await self.async_check(fix=False)
+            n = len(res.get("items") or [])
+        except Exception:  # noqa: BLE001 – der Sensor soll nie die Integration stören
+            n = -1
+        recent = self._errors_since(timedelta(hours=24))
+        if n < 0:
+            level = "unbekannt"
+        elif n > 5:
+            level = "problem"
+        elif n > 0 or recent:
+            level = "hinweis"
+        else:
+            level = "ok"
+        self.health_cache = {"level": level, "probleme": max(n, 0), "fehler_24h": recent, "geprueft": _now_iso()}
+        return self.health_cache
 
     # ------------------------------------------------------------------ Aufräumen
     @callback

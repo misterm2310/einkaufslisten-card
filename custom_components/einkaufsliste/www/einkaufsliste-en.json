@@ -1316,5 +1316,11 @@
 "🍳 Foto zu Schritt {}": "🍳 Photo for step {0}",
 "Packung scannen, dann den Namen tippen und ✅ drücken.": "Scan the pack, then type the name and tap ✅.",
 "Packung scannen – beim nächsten Mal erkenne ich sie sofort.": "Scan the pack – next time I'll recognise it right away.",
-"Was brauchen wir/du?": "What do we/you need?"
+"Was brauchen wir/du?": "What do we/you need?",
+"Oder war es:": "Or was it:",
+"Eine Zeile = ein Artikel. Steht eine Zeile wie „Aldi“ oder „Aldi:“ davor, gehören die Artikel darunter zu diesem Geschäft. Bitte kurz prüfen und verbessern – Handschrift ist für die Texterkennung schwer.": "One line = one item. A line like “Aldi” or “Aldi:” above them puts the items below it in that store. Please check and correct briefly – handwriting is hard for text recognition.",
+"🎉 Automatisch fragen: an": "🎉 Ask automatically: on",
+"Automatisch fragen: aus": "Ask automatically: off",
+"Wenn alles auf der Liste abgehakt ist, geht der Einkauf-eintragen-Dialog von selbst auf – mit dem Geschäft schon ausgewählt. Gilt für alle.": "When everything on the list is checked off, the log-a-purchase dialog opens by itself – with the store already chosen. Applies to everyone.",
+"🎉 Alles abgehakt – Einkauf eintragen?": "🎉 All checked off – log the purchase?"
 }
