@@ -1368,6 +1368,7 @@ async def test_check_offers_delete(hass, setup):
     await m.async_check(fix=True)
     x = m.add_item("Quatschprodukt")
     x["category_id"] = None
+    x["store_id"] = "gibtsnicht"
     m.history_for("Quatschprodukt")["category_id"] = None
     res = await m.async_check()
     ids = {e["id"]: e for e in res["items"]}
@@ -2462,3 +2463,32 @@ async def test_check_findings_have_edit_and_choices(hass: HomeAssistant, setup) 
     # gewählte Reparatur: „nur löschen“
     await m.async_check(fixes={"photo_cut:wraps": "drop"})
     assert "wraps" not in m.photos
+
+
+async def test_check_ignores_egal_wo_items(hass: HomeAssistant, setup) -> None:
+    """„Alles ok?“: Artikel ohne Geschäft („Egal wo“) sind kein Fehler – nur ein nicht mehr vorhandenes Geschäft."""
+    m = mgr(hass)
+    m.add_item("Kakao")
+    m.add_item("Seife")
+    m.items[-1]["store_id"] = "gibtsnicht"
+    res = await m.async_check()
+    ids = [f["id"] for f in res["items"] if f["id"].startswith("nostore:")]
+    kakao = next(i for i in m.items if i["name"] == "Kakao")
+    seife = next(i for i in m.items if i["name"] == "Seife")
+    assert f"nostore:{kakao['id']}" not in ids
+    assert f"nostore:{seife['id']}" in ids
+
+
+async def test_undo_keeps_original_date(hass: HomeAssistant, setup, freezer) -> None:
+    """↩️ Rückgängig behält Datum + Eintrager; normales Wieder-Draufsetzen bekommt das neue Datum."""
+    m = mgr(hass)
+    item = m.add_item("Milch", added_by="Marco")
+    old = item["added_at"]
+    m.set_checked(item["id"], True, "Sandra")
+    freezer.tick(86400 * 2)
+    m.set_checked(item["id"], False, "Sandra", None, None, True)
+    got = m.get_item(item["id"])
+    assert got["checked"] is False and got["added_at"] == old and got["added_by"] == "Marco"
+    m.set_checked(item["id"], True, "Sandra")
+    m.set_checked(item["id"], False, "Sandra")
+    assert m.get_item(item["id"])["added_at"] != old

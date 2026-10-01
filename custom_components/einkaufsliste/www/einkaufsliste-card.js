@@ -2,9 +2,11 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.44.0";
+const EL_VERSION = "2.44.1";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
+  ["🛠️ <b>Zwei Fehler behoben:</b> „Alles ok?“ meldet Artikel mit <b>„Egal wo“</b> nicht mehr als Fehler (nur noch, wenn das eingetragene Geschäft nicht mehr existiert). Und <b>↩️ Rückgängig</b> behält das <b>ursprüngliche Datum</b> des Artikels, statt „heute“ draufzuschreiben.",
+   "🛠️ <b>Two bugs fixed:</b> “All OK?” no longer reports items set to <b>“Anywhere”</b> as errors (only when the saved store no longer exists). And <b>↩️ Undo</b> keeps the item’s <b>original date</b> instead of stamping “today”."],
   ["🔧 <b>„Alles ok?“ löst alles direkt:</b> Bei jedem Fund gibt es <b>🔧 Beheben</b> (nur dieser eine), <b>✏️ Selbst ändern</b> (springt zum Produkt, Artikel oder Rezept) und – wo es mehrere Wege gibt – eine <b>Auswahl</b>, z. B. „neu holen“ oder „nur löschen“.",
    "🔧 <b>“All OK?” solves everything right there:</b> every finding has <b>🔧 Fix</b> (just this one), <b>✏️ Change it myself</b> (jumps to the product, item or recipe) and – where there is more than one way – a <b>choice</b>, e.g. “fetch again” or “just delete”."],
   ["🔁 <b>Mehrere To-do-/Alexa-Listen:</b> In ⚙️ → Daten → Import &amp; Sicherung → „Aus anderen Apps“ lassen sich jetzt mehrere Listen gleichzeitig herüberholen – jede mit <b>eigenem Geschäft</b> (oder „Egal wo“) und <b>eigener Art</b> des Abgleichs. Die bisherige Liste bleibt, wie sie war.",
@@ -3168,14 +3170,14 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // Wieder auf die Liste nehmen – aber erst fragen, wenn es woanders schon offen ist
-  _readd(item) {
+  _readd(item, undo = false) {
     const other = this._openElsewhere(item, item.store_id);
     if (other) {
       this._conflict = { kind: "readd", other: other.id, store: item.store_id, item: item.id };
       this._renderList();
       return;
     }
-    this._toggle(item.id);
+    this._toggle(item.id, undo);
   }
 
   // ↩️ Kleiner Hinweis unten mit „Rückgängig“ (verschwindet von allein, blockiert nichts)
@@ -3207,10 +3209,10 @@ class EinkaufslisteCard extends HTMLElement {
     const it = this._data?.items.find((i) => i.id === id);
     if (!it) { this._toast("Das lässt sich nicht mehr zurücknehmen."); return; }
     if (this._pending.has(id) && tries < 10) { setTimeout(() => this._undoCheck(id, tries + 1), 300); return; } // Abhaken ist noch unterwegs
-    if (it.checked) this._readd(it);
+    if (it.checked) this._readd(it, true);
   }
 
-  _toggle(id) {
+  _toggle(id, undo = false) {
     if (!id || this._pending.has(id)) return;
     const it = this._data?.items.find((i) => i.id === id);
     if (it && !it.checked) { try { navigator.vibrate?.(35); } catch (_) { /* egal */ } }
@@ -3228,7 +3230,7 @@ class EinkaufslisteCard extends HTMLElement {
     // 🤷 „Egal wo“ im Reiter eines Geschäfts abgehakt -> gehört ab jetzt zu diesem Geschäft
     const here = this._fixedStore || (this._activeTab !== "all" && this._activeTab !== "none" ? this._activeTab : null);
     const atStore = it && !it.checked && !it.store_id && here && this._store(here) ? here : null;
-    this._ws({ type: "einkaufsliste/item/toggle", item_id: id, ...(atStore ? { store_id: atStore } : {}) })
+    this._ws({ type: "einkaufsliste/item/toggle", item_id: id, ...(atStore ? { store_id: atStore } : {}), ...(undo ? { undo: true } : {}) })
       .catch(() => {})
       .finally(() => { this._pending.delete(id); this._renderAll(); });
   }
@@ -6416,7 +6418,7 @@ class EinkaufslisteCard extends HTMLElement {
         try {
           await this._ws({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: true, via: "scan", ...(!item.store_id ? { store_id: store.id } : {}) });
           stats.checked++;
-          stats.log.push({ text: `✅ ${item.name}`, btn: "↩️ Wieder offen", undo: () => this._ws({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: false }) });
+          stats.log.push({ text: `✅ ${item.name}`, btn: "↩️ Wieder offen", undo: () => this._ws({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: false, undo: true }) });
           return `✅ ${item.name} abgehakt`;
         } catch (err) {
           return `⚠️ ${err?.message || "Hat nicht geklappt"}`;

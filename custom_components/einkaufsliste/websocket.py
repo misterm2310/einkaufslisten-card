@@ -241,6 +241,7 @@ def ws_item_update(hass, connection, msg):
         vol.Required("item_id"): str,
         vol.Optional("checked"): bool,
         vol.Optional("store_id"): OPT_STR,  # 🤷 „Egal wo“ in diesem Geschäft abgehakt
+        vol.Optional("undo"): bool,  # ↩️ Rückgängig: altes Datum behalten
     }
 )
 @callback
@@ -252,7 +253,7 @@ def ws_item_toggle(hass, connection, msg):
         msg,
         lambda m: m.set_checked(
             msg["item_id"], msg.get("checked"), who, connection.user.id if connection.user else None,
-            msg.get("store_id") or None,
+            msg.get("store_id") or None, bool(msg.get("undo")),
         ),
     )
 

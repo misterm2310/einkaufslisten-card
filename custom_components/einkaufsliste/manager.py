@@ -1719,8 +1719,11 @@ class EinkaufslisteManager:
         by: str | None = None,
         by_id: str | None = None,
         at_store: str | None = None,
+        undo: bool = False,
     ) -> dict[str, Any]:
         """Abhaken oder wieder auf die Liste nehmen (None = umschalten).
+
+        undo: ↩️ „Rückgängig“ – war nur ein Versehen, also Datum und Eintrager bleiben wie vorher.
 
         at_store: 🤷 ein „Egal wo“-Artikel wird in diesem Geschäft abgehakt -> gehört ab jetzt dorthin
         (dort unter „Erledigt“, bei den anderen weg; wieder draufgesetzt landet er dort).
@@ -1746,6 +1749,11 @@ class EinkaufslisteManager:
         if checked:
             item.update(checked=True, checked_at=_now_iso(), checked_by=by, out_at=None)
             self._learn_store(item["name"], item.get("store_id"))  # 🏪 hier gekauft = gibt's hier
+        elif undo:
+            # ↩️ Rückgängig: nur den Haken weg – altes Datum und Eintrager bleiben
+            item.update(checked=False, checked_at=None, checked_by=None)
+            self._changed()
+            return item
         else:
             # Wieder drauf: neues Datum, und wer ihn reinnimmt, steht dahinter
             item.update(
@@ -2258,7 +2266,8 @@ class EinkaufslisteManager:
                     "Rezept-Hinweis entfernen (der Artikel bleibt auf der Liste)",
                     lambda _v, i=item: i.__setitem__("recipe_id", None), edit={"kind": "item", "id": item["id"]})
             # 🛒 kein (gültiges) Geschäft – Vorschlag: so wie zuletzt gekauft
-            if not item.get("store_id") or item["store_id"] not in stores:
+            # „Egal wo“ (kein Geschäft) ist erlaubt – nur melden, wenn das eingetragene Geschäft fehlt
+            if item.get("store_id") and item["store_id"] not in stores:
                 last = (self.history_for(item["name"]) or {}).get("store_id")
                 state = "offen" if not item["checked"] else "erledigt"
                 pkey = product_key(item["name"], item.get("note"))
