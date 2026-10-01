@@ -1306,5 +1306,15 @@
 "Liste aus Foto einlesen": "Read a list from a photo",
 "📋 Einkaufsliste abfotografieren": "📋 Photograph shopping list",
 "🧾 Kassenbon abfotografieren": "🧾 Photograph receipt",
-"🍳 Rezept abfotografieren": "🍳 Photograph recipe"
+"🍳 Rezept abfotografieren": "🍳 Photograph recipe",
+"🍳 Foto zum Rezept": "🍳 Photo for the recipe",
+"🍳 Weiteres Foto zum Rezept": "🍳 Another photo for the recipe",
+"🧾 Foto vom Kassenbon": "🧾 Photo of the receipt",
+"📷 Foto zum Produkt": "📷 Photo for the product",
+"📷 Weiteres Foto zum Produkt": "📷 Another photo for the product",
+"📷 Foto zum neuen Produkt": "📷 Photo for the new product",
+"🍳 Foto zu Schritt {}": "🍳 Photo for step {0}",
+"Packung scannen, dann den Namen tippen und ✅ drücken.": "Scan the pack, then type the name and tap ✅.",
+"Packung scannen – beim nächsten Mal erkenne ich sie sofort.": "Scan the pack – next time I'll recognise it right away.",
+"Was brauchen wir/du?": "What do we/you need?"
 }

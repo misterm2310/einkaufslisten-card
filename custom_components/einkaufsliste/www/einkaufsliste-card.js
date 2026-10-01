@@ -2,11 +2,11 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.40.1";
+const EL_VERSION = "2.40.2";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["📸 <b>Text aus Foto (Neu in 2.40.0):</b> Mit dem <b>📋-Symbol unter dem Eingabefeld</b> Einkaufszettel einlesen, dazu Rezept oder <b>Kassenbon</b> fotografieren – die Karte liest den Text direkt auf deinem Gerät (nichts wird hochgeladen). Gedruckter Text klappt gut, <b>Handschrift nur mit Glück</b> – darum kannst du alles vor dem Übernehmen korrigieren. Beim Einkaufs-Protokoll füllt „📷 Kassenbon lesen“ Betrag, Geschäft und Tag aus, das Bon-Foto hängt am Eintrag.",
-   "📸 <b>Text from photo (new in 2.40.0):</b> the <b>📋 icon below the input field</b> reads a shopping note; also recipes and <b>receipts</b> – the card reads the text right on your device (nothing is uploaded). Printed text works well, <b>handwriting only with luck</b> – so you can correct everything before adding it. In the purchase log “📷 Read receipt” fills in amount, store and day; the receipt photo stays attached to the entry."],
+  ["📸 <b>Text aus Foto (Neu in 2.40.0):</b> Die Karte liest Text direkt auf deinem Gerät (nichts wird hochgeladen) – an <b>drei Stellen</b>: Das <b>📋-Symbol unter dem Eingabefeld</b> liest nur einen <b>Einkaufszettel</b>. Ein <b>Rezept</b> liest du im Rezept-Editor mit „📷 Aus Foto“ ein, einen <b>Kassenbon</b> im Einkaufs-Protokoll mit „📷 Kassenbon lesen“ (Betrag, Geschäft und Tag; das Bon-Foto hängt am Eintrag). Gedruckter Text klappt gut, <b>Handschrift nur mit Glück</b> – darum kannst du alles vor dem Übernehmen korrigieren.",
+   "📸 <b>Text from photo (new in 2.40.0):</b> the card reads text right on your device (nothing is uploaded) – in <b>three places</b>: the <b>📋 icon below the input field</b> reads a <b>shopping note</b> only. A <b>recipe</b> is read in the recipe editor with “📷 From photo”, a <b>receipt</b> in the purchase log with “📷 Read receipt” (amount, store and day; the receipt photo stays attached to the entry). Printed text works well, <b>handwriting only with luck</b> – so you can correct everything before adding it."],
   ["🩺 <b>Gesundheits-Ampel &amp; 🐞 Fehler-Protokoll:</b> In den Einstellungen zeigt eine Ampel, ob alles in Ordnung ist. Technische Fehler landen im Fehler-Protokoll – mit „Kopieren“-Knopf, falls du mal Hilfe brauchst.",
    "🩺 <b>Health light &amp; 🐞 error log:</b> in the settings a traffic light shows whether everything is fine. Technical errors go to the error log – with a “Copy” button in case you need help."],
   ["🧲 <b>Produkte zusammenführen, Laden-Modus automatisch, Kostüme, Schritt-Fotos:</b> Doppelte Produkte werden eins (inkl. Fotos &amp; Gedächtnis). Der Laden-Modus kann sich beim Betreten eines Geschäfts selbst einschalten (pro Gerät, optional). Das Maskottchen trägt je nach Jahreszeit ein Kostüm. Im Kochmodus kann jeder Schritt ein Foto haben. Fotos, die du offline machst, werden nachgeschickt. Angebote ohne Enddatum laufen nach 14 Tagen ab. Import aus Bring!/AnyList-Tabellen (CSV).",
@@ -1021,6 +1021,9 @@ form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .tool.busy ha-icon { animation: pulse 1s infinite; }
 .tool.hasval { color:var(--primary-color,#03a9f4); }
 #btnOcrList { margin-left:auto; } /* 📋 ganz rechts; kommt das Radiergummi, rutscht es einen nach links */
+.newrec { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 12px; padding:13px 16px; border:0; border-radius:14px; cursor:pointer; font:inherit; font-size:16px; font-weight:600; color:#fff; background:linear-gradient(135deg,#43a047,#2e7d32); box-shadow:0 2px 8px rgba(46,125,50,.35); --mdc-icon-size:24px; transition:transform .1s, box-shadow .1s; }
+.newrec:hover { box-shadow:0 3px 12px rgba(46,125,50,.5); }
+.newrec:active { transform:scale(.98); }
 .tool.tclear { color:var(--error-color,#db4437); }
 #btnScan { position:relative; }
 /* 📝 Notiz am Artikel: dezent hervorgehoben – etwas kräftiger, zarter Farbhauch */
@@ -2085,7 +2088,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div id="listView">
           <div class="tabs" id="tabs"></div>
           <form class="add" id="addForm" autocomplete="off">
-            <input id="inName" placeholder="Was brauchen wir?" enterkeyhint="done">
+            <input id="inName" placeholder="Was brauchen wir/du?" enterkeyhint="done">
             <button class="primary addbtn" type="submit" title="Hinzufügen"><ha-icon icon="mdi:check-bold"></ha-icon></button>
             <div class="sugg" id="sugg" hidden></div>
             <div class="toolbar">
@@ -3335,6 +3338,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="picker" hidden></div>
         <p class="hint">Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>` },
       { key: "recipes", icon: "mdi:chef-hat", title: "Rezepte", info: `${recipes.length ? (recipes.length === 1 ? "1 Rezept" : `${recipes.length} Rezepte`) : "noch keine"} · ${(d.recipe_groups || []).length} Gruppen`, html: () => `
+        ${this._recTab === "groups" ? "" : `<button class="newrec" type="button" data-act="recipe-new"><ha-icon icon="mdi:chef-hat"></ha-icon><span>Neues Rezept</span><ha-icon icon="mdi:plus-circle-outline"></ha-icon></button>`}
         <div class="subtabs">
           <button class="tab ${this._recTab !== "groups" ? "active" : ""}" data-act="rec-tab" data-tab="recipes"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</button>
           <button class="tab ${this._recTab === "groups" ? "active" : ""}" data-act="rec-tab" data-tab="groups"><ha-icon icon="mdi:tag-multiple-outline"></ha-icon>Rezept-Gruppen</button>
@@ -3350,8 +3354,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="picker" hidden></div>
         <p class="hint">Das Icon der Gruppe bekommen automatisch alle Rezepte dieser Gruppe. Icon: einfach den Namen tippen (z. B. <b>fish</b>, <b>pizza</b> oder <b>cake</b>) und aus der Vorschau antippen.</p>` : `
         ${recipes.length ? this._recipeSearchHtml("recipeSearchS") : ""}
-        <div id="setRecipeList"></div>
-        <div class="btnrow"><button class="btn" data-act="recipe-new"><ha-icon icon="mdi:plus"></ha-icon>Neues Rezept</button></div>`}` },
+        <div id="setRecipeList"></div>`}` },
       { key: "recipe_groups", parent: "recipes", alias: true },
       { key: "persons", icon: "mdi:account-group-outline", title: "Personen", info: persons.length ? `${persons.length} für „Für wen?“` : "noch keine", html: () => `
         ${persons.map((e, i) => row("persons", e, i, persons.length)).join("")}
@@ -4433,7 +4436,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._formMode = null;
     this._rEditIdx = null;
     this.$("tBasic").hidden = true;
-    this.$("inName").placeholder = "Was brauchen wir?";
+    this.$("inName").placeholder = "Was brauchen wir/du?";
     const none = this.$("inStore").querySelector('option[value="~none"]');
     if (none) none.hidden = false;
     this.$("inStore").options[0].textContent = "🛒 Welches Geschäft?";
@@ -4811,9 +4814,19 @@ class EinkaufslisteCard extends HTMLElement {
     }, "📋 Einkaufsliste abfotografieren");
   }
 
+  // 🏷️ Überschrift im Foto-Menü – damit klar ist, WOFÜR das Foto ist
+  _photoHeading(key, more = false) {
+    const k = String(key || "");
+    let m = k.match(/^rezept#.+#s(\d+)$/);
+    if (m) return `🍳 Foto zu Schritt ${Number(m[1]) + 1}`;
+    if (k.startsWith("rezept#")) return more ? "🍳 Weiteres Foto zum Rezept" : "🍳 Foto zum Rezept";
+    if (k.startsWith("bon#")) return "🧾 Foto vom Kassenbon";
+    return more ? "📷 Weiteres Foto zum Produkt" : "📷 Foto zum Produkt";
+  }
+
   _takePhoto(name, button) {
     this._photoTarget = { name, button };
-    this._pickFile("photoFile");
+    this._pickFile("photoFile", this._photoHeading(name));
   }
 
   async _onNewPhotoFile(e) {
@@ -5186,7 +5199,7 @@ class EinkaufslisteCard extends HTMLElement {
     bMain.onclick = () => move(0);
     bAdd.onclick = () => {
       this._photoTarget = { name: key, add: true, onDone: () => { this._toast("📸 Foto dazu gespeichert"); idx = count(); setTimeout(show, 400); } };
-      this._pickFile("photoFile");
+      this._pickFile("photoFile", this._photoHeading(key, true));
     };
     show();
   }
@@ -5321,7 +5334,7 @@ class EinkaufslisteCard extends HTMLElement {
         if (this._hasPhoto(key)) this._openPhoto(key, "🧾 Kassenbon");
         else {
           this._photoTarget = { name: key, keepEdit: true, onDone: () => { this._toast("📸 Bon-Foto gespeichert"); setTimeout(() => draw(), 600); } };
-          this._pickFile("photoFile");
+          this._pickFile("photoFile", this._photoHeading(key));
         }
       } else if (act === "save") {
         const store = ov.querySelector("#spStore").value, amount = ov.querySelector("#spAmount").value, day = ov.querySelector("#spDay").value;
@@ -5406,12 +5419,12 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Dort den Kreis antippen = <b>wieder auf der Liste</b>. So musst du nichts neu tippen.</li>
         <li>Einmal pro Woche wird automatisch aufgeräumt: Alte Sachen werden abgehakt, <b>gelöscht wird nichts</b>.</li></ul>`)}
       ${sec("📸", "Text aus Foto & neue Helfer", `<ul>
-        <li><b>📋 unter dem Eingabefeld:</b> Einkaufszettel fotografieren, Text prüfen, übernehmen. Gedruckt klappt gut, Handschrift nur mit Glück – darum kannst du den Text vorher korrigieren.</li>
-        <li><b>Kassenbon:</b> im Einkaufs-Protokoll „📷 Kassenbon lesen“ – Betrag, Geschäft und Tag werden vorgeschlagen.</li>
+        <li><b>📋 unter dem Eingabefeld:</b> liest <b>nur einen Einkaufszettel</b>: fotografieren, Text prüfen, auf die Liste. Gedruckt klappt gut, Handschrift nur mit Glück – darum kannst du den Text vorher korrigieren.</li>
+        <li><b>Kassenbon:</b> nicht über das 📋, sondern im Einkaufs-Protokoll mit „📷 Kassenbon lesen“ – Betrag, Geschäft und Tag werden vorgeschlagen.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt-Editor zwei gleiche Produkte zu einem machen.</li>
         <li><b>🩺 Ampel &amp; 🐞 Fehler-Protokoll:</b> in den Einstellungen – zeigt, ob alles läuft.</li>
         <li><b>🛍️ Laden-Modus automatisch:</b> schaltet sich beim Betreten eines Geschäfts ein (pro Gerät, optional).</li>
-        <li><b>Rezepte:</b> Fotos pro Schritt im Kochmodus; Rezept per „📷 Aus Foto“ einlesen.</li>
+        <li><b>Rezepte:</b> Fotos pro Schritt im Kochmodus. Ein Rezept von einer Kochbuch-Seite liest du <b>im Rezept-Editor</b> mit „📷 Aus Foto“ ein – nicht über das 📋.</li>
         <li><b>Offline:</b> Fotos, die du ohne Netz machst, werden später nachgeschickt.</li>
       </ul>`)}
       ${sec("🏪", "Geschäfte & Reiter", `<ul>
@@ -5439,9 +5452,17 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Der <b>🧾-Knopf</b> oben in der Karte (und im Verlauf) öffnet es. <b>➕ Eintragen</b>: Geschäft, Betrag, Datum – wer und wann setzt die Liste selbst.</li>
         <li><b>📊 Auswertung</b>: zusammengerechnet, pro Geschäft und pro Monat. Filter für Person, Geschäft und Datum, Schnellwahl <b>Dieser Monat / Letzter Monat / Alles</b>.</li>
         <li>Falsch eingetragen? Beim Einkauf auf <b>✖</b> tippen.</li></ul>`)}
-      ${sec("📷", "Fotos & Barcodes", `<ul>
-        <li>Das <b>📷</b> am Artikel zeigt das Foto. Wischen = blättern, <b>„Foto dazu“</b> für weitere (bis 6).</li>
-        <li>Ein neues Foto <b>ersetzt nie</b> ein altes, es kommt immer dazu.</li>
+      ${sec("📷", "Fotos", `<ul>
+        <li><b>Produkt-Foto:</b> Beim Eintragen auf das <b>📷</b> unter dem Eingabefeld tippen – oder später den Artikel <b>lange drücken → Foto</b>. Das Foto gehört zum Produkt und ist beim nächsten Mal wieder da. Am Artikel zeigt das kleine <b>📷</b> es groß; wischen = blättern. Bis zu <b>6 Fotos</b> pro Produkt, ein neues ersetzt nie ein altes.</li>
+        <li><b>Woher kommt das Foto?</b> Am Handy fragt die Karte: <b>📷 Kamera</b> · <b>🖼️ Galerie</b> · <b>📋 Einfügen</b> (ein kopiertes Bild). Am PC öffnet sich ein Fenster: Bild <b>reinziehen</b>, <b>Strg + V</b> drücken oder klicken. In der HA-App im WLAN (lokale http-Adresse) gibt es die Kamera nicht – dort geht gleich die Galerie auf.</li>
+        <li><b>Drehen &amp; zuschneiden:</b> Vor dem Speichern kannst du das Foto drehen und den Ausschnitt wählen.</li>
+        <li><b>Rezept-Fotos:</b> Im Rezept-Editor Fotos zum Rezept hinzufügen. In der Rezeptliste öffnet das <b>📷</b> neben dem Namen die Fotos.</li>
+        <li><b>Foto zu einem Koch-Schritt:</b> Im Rezept-Editor stehen unter der Zubereitung alle Schritte. Bei jedem Schritt <b>„Foto“</b> bzw. <b>„Dazu“</b> tippen (geht, sobald das Rezept einmal gespeichert ist). Im <b>Koch-Modus</b> erscheint das Foto bei genau diesem Schritt. Die Fotos hängen an der Schrittnummer – ändert sich die Reihenfolge, bitte kurz prüfen.</li>
+        <li><b>Kassenbon-Foto:</b> Im Einkaufs-Protokoll hängt beim Eintragen „📷 Kassenbon lesen“ das Bon-Foto automatisch an. Bei einem Eintrag ohne Foto gibt es das Symbol <b>➕📷</b>, mit Foto öffnet das <b>📷</b> es.</li>
+        <li><b>Ohne Netz:</b> Fotos, die du in der Offline-App ohne Netz machst, werden vorgemerkt („📴 Foto vorgemerkt“) und hochgeladen, sobald wieder Netz da ist. Sehr große Fotos (über ca. 3 MB) gehen nur mit Netz.</li>
+        <li><b>Verwalten &amp; löschen:</b> Nur in ⚙️ → <b>Produkte</b> (Reihenfolge, Hauptfoto, einzeln löschen) und im Rezept-Editor – nicht in der Einkaufsliste selbst.</li>
+        <li><b>Foto einlesen (Text):</b> Das ist etwas anderes als ein Foto ablegen. Dazu siehe „Text aus Foto &amp; neue Helfer“.</li></ul>`)}
+      ${sec("▥", "Barcodes", `<ul>
         <li><b>▥</b> oben neben dem grünen Punkt = Barcode scannen (in der HA-App und in der Offline-App): Das Produkt wird erkannt und eingetragen.</li>
         <li>Einen Barcode nachträglich zuordnen: Artikel lange drücken → <b>Barcode</b>.</li>
         <li>Neues Produkt mit eigenem Namen? Beim Eintragen das <b>▥ mit Plus</b> (neben dem Foto-Symbol) antippen, scannen, Namen tippen, ✔ – der Barcode gehört dann gleich dazu.</li></ul>`)}
@@ -5574,12 +5595,12 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Tap the circle there = <b>back on the list</b>. No need to type anything again.</li>
         <li>Once a week the list tidies itself up: old things get checked off, <b>nothing gets deleted</b>.</li></ul>`)}
       ${sec("📸", "Text from photo & new helpers", `<ul>
-        <li><b>📋 below the input field:</b> photograph a shopping note, check the text, add it. Printed text works well, handwriting only with luck – so you can correct the text first.</li>
-        <li><b>Receipt:</b> in the purchase log “📷 Read receipt” – amount, store and day are suggested.</li>
+        <li><b>📋 below the input field:</b> reads <b>a shopping note only</b>: photograph it, check the text, add it to the list. Printed text works well, handwriting only with luck – so you can correct the text first.</li>
+        <li><b>Receipt:</b> not via the 📋, but in the purchase log with “📷 Read receipt” – amount, store and day are suggested.</li>
         <li><b>🧲 Merge:</b> in the product editor turn two identical products into one.</li>
         <li><b>🩺 Health light &amp; 🐞 error log:</b> in the settings – shows whether everything runs.</li>
         <li><b>🛍️ Automatic shop mode:</b> switches on when you enter a store (per device, optional).</li>
-        <li><b>Recipes:</b> a photo per step in cooking mode; read a recipe with “📷 From photo”.</li>
+        <li><b>Recipes:</b> a photo per step in cooking mode. To read a recipe from a cookbook page use “📷 From photo” <b>in the recipe editor</b> – not the 📋.</li>
         <li><b>Offline:</b> photos taken without network are sent later.</li>
       </ul>`)}
       ${sec("🏪", "Stores & tabs", `<ul>
@@ -5606,9 +5627,17 @@ class EinkaufslisteCard extends HTMLElement {
         <li>The <b>🧾 button</b> at the top of the card (and in the history) opens it. <b>➕ Add</b>: store, amount, date – the list fills in who and when.</li>
         <li><b>📊 Overview</b>: in total, per store and per month. Filters for person, store and date, quick buttons <b>This month / Last month / All</b>.</li>
         <li>Entered something wrong? Tap <b>✖</b> on the purchase.</li></ul>`)}
-      ${sec("📷", "Photos & barcodes", `<ul>
-        <li>The <b>📷</b> on the item shows the photo. Swipe = browse, <b>“Add photo”</b> for more (up to 6).</li>
-        <li>A new photo <b>never replaces</b> an old one, it is always added.</li>
+      ${sec("📷", "Photos", `<ul>
+        <li><b>Product photo:</b> When adding, tap the <b>📷</b> below the input field – or later <b>long-press the item → Photo</b>. The photo belongs to the product and is there again next time. On the item the small <b>📷</b> shows it large; swipe = browse. Up to <b>6 photos</b> per product, a new one never replaces an old one.</li>
+        <li><b>Where does the photo come from?</b> On a phone the card asks: <b>📷 Camera</b> · <b>🖼️ Gallery</b> · <b>📋 Paste</b> (a copied image). On a PC a window opens: <b>drag in</b> an image, press <b>Ctrl + V</b> or click. In the HA app on Wi-Fi (local http address) there is no camera – the gallery opens right away.</li>
+        <li><b>Rotate &amp; crop:</b> Before saving you can rotate the photo and choose the crop.</li>
+        <li><b>Recipe photos:</b> Add photos to a recipe in the recipe editor. In the recipe list the <b>📷</b> next to the name opens them.</li>
+        <li><b>Photo for a cooking step:</b> In the recipe editor all steps are listed below the instructions. Tap <b>“Photo”</b> or <b>“Add”</b> at a step (works once the recipe has been saved). In <b>cooking mode</b> the photo shows up at exactly that step. The photos are tied to the step number – if you change the order, please check them.</li>
+        <li><b>Receipt photo:</b> In the purchase log “📷 Read receipt” attaches the receipt photo automatically. An entry without a photo has a <b>➕📷</b> symbol; with a photo the <b>📷</b> opens it.</li>
+        <li><b>Without network:</b> Photos you take in the offline app without network are queued (“📴 Photo queued”) and uploaded as soon as the network is back. Very large photos (over about 3 MB) need a connection.</li>
+        <li><b>Manage &amp; delete:</b> Only in ⚙️ → <b>Products</b> (order, main photo, delete one) and in the recipe editor – not in the shopping list itself.</li>
+        <li><b>Reading text from a photo:</b> That is something different from storing a photo. See “Text from photo &amp; new helpers”.</li></ul>`)}
+      ${sec("▥", "Barcodes", `<ul>
         <li><b>▥</b> at the top next to the green dot = scan a barcode (in the HA app and the offline app): the product is recognized and added.</li>
         <li>Assign a barcode later: long-press the item → <b>Barcode</b>.</li>
         <li>New product with your own name? When adding, tap the <b>▥ with a plus</b> (next to the photo icon), scan, type the name, ✔ – the barcode belongs to it right away.</li></ul>`)}
@@ -5971,8 +6000,8 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // Alter Name bleibt für „Barcode zuordnen“
-  _startAppScan(onCode = (code) => this._handleCode(code), title = "🛒 Barcode scannen") {
-    this._appScan({ title, altLabel: "Abbrechen", onCode });
+  _startAppScan(onCode = (code) => this._handleCode(code), title = "🛒 Barcode scannen", description) {
+    this._appScan({ title, description, altLabel: "Abbrechen", onCode });
   }
 
   // ▥ antippen: im Laden = abhaken, zu Hause = eintragen
@@ -6520,7 +6549,7 @@ class EinkaufslisteCard extends HTMLElement {
           this._updateTools();
           this._toast(`▥ Barcode ist dabei – tipp den Namen ein und tippe ✅, dann merke ich ihn mir!`);
           this.$("inName").focus();
-        }, "▥ Barcode für das neue Produkt");
+        }, "▥ Barcode für das neue Produkt", "Packung scannen, dann den Namen tippen und ✅ drücken.");
         break;
       }
       case "barcode-assign": {
@@ -6530,7 +6559,7 @@ class EinkaufslisteCard extends HTMLElement {
           this._ws({ type: "einkaufsliste/barcode/assign", item_id: item.id, code })
             .then(() => this._toast(`▥ Barcode gespeichert – beim nächsten Scan erkenne ich „${item.name}“ sofort!`))
             .catch(() => {});
-        }, `▥ Barcode für „${item.name}“`);
+        }, `▥ Barcode für „${item.name}“`, "Packung scannen – beim nächsten Mal erkenne ich sie sofort.");
         break;
       }
       case "menu-close":
@@ -6731,7 +6760,7 @@ class EinkaufslisteCard extends HTMLElement {
           this._updateNewPhotoBtn();
           this._toast("Foto wieder entfernt");
         } else {
-          this._pickFile("newPhotoFile");
+          this._pickFile("newPhotoFile", "📷 Foto zum neuen Produkt");
         }
         break;
       case "photo-view":
@@ -7162,7 +7191,7 @@ class EinkaufslisteCard extends HTMLElement {
         if (!dr?.id) break;
         this._photoTarget = { name: this._stepPhotoKey(dr.id, el.dataset.n), keepEdit: true,
           onDone: () => { this._toast("📸 Foto zum Schritt gespeichert"); setTimeout(() => this._renderStepPhotos(), 500); } };
-        this._pickFile("photoFile");
+        this._pickFile("photoFile", this._photoHeading(this._photoTarget.name));
         break;
       }
       case "sphoto-view": {
@@ -7172,7 +7201,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       case "rphoto-take":
         this._photoTarget = { recipeDraft: true };
-        this._pickFile("photoFile");
+        this._pickFile("photoFile", "🍳 Foto zum Rezept");
         break;
       case "rphoto-view": {
         const dr = this._draft;
