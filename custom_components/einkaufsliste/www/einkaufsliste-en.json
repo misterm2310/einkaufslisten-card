@@ -1370,9 +1370,5 @@
 "Handy in die Zone kommt.": "phone enters the zone.",
 "Es braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant.": "It needs a 📍 zone at the store (Stores → Location) and your phone as a person in Home Assistant.",
 "📍 Laden-Modus automatisch: an – für alle": "📍 Shop mode automatic: on – for everyone",
-"📷 Foto lädt …": "📷 Photo loading …",
-"😕 Foto nicht ladbar": "😕 Photo could not be loaded",
-"🔄 Nochmal": "🔄 Try again",
-"📷 Foto lädt … ({} s)": "📷 Photo loading … ({0} s)",
-"😕 Foto lässt sich nicht anzeigen": "😕 Photo cannot be displayed"
+"💡 Kein Foto zu sehen? Schließen und das Foto nochmal antippen.": "💡 No photo showing? Close and tap the photo again."
 }

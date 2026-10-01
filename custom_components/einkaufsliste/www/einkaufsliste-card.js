@@ -2,11 +2,11 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.43.3";
+const EL_VERSION = "2.43.4";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["📷 <b>Foto-Fenster zeigt das Bild sofort:</b> Das Foto wird erst komplett entpackt und geprüft, dann gezeigt – kein leerer Kasten mehr beim ersten Antippen. Klappt es einmal nicht, versucht die Karte es selbst nochmal.",
-   "📷 <b>Photo window shows the picture right away:</b> the photo is fully unpacked and checked first, then shown – no more empty box on the first tap. If it fails once, the card tries again by itself."],
+  ["↩️ <b>Foto-Änderungen zurückgenommen:</b> Das Foto-Fenster ist wieder so wie in Version 2.43.0 (ohne die Versuche der letzten Updates). <b>Kommt kein Foto, einfach nochmal antippen.</b>",
+   "↩️ <b>Photo changes rolled back:</b> the photo window is back to how it was in version 2.43.0 (without the attempts of the last updates). <b>If no photo shows up, just tap again.</b>"],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -557,16 +557,6 @@ function makeOverlay() {
   document.body.appendChild(ov);
   elWatch(ov, false);
   return ov;
-}
-
-// 🖼️ Foto als echte Bilddatei im Speicher (statt riesiger Text-Adresse) – das zeichnen Handy-Browser zuverlässiger
-function elBlobUrl(dataUrl) {
-  const m = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(String(dataUrl || ""));
-  if (!m) throw new Error("Foto-Daten unlesbar");
-  const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return URL.createObjectURL(new Blob([bytes], { type: m[1] || "image/jpeg" }));
 }
 
 function ovButton(label, main = false) {
@@ -1832,7 +1822,6 @@ class EinkaufslisteCard extends HTMLElement {
     this._pending = new Set();
     this._picker = null; // welches Icon-Feld gerade sucht
     this._photoCache = new Map();
-    this._photoPending = new Map();
     this._newPhoto = null;
   }
 
@@ -2010,7 +1999,6 @@ class EinkaufslisteCard extends HTMLElement {
           if (!this._seenSnap && this._mySeen()) this._seenSnap = { ...this._mySeen() };
           this._renderAll();
           this._autoStore();
-          this._prefetchPhotos();
         },
         { type: "einkaufsliste/subscribe" }
       );
@@ -5240,52 +5228,9 @@ class EinkaufslisteCard extends HTMLElement {
     const ck = `${key}#${index}`;
     const cached = this._photoCache.get(ck);
     if (cached && cached.updated === updated) return cached.data;
-    // 📷 Die Antwort von Home Assistant kann dauern: geduldig warten (bis 60 s), aber jede Antwort
-    // kommt in den Zwischenspeicher – auch wenn das Fenster schon zu ist. Eine Anfrage pro Foto.
-    let p = this._photoPending.get(ck);
-    if (!p) {
-      const t0 = Date.now();
-      p = this._hass.callWS({ type: "einkaufsliste/photo/get", name: key, index }).then((res) => {
-        this._photoCache.set(ck, { updated, data: res.data });
-        const sec = Math.round((Date.now() - t0) / 1000);
-        if (sec >= 8) this._photoReport("Foto kam erst nach " + sec + " Sekunden: " + key);
-        return res.data;
-      }, (err) => {
-        this._photoReport("Foto-Abruf fehlgeschlagen: " + String(err?.message || err?.code || err).slice(0, 300) + " (" + key + ")");
-        throw err;
-      }).finally(() => this._photoPending.delete(ck));
-      this._photoPending.set(ck, p);
-    }
-    let timer;
-    try {
-      return await Promise.race([p, new Promise((_, rej) => { timer = setTimeout(() => rej(new Error("Home Assistant antwortet nicht (60 s)")), 60000); })]);
-    } finally { clearTimeout(timer); }
-  }
-
-  _photoReport(message) {
-    this._hass?.callWS?.({ type: "einkaufsliste/errors/report", where: "Karte: Foto laden", message }).catch(() => {});
-  }
-
-  // 📷 Fotos der offenen Artikel im Hintergrund holen (ruhig, eins nach dem anderen) – dann sind sie beim Tippen schon da
-  _prefetchPhotos() {
-    if (this._prefetching || !this._data?.photos || !this._hass?.callWS) return;
-    this._prefetching = true;
-    const run = async () => {
-      try {
-        const keys = [...new Set((this._data?.items || []).filter((i) => !i.checked).map((i) => this._pk(i.name, i.note)))]
-          .filter((k) => this._hasPhoto(k)).slice(0, 40);
-        for (const k of keys) {
-          if (!this.isConnected) break;
-          const key = String(k).toLowerCase();
-          const updated = this._data?.photos?.[key];
-          const c = this._photoCache.get(`${key}#0`);
-          if (updated === "queued" || (c && c.updated === updated)) continue;
-          try { await this._photoData(key, 0); } catch (_) { /* egal, beim Tippen wird es nochmal versucht */ }
-          await new Promise((r) => setTimeout(r, 400));
-        }
-      } finally { this._prefetching = false; }
-    };
-    setTimeout(run, 2500);
+    const res = await this._ws({ type: "einkaufsliste/photo/get", name: key, index });
+    this._photoCache.set(ck, { updated, data: res.data });
+    return res.data;
   }
 
   // 📷 Foto-Galerie: blättern, weitere Fotos dazu, einzelne löschen
@@ -5318,12 +5263,10 @@ class EinkaufslisteCard extends HTMLElement {
     const full = document.createElement("div");
     Object.assign(full.style, { color: "#ffcc80", fontSize: "14px", margin: "0 0 8px", textAlign: "center" });
     row.append(bAdd, ...(canDelete ? [bDel] : []), bClose);
-    let loadId = 0, tick = null, curUrl = null;
-    const note = document.createElement("div"); // 📷 „lädt …“ bzw. Fehlermeldung statt leerer Fläche
-    Object.assign(note.style, { font: "500 16px Roboto, sans-serif", margin: "24px 0", textAlign: "center" });
-    const retry = ovButton("🔄 Nochmal");
-    retry.style.display = "none";
-    ov.append(note, retry, img, cap, nav, full, sort, row);
+    const hint = document.createElement("div"); // 💡 Hinweis über den Knöpfen
+    hint.textContent = "💡 Kein Foto zu sehen? Schließen und das Foto nochmal antippen.";
+    Object.assign(hint.style, { font: "400 13px Roboto, sans-serif", opacity: ".75", margin: "0 0 10px", textAlign: "center" });
+    ov.append(img, cap, nav, full, sort, hint, row);
     const show = async () => {
       const n = count();
       if (!n) { close(); return; }
@@ -5339,54 +5282,15 @@ class EinkaufslisteCard extends HTMLElement {
       bLeft.style.display = idx > 0 ? "" : "none";
       bMain.style.display = idx > 0 ? "" : "none";
       bRight.style.display = idx < n - 1 ? "" : "none";
-      const my = ++loadId;
-      img.style.display = "none";
-      note.style.display = "";
-      note.textContent = "📷 Foto lädt …";
-      retry.style.display = "none";
-      const t0 = Date.now();
-      clearInterval(tick);
-      tick = setInterval(() => { const sec = Math.round((Date.now() - t0) / 1000); if (sec >= 3) note.textContent = `📷 Foto lädt … (${sec} s)`; }, 1000);
-      try {
-        const src = await this._photoData(key, idx);
-        if (my !== loadId) return; // inzwischen weitergeblättert
-        // erst komplett entpacken und prüfen, dann zeigen – nie ein leerer Kasten; ein zweiter Versuch, falls das Handy es nicht schafft
-        let url = null;
-        for (let n = 0; n < 2 && !url; n++) {
-          const u = elBlobUrl(src);
-          try {
-            const probe = new Image();
-            probe.src = u;
-            await probe.decode();
-            url = u;
-          } catch (_) {
-            URL.revokeObjectURL(u);
-            await new Promise((r) => setTimeout(r, 300));
-          }
-        }
-        if (my !== loadId) { if (url) URL.revokeObjectURL(url); return; }
-        if (!url) throw new Error("Foto lässt sich nicht anzeigen");
-        clearInterval(tick);
-        if (curUrl) URL.revokeObjectURL(curUrl);
-        curUrl = url;
-        img.src = url;
-        img.style.display = "";
-        note.style.display = "none";
-      } catch (err) {
-        if (my !== loadId) return;
-        clearInterval(tick);
-        note.textContent = err?.message && !/antwortet nicht/.test(err.message) ? `😕 ${err.message}` : "😕 Foto nicht ladbar";
-        retry.style.display = "";
-      }
+      try { img.src = await this._photoData(key, idx); } catch (_) { close(); }
     };
-    const close = () => { clearInterval(tick); if (curUrl) URL.revokeObjectURL(curUrl); ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
+    const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
     const onKey = (e) => {
       if (e.key === "Escape") close();
       if (e.key === "ArrowLeft") { idx--; show(); }
       if (e.key === "ArrowRight") { idx++; show(); }
     };
     document.addEventListener("keydown", onKey);
-    retry.onclick = () => show();
     prev.onclick = () => { idx = (idx - 1 + count()) % count(); show(); };
     next.onclick = () => { idx = (idx + 1) % count(); show(); };
     // wischen zum Blättern
