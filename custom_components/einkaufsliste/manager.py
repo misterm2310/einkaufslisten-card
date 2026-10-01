@@ -278,7 +278,7 @@ class EinkaufslisteManager:
         self.spend_auto: bool = False  # 🧾 Protokoll von selbst anbieten, wenn alles abgehakt ist (Option, standardmäßig aus)
         self.health_cache: dict[str, Any] = {}  # 🩺 letztes Ergebnis für den Gesundheits-Sensor
         self.purchases: list[dict[str, Any]] = []  # 🧾 {"id","t","s","sn","w","wi","a"} – wer, wann, wo, wie viel
-        self.todo_sync: dict[str, Any] | None = None  # 🔁 {"entity_id", "store_id", "count"} – To-do-Liste herüberholen
+        self.todo_syncs: list[dict[str, Any]] = []  # 🔁 je To-do-Liste {"entity_id", "store_id", "count", "mode", "links"} – herüberholen
         self.offers_cfg: dict[str, Any] | None = None  # 🏷️ {"enabled", "zip", "stores", "hours", "key", "last", "ok", "error", "count"}
         self.offers_data: dict[str, list[dict[str, Any]]] = {}  # 🏷️ Artikelname klein -> Angebote
         self.mail_import: dict[str, Any] | None = None  # 📧 {"entry_id", "store_id", "senders", "count"} – per E-Mail
@@ -374,7 +374,10 @@ class EinkaufslisteManager:
         self.spend_auto = bool(data.get("spend_auto", False))
         self.auto_shop = bool(data.get("auto_shop", False))
         self.purchases = list(data.get("purchases") or [])
-        self.todo_sync = data.get("todo_sync") or None
+        raw_sync = data.get("todo_syncs")
+        if raw_sync is None and data.get("todo_sync"):  # ♻️ früher gab es nur eine Liste
+            raw_sync = [data["todo_sync"]]
+        self.todo_syncs = [c for c in (raw_sync or []) if isinstance(c, dict) and c.get("entity_id")]
         self.mail_import = data.get("mail_import") or None
         self.offers_cfg = data.get("offers_cfg") or None
         self.offers_data = dict(data.get("offers_data") or {})
@@ -430,7 +433,7 @@ class EinkaufslisteManager:
             "spend_auto": self.spend_auto,
             "auto_shop": self.auto_shop,
             "purchases": self.purchases,
-            "todo_sync": self.todo_sync,
+            "todo_syncs": self.todo_syncs,
             "mail_import": self.mail_import,
             "offers_cfg": self.offers_cfg,
             "offers_data": self.offers_data,
@@ -504,7 +507,7 @@ class EinkaufslisteManager:
                 "spend": self.spend,
                 "spend_auto": self.spend_auto,
                 "auto_shop": self.auto_shop,
-                "todo_sync": self._todo_sync_info(),
+                "todo_syncs": [self._todo_sync_info(c) for c in self.todo_syncs],
                 "mail_import": self._mail_import_info(),
                 "offers": self._offers_info(),
                 "errors": len(self.errors),
@@ -515,12 +518,10 @@ class EinkaufslisteManager:
             "missed_hidden": self.missed_hidden,
         }
 
-    def _todo_sync_info(self) -> dict[str, Any] | None:
-        if not self.todo_sync:
-            return None
-        st = self.hass.states.get(self.todo_sync["entity_id"])
-        info = {k: v for k, v in self.todo_sync.items() if k != "links"}
-        return {**info, "mode": info.get("mode", "move"), "name": st.name if st else self.todo_sync["entity_id"],
+    def _todo_sync_info(self, cfg: dict[str, Any]) -> dict[str, Any]:
+        st = self.hass.states.get(cfg["entity_id"])
+        info = {k: v for k, v in cfg.items() if k != "links"}
+        return {**info, "mode": info.get("mode", "move"), "name": st.name if st else cfg["entity_id"],
                 "ok": st is not None and st.state != "unavailable"}
 
     def store_for_retailer(self, retailer: str | None) -> str | None:
@@ -779,19 +780,39 @@ class EinkaufslisteManager:
         self._changed()
 
     def set_todo_sync(self, entity_id: str | None, store_id: str | None = None, mode: str | None = None) -> None:
-        """🔁 To-do-Liste zum automatischen Herüberholen wählen (None = aus)."""
-        if entity_id:
+        """🔁 To-do-Liste zum automatischen Herüberholen hinzufügen oder ändern (jede Liste: eigenes Geschäft + eigene Art).
+
+        entity_id=None: alle Listen aus (so ging es früher mit nur einer Liste).
+        """
+        if not entity_id:
+            self.todo_syncs = []
+        else:
             if not entity_id.startswith("todo.") or self.hass.states.get(entity_id) is None:
                 raise ValueError("Diese To-do-Liste gibt es nicht.")
             store_id = self._check_store(store_id)
-            same = self.todo_sync if self.todo_sync and self.todo_sync.get("entity_id") == entity_id else {}
-            mode = mode or same.get("mode") or "move"
+            same = next((c for c in self.todo_syncs if c["entity_id"] == entity_id), None)
+            if same is None and len(self.todo_syncs) >= 10:
+                raise ValueError("Mehr als 10 To-do-Listen sind zu viel des Guten 😉")
+            mode = mode or (same or {}).get("mode") or "move"
             if mode not in ("move", "keep", "sync"):
                 raise ValueError("Unbekannte Art des Abgleichs.")
-            self.todo_sync = {"entity_id": entity_id, "store_id": store_id, "count": same.get("count", 0), "mode": mode,
-                              "links": same.get("links", {}) if mode != "move" else {}}
-        else:
-            self.todo_sync = None
+            cfg = {"entity_id": entity_id, "store_id": store_id, "count": (same or {}).get("count", 0), "mode": mode,
+                   "links": (same or {}).get("links", {}) if mode != "move" else {}}
+            if same is None:
+                self.todo_syncs.append(cfg)
+            else:
+                self.todo_syncs[self.todo_syncs.index(same)] = cfg
+        self._changed()
+        sync = getattr(self, "sync", None)
+        if sync is not None:
+            sync.start()
+
+    def remove_todo_sync(self, entity_id: str) -> None:
+        """🔁 Eine To-do-Liste nicht mehr herüberholen."""
+        before = len(self.todo_syncs)
+        self.todo_syncs = [c for c in self.todo_syncs if c["entity_id"] != entity_id]
+        if len(self.todo_syncs) == before:
+            raise ValueError("Diese To-do-Liste war gar nicht verknüpft.")
         self._changed()
         sync = getattr(self, "sync", None)
         if sync is not None:
@@ -1835,12 +1856,13 @@ class EinkaufslisteManager:
 
     def _relink(self, old_id: str, new_id: str) -> None:
         """🔁 Verknüpfungen der To-do-Liste auf den verbleibenden Eintrag umbiegen."""
-        links = (self.todo_sync or {}).get("links") or {}
-        if any(v.get("item") == new_id for v in links.values()):
-            return  # schon verknüpft: der doppelte Eintrag drüben wird beim Abgleich gelöscht
-        for v in links.values():
-            if v.get("item") == old_id:
-                v["item"] = new_id
+        for cfg in self.todo_syncs:
+            links = cfg.get("links") or {}
+            if any(v.get("item") == new_id for v in links.values()):
+                continue  # schon verknüpft: der doppelte Eintrag drüben wird beim Abgleich gelöscht
+            for v in links.values():
+                if v.get("item") == old_id:
+                    v["item"] = new_id
 
     @callback
     def remove_item(self, item_id: str) -> None:
@@ -1918,6 +1940,31 @@ class EinkaufslisteManager:
     def barcodes_for(self, key: str) -> list[str]:
         """Alle Barcodes, die zu diesem Produkt (Name + Notiz) gehören."""
         return [c for c, bc in self.barcodes.items() if bc.get("name") and product_key(bc["name"], bc.get("note")) == key]
+
+    def barcode_product_keys(self) -> list[str]:
+        """Alle Produkte (Name + Notiz), die mindestens einen Barcode haben."""
+        keys: list[str] = []
+        for bc in self.barcodes.values():
+            if bc.get("name"):
+                k = product_key(bc["name"], bc.get("note"))
+                if k not in keys:
+                    keys.append(k)
+        return keys
+
+    async def async_photo_refresh_plan(self) -> dict[str, Any]:
+        """🔄 Welche Produkte mit Barcode brauchen ein Foto? (keins da oder ein abgeschnittenes dabei)"""
+        keys = self.barcode_product_keys()
+
+        def _plan() -> list[str]:
+            todo: list[str] = []
+            for k in keys:
+                entry = self.photos.get(k)
+                if entry is None or any(not photo_file_complete(self._photo_path(pid)) for pid in self._photo_ids(entry)):
+                    todo.append(k)
+            return todo
+
+        todo = await self.hass.async_add_executor_job(_plan)
+        return {"keys": todo, "total": len(keys)}
 
     def product_label(self, key: str) -> str:
         """Name des Produkts in Originalschreibweise (Name|Notiz) – für ein neues Foto."""
@@ -2050,8 +2097,10 @@ class EinkaufslisteManager:
             return {"value": DEL, "label": "🗑️ Produkt ganz löschen" + (f" (bleibt in Rezept: {', '.join(where)})" if where else "")}
 
         def add(pid: str, text: str, how: str, action: Any, options: list | None = None,
-                default: str | None = None, empty: str | None = None) -> None:
+                default: str | None = None, empty: str | None = None, edit: dict[str, str] | None = None) -> None:
             entry: dict[str, Any] = {"id": pid, "text": text, "how": how}
+            if edit:  # ✏️ „Selbst ändern“: wohin die Karte springen soll
+                entry["edit"] = edit
             if options is not None:
                 entry.update(options=options, default=default or "", empty=empty)
             found.append(entry)
@@ -2098,8 +2147,17 @@ class EinkaufslisteManager:
                         if await async_auto_photo(self.hass, self, code, self.product_label(key)):
                             break
                 has_bc = bool(self.barcodes_for(key))
+
+                async def cut_fix(v, key=key, refetch=refetch):
+                    if v == "drop":
+                        await self.async_drop_cut_photos(key)
+                    else:
+                        await refetch(v)
+                cut_opts = ([{"value": "refetch", "label": "🔄 Löschen und neu aus der Datenbank holen"}] if has_bc else []) \
+                    + [{"value": "drop", "label": "🗑️ Nur die abgeschnittenen löschen"}]
                 add(f"photo_cut:{key}", f"📷 „{label}“: {len(cut)} von {len(ids)} Foto(s) sind abgeschnitten (nur halb geladen)",
-                    "Abgeschnittene Fotos löschen" + (" und neu aus der Datenbank holen" if has_bc else ""), refetch)
+                    "Abgeschnittene Fotos löschen" + (" und neu aus der Datenbank holen" if has_bc else ""), cut_fix,
+                    cut_opts, cut_opts[0]["value"], edit={"kind": "product", "id": key})
             missing = [pid for pid in ids if pid not in files]
             if missing:
                 def drop(_v, key=key, entry=entry, ids=ids):
@@ -2111,7 +2169,47 @@ class EinkaufslisteManager:
                 keep_n = len(ids) - len(missing)
                 add(f"photo_missing:{key}",
                     f"📷 „{label}“: {len(missing)} von {len(ids)} Foto(s) fehlen auf der Festplatte",
-                    f"Fehlende Fotos austragen{f' ({keep_n} vorhandene bleiben)' if keep_n else ' (Produkt hat dann kein Foto mehr)'}", drop)
+                    f"Fehlende Fotos austragen{f' ({keep_n} vorhandene bleiben)' if keep_n else ' (Produkt hat dann kein Foto mehr)'}", drop,
+                    edit=None if key.startswith(("rezept#", "bon#")) else {"kind": "product", "id": key})
+        # 👯 Zwei Produkte mit genau demselben Foto (oder ein Foto doppelt beim selben Produkt)
+        prod_photos = [(k, pid) for k, e in self.photos.items() if not k.startswith(("rezept#", "bon#"))
+                       for pid in self._photo_ids(e) if pid in files and pid not in cut_ids]
+
+        def _hash_files() -> dict[str, str]:
+            out: dict[str, str] = {}
+            for _k, pid in prod_photos:
+                try:
+                    out[pid] = hashlib.md5(self._photo_path(pid).read_bytes()).hexdigest()  # noqa: S324 – nur zum Vergleichen
+                except OSError:
+                    continue
+            return out
+
+        digest = await self.hass.async_add_executor_job(_hash_files)
+        first_of: dict[str, tuple[str, str]] = {}
+        for k, pid in sorted(prod_photos, key=lambda x: (x[0], self._photo_ids(self.photos[x[0]]).index(x[1]))):
+            h = digest.get(pid)
+            if not h:
+                continue
+            if h not in first_of:
+                first_of[h] = (k, pid)
+                continue
+            k0, _pid0 = first_of[h]
+            e = self.photos[k]
+            lab = (e.get("name") or k).replace("|", " · ")
+            lab0 = (self.photos[k0].get("name") or k0).replace("|", " · ")
+            if k == k0:
+                text, how = f"📷 „{lab}“: ein Foto ist doppelt vorhanden", "Das doppelte Foto löschen"
+            else:
+                text, how = (f"📷 „{lab}“ hat genau dasselbe Foto wie „{lab0}“",
+                             f"Foto bei „{lab}“ löschen (bei „{lab0}“ bleibt es)")
+            if k == k0:
+                add(f"photo_dup:{k}:{pid}", text, how, lambda _v, k=k, pid=pid: self._drop_photo_by_id(k, pid),
+                    edit={"kind": "product", "id": k})
+            else:
+                dup_opts = [{"value": "this", "label": f"🗑️ Bei „{lab}“ löschen"}, {"value": "other", "label": f"🗑️ Bei „{lab0}“ löschen"}]
+                add(f"photo_dup:{k}:{pid}", text, how,
+                    lambda v, k=k, pid=pid, k0=k0, pid0=_pid0: self._drop_photo_by_id(k0, pid0) if v == "other" else self._drop_photo_by_id(k, pid),
+                    dup_opts, "this", edit={"kind": "product", "id": k})
         orphans = files - used
         if orphans:
             async def wipe(_v, orphans=sorted(orphans)):
@@ -2125,39 +2223,40 @@ class EinkaufslisteManager:
                 add(f"bc_noname:{code}", f"▥ Barcode {code} hat keinen Produktnamen", "Barcode löschen",
                     lambda _v, code=code: self.barcodes.pop(code, None))
 
-        def ref(pid: str, thing: dict[str, Any], label: str, fields: tuple[str, ...] = ("store_id", "category_id")) -> None:
+        def ref(pid: str, thing: dict[str, Any], label: str, fields: tuple[str, ...] = ("store_id", "category_id"),
+                edit: dict[str, str] | None = None) -> None:
             for field in fields:
                 if not thing.get(field):
                     continue
                 if field == "store_id" and thing[field] not in stores:
                     add(f"ref:{pid}:store", f"🔗 {label}: das Geschäft gibt es nicht mehr",
                         "Anderes Geschäft wählen", lambda v, t=thing: t.__setitem__("store_id", v or None),
-                        store_opts, None, "🤷 Egal wo / wie zuletzt")
+                        store_opts, None, "🤷 Egal wo / wie zuletzt", edit)
                 if field == "category_id" and thing[field] not in cats:
                     guess = self.guess_category(thing.get("name") or "")
                     add(f"ref:{pid}:cat", f"🔗 {label}: die Kategorie gibt es nicht mehr",
                         "Andere Kategorie wählen", lambda v, t=thing: t.__setitem__("category_id", v or None),
-                        cat_opts, guess, "📦 Ohne Kategorie")
+                        cat_opts, guess, "📦 Ohne Kategorie", edit)
 
         for code, bc in self.barcodes.items():
             if bc.get("name"):
-                ref(f"bc:{code}", bc, f"Barcode „{bc['name']}“")
+                ref(f"bc:{code}", bc, f"Barcode „{bc['name']}“", edit={"kind": "product", "id": product_key(bc["name"], bc.get("note"))})
         for recipe in self.recipes:
             for n, ri in enumerate(recipe["items"]):
-                ref(f"ri:{recipe['id']}:{n}", ri, f"Zutat „{ri['name']}“ in „{recipe['name']}“")
+                ref(f"ri:{recipe['id']}:{n}", ri, f"Zutat „{ri['name']}“ in „{recipe['name']}“", edit={"kind": "recipe", "id": recipe["id"]})
             if recipe.get("group") and recipe["group"] not in groups:
                 add(f"rgroup:{recipe['id']}", f"🏷️ Rezept „{recipe['name']}“: die Rezept-Gruppe gibt es nicht mehr",
                     "Andere Gruppe wählen", lambda v, r=recipe: r.__setitem__("group", v or None),
-                    group_opts, None, "Ohne Gruppe")
+                    group_opts, None, "Ohne Gruppe", {"kind": "recipe", "id": recipe["id"]})
         for hkey, hist in self.history.items():
             ref(f"hist:{hkey}", hist, f"Gedächtnis „{hist.get('name', '?')}“")
         for item in self.items:
             label = item["name"] + (f" · {item['note']}" if item.get("note") else "")
-            ref(f"item:{item['id']}", item, f"Artikel „{label}“", ("category_id",))
+            ref(f"item:{item['id']}", item, f"Artikel „{label}“", ("category_id",), {"kind": "item", "id": item["id"]})
             if item.get("recipe_id") and item["recipe_id"] not in recipes:
                 add(f"item_recipe:{item['id']}", f"🍽️ Artikel „{label}“ gehört zu einem Rezept, das es nicht mehr gibt",
                     "Rezept-Hinweis entfernen (der Artikel bleibt auf der Liste)",
-                    lambda _v, i=item: i.__setitem__("recipe_id", None))
+                    lambda _v, i=item: i.__setitem__("recipe_id", None), edit={"kind": "item", "id": item["id"]})
             # 🛒 kein (gültiges) Geschäft – Vorschlag: so wie zuletzt gekauft
             if not item.get("store_id") or item["store_id"] not in stores:
                 last = (self.history_for(item["name"]) or {}).get("store_id")
@@ -2173,7 +2272,7 @@ class EinkaufslisteManager:
                     f"🛒 „{label}“ ({state}) hat kein Geschäft" + (" – das alte gibt es nicht mehr" if item.get("store_id") else " („Egal wo“)"),
                     "Geschäft setzen" + (" (Vorschlag: wie zuletzt)" if last in stores else "") + " – oder ganz löschen, falls es das nicht gibt",
                     set_store, store_opts + ([] if item.get("recipe_id") else [del_opt(pkey)]),
-                    last if last in stores else None, "🤷 Egal wo lassen")
+                    last if last in stores else None, "🤷 Egal wo lassen", {"kind": "item", "id": item["id"]})
         # 📦 Produkte im Katalog ohne Kategorie – Vorschlag aus dem Wörterbuch
         for prod in self.products():
             if prod["category_id"] and prod["category_id"] in cats:
@@ -2187,7 +2286,7 @@ class EinkaufslisteManager:
                 return v and self.update_product(key, category_id=v)
             add(f"nocat:{prod['key']}", f"📦 „{label}“ hat keine Kategorie",
                 "Kategorie setzen" + (" (Vorschlag aus dem Wörterbuch)" if guess else " – bitte selbst wählen") + " – oder ganz löschen, falls es das nicht gibt",
-                set_cat, cat_opts + [del_opt(prod["key"])], guess, "📦 Ohne Kategorie lassen")
+                set_cat, cat_opts + [del_opt(prod["key"])], guess, "📦 Ohne Kategorie lassen", {"kind": "product", "id": prod["key"]})
 
         # 🔧 Reparieren: nur was ausgewählt ist (bzw. bei fix=True alles mit Vorschlag)
         todo: dict[str, str] = dict(fixes or {})
@@ -2209,6 +2308,13 @@ class EinkaufslisteManager:
             self._changed()
         problems = [e["text"] for e in found]
         return {"items": found, "problems": problems, "count": len(found), "fixed": fixed}
+
+    async def _drop_photo_by_id(self, key: str, pid: str) -> None:
+        """Ein bestimmtes Foto eines Produkts löschen (nach Datei-ID, nicht nach Platz – der kann sich verschieben)."""
+        entry = self.photos.get(key)
+        if entry is None or pid not in self._photo_ids(entry):
+            return
+        await self.async_remove_photo(key, self._photo_ids(entry).index(pid))
 
     async def _async_delete_file(self, photo_id: str) -> None:
         path = self._photo_path(photo_id)

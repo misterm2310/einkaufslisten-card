@@ -293,8 +293,12 @@ async def async_auto_photo(hass: HomeAssistant, manager: Any, code: str, name: s
     return True
 
 
-async def async_refresh_photo(hass: HomeAssistant, manager: Any, key: str) -> dict[str, Any]:
-    """🔄 Foto zu einem Produkt neu aus der Datenbank holen (abgeschnittene alte Fotos werden ersetzt)."""
+async def async_refresh_photo(hass: HomeAssistant, manager: Any, key: str, only_missing: bool = False) -> dict[str, Any]:
+    """🔄 Foto zu einem Produkt neu aus der Datenbank holen (abgeschnittene alte Fotos werden ersetzt).
+
+    only_missing=True („Alle Fotos neu holen“): ganze Fotos bleiben unangetastet, es kommt nichts doppelt dazu –
+    nur abgeschnittene Fotos fliegen raus, und ein neues Foto kommt nur, wenn danach keins mehr da ist.
+    """
     key = (key or "").strip().lower()
     codes = manager.barcodes_for(key)
     if not codes:
@@ -306,11 +310,13 @@ async def async_refresh_photo(hass: HomeAssistant, manager: Any, key: str) -> di
             break
     if raw is None:
         raise ValueError("Die Datenbank hat zu diesem Barcode kein (vollständiges) Foto, oder sie ist gerade nicht erreichbar.")
-    await manager.async_drop_cut_photos(key)  # kaputte alte Fotos raus
+    dropped = await manager.async_drop_cut_photos(key)  # kaputte alte Fotos raus
+    if only_missing and manager.photos.get(key):
+        return {"key": key, "count": 1 + len(manager.photos[key].get("more", [])), "fixed": dropped, "added": False}
     label = (manager.photos.get(key) or {}).get("name") or key
     name = label if manager.photos.get(key) else manager.product_label(key)
     result = await manager.async_set_photo(name, base64.b64encode(raw).decode(), add=bool(manager.photos.get(key)))
-    return {"key": key, "count": result.get("count", 1)}
+    return {"key": key, "count": result.get("count", 1), "fixed": dropped, "added": True}
 
 
 # ℹ️ Produkt-Infos (nur auf Nachfrage: beim Draufdrücken aufs Produkt)

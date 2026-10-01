@@ -63,11 +63,11 @@ class TodoSync:
     @callback
     def start(self) -> None:
         self.stop()
-        cfg = self.manager.todo_sync
-        if not cfg or not cfg.get("entity_id"):
+        cfgs = self.manager.todo_syncs
+        if not cfgs:
             return
-        self._unsub = async_track_state_change_event(self.hass, [cfg["entity_id"]], self._on_change)
-        if cfg.get("mode", "move") != "move":  # 🔗 Änderungen in der Einkaufsliste auch dorthin
+        self._unsub = async_track_state_change_event(self.hass, [c["entity_id"] for c in cfgs], self._on_change)
+        if any(c.get("mode", "move") != "move" for c in cfgs):  # 🔗 Änderungen in der Einkaufsliste auch dorthin
             self._unsub_list = async_dispatcher_connect(self.hass, SIGNAL_UPDATED, self._on_list_change)
         self.hass.async_create_task(self.run())  # gleich einmal nachschauen
 
@@ -91,7 +91,8 @@ class TodoSync:
         new = event.data.get("new_state")
         if new is None or str(new.state) in ("unavailable", "unknown"):
             return
-        if str(new.state) == "0" and (self.manager.todo_sync or {}).get("mode", "move") == "move":
+        cfg = next((c for c in self.manager.todo_syncs if c["entity_id"] == event.data.get("entity_id")), None)
+        if cfg is None or (str(new.state) == "0" and cfg.get("mode", "move") == "move"):
             return
         self.hass.async_create_task(self.run())
 
@@ -119,17 +120,15 @@ class TodoSync:
         try:
             while True:
                 self._again = False
-                total += await self._once()
+                for cfg in list(self.manager.todo_syncs):
+                    total += await self._once(cfg)
                 if not self._again:
                     break
         finally:
             self._busy = False
         return total
 
-    async def _once(self) -> int:
-        cfg = self.manager.todo_sync
-        if not cfg:
-            return 0
+    async def _once(self, cfg: dict[str, Any]) -> int:
         if cfg.get("mode", "move") != "move":
             return await self._reconcile(cfg)
         entity_id = cfg["entity_id"]
@@ -163,7 +162,7 @@ class TodoSync:
                         _LOGGER.debug("„%s“ nicht übernommen: %s", text, err)
                 done.append(entry.get("uid") or text)
         if added:
-            self.manager.todo_sync["count"] = int(self.manager.todo_sync.get("count", 0)) + added
+            cfg["count"] = int(cfg.get("count", 0)) + added
             self.manager._changed()
         if done:
             try:  # erst eintragen, dann dort löschen – so geht nichts verloren

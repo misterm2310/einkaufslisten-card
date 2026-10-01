@@ -63,6 +63,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_import_todo_lists,
         ws_import_todo,
         ws_todo_sync,
+        ws_todo_sync_remove,
         ws_mail_sources,
         ws_mail_import,
         ws_mascot,
@@ -87,6 +88,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_offers_take,
         ws_product_add,
         ws_product_refresh,
+        ws_photos_refresh_plan,
         ws_stats,
         ws_errors_get,
         ws_errors_clear,
@@ -579,8 +581,16 @@ async def ws_import_todo(hass, connection, msg):
 @websocket_api.require_admin
 @callback
 def ws_todo_sync(hass, connection, msg):
-    """🔁 To-do-Liste zum automatischen Herüberholen wählen (ohne entity_id = aus)."""
+    """🔁 To-do-Liste zum automatischen Herüberholen hinzufügen/ändern (ohne entity_id = alle aus)."""
     _run(hass, connection, msg, lambda m: m.set_todo_sync(msg.get("entity_id") or None, msg.get("store_id") or None, msg.get("mode")))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/todo_sync/remove", vol.Required("entity_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_todo_sync_remove(hass, connection, msg):
+    """🔁 Eine To-do-Liste nicht mehr herüberholen."""
+    _run(hass, connection, msg, lambda m: m.remove_todo_sync(msg["entity_id"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/mail/sources"})
@@ -868,11 +878,20 @@ def ws_product_add(hass, connection, msg):
     _run(hass, connection, msg, _add)
 
 
-@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/product/refresh", vol.Required("key"): str})
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/product/refresh", vol.Required("key"): str, vol.Optional("only_missing"): bool}
+)
 @websocket_api.async_response
 async def ws_product_refresh(hass, connection, msg):
     """🔄 Foto zu einem Produkt neu aus der Barcode-Datenbank holen."""
-    await _run_async(hass, connection, msg, lambda m: async_refresh_photo(hass, m, msg["key"]))
+    await _run_async(hass, connection, msg, lambda m: async_refresh_photo(hass, m, msg["key"], bool(msg.get("only_missing"))))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/photos/refresh_plan"})
+@websocket_api.async_response
+async def ws_photos_refresh_plan(hass, connection, msg):
+    """🔄 Alle Fotos neu holen: welche Produkte mit Barcode brauchen ein Foto?"""
+    await _run_async(hass, connection, msg, lambda m: m.async_photo_refresh_plan())
 
 
 @websocket_api.websocket_command(

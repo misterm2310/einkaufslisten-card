@@ -2,11 +2,21 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.43.5";
+const EL_VERSION = "2.44.0";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["📷 <b>Halbe Fotos behoben:</b> Produktfotos aus der Barcode-Datenbank kamen oft nur zur Hälfte an, weil nur das erste Stück der Datei gespeichert wurde. Jetzt wird die ganze Datei geholt – und nur vollständige Fotos werden gespeichert. „Alles ok?“ findet schon gespeicherte halbe Fotos und holt sie neu. Im Katalog hat jedes Produkt mit Barcode den Knopf <b>„Foto neu holen“</b>.",
-   "📷 <b>Half photos fixed:</b> product photos from the barcode database often arrived only half, because only the first part of the file was saved. Now the whole file is fetched – and only complete photos are saved. “All ok?” finds already saved half photos and fetches them again. In the catalog every product with a barcode has a <b>“Fetch photo again”</b> button."],
+  ["🔧 <b>„Alles ok?“ löst alles direkt:</b> Bei jedem Fund gibt es <b>🔧 Beheben</b> (nur dieser eine), <b>✏️ Selbst ändern</b> (springt zum Produkt, Artikel oder Rezept) und – wo es mehrere Wege gibt – eine <b>Auswahl</b>, z. B. „neu holen“ oder „nur löschen“.",
+   "🔧 <b>“All OK?” solves everything right there:</b> every finding has <b>🔧 Fix</b> (just this one), <b>✏️ Change it myself</b> (jumps to the product, item or recipe) and – where there is more than one way – a <b>choice</b>, e.g. “fetch again” or “just delete”."],
+  ["🔁 <b>Mehrere To-do-/Alexa-Listen:</b> In ⚙️ → Daten → Import &amp; Sicherung → „Aus anderen Apps“ lassen sich jetzt mehrere Listen gleichzeitig herüberholen – jede mit <b>eigenem Geschäft</b> (oder „Egal wo“) und <b>eigener Art</b> des Abgleichs. Die bisherige Liste bleibt, wie sie war.",
+   "🔁 <b>Several to-do/Alexa lists:</b> in ⚙️ → Data → Import &amp; backup → “From other apps” you can now bring over several lists at once – each with its <b>own store</b> (or “Anywhere”) and its <b>own kind</b> of sync. Your existing list stays as it was."],
+  ["↩️ <b>Rückgängig:</b> Wer einen Artikel versehentlich abhakt, sieht unten 3 Sekunden lang „↩️ Rückgängig“ – ein Tipp, und er steht wieder offen. Der Hinweis erscheint nur bei dem, der selbst abgehakt hat.",
+   "↩️ <b>Undo:</b> if you check something off by accident, “↩️ Undo” appears at the bottom for 3 seconds – one tap and it is open again. It only shows for the person who checked it off."],
+  ["▥ <b>Rückgängig nach dem Scannen:</b> Nach „Mehrere scannen“ und „Scannen &amp; abhaken“ steht 5 Sekunden „↩️ Rückgängig“ für den zuletzt gescannten Artikel.",
+   "▥ <b>Undo after scanning:</b> after “Scan several” and “Scan &amp; check off”, “↩️ Undo” shows for 5 seconds for the last scanned item."],
+  ["🔄 <b>Alle Fotos neu holen:</b> in ⚙️ → Produkte → „Alle Produkte“ holt ein Knopf die fehlenden oder abgeschnittenen Fotos für alle Produkte mit Barcode nach – nacheinander, mit Fortschritt. Ganze Fotos bleiben unangetastet.",
+   "🔄 <b>Fetch all photos again:</b> in ⚙️ → Products → “All products” one button fetches the missing or cut-off photos for every product with a barcode – one after another, with progress. Complete photos stay untouched."],
+  ["🧹 <b>Doppelte Fotos:</b> „Alles ok?“ meldet jetzt, wenn zwei Produkte genau dasselbe Foto haben (oder ein Foto doppelt vorkommt) – und löscht auf Wunsch das doppelte.",
+   "🧹 <b>Duplicate photos:</b> “All ok?” now reports when two products have exactly the same photo (or a photo appears twice) – and deletes the duplicate on request."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -980,6 +990,15 @@ button { font:inherit; color:inherit; }
 .qwait { font-size:.8em; margin-left:4px; }
 .live.off { background:var(--error-color,#db4437); box-shadow:0 0 0 3px color-mix(in srgb, var(--error-color,#db4437) 25%, transparent); animation: pulse 1.2s infinite; }
 .updbar { margin:0 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 14%, transparent); font-size:.88em; display:flex; align-items:center; gap:8px; }
+.undobar { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:50; max-width:calc(100vw - 24px); display:flex; align-items:center; gap:12px; padding:8px 8px 8px 16px; border-radius:24px; background:#323232; color:#fff; box-shadow:0 3px 12px rgba(0,0,0,.35); font-size:.92em; }
+.undobar[hidden] { display:none; }
+.undobar .ut { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.undobar .ub { border:0; border-radius:16px; padding:7px 12px; background:#fff; color:#222; font-weight:600; cursor:pointer; font:inherit; font-weight:600; white-space:nowrap; }
+.chkitem { margin-bottom:4px; }
+.chkitem .cbtns { display:flex; flex-wrap:wrap; gap:6px; padding:6px 0 4px 28px; }
+.chkitem .cbtns .btn { font-size:.85em; padding:5px 10px; }
+.syncrow { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:6px 0; border-top:1px solid var(--divider-color,#eee); }
+.syncrow .btn { font-size:.85em; padding:4px 9px; }
 .updbar b { flex:1; }
 .tipbtn { font:inherit; font-size:.95em; border:0; border-radius:10px; padding:6px 10px; cursor:pointer; background:color-mix(in srgb, var(--primary-color,#03a9f4) 25%, transparent); color:var(--primary-text-color); }
 .guidebtn { margin-left:auto; font:inherit; font-size:1em; display:inline-flex; align-items:center; gap:4px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:5px 10px; background:none; color:var(--primary-text-color); cursor:pointer; }
@@ -2120,6 +2139,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="updbar" id="updBar" hidden></div>
         <div class="updbar" id="tipBar" hidden></div>
         <div class="wizard" id="wizard" hidden></div>
+        <div class="undobar" id="undoBar" hidden></div>
         <div id="listView">
           <div class="tabs" id="tabs"></div>
           <form class="add" id="addForm" autocomplete="off">
@@ -2817,15 +2837,17 @@ class EinkaufslisteCard extends HTMLElement {
       const items = res.items || [];
       if (!items.length) { box.innerHTML = `<p>✅ <b>Alles ok!</b> Nichts gefunden. 🎉</p>`; return; }
       const shown = items.slice(0, 150);
+      this._checkEdits = Object.fromEntries(shown.filter((e) => e.edit).map((e) => [e.id, e.edit]));
       box.innerHTML = `<p><b>⚠️ ${items.length} ${items.length === 1 ? "Sache gefunden" : "Sachen gefunden"}.</b> Anhaken, was repariert werden soll – und wie:</p>
         <div class="btnrow"><button class="btn" data-act="check-all">Alle an</button><button class="btn" data-act="check-none">Alle aus</button></div>
         <div class="chklist">${shown.map((e) => {
-          const pick = e.options ? `<select title="So reparieren">${e.default ? "" : `<option value="">– bitte wählen –</option>`}
+          const pick = e.options ? `<select title="So reparieren">${e.default ? "" : `<option value="" data-need="${e.empty ? "" : "1"}">${e.empty ? "" : "– bitte wählen –"}</option>`}
               ${e.options.map((o) => `<option value="${esc(o.value)}" ${o.value === e.default ? "selected" : ""}>${esc(o.label)}</option>`).join("")}
-              ${e.empty ? `<option value="">${esc(e.empty)}</option>` : ""}</select>` : "";
+              ${e.empty && e.default ? `<option value="">${esc(e.empty)}</option>` : ""}</select>` : "";
           const on = !e.options || !!e.default;
-          return `<label class="chkrow" data-id="${esc(e.id)}"><input type="checkbox" class="chk" ${on ? "checked" : ""}>
-            <span class="ctxt"><span class="cwhat">${esc(e.text)}</span><span class="chow">🔧 ${esc(e.how)}</span>${pick}</span></label>`;
+          return `<div class="chkitem"><label class="chkrow" data-id="${esc(e.id)}"><input type="checkbox" class="chk" ${on ? "checked" : ""}>
+            <span class="ctxt"><span class="cwhat">${esc(e.text)}</span><span class="chow">🔧 ${esc(e.how)}</span>${pick}</span></label>
+            <div class="cbtns"><button type="button" class="btn" data-act="check-one" data-id="${esc(e.id)}">🔧 Beheben</button>${e.edit ? `<button type="button" class="btn" data-act="check-edit" data-id="${esc(e.id)}">✏️ Selbst ändern</button>` : ""}</div></div>`;
         }).join("")}</div>
         ${items.length > shown.length ? `<p class="hint">… und ${items.length - shown.length} weitere – nach dem Reparieren nochmal prüfen.</p>` : ""}
         <div class="btnrow"><button class="btn primary" data-act="check-fix" id="checkFixBtn"><ha-icon icon="mdi:wrench-outline"></ha-icon>Ausgewählte reparieren</button></div>`;
@@ -3156,10 +3178,44 @@ class EinkaufslisteCard extends HTMLElement {
     this._toggle(item.id);
   }
 
+  // ↩️ Kleiner Hinweis unten mit „Rückgängig“ (verschwindet von allein, blockiert nichts)
+  _undoShow(text, fn, ms = 3000) {
+    const bar = this.$("undoBar");
+    if (!bar) return;
+    clearTimeout(this._undoTimer);
+    this._undoFn = fn;
+    bar.innerHTML = `<span class="ut">${esc(elT(text))}</span><button type="button" class="ub" data-act="undo-go">${esc(elT("↩️ Rückgängig"))}</button>`;
+    bar.hidden = false;
+    this._undoTimer = setTimeout(() => this._undoHide(), ms);
+  }
+
+  _undoHide() {
+    clearTimeout(this._undoTimer);
+    this._undoFn = null;
+    const bar = this.$("undoBar");
+    if (bar) bar.hidden = true;
+  }
+
+  // ↩️ Nach dem Scannen: für den zuletzt gescannten Artikel 5 Sekunden „Rückgängig“ (keine Prüf-Liste)
+  _scanFinish(entries) {
+    const last = (entries || []).filter((e) => e && e.undo).pop();
+    if (!last) return;
+    this._undoShow(last.text, async () => { try { await last.undo(); } catch (_) { /* Meldung kam schon */ } }, 5000);
+  }
+
+  _undoCheck(id, tries = 0) {
+    const it = this._data?.items.find((i) => i.id === id);
+    if (!it) { this._toast("Das lässt sich nicht mehr zurücknehmen."); return; }
+    if (this._pending.has(id) && tries < 10) { setTimeout(() => this._undoCheck(id, tries + 1), 300); return; } // Abhaken ist noch unterwegs
+    if (it.checked) this._readd(it);
+  }
+
   _toggle(id) {
     if (!id || this._pending.has(id)) return;
     const it = this._data?.items.find((i) => i.id === id);
     if (it && !it.checked) { try { navigator.vibrate?.(35); } catch (_) { /* egal */ } }
+    // ↩️ Versehentlich abgehakt? 3 Sekunden lang kann man es zurücknehmen (nur bei dem, der selbst abgehakt hat)
+    if (it && !it.checked) this._undoShow(`„${it.name}“ abgehakt`, () => this._undoCheck(id)); else this._undoHide();
     this._pending.add(id);
     this.shadowRoot.querySelector(`.item[data-id="${id}"]`)?.classList.add("pending");
     // 🧾 Merken, wo ich abgehakt habe – für den automatischen Protokoll-Vorschlag
@@ -3421,7 +3477,9 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen …" value="${esc(this._prodFilter || "")}"></div>
         ${this._prodTab === "scanned" ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:filter-variant"></ha-icon><select class="grow" id="prodFilterSel" title="Filter">${this._prodFilterOptions()}</select>
           <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon>Neues Produkt</button>
-          <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon>Per Barcode</button></div>
+          <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon>Per Barcode</button>
+          <button class="btn" data-act="prod-refresh-all" title="Für alle Produkte mit Barcode fehlende oder abgeschnittene Fotos neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon>Alle Fotos neu holen</button></div>
+        <p class="hint" id="prodRefreshMsg" hidden></p>
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
       { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_VERSION}`, html: () => this._newsHtml() },
@@ -3631,20 +3689,23 @@ class EinkaufslisteCard extends HTMLElement {
         ${admin ? `<div class="btnrow"><label class="btn primary"><ha-icon icon="mdi:file-upload-outline"></ha-icon>Datei auswählen<input type="file" id="xferRecipeFile" accept=".txt,.md,.csv,.json,text/*,application/json" hidden></label></div>` : `<p class="hint">🔒 Rezepte einlesen darf nur ein Admin.</p>`}
         <div id="xferRes"></div>`;
     } else if (tab === "apps") {
-      const sync = this._data.settings?.todo_sync;
-      const syncStore = sync?.store_id ? this._store(sync.store_id)?.name : null;
+      const syncs = this._data.settings?.todo_syncs || [];
+      const modeName = { move: "herüberholen & dort löschen", keep: "bei beiden behalten", sync: "voller Abgleich" };
+      const editSync = syncs.find((x) => x.entity_id === this._syncSel) || null;
       body = `
         <div class="syncbox">
-        <p class="hint"><b>🔁 Automatisch herüberholen</b>: Alles, was auf der gewählten Liste landet, wandert <b>sofort</b> in die Einkaufsliste – ganz ohne Automation. Unten auswählen: 🗑️ dort löschen · 🔗 bei beiden behalten (Abhaken wird in beide Richtungen abgeglichen) · 🔄 voller Abgleich (zusätzlich kommt alles aus der Einkaufsliste auch dorthin, ohne Geschäft und Notiz). Für <b>Alexa</b>: in Home Assistant die Integration „Alexa Devices“ einrichten und hier deren Einkaufsliste wählen. Dann reicht „Alexa, setz Milch auf die Einkaufsliste“.</p>
-        ${sync ? `<p><b>✅ An:</b> <span translate="no">${esc(sync.name || sync.entity_id)}</span> → ${syncStore ? `<span translate="no">${esc(syncStore)}</span>` : "<span>Egal wo</span>"}<span> · ${{ move: "herüberholen & dort löschen", keep: "bei beiden behalten", sync: "voller Abgleich" }[sync.mode || "move"]}</span>${sync.count ? `<span> · schon ${sync.count}× herübergeholt</span>` : ""}${sync.ok === false ? `<br><span>⚠️ Die Liste ist gerade nicht erreichbar – es geht weiter, sobald sie wieder da ist.</span>` : ""}</p>` : ""}
+        <p class="hint">${EL_LANG === "en" ? `<b>🔁 Bring over automatically</b>: everything that lands on the chosen lists moves <b>right away</b> into the shopping list – no automation needed. You can use <b>several lists</b>, each with its <b>own store</b> and its own kind. Choose below: 🗑️ delete there · 🔗 keep on both (checking off is matched both ways) · 🔄 full sync (everything from the shopping list also goes there, without store and note). For <b>Alexa</b>: set up the “Alexa Devices” integration in Home Assistant and pick its shopping list here. Then “Alexa, add milk to my shopping list” is all it takes.` : `<b>🔁 Automatisch herüberholen</b>: Alles, was auf den gewählten Listen landet, wandert <b>sofort</b> in die Einkaufsliste – ganz ohne Automation. Du kannst <b>mehrere Listen</b> nehmen, jede mit <b>eigenem Geschäft</b> und eigener Art. Unten auswählen: 🗑️ dort löschen · 🔗 bei beiden behalten (Abhaken wird in beide Richtungen abgeglichen) · 🔄 voller Abgleich (zusätzlich kommt alles aus der Einkaufsliste auch dorthin, ohne Geschäft und Notiz). Für <b>Alexa</b>: in Home Assistant die Integration „Alexa Devices“ einrichten und hier deren Einkaufsliste wählen. Dann reicht „Alexa, setz Milch auf die Einkaufsliste“.`}</p>
+        ${syncs.map((sy) => `<div class="syncrow" data-ent="${esc(sy.entity_id)}"><span class="grow"><b>✅</b> <span translate="no">${esc(sy.name || sy.entity_id)}</span> → ${sy.store_id && this._store(sy.store_id) ? `<span translate="no">${esc(this._store(sy.store_id).name)}</span>` : "<span>Egal wo</span>"}<span> · ${modeName[sy.mode] || ""}</span>${sy.count ? `<span> · ${sy.count} geholt</span>` : ""}${sy.ok === false ? ` <span title="Liste gerade nicht erreichbar">⚠️</span>` : ""}</span>
+          ${admin ? `<button type="button" class="btn" data-act="sync-edit" data-ent="${esc(sy.entity_id)}" title="Geschäft oder Art ändern">✏️</button><button type="button" class="btn" data-act="sync-off" data-ent="${esc(sy.entity_id)}" title="Diese Liste nicht mehr herüberholen"><ha-icon icon="mdi:sync-off"></ha-icon>Aus</button>` : ""}</div>`).join("")}
         ${!admin ? `<p class="hint">🔒 Einschalten oder ändern kann das nur ein Admin – es verändert eine andere Liste in Home Assistant.</p>` : `
+        <p class="hint" style="margin-top:8px"><b>${editSync ? "Liste ändern" : "➕ Liste hinzufügen"}</b></p>
         <div class="srow"><ha-icon class="prev" icon="mdi:sync"></ha-icon><select class="grow" id="syncTodo"><option value="">Lade Listen …</option></select></div>
         <div class="srow"><ha-icon class="prev" icon="mdi:swap-horizontal"></ha-icon><select class="grow" id="syncMode" title="Wie abgeglichen wird">
           ${[["move", "🗑️ Holen & dort löschen"], ["keep", "🔗 Bei beiden behalten"], ["sync", "🔄 Voller Abgleich"]]
-            .map(([v, l]) => `<option value="${v}" ${(sync?.mode || "move") === v ? "selected" : ""}>${l}</option>`).join("")}
+            .map(([v, l]) => `<option value="${v}" ${(editSync?.mode || "move") === v ? "selected" : ""}>${l}</option>`).join("")}
         </select></div>
-        <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="syncStore">${this._selectOptions(this._data.stores, sync?.store_id || null, "🛒 Egal wo")}</select></div>
-        <div class="btnrow"><button class="btn primary" data-act="sync-on"><ha-icon icon="mdi:sync"></ha-icon>${sync ? "Ändern" : "Einschalten"}</button>${sync ? `<button class="btn" data-act="sync-off"><ha-icon icon="mdi:sync-off"></ha-icon>Ausschalten</button>` : ""}</div>
+        <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="syncStore">${this._selectOptions(this._data.stores, editSync?.store_id || null, "🛒 Egal wo")}</select></div>
+        <div class="btnrow"><button class="btn primary" data-act="sync-on"><ha-icon icon="mdi:sync"></ha-icon>${editSync ? "Speichern" : "Hinzufügen"}</button>${editSync ? `<button class="btn" data-act="sync-cancel">Abbrechen</button>` : ""}</div>
         `}
         </div>
         <p class="hint" style="margin-top:14px"><b>Einmal herüberholen</b>: Die Artikel einer anderen HA-Liste (z. B. der eingebauten Einkaufsliste oder einer Google-/Bring!-Liste, die in HA eingebunden ist) herüberholen. Die alte Liste bleibt, wie sie ist.</p>
@@ -3720,14 +3781,17 @@ class EinkaufslisteCard extends HTMLElement {
     let lists = [];
     try { lists = await this._ws({ type: "einkaufsliste/import/todo_lists" }); } catch (_) { /* Meldung kam schon */ }
     lists = lists?.lists || lists || [];
-    const cur = this._data.settings?.todo_sync?.entity_id;
+    const cur = this._syncSel || "";
+    const linked = new Set((this._data.settings?.todo_syncs || []).map((x) => x.entity_id));
     for (const id of ["xferTodo", "syncTodo"]) {
       const sel = this.$(id);
       if (!sel) continue;
-      sel.innerHTML = lists.length
+      const pool = id === "syncTodo" ? lists.filter((l) => !linked.has(l.entity_id) || l.entity_id === cur) : lists; // schon verknüpfte nicht nochmal anbieten
+      sel.innerHTML = pool.length
         ? (id === "syncTodo" && !cur ? `<option value="">🔁 Welche Liste?</option>` : "")
-          + lists.map((l) => `<option value="${esc(l.entity_id)}" ${id === "syncTodo" && l.entity_id === cur ? "selected" : ""}>${esc(l.name)}${l.open != null ? ` · ${l.open}` : ""}</option>`).join("")
-        : `<option value="">Keine andere Liste in Home Assistant gefunden</option>`;
+          + pool.map((l) => `<option value="${esc(l.entity_id)}" ${id === "syncTodo" && l.entity_id === cur ? "selected" : ""}>${esc(l.name)}${l.open != null ? ` · ${l.open}` : ""}</option>`).join("")
+        : `<option value="">${id === "syncTodo" && lists.length ? "Alle Listen sind schon verknüpft" : "Keine andere Liste in Home Assistant gefunden"}</option>`;
+      if (id === "syncTodo" && cur) sel.disabled = true; // beim Ändern bleibt die Liste, nur Geschäft/Art ändern sich
     }
   }
 
@@ -5553,6 +5617,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Kreis antippen</b> = gekauft. Das Handy vibriert kurz.</li>
         <li>Gekauftes rutscht nach unten zu <b>„Erledigt – schon mal gekauft“</b>.</li>
         <li>Dort den Kreis antippen = <b>wieder auf der Liste</b>. So musst du nichts neu tippen.</li>
+        <li><b>↩️ Versehentlich abgehakt?</b> Unten steht 3 Sekunden „Rückgängig“ – antippen, und der Artikel ist wieder offen.</li>
         <li>Einmal pro Woche wird automatisch aufgeräumt: Alte Sachen werden abgehakt, <b>gelöscht wird nichts</b>.</li></ul>`)}
       ${sec("📸", "Text aus Foto & neue Helfer", `<ul>
         <li><b>📋 unter dem Eingabefeld:</b> liest <b>nur einen Einkaufszettel</b>: fotografieren, Text prüfen, auf die Liste. Gedruckt klappt gut, Handschrift nur mit Glück – darum kannst du den Text vorher korrigieren.</li>
@@ -5664,6 +5729,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Filter “🗓️ Not bought for 3 months”:</b> shows products that were last checked off more than 3 months ago (never checked off: counted from when they were added). Products on the list or in a recipe are not shown. Tap one to look at it, or <b>Delete all</b> in one go.</li>
         <li><b>➕ New product / ▥ By barcode:</b> adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
         <li><b>📥 Fetch photo again:</b> inside a product (with a barcode) fetches the photo from the barcode database again. Cut-off photos are replaced.</li>
+        <li><b>🔄 Fetch all photos again:</b> under “All products” fetches missing and cut-off photos for every product with a barcode (one after another, with progress). Complete photos stay untouched.</li>
         <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
         <li><b>Recipes:</b> a recipe tab and a groups tab (Fish, Meat, Pastry …).</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
@@ -5671,11 +5737,11 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Applies to all devices:</b> purchase log, auto-ask, shop mode automatic and mascot. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
         <li><b>🏷️ Offers</b> need a postcode (admins only). They come unofficially from Marktguru and can stop working at any time.</li></ul>`)}
       ${sec("💾", "Data", `<ul>
-        <li><b>Import &amp; backup:</b> recipes from a file · other apps (Bring!/AnyList tables as CSV, and an Alexa/to-do list) · 📧 e-mail · backup. Admins only.</li>
+        <li><b>Import &amp; backup:</b> recipes from a file · other apps (Bring!/AnyList tables as CSV, and several Alexa/to-do lists, each with its own store) · 📧 e-mail · backup. Admins only.</li>
         <li><b>History:</b> who did what and when, with filters and search. How many days it is kept is set there.</li>
         <li><b>Tidy up:</b> once a week old open items are <b>checked off</b> – nothing is deleted. Day and time: Settings → Devices &amp; services → Shopping list → Configure.</li></ul>`)}
       ${sec("🩺", "Health", `<ul>
-        <li><b>All OK?</b> looks for broken entries (photos, barcodes, recipes). It only repairs what you tick.</li>
+        <li><b>All OK?</b> looks for broken entries (photos, barcodes, recipes). For every finding: <b>🔧 Fix</b> (just this one), <b>✏️ Change it myself</b> (jumps to the product, item or recipe) and – where there is more than one way – a choice. Or tick and repair everything at once.</li>
         <li><b>Error log:</b> technical errors with a “Copy” button – handy if you need help.</li>
         <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> shows the health light in Home Assistant (ok / hinweis / problem) – you can use it in automations, e.g. a message to your phone.</li>
         <li><b>Resources:</b> how big the data and photos are.</li></ul>`)}
@@ -5701,6 +5767,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Filter „🗓️ Seit 3 Monaten nicht gekauft“:</b> zeigt Produkte, die vor mehr als 3 Monaten zuletzt abgehakt wurden (nie abgehakt: gezählt ab dem Eintragen). Produkte, die auf der Liste oder in einem Rezept stehen, fehlen hier. Antippen zum Ansehen, oder <b>Alle löschen</b> auf einmal.</li>
         <li><b>➕ Neues Produkt / ▥ Per Barcode:</b> legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
         <li><b>📥 Foto neu holen:</b> im Produkt (mit Barcode) holt das Foto noch einmal aus der Barcode-Datenbank. Abgeschnittene Fotos werden ersetzt.</li>
+        <li><b>🔄 Alle Fotos neu holen:</b> bei „Alle Produkte“ holt fehlende und abgeschnittene Fotos für alle Produkte mit Barcode nach (nacheinander, mit Fortschritt). Ganze Fotos bleiben unangetastet.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
         <li><b>Rezepte:</b> ein Reiter für die Rezepte, einer für die Gruppen (Fisch, Fleisch, Gebäck …).</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
@@ -5708,11 +5775,11 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Gilt für alle Geräte:</b> Protokoll, automatisch fragen, Laden-Modus automatisch und Maskottchen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
         <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl (nur Admins). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren.</li></ul>`)}
       ${sec("💾", "Daten", `<ul>
-        <li><b>Import &amp; Sicherung:</b> Rezepte aus Datei · andere Apps (Bring!/AnyList-Tabellen als CSV und eine Alexa-/To-do-Liste) · 📧 E-Mail · Sicherung. Nur für Admins.</li>
+        <li><b>Import &amp; Sicherung:</b> Rezepte aus Datei · andere Apps (Bring!/AnyList-Tabellen als CSV und mehrere Alexa-/To-do-Listen, jede mit eigenem Geschäft) · 📧 E-Mail · Sicherung. Nur für Admins.</li>
         <li><b>Verlauf:</b> wer hat wann was gemacht, mit Filtern und Suche. Wie viele Tage er bleibt, stellst du dort ein.</li>
         <li><b>Aufräumen:</b> einmal pro Woche werden alte offene Sachen <b>abgehakt</b> – gelöscht wird nichts. Tag und Uhrzeit: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren.</li></ul>`)}
       ${sec("🩺", "Gesundheit", `<ul>
-        <li><b>Alles ok?</b> sucht kaputte Einträge (Fotos, Barcodes, Rezepte). Repariert wird nur, was du anhakst.</li>
+        <li><b>Alles ok?</b> sucht kaputte Einträge (Fotos, Barcodes, Rezepte). Bei jedem Fund: <b>🔧 Beheben</b> (nur dieser eine), <b>✏️ Selbst ändern</b> (springt zum Produkt, Artikel oder Rezept) und – wo es mehrere Wege gibt – eine Auswahl. Oder anhaken und alles auf einmal reparieren.</li>
         <li><b>Fehler-Protokoll:</b> technische Fehler mit „Kopieren“-Knopf – praktisch, wenn du Hilfe brauchst.</li>
         <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> zeigt die Ampel in Home Assistant (ok / hinweis / problem) – nutzbar in Automationen, z. B. für eine Meldung aufs Handy.</li>
         <li><b>Ressourcen:</b> wie groß Daten und Fotos sind.</li></ul>`)}
@@ -5809,6 +5876,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Tap the circle</b> = bought. The phone vibrates briefly.</li>
         <li>Bought things slide down to <b>“Done – bought before”</b>.</li>
         <li>Tap the circle there = <b>back on the list</b>. No need to type anything again.</li>
+        <li><b>↩️ Checked off by accident?</b> “Undo” shows at the bottom for 3 seconds – tap it and the item is open again.</li>
         <li>Once a week the list tidies itself up: old things get checked off, <b>nothing gets deleted</b>.</li></ul>`)}
       ${sec("📸", "Text from photo & new helpers", `<ul>
         <li><b>📋 below the input field:</b> reads <b>a shopping note only</b>: photograph it, check the text, add it to the list. Printed text works well, handwriting only with luck – so you can correct the text first.</li>
@@ -6267,7 +6335,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   // 📦 Serien-Scan am Kühlschrank: jede Packung kommt direkt auf die Liste
   _scanSeries() {
-    const stats = { added: 0, unknown: 0 };
+    const stats = { added: 0, unknown: 0, log: [] };
     const tab = this._activeTab;
     const defaultStore = tab !== "all" && tab !== "none" ? tab : null;
     this._appScan({
@@ -6297,23 +6365,30 @@ class EinkaufslisteCard extends HTMLElement {
           return res.found ? `✅ ${name} ist im Rezept` : `❓ Unbekannt – später umbenennen`;
         }
         try {
-          await this._ws({
+          const storeId = (res.store_id && this._store(res.store_id) ? res.store_id : defaultStore) || null;
+          const want = this._pk(name, res.found ? res.note : null);
+          const before = this._data.items.find((i) => this._pk(i.name, i.note) === want && (i.store_id || null) === storeId);
+          const added = await this._ws({
             type: "einkaufsliste/item/add",
             via: "scan",
             name,
             ...(res.found && res.note ? { note: res.note } : {}),
-            store_id: (res.store_id && this._store(res.store_id) ? res.store_id : defaultStore) || null,
+            store_id: storeId,
             category_id: guess && this._cat(guess) ? guess : null,
             barcode: res.code || code,
           });
+          // ↩️ Merken, wie man es zurücknimmt (nichts löschen, was vorher schon da war)
+          if (!before && added?.id) stats.log.push({ text: `➕ ${name}`, btn: "✖ Raus", undo: () => this._ws({ type: "einkaufsliste/item/remove", item_id: added.id }) });
+          else if (before?.checked && added?.id) stats.log.push({ text: `➕ ${name}`, btn: "↩️ Wieder erledigt", undo: () => this._ws({ type: "einkaufsliste/item/toggle", item_id: added.id, checked: true }) });
+          else stats.log.push({ text: `ℹ️ ${name} (stand schon drauf)`, undo: null });
           stats.added++;
           return res.found ? `✅ ${name} ist drauf${res.private_label ? ` · 🏷️ Eigenmarke von ${res.private_label}` : ""}` : `❓ Unbekannt – später umbenennen`;
         } catch (err) {
           return `⚠️ ${err?.message || "Hat nicht geklappt"}`;
         }
       },
-      onAlt: () => this._seriesDone(stats),
-      onEnd: () => this._seriesDone(stats),
+      onAlt: () => { this._seriesDone(stats); this._scanFinish(stats.log); },
+      onEnd: () => { this._seriesDone(stats); this._scanFinish(stats.log); },
     });
   }
 
@@ -6324,7 +6399,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   // ✅ Im Laden: gescannte Packung wird auf der Liste abgehakt
   _scanCheckOff(store) {
-    const stats = { checked: 0 };
+    const stats = { checked: 0, log: [] };
     this._appScan({
       title: `✅ Scannen & abhaken · ${store.name}`,
       description: "Packung scannen, bevor sie in den Wagen kommt.",
@@ -6341,13 +6416,14 @@ class EinkaufslisteCard extends HTMLElement {
         try {
           await this._ws({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: true, via: "scan", ...(!item.store_id ? { store_id: store.id } : {}) });
           stats.checked++;
+          stats.log.push({ text: `✅ ${item.name}`, btn: "↩️ Wieder offen", undo: () => this._ws({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: false }) });
           return `✅ ${item.name} abgehakt`;
         } catch (err) {
           return `⚠️ ${err?.message || "Hat nicht geklappt"}`;
         }
       },
-      onAlt: () => stats.checked && this._toast(`✅ ${stats.checked} Artikel per Scan abgehakt`),
-      onEnd: () => stats.checked && this._toast(`✅ ${stats.checked} Artikel per Scan abgehakt`),
+      onAlt: () => { if (stats.checked) this._toast(`✅ ${stats.checked} Artikel per Scan abgehakt`); this._scanFinish(stats.log); },
+      onEnd: () => { if (stats.checked) this._toast(`✅ ${stats.checked} Artikel per Scan abgehakt`); this._scanFinish(stats.log); },
     });
   }
 
@@ -7112,6 +7188,34 @@ class EinkaufslisteCard extends HTMLElement {
           .catch(() => {});
         break;
       }
+      case "undo-go": {
+        const fn = this._undoFn;
+        this._undoHide();
+        fn?.();
+        break;
+      }
+      case "prod-refresh-all": { // 🔄 Fotos für ALLE Produkte mit Barcode nachholen (nacheinander, mit Fortschritt)
+        if (this._refreshAllBusy) break;
+        this._refreshAllBusy = true;
+        const say = (t) => { const m = this.$("prodRefreshMsg"); if (m) { m.hidden = !t; m.textContent = t ? elT(t) : ""; } };
+        (async () => {
+          try {
+            const plan = await this._ws({ type: "einkaufsliste/photos/refresh_plan" });
+            const n = plan.keys.length;
+            if (!plan.total) { this._toast("Kein Produkt hat einen Barcode."); return; }
+            if (!n) { this._toast(`📷 Alle ${plan.total} Produkte mit Barcode haben schon ganze Fotos 👍`); return; }
+            if (!elConfirm(`Für ${n} Produkte mit Barcode die Fotos neu holen?\n\nDas geht nacheinander und kann etwas dauern. Fehlende und abgeschnittene Fotos werden geholt, ganze Fotos bleiben unangetastet.`)) return;
+            let ok = 0, none = 0;
+            for (let i = 0; i < n; i++) {
+              say(`🔄 Fotos werden geholt … ${i + 1} / ${n}`);
+              try { await this._hass.callWS({ type: "einkaufsliste/product/refresh", key: plan.keys[i], only_missing: true }); ok++; } catch (_) { none++; }
+            }
+            this._toast(`📷 Fertig: ${ok} Produkte erledigt${none ? `, ${none}× hat die Datenbank kein Foto` : ""}`);
+            this._loadProducts();
+          } catch (_) { /* Meldung kam schon */ } finally { say(""); this._refreshAllBusy = false; }
+        })();
+        break;
+      }
       case "prod-photos":
         this._openPhoto(el.closest(".prodedit").dataset.key);
         break;
@@ -7302,6 +7406,43 @@ class EinkaufslisteCard extends HTMLElement {
         this.$("checkRes")?.querySelectorAll("input.chk").forEach((c) => { c.checked = act === "check-all"; });
         this._checkCount();
         break;
+      case "check-one": { // 🔧 genau diesen einen Fund sofort beheben
+        const row = el.closest(".chkitem")?.querySelector(".chkrow");
+        if (!row) break;
+        const sel = row.querySelector("select");
+        const opt = sel?.selectedOptions?.[0];
+        if (sel && opt?.dataset.need) { this._toast("Erst oben eine Auswahl treffen 😉"); break; }
+        if (/🗑️|löschen/i.test(opt?.textContent || "") && !elConfirm(`Wirklich so beheben?\n\n${opt.textContent.trim()}`)) break;
+        this._ws({ type: "einkaufsliste/check", fixes: { [row.dataset.id]: sel?.value || "" } }).then((res) => {
+          this._toast(res.fixed ? "🛠️ Erledigt" : "Das hatte sich schon erledigt 👍");
+          this._runCheck();
+        }).catch(() => {});
+        break;
+      }
+      case "check-edit": { // ✏️ direkt zum betroffenen Produkt / Artikel / Rezept springen
+        const ed = (this._checkEdits || {})[el.dataset.id];
+        if (!ed) break;
+        if (ed.kind === "recipe") {
+          const r = this._recipe(ed.id);
+          if (r) this._openRecipe(r); else this._toast("Das Rezept gibt es nicht mehr.");
+        } else if (ed.kind === "item") {
+          if (!this._data.items.some((i) => i.id === ed.id)) { this._toast("Den Artikel gibt es nicht mehr."); break; }
+          this._view = "list"; this._activeTab = "all"; this._editing = ed.id; this._menuId = null;
+          this._renderAll();
+          this.shadowRoot.querySelector(`.item[data-id="${ed.id}"]`)?.scrollIntoView?.({ block: "center" });
+        } else {
+          this._view = "settings"; this._setOpen = "📋 Meine Liste"; this._setSec = "products"; this._prodTab = "all"; this._prodFilter = ""; this._prodSel = "";
+          this._renderAll(); this._renderSettings();
+          (async () => {
+            const has = () => (this._products || []).some((p) => p.key === ed.id);
+            for (let n = 0; n < 40 && this._prodLoading; n++) await new Promise((r) => setTimeout(r, 100)); // Katalog lädt gerade noch
+            if (!has()) await this._loadProducts();
+            if (has()) { this._prodEdit = ed.id; this._renderProducts(); }
+            else this._toast("Das Produkt gibt es nicht mehr.");
+          })();
+        }
+        break;
+      }
       case "check-fix": { // 🔧 nur die angehakten, mit der gewählten Reparatur
         const box = this.$("checkRes");
         const fixes = {};
@@ -7339,10 +7480,10 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       }
       case "sync-on": {
-        const entity_id = this.$("syncTodo")?.value;
+        const entity_id = this.$("syncTodo")?.value || this._syncSel;
         if (!entity_id) { this._toast("Erst eine Liste auswählen 😉"); break; }
         this._ws({ type: "einkaufsliste/todo_sync/set", entity_id, store_id: this._xferStore("syncStore"), mode: this.$("syncMode")?.value || "move" })
-          .then(() => { this._toast("🔁 Ab jetzt wird automatisch herübergeholt"); setTimeout(() => this._renderSettings(), 300); }).catch(() => {});
+          .then(() => { this._syncSel = null; this._toast("🔁 Ab jetzt wird automatisch herübergeholt"); setTimeout(() => this._renderSettings(), 300); }).catch(() => {});
         break;
       }
       case "mail-on": {
@@ -7357,9 +7498,21 @@ class EinkaufslisteCard extends HTMLElement {
         this._ws({ type: "einkaufsliste/mail/set", entry_id: null })
           .then(() => { this._toast("📧 Per E-Mail ist aus"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
         break;
-      case "sync-off":
-        this._ws({ type: "einkaufsliste/todo_sync/set", entity_id: null })
-          .then(() => { this._toast("🔁 Automatisch herüberholen ist aus"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+      case "sync-off": {
+        const ent = el.dataset.ent;
+        if (!ent) break;
+        if (!elConfirm("Diese Liste nicht mehr automatisch herüberholen?\n\nDie Artikel in deiner Einkaufsliste bleiben.")) break;
+        this._ws({ type: "einkaufsliste/todo_sync/remove", entity_id: ent })
+          .then(() => { if (this._syncSel === ent) this._syncSel = null; this._toast("🔁 Diese Liste wird nicht mehr herübergeholt"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+        break;
+      }
+      case "sync-edit":
+        this._syncSel = el.dataset.ent;
+        this._renderSettings();
+        break;
+      case "sync-cancel":
+        this._syncSel = null;
+        this._renderSettings();
         break;
       case "xfer-tab":
         this._xferTab = el.dataset.tab;

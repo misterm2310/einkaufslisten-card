@@ -1731,7 +1731,7 @@ async def test_zones_mascot_todo_sync(hass: HomeAssistant, setup, hass_ws_client
     milch = next(i for i in m.items if i["name"] == "Milch")
     assert milch["quantity"] == "2x" and milch["store_id"] == netto["id"]
     assert hass.states.get("todo.einkaufsliste").state == "0"
-    info = m.as_dict()["settings"]["todo_sync"]
+    info = m.as_dict()["settings"]["todo_syncs"][0]
     assert info["entity_id"] == "todo.einkaufsliste" and info["count"] == 2 and info["ok"]
     assert m.log[-1]["v"] == "sync"
     # ausschalten
@@ -1740,7 +1740,7 @@ async def test_zones_mascot_todo_sync(hass: HomeAssistant, setup, hass_ws_client
     await hass.services.async_call("todo", "add_item", {"entity_id": "todo.einkaufsliste", "item": "Tee"}, blocking=True)
     await hass.async_block_till_done()
     assert not any(i["name"] == "Tee" for i in m.items)
-    assert m.as_dict()["settings"]["todo_sync"] is None
+    assert m.as_dict()["settings"]["todo_syncs"] == []
 
 
 async def test_mail_import_and_store_icon(hass: HomeAssistant, setup, hass_ws_client) -> None:
@@ -1865,7 +1865,8 @@ async def test_todo_sync_keep_and_full(hass: HomeAssistant, setup) -> None:
     assert "Tee (2x)" in await todo()
     await settle()
     assert len([i for i in m.items if i["name"].lower().startswith("tee")]) == 1
-    assert m.as_dict()["settings"]["todo_sync"]["mode"] == "sync" and "links" not in m.as_dict()["settings"]["todo_sync"]
+    sy = m.as_dict()["settings"]["todo_syncs"][0]
+    assert sy["mode"] == "sync" and "links" not in sy
 
 
 async def test_move_from_anywhere_relocates(hass: HomeAssistant, setup) -> None:
@@ -2363,3 +2364,101 @@ async def test_cut_photos_found_and_refreshed(hass: HomeAssistant, setup, monkey
     # ohne Barcode: freundliche Fehlermeldung
     with pytest.raises(ValueError):
         await bc.async_refresh_photo(hass, m, "gibtsnicht")
+
+
+async def test_refresh_all_photos_only_missing(hass: HomeAssistant, setup, monkeypatch) -> None:
+    """🔄 „Alle Fotos neu holen“: nur fehlende/abgeschnittene Fotos, ganze bleiben, nichts kommt doppelt."""
+    import base64
+
+    import custom_components.einkaufsliste.barcode as bc
+
+    m = mgr(hass)
+    full = b"\xff\xd8\xff\xe0" + b"y" * 500 + b"\xff\xd9"
+    m.learn_barcode("4001", "Milch", None, None)      # kein Foto
+    m.learn_barcode("4002", "Butter", None, None)     # ganzes Foto
+    m.learn_barcode("4003", "Wraps", None, None)      # abgeschnittenes Foto
+    await m.async_set_photo("Butter", base64.b64encode(full).decode())
+    await m.async_set_photo("Wraps", base64.b64encode(full).decode())
+    m._photo_path(m.photos["wraps"]["id"]).write_bytes(full[:100])
+    plan = await m.async_photo_refresh_plan()
+    assert plan["total"] == 3
+    assert sorted(plan["keys"]) == ["milch", "wraps"]
+
+    async def fake(hass_, code):
+        return full
+
+    monkeypatch.setattr(bc, "_download_photo", fake)
+    butter_id = m.photos["butter"]["id"]
+    out = await bc.async_refresh_photo(hass, m, "butter", only_missing=True)
+    assert out["added"] is False and m.photos["butter"]["id"] == butter_id and not m.photos["butter"].get("more")
+    out = await bc.async_refresh_photo(hass, m, "milch", only_missing=True)
+    assert out["added"] is True and m.photos["milch"]["id"]
+    out = await bc.async_refresh_photo(hass, m, "wraps", only_missing=True)
+    assert out["added"] is True
+    assert (await m.async_photo_refresh_plan())["keys"] == []
+
+
+async def test_duplicate_photo_finding(hass: HomeAssistant, setup) -> None:
+    """🧹 „Alles ok?“ findet zwei Produkte mit genau demselben Foto und löscht auf Wunsch das doppelte."""
+    import base64
+
+    m = mgr(hass)
+    one = base64.b64encode(b"\xff\xd8\xff\xe0" + b"a" * 300 + b"\xff\xd9").decode()
+    two = base64.b64encode(b"\xff\xd8\xff\xe0" + b"b" * 300 + b"\xff\xd9").decode()
+    await m.async_set_photo("Apfel", one)
+    await m.async_set_photo("Birne", one)   # dasselbe Foto
+    await m.async_set_photo("Kiwi", two)
+    res = await m.async_check()
+    dups = [f for f in res["items"] if f["id"].startswith("photo_dup:")]
+    assert len(dups) == 1 and dups[0]["id"].startswith("photo_dup:birne:")
+    await m.async_check(fix=True)
+    assert "birne" not in m.photos and "apfel" in m.photos and "kiwi" in m.photos
+    res = await m.async_check()
+    assert not any(f["id"].startswith("photo_dup:") for f in res["items"])
+
+
+async def test_todo_sync_multiple_lists(hass: HomeAssistant, setup) -> None:
+    """🔁 Mehrere To-do-/Alexa-Listen: jede mit eigenem Geschäft und eigener Abgleich-Art."""
+    m = mgr(hass)
+    netto = next(x for x in m.stores if x["name"] == "Netto")
+    aldi = next(x for x in m.stores if x["name"] == "Aldi")
+    hass.states.async_set("todo.alexa_netto", "0", {"friendly_name": "Alexa Netto"})
+    hass.states.async_set("todo.alexa_aldi", "0", {"friendly_name": "Alexa Aldi"})
+    m.set_todo_sync("todo.alexa_netto", netto["id"], "move")
+    m.set_todo_sync("todo.alexa_aldi", aldi["id"], "keep")
+    infos = m.as_dict()["settings"]["todo_syncs"]
+    assert [(i["entity_id"], i["store_id"], i["mode"]) for i in infos] == [
+        ("todo.alexa_netto", netto["id"], "move"), ("todo.alexa_aldi", aldi["id"], "keep")]
+    assert all("links" not in i for i in infos)
+    m.set_todo_sync("todo.alexa_netto", None, "move")  # dieselbe Liste nochmal = ändern, nicht doppelt
+    assert len(m.todo_syncs) == 2 and m.todo_syncs[0]["store_id"] is None
+    with pytest.raises(ValueError):
+        m.set_todo_sync("todo.gibts_nicht", None, "move")
+    with pytest.raises(ValueError):
+        m.remove_todo_sync("todo.gibts_nicht")
+    m.remove_todo_sync("todo.alexa_aldi")
+    assert [c["entity_id"] for c in m.todo_syncs] == ["todo.alexa_netto"]
+    m.set_todo_sync(None)  # alter Weg: alles aus
+    assert m.todo_syncs == []
+    m.sync.stop()
+
+
+async def test_check_findings_have_edit_and_choices(hass: HomeAssistant, setup) -> None:
+    """🔧 „Alles ok?“: Funde bringen Sprungziel (✏️) und – wo es mehrere Wege gibt – eine Auswahl mit."""
+    import base64
+
+    m = mgr(hass)
+    full = b"\xff\xd8\xff\xe0" + b"z" * 300 + b"\xff\xd9"
+    await m.async_set_photo("Wraps", base64.b64encode(full).decode())
+    m._photo_path(m.photos["wraps"]["id"]).write_bytes(full[:100])
+    m.add_item("Seife")
+    m.items[-1]["store_id"] = "gibtsnicht"
+    res = await m.async_check()
+    cut = next(f for f in res["items"] if f["id"] == "photo_cut:wraps")
+    assert cut["edit"] == {"kind": "product", "id": "wraps"}
+    assert [o["value"] for o in cut["options"]] == ["drop"] and cut["default"] == "drop"
+    nostore = next(f for f in res["items"] if f["id"].startswith("nostore:"))
+    assert nostore["edit"]["kind"] == "item"
+    # gewählte Reparatur: „nur löschen“
+    await m.async_check(fixes={"photo_cut:wraps": "drop"})
+    assert "wraps" not in m.photos
