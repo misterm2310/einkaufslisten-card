@@ -2,13 +2,11 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.44.2";
+const EL_VERSION = "2.44.3";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["🔄 <b>Alle Fotos neu holen</b> holt jetzt wirklich <b>alle</b> Datenbank-Fotos neu (nicht nur fehlende) und ersetzt alte durch neuere – eigene Fotos bleiben, nichts kommt doppelt dazu. Am Ende steht, bei welchen Produkten die Datenbank kein Foto hat.",
-   "🔄 <b>Fetch all photos again</b> now really fetches <b>all</b> database photos again (not only missing ones) and replaces old ones with newer ones – your own photos stay, nothing is added twice. At the end it lists the products the database has no photo for."],
-  ["🔘 <b>Katalog:</b> die Knöpfe „Neues Produkt“, „Per Barcode“ und „Alle Fotos neu holen“ zeigen nur noch das Symbol (Tipp lange darauf = Name).",
-   "🔘 <b>Catalog:</b> the buttons “New product”, “By barcode” and “Fetch all photos again” now show only the icon (long-press = name)."],
+  ["🧀 <b>Rezept „Auf die Liste“:</b> „steht schon drauf“ (und der fehlende Haken vorab) gilt nur noch, wenn <b>Name und Notiz</b> gleich sind – „Käse · Gouda“ auf der Liste und „Käse · Gouda, gerieben“ im Rezept sind jetzt zwei verschiedene Zutaten.",
+   "🧀 <b>Recipe “Add to list”:</b> “already on the list” (and the missing tick beforehand) now only applies when <b>name and note</b> match – “Cheese · Gouda” on the list and “Cheese · Gouda, grated” in the recipe are now two different ingredients."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -4296,12 +4294,16 @@ class EinkaufslisteCard extends HTMLElement {
     return r.servings && this._pickPers ? this._pickPers / r.servings : 1;
   }
 
+  // 🧀 „Steht schon drauf“ gilt nur bei gleichem Namen UND gleicher Notiz (Käse · Gouda ≠ Käse · Gouda, gerieben)
+  _pickKey(it) { return `${String(it.name || "").trim().toLowerCase()}|${String(it.note || "").trim().toLowerCase()}`; }
+  _pickOpenSet() { return new Set(this._data.items.filter((i) => !i.checked).map((i) => this._pickKey(i))); }
+
   _pickMissingStore(r) {
     return [...this._pickSel].some((n) => r.items[n] && this._pickNeedsStore(r.items[n]) && !(String(n) in this._pickStores));
   }
 
   _pickHtml(r) {
-    const open = new Set(this._data.items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
+    const open = this._pickOpenSet();
     const sel = this._pickSel;
     const f = this._pickFactor(r);
     const stores = this._data.stores || [];
@@ -4315,7 +4317,7 @@ class EinkaufslisteCard extends HTMLElement {
       return `<div class="pickrow ${on ? "on" : ""} ${it.basic ? "basic" : ""}" data-act="pick-toggle" data-n="${n}">
         <ha-icon icon="${on ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"}"></ha-icon>
         <span class="pname">${esc(it.name)}${info ? `<small>${info}</small>` : ""}</span>
-        ${open.has(it.name.toLowerCase()) ? `<span class="phint">steht schon drauf</span>` : it.basic ? `<span class="pbasic">🧂 haben wir immer</span>` : ""}
+        ${open.has(this._pickKey(it)) ? `<span class="phint">steht schon drauf</span>` : it.basic ? `<span class="pbasic">🧂 haben wir immer</span>` : ""}
       </div>${ask ? `<div class="pstore ${chosen === undefined ? "need" : ""}">
         <span>🛒 Noch nie gekauft – wo kaufen?</span>
         <select data-act="pick-store" data-n="${n}">
@@ -7547,11 +7549,11 @@ class EinkaufslisteCard extends HTMLElement {
       case "recipe-apply": {
         const r = this._recipe(el.closest(".recipe").dataset.id);
         if (this._pickRecipe === r.id) { this._pickRecipe = null; this._renderRecipes(); break; }
-        const open = new Set(this._data.items.filter((i) => !i.checked).map((i) => i.name.toLowerCase()));
+        const open = this._pickOpenSet();
         this._pickRecipe = r.id;
         this._pickPers = r.servings || null; // 👥 Standard: immer erst wie im Rezept
         this._pickStores = {};
-        this._pickSel = new Set(r.items.map((it, n) => (open.has(it.name.toLowerCase()) || it.basic ? -1 : n)).filter((n) => n >= 0));
+        this._pickSel = new Set(r.items.map((it, n) => (open.has(this._pickKey(it)) || it.basic ? -1 : n)).filter((n) => n >= 0));
         this._renderRecipes();
         break;
       }
