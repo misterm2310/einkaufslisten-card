@@ -2,11 +2,11 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.43.2";
+const EL_VERSION = "2.43.3";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["📷 <b>Fotos erscheinen schneller:</b> Die Fotos der offenen Artikel holt die Karte nach dem Öffnen ruhig im Hintergrund – beim Antippen sind sie dann schon da. Dauert es doch, wartet die Karte geduldig und zeigt „Foto lädt … (12 s)“. Ist Home Assistant sehr langsam, steht das im Fehler-Protokoll.",
-   "📷 <b>Photos appear faster:</b> after opening, the card quietly fetches the photos of open items in the background – when you tap they are already there. If it still takes a while the card waits patiently and shows “Photo loading … (12 s)”. If Home Assistant is very slow, it is noted in the error log."],
+  ["📷 <b>Foto-Fenster zeigt das Bild sofort:</b> Das Foto wird erst komplett entpackt und geprüft, dann gezeigt – kein leerer Kasten mehr beim ersten Antippen. Klappt es einmal nicht, versucht die Karte es selbst nochmal.",
+   "📷 <b>Photo window shows the picture right away:</b> the photo is fully unpacked and checked first, then shown – no more empty box on the first tap. If it fails once, the card tries again by itself."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -557,6 +557,16 @@ function makeOverlay() {
   document.body.appendChild(ov);
   elWatch(ov, false);
   return ov;
+}
+
+// 🖼️ Foto als echte Bilddatei im Speicher (statt riesiger Text-Adresse) – das zeichnen Handy-Browser zuverlässiger
+function elBlobUrl(dataUrl) {
+  const m = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(String(dataUrl || ""));
+  if (!m) throw new Error("Foto-Daten unlesbar");
+  const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: m[1] || "image/jpeg" }));
 }
 
 function ovButton(label, main = false) {
@@ -5308,7 +5318,7 @@ class EinkaufslisteCard extends HTMLElement {
     const full = document.createElement("div");
     Object.assign(full.style, { color: "#ffcc80", fontSize: "14px", margin: "0 0 8px", textAlign: "center" });
     row.append(bAdd, ...(canDelete ? [bDel] : []), bClose);
-    let loadId = 0, tick = null;
+    let loadId = 0, tick = null, curUrl = null;
     const note = document.createElement("div"); // 📷 „lädt …“ bzw. Fehlermeldung statt leerer Fläche
     Object.assign(note.style, { font: "500 16px Roboto, sans-serif", margin: "24px 0", textAlign: "center" });
     const retry = ovButton("🔄 Nochmal");
@@ -5340,8 +5350,26 @@ class EinkaufslisteCard extends HTMLElement {
       try {
         const src = await this._photoData(key, idx);
         if (my !== loadId) return; // inzwischen weitergeblättert
+        // erst komplett entpacken und prüfen, dann zeigen – nie ein leerer Kasten; ein zweiter Versuch, falls das Handy es nicht schafft
+        let url = null;
+        for (let n = 0; n < 2 && !url; n++) {
+          const u = elBlobUrl(src);
+          try {
+            const probe = new Image();
+            probe.src = u;
+            await probe.decode();
+            url = u;
+          } catch (_) {
+            URL.revokeObjectURL(u);
+            await new Promise((r) => setTimeout(r, 300));
+          }
+        }
+        if (my !== loadId) { if (url) URL.revokeObjectURL(url); return; }
+        if (!url) throw new Error("Foto lässt sich nicht anzeigen");
         clearInterval(tick);
-        img.src = src;
+        if (curUrl) URL.revokeObjectURL(curUrl);
+        curUrl = url;
+        img.src = url;
         img.style.display = "";
         note.style.display = "none";
       } catch (err) {
@@ -5351,7 +5379,7 @@ class EinkaufslisteCard extends HTMLElement {
         retry.style.display = "";
       }
     };
-    const close = () => { clearInterval(tick); ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
+    const close = () => { clearInterval(tick); if (curUrl) URL.revokeObjectURL(curUrl); ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
     const onKey = (e) => {
       if (e.key === "Escape") close();
       if (e.key === "ArrowLeft") { idx--; show(); }

@@ -1373,5 +1373,6 @@
 "📷 Foto lädt …": "📷 Photo loading …",
 "😕 Foto nicht ladbar": "😕 Photo could not be loaded",
 "🔄 Nochmal": "🔄 Try again",
-"📷 Foto lädt … ({} s)": "📷 Photo loading … ({0} s)"
+"📷 Foto lädt … ({} s)": "📷 Photo loading … ({0} s)",
+"😕 Foto lässt sich nicht anzeigen": "😕 Photo cannot be displayed"
 }
