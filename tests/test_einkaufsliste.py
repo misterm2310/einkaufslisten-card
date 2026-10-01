@@ -2492,3 +2492,40 @@ async def test_undo_keeps_original_date(hass: HomeAssistant, setup, freezer) -> 
     m.set_checked(item["id"], True, "Sandra")
     m.set_checked(item["id"], False, "Sandra")
     assert m.get_item(item["id"])["added_at"] != old
+
+
+async def test_refresh_all_replaces_db_photo_keeps_own(hass: HomeAssistant, setup, monkeypatch) -> None:
+    """🔄 „Alle Fotos neu holen“ (replace): Datenbank-Foto wird ersetzt, eigene Fotos bleiben, gleiches Foto = unverändert."""
+    import base64
+
+    import custom_components.einkaufsliste.barcode as bc
+
+    m = mgr(hass)
+    old = b"\xff\xd8\xff\xe0" + b"o" * 400 + b"\xff\xd9"
+    new = b"\xff\xd8\xff\xe0" + b"n" * 400 + b"\xff\xd9"
+    own = b"\xff\xd8\xff\xe0" + b"e" * 400 + b"\xff\xd9"
+    m.learn_barcode("5001", "Milch", None, None)
+    m.learn_barcode("5002", "Butter", None, None)
+    # Milch: Datenbank-Foto (markiert) + eigenes Foto
+    await m.async_set_photo("Milch", base64.b64encode(old).decode(), db=True)
+    await m.async_set_photo("Milch", base64.b64encode(own).decode(), add=True)
+    box = {"raw": new}
+
+    async def fake(hass_, code):
+        return box["raw"]
+
+    monkeypatch.setattr(bc, "_download_photo", fake)
+    out = await bc.async_refresh_photo(hass, m, "milch", replace=True)
+    assert out["status"] == "replaced"
+    ids = m._photo_ids(m.photos["milch"])
+    assert len(ids) == 2
+    assert m._photo_path(ids[0]).read_bytes() == new      # an derselben Stelle (Hauptfoto)
+    assert m._photo_path(ids[1]).read_bytes() == own      # eigenes Foto bleibt
+    out = await bc.async_refresh_photo(hass, m, "milch", replace=True)
+    assert out["status"] == "same" and len(m._photo_ids(m.photos["milch"])) == 2
+    # Butter: noch gar kein Foto -> neu dazu, danach „unverändert“
+    out = await bc.async_refresh_photo(hass, m, "butter", replace=True)
+    assert out["status"] == "added"
+    assert (await bc.async_refresh_photo(hass, m, "butter", replace=True))["status"] == "same"
+    plan = await m.async_photo_refresh_plan()
+    assert sorted(plan["all"]) == ["butter", "milch"] and plan["names"]["milch"] == "Milch"

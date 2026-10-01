@@ -1074,7 +1074,7 @@
 "🔒 Gesperrt – das Zahnrad braucht jetzt wieder die PIN": "🔒 Locked – the gear needs the PIN again",
 "Filter": "Filter",
 "Neues Produkt": "New product",
-"Neues Produkt in den Katalog": "New product for the catalog",
+"Neues Produkt in den Katalog": "New product in the catalog",
 "⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück": "⌨️ Click = select · double-click or Enter = edit · ↑↓ = browse · Esc = back",
 "📦 Neues Produkt": "📦 New product",
 "Wie heißt das Produkt?": "What's the product called?",
@@ -1348,7 +1348,7 @@
 "Einrichten": "Set up",
 "🔒 Admin": "🔒 Admin",
 "Per Barcode": "By barcode",
-"Neues Produkt per Barcode in den Katalog": "New product to the catalog by barcode",
+"Neues Produkt per Barcode in den Katalog": "New product by barcode in the catalog",
 "🗓️ Seit 3 Monaten nicht gekauft": "🗓️ Not bought for 3 months",
 "🗓️ Diese {} Produkte hast du seit 3 Monaten nicht gekauft (gezählt ab dem letzten Abhaken, sonst ab dem Eintragen; Produkte aus Rezepten fehlen hier). Antippen = ansehen oder ganz löschen – oder alle auf einmal:": "🗓️ You have not bought these {0} products for 3 months (counted from the last check-off, otherwise from when they were added; products from recipes are not listed here). Tap = look at it or delete it completely – or delete all at once:",
 "Alle {} löschen": "Delete all {0}",
@@ -1406,5 +1406,10 @@
 "Diese Liste nicht mehr automatisch herüberholen?\n\nDie Artikel in deiner Einkaufsliste bleiben.": "Stop bringing over this list automatically?\n\nThe items in your shopping list stay.",
 "🔁 Diese Liste wird nicht mehr herübergeholt": "🔁 This list is no longer brought over",
 "Alle Listen sind schon verknüpft": "All lists are already linked",
-"· {} geholt": "· {0} fetched"
+"· {} geholt": "· {0} fetched",
+"Für alle {} Produkte mit Barcode die Fotos aus der Datenbank neu holen?\n\nDas geht nacheinander und kann etwas dauern. Gibt es ein neueres Foto, ersetzt es das alte Datenbank-Foto. Deine eigenen Fotos bleiben unangetastet.": "Fetch the photos from the database again for all {0} products with a barcode?\n\nThis happens one after another and can take a while. A newer photo replaces the old database photo. Your own photos stay untouched.",
+"📷 Fertig: {} neu oder ersetzt, {} schon aktuell": "📷 Done: {0} new or replaced, {1} already up to date",
+"📷 Fertig: {} neu oder ersetzt, {} schon aktuell, {}× Platz voll": "📷 Done: {0} new or replaced, {1} already up to date, {2}× no room",
+"📷 Fertig: {} neu oder ersetzt, {} schon aktuell, {}× keins in der Datenbank": "📷 Done: {0} new or replaced, {1} already up to date, {2}× none in the database",
+"📷 Fertig: {} neu oder ersetzt, {} schon aktuell, {}× Platz voll, {}× keins in der Datenbank": "📷 Done: {0} new or replaced, {1} already up to date, {2}× no room, {3}× none in the database"
 }

@@ -2,23 +2,13 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.44.1";
+const EL_VERSION = "2.44.2";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["🛠️ <b>Zwei Fehler behoben:</b> „Alles ok?“ meldet Artikel mit <b>„Egal wo“</b> nicht mehr als Fehler (nur noch, wenn das eingetragene Geschäft nicht mehr existiert). Und <b>↩️ Rückgängig</b> behält das <b>ursprüngliche Datum</b> des Artikels, statt „heute“ draufzuschreiben.",
-   "🛠️ <b>Two bugs fixed:</b> “All OK?” no longer reports items set to <b>“Anywhere”</b> as errors (only when the saved store no longer exists). And <b>↩️ Undo</b> keeps the item’s <b>original date</b> instead of stamping “today”."],
-  ["🔧 <b>„Alles ok?“ löst alles direkt:</b> Bei jedem Fund gibt es <b>🔧 Beheben</b> (nur dieser eine), <b>✏️ Selbst ändern</b> (springt zum Produkt, Artikel oder Rezept) und – wo es mehrere Wege gibt – eine <b>Auswahl</b>, z. B. „neu holen“ oder „nur löschen“.",
-   "🔧 <b>“All OK?” solves everything right there:</b> every finding has <b>🔧 Fix</b> (just this one), <b>✏️ Change it myself</b> (jumps to the product, item or recipe) and – where there is more than one way – a <b>choice</b>, e.g. “fetch again” or “just delete”."],
-  ["🔁 <b>Mehrere To-do-/Alexa-Listen:</b> In ⚙️ → Daten → Import &amp; Sicherung → „Aus anderen Apps“ lassen sich jetzt mehrere Listen gleichzeitig herüberholen – jede mit <b>eigenem Geschäft</b> (oder „Egal wo“) und <b>eigener Art</b> des Abgleichs. Die bisherige Liste bleibt, wie sie war.",
-   "🔁 <b>Several to-do/Alexa lists:</b> in ⚙️ → Data → Import &amp; backup → “From other apps” you can now bring over several lists at once – each with its <b>own store</b> (or “Anywhere”) and its <b>own kind</b> of sync. Your existing list stays as it was."],
-  ["↩️ <b>Rückgängig:</b> Wer einen Artikel versehentlich abhakt, sieht unten 3 Sekunden lang „↩️ Rückgängig“ – ein Tipp, und er steht wieder offen. Der Hinweis erscheint nur bei dem, der selbst abgehakt hat.",
-   "↩️ <b>Undo:</b> if you check something off by accident, “↩️ Undo” appears at the bottom for 3 seconds – one tap and it is open again. It only shows for the person who checked it off."],
-  ["▥ <b>Rückgängig nach dem Scannen:</b> Nach „Mehrere scannen“ und „Scannen &amp; abhaken“ steht 5 Sekunden „↩️ Rückgängig“ für den zuletzt gescannten Artikel.",
-   "▥ <b>Undo after scanning:</b> after “Scan several” and “Scan &amp; check off”, “↩️ Undo” shows for 5 seconds for the last scanned item."],
-  ["🔄 <b>Alle Fotos neu holen:</b> in ⚙️ → Produkte → „Alle Produkte“ holt ein Knopf die fehlenden oder abgeschnittenen Fotos für alle Produkte mit Barcode nach – nacheinander, mit Fortschritt. Ganze Fotos bleiben unangetastet.",
-   "🔄 <b>Fetch all photos again:</b> in ⚙️ → Products → “All products” one button fetches the missing or cut-off photos for every product with a barcode – one after another, with progress. Complete photos stay untouched."],
-  ["🧹 <b>Doppelte Fotos:</b> „Alles ok?“ meldet jetzt, wenn zwei Produkte genau dasselbe Foto haben (oder ein Foto doppelt vorkommt) – und löscht auf Wunsch das doppelte.",
-   "🧹 <b>Duplicate photos:</b> “All ok?” now reports when two products have exactly the same photo (or a photo appears twice) – and deletes the duplicate on request."],
+  ["🔄 <b>Alle Fotos neu holen</b> holt jetzt wirklich <b>alle</b> Datenbank-Fotos neu (nicht nur fehlende) und ersetzt alte durch neuere – eigene Fotos bleiben, nichts kommt doppelt dazu. Am Ende steht, bei welchen Produkten die Datenbank kein Foto hat.",
+   "🔄 <b>Fetch all photos again</b> now really fetches <b>all</b> database photos again (not only missing ones) and replaces old ones with newer ones – your own photos stay, nothing is added twice. At the end it lists the products the database has no photo for."],
+  ["🔘 <b>Katalog:</b> die Knöpfe „Neues Produkt“, „Per Barcode“ und „Alle Fotos neu holen“ zeigen nur noch das Symbol (Tipp lange darauf = Name).",
+   "🔘 <b>Catalog:</b> the buttons “New product”, “By barcode” and “Fetch all photos again” now show only the icon (long-press = name)."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -3478,10 +3468,10 @@ class EinkaufslisteCard extends HTMLElement {
           : `<p class="hint">Alle Produkte, die die Liste kennt. Antippen = ändern oder ganz löschen. Umbenennen zieht Fotos, Barcodes, Artikel und Rezepte mit.</p>`}
         <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen …" value="${esc(this._prodFilter || "")}"></div>
         ${this._prodTab === "scanned" ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:filter-variant"></ha-icon><select class="grow" id="prodFilterSel" title="Filter">${this._prodFilterOptions()}</select>
-          <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon>Neues Produkt</button>
-          <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon>Per Barcode</button>
-          <button class="btn" data-act="prod-refresh-all" title="Für alle Produkte mit Barcode fehlende oder abgeschnittene Fotos neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon>Alle Fotos neu holen</button></div>
-        <p class="hint" id="prodRefreshMsg" hidden></p>
+          <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog" aria-label="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon></button>
+          <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog" aria-label="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
+          <button class="btn" data-act="prod-refresh-all" title="Alle Fotos neu holen" aria-label="Alle Fotos neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon></button></div>
+        <p class="hint" id="prodRefreshMsg" ${this._refreshNone ? "" : "hidden"}>${esc(this._refreshNone ? elT(this._refreshNone) : "")}</p>
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
       { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_VERSION}`, html: () => this._newsHtml() },
@@ -5729,9 +5719,9 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>People:</b> the names for the quick buttons at “For whom?”.</li>
         <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK) and <b>Delete shopping-list items</b>.</li>
         <li><b>Filter “🗓️ Not bought for 3 months”:</b> shows products that were last checked off more than 3 months ago (never checked off: counted from when they were added). Products on the list or in a recipe are not shown. Tap one to look at it, or <b>Delete all</b> in one go.</li>
-        <li><b>➕ New product / ▥ By barcode:</b> adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
+        <li><b>➕ New product / ▥ By barcode</b> (icons only): adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
         <li><b>📥 Fetch photo again:</b> inside a product (with a barcode) fetches the photo from the barcode database again. Cut-off photos are replaced.</li>
-        <li><b>🔄 Fetch all photos again:</b> under “All products” fetches missing and cut-off photos for every product with a barcode (one after another, with progress). Complete photos stay untouched.</li>
+        <li><b>🔄 Fetch all photos again</b> (cloud icon under “All products”): fetches the photos from the database again for every product with a barcode and replaces old database photos with newer ones. Your own photos stay, nothing is added twice. At the end it lists where the database has no photo.</li>
         <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
         <li><b>Recipes:</b> a recipe tab and a groups tab (Fish, Meat, Pastry …).</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
@@ -5767,9 +5757,9 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Personen:</b> die Namen für die Schnellknöpfe bei „Für wen?“.</li>
         <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt) und <b>Einkaufsliste Produkte löschen</b>.</li>
         <li><b>Filter „🗓️ Seit 3 Monaten nicht gekauft“:</b> zeigt Produkte, die vor mehr als 3 Monaten zuletzt abgehakt wurden (nie abgehakt: gezählt ab dem Eintragen). Produkte, die auf der Liste oder in einem Rezept stehen, fehlen hier. Antippen zum Ansehen, oder <b>Alle löschen</b> auf einmal.</li>
-        <li><b>➕ Neues Produkt / ▥ Per Barcode:</b> legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
+        <li><b>➕ Neues Produkt / ▥ Per Barcode</b> (nur Symbole): legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
         <li><b>📥 Foto neu holen:</b> im Produkt (mit Barcode) holt das Foto noch einmal aus der Barcode-Datenbank. Abgeschnittene Fotos werden ersetzt.</li>
-        <li><b>🔄 Alle Fotos neu holen:</b> bei „Alle Produkte“ holt fehlende und abgeschnittene Fotos für alle Produkte mit Barcode nach (nacheinander, mit Fortschritt). Ganze Fotos bleiben unangetastet.</li>
+        <li><b>🔄 Alle Fotos neu holen</b> (Wolken-Symbol bei „Alle Produkte“): holt für alle Produkte mit Barcode die Fotos aus der Datenbank neu und ersetzt alte Datenbank-Fotos durch neuere. Eigene Fotos bleiben, nichts kommt doppelt dazu. Am Ende steht, wo die Datenbank kein Foto hat.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
         <li><b>Rezepte:</b> ein Reiter für die Rezepte, einer für die Gruppen (Fisch, Fleisch, Gebäck …).</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
@@ -7202,19 +7192,26 @@ class EinkaufslisteCard extends HTMLElement {
         const say = (t) => { const m = this.$("prodRefreshMsg"); if (m) { m.hidden = !t; m.textContent = t ? elT(t) : ""; } };
         (async () => {
           try {
+            this._refreshNone = "";
             const plan = await this._ws({ type: "einkaufsliste/photos/refresh_plan" });
-            const n = plan.keys.length;
-            if (!plan.total) { this._toast("Kein Produkt hat einen Barcode."); return; }
-            if (!n) { this._toast(`📷 Alle ${plan.total} Produkte mit Barcode haben schon ganze Fotos 👍`); return; }
-            if (!elConfirm(`Für ${n} Produkte mit Barcode die Fotos neu holen?\n\nDas geht nacheinander und kann etwas dauern. Fehlende und abgeschnittene Fotos werden geholt, ganze Fotos bleiben unangetastet.`)) return;
-            let ok = 0, none = 0;
+            const keys = plan.all || [];
+            const n = keys.length;
+            if (!n) { this._toast("Kein Produkt hat einen Barcode."); return; }
+            if (!elConfirm(`Für alle ${n} Produkte mit Barcode die Fotos aus der Datenbank neu holen?\n\nDas geht nacheinander und kann etwas dauern. Gibt es ein neueres Foto, ersetzt es das alte Datenbank-Foto. Deine eigenen Fotos bleiben unangetastet.`)) return;
+            let same = 0, changed = 0, full = 0;
+            const none = [];
             for (let i = 0; i < n; i++) {
               say(`🔄 Fotos werden geholt … ${i + 1} / ${n}`);
-              try { await this._hass.callWS({ type: "einkaufsliste/product/refresh", key: plan.keys[i], only_missing: true }); ok++; } catch (_) { none++; }
+              try {
+                const r = await this._hass.callWS({ type: "einkaufsliste/product/refresh", key: keys[i], replace: true });
+                if (r.status === "same") same++; else if (r.status === "full") full++; else changed++;
+              } catch (_) { none.push((plan.names || {})[keys[i]] || keys[i]); }
             }
-            this._toast(`📷 Fertig: ${ok} Produkte erledigt${none ? `, ${none}× hat die Datenbank kein Foto` : ""}`);
+            this._toast(`📷 Fertig: ${changed} neu oder ersetzt, ${same} schon aktuell${full ? `, ${full}× Platz voll` : ""}${none.length ? `, ${none.length}× keins in der Datenbank` : ""}`);
+            this._refreshNone = none.length ? `Kein Foto in der Datenbank: ${none.join(", ")}` : "";
+            say(this._refreshNone);
             this._loadProducts();
-          } catch (_) { /* Meldung kam schon */ } finally { say(""); this._refreshAllBusy = false; }
+          } catch (_) { /* Meldung kam schon */ } finally { if (!this._refreshNone) say(""); this._refreshAllBusy = false; }
         })();
         break;
       }

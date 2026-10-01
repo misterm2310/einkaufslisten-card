@@ -880,12 +880,12 @@ def ws_product_add(hass, connection, msg):
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/product/refresh", vol.Required("key"): str, vol.Optional("only_missing"): bool}
+    {vol.Required("type"): "einkaufsliste/product/refresh", vol.Required("key"): str, vol.Optional("only_missing"): bool, vol.Optional("replace"): bool}
 )
 @websocket_api.async_response
 async def ws_product_refresh(hass, connection, msg):
     """🔄 Foto zu einem Produkt neu aus der Barcode-Datenbank holen."""
-    await _run_async(hass, connection, msg, lambda m: async_refresh_photo(hass, m, msg["key"], bool(msg.get("only_missing"))))
+    await _run_async(hass, connection, msg, lambda m: async_refresh_photo(hass, m, msg["key"], bool(msg.get("only_missing")), bool(msg.get("replace"))))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/photos/refresh_plan"})

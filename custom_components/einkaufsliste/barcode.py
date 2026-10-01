@@ -286,16 +286,17 @@ async def async_auto_photo(hass: HomeAssistant, manager: Any, code: str, name: s
     if manager.photos.get(name.strip().lower()):
         return False
     try:
-        await manager.async_set_photo(name, base64.b64encode(raw).decode())
+        await manager.async_set_photo(name, base64.b64encode(raw).decode(), db=True)
     except ValueError as err:
         _LOGGER.debug("Produktfoto abgelehnt: %s", err)
         return False
     return True
 
 
-async def async_refresh_photo(hass: HomeAssistant, manager: Any, key: str, only_missing: bool = False) -> dict[str, Any]:
+async def async_refresh_photo(hass: HomeAssistant, manager: Any, key: str, only_missing: bool = False, replace: bool = False) -> dict[str, Any]:
     """🔄 Foto zu einem Produkt neu aus der Datenbank holen (abgeschnittene alte Fotos werden ersetzt).
 
+    replace=True („Alle Fotos neu holen“): das Datenbank-Foto wird durch das aktuelle ersetzt, eigene bleiben.
     only_missing=True („Alle Fotos neu holen“): ganze Fotos bleiben unangetastet, es kommt nichts doppelt dazu –
     nur abgeschnittene Fotos fliegen raus, und ein neues Foto kommt nur, wenn danach keins mehr da ist.
     """
@@ -311,6 +312,9 @@ async def async_refresh_photo(hass: HomeAssistant, manager: Any, key: str, only_
     if raw is None:
         raise ValueError("Die Datenbank hat zu diesem Barcode kein (vollständiges) Foto, oder sie ist gerade nicht erreichbar.")
     dropped = await manager.async_drop_cut_photos(key)  # kaputte alte Fotos raus
+    if replace:  # „Alle Fotos neu holen“: Datenbank-Foto ersetzen, eigene Fotos bleiben
+        status = await manager.async_replace_db_photo(key, raw)
+        return {"key": key, "status": status, "fixed": dropped}
     if only_missing and manager.photos.get(key):
         return {"key": key, "count": 1 + len(manager.photos[key].get("more", [])), "fixed": dropped, "added": False}
     label = (manager.photos.get(key) or {}).get("name") or key

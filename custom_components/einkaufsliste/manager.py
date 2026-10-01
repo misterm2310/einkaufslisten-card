@@ -1903,7 +1903,62 @@ class EinkaufslisteManager:
     def _photo_ids(entry: dict[str, Any]) -> list[str]:
         return [entry["id"], *entry.get("more", [])]
 
-    async def async_set_photo(self, name: str, data: str, add: bool = False) -> dict[str, Any]:
+    async def async_replace_db_photo(self, key: str, raw: bytes) -> str:
+        """🔄 Datenbank-Foto durch das aktuelle ersetzen – eigene Fotos bleiben, nichts kommt doppelt dazu.
+
+        Gibt zurück: "same" (schon aktuell), "replaced" (altes Datenbank-Foto ersetzt), "added" (neu dazu)
+        oder "full" (schon MAX_PHOTOS eigene Fotos – kein Platz).
+        """
+        entry = self.photos.get(key)
+        if entry is None:
+            await self.async_set_photo(self.product_label(key), base64.b64encode(raw).decode(), db=True)
+            return "added"
+        ids = self._photo_ids(entry)
+        new_md5 = hashlib.md5(raw).hexdigest()
+
+        def _md5s() -> dict[str, str]:
+            out: dict[str, str] = {}
+            for pid in ids:
+                try:
+                    out[pid] = hashlib.md5(self._photo_path(pid).read_bytes()).hexdigest()
+                except OSError:
+                    pass
+            return out
+
+        sums = await self.hass.async_add_executor_job(_md5s)
+        dbs = entry.setdefault("db", [])
+        for pid, digest in sums.items():
+            if digest == new_md5:  # genau dieses Foto ist schon da (= stammt aus der Datenbank)
+                if pid not in dbs:
+                    dbs.append(pid)
+                    self._changed()
+                return "same"
+        old_db = [i for i in ids if i in dbs]
+        if not old_db and len(ids) >= MAX_PHOTOS:
+            return "full"
+        if len(raw) > 3 * 1024 * 1024 or not (raw[:3] == b"\xff\xd8\xff" or raw[:8] == b"\x89PNG\r\n\x1a\n" or raw[8:12] == b"WEBP"):
+            raise ValueError("Das Foto aus der Datenbank ist kein brauchbares Foto.")
+        new_id = _new_id()
+
+        def _write() -> None:
+            self.photo_dir.mkdir(parents=True, exist_ok=True)
+            self._photo_path(new_id).write_bytes(raw)
+
+        await self.hass.async_add_executor_job(_write)
+        if old_db:
+            ids[ids.index(old_db[0])] = new_id  # an derselben Stelle (auch als Hauptfoto)
+            drop = old_db
+        else:
+            ids.append(new_id)
+            drop = []
+        ids = [i for i in ids if i not in drop[1:]]
+        for pid in drop:
+            await self._async_delete_file(pid)
+        entry.update(id=ids[0], more=ids[1:], db=[new_id], updated=_now_iso())
+        self._changed()
+        return "replaced" if old_db else "added"
+
+    async def async_set_photo(self, name: str, data: str, add: bool = False, db: bool = False) -> dict[str, Any]:
         """Foto zu einem Produkt speichern (Base64, vom Handy schon verkleinert).
 
         add=True: zusätzliches Foto (z. B. Rückseite), sonst wird das Haupt-Foto ersetzt.
@@ -1941,6 +1996,8 @@ class EinkaufslisteManager:
             self.photos[key] = {"id": photo_id, "updated": _now_iso(), "name": name, "more": old.get("more", []) if old else []}
             if old:
                 await self._async_delete_file(old["id"])
+        if db:  # 🏷️ merken: dieses Foto stammt aus der Datenbank (wird bei „Alle Fotos neu holen“ ersetzt)
+            self.photos[key].setdefault("db", []).append(photo_id)
         self._changed()
         entry = self.photos[key]
         return {"name": name, "updated": entry["updated"], "count": len(self._photo_ids(entry))}
@@ -1972,7 +2029,8 @@ class EinkaufslisteManager:
             return todo
 
         todo = await self.hass.async_add_executor_job(_plan)
-        return {"keys": todo, "total": len(keys)}
+        names = {k: self.product_label(k).replace("|", " · ") for k in keys}
+        return {"keys": todo, "total": len(keys), "all": keys, "names": names}
 
     def product_label(self, key: str) -> str:
         """Name des Produkts in Originalschreibweise (Name|Notiz) – für ein neues Foto."""
