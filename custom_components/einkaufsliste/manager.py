@@ -717,13 +717,13 @@ class EinkaufslisteManager:
 
     def get_purchases(self) -> dict[str, Any]:
         if not self.spend:
-            raise ValueError("Das Einkaufs-Protokoll ist ausgeschaltet (⚙️ → App & Aussehen).")
+            raise ValueError("Das Einkaufs-Protokoll ist ausgeschaltet (⚙️ → Extras).")
         return {"entries": sorted(self.purchases, key=lambda e: e.get("t", ""), reverse=True)}
 
     def add_purchase(self, store_id: str | None, amount: Any, day: str | None = None) -> dict[str, Any]:
         """🧾 Nach dem Einkauf: Geschäft + Betrag. Wer und wann setzen wir selbst (Datum nur, wenn es ein anderer Tag war)."""
         if not self.spend:
-            raise ValueError("Das Einkaufs-Protokoll ist ausgeschaltet (⚙️ → App & Aussehen).")
+            raise ValueError("Das Einkaufs-Protokoll ist ausgeschaltet (⚙️ → Extras).")
         store = self.store_by_id(store_id) if store_id else None
         if store is None:
             raise ValueError("Bei welchem Geschäft war das?")
@@ -758,7 +758,7 @@ class EinkaufslisteManager:
 
     def remove_purchase(self, purchase_id: str) -> None:
         if not self.spend:
-            raise ValueError("Das Einkaufs-Protokoll ist ausgeschaltet (⚙️ → App & Aussehen).")
+            raise ValueError("Das Einkaufs-Protokoll ist ausgeschaltet (⚙️ → Extras).")
         before = len(self.purchases)
         self.purchases = [e for e in self.purchases if e["id"] != purchase_id]
         if len(self.purchases) == before:
@@ -839,14 +839,21 @@ class EinkaufslisteManager:
         return out
 
     # ------------------------------------------------------------------ Produkt-Katalog
-    def add_product(self, name: str, category_id: str | None = None, store_id: str | None = None) -> dict[str, Any]:
-        """📦 Neues Produkt direkt im Katalog – ohne es auf die Liste zu setzen."""
+    def add_product(
+        self, name: str, category_id: str | None = None, store_id: str | None = None, barcode: str | None = None
+    ) -> dict[str, Any]:
+        """📦 Neues Produkt direkt im Katalog – ohne es auf die Liste zu setzen (optional gleich mit Barcode)."""
         name = _nice(name or "")
         if not name or len(name) > 80:
             raise ValueError("Wie heißt das Produkt?")
         key = name.lower()
         if key in self.history:
             raise ValueError(f"„{self.history[key]['name']}“ gibt es schon.")
+        code = "".join(ch for ch in str(barcode or "") if ch.isdigit())
+        if barcode and not code:
+            raise ValueError("Das ist kein gültiger Barcode.")
+        if code and code in self.barcodes and self.barcodes[code].get("name"):
+            raise ValueError(f"Der Barcode gehört schon zu „{self.barcodes[code]['name']}“.")
         self.history[key] = {
             "name": name,
             "count": 0,
@@ -854,6 +861,9 @@ class EinkaufslisteManager:
             "category_id": category_id if self.category_by_id(category_id) else self.guess_category(name),
             "last_used": _now_iso(),
         }
+        if code:
+            h = self.history[key]
+            self.learn_barcode(code, name, h["store_id"], h["category_id"])
         self._changed()
         return next((p for p in self.products() if p["key"] == product_key(name, None)), {"key": key, "name": name})
 
@@ -882,6 +892,9 @@ class EinkaufslisteManager:
                     "photos": 0,
                     "open": 0,
                     "items": 0,
+                    "last_bought": None,  # 🗓️ zuletzt abgehakt
+                    "last_added": None,  # 🗓️ zuletzt eingetragen
+                    "in_recipes": 0,  # 🍳 in so vielen Rezepten
                 }
             return out[key]
 
@@ -892,6 +905,10 @@ class EinkaufslisteManager:
             e["items"] += 1
             if not item["checked"]:
                 e["open"] += 1
+            elif item.get("checked_at") and str(item["checked_at"]) > (e["last_bought"] or ""):
+                e["last_bought"] = str(item["checked_at"])
+            if item.get("added_at") and str(item["added_at"]) > (e["last_added"] or ""):
+                e["last_added"] = str(item["added_at"])
             if item.get("category_id") and not e["category_id"]:
                 e["category_id"] = item["category_id"]
             if item.get("store_id") and not e["store_id"]:
@@ -899,6 +916,7 @@ class EinkaufslisteManager:
         for recipe in self.recipes:
             for ri in recipe["items"]:
                 e = entry(ri["name"], ri.get("note"))
+                e["in_recipes"] += 1
                 if ri.get("category_id") and not e["category_id"]:
                     e["category_id"] = ri["category_id"]
                 if ri.get("store_id") and not e["store_id"]:

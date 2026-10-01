@@ -846,11 +846,17 @@ def ws_log_settings(hass, connection, msg):
 
 @websocket_api.websocket_command(
     {vol.Required("type"): "einkaufsliste/product/add", vol.Required("name"): str,
-     vol.Optional("category_id"): OPT_STR, vol.Optional("store_id"): OPT_STR}
+     vol.Optional("category_id"): OPT_STR, vol.Optional("store_id"): OPT_STR, vol.Optional("barcode"): OPT_STR}
 )
 @callback
 def ws_product_add(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: m.add_product(msg["name"], msg.get("category_id"), msg.get("store_id")))
+    def _add(m):
+        result = m.add_product(msg["name"], msg.get("category_id"), msg.get("store_id"), msg.get("barcode"))
+        if result.get("barcodes"):
+            _auto_photo(hass, m, result["barcodes"][0], result["key"])
+        return result
+
+    _run(hass, connection, msg, _add)
 
 
 @websocket_api.websocket_command(

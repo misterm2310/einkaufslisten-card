@@ -2,17 +2,17 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.41.0";
+const EL_VERSION = "2.42.0";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["🎉 <b>Protokoll fragt von selbst (optional):</b> In den Einstellungen → 🧾 Einkaufs-Protokoll kannst du „Automatisch fragen“ einschalten. Ist dann alles auf der Liste abgehakt, geht der Dialog „Einkauf eintragen“ von selbst auf – mit dem Geschäft schon ausgewählt.",
-   "🎉 <b>Log asks by itself (optional):</b> in Settings → 🧾 Purchase log you can switch on “Ask automatically”. Once everything on the list is checked off, the “log purchase” dialog opens by itself – with the store already chosen."],
-  ["✨ <b>„Neu“-Markierung auf allen Geräten:</b> Tippst du auf ✨, ist sie bei allen weg. 🧾 <b>Kassenbon:</b> Findet die Karte mehrere mögliche Beträge, kannst du den richtigen antippen. 📋 <b>Einkaufszettel-Foto:</b> Überschriften wie „Aldi“ oder „Aldi:“ ordnen die Artikel dem Geschäft zu.",
-   "✨ <b>“New” marker on all devices:</b> tap ✨ and it disappears for everyone. 🧾 <b>Receipt:</b> if the card finds several possible amounts, tap the right one. 📋 <b>Shopping-note photo:</b> headings like “Aldi” or “Aldi:” assign the items to that store."],
-  ["🩺 <b>Neuer Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> zeigt die Gesundheits-Ampel (ok / hinweis / problem) – nutzbar in Automationen, z. B. für eine Meldung aufs Handy.",
-   "🩺 <b>New sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> shows the health light (ok / hinweis / problem) – usable in automations, e.g. for a phone notification."],
-  ["📸 <b>Text aus Foto:</b> Die Karte liest Text direkt auf deinem Gerät (nichts wird hochgeladen): 📋 Einkaufszettel, Rezept („📷 Aus Foto“) und Kassenbon („📷 Kassenbon lesen“). Handschrift klappt nur mit Glück – alles ist vor dem Übernehmen korrigierbar.",
-   "📸 <b>Text from photo:</b> the card reads text right on your device (nothing is uploaded): 📋 shopping note, recipe (“📷 From photo”) and receipt (“📷 Read receipt”). Handwriting only works with luck – everything can be corrected before adding."],
+  ["⚙️ <b>Einstellungen neu sortiert:</b> Eine <b>Liste mit Überschriften</b> (Meine Liste · Extras · Daten · Gesundheit · App &amp; Info), nur eine Ebene tief – dazu ein <b>Suchfeld</b> ganz oben. Alle Ein/Aus-Schalter (Protokoll, Maskottchen, Laden-Modus automatisch …) stehen auf der Seite <b>Extras</b>.",
+   "⚙️ <b>Settings re-sorted:</b> a <b>list with headings</b> (My list · Extras · Data · Health · App &amp; info), only one level deep – plus a <b>search field</b> at the top. All on/off switches (log, mascot, shop mode automatic …) are on the <b>Extras</b> page."],
+  ["📖 <b>Zwei Anleitungen:</b> Vorne (Einkaufswagen oder Knopf „Anleitung“) steht die Anleitung für <b>Einkaufen und Rezepte</b>. Die Anleitung für die <b>Einstellungen</b> gibt es nur in den Einstellungen (Knopf „Anleitung Einstellungen“ unten).",
+   "📖 <b>Two guides:</b> up front (shopping cart or the “Guide” button) is the guide for <b>shopping and recipes</b>. The guide for the <b>settings</b> is only inside the settings (button “Settings guide” at the bottom)."],
+  ["📦 <b>Katalog:</b> Neuer Filter „🗓️ Seit 3 Monaten nicht gekauft“ – zum Ansehen und Aufräumen (auch alle auf einmal löschen). Und „▥ Per Barcode“: neues Produkt scannen, Namen bestätigen, fertig.",
+   "📦 <b>Catalog:</b> new filter “🗓️ Not bought for 3 months” – to look through and tidy up (delete all at once too). And “▥ By barcode”: scan a new product, confirm the name, done."],
+  ["🎉 <b>Protokoll fragt von selbst (Option), ✨ auf allen Geräten, Gesundheits-Sensor:</b> Ist alles abgehakt, geht „Einkauf eintragen“ von selbst auf (Schalter unter Extras). Tippst du auf ✨, ist es bei allen weg. <code>sensor.einkaufsliste_gesundheit</code> zeigt die Ampel in Home Assistant.",
+   "🎉 <b>Log asks by itself (option), ✨ on all devices, health sensor:</b> once everything is checked off, “log purchase” opens by itself (switch under Extras). Tap ✨ and it is gone for everyone. <code>sensor.einkaufsliste_gesundheit</code> shows the health light in Home Assistant."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -840,7 +840,7 @@ function askPin(title = "🔒 PIN eingeben") {
   });
 }
 // ✍️ Kleines Eingabefenster (statt prompt(), das in der HA-App nicht überall geht)
-function askText(title, placeholder = "") {
+function askText(title, placeholder = "", value = "") {
   return new Promise((resolve) => {
     const ov = makeOverlay();
     ov.innerHTML = `<div style="max-width:340px;width:100%">
@@ -848,6 +848,7 @@ function askText(title, placeholder = "") {
       <input style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:12px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee" placeholder="${esc(elT(placeholder))}">
       <div class="abtn" style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px"></div></div>`;
     const inp = ov.querySelector("input");
+    inp.value = value || "";
     const done = (v) => { ov.remove(); resolve(v); };
     const ok = ovButton("OK", true), cancel = ovButton(elT("Abbrechen"));
     ok.onclick = () => done(inp.value.trim() || null);
@@ -1154,6 +1155,20 @@ ha-card.compact .group { margin-top:4px; }
 .error { background: color-mix(in srgb, var(--error-color,#db4437) 15%, transparent); color:var(--primary-text-color); border-radius:10px; padding:10px; margin:4px 2px 8px; font-size:.9em; }
 .sec { margin:4px 2px 16px; }
 .sec h3 { display:flex; align-items:center; gap:6px; font-size:1em; margin:6px 0 8px; }
+.lgroup { margin:14px 0 4px; font-size:.9em; color:var(--secondary-text-color); font-weight:600; }
+.lrow { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; margin:3px 0; border-radius:12px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
+.lrow:hover { border-color:var(--primary-color,#03a9f4); }
+.lrow > ha-icon:first-child { color:var(--primary-color,#03a9f4); }
+.lrow small, .swrow small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
+.lrow .grow, .swrow .grow { flex:1 1 auto; min-width:0; }
+.lrow .chev { opacity:.5; flex:none; }
+.lrow b, .swrow b { display:block; }
+.swrow { display:flex; align-items:center; gap:10px; padding:10px 12px; margin:4px 0; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); }
+.swrow > ha-icon { color:var(--primary-color,#03a9f4); }
+.sw { position:relative; flex:none; width:48px; height:28px; border-radius:14px; border:0; cursor:pointer; background:rgba(127,127,127,.45); transition:background .15s; padding:0; }
+.sw i { position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:left .15s; box-shadow:0 1px 3px rgba(0,0,0,.35); }
+.sw.on { background:var(--primary-color,#03a9f4); }
+.sw.on i { left:23px; }
 .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:8px; }
 .tile { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:12px; border-radius:14px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
 .tile:hover { border-color:var(--primary-color,#03a9f4); }
@@ -2361,8 +2376,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._view === "settings") {
       if (this._storeSel) this._storeSel = null;
       else if (this._setSec) {
-        const parents = { check: "tools", errors: "tools", transfer: "tools", log: "tools", cleanup: "tools", app: "appx", mascot: "appx", autoshop: "appx", spend: "appx", pin: "appx" };
-        this._setSec = parents[this._setSec] || null;
+        this._setSec = null; // Einstellungen sind nur eine Ebene tief: zurück = Übersicht
       } else this._view = "list";
       this._renderAll();
       return true;
@@ -3225,7 +3239,7 @@ class EinkaufslisteCard extends HTMLElement {
     f.hidden = false;
     const next = new Date(s.next_cleanup);
     f.innerHTML = `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`
-      + (window.__elOfflineApp ? "" : `<button class="guidebtn" type="button" data-act="guide" title="Anleitung öffnen"><ha-icon icon="mdi:book-open-page-variant-outline"></ha-icon>Anleitung</button>`); // 📖 fester Platz unten (in der Offline-App steht er neben „Abmelden“)
+      + (window.__elOfflineApp ? "" : `<button class="guidebtn" type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte"><ha-icon icon="mdi:book-open-page-variant-outline"></ha-icon>Anleitung</button>`); // 📖 fester Platz unten (in der Offline-App steht er neben „Abmelden“)
   }
 
   // ---------------------------------------------------------------- Icon-Suche
@@ -3411,24 +3425,24 @@ class EinkaufslisteCard extends HTMLElement {
           : `<p class="hint">Alle Produkte, die die Liste kennt. Antippen = ändern oder ganz löschen. Umbenennen zieht Fotos, Barcodes, Artikel und Rezepte mit.</p>`}
         <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen …" value="${esc(this._prodFilter || "")}"></div>
         ${this._prodTab === "scanned" ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:filter-variant"></ha-icon><select class="grow" id="prodFilterSel" title="Filter">${this._prodFilterOptions()}</select>
-          <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon>Neues Produkt</button></div>
+          <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon>Neues Produkt</button>
+          <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon>Per Barcode</button></div>
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
-      { key: "tools", icon: "mdi:toolbox-outline", title: "Werkzeuge", info: "Alles ok?, Import, Angebote, Verlauf, Aufräumen, Ressourcen", group: true },
-      { key: "appx", icon: "mdi:cellphone-cog", title: "App & Aussehen", info: "Offline-App, Maskottchen, PIN", group: true },
+      { key: "extras", icon: "mdi:toggle-switch-outline", title: "Extras (Schalter)", info: "Angebote, Protokoll, Laden-Modus, Maskottchen", html: () => this._extrasHtml() },
       { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_VERSION}`, html: () => this._newsHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
-      { key: "offers", parent: "tools", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
-      { key: "stats", parent: "tools", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher & Umfang", html: () => `
+      { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
+      { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher & Umfang", html: () => `
         <p class="hint">So viel Platz braucht die Einkaufsliste in deinem Home Assistant.</p>
         <div id="statsBox"><p class="hint">Lade …</p></div>` },
-      { key: "check", parent: "tools", icon: "mdi:check-decagram-outline", title: "Alles ok?", info: "prüfen & reparieren", html: () => `
+      { key: "check", icon: "mdi:check-decagram-outline", title: "Alles ok?", info: "prüfen & reparieren", html: () => `
         <p class="hint">Sucht nach kaputten oder unvollständigen Einträgen: Produkte ohne Kategorie, Artikel ohne Geschäft, fehlende oder übrige Fotos, Barcodes ohne Produkt und Verweise auf Gelöschtes. Jeder Fund steht einzeln da – mit Haken und wie repariert wird. Repariert wird nur, was du anhakst.</p>
         <div class="btnrow"><button class="btn primary" data-act="check-run"><ha-icon icon="mdi:magnify"></ha-icon>Jetzt prüfen</button></div>
         <div id="checkRes"></div>` },
-      { key: "errors", parent: "tools", icon: "mdi:bug-outline", title: "Fehler-Protokoll", info: (this._data.settings?.errors || 0) ? `${this._data.settings.errors} Meldungen` : "keine Fehler 🎉", html: () => this._errorsHtml() },
-      { key: "transfer", parent: "tools", icon: "mdi:database-import-outline", title: "Import & Sicherung", info: "Rezepte, andere Apps, Backup", html: () => this._xferHtml() },
-      { key: "app", parent: "appx", icon: "mdi:cellphone-arrow-down", title: "Offline-App", info: "Liste auch ohne Netz", html: () => `
+      { key: "errors", icon: "mdi:bug-outline", title: "Fehler-Protokoll", info: (this._data.settings?.errors || 0) ? `${this._data.settings.errors} Meldungen` : "keine Fehler 🎉", html: () => this._errorsHtml() },
+      { key: "transfer", icon: "mdi:database-import-outline", title: "Import & Sicherung", info: "Rezepte, andere Apps, Backup", html: () => this._xferHtml() },
+      { key: "app", icon: "mdi:cellphone-arrow-down", title: "Offline-App", info: "Liste auch ohne Netz", html: () => `
         <p class="hint">Eine eigene kleine App nur für die Einkaufsliste. Sie öffnet sich auch <b>ohne Netz</b> (z. B. im Funkloch im Geschäft), zeigt den letzten Stand, lässt dich abhaken und eintragen und schickt alles nach, sobald wieder Netz da ist.</p>
         <ol class="hint xferfmt">
           <li>Auf dem Handy im <b>Browser</b> (Chrome oder Safari, nicht in der HA-App) deine Home-Assistant-Adresse von unterwegs öffnen, z. B. die Nabu-Casa-Adresse, und <code>/einkaufsliste/app/</code> anhängen.</li>
@@ -3442,18 +3456,18 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow"><button class="btn primary" data-act="app-copy"><ha-icon icon="mdi:content-copy"></ha-icon>Kopieren</button></div>
         <p class="hint">Kopieren, im Handy-Browser einfügen, fertig. Die Adresse funktioniert zu Hause und unterwegs.</p>`
           : `<p class="hint">⚠️ Home Assistant kennt keine https-Adresse für unterwegs. Mit <b>Nabu Casa</b> (Einstellungen → Home Assistant Cloud → Fernzugriff) oder einer eigenen https-Adresse (Einstellungen → System → Netzwerk) klappt es.</p>`}` },
-      { key: "mascot", parent: "appx", icon: "mdi:emoticon-happy-outline", title: "Maskottchen", info: this._data.settings?.mascot ? "an – für alle" : "aus", html: () => `
+      { key: "mascot", icon: "mdi:emoticon-happy-outline", title: "Maskottchen", info: this._data.settings?.mascot ? "an – für alle" : "aus", html: () => `
         <p class="hint">Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen öffnet wie gewohnt die Anleitung.</p>
         <div class="mascotprev">${mascotSvg("happy", null)}${mascotSvg("busy", null)}${mascotSvg("full", null)}${mascotSvg("sleep", null)}</div>
         <div class="mascotprev">${["spring", "summer", "autumn", "winter"].map((x) => mascotSvg("happy", x)).join("")}</div>
         <p><b>${this._data.settings?.mascot ? "🛒😊 Das Maskottchen ist an." : "Das Maskottchen ist aus."}</b> Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App.</p>
         <div class="btnrow"><button class="btn primary" data-act="mascot-toggle"><ha-icon icon="${this._data.settings?.mascot ? "mdi:emoticon-neutral-outline" : "mdi:emoticon-happy-outline"}"></ha-icon>${this._data.settings?.mascot ? "Ausschalten" : "Einschalten"}</button></div>` },
-      ...(window.__elOfflineApp ? [] : [{ key: "autoshop", parent: "appx", icon: "mdi:map-marker-radius-outline", title: "Laden-Modus automatisch", info: this._flag("einkaufsliste_auto_shop") ? "an – nur dieses Gerät" : "aus", html: () => `
+      ...(window.__elOfflineApp ? [] : [{ key: "autoshop", icon: "mdi:map-marker-radius-outline", title: "Laden-Modus automatisch", info: this._flag("einkaufsliste_auto_shop") ? "an – nur dieses Gerät" : "aus", html: () => `
         <p class="hint">Kommst du in die 📍 Zone eines Geschäfts, geht der Laden-Modus von selbst an – und wieder aus, sobald du den Laden verlässt. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</p>
         <p><b>${this._flag("einkaufsliste_auto_shop") ? "📍 Automatisch ist an." : "Automatisch ist aus."}</b></p>
         <p class="hint">Der Schalter gilt nur für <b>dieses Gerät</b>. Es braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant.</p>
         <div class="btnrow"><button class="btn primary" data-act="autoshop-toggle"><ha-icon icon="mdi:map-marker-radius-outline"></ha-icon>${this._flag("einkaufsliste_auto_shop") ? "Ausschalten" : "Einschalten"}</button></div>` }]),
-      { key: "spend", parent: "appx", icon: "mdi:receipt-text-outline", title: "Einkaufs-Protokoll", info: this._data.settings?.spend ? "an – für alle" : "aus", html: () => `
+      { key: "spend", icon: "mdi:receipt-text-outline", title: "Einkaufs-Protokoll", info: this._data.settings?.spend ? "an – für alle" : "aus", html: () => `
         <p class="hint">Merkt sich nach jedem Einkauf, wer wann wo für wie viel eingekauft hat. Die Auswertung zeigt Summen pro Geschäft und pro Monat, mit Filtern nach Person, Geschäft und Datum. Unabhängig von den Listen – der Betrag wird von Hand eingetragen.</p>
         <p><b>${this._data.settings?.spend ? "🧾 Das Einkaufs-Protokoll ist an." : "Das Einkaufs-Protokoll ist aus."}</b></p>
         <p class="hint">Der Schalter gilt für alle. Ist es an, sehen und pflegen es alle in der Familie – den 🧾-Knopf oben in der Karte und hier im Verlauf.</p>
@@ -3462,13 +3476,13 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">Wenn alles auf der Liste abgehakt ist, geht der Einkauf-eintragen-Dialog von selbst auf – mit dem Geschäft schon ausgewählt. Gilt für alle.</p>
         <div class="btnrow"><button class="btn" data-act="spend-auto-toggle"><ha-icon icon="mdi:party-popper"></ha-icon>${this._data.settings?.spend_auto ? "Ausschalten" : "Einschalten"}</button></div>` : ""}
         <p class="hint">Ausschalten versteckt nur die Anzeige – die bisherigen Einträge bleiben gespeichert.</p>` },
-      ...(window.__elOfflineApp ? [{ key: "theme", parent: "appx", icon: "mdi:theme-light-dark", title: "Hell / Dunkel", info: { light: "☀️ Hell", dark: "🌙 Dunkel" }[elAppTheme()] || "🌓 Automatisch", html: () => `
+      ...(window.__elOfflineApp ? [{ key: "theme", icon: "mdi:theme-light-dark", title: "Hell / Dunkel", info: { light: "☀️ Hell", dark: "🌙 Dunkel" }[elAppTheme()] || "🌓 Automatisch", html: () => `
         <p class="hint">Nur für die Offline-App auf diesem Gerät. „Automatisch“ richtet sich nach dem Handy – so wie Home Assistant auch.</p>
         <div class="btnrow themebtns">${[["auto", "🌓 Automatisch"], ["light", "☀️ Hell"], ["dark", "🌙 Dunkel"]].map(([v, l]) =>
           `<button class="btn ${elAppTheme() === v ? "primary" : ""}" data-act="app-theme" data-v="${v}">${l}</button>`).join("")}</div>` }] : []),
-      { key: "pin", parent: "appx", icon: this._data.settings?.pin ? "mdi:lock-outline" : "mdi:lock-open-variant-outline", title: "Schutz", info: this._data.settings?.pin ? "PIN ist an" : "PIN fürs Zahnrad", html: () => this._pinHtml() },
-      { key: "log", parent: "tools", icon: "mdi:history", title: "Verlauf", info: "wer, wann, was, wie", html: () => this._logSectionHtml() },
-      { key: "cleanup", parent: "tools", icon: "mdi:broom", title: "Aufräumen", info: `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
+      { key: "pin", icon: this._data.settings?.pin ? "mdi:lock-outline" : "mdi:lock-open-variant-outline", title: "Schutz", info: this._data.settings?.pin ? "PIN ist an" : "PIN fürs Zahnrad", html: () => this._pinHtml() },
+      { key: "log", icon: "mdi:history", title: "Verlauf", info: "wer, wann, was, wie", html: () => this._logSectionHtml() },
+      { key: "cleanup", icon: "mdi:broom", title: "Aufräumen", info: `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
         <p>Jeden <b>${WD_LONG[s.cleanup_weekday]}</b> um <b>${s.cleanup_time} Uhr</b> werden alle offenen Artikel <b>abgehakt</b>, die mindestens <b>${s.min_age_days} Tage</b> auf der Liste stehen. Gelöscht wird nichts – so kannst du sie später mit einem Tipp wieder auf die Liste nehmen.</p>
         <p class="hint">Tag & Uhrzeit ändern: Einstellungen → Geräte & Dienste → Einkaufsliste → Konfigurieren</p>
         <div class="btnrow">
@@ -3478,28 +3492,26 @@ class EinkaufslisteCard extends HTMLElement {
     ];
     if (this._setSec === "recipe_groups") { this._setSec = "recipes"; this._recTab = "groups"; } // alter Weg zu den Rezept-Gruppen
     const cur = sections.find((x) => x.key === this._setSec && !x.alias);
-    const tile = (x) => `
-            <button class="tile" data-act="set-sec" data-sec="${x.key}">
-              <ha-icon icon="${x.icon}"></ha-icon><b>${x.title}</b><small>${esc(x.info)}</small>
-            </button>`;
     if (!cur) {
       this.$("otherView").innerHTML = `
         <div class="sec">
           <h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3>
           <button class="health wait" id="healthBar" data-act="set-sec" data-sec="check"><span>⚪</span><span><b>Prüfe …</b></span></button>
-          <div class="tiles">${sections.filter((x) => !x.parent).map(tile).join("")}
-          </div>
+          <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="setSearch" placeholder="In den Einstellungen suchen …" value="${esc(this._setQ || "")}"></div>
+          <div id="setList">${this._settingsListHtml(sections)}</div>
+          <div class="btnrow" style="margin-top:14px"><button class="btn" data-act="guide-settings"><ha-icon icon="mdi:book-open-variant"></ha-icon>Anleitung Einstellungen</button></div>
         </div>
         <p class="hint" style="text-align:right">Einkaufsliste v${EL_VERSION}</p>`;
+      this.$("setSearch").addEventListener("input", (ev) => {
+        this._setQ = ev.target.value;
+        this.$("setList").innerHTML = this._settingsListHtml(sections);
+      });
       this._loadHealth();
       return;
     }
-    const parent = cur.parent && sections.find((x) => x.key === cur.parent);
     const storeOpen = cur.key === "stores" && d.stores.some((x) => x.id === this._storeSel);
     const back = storeOpen
       ? `<button class="btn back" data-act="store-sel" data-id=""><ha-icon icon="mdi:arrow-left"></ha-icon>Alle Geschäfte</button>`
-      : parent
-      ? `<button class="btn back" data-act="set-sec" data-sec="${parent.key}"><ha-icon icon="mdi:arrow-left"></ha-icon>${parent.title}</button>`
       : `<button class="btn back" data-act="set-sec" data-sec=""><ha-icon icon="mdi:arrow-left"></ha-icon>Übersicht</button>`;
     this.$("otherView").innerHTML = `
       <div class="sec">
@@ -3507,7 +3519,7 @@ class EinkaufslisteCard extends HTMLElement {
           ${back}
           <h3><ha-icon icon="${cur.icon}"></ha-icon>${cur.title}</h3>
         </div>
-        ${cur.group ? `<div class="tiles">${sections.filter((x) => x.parent === cur.key).map(tile).join("")}</div>` : cur.html()}
+        ${cur.html()}
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
     if (cur.key === "stats") this._loadStats();
@@ -3517,6 +3529,52 @@ class EinkaufslisteCard extends HTMLElement {
     if (cur.key === "transfer" && this._xferTab === "apps") this._loadTodoLists();
     if (cur.key === "transfer" && this._xferTab === "mail") this._loadMailSources();
     this._renderDelList();
+  }
+
+  // 🗂️ Einstellungen als Liste: Überschriften nach Zweck, eine Ebene tief, mit Suche
+  _settingsListHtml(sections) {
+    const groups = [
+      ["📋 Meine Liste", ["stores", "categories", "persons", "products", "recipes"]],
+      ["🎛️ Extras", ["extras", "offers", "spend", "autoshop", "mascot"]],
+      ["💾 Daten", ["transfer", "log", "cleanup"]],
+      ["🩺 Gesundheit", ["check", "errors", "stats"]],
+      ["📱 App & Info", ["app", "theme", "pin", "news", "credits"]],
+    ];
+    const kw = {
+      stores: "laden markt zone standort icon eigenmarken", categories: "kategorie farbe reihenfolge", persons: "für wen namen familie",
+      products: "katalog barcode foto löschen zusammenführen scan alt monate", recipes: "rezept gruppen kochen zutaten",
+      extras: "schalter ein aus an schalten", offers: "angebote marktguru preise plz", spend: "protokoll bon kasse kosten einkauf",
+      autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
+      log: "verlauf wer wann", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel", errors: "fehler protokoll kopieren",
+      stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", pin: "pin schutz sperre", news: "neu version", credits: "über danke lizenz github",
+    };
+    const q = (this._setQ || "").trim().toLowerCase();
+    const byKey = Object.fromEntries(sections.map((x) => [x.key, x]));
+    const out = groups.map(([title, keys]) => {
+      const rows = keys.map((k) => byKey[k]).filter(Boolean)
+        .filter((x) => !q || `${x.title} ${x.info} ${kw[x.key] || ""}`.toLowerCase().includes(q))
+        .map((x) => `<button class="lrow" data-act="set-sec" data-sec="${x.key}"><ha-icon icon="${x.icon}"></ha-icon><span class="grow"><b>${x.title}</b><small>${esc(x.info)}</small></span><ha-icon class="chev" icon="mdi:chevron-right"></ha-icon></button>`).join("");
+      return rows ? `<h4 class="lgroup">${title}</h4>${rows}` : "";
+    }).join("");
+    return out || `<p class="hint">Nichts gefunden zu „${esc(q)}“.</p>`;
+  }
+
+  // 🎛️ Alle Ein/Aus-Schalter auf einer Seite
+  _extrasHtml() {
+    const s = this._data.settings || {};
+    const admin = !!this._hass?.user?.is_admin;
+    const sw = (on, act, icon, title, desc) => `
+      <div class="swrow"><ha-icon icon="${icon}"></ha-icon><div class="grow"><b>${title}</b><small>${desc}</small></div>
+        <button class="sw ${on ? "on" : ""}" data-act="${act}" role="switch" aria-checked="${on ? "true" : "false"}" title="${on ? "Ausschalten" : "Einschalten"}"><i></i></button></div>`;
+    const off = s.offers?.enabled;
+    return `
+      <p class="hint">Alle Schalter an einem Ort. Antippen = ein- oder ausschalten.</p>
+      ${sw(!!s.spend, "spend-toggle", "mdi:receipt-text-outline", "🧾 Einkaufs-Protokoll", "Wer hat wann wo für wie viel eingekauft · gilt für alle")}
+      ${s.spend ? sw(!!s.spend_auto, "spend-auto-toggle", "mdi:party-popper", "🎉 Protokoll fragt automatisch", "Wenn alles abgehakt ist, geht „Einkauf eintragen“ von selbst auf · gilt für alle") : ""}
+      ${window.__elOfflineApp ? "" : sw(this._flag("einkaufsliste_auto_shop"), "autoshop-toggle", "mdi:map-marker-radius-outline", "📍 Laden-Modus automatisch", "Geht in der Zone eines Geschäfts von selbst an · nur dieses Gerät")}
+      ${sw(!!s.mascot, "mascot-toggle", "mdi:emoticon-happy-outline", "🛒😊 Maskottchen", "Einkaufswagen mit Gesicht statt Symbol · gilt für alle")}
+      <div class="swrow"><ha-icon icon="mdi:tag-outline"></ha-icon><div class="grow"><b>🏷️ Angebote</b><small>${off ? "an · Marktguru" : "aus · inoffiziell"} – braucht Postleitzahl, darum eigene Seite</small></div>
+        ${admin ? `<button class="btn" data-act="set-sec" data-sec="offers">${off ? "Einstellen" : "Einrichten"}</button>` : `<small>🔒 Admin</small>`}</div>`;
   }
 
   // 🔒 PIN fürs Zahnrad
@@ -3927,9 +3985,30 @@ class EinkaufslisteCard extends HTMLElement {
     const opt = (v, l) => `<option value="${esc(v)}" ${v === f ? "selected" : ""}>${l}</option>`;
     return opt("", "🔽 Alle Produkte") + opt("~nocat", "📦 Ohne Kategorie") + opt("~nostore", "🛒 Ohne Geschäft")
       + opt("~open", "🛍️ Steht auf der Liste") + opt("~photo", "📷 Mit Foto") + opt("~nophoto", "📷 Ohne Foto")
-      + opt("~barcode", "▥ Mit Barcode") + opt("~nobarcode", "▥ Ohne Barcode")
+      + opt("~barcode", "▥ Mit Barcode") + opt("~nobarcode", "▥ Ohne Barcode") + opt("~old3m", "🗓️ Seit 3 Monaten nicht gekauft")
       + `<optgroup label="Geschäft">${d.stores.map((st) => opt(`s:${st.id}`, `🏪 ${esc(st.name)}`)).join("")}</optgroup>`
       + `<optgroup label="Kategorie">${d.categories.map((c) => opt(`c:${c.id}`, `🏷️ ${esc(c.name)}`)).join("")}</optgroup>`;
+  }
+
+  // 🗓️ Wann wurde das Produkt zuletzt gekauft? Zuletzt abgehakt, sonst zuletzt eingetragen
+  _prodLast(p) {
+    return p.last_bought || p.last_added || p.last_used || "";
+  }
+
+  _prodOld(p) {
+    if (p.open || p.in_recipes) return false; // steht gerade auf der Liste oder in einem Rezept
+    const last = this._prodLast(p);
+    if (!last) return true; // nie gekauft, nie eingetragen
+    const limit = new Date(); limit.setMonth(limit.getMonth() - 3);
+    return new Date(last) < limit;
+  }
+
+  _prodAgo(p) {
+    const last = this._prodLast(p);
+    if (!last) return "noch nie";
+    const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+    if (days < 60) return `vor ${days} Tagen`;
+    return `vor ${Math.floor(days / 30)} Monaten`;
   }
 
   _prodFilterFn() {
@@ -3939,6 +4018,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (f.startsWith("c:")) { const id = f.slice(2); return (p) => p.category_id === id; }
     return {
       "~nocat": (p) => !this._cat(p.category_id), "~nostore": (p) => !this._store(p.store_id), "~open": (p) => !!p.open,
+      "~old3m": (p) => this._prodOld(p),
       "~photo": (p) => !!p.photos, "~nophoto": (p) => !p.photos, "~barcode": (p) => p.barcodes.length > 0, "~nobarcode": (p) => !p.barcodes.length,
     }[f] || (() => true);
   }
@@ -3990,9 +4070,11 @@ class EinkaufslisteCard extends HTMLElement {
     const ff = scannedTab ? () => true : this._prodFilterFn();
     let list = this._products.filter((p) => (!scannedTab || p.scanned) && ff(p) && (!q || `${p.name} ${p.note || ""}`.toLowerCase().includes(q)));
     if (scannedTab) list = list.sort((a, b) => String(b.scanned_at || "").localeCompare(String(a.scanned_at || "")));
-    if (!list.length) { box.innerHTML = `<p class="hint">${q ? `Nichts gefunden zu „${esc(q)}“.` : scannedTab ? "Alles geprüft – nichts Neues gescannt. 👍" : "Noch keine Produkte."}</p>`; return; }
+    if (!list.length) { this._oldKeys = null; box.innerHTML = `<p class="hint">${q ? `Nichts gefunden zu „${esc(q)}“.` : this._prodSel === "~old3m" ? "Nichts Altes – alles wurde in den letzten 3 Monaten gekauft. 👍" : scannedTab ? "Alles geprüft – nichts Neues gescannt. 👍" : "Noch keine Produkte."}</p>`; return; }
     const shown = list.slice(0, 80);
-    box.innerHTML = shown.map((p) => {
+    this._oldKeys = this._prodSel === "~old3m" && !scannedTab ? list.map((p) => p.key) : null;
+    const bulk = this._oldKeys ? `<p class="hint">🗓️ Diese ${list.length} Produkte hast du seit 3 Monaten nicht gekauft (gezählt ab dem letzten Abhaken, sonst ab dem Eintragen; Produkte aus Rezepten fehlen hier). Antippen = ansehen oder ganz löschen – oder alle auf einmal:</p><div class="btnrow"><button class="btn danger" data-act="prod-old-del"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Alle ${list.length} löschen</button></div>` : "";
+    box.innerHTML = bulk + shown.map((p) => {
       const cat = this._cat(p.category_id), st = this._store(p.store_id);
       const bits = [
         st ? `<span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>` : "",
@@ -4001,6 +4083,7 @@ class EinkaufslisteCard extends HTMLElement {
         p.barcodes.length ? `<span>▥ ${p.barcodes.length}</span>` : "",
         p.photos ? `<span>📷 ${p.photos}${p.photos >= 6 ? " (voll)" : ""}</span>` : "",
         p.open ? `<span>🛒 steht drauf</span>` : "",
+        this._prodSel === "~old3m" ? `<span>🗓️ ${p.last_bought ? "zuletzt gekauft" : "zuletzt eingetragen"} ${this._prodAgo(p)}</span>` : "",
       ].filter(Boolean).join("");
       if (this._prodEdit === p.key) {
         return `<div class="prodedit" data-key="${esc(p.key)}">
@@ -5439,12 +5522,12 @@ class EinkaufslisteCard extends HTMLElement {
     if (cur === "stats") load();
   }
 
-  _showGuide() {
+  _showGuide(kind = "user") {
     const ov = makeOverlay();
     Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
       paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
     const sec = (icon, title, body, open = false) => `<details class="elg-sec" ${open ? "open" : ""}><summary>${icon} ${title}</summary><div>${body}</div></details>`;
-    const appSec = this._guideAppSec(sec);
+    const appSec = kind === "settings" ? "" : this._guideAppSec(sec);
     ov.innerHTML = `<style>
       .elg { width:100%; max-width:640px; color:#eee; font:15px/1.5 Roboto, sans-serif; }
       .elg h2 { font-size:21px; margin:6px 0 4px; display:flex; align-items:center; gap:8px; }
@@ -5469,7 +5552,7 @@ class EinkaufslisteCard extends HTMLElement {
       .elg .elg-url { width:100%; box-sizing:border-box; font:14px monospace; padding:9px 10px; border-radius:10px; border:1px solid #444; background:#111; color:#eee; margin:6px 0; }
       .elg .elg-copy { font:inherit; font-weight:600; color:#fff; background:#03a9f4; border:0; border-radius:10px; padding:9px 16px; cursor:pointer; }
     </style>
-    ${EL_LANG !== "de" ? this._guideEn(sec, appSec) : `<div class="elg">
+    ${kind === "settings" ? this._guideSettings(sec) : EL_LANG !== "de" ? this._guideEn(sec, appSec) : `<div class="elg">
       <div class="elg-top"><h2>🛒 So funktioniert die Einkaufsliste</h2></div>
       <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung findest du immer über den <b>Einkaufswagen ganz oben links</b>.</p>
       ${sec("🆕", "Was ist neu", this._newsHtml(false))}
@@ -5519,7 +5602,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Nochmal antippen (oder <b>Beenden</b>) = wieder normal.</li>
         <li>Bist du laut Standort im Geschäft, hakt <b>▥</b> (oben neben dem grünen Punkt) das gescannte Produkt gleich ab – falls es auf der Liste steht.</li></ul>`)}
       ${sec("🧾", "Einkaufs-Protokoll", `<ul>
-        <li>Nur da, wenn es in ⚙️ → App &amp; Aussehen → <b>Einkaufs-Protokoll</b> eingeschaltet ist (gilt für alle).</li>
+        <li>Nur da, wenn es in ⚙️ → <b>Extras</b> → <b>Einkaufs-Protokoll</b> eingeschaltet ist (gilt für alle).</li>
         <li>Der <b>🧾-Knopf</b> oben in der Karte (und im Verlauf) öffnet es. <b>➕ Eintragen</b>: Geschäft, Betrag, Datum – wer und wann setzt die Liste selbst.</li>
         <li><b>📊 Auswertung</b>: zusammengerechnet, pro Geschäft und pro Monat. Filter für Person, Geschäft und Datum, Schnellwahl <b>Dieser Monat / Letzter Monat / Alles</b>.</li>
         <li>Falsch eingetragen? Beim Einkauf auf <b>✖</b> tippen.</li></ul>`)}
@@ -5578,6 +5661,83 @@ class EinkaufslisteCard extends HTMLElement {
     document.addEventListener("keydown", onKey);
     bClose.onclick = close;
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+  }
+
+  // 📖 Anleitung für die Einstellungen (⚙️) – nur für alle, die ins Zahnrad kommen
+  _guideSettings(sec) {
+    const en = EL_LANG !== "de";
+    if (en) {
+      return `<div class="elg" translate="no">
+      <div class="elg-top"><h2>⚙️ How the settings work</h2></div>
+      <p class="elg-sub">Tap a heading to open it. This guide is only for people who can open the settings. The guide for shopping and recipes is behind the <b>shopping cart at the top left</b>.</p>
+      ${sec("🔍", "Finding things", `<ul>
+        <li>The settings are a <b>list with headings</b>, only one level deep: tap a row, change something, tap <b>Overview</b> to go back.</li>
+        <li>The <b>search field</b> at the top finds rows by their name or topic, e.g. “photo”, “mail”, “backup” or “sensor”.</li>
+        <li>The bar at the top shows the <b>health light</b> 🟢🟡🔴. Tap it to open “All OK?”.</li></ul>`, true)}
+      ${sec("📋", "My list", `<ul>
+        <li><b>Stores:</b> one row per store: colour, icon, 📍 zone(s) for “Next store first”, own brands and the order of the categories. Several zones per store work too (e.g. several branches).</li>
+        <li><b>Categories:</b> name, colour, icon, order.</li>
+        <li><b>People:</b> the names for the quick buttons at “For whom?”.</li>
+        <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK) and <b>Delete shopping-list items</b>.</li>
+        <li><b>Filter “🗓️ Not bought for 3 months”:</b> shows products that were last checked off more than 3 months ago (never checked off: counted from when they were added). Products on the list or in a recipe are not shown. Tap one to look at it, or <b>Delete all</b> in one go.</li>
+        <li><b>➕ New product / ▥ By barcode:</b> adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
+        <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
+        <li><b>Recipes:</b> a recipe tab and a groups tab (Fish, Meat, Pastry …).</li></ul>`)}
+      ${sec("🎛️", "Extras (switches)", `<ul>
+        <li>All on/off switches on <b>one page</b>: 🧾 purchase log, 🎉 log asks automatically, 📍 shop mode automatic, 🛒😊 mascot.</li>
+        <li><b>Applies to everyone:</b> purchase log, auto-ask and mascot. <b>Only this device:</b> shop mode automatic.</li>
+        <li><b>🏷️ Offers</b> need a postcode, so they have their own page (admins only). They come unofficially from Marktguru and can stop working at any time.</li></ul>`)}
+      ${sec("💾", "Data", `<ul>
+        <li><b>Import &amp; backup:</b> recipes from a file · other apps (Bring!/AnyList tables as CSV, and an Alexa/to-do list) · 📧 e-mail · backup. Admins only.</li>
+        <li><b>History:</b> who did what and when, with filters and search. How many days it is kept is set there.</li>
+        <li><b>Tidy up:</b> once a week old open items are <b>checked off</b> – nothing is deleted. Day and time: Settings → Devices &amp; services → Shopping list → Configure.</li></ul>`)}
+      ${sec("🩺", "Health", `<ul>
+        <li><b>All OK?</b> looks for broken entries (photos, barcodes, recipes). It only repairs what you tick.</li>
+        <li><b>Error log:</b> technical errors with a “Copy” button – handy if you need help.</li>
+        <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> shows the health light in Home Assistant (ok / hinweis / problem) – you can use it in automations, e.g. a message to your phone.</li>
+        <li><b>Resources:</b> how big the data and photos are.</li></ul>`)}
+      ${sec("📱", "App & info", `<ul>
+        <li><b>Offline app:</b> your own address with “Copy”. Open it in the phone browser and add it to the home screen.</li>
+        <li><b>Light / dark:</b> only in the offline app.</li>
+        <li><b>Protection (PIN):</b> with a PIN the ⚙️ only opens after entering it (4–8 digits, remembered for 10 minutes on this device). The 🔓 button locks at once. Forgot it? An admin resets it in Settings → Devices &amp; services → Shopping list → Configure. The PIN protects against accidents, it is not a safe.</li>
+        <li><b>What's new</b> and <b>Credits</b> are at the end of the list.</li></ul>`)}
+    </div>`;
+    }
+    return `<div class="elg">
+      <div class="elg-top"><h2>⚙️ So funktionieren die Einstellungen</h2></div>
+      <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung ist nur für alle, die ins Zahnrad kommen. Die Anleitung fürs Einkaufen und die Rezepte steht hinter dem <b>Einkaufswagen oben links</b>.</p>
+      ${sec("🔍", "Wie finde ich etwas?", `<ul>
+        <li>Die Einstellungen sind eine <b>Liste mit Überschriften</b> und nur eine Ebene tief: Zeile antippen, etwas ändern, mit <b>Übersicht</b> wieder zurück.</li>
+        <li>Das <b>Suchfeld</b> oben findet Zeilen nach Name oder Thema, z. B. „Foto“, „Mail“, „Sicherung“ oder „Sensor“.</li>
+        <li>Der Balken ganz oben zeigt die <b>Gesundheits-Ampel</b> 🟢🟡🔴. Antippen öffnet „Alles ok?“.</li></ul>`, true)}
+      ${sec("📋", "Meine Liste", `<ul>
+        <li><b>Geschäfte:</b> pro Geschäft eine Zeile: Farbe, Icon, 📍 Zone(n) für „Nächstes Geschäft zuerst“, Eigenmarken und die Reihenfolge der Kategorien. Auch mehrere Zonen pro Geschäft gehen (z. B. mehrere Filialen).</li>
+        <li><b>Kategorien:</b> Name, Farbe, Icon, Reihenfolge.</li>
+        <li><b>Personen:</b> die Namen für die Schnellknöpfe bei „Für wen?“.</li>
+        <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt) und <b>Einkaufsliste Produkte löschen</b>.</li>
+        <li><b>Filter „🗓️ Seit 3 Monaten nicht gekauft“:</b> zeigt Produkte, die vor mehr als 3 Monaten zuletzt abgehakt wurden (nie abgehakt: gezählt ab dem Eintragen). Produkte, die auf der Liste oder in einem Rezept stehen, fehlen hier. Antippen zum Ansehen, oder <b>Alle löschen</b> auf einmal.</li>
+        <li><b>➕ Neues Produkt / ▥ Per Barcode:</b> legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
+        <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
+        <li><b>Rezepte:</b> ein Reiter für die Rezepte, einer für die Gruppen (Fisch, Fleisch, Gebäck …).</li></ul>`)}
+      ${sec("🎛️", "Extras (Schalter)", `<ul>
+        <li>Alle Ein/Aus-Schalter auf <b>einer Seite</b>: 🧾 Einkaufs-Protokoll, 🎉 Protokoll fragt automatisch, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen.</li>
+        <li><b>Gilt für alle:</b> Protokoll, automatisch fragen und Maskottchen. <b>Nur dieses Gerät:</b> Laden-Modus automatisch.</li>
+        <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl, darum haben sie eine eigene Seite (nur Admins). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren.</li></ul>`)}
+      ${sec("💾", "Daten", `<ul>
+        <li><b>Import &amp; Sicherung:</b> Rezepte aus Datei · andere Apps (Bring!/AnyList-Tabellen als CSV und eine Alexa-/To-do-Liste) · 📧 E-Mail · Sicherung. Nur für Admins.</li>
+        <li><b>Verlauf:</b> wer hat wann was gemacht, mit Filtern und Suche. Wie viele Tage er bleibt, stellst du dort ein.</li>
+        <li><b>Aufräumen:</b> einmal pro Woche werden alte offene Sachen <b>abgehakt</b> – gelöscht wird nichts. Tag und Uhrzeit: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren.</li></ul>`)}
+      ${sec("🩺", "Gesundheit", `<ul>
+        <li><b>Alles ok?</b> sucht kaputte Einträge (Fotos, Barcodes, Rezepte). Repariert wird nur, was du anhakst.</li>
+        <li><b>Fehler-Protokoll:</b> technische Fehler mit „Kopieren“-Knopf – praktisch, wenn du Hilfe brauchst.</li>
+        <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> zeigt die Ampel in Home Assistant (ok / hinweis / problem) – nutzbar in Automationen, z. B. für eine Meldung aufs Handy.</li>
+        <li><b>Ressourcen:</b> wie groß Daten und Fotos sind.</li></ul>`)}
+      ${sec("📱", "App & Info", `<ul>
+        <li><b>Offline-App:</b> deine eigene Adresse mit „Kopieren“. Im Handy-Browser öffnen und zum Startbildschirm hinzufügen.</li>
+        <li><b>Hell / Dunkel:</b> nur in der Offline-App.</li>
+        <li><b>Schutz (PIN):</b> mit PIN geht das ⚙️ erst nach Eingabe auf (4–8 Ziffern, auf diesem Gerät 10 Minuten gemerkt). Der 🔓-Knopf sperrt sofort. Vergessen? Ein Admin setzt sie zurück: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Die PIN schützt vor Versehen, ein Tresor ist sie nicht.</li>
+        <li><b>Was ist neu</b> und <b>Credits</b> stehen am Ende der Liste.</li></ul>`)}
+    </div>`;
   }
 
   // 📊 Ressourcen: Dateigrößen und wie viel drinsteht
@@ -6914,6 +7074,41 @@ class EinkaufslisteCard extends HTMLElement {
           })).catch(() => {});
         break;
       }
+      case "prod-add-bc": {
+        const f = this._prodSel || "";
+        this._startAppScan(async (code) => {
+          const res = await this._lookup(code).catch(() => null);
+          const clean = (res?.code || String(code).replace(/\D/g, "")) || "";
+          if (!clean) { this._toast("🤔 Den Barcode konnte ich nicht lesen"); return; }
+          if (res?.found && res.source === "gemerkt") { this._toast(`ℹ️ Kenn ich schon: „${res.name}${res.note ? ` · ${res.note}` : ""}“`); return; }
+          const name = await askText("📦 Neues Produkt per Barcode", "Wie heißt das Produkt?", res?.found ? res.name : "");
+          if (!name) return;
+          this._ws({ type: "einkaufsliste/product/add", name, barcode: clean,
+            store_id: f.startsWith("s:") ? f.slice(2) : null, category_id: f.startsWith("c:") ? f.slice(2) : (res?.category_id || null) })
+            .then(async (p) => {
+              this._toast(`📦▥ „${p.name}“ ist im Katalog – mit Barcode`);
+              await this._loadProducts();
+              this._prodEdit = p.key;
+              this._renderProducts();
+            }).catch(() => {});
+        }, "▥ Neues Produkt per Barcode", "Packung scannen, dann den Namen bestätigen.");
+        break;
+      }
+      case "prod-old-del": {
+        const keys = this._oldKeys || [];
+        if (!keys.length) break;
+        if (!elConfirm(`${keys.length} Produkte ganz löschen?\n\nWeg sind dann: Fotos, Barcodes und Vorschläge dieser Produkte. Sie stehen weder auf der Einkaufsliste noch in einem Rezept.`)) break;
+        (async () => {
+          let n = 0;
+          for (const key of keys) {
+            try { await this._ws({ type: "einkaufsliste/product/remove", key }); n++; } catch (_) { /* weiter */ }
+          }
+          this._toast(`🗑️ ${n} Produkte gelöscht`);
+          this._prodEdit = null;
+          this._loadProducts();
+        })();
+        break;
+      }
       case "prod-cancel":
         this._prodEdit = null;
         this._renderProducts();
@@ -7087,6 +7282,9 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "guide":
         this._showGuide();
+        break;
+      case "guide-settings":
+        this._showGuide("settings");
         break;
       case "spend":
         this._showSpend();

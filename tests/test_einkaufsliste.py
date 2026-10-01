@@ -2274,3 +2274,25 @@ async def test_import_text_by_store(hass: HomeAssistant, setup) -> None:
     assert by["Milch"] == aldi and by["Brot"] == aldi and by["Eier"] == netto
     assert by["Zahnpasta"] == m.find_store("DM") and by["Seife"] == m.find_store("DM")
     assert by["Butter"] == m.find_store("DM")  # gilt bis zur nächsten Überschrift
+
+
+async def test_add_product_with_barcode(hass: HomeAssistant, setup) -> None:
+    """📦▥ Neues Produkt im Katalog direkt mit Barcode anlegen."""
+    m = mgr(hass)
+    p = m.add_product("Nudeln", barcode="4001 234-567890")
+    assert p["barcodes"] == ["4001234567890"]
+    assert m.barcodes["4001234567890"]["name"] == "Nudeln"
+    with pytest.raises(ValueError):
+        m.add_product("Reis", barcode="4001234567890")  # Barcode gehört schon zu Nudeln
+    with pytest.raises(ValueError):
+        m.add_product("Mehl", barcode="abc")
+
+
+async def test_products_last_bought(hass: HomeAssistant, setup) -> None:
+    """🗓️ Katalog kennt „zuletzt abgehakt“ und „zuletzt eingetragen“."""
+    m = mgr(hass)
+    it = m.add_item("Butter", added_by="x")
+    assert next(p for p in m.products() if p["name"] == "Butter")["last_bought"] is None
+    m.set_checked(it["id"], True, by="x")
+    p = next(p for p in m.products() if p["name"] == "Butter")
+    assert p["last_bought"] and p["last_added"]
