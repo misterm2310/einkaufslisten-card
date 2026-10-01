@@ -1,0 +1,50 @@
+name: Aufräumen (alte Releases löschen)
+
+# Einmal-Knopf: Actions → „Aufräumen (alte Releases löschen)“ → Run workflow.
+# Erst „probelauf“ = zeigt nur, was gelöscht würde. Dann „loeschen“ = löscht wirklich
+# (Release + Tag). Gelöscht werden NUR die Versionen aus der Liste WEG – alles andere bleibt.
+
+on:
+  workflow_dispatch:
+    inputs:
+      modus:
+        description: "probelauf = nur anzeigen, loeschen = wirklich löschen"
+        type: choice
+        options: [probelauf, loeschen]
+        default: probelauf
+
+permissions:
+  contents: write
+
+jobs:
+  aufraeumen:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      MODUS: ${{ inputs.modus }}
+      WEG: >-
+        v2.43.1 v2.43.2 v2.43.3 v2.43.4 v2.43.5 v2.40.1 v2.40.2 v2.39.1 v2.38.1 v2.31.1
+    steps:
+      - name: Releases und Tags aufräumen
+        run: |
+          set -euo pipefail
+          # die neueste Version und v2.21.2 (Einreichung bei HACS) bleiben immer, egal was in WEG steht
+          latest=$(gh release view --repo "$REPO" --json tagName -q .tagName)
+          echo "Bleibt immer stehen: $latest v2.21.2"
+          n=0
+          for tag in $WEG; do
+            if [ "$tag" = "$latest" ] || [ "$tag" = "v2.21.2" ]; then continue; fi
+            if ! gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
+              echo "ℹ️  $tag gibt es nicht (mehr) – übersprungen"
+              continue
+            fi
+            n=$((n+1))
+            if [ "$MODUS" = "loeschen" ]; then
+              echo "🗑️  lösche Release $tag"
+              gh release delete "$tag" --repo "$REPO" --yes --cleanup-tag
+            else
+              echo "würde löschen: Release $tag (und Tag)"
+            fi
+          done
+          echo "Fertig – $n Releases betroffen (Modus: $MODUS)."
