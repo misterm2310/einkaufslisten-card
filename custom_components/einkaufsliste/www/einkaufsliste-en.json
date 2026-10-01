@@ -1370,5 +1370,10 @@
 "Handy in die Zone kommt.": "phone enters the zone.",
 "Es braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant.": "It needs a 📍 zone at the store (Stores → Location) and your phone as a person in Home Assistant.",
 "📍 Laden-Modus automatisch: an – für alle": "📍 Shop mode automatic: on – for everyone",
-"💡 Kein Foto zu sehen? Schließen und das Foto nochmal antippen.": "💡 No photo showing? Close and tap the photo again."
+"💡 Kein Foto zu sehen? Schließen und das Foto nochmal antippen.": "💡 No photo showing? Close and tap the photo again.",
+"Foto neu holen": "Fetch photo again",
+"Foto noch einmal aus der Barcode-Datenbank holen (abgeschnittene Fotos werden ersetzt)": "Fetch the photo from the barcode database again (cut-off photos are replaced)",
+"Foto für „{}“ neu aus der Barcode-Datenbank holen?\n\nAbgeschnittene (halbe) Fotos werden ersetzt. Ein ganzes Foto bleibt, das neue kommt dazu (höchstens 6).": "Fetch the photo for “{0}” from the barcode database again?\n\nCut-off (half) photos are replaced. A complete photo stays, the new one is added (6 at most).",
+"🔄 Foto wird geholt …": "🔄 Fetching photo …",
+"📷 Foto für „{}“ neu geholt": "📷 Photo for “{0}” fetched again"
 }

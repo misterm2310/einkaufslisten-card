@@ -20,6 +20,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import VERSION
 from .convert import convert_line, convert_temps
+from .netutil import read_limited
 from .quantity import NUM, UNIT_WORDS, norm_qty
 
 _LOGGER = logging.getLogger(__name__)
@@ -227,8 +228,8 @@ async def _download(hass: HomeAssistant, session: aiohttp.ClientSession, url: st
                     continue
                 if resp.status != 200:
                     return None
-                raw = await resp.content.read(limit + 1)
-                if len(raw) > limit:
+                raw = await read_limited(resp.content, limit)  # bis zum Ende lesen
+                if raw is None:
                     return None
                 return raw, resp.headers.get("Content-Type", "")
             return None  # zu viele Umleitungen

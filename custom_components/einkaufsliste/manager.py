@@ -25,6 +25,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .categories import category_hints, guess_category
+from .netutil import photo_file_complete
 from .quantity import UNIT_CHOICES, apply_unit, is_bare, norm_qty, split_qty, split_qty_ex, unit_of
 from .const import (
     CATEGORY_COLORS,
@@ -1914,6 +1915,41 @@ class EinkaufslisteManager:
         entry = self.photos[key]
         return {"name": name, "updated": entry["updated"], "count": len(self._photo_ids(entry))}
 
+    def barcodes_for(self, key: str) -> list[str]:
+        """Alle Barcodes, die zu diesem Produkt (Name + Notiz) gehören."""
+        return [c for c, bc in self.barcodes.items() if bc.get("name") and product_key(bc["name"], bc.get("note")) == key]
+
+    def product_label(self, key: str) -> str:
+        """Name des Produkts in Originalschreibweise (Name|Notiz) – für ein neues Foto."""
+        for code in self.barcodes_for(key):
+            bc = self.barcodes[code]
+            return bc["name"] + (f"|{bc['note']}" if bc.get("note") else "")
+        return key
+
+    async def async_drop_cut_photos(self, key: str) -> int:
+        """Abgeschnittene (unvollständige) Fotos eines Produkts löschen. Gibt zurück, wie viele es waren."""
+        entry = self.photos.get(key)
+        if entry is None:
+            return 0
+        ids = self._photo_ids(entry)
+
+        def _cut() -> list[str]:
+            return [pid for pid in ids if not photo_file_complete(self._photo_path(pid))]
+
+        cut = await self.hass.async_add_executor_job(_cut)
+        if not cut:
+            return 0
+        keep = [pid for pid in ids if pid not in cut]
+        if keep:
+            entry["id"], entry["more"] = keep[0], keep[1:]
+            entry["updated"] = _now_iso()
+        else:
+            self.photos.pop(key, None)
+        for pid in cut:
+            await self._async_delete_file(pid)
+        self._changed()
+        return len(cut)
+
     async def async_get_photo(self, name: str, index: int = 0) -> str:
         entry = self.photos.get((_clean(name) or "").lower())
         if entry is None:
@@ -2025,6 +2061,11 @@ class EinkaufslisteManager:
             return {f.stem for f in self.photo_dir.glob("*.jpg")} if self.photo_dir.exists() else set()
 
         files = await self.hass.async_add_executor_job(_files)
+
+        def _cut_files() -> set[str]:
+            return {f.stem for f in self.photo_dir.glob("*.jpg") if not photo_file_complete(f)} if self.photo_dir.exists() else set()
+
+        cut_ids = await self.hass.async_add_executor_job(_cut_files)
         used: set[str] = set()
         for key, entry in list(self.photos.items()):
             ids = self._photo_ids(entry)
@@ -2048,6 +2089,17 @@ class EinkaufslisteManager:
                     add(f"photo_step:{key}", f"📷 {label}: den Schritt gibt es nicht mehr (Zubereitung wurde kürzer)",
                         "Foto löschen", lambda _v, key=key: self.async_remove_photo(key))
                     continue
+            cut = [pid for pid in ids if pid in files and pid in cut_ids]
+            if cut and not key.startswith(("rezept#", "bon#")):
+                async def refetch(_v, key=key):
+                    await self.async_drop_cut_photos(key)
+                    from .barcode import async_auto_photo  # noqa: PLC0415 – erst hier, damit nichts im Kreis importiert wird
+                    for code in self.barcodes_for(key):
+                        if await async_auto_photo(self.hass, self, code, self.product_label(key)):
+                            break
+                has_bc = bool(self.barcodes_for(key))
+                add(f"photo_cut:{key}", f"📷 „{label}“: {len(cut)} von {len(ids)} Foto(s) sind abgeschnitten (nur halb geladen)",
+                    "Abgeschnittene Fotos löschen" + (" und neu aus der Datenbank holen" if has_bc else ""), refetch)
             missing = [pid for pid in ids if pid not in files]
             if missing:
                 def drop(_v, key=key, entry=entry, ids=ids):

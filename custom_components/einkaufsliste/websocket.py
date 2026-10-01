@@ -12,7 +12,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .barcode import async_auto_photo, async_lookup, async_product_info
+from .barcode import async_auto_photo, async_lookup, async_product_info, async_refresh_photo
 from .recipe_import import async_import
 from .const import DOMAIN, SIGNAL_UPDATED
 from .mail_import import mail_sources
@@ -86,6 +86,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_offers_search,
         ws_offers_take,
         ws_product_add,
+        ws_product_refresh,
         ws_stats,
         ws_errors_get,
         ws_errors_clear,
@@ -865,6 +866,13 @@ def ws_product_add(hass, connection, msg):
         return result
 
     _run(hass, connection, msg, _add)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/product/refresh", vol.Required("key"): str})
+@websocket_api.async_response
+async def ws_product_refresh(hass, connection, msg):
+    """🔄 Foto zu einem Produkt neu aus der Barcode-Datenbank holen."""
+    await _run_async(hass, connection, msg, lambda m: async_refresh_photo(hass, m, msg["key"]))
 
 
 @websocket_api.websocket_command(

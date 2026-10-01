@@ -2304,3 +2304,62 @@ async def test_auto_shop_setting(hass: HomeAssistant, setup) -> None:
     assert m.auto_shop is False
     m.set_auto_shop(True)
     assert m._to_storage()["auto_shop"] is True and m.as_dict()["settings"]["auto_shop"] is True
+
+
+def test_photo_complete_checks() -> None:
+    from custom_components.einkaufsliste.netutil import photo_complete
+
+    full = b"\xff\xd8\xff\xe0" + b"x" * 500 + b"\xff\xd9"
+    assert photo_complete(full)
+    assert not photo_complete(full[:300])  # abgeschnitten
+    png = b"\x89PNG\r\n\x1a\n" + b"x" * 100 + b"\x00\x00\x00\x00IEND\xaeB`\x82"
+    assert photo_complete(png) and not photo_complete(png[:60])
+    webp = b"RIFF" + (100 - 8).to_bytes(4, "little") + b"WEBP" + b"x" * 88
+    assert photo_complete(webp) and not photo_complete(webp[:50])
+    assert not photo_complete(b"hallo")
+
+
+async def test_read_limited_reads_all_chunks() -> None:
+    from custom_components.einkaufsliste.netutil import read_limited
+
+    class Stream:
+        def __init__(self, parts):
+            self.parts = parts
+
+        async def iter_chunked(self, n):
+            for p in self.parts:
+                yield p
+
+    assert await read_limited(Stream([b"ab", b"cd", b"ef"]), 100) == b"abcdef"  # nicht nur das erste Stück
+    assert await read_limited(Stream([b"abc", b"def"]), 4) is None  # zu groß
+
+
+async def test_cut_photos_found_and_refreshed(hass: HomeAssistant, setup, monkeypatch) -> None:
+    import base64
+
+    m = mgr(hass)
+    full = b"\xff\xd8\xff\xe0" + b"x" * 500 + b"\xff\xd9"
+    await m.async_set_photo("Wraps", base64.b64encode(full).decode())
+    m.learn_barcode("4001234567890", "Wraps", None, None)
+    # Foto auf der Festplatte abschneiden
+    pid = m.photos["wraps"]["id"]
+    path = m._photo_path(pid)
+    path.write_bytes(full[:200])
+    res = await m.async_check()
+    assert any(f["id"] == "photo_cut:wraps" for f in res["items"])
+    # Neu holen: Download vortäuschen
+    import custom_components.einkaufsliste.barcode as bc
+
+    async def fake(hass_, code):
+        return full
+
+    monkeypatch.setattr(bc, "_download_photo", fake)
+    out = await bc.async_refresh_photo(hass, m, "wraps")
+    assert out["count"] == 1
+    assert m.photos["wraps"]["id"] != pid
+    assert m._photo_path(m.photos["wraps"]["id"]).read_bytes() == full
+    res = await m.async_check()
+    assert not any(f["id"].startswith("photo_cut") for f in res["items"])
+    # ohne Barcode: freundliche Fehlermeldung
+    with pytest.raises(ValueError):
+        await bc.async_refresh_photo(hass, m, "gibtsnicht")

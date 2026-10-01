@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import VERSION
+from .netutil import photo_complete, read_limited
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -252,25 +253,34 @@ async def _image_url(session: aiohttp.ClientSession, code: str) -> str | None:
     return None
 
 
+async def _download_photo(hass: HomeAssistant, code: str) -> bytes | None:
+    """Das ganze Produktfoto zu einem Barcode holen – None, wenn es keins gibt oder es unvollständig ankam."""
+    session = async_get_clientsession(hass)
+    url = await _image_url(session, code)
+    if not url:
+        return None
+    try:
+        async with asyncio.timeout(20):
+            resp = await session.get(url, headers={"User-Agent": USER_AGENT})
+            if resp.status != 200:
+                return None
+            raw = await read_limited(resp.content, MAX_IMAGE)  # bis zum Ende lesen, nicht nur das erste Stück
+    except (TimeoutError, aiohttp.ClientError) as err:
+        _LOGGER.debug("Produktfoto nicht ladbar: %s", err)
+        return None
+    if not raw or not photo_complete(raw):
+        _LOGGER.debug("Produktfoto unvollständig oder zu groß – verworfen")
+        return None
+    return raw
+
+
 async def async_auto_photo(hass: HomeAssistant, manager: Any, code: str, name: str) -> bool:
     """📸 Produktfoto aus der Datenbank holen – aber nur, wenn es noch kein eigenes Foto gibt."""
     code = _clean_code(code)
     if not code or not name or manager.photos.get(name.strip().lower()):
         return False
-    session = async_get_clientsession(hass)
-    url = await _image_url(session, code)
-    if not url:
-        return False
-    try:
-        async with asyncio.timeout(15):
-            resp = await session.get(url, headers={"User-Agent": USER_AGENT})
-            if resp.status != 200:
-                return False
-            raw = await resp.content.read(MAX_IMAGE + 1)
-    except (TimeoutError, aiohttp.ClientError) as err:
-        _LOGGER.debug("Produktfoto nicht ladbar: %s", err)
-        return False
-    if len(raw) > MAX_IMAGE:
+    raw = await _download_photo(hass, code)
+    if raw is None:
         return False
     # Inzwischen doch ein eigenes Foto gemacht? Dann das eigene behalten.
     if manager.photos.get(name.strip().lower()):
@@ -281,6 +291,26 @@ async def async_auto_photo(hass: HomeAssistant, manager: Any, code: str, name: s
         _LOGGER.debug("Produktfoto abgelehnt: %s", err)
         return False
     return True
+
+
+async def async_refresh_photo(hass: HomeAssistant, manager: Any, key: str) -> dict[str, Any]:
+    """🔄 Foto zu einem Produkt neu aus der Datenbank holen (abgeschnittene alte Fotos werden ersetzt)."""
+    key = (key or "").strip().lower()
+    codes = manager.barcodes_for(key)
+    if not codes:
+        raise ValueError("Dieses Produkt hat keinen Barcode – darum weiß die Datenbank nicht, welches Foto gemeint ist.")
+    raw = None
+    for code in codes:
+        raw = await _download_photo(hass, code)
+        if raw:
+            break
+    if raw is None:
+        raise ValueError("Die Datenbank hat zu diesem Barcode kein (vollständiges) Foto, oder sie ist gerade nicht erreichbar.")
+    await manager.async_drop_cut_photos(key)  # kaputte alte Fotos raus
+    label = (manager.photos.get(key) or {}).get("name") or key
+    name = label if manager.photos.get(key) else manager.product_label(key)
+    result = await manager.async_set_photo(name, base64.b64encode(raw).decode(), add=bool(manager.photos.get(key)))
+    return {"key": key, "count": result.get("count", 1)}
 
 
 # ℹ️ Produkt-Infos (nur auf Nachfrage: beim Draufdrücken aufs Produkt)

@@ -17,6 +17,8 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
+from .netutil import read_limited
+
 from .const import DOMAIN, VERSION
 from .recipe_import import parse_line
 
@@ -126,8 +128,8 @@ class BackupView(HomeAssistantView):
         manager = self._manager(request)
         if manager is None:
             return web.Response(status=HTTPStatus.SERVICE_UNAVAILABLE, text="Nicht eingerichtet.")
-        raw = await request.content.read(MAX_BACKUP + 1)
-        if len(raw) > MAX_BACKUP:
+        raw = await read_limited(request.content, MAX_BACKUP)  # bis zum Ende lesen
+        if raw is None:
             return web.Response(status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE, text="Die Datei ist zu groß.")
         try:
             result = await async_restore(manager, raw)

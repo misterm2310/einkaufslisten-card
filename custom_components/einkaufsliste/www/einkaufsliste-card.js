@@ -2,11 +2,11 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.43.4";
+const EL_VERSION = "2.43.5";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["↩️ <b>Foto-Änderungen zurückgenommen:</b> Das Foto-Fenster ist wieder so wie in Version 2.43.0 (ohne die Versuche der letzten Updates). <b>Kommt kein Foto, einfach nochmal antippen.</b>",
-   "↩️ <b>Photo changes rolled back:</b> the photo window is back to how it was in version 2.43.0 (without the attempts of the last updates). <b>If no photo shows up, just tap again.</b>"],
+  ["📷 <b>Halbe Fotos behoben:</b> Produktfotos aus der Barcode-Datenbank kamen oft nur zur Hälfte an, weil nur das erste Stück der Datei gespeichert wurde. Jetzt wird die ganze Datei geholt – und nur vollständige Fotos werden gespeichert. „Alles ok?“ findet schon gespeicherte halbe Fotos und holt sie neu. Im Katalog hat jedes Produkt mit Barcode den Knopf <b>„Foto neu holen“</b>.",
+   "📷 <b>Half photos fixed:</b> product photos from the barcode database often arrived only half, because only the first part of the file was saved. Now the whole file is fetched – and only complete photos are saved. “All ok?” finds already saved half photos and fetches them again. In the catalog every product with a barcode has a <b>“Fetch photo again”</b> button."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -4081,6 +4081,7 @@ class EinkaufslisteCard extends HTMLElement {
             <button class="btn primary" data-act="prod-merge-go"><ha-icon icon="mdi:call-merge"></ha-icon>Jetzt zusammenführen</button></div>` : ""}
           <div class="btnrow">
             ${p.photos ? `<button class="btn" data-act="prod-photos"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Fotos</button>` : ""}
+            ${p.barcodes.length ? `<button class="btn" data-act="prod-refresh" title="Foto noch einmal aus der Barcode-Datenbank holen (abgeschnittene Fotos werden ersetzt)"><ha-icon icon="mdi:cloud-download-outline"></ha-icon>Foto neu holen</button>` : ""}
             <button class="btn" data-act="prod-merge" title="Dieses Produkt in ein anderes aufgehen lassen (z. B. Tomaten → Tomate)"><ha-icon icon="mdi:call-merge"></ha-icon>Zusammenführen</button>
             <button class="btn danger" data-act="prod-forget" title="Produkt mit Fotos, Barcodes und Vorschlag löschen – auch von der Einkaufsliste"><ha-icon icon="mdi:delete-outline"></ha-icon>Ganz löschen</button>
             <span style="flex:1"></span>
@@ -5662,6 +5663,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK) and <b>Delete shopping-list items</b>.</li>
         <li><b>Filter “🗓️ Not bought for 3 months”:</b> shows products that were last checked off more than 3 months ago (never checked off: counted from when they were added). Products on the list or in a recipe are not shown. Tap one to look at it, or <b>Delete all</b> in one go.</li>
         <li><b>➕ New product / ▥ By barcode:</b> adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
+        <li><b>📥 Fetch photo again:</b> inside a product (with a barcode) fetches the photo from the barcode database again. Cut-off photos are replaced.</li>
         <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
         <li><b>Recipes:</b> a recipe tab and a groups tab (Fish, Meat, Pastry …).</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
@@ -5698,6 +5700,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt) und <b>Einkaufsliste Produkte löschen</b>.</li>
         <li><b>Filter „🗓️ Seit 3 Monaten nicht gekauft“:</b> zeigt Produkte, die vor mehr als 3 Monaten zuletzt abgehakt wurden (nie abgehakt: gezählt ab dem Eintragen). Produkte, die auf der Liste oder in einem Rezept stehen, fehlen hier. Antippen zum Ansehen, oder <b>Alle löschen</b> auf einmal.</li>
         <li><b>➕ Neues Produkt / ▥ Per Barcode:</b> legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
+        <li><b>📥 Foto neu holen:</b> im Produkt (mit Barcode) holt das Foto noch einmal aus der Barcode-Datenbank. Abgeschnittene Fotos werden ersetzt.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
         <li><b>Rezepte:</b> ein Reiter für die Rezepte, einer für die Gruppen (Fisch, Fleisch, Gebäck …).</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
@@ -7098,6 +7101,17 @@ class EinkaufslisteCard extends HTMLElement {
         this._prodEdit = null;
         this._renderProducts();
         break;
+      case "prod-refresh": { // 🔄 Foto neu aus der Barcode-Datenbank holen
+        const key = el.closest(".prodedit").dataset.key;
+        const prod = (this._products || []).find((x) => x.key === key);
+        const label = prod ? prod.name + (prod.note ? ` · ${prod.note}` : "") : key;
+        if (!elConfirm(`Foto für „${label}“ neu aus der Barcode-Datenbank holen?\n\nAbgeschnittene (halbe) Fotos werden ersetzt. Ein ganzes Foto bleibt, das neue kommt dazu (höchstens 6).`)) break;
+        this._toast("🔄 Foto wird geholt …");
+        this._ws({ type: "einkaufsliste/product/refresh", key })
+          .then(() => { this._toast(`📷 Foto für „${label}“ neu geholt`); this._loadProducts(); })
+          .catch(() => {});
+        break;
+      }
       case "prod-photos":
         this._openPhoto(el.closest(".prodedit").dataset.key);
         break;
