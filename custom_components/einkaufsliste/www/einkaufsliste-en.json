@@ -1372,5 +1372,6 @@
 "📍 Laden-Modus automatisch: an – für alle": "📍 Shop mode automatic: on – for everyone",
 "📷 Foto lädt …": "📷 Photo loading …",
 "😕 Foto nicht ladbar": "😕 Photo could not be loaded",
-"🔄 Nochmal": "🔄 Try again"
+"🔄 Nochmal": "🔄 Try again",
+"📷 Foto lädt … ({} s)": "📷 Photo loading … ({0} s)"
 }

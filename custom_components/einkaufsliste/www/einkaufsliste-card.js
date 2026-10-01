@@ -2,11 +2,11 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.43.1";
+const EL_VERSION = "2.43.2";
 // 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
 const EL_NEWS = [
-  ["📷 <b>Fotos laden zuverlässiger:</b> Kommt ein Foto nicht an, fragt die Karte nach 5 Sekunden von selbst nochmal (bis zu 3-mal). Solange es lädt, steht „Foto lädt …“ da; klappt es gar nicht, gibt es einen Knopf „Nochmal“ und einen Eintrag im Fehler-Protokoll.",
-   "📷 <b>Photos load more reliably:</b> if a photo does not arrive, the card asks again by itself after 5 seconds (up to 3 times). While it loads you see “Photo loading …”; if it still fails there is a “Try again” button and an entry in the error log."],
+  ["📷 <b>Fotos erscheinen schneller:</b> Die Fotos der offenen Artikel holt die Karte nach dem Öffnen ruhig im Hintergrund – beim Antippen sind sie dann schon da. Dauert es doch, wartet die Karte geduldig und zeigt „Foto lädt … (12 s)“. Ist Home Assistant sehr langsam, steht das im Fehler-Protokoll.",
+   "📷 <b>Photos appear faster:</b> after opening, the card quietly fetches the photos of open items in the background – when you tap they are already there. If it still takes a while the card waits patiently and shows “Photo loading … (12 s)”. If Home Assistant is very slow, it is noted in the error log."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -1822,6 +1822,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._pending = new Set();
     this._picker = null; // welches Icon-Feld gerade sucht
     this._photoCache = new Map();
+    this._photoPending = new Map();
     this._newPhoto = null;
   }
 
@@ -1999,6 +2000,7 @@ class EinkaufslisteCard extends HTMLElement {
           if (!this._seenSnap && this._mySeen()) this._seenSnap = { ...this._mySeen() };
           this._renderAll();
           this._autoStore();
+          this._prefetchPhotos();
         },
         { type: "einkaufsliste/subscribe" }
       );
@@ -5228,23 +5230,52 @@ class EinkaufslisteCard extends HTMLElement {
     const ck = `${key}#${index}`;
     const cached = this._photoCache.get(ck);
     if (cached && cached.updated === updated) return cached.data;
-    // 📷 Antwort kommt manchmal nie an: nach 5 Sekunden neu fragen (bis zu 3 Versuche), statt ewig zu warten
-    let lastErr = null;
-    for (let n = 0; n < 3; n++) {
-      try {
-        const res = await Promise.race([
-          this._hass.callWS({ type: "einkaufsliste/photo/get", name: key, index }),
-          new Promise((_, rej) => setTimeout(() => rej(new Error("keine Antwort nach 5 Sekunden")), 5000)),
-        ]);
+    // 📷 Die Antwort von Home Assistant kann dauern: geduldig warten (bis 60 s), aber jede Antwort
+    // kommt in den Zwischenspeicher – auch wenn das Fenster schon zu ist. Eine Anfrage pro Foto.
+    let p = this._photoPending.get(ck);
+    if (!p) {
+      const t0 = Date.now();
+      p = this._hass.callWS({ type: "einkaufsliste/photo/get", name: key, index }).then((res) => {
         this._photoCache.set(ck, { updated, data: res.data });
+        const sec = Math.round((Date.now() - t0) / 1000);
+        if (sec >= 8) this._photoReport("Foto kam erst nach " + sec + " Sekunden: " + key);
         return res.data;
-      } catch (err) {
-        lastErr = err;
-        if (err?.code === "invalid" || err?.code === "error" || err?.code === "not_found") break; // der Server hat geantwortet: nochmal fragen hilft nicht
-      }
+      }, (err) => {
+        this._photoReport("Foto-Abruf fehlgeschlagen: " + String(err?.message || err?.code || err).slice(0, 300) + " (" + key + ")");
+        throw err;
+      }).finally(() => this._photoPending.delete(ck));
+      this._photoPending.set(ck, p);
     }
-    this._hass?.callWS?.({ type: "einkaufsliste/errors/report", where: "Karte: photo/get (Foto lädt nicht)", message: String(lastErr?.message || lastErr?.code || lastErr).slice(0, 380) }).catch(() => {});
-    throw lastErr;
+    let timer;
+    try {
+      return await Promise.race([p, new Promise((_, rej) => { timer = setTimeout(() => rej(new Error("Home Assistant antwortet nicht (60 s)")), 60000); })]);
+    } finally { clearTimeout(timer); }
+  }
+
+  _photoReport(message) {
+    this._hass?.callWS?.({ type: "einkaufsliste/errors/report", where: "Karte: Foto laden", message }).catch(() => {});
+  }
+
+  // 📷 Fotos der offenen Artikel im Hintergrund holen (ruhig, eins nach dem anderen) – dann sind sie beim Tippen schon da
+  _prefetchPhotos() {
+    if (this._prefetching || !this._data?.photos || !this._hass?.callWS) return;
+    this._prefetching = true;
+    const run = async () => {
+      try {
+        const keys = [...new Set((this._data?.items || []).filter((i) => !i.checked).map((i) => this._pk(i.name, i.note)))]
+          .filter((k) => this._hasPhoto(k)).slice(0, 40);
+        for (const k of keys) {
+          if (!this.isConnected) break;
+          const key = String(k).toLowerCase();
+          const updated = this._data?.photos?.[key];
+          const c = this._photoCache.get(`${key}#0`);
+          if (updated === "queued" || (c && c.updated === updated)) continue;
+          try { await this._photoData(key, 0); } catch (_) { /* egal, beim Tippen wird es nochmal versucht */ }
+          await new Promise((r) => setTimeout(r, 400));
+        }
+      } finally { this._prefetching = false; }
+    };
+    setTimeout(run, 2500);
   }
 
   // 📷 Foto-Galerie: blättern, weitere Fotos dazu, einzelne löschen
@@ -5277,7 +5308,7 @@ class EinkaufslisteCard extends HTMLElement {
     const full = document.createElement("div");
     Object.assign(full.style, { color: "#ffcc80", fontSize: "14px", margin: "0 0 8px", textAlign: "center" });
     row.append(bAdd, ...(canDelete ? [bDel] : []), bClose);
-    let loadId = 0;
+    let loadId = 0, tick = null;
     const note = document.createElement("div"); // 📷 „lädt …“ bzw. Fehlermeldung statt leerer Fläche
     Object.assign(note.style, { font: "500 16px Roboto, sans-serif", margin: "24px 0", textAlign: "center" });
     const retry = ovButton("🔄 Nochmal");
@@ -5303,19 +5334,24 @@ class EinkaufslisteCard extends HTMLElement {
       note.style.display = "";
       note.textContent = "📷 Foto lädt …";
       retry.style.display = "none";
+      const t0 = Date.now();
+      clearInterval(tick);
+      tick = setInterval(() => { const sec = Math.round((Date.now() - t0) / 1000); if (sec >= 3) note.textContent = `📷 Foto lädt … (${sec} s)`; }, 1000);
       try {
         const src = await this._photoData(key, idx);
         if (my !== loadId) return; // inzwischen weitergeblättert
+        clearInterval(tick);
         img.src = src;
         img.style.display = "";
         note.style.display = "none";
       } catch (err) {
         if (my !== loadId) return;
-        note.textContent = err?.message && !/keine Antwort/.test(err.message) ? `😕 ${err.message}` : "😕 Foto nicht ladbar";
+        clearInterval(tick);
+        note.textContent = err?.message && !/antwortet nicht/.test(err.message) ? `😕 ${err.message}` : "😕 Foto nicht ladbar";
         retry.style.display = "";
       }
     };
-    const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
+    const close = () => { clearInterval(tick); ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
     const onKey = (e) => {
       if (e.key === "Escape") close();
       if (e.key === "ArrowLeft") { idx--; show(); }
