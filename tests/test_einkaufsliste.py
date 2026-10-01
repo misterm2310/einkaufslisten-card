@@ -2529,3 +2529,144 @@ async def test_refresh_all_replaces_db_photo_keeps_own(hass: HomeAssistant, setu
     assert (await bc.async_refresh_photo(hass, m, "butter", replace=True))["status"] == "same"
     plan = await m.async_photo_refresh_plan()
     assert sorted(plan["all"]) == ["butter", "milch"] and plan["names"]["milch"] == "Milch"
+
+
+async def test_mail_initial_false_is_imported_once(hass: HomeAssistant, setup) -> None:
+    """📧 HA schickt manche neue Mails mit „initial: false“ – die werden trotzdem eingetragen, aber nur einmal."""
+    from datetime import datetime, timedelta, timezone
+
+    m = mgr(hass)
+    imap = MockConfigEntry(domain="imap", title="liste@example.com")
+    imap.add_to_hass(hass)
+    m.set_mail_import(imap.entry_id, None, ["ich@example.com"], "keep")
+    now = datetime.now(timezone.utc)
+
+    def fire(uid, text, initial, date):
+        hass.bus.async_fire("imap_content", {
+            "entry_id": imap.entry_id, "initial": initial, "uid": uid, "date": date, "subject": "",
+            "sender": '"ich" <ich@example.com>', "text": text, "parts": {}})
+
+    fire("10", "Kakao\nButter", False, now)
+    await hass.async_block_till_done()
+    assert {i["name"] for i in m.items} >= {"Kakao", "Butter"}
+    assert "10|" + str(now) in m.mail_seen
+    count = len(m.items)
+    fire("10", "Kakao\nButter", False, now)       # HA schickt dieselbe Mail nochmal
+    await hass.async_block_till_done()
+    assert len(m.items) == count and m.mail_import["count"] == 2  # zählt Artikel, nicht Mails
+    fire("9", "Honig", False, now - timedelta(days=5))  # alte, nur aufgewärmte Mail
+    await hass.async_block_till_done()
+    assert not any(i["name"] == "Honig" for i in m.items)
+    fire("11", "Honig", True, now - timedelta(days=5))  # echte neue Mail (initial: true) geht immer
+    await hass.async_block_till_done()
+    assert any(i["name"] == "Honig" for i in m.items)
+
+
+# ---------------------------------------------------------------- Regressionen (sichere Bugfixes)
+async def test_offer_dates_without_timezone_do_not_crash(hass, setup):
+    m = mgr(hass)
+    assert isinstance(m.offer_note({"p": 1.19, "to": "2026-10-05"}), str)
+    assert "bis" in m.offer_note({"p": 1.19, "to": "2026-10-05", "from": "2026-09-01T00:00:00"})
+    a = m.add_item("Kaffee")
+    b = m.add_item("Tee")
+    a["offer"] = {"to": "2000-01-01", "p": 1}
+    b["offer"] = {"to": "kaputt", "taken": 5, "p": 1}
+    assert m.expire_offers() >= 1  # kein TypeError, der kaputte Eintrag blockiert nichts
+    assert "expired" in a["offer"]
+
+
+async def test_take_offer_without_store_keeps_store(hass, setup):
+    m = mgr(hass)
+    sid = m.stores[0]["id"]
+    item = m.add_item("Butter", store_id=sid)
+    m.take_offer({"d": "Butter", "r": "X", "p": 1.0, "to": None}, item_id=item["id"])
+    assert m.get_item(item["id"])["store_id"] == sid
+
+
+async def test_remove_recipe_keeps_open_item_with_checked_twin(hass, setup):
+    m = mgr(hass)
+    r = m.add_recipe("Kuchen", items=[{"name": "Mehl"}])
+    m.apply_recipe(r["id"])
+    twin = m.add_item("Mehl")
+    m.set_checked(twin["id"], True)
+    m.remove_recipe(r["id"])
+    open_mehl = [i for i in m.items if i["name"] == "Mehl" and not i["checked"]]
+    assert len(open_mehl) == 1
+    assert len([i for i in m.items if i["name"] == "Mehl"]) == 1
+
+
+async def test_update_product_collision_and_case_rename(hass, setup):
+    m = mgr(hass)
+    m.add_item("milch")
+    m.add_item("Sahne")
+    with pytest.raises(ValueError, match="Zusammenführen"):
+        m.update_product("milch", name="Sahne")
+    m.update_product("milch", name="Milch")
+    assert m.history["milch"]["name"] == "Milch"
+
+
+async def test_manual_add_clears_offer_flags(hass, setup):
+    m = mgr(hass)
+    item = m.take_offer({"d": "Pesto", "r": "Rewe", "p": 1.0, "to": "2026-12-01"})
+    assert item.get("from_offer")
+    again = m.add_item("Pesto")
+    assert again["id"] == item["id"]
+    assert not again.get("from_offer") and not again.get("offer") and not again.get("orig")
+
+
+async def test_store_for_retailer_prefers_exact_and_longest(hass, setup):
+    m = mgr(hass)
+    m.stores = [{"id": "a", "name": "Aldi"}, {"id": "b", "name": "Aldi Süd"}]
+    assert m.store_for_retailer("ALDI SÜD") == "b"
+    assert m.store_for_retailer("Aldi") == "a"
+
+
+async def test_update_recipe_invalid_leaves_recipe_unchanged(hass, setup):
+    m = mgr(hass)
+    r = m.add_recipe("Suppe", items=[{"name": "Wasser"}])
+    with pytest.raises(ValueError):
+        m.update_recipe(r["id"], name="Brühe", items=[{"name": "Salz"}, {"name": "salz"}])
+    assert m.recipe_by_id(r["id"])["name"] == "Suppe"
+
+
+async def test_replace_main_photo_keeps_db_marker(hass, setup):
+    import base64
+    m = mgr(hass)
+    jpg = base64.b64encode(b"\xff\xd8\xff" + b"0" * 20).decode()
+    await m.async_set_photo("Käse", jpg)
+    await m.async_set_photo("Käse", jpg, add=True, db=True)
+    entry = m.photos["käse"]
+    extra = entry["more"][0]
+    assert entry["db"] == [extra]
+    await m.async_set_photo("Käse", jpg)  # Hauptfoto ersetzen
+    assert m.photos["käse"].get("db") == [extra]
+    await m.async_remove_photo("Käse", 1)
+    assert not m.photos["käse"].get("db")
+
+
+async def test_todo_sync_long_text_truncated_and_failed_not_deleted(hass, setup):
+    m = mgr(hass)
+    long = "x" * 120
+    sync = m.sync
+    entity = "todo.alexa"
+    hass.states.async_set(entity, "1", {"friendly_name": "Alexa"})
+    calls = []
+
+    async def get_items(call):
+        return {entity: {"items": [{"uid": "1", "summary": long}, {"uid": "2", "summary": "  "}]}}
+
+    async def remove_item(call):
+        calls.append(call.data["item"])
+
+    from homeassistant.core import SupportsResponse
+    hass.services.async_register("todo", "get_items", get_items, supports_response=SupportsResponse.ONLY)
+    hass.services.async_register("todo", "remove_item", remove_item)
+    await sync._once({"entity_id": entity, "mode": "move"})
+    assert any(i["name"].startswith("X") and len(i["name"]) <= 80 for i in m.items)
+    assert calls and set(calls[0]) == {"1", "2"}
+
+
+def test_mail_text_is_capped():
+    from custom_components.einkaufsliste.mail_import import MAX_MAIL_CHARS, mail_text
+    text = "Milch\n" + "x\n" * MAX_MAIL_CHARS
+    assert len(mail_text(text).split("\n")) <= 60

@@ -281,6 +281,7 @@ class EinkaufslisteManager:
         self.todo_syncs: list[dict[str, Any]] = []  # 🔁 je To-do-Liste {"entity_id", "store_id", "count", "mode", "links"} – herüberholen
         self.offers_cfg: dict[str, Any] | None = None  # 🏷️ {"enabled", "zip", "stores", "hours", "key", "last", "ok", "error", "count"}
         self.offers_data: dict[str, list[dict[str, Any]]] = {}  # 🏷️ Artikelname klein -> Angebote
+        self.mail_seen: list[str] = []  # 📧 zuletzt eingetragene Mails (Nummer|Datum) – gegen doppeltes Eintragen
         self.mail_import: dict[str, Any] | None = None  # 📧 {"entry_id", "store_id", "senders", "count"} – per E-Mail
         self.photo_dir = Path(hass.config.path("einkaufsliste_fotos"))
         self.history: dict[str, dict[str, Any]] = {}
@@ -379,6 +380,7 @@ class EinkaufslisteManager:
             raw_sync = [data["todo_sync"]]
         self.todo_syncs = [c for c in (raw_sync or []) if isinstance(c, dict) and c.get("entity_id")]
         self.mail_import = data.get("mail_import") or None
+        self.mail_seen = [str(k) for k in (data.get("mail_seen") or [])][-50:]
         self.offers_cfg = data.get("offers_cfg") or None
         self.offers_data = dict(data.get("offers_data") or {})
         for store in self.stores:  # 📍 früher eine Zone pro Geschäft, jetzt beliebig viele
@@ -435,6 +437,7 @@ class EinkaufslisteManager:
             "purchases": self.purchases,
             "todo_syncs": self.todo_syncs,
             "mail_import": self.mail_import,
+            "mail_seen": self.mail_seen[-50:],
             "offers_cfg": self.offers_cfg,
             "offers_data": self.offers_data,
             "last_cleanup": self.last_cleanup,
@@ -529,19 +532,44 @@ class EinkaufslisteManager:
         r = _norm_name(retailer)
         if not r:
             return None
+        best_len = 0
+        best_id: str | None = None
         for st in self.stores:
             n = _norm_name(st["name"])
-            if n and (n == r or n in r.split() or r.startswith(n + " ") or n.startswith(r + " ")):
+            if not n:
+                continue
+            if n == r:
                 return st["id"]
-        return None
+            if (n in r.split() or r.startswith(n + " ") or n.startswith(r + " ")) and len(n) > best_len:
+                best_len, best_id = len(n), st["id"]
+        return best_id
+
+    @staticmethod
+    def _parse_offer_dt(value: Any, end_of_day: bool = False) -> datetime | None:
+        """Datum/Zeit robust lesen: ohne Zeitzone gilt lokale Zeit, nur Datum = Tagesanfang (bzw. -ende)."""
+        text = str(value or "").strip()
+        if not text:
+            return None
+        try:
+            dt = None if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text) else dt_util.parse_datetime(text)
+            if dt is None:
+                d = dt_util.parse_date(text)
+                if d is None:
+                    return None
+                dt = datetime.combine(d, time(23, 59, 59) if end_of_day else time(0, 0))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+            return dt
+        except (ValueError, TypeError):
+            return None
 
     @staticmethod
     def offer_note(offer: dict[str, Any]) -> str:
         """„🏷️ 1,19 € bis Sa.“ – liegt der Start in der Zukunft: „🏷️ 1,19 € ab Mo.“"""
         price = f"{float(offer.get('p') or 0):.2f}".replace(".", ",")
         names = ["Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa.", "So."]
-        start = dt_util.parse_datetime(str(offer.get("from") or ""))
-        end = dt_util.parse_datetime(str(offer.get("to") or ""))
+        start = EinkaufslisteManager._parse_offer_dt(offer.get("from"))
+        end = EinkaufslisteManager._parse_offer_dt(offer.get("to"), end_of_day=True)
         if start is not None and start > dt_util.utcnow():
             return f"🏷️ {price} € ab {names[dt_util.as_local(start).weekday()]}"
         if end is not None:
@@ -563,12 +591,12 @@ class EinkaufslisteManager:
         created = False
         if original is not None and (not offer_name or offer_name.lower() == original["name"].strip().lower()):
             item = original  # gleicher Name = dein Produkt: das Angebot hängt nur daran, es wird nie gelöscht
-            if item["store_id"] != store_id and not item["checked"]:
+            if store_id is not None and item["store_id"] != store_id and not item["checked"]:
                 item = self.move_item(item["id"], store_id or "~none", by, by_id)
             original = None
         else:
             before = len(self.items)
-            item = self.add_item(offer_name, store_id=store_id, added_by=by, added_by_id=by_id)
+            item = self.add_item(offer_name, store_id=store_id, added_by=by, added_by_id=by_id, from_offer=True)
             created = len(self.items) > before  # gab es den Artikel schon, ist er dein Produkt
         if created:
             item["from_offer"] = True  # erst durch das Angebot entstanden: verschwindet mit dem Angebot
@@ -591,47 +619,53 @@ class EinkaufslisteManager:
         now = now or dt_util.utcnow()
         n = 0
         gone_items: list[dict[str, Any]] = []
-        for item in self.items:
-            off = item.get("offer")
-            if not off:
-                continue
-            if off.get("expired"):
-                gone = dt_util.parse_datetime(str(off["expired"]))
-                if gone is not None and now - gone >= timedelta(days=1):
-                    if item.get("from_offer"):
-                        gone_items.append(item)  # 1 Tag „Angebot vorbei“ ist um – Angebots-Artikel raus
-                    else:
-                        item.pop("offer", None)
-                    n += 1
-                continue
-            if off.get("to"):
-                to = dt_util.parse_datetime(str(off["to"]))
-            else:  # 📅 ohne Enddatum: nach 14 Tagen (ab Übernahme) wie abgelaufen
-                taken = dt_util.parse_datetime(str(off.get("taken") or ""))
-                if taken is None:
-                    off["taken"] = now.isoformat()  # alte Angebote ohne Datum: ab jetzt zählen
+        for item in list(self.items):
+            try:
+                off = item.get("offer")
+                if not off:
                     continue
-                to = taken + timedelta(days=OFFER_OPEN_DAYS)
-            if to is None or to > now:
-                continue
-            part = off.get("part") or ""
-            note = item.get("note") or ""
-            if part and part in note:  # alte Artikel (vor 2.39): Angebot steckte in der Notiz
-                note = note.replace(" · " + part, "").replace(part, "").strip(" ·")
-                item["note"] = note or None
-            item["offer"] = {"expired": now.isoformat()}
-            n += 1
+                if off.get("expired"):
+                    gone = self._parse_offer_dt(off["expired"])
+                    if gone is not None and now - gone >= timedelta(days=1):
+                        if item.get("from_offer"):
+                            gone_items.append(item)  # 1 Tag „Angebot vorbei“ ist um – Angebots-Artikel raus
+                        else:
+                            item.pop("offer", None)
+                        n += 1
+                    continue
+                if off.get("to"):
+                    to = self._parse_offer_dt(off["to"], end_of_day=True)
+                else:  # 📅 ohne Enddatum: nach 14 Tagen (ab Übernahme) wie abgelaufen
+                    taken = self._parse_offer_dt(off.get("taken"))
+                    if taken is None:
+                        off["taken"] = now.isoformat()  # alte Angebote ohne Datum: ab jetzt zählen
+                        continue
+                    to = taken + timedelta(days=OFFER_OPEN_DAYS)
+                if to is None or to > now:
+                    continue
+                part = off.get("part") or ""
+                note = item.get("note") or ""
+                if part and part in note:  # alte Artikel (vor 2.39): Angebot steckte in der Notiz
+                    note = note.replace(" · " + part, "").replace(part, "").strip(" ·")
+                    item["note"] = note or None
+                item["offer"] = {"expired": now.isoformat()}
+                n += 1
+            except Exception:  # noqa: BLE001 – ein kaputtes Angebot darf nie alle anderen blockieren
+                _LOGGER.exception("Angebot konnte nicht geprüft werden: %s", item.get("name"))
         for item in gone_items:
-            self.items.remove(item)
-            self._log("remove", item, "Angebot vorbei", who="automatisch")
-            orig = item.get("orig") or {}
-            old = next((i for i in self.items if i["id"] == orig.get("id")), None)
-            if old is not None and old["checked"] and not any(
-                    i is not old and not i["checked"] and i["name"].lower() == old["name"].lower()
-                    and i["store_id"] == old["store_id"] for i in self.items):
-                self.set_checked(old["id"], False, None, None)  # dein Produkt zurück auf die Liste …
-                old.update(added_at=orig.get("added_at") or old.get("added_at"),  # … mit dem alten Datum
-                           added_by=orig.get("added_by"), added_by_id=orig.get("added_by_id"))
+            try:
+                self.items.remove(item)
+                self._log("remove", item, "Angebot vorbei", who="automatisch")
+                orig = item.get("orig") or {}
+                old = next((i for i in self.items if i["id"] == orig.get("id")), None)
+                if old is not None and old["checked"] and not any(
+                        i is not old and not i["checked"] and i["name"].lower() == old["name"].lower()
+                        and i["store_id"] == old["store_id"] for i in self.items):
+                    self.set_checked(old["id"], False, None, None)  # dein Produkt zurück auf die Liste …
+                    old.update(added_at=orig.get("added_at") or old.get("added_at"),  # … mit dem alten Datum
+                               added_by=orig.get("added_by"), added_by_id=orig.get("added_by_id"))
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Abgelaufenes Angebot konnte nicht entfernt werden")
         if n:
             self._changed()
         return n
@@ -998,6 +1032,9 @@ class EinkaufslisteManager:
             raise ValueError("Der Name darf nicht leer sein.")
         new_note = _note(note) if note is not None else prod["note"]
         new_key = product_key(new_name, new_note)
+        if new_key != key and any(p["key"] == new_key for p in self.products()):
+            raise ValueError(
+                f"„{new_name}“ gibt es schon – bitte „Zusammenführen“ benutzen.")
         cat = self._check_category(category_id) if category_id is not None else None
         store = self._check_store(store_id) if store_id is not None else None
         if unit and unit not in UNIT_CHOICES:
@@ -1040,11 +1077,13 @@ class EinkaufslisteManager:
         if new_key != key and key in self.photos and new_key not in self.photos:
             self.photos[new_key] = self.photos.pop(key)
             self.photos[new_key]["name"] = new_key
+        elif new_key == key and key in self.photos:
+            self.photos[key]["name"] = new_key
         old_hist = self.history.get(prod["name"].lower())
         if old_hist is not None:
+            old_hist["name"] = new_name
             if new_name.lower() != prod["name"].lower():
                 self.history.pop(prod["name"].lower(), None)
-                old_hist["name"] = new_name
                 self.history.setdefault(new_name.lower(), old_hist)
             target = self.history[new_name.lower()]
             if category_id is not None:
@@ -1126,7 +1165,7 @@ class EinkaufslisteManager:
         if len(self.typos) > 300:  # nicht endlos wachsen: die seltensten fliegen raus
             for k in sorted(self.typos, key=lambda k: self.typos[k].get("n", 0))[: len(self.typos) - 300]:
                 self.typos.pop(k, None)
-        self._schedule_save()
+        self._changed()
         return {"learned": entry["n"] >= TYPO_LEARN_AFTER, "count": entry["n"]}
 
     def forget_typo(self, wrong: str) -> None:
@@ -1325,7 +1364,7 @@ class EinkaufslisteManager:
 
     def clear_errors(self) -> dict[str, Any]:
         self.errors = []
-        self._schedule_save()
+        self._changed()
         return self.get_errors()
 
     # ------------------------------------------------------------------ Verlauf
@@ -1398,7 +1437,7 @@ class EinkaufslisteManager:
 
     def clear_log(self) -> None:
         self.log = []
-        self._schedule_save()
+        self._changed()
 
     # ------------------------------------------------------------------ Suchen
     def get_item(self, item_id: str) -> dict[str, Any]:
@@ -1554,6 +1593,7 @@ class EinkaufslisteManager:
         notify: bool = True,
         barcode: str | None = None,
         added_by_id: str | None = None,
+        from_offer: bool = False,
     ) -> dict[str, Any]:
         """Artikel hinzufügen.
 
@@ -1590,6 +1630,10 @@ class EinkaufslisteManager:
                 quantity = apply_unit(quantity, unit)
         existing = self._find_same(name, note, for_whom, store_id, recipe_id)
         if existing is not None:
+            if not from_offer and recipe_id is None and existing.get("from_offer"):
+                # ✍️ von Hand (nochmal) eingetragen: ab jetzt dein Artikel, verschwindet nicht mit dem Angebot
+                for k in ("from_offer", "offer", "orig"):
+                    existing.pop(k, None)
             readded = existing["checked"]
             if readded:
                 existing.update(
@@ -1995,6 +2039,9 @@ class EinkaufslisteManager:
         else:
             self.photos[key] = {"id": photo_id, "updated": _now_iso(), "name": name, "more": old.get("more", []) if old else []}
             if old:
+                kept = [pid for pid in old.get("db", []) if pid in self._photo_ids(self.photos[key])]
+                if kept:
+                    self.photos[key]["db"] = kept
                 await self._async_delete_file(old["id"])
         if db:  # 🏷️ merken: dieses Foto stammt aus der Datenbank (wird bei „Alle Fotos neu holen“ ersetzt)
             self.photos[key].setdefault("db", []).append(photo_id)
@@ -2093,6 +2140,10 @@ class EinkaufslisteManager:
         else:
             index = max(0, min(int(index), len(ids) - 1))
             gone = ids.pop(index)
+            if entry.get("db"):
+                entry["db"] = [pid for pid in entry["db"] if pid != gone]
+                if not entry["db"]:
+                    entry.pop("db")
             entry["id"], entry["more"] = ids[0], ids[1:]
             entry["updated"] = _now_iso()
             await self._async_delete_file(gone)
@@ -2360,19 +2411,24 @@ class EinkaufslisteManager:
         if fix and not fixes:
             todo = {pid: e.get("default") or "" for pid, (_a, e) in actions.items() if "options" not in e or e.get("default")}
         fixed = 0
-        for pid, value in todo.items():
-            if pid not in actions:
-                continue
-            action, _entry = actions[pid]
-            try:
-                result = action(value or "")
-                if hasattr(result, "__await__"):
-                    await result
-            except ValueError:  # hat sich durch eine andere Reparatur schon erledigt (z. B. Produkt weg)
-                continue
-            fixed += 1
-        if fixed:
-            self._changed()
+        try:
+            for pid, value in todo.items():
+                if pid not in actions:
+                    continue
+                action, _entry = actions[pid]
+                try:
+                    result = action(value or "")
+                    if hasattr(result, "__await__"):
+                        await result
+                except ValueError:  # hat sich durch eine andere Reparatur schon erledigt (z. B. Produkt weg)
+                    continue
+                except Exception:  # noqa: BLE001 – eine kaputte Reparatur darf die anderen nicht stoppen
+                    _LOGGER.exception("Reparatur %s fehlgeschlagen", pid)
+                    continue
+                fixed += 1
+        finally:
+            if todo:
+                self._changed()
         problems = [e["text"] for e in found]
         return {"items": found, "problems": problems, "count": len(found), "fixed": fixed}
 
@@ -2418,7 +2474,7 @@ class EinkaufslisteManager:
         self.learn_barcode(
             code, item["name"], item["store_id"], item["category_id"], item.get("note"), item.get("for_whom")
         )
-        self._schedule_save()
+        self._changed()
         return {"code": code, "name": item["name"], "note": item.get("note")}
 
     # ------------------------------------------------------------------ Gesehen
@@ -2624,12 +2680,15 @@ class EinkaufslisteManager:
         recipe = self.recipe_by_id(recipe_id)
         if recipe is None:
             raise ValueError("Dieses Rezept gibt es nicht (mehr).")
+        new_name = self._recipe_name(fields["name"], recipe_id) if "name" in fields else None
+        new_icon = _icon(fields["icon"], recipe.get("icon", "mdi:silverware-fork-knife")) if "icon" in fields else None
+        new_items = self._recipe_items(fields["items"]) if "items" in fields else None
         if "name" in fields:
-            recipe["name"] = self._recipe_name(fields["name"], recipe_id)
+            recipe["name"] = new_name
         if "icon" in fields:
-            recipe["icon"] = _icon(fields["icon"], recipe.get("icon", "mdi:silverware-fork-knife"))
+            recipe["icon"] = new_icon
         if "items" in fields:
-            recipe["items"] = self._recipe_items(fields["items"])
+            recipe["items"] = new_items
         if "steps" in fields:
             recipe["steps"] = _clean_steps(fields["steps"])
         if "heat" in fields:
@@ -2652,6 +2711,7 @@ class EinkaufslisteManager:
         # Zutaten dieses Rezepts: offene bleiben als normale Artikel, sofern es sie
         # nicht schon normal gibt; abgehakte Rezept-Einträge verschwinden.
         keep = []
+        drop: list[str] = []
         for item in self.items:
             if item.get("recipe_id") != recipe_id:
                 keep.append(item)
@@ -2660,9 +2720,11 @@ class EinkaufslisteManager:
             twin = self._find_same(
                 item["name"], item.get("note"), item.get("for_whom"), item["store_id"], None, item["id"]
             )
-            if not item["checked"] and twin is None:
+            if not item["checked"] and (twin is None or twin["checked"]):
                 keep.append(item)
-        self.items = keep
+                if twin is not None:  # abgehakter Zwilling: der offene Eintrag bleibt, Doppel vermeiden
+                    drop.append(twin["id"])
+        self.items = [i for i in keep if i["id"] not in drop]
         base = recipe_photo_key(recipe_id)
         for pkey in [k for k in self.photos if k == base or k.startswith(base + "#")]:  # Rezept-Fotos und Schritt-Fotos
             self.hass.async_create_task(self.async_remove_photo(pkey))

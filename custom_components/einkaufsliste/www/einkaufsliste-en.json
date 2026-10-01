@@ -1411,5 +1411,7 @@
 "📷 Fertig: {} neu oder ersetzt, {} schon aktuell": "📷 Done: {0} new or replaced, {1} already up to date",
 "📷 Fertig: {} neu oder ersetzt, {} schon aktuell, {}× Platz voll": "📷 Done: {0} new or replaced, {1} already up to date, {2}× no room",
 "📷 Fertig: {} neu oder ersetzt, {} schon aktuell, {}× keins in der Datenbank": "📷 Done: {0} new or replaced, {1} already up to date, {2}× none in the database",
-"📷 Fertig: {} neu oder ersetzt, {} schon aktuell, {}× Platz voll, {}× keins in der Datenbank": "📷 Done: {0} new or replaced, {1} already up to date, {2}× no room, {3}× none in the database"
+"📷 Fertig: {} neu oder ersetzt, {} schon aktuell, {}× Platz voll, {}× keins in der Datenbank": "📷 Done: {0} new or replaced, {1} already up to date, {2}× no room, {3}× none in the database",
+"erledigt": "done",
+"offen": "open"
 }

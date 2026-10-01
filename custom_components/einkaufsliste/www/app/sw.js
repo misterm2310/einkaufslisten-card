@@ -8,7 +8,8 @@ const FILES = [
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // einzeln holen: fehlt eine Datei, soll nicht die ganze Installation (und damit jedes Update) scheitern
+  e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(FILES.map((f) => c.add(f)))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
@@ -21,17 +22,23 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   const ours = url.pathname.startsWith("/einkaufsliste/app/") || url.pathname.startsWith("/einkaufsliste_files/");
   if (e.request.method !== "GET" || url.origin !== location.origin || !ours || url.pathname.endsWith("sw.js") || url.pathname.includes("/__ws/")) return;
-  e.respondWith(
-    fetch(e.request).then((resp) => {
-      if (resp.ok) {
-        const copy = resp.clone();
-        caches.open(CACHE).then((c) => c.put(url.pathname === "/einkaufsliste/app/" || url.pathname === "/einkaufsliste/app/index.html" ? "./" : e.request, copy));
-      }
-      return resp;
-    }).catch(() => caches.match(e.request).then((r) => r || caches.match(e.request, { ignoreSearch: true }))
-      .then((r) => r || (url.pathname.startsWith("/einkaufsliste/app/") ? caches.match("./") : undefined))
-      .then((r) => r || new Response("offline", { status: 503 })))
-  );
+  // Gespeichertes suchen (auch ohne ?v=…, notfalls die Startseite)
+  const lookup = () => caches.match(e.request).then((r) => r || caches.match(e.request, { ignoreSearch: true }))
+    .then((r) => r || (url.pathname.startsWith("/einkaufsliste/app/") ? caches.match("./") : undefined));
+  const net = fetch(e.request).then((resp) => {
+    // Eine Anmeldeseite vom Laden-WLAN (HTML statt Programm) darf nie gespeichert oder ausgeliefert werden
+    if (/\.(js|json|webp|png)$/.test(url.pathname) && /text\/html/.test(resp.headers.get("content-type") || "")) throw new Error("html");
+    if (resp.ok && resp.type === "basic" && !resp.redirected) {
+      const copy = resp.clone();
+      caches.open(CACHE).then((c) => c.put(url.pathname === "/einkaufsliste/app/" || url.pathname === "/einkaufsliste/app/index.html" ? "./" : e.request, copy)).catch(() => {});
+    }
+    return resp;
+  });
+  const guarded = net.catch(() => lookup().then((r) => r || new Response("offline", { status: 503 })));
+  // Netz „da“, aber tot (typisch im Laden)? Nach 4 Sekunden das Gespeicherte nehmen, das Netz aktualisiert nebenher
+  const slow = new Promise((res) => setTimeout(() => lookup().then((r) => res(r || null), () => res(null)), 4000));
+  e.waitUntil(net.catch(() => {}));
+  e.respondWith(Promise.race([guarded, slow]).then((r) => r || guarded));
 });
 
 // ---------------------------------------------------------------- 🔄 Im Hintergrund nachschicken (Android/Chrome)
@@ -134,9 +141,20 @@ async function flushQueue(force) {
       if (!String(m.item_id || m.recipe_id || "").startsWith("tmp_")) {
         try {
           const res = await sock.call(m);
-          if (tmp && res?.id) ids[tmp] = res.id;
+          if (tmp && res?.id) {
+            ids[tmp] = res.id;
+            for (const x of q.slice(1)) { // 🔁 vorläufige Nummer in den wartenden Nachrichten durch die echte ersetzen
+              for (const k of ["item_id", "recipe_id"]) if (x[k] === tmp) x[k] = res.id;
+              if (typeof x.name === "string" && x.name.includes(tmp)) x.name = x.name.split(tmp).join(res.id);
+            }
+          }
         } catch (err) {
           if (err.lost) throw err; // Netz wieder weg – der Rest bleibt gemerkt
+          const code = err.ha?.code;
+          if (!["invalid", "invalid_format", "not_found", "unauthorized", "unknown_command"].includes(code)) {
+            q[0]._tries = (q[0]._tries || 0) + 1; // z. B. HA startet gerade neu: nicht wegwerfen, später nochmal (höchstens 3×)
+            if (q[0]._tries < 3) { await kvSet("queue", q); throw new Error("retry"); }
+          }
           // echter Fehler (z. B. Artikel inzwischen gelöscht): diesen einen überspringen
         }
         sent += 1;

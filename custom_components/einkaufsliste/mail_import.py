@@ -13,6 +13,7 @@ import html
 import logging
 import quopri
 import re
+from datetime import datetime, timedelta
 from email.utils import parseaddr
 from typing import Any
 
@@ -88,9 +89,12 @@ def mail_sources(hass: HomeAssistant) -> list[dict[str, Any]]:
     ]
 
 
+MAX_MAIL_CHARS = 200_000
+
+
 def mail_text(text: str | None, subject: str | None = None) -> str:
     """Nur die Einkaufszeilen: ohne HTML, Zitate, Signatur und „Gesendet von meinem iPhone“."""
-    raw = text or ""
+    raw = (text or "")[:MAX_MAIL_CHARS]  # riesige Mails nicht durch Regex jagen
     if "<" in raw and ">" in raw and re.search(r"<(html|body|div|p|br|span|table)\b", raw, re.I):
         raw = _BR.sub("\n", raw)
         raw = re.sub(r"<(style|script)[^>]*>.*?</\1>", "", raw, flags=re.I | re.S)
@@ -170,12 +174,20 @@ class MailImport:
     def _on_mail(self, event: Event) -> None:
         cfg = self.manager.mail_import
         data = event.data
-        if not cfg or data.get("entry_id") != cfg.get("entry_id") or data.get("initial") is False:
+        if not cfg or data.get("entry_id") != cfg.get("entry_id"):
             return
+        # 📬 „initial: false“ heißt nur „HA schickt dieselbe letzte Mail nochmal“ (gleiche Message-ID) – das kann auch
+        # eine ganz neue Mail sein. Darum nicht pauschal wegwerfen, sondern über eigene Nummer|Datum-Liste auf Doppelte prüfen.
         key = f"{data.get('uid')}|{data.get('date')}"
-        if key in self._seen:
+        if key in self._seen or key in self.manager.mail_seen:
             return
+        if data.get("initial") is False:
+            sent = data.get("date")
+            if isinstance(sent, datetime) and sent.tzinfo is not None and datetime.now(sent.tzinfo) - sent > timedelta(days=2):
+                return  # alte Mail, die HA nur wieder aufwärmt
         self._seen = (self._seen + [key])[-50:]
+        self.manager.mail_seen = (self.manager.mail_seen + [key])[-50:]
+        self.manager._changed()
         name, address = parseaddr(str(data.get("sender") or ""))
         address = address.lower()
         allowed = [s.lower() for s in cfg.get("senders", [])]

@@ -153,13 +153,17 @@ class TodoSync:
         with self.manager.acting(who, None, "sync"):
             for entry in entries:
                 text = str(entry.get("summary") or "").strip()
-                if text and len(text) <= 80:
-                    try:
-                        store_id = cfg.get("store_id") if self.manager.store_by_id(cfg.get("store_id")) else None
-                        self.manager.add_item(text, store_id=store_id, added_by=who, notify=True)
-                        added += 1
-                    except ValueError as err:
-                        _LOGGER.debug("„%s“ nicht übernommen: %s", text, err)
+                if not text:
+                    done.append(entry.get("uid") or text)  # leerer Eintrag: nichts zu übernehmen, kann weg
+                    continue
+                text = text[:80].rstrip()  # zu lang: gekürzt übernehmen, statt zu verlieren
+                try:
+                    store_id = cfg.get("store_id") if self.manager.store_by_id(cfg.get("store_id")) else None
+                    self.manager.add_item(text, store_id=store_id, added_by=who, notify=True)
+                    added += 1
+                except ValueError as err:  # nicht übernommen: dort stehen lassen, damit nichts verloren geht
+                    _LOGGER.debug("„%s“ nicht übernommen: %s", text, err)
+                    continue
                 done.append(entry.get("uid") or text)
         if added:
             cfg["count"] = int(cfg.get("count", 0)) + added

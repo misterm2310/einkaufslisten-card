@@ -209,13 +209,16 @@ async function tokenRequest(body) {
 function startLogin() {
   const state = Math.random().toString(36).slice(2);
   sessionStorage.setItem("elapp_state", state);
+  try { localStorage.setItem("elapp_state", state); } catch (_) { /* egal */ } // iPhone: der Sitzungsspeicher kann beim Zurückkommen von der Anmeldung leer sein
   location.href = "/auth/authorize?" + new URLSearchParams({ response_type: "code", client_id: CLIENT_ID, redirect_uri: CLIENT_ID, state });
 }
 async function finishLogin() {
   const q = new URLSearchParams(location.search);
   if (!q.get("code")) return;
   history.replaceState(null, "", BASE);
-  if (q.get("state") !== sessionStorage.getItem("elapp_state")) return;
+  const savedState = sessionStorage.getItem("elapp_state") || (() => { try { return localStorage.getItem("elapp_state"); } catch (_) { return null; } })();
+  if (!savedState || q.get("state") !== savedState) return; // ohne gemerkten Wert (null) nie durchlassen
+  try { localStorage.removeItem("elapp_state"); } catch (_) { /* egal */ }
   auth = await tokenRequest({ grant_type: "authorization_code", code: q.get("code") });
   put(K.auth, auth); kvSet("auth", { ...auth, client_id: CLIENT_ID });
 }
@@ -242,7 +245,7 @@ function connect() {
     const m = JSON.parse(ev.data);
     if (m.type === "auth_required") {
       try { ws.send(JSON.stringify({ type: "auth", access_token: await accessToken() })); }
-      catch (err) { if ([400, 401, 403].includes(err.status)) logout(true); else ws.close(); }
+      catch (err) { if ([400, 401].includes(err.status)) logout(true); else ws.close(); } // 403 (Sperre, WLAN-Anmeldeseite) ist KEIN ungültiges Token – nicht abmelden
     } else if (m.type === "auth_invalid") {
       auth.expires = 0; put(K.auth, auth); kvSet("auth", { ...auth, client_id: CLIENT_ID }); ws.close();
     } else if (m.type === "auth_ok") {

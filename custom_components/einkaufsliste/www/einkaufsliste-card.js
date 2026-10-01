@@ -2,11 +2,22 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.44.3";
-// 🆕 Was ist neu in dieser Version (deutsch, englisch) – bei jedem Update neu schreiben
+const EL_VERSION = "2.44.5";
+// 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
+const EL_NEWS_VERSION = "2.44.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
-  ["🧀 <b>Rezept „Auf die Liste“:</b> „steht schon drauf“ (und der fehlende Haken vorab) gilt nur noch, wenn <b>Name und Notiz</b> gleich sind – „Käse · Gouda“ auf der Liste und „Käse · Gouda, gerieben“ im Rezept sind jetzt zwei verschiedene Zutaten.",
-   "🧀 <b>Recipe “Add to list”:</b> “already on the list” (and the missing tick beforehand) now only applies when <b>name and note</b> match – “Cheese · Gouda” on the list and “Cheese · Gouda, grated” in the recipe are now two different ingredients."],
+  ["🔧 <b>„Alles ok?“ löst alles direkt:</b> Bei jedem Fund gibt es <b>🔧 Beheben</b> (nur dieser eine), <b>✏️ Selbst ändern</b> (springt zum Produkt, Artikel oder Rezept) und – wo es mehrere Wege gibt – eine <b>Auswahl</b>, z. B. „neu holen“ oder „nur löschen“.",
+   "🔧 <b>“All OK?” solves everything right there:</b> every finding has <b>🔧 Fix</b> (just this one), <b>✏️ Change it myself</b> (jumps to the product, item or recipe) and – where there is more than one way – a <b>choice</b>, e.g. “fetch again” or “just delete”."],
+  ["🔁 <b>Mehrere To-do-/Alexa-Listen:</b> In ⚙️ → Daten → Import &amp; Sicherung → „Aus anderen Apps“ lassen sich jetzt mehrere Listen gleichzeitig herüberholen – jede mit <b>eigenem Geschäft</b> (oder „Egal wo“) und <b>eigener Art</b> des Abgleichs. Die bisherige Liste bleibt, wie sie war.",
+   "🔁 <b>Several to-do/Alexa lists:</b> in ⚙️ → Data → Import &amp; backup → “From other apps” you can now bring over several lists at once – each with its <b>own store</b> (or “Anywhere”) and its <b>own kind</b> of sync. Your existing list stays as it was."],
+  ["↩️ <b>Rückgängig:</b> Wer einen Artikel versehentlich abhakt, sieht unten 3 Sekunden lang „↩️ Rückgängig“ – ein Tipp, und er steht wieder offen. Der Hinweis erscheint nur bei dem, der selbst abgehakt hat.",
+   "↩️ <b>Undo:</b> if you check something off by accident, “↩️ Undo” appears at the bottom for 3 seconds – one tap and it is open again. It only shows for the person who checked it off."],
+  ["▥ <b>Rückgängig nach dem Scannen:</b> Nach „Mehrere scannen“ und „Scannen &amp; abhaken“ steht 5 Sekunden „↩️ Rückgängig“ für den zuletzt gescannten Artikel.",
+   "▥ <b>Undo after scanning:</b> after “Scan several” and “Scan &amp; check off”, “↩️ Undo” shows for 5 seconds for the last scanned item."],
+  ["🔄 <b>Alle Fotos neu holen:</b> in ⚙️ → Produkte → „Alle Produkte“ holt ein Knopf die fehlenden oder abgeschnittenen Fotos für alle Produkte mit Barcode nach – nacheinander, mit Fortschritt. Ganze Fotos bleiben unangetastet.",
+   "🔄 <b>Fetch all photos again:</b> in ⚙️ → Products → “All products” one button fetches the missing or cut-off photos for every product with a barcode – one after another, with progress. Complete photos stay untouched."],
+  ["🧹 <b>Doppelte Fotos:</b> „Alles ok?“ meldet jetzt, wenn zwei Produkte genau dasselbe Foto haben (oder ein Foto doppelt vorkommt) – und löscht auf Wunsch das doppelte.",
+   "🧹 <b>Duplicate photos:</b> “All ok?” now reports when two products have exactly the same photo (or a photo appears twice) – and deletes the duplicate on request."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
@@ -701,6 +712,7 @@ async function elCameraShot() {
       flip.disabled = true;
       const res = await elNextCamera(stream, facing);
       flip.disabled = false;
+      if (over) { res?.stream?.getTracks().forEach((t) => t.stop()); return; } // inzwischen abgebrochen: die neue Kamera nicht anlassen
       if (!res) { flip.textContent = "🚫"; setTimeout(() => { flip.textContent = "🔄"; }, 1500); return; }
       stream = res.stream;
       facing = res.facing;
@@ -980,7 +992,7 @@ button { font:inherit; color:inherit; }
 .qwait { font-size:.8em; margin-left:4px; }
 .live.off { background:var(--error-color,#db4437); box-shadow:0 0 0 3px color-mix(in srgb, var(--error-color,#db4437) 25%, transparent); animation: pulse 1.2s infinite; }
 .updbar { margin:0 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 14%, transparent); font-size:.88em; display:flex; align-items:center; gap:8px; }
-.undobar { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:50; max-width:calc(100vw - 24px); display:flex; align-items:center; gap:12px; padding:8px 8px 8px 16px; border-radius:24px; background:#323232; color:#fff; box-shadow:0 3px 12px rgba(0,0,0,.35); font-size:.92em; }
+.undobar { position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); z-index:50; max-width:calc(100vw - 24px); display:flex; align-items:center; gap:12px; padding:8px 8px 8px 16px; border-radius:24px; background:#323232; color:#fff; box-shadow:0 3px 12px rgba(0,0,0,.35); font-size:.92em; }
 .undobar[hidden] { display:none; }
 .undobar .ut { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .undobar .ub { border:0; border-radius:16px; padding:7px 12px; background:#fff; color:#222; font-weight:600; cursor:pointer; font:inherit; font-weight:600; white-space:nowrap; }
@@ -1492,7 +1504,7 @@ function elReceiptInfo(text, stores = [], today = new Date()) {
   if (dm) {
     const y = dm[3].length === 2 ? 2000 + Number(dm[3]) : Number(dm[3]);
     const d = new Date(y, Number(dm[2]) - 1, Number(dm[1]), 12);
-    const ago = (today - d) / 86400000;
+    const ago = Math.round((startOfDay(today) - startOfDay(d)) / 86400000); // Bon von heute vor 12 Uhr: nicht „negativ“ (die Uhrzeit zählt nicht)
     if (!Number.isNaN(d.getTime()) && ago >= 0 && ago <= 120) day = `${y}-${dm[2]}-${dm[1]}`;
   }
   const flat = String(text || "").toLowerCase().replace(/[^a-zäöüß0-9]/g, "");
@@ -1703,6 +1715,15 @@ const PHOTO_QUEUE_MAX = 3 * 1024 * 1024; // so viele Foto-Daten (Zeichen) dürfe
 const QUEUE_KEY = "einkaufsliste_queue";
 const elQueue = (() => { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]"); } catch (_) { return []; } })();
 const elFlush = { busy: false };
+const EL_QUEUE_FINAL = new Set(["invalid", "invalid_format", "not_found", "unauthorized", "unknown_command"]); // sicher „geht nie durch“ – alles andere wird noch einmal versucht
+// 🔁 Nach einem erfolgreichen „anlegen“: vorläufige Nummer (tmp_…) in allen noch wartenden Nachrichten durch die echte ersetzen
+function elQueueRemap(tmp, real) {
+  const re = new RegExp(tmp.replace(/[^a-z0-9_]/gi, ""), "gi");
+  for (const q of elQueue) {
+    for (const k of ["item_id", "recipe_id"]) if (q[k] === tmp) q[k] = real;
+    if (typeof q.name === "string" && q.name.toLowerCase().includes(tmp.toLowerCase())) q.name = q.name.replace(re, real);
+  }
+}
 const elQueueSave = () => {
   try { localStorage.setItem(QUEUE_KEY, JSON.stringify(elQueue)); } catch (_) { /* egal */ }
   try { window.dispatchEvent(new CustomEvent("einkaufsliste-queue", { detail: elQueue.slice() })); } catch (_) { /* egal */ }
@@ -1858,7 +1879,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._hass = hass;
     if (!this._built) this._build();
     elUseLang(hass, this._config, this.shadowRoot);
-    if (!this._unsub && !this._subscribing && this.isConnected) this._subscribe();
+    if (!this._unsub && !this._subscribing && this.isConnected && Date.now() - (this._subFailAt || 0) > 10000) this._subscribe(); // nach einem Fehler erst nach 10 s wieder (nicht bei jedem hass-Update)
     this._autoStore();
     this._updateLive();
     this._applyScheme(hass);
@@ -1968,7 +1989,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (this._view === "list" && !this._editing && this._data) this._renderList(); // „vor 5 Min“ aktuell halten
       this._updateLockBtn(); // 🔒 nach 10 Minuten verschwindet der Sperr-Knopf von selbst
     }, 60000);
-    if (this._hass && !this._unsub && !this._subscribing) this._subscribe();
+    if (this._hass && !this._unsub && !this._subscribing && Date.now() - (this._subFailAt || 0) > 10000) this._subscribe();
   }
 
   disconnectedCallback() {
@@ -2014,6 +2035,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (!this.isConnected) unsub(); else this._unsub = unsub;
       this._updateLive();
     } catch (err) {
+      this._subFailAt = Date.now();
       this._error = err?.code === "unknown_command" || err?.code === "not_loaded"
         ? "Die Integration „Einkaufsliste“ ist noch nicht eingerichtet. Einstellungen → Geräte & Dienste → Integration hinzufügen → Einkaufsliste."
         : `Verbindung klappt nicht: ${err?.message || err}`;
@@ -2025,7 +2047,7 @@ class EinkaufslisteCard extends HTMLElement {
   _ws(msg) {
     // ⏳ Funkloch im Laden? Abhaken & Co. wird gemerkt und nachgeschickt, sobald das Netz wieder da ist
     const offline = this._hass?.connected === false;
-    const isItem = msg.type.startsWith("einkaufsliste/item/") || msg.type === "einkaufsliste/barcode/assign";
+    const isItem = msg.type.startsWith("einkaufsliste/item/") || msg.type.startsWith("einkaufsliste/recipe/") || msg.type === "einkaufsliste/barcode/assign" || msg.type === "einkaufsliste/photo/set"; // wartet schon etwas? dann hinten anstellen (Reihenfolge!)
     if (QUEUE_TYPES.has(msg.type) && (offline || (isItem && elQueue.length))) return this._queueMsg(msg);
     return this._hass.callWS(msg).catch((err) => {
       if (QUEUE_TYPES.has(msg.type) && this._hass?.connected === false) return this._queueMsg(msg);
@@ -2080,7 +2102,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
     }
     const ids = {};
-    let sent = 0;
+    let sent = 0, retry = false;
     try {
       while (elQueue.length) {
         const m = { ...elQueue[0] };
@@ -2090,9 +2112,14 @@ class EinkaufslisteCard extends HTMLElement {
         if (String(m.item_id || m.recipe_id || "").startsWith("tmp_")) { elQueue.shift(); continue; } // Eintrag ging nicht durch
         try {
           const res = await this._hass.callWS(m);
-          if (tmp && res?.id) ids[tmp] = res.id;
+          if (tmp && res?.id) { ids[tmp] = res.id; elQueueRemap(tmp, res.id); }
         } catch (err) {
           if (this._hass?.connected === false) break; // Netz wieder weg – später weiter
+          if (!EL_QUEUE_FINAL.has(err?.code)) { // z. B. HA startet gerade neu oder kurz keine Verbindung: nicht wegwerfen, später nochmal (höchstens 3×)
+            const q0 = elQueue[0];
+            q0._tries = (q0._tries || 0) + 1;
+            if (q0._tries < 3) { elQueueSave(); retry = true; break; }
+          }
           // echter Fehler (z. B. Artikel inzwischen gelöscht): diesen einen überspringen
         }
         elQueue.shift();
@@ -2104,6 +2131,7 @@ class EinkaufslisteCard extends HTMLElement {
       try { gate?.release(); } catch (_) { /* egal */ }
       this._updateLive();
     }
+    if (retry) setTimeout(() => this._flushQueue(), 15000);
     if (sent && !elQueue.length) this._toast(`✅ Wieder online – ${sent} ${sent === 1 ? "Änderung" : "Änderungen"} nachgeschickt`);
   }
 
@@ -2129,7 +2157,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="updbar" id="updBar" hidden></div>
         <div class="updbar" id="tipBar" hidden></div>
         <div class="wizard" id="wizard" hidden></div>
-        <div class="undobar" id="undoBar" hidden></div>
+        <div class="undobar" id="undoBar" role="status" aria-live="polite" hidden></div>
         <div id="listView">
           <div class="tabs" id="tabs"></div>
           <form class="add" id="addForm" autocomplete="off">
@@ -2188,6 +2216,11 @@ class EinkaufslisteCard extends HTMLElement {
     this.shadowRoot.addEventListener("paste", (e) => this._onPaste(e));
     this.$("inName").addEventListener("input", () => { if (!this.$("inName").value.trim()) this._pendingBarcode = null; this._onNameInput(); this._renderSuggest(); this._updateTools(); if (!this._editing) this._renderList(); });
     root.addEventListener("click", (e) => this._onClick(e), true);
+    // ⌨️ Köpfe, die wie Knöpfe wirken (role="button"), lassen sich mit Enter/Leertaste bedienen
+    root.addEventListener("keydown", (e) => {
+      const t = e.target;
+      if ((e.key === "Enter" || e.key === " ") && t?.getAttribute?.("role") === "button" && t.dataset?.act) { e.preventDefault(); t.click(); }
+    });
     root.addEventListener("dblclick", (e) => { // 🖥️ Doppelklick im Katalog = bearbeiten
       const row = e.target.closest?.(".prodrow");
       if (!row) return;
@@ -2973,7 +3006,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       const key = cid || "none";
       const open = forceOpen || this._openDoneCats.has(key) || arr.some((i) => i.id === this._editing);
-      html.push(`<div class="group"><div class="ghead subhead donehead ${open ? "" : "closed"}" data-act="toggle-donecat" data-cat="${key}"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>${label}</div>${open ? arr.map(row).join("") : ""}</div>`);
+      html.push(`<div class="group"><div class="ghead subhead donehead ${open ? "" : "closed"}" role="button" tabindex="0" aria-expanded="${open ? "true" : "false"}" data-act="toggle-donecat" data-cat="${key}"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>${label}</div>${open ? arr.map(row).join("") : ""}</div>`);
     }
     return html.join("");
   }
@@ -3040,7 +3073,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._config.show_checked && (done.length || filter)) {
       const total = allView ? this._groupStores(items.filter((i) => i.checked)).length : items.filter((i) => i.checked).length;
       html.push(`<div class="group">
-        <div class="ghead donehead ${this._doneOpen || filter ? "" : "closed"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
+        <div class="ghead donehead ${this._doneOpen || filter ? "" : "closed"}" role="button" tabindex="0" aria-expanded="${this._doneOpen || filter ? "true" : "false"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
         ${this._doneOpen || filter ? `<div class="donehint">Tipp auf den Kreis, um es wieder auf die Liste zu nehmen.</div>${
           done.length ? this._groupedHtml(done, row, byName, true, !!filter) : `<div class="donehint">Nichts gefunden zu „${esc(filter)}“.</div>`}` : ""}
       </div>`);
@@ -3472,7 +3505,7 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint" id="prodRefreshMsg" ${this._refreshNone ? "" : "hidden"}>${esc(this._refreshNone ? elT(this._refreshNone) : "")}</p>
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
-      { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_VERSION}`, html: () => this._newsHtml() },
+      { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_NEWS_VERSION}`, html: () => this._newsHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
       { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
       { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher & Umfang", html: () => `
@@ -3529,7 +3562,7 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">Tag & Uhrzeit ändern: Einstellungen → Geräte & Dienste → Einkaufsliste → Konfigurieren</p>
         <div class="btnrow">
           <button class="btn" data-act="cleanup-now"><ha-icon icon="mdi:broom"></ha-icon>Jetzt aufräumen</button>
-          <button class="btn" data-act="check-all"><ha-icon icon="mdi:checkbox-multiple-marked-circle-outline"></ha-icon>Alles abhaken</button>
+          <button class="btn" data-act="cleanup-all"><ha-icon icon="mdi:checkbox-multiple-marked-circle-outline"></ha-icon>Alles abhaken</button>
         </div>` },
     ];
     if (this._setSec === "recipe_groups") { this._setSec = "recipes"; this._recTab = "groups"; } // alter Weg zu den Rezept-Gruppen
@@ -3995,7 +4028,7 @@ class EinkaufslisteCard extends HTMLElement {
       html.push(`<div class="logrow">
         <span class="lt">${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}</span>
         <span class="lv" title="${esc(e.v || "")}">${via}</span>
-        <span class="lx">${who} ${act.verb.replace("%", `<b>${esc(e.n || "?")}</b>`)}${st ? ` <span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>` : ""}${e.d ? `<small>${esc(e.d)}</small>` : ""}</span>
+        <span class="lx">${who} ${elT(act.verb).replace("%", () => `<b>${esc(e.n || "?")}</b>`)}${st ? ` <span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>` : ""}${e.d ? `<small>${esc(e.d)}</small>` : ""}</span>
       </div>`);
     }
     if (list.length > shown.length) html.push(`<div class="btnrow"><button class="btn" data-act="log-more">Mehr anzeigen (${list.length - shown.length} weitere)</button></div>`);
@@ -4165,7 +4198,7 @@ class EinkaufslisteCard extends HTMLElement {
     const shown = items.slice(0, 60);
     box.innerHTML = shown.map((i) => {
       const st = this._store(i.store_id);
-      const info = [st ? st.name : "Egal wo", i.checked ? "erledigt" : "offen", i.note, i.for_whom && `für ${i.for_whom}`]
+      const info = [st ? st.name : elT("Egal wo"), elT(i.checked ? "erledigt" : "offen"), i.note, i.for_whom && `${elT("für")} ${i.for_whom}`]
         .filter(Boolean).map(esc).join(" · ");
       return `<div class="srow delrow" data-id="${i.id}">
         <div class="grow delname"><b>${esc(i.name)}</b><small>${info}</small></div>
@@ -4709,7 +4742,14 @@ class EinkaufslisteCard extends HTMLElement {
     this._readHeat();
   }
 
+  // 🔒 Doppeltipp auf ✔ Speichern darf kein zweites Rezept anlegen
   async _saveRecipe() {
+    if (this._savingRecipe) return;
+    this._savingRecipe = true;
+    try { await this._saveRecipeInner(); } finally { this._savingRecipe = false; }
+  }
+
+  async _saveRecipeInner() {
     this._readDraft();
     const dr = this._draft;
     const items = dr.items.filter((i) => i.name).map((i) => {
@@ -5326,6 +5366,7 @@ class EinkaufslisteCard extends HTMLElement {
     hint.textContent = "💡 Kein Foto zu sehen? Schließen und das Foto nochmal antippen.";
     Object.assign(hint.style, { font: "400 13px Roboto, sans-serif", opacity: ".75", margin: "0 0 10px", textAlign: "center" });
     ov.append(img, cap, nav, full, sort, hint, row);
+    let seq = 0;
     const show = async () => {
       const n = count();
       if (!n) { close(); return; }
@@ -5341,7 +5382,8 @@ class EinkaufslisteCard extends HTMLElement {
       bLeft.style.display = idx > 0 ? "" : "none";
       bMain.style.display = idx > 0 ? "" : "none";
       bRight.style.display = idx < n - 1 ? "" : "none";
-      try { img.src = await this._photoData(key, idx); } catch (_) { close(); }
+      const mine = ++seq; // schnell durchgewischt? Nur das zuletzt gewünschte Foto darf angezeigt werden
+      try { const src = await this._photoData(key, idx); if (mine === seq) img.src = src; } catch (_) { if (mine === seq) close(); }
     };
     const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
     const onKey = (e) => {
@@ -5472,7 +5514,7 @@ class EinkaufslisteCard extends HTMLElement {
         .sp-tabs button, .sp-q { background:#1e1e1e; color:#eee; border:1px solid #333; border-radius:10px; padding:10px; font:inherit; cursor:pointer; }
         .sp-tabs button.on, .sp-q.on { background:#1e88e5; border-color:#1e88e5; color:#fff; font-weight:600; }
         .sp-q-row { display:flex; gap:6px; margin-bottom:8px; } .sp-q { flex:1; padding:8px 6px; }
-        .sp select, .sp input { width:100%; box-sizing:border-box; font:inherit; padding:10px 12px; border-radius:10px; border:1px solid #444; background:#1e1e1e; color:#eee; color-scheme:dark; }
+        .sp select, .sp input { width:100%; box-sizing:border-box; font:inherit; font-size:max(16px,1em); padding:10px 12px; border-radius:10px; border:1px solid #444; background:#1e1e1e; color:#eee; color-scheme:dark; }
         .sp-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
         .sp-l { display:block; margin:10px 0 4px; color:#aaa; font-size:14px; }
         .sp-hint { color:#aaa; } .sp small { color:#aaa; }
@@ -5808,7 +5850,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   // 🙏 Credits – in ⚙️ und in der Anleitung (dort dunkel)
   _newsHtml(en = EL_LANG !== "de") {
-    return `<div ${en ? 'translate="no"' : ""}><p class="hint">${en ? "This is what changed in version" : "Das hat sich in Version"} <b>${EL_VERSION}</b>${en ? ":" : " geändert:"}</p><ul>${EL_NEWS.map((n) => `<li>${en ? n[1] : n[0]}</li>`).join("")}</ul></div>`;
+    return `<div ${en ? 'translate="no"' : ""}><p class="hint">${en ? "The latest new features (version" : "Die letzten Neuerungen (Version"} <b>${EL_NEWS_VERSION}</b>):</p><ul>${EL_NEWS.map((n) => `<li>${en ? n[1] : n[0]}</li>`).join("")}</ul></div>`;
   }
 
   _creditsHtml(en = EL_LANG !== "de") {
@@ -6251,6 +6293,8 @@ class EinkaufslisteCard extends HTMLElement {
     this._listenToApp();
     let last = { code: null, at: 0 };
     const done = () => window.removeEventListener("einkaufsliste-barcode", onMsg);
+    try { this._scanDone?.(); } catch (_) { /* egal */ } // ein noch offener Scan-Zuhörer (z. B. zweimal ▥ getippt) würde sonst jeden Code doppelt verarbeiten
+    this._scanDone = done;
     const close = () => ext.fireMessage({ type: "bar_code/close" });
     const onMsg = async (ev) => {
       const msg = ev.detail;
@@ -6555,7 +6599,14 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // Jeder Artikel bekommt sein eigenes Geschäft (Reiter > Gedächtnis > Auswahl), seine Kategorie und Menge
+  // 🔒 Doppeltipp darf nicht alles zweimal eintragen
   async _addMany(parts) {
+    if (this._addingMany) return;
+    this._addingMany = true;
+    try { await this._addManyInner(parts); } finally { this._addingMany = false; }
+  }
+
+  async _addManyInner(parts) {
     if (this._newPhoto) { this._toast("📷 Mit Foto bitte einzeln eintragen – das Foto gehört ja zu einem Produkt."); return; }
     if (this._pendingBarcode) { this._toast("▥ Mit Barcode bitte einzeln eintragen – der Barcode gehört ja zu einem Produkt."); return; }
     const tab = this._activeTab;
@@ -6623,8 +6674,10 @@ class EinkaufslisteCard extends HTMLElement {
 
     switch (act) {
       case "reload":
-        try { caches?.keys?.().then((ks) => ks.forEach((k) => caches.delete(k))); } catch (_) { /* egal */ }
-        setTimeout(() => location.reload(), 150);
+        // nur die eigenen Zwischenspeicher leeren (nicht die von Home Assistant oder anderen Karten) und den Offline-Helfer zum Aktualisieren bitten
+        try { caches?.keys?.().then((ks) => ks.filter((k) => k.startsWith("einkaufsliste-")).forEach((k) => caches.delete(k))); } catch (_) { /* egal */ }
+        try { navigator.serviceWorker?.getRegistrations?.().then((rs) => rs.forEach((r) => { if (/\/einkaufsliste\/app\//.test(r.scope)) r.update().catch(() => {}); })); } catch (_) { /* egal */ }
+        setTimeout(() => location.reload(), 300);
         break;
       case "shopmode":
         this._shopMode = !this._shopMode;
@@ -6846,6 +6899,7 @@ class EinkaufslisteCard extends HTMLElement {
       case "barcode-assign": {
         const item = this._data.items.find((i) => i.id === el.dataset.id);
         this._menuId = null;
+        if (!item) { this._renderList(); this._toast("Den Artikel gibt es nicht mehr."); break; }
         this._startAppScan((code) => {
           this._ws({ type: "einkaufsliste/barcode/assign", item_id: item.id, code })
             .then(() => this._toast(`▥ Barcode gespeichert – beim nächsten Scan erkenne ich „${item.name}“ sofort!`))
@@ -6931,6 +6985,7 @@ class EinkaufslisteCard extends HTMLElement {
         const item = this._data.items.find((i) => i.id === el.dataset.id);
         this._menuId = null;
         this._renderList();
+        if (!item) { this._toast("Den Artikel gibt es nicht mehr."); break; } // ein anderes Gerät hat ihn inzwischen gelöscht
         const pk = this._pk(item.name, item.note);
         if (this._hasPhoto(pk)) this._openPhoto(pk);
         else this._takePhoto(pk, null);
@@ -7306,7 +7361,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._ws({ type: "einkaufsliste/cleanup" })
           .then((r) => this._toast(r.checked ? `${r.checked} alte Artikel abgehakt 🧹` : "Nix zu tun – alles noch frisch! ✨")).catch(() => {});
         break;
-      case "check-all":
+      case "cleanup-all":
         if (!elConfirm("Wirklich ALLE offenen Artikel abhaken?")) return;
         this._ws({ type: "einkaufsliste/cleanup", force: true })
           .then((r) => this._toast(`${r.checked} Artikel abgehakt ✅`)).catch(() => {});
@@ -7428,7 +7483,7 @@ class EinkaufslisteCard extends HTMLElement {
           if (r) this._openRecipe(r); else this._toast("Das Rezept gibt es nicht mehr.");
         } else if (ed.kind === "item") {
           if (!this._data.items.some((i) => i.id === ed.id)) { this._toast("Den Artikel gibt es nicht mehr."); break; }
-          this._view = "list"; this._activeTab = "all"; this._editing = ed.id; this._menuId = null;
+          this._view = "list"; this._tab = "all"; this._editing = ed.id; this._menuId = null;
           this._renderAll();
           this.shadowRoot.querySelector(`.item[data-id="${ed.id}"]`)?.scrollIntoView?.({ block: "center" });
         } else {
@@ -7543,11 +7598,14 @@ class EinkaufslisteCard extends HTMLElement {
         if (this.$("recipeList")) this._renderRecipeList(); else this._renderSetRecipeList();
         break;
       }
-      case "recipe-edit":
-        this._openRecipe(this._recipe(el.closest(".recipe").dataset.id));
+      case "recipe-edit": {
+        const rec = this._recipe(el.closest(".recipe").dataset.id);
+        if (rec) this._openRecipe(rec); else this._toast("Das Rezept gibt es nicht mehr.");
         break;
+      }
       case "recipe-apply": {
         const r = this._recipe(el.closest(".recipe").dataset.id);
+        if (!r) { this._toast("Das Rezept gibt es nicht mehr."); break; }
         if (this._pickRecipe === r.id) { this._pickRecipe = null; this._renderRecipes(); break; }
         const open = this._pickOpenSet();
         this._pickRecipe = r.id;
@@ -7672,6 +7730,7 @@ class EinkaufslisteCard extends HTMLElement {
         const n = Number(el.closest(".rrow").dataset.n);
         this._draft.items.splice(n, 1);
         if (this._rEditIdx === n) { this._rEditIdx = null; this.$("rEditHint").hidden = true; this._clearForm(); this.$("inStore").value = ""; }
+        else if (this._rEditIdx !== null && this._rEditIdx > n) this._rEditIdx -= 1; // eine Zutat davor weg: die bearbeitete rutscht eine Stelle hoch
         this._renderRecipeItems();
         break;
       }
