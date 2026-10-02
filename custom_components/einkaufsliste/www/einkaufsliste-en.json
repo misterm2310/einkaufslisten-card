@@ -1469,5 +1469,6 @@
 "Scannen": "Scan",
 "Packung scannen – danach frage ich die Produkt-Datenbank.": "Scan the pack – then I ask the product database.",
 "🤔 Das ist kein gültiger Barcode": "🤔 That is not a valid barcode",
-"▥ Barcode gespeichert – „{}“ wird jetzt beim Scannen erkannt": "▥ Barcode saved – “{0}” is now recognised when scanning"
+"▥ Barcode gespeichert – „{}“ wird jetzt beim Scannen erkannt": "▥ Barcode saved – “{0}” is now recognised when scanning",
+"Verbunden – alles ist aktuell · antippen = zurück zur Liste": "Connected – everything is up to date · tap = back to the list"
 }

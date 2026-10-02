@@ -2771,3 +2771,21 @@ async def test_add_product_barcode(hass: HomeAssistant, setup) -> None:
         m.add_product_barcode("tee", "12")
     with pytest.raises(ValueError):
         m.add_product_barcode("gibtsnicht", "4006381333900")
+
+
+async def test_alias_for_several_products(hass: HomeAssistant, setup) -> None:
+    """🏷️ Ein Spitzname darf zu mehreren Produkten gehören."""
+    m = mgr(hass)
+    m.add_item("Batterien", note="AA")
+    m.add_item("Batterien", note="AAA")
+    m.set_aliases("batterien|aa", ["Akku"])
+    m.set_aliases("batterien|aaa", ["Akku"])
+    rows = [r for r in m.as_dict()["aliases"] if r["alias"] == "akku"]
+    assert sorted(r["note"] for r in rows) == ["AA", "AAA"]
+    assert "akku" in next(p for p in m.products() if p["key"] == "batterien|aa")["aliases"]
+    assert "akku" in next(p for p in m.products() if p["key"] == "batterien|aaa")["aliases"]
+    m.update_product("batterien|aa", note="AA 1,5V")  # Umbenennen zieht den Spitznamen mit
+    assert "akku" in next(p for p in m.products() if p["key"] == "batterien|aa 1,5v")["aliases"]
+    m.set_aliases("batterien|aaa", [])  # nur dieses Produkt verliert ihn
+    rows = [r for r in m.as_dict()["aliases"] if r["alias"] == "akku"]
+    assert [r["note"] for r in rows] == ["AA 1,5V"]

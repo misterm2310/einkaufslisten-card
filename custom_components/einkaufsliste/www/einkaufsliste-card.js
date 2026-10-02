@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.47.1";
+const EL_VERSION = "2.48.0";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.47.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.48.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🟢 <b>Grüner Punkt = nach Hause:</b> Ein Tipp auf den grünen Punkt oben bringt dich von überall (Rezepte, Einstellungen …) zurück auf die Einkaufsliste. · 🏷️ <b>Ein Spitzname für mehrere Produkte:</b> „Batterien“ kann zu „AA“ und „AAA“ gehören – beim Tippen zeigt die Liste dann beide zur Auswahl an. · ✏️ Alte, selbst getippte Notizen haben im Bearbeiten nur noch <b>ein</b> Feld (✏️), damit „Batterien – AA“ und „– AAA“ getrennte Produkte bleiben.",
+   "🟢 <b>Green dot = home:</b> tapping the green dot at the top takes you back to the shopping list from anywhere (recipes, settings …). · 🏷️ <b>One nickname for several products:</b> “Batteries” can belong to “AA” and “AAA” – when you type it, the list shows both to choose from. · ✏️ Old notes you typed yourself now have only <b>one</b> field (✏️) when editing, so “Batteries – AA” and “– AAA” stay separate products."],
   ["▥ <b>Barcode nachtragen:</b> Im Katalog hat jedes Produkt jetzt den Knopf <b>„Barcode nachtragen“</b> – Nummer eintippen (Enter bestätigt) oder scannen. Danach schaut die Liste in der Datenbank nach und fragt, ob Name, Notiz und Foto übernommen werden sollen.",
    "▥ <b>Add a barcode afterwards:</b> in the catalog every product now has an <b>“Add barcode”</b> button – type the number (Enter confirms) or scan it. The list then checks the database and asks whether name, note and photo should be taken over."],
   ["⌨️ <b>Tastatur &amp; Maus überall:</b> Was im Katalog schon ging, geht jetzt auch in der <b>Einkaufsliste</b>, bei den <b>Rezepten</b> und in der <b>Gelöscht</b>-Liste: ↑↓ blättern (aus dem Suchfeld mit ↓ hinein), <b>Enter</b> oder Doppelklick öffnet bzw. bearbeitet, <b>Leertaste</b> hakt ab, <b>Esc</b> geht zurück; am PC markiert ein Klick die Zeile. Die <b>PIN</b> fürs ⚙️ bestätigst du jetzt auch mit <b>Enter</b>.",
@@ -1022,7 +1024,8 @@ button { font:inherit; color:inherit; }
 .head { display:flex; align-items:center; gap:4px; margin:0 2px 8px; min-height:36px; }
 .title { display:flex; align-items:center; gap:8px; font-size:1.25em; font-weight:600; flex:1; min-width:0; }
 .title span.t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.live { width:9px; height:9px; border-radius:50%; background:var(--success-color,#43a047); flex:0 0 auto; box-shadow:0 0 0 3px color-mix(in srgb, var(--success-color,#43a047) 25%, transparent); }
+.live { cursor:pointer; position:relative; width:9px; height:9px; border-radius:50%; background:var(--success-color,#43a047); flex:0 0 auto; box-shadow:0 0 0 3px color-mix(in srgb, var(--success-color,#43a047) 25%, transparent); }
+.live::after { content:""; position:absolute; inset:-10px; }
 .live.wait { background:var(--warning-color,#ffa600); box-shadow:0 0 0 3px color-mix(in srgb, var(--warning-color,#ffa600) 30%, transparent); animation: pulse 1.6s infinite; }
 .qwait { font-size:.8em; margin-left:4px; }
 .live.off { background:var(--error-color,#db4437); box-shadow:0 0 0 3px color-mix(in srgb, var(--error-color,#db4437) 25%, transparent); animation: pulse 1.2s infinite; }
@@ -1951,7 +1954,7 @@ class EinkaufslisteCard extends HTMLElement {
     dot.classList.toggle("off", !ok && !wait);
     dot.classList.toggle("wait", !!wait);
     dot.title = wait ? `⏳ ${wait} ${wait === 1 ? "Sache wartet" : "Sachen warten"} aufs Netz`
-      : ok ? "Verbunden – alles ist aktuell" : "Keine Verbindung – Änderungen kommen gerade nicht an";
+      : ok ? "Verbunden – alles ist aktuell · antippen = zurück zur Liste" : "Keine Verbindung – Änderungen kommen gerade nicht an";
     if (ok && wait) this._flushQueue();
   }
 
@@ -2191,7 +2194,7 @@ class EinkaufslisteCard extends HTMLElement {
       <style>${STYLE}</style>
       <ha-card>
         <div class="head">
-          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="guide" title="📖 Anleitung – antippen"></ha-icon><span id="mascot" data-act="guide" title="📖 Anleitung – antippen" hidden></span><span class="live" id="liveDot" title="Verbindung"></span><span class="badge" id="count" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
+          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="guide" title="📖 Anleitung – antippen"></ha-icon><span id="mascot" data-act="guide" title="📖 Anleitung – antippen" hidden></span><span class="live" id="liveDot" title="Verbindung" data-act="home"></span><span class="badge" id="count" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon></button>
           <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon></button>
           <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon></button>
@@ -3006,7 +3009,7 @@ class EinkaufslisteCard extends HTMLElement {
         <input id="edQty" value="${esc(item.quantity || "")}" placeholder="Menge">
         <select id="edFor">${this._personOptions(item.for_whom)}</select>
         ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz (alt)">` : `<input type="hidden" id="edNote" value="${esc(item.note)}">`}` : `<input type="hidden" id="edNote" value="">`}
-        ${item.recipe_id ? "" : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz – bleibt beim Produkt">`}
+        ${item.recipe_id ? "" : (item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz – bleibt beim Produkt">`)}
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
         <div class="full photorow">
@@ -4291,7 +4294,7 @@ class EinkaufslisteCard extends HTMLElement {
         return `<div class="prodedit" data-key="${esc(p.key)}">
           <input id="peName" value="${esc(p.name)}" placeholder="Name">
           ${p.note ? (p.barcodes.length ? `<input type="hidden" id="peNote" value="${esc(p.note)}">` : `<input id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz (alt)">`) : `<input type="hidden" id="peNote" value="">`}
-          <input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben" title="Nur für dich: Die Datenbank überschreibt sie nie">
+          ${p.note && !p.barcodes.length ? `<input type="hidden" id="peOwn" value="${esc(p.own_note || "")}">` : `<input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben" title="Nur für dich: Die Datenbank überschreibt sie nie">`}
           <input id="peAliases" value="${esc(this._capAliases(p.aliases).join(", "))}" data-orig="${esc(this._capAliases(p.aliases).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
           <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
           <select id="peStore">${this._selectOptions(this._data.stores, p.store_id, "🛒 Kein Standard-Geschäft")}</select>
@@ -7132,6 +7135,13 @@ class EinkaufslisteCard extends HTMLElement {
       case "new-ack":
         this._ackNew(el.dataset.id);
         this._renderList();
+        break;
+      case "home": // 🟢 Grüner Punkt: von überall zurück auf die Einkaufsliste
+        if (this._view !== "list") {
+          this._view = "list";
+          this._setSec = null;
+          this._renderAll();
+        } else this.$("list")?.scrollIntoView?.({ block: "nearest" });
         break;
       case "tab":
         this._tab = el.dataset.tab;

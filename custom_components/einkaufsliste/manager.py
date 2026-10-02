@@ -502,7 +502,7 @@ class EinkaufslisteManager:
             "seen": self.seen,
             "history": history[:300],
             "barcodes_by_name": self._barcodes_by_name(),
-            "aliases": [{"alias": a, "name": t["name"], "note": t.get("note")} for a, t in sorted(self.aliases.items())],
+            "aliases": [{"alias": a, "name": t["name"], "note": t.get("note")} for a, e in sorted(self.aliases.items()) for t in self._al_targets(e)],
             "typos": {k: v["right"] for k, v in self.typos.items() if v.get("n", 0) >= TYPO_LEARN_AFTER},
             "scanned_new": len({product_key(b.get("name"), b.get("note")) for b in self.barcodes.values() if b.get("new") and b.get("name")}),
             "settings": {
@@ -954,7 +954,7 @@ class EinkaufslisteManager:
                     "store_id": hist.get("store_id"),
                     "count": hist.get("count", 0),
                     "last_used": hist.get("last_used"),
-                    "aliases": sorted(a for a, t in self.aliases.items() if product_key(t["name"], t.get("note")) == key),
+                    "aliases": sorted(a for a, e in self.aliases.items() if any(product_key(t["name"], t.get("note")) == key for t in self._al_targets(e))),
                     "own_note": hist.get("own_note"),  # ✏️ Eigene Notiz
                     "unit": hist.get("unit"),  # 📏 gemerkte Einheit beim direkten Eintragen
                     "unit_fixed": bool(hist.get("unit_fixed")),
@@ -1079,9 +1079,7 @@ class EinkaufslisteManager:
                     bc["category_id"] = cat
                 if store_id is not None:
                     bc["store_id"] = store
-        for target in self.aliases.values():  # 🏷️ Spitznamen zeigen aufs neue Produkt
-            if product_key(target["name"], target.get("note")) == key:
-                target.update(name=new_name, note=new_note)
+        self._al_retarget(key, new_name, new_note)  # 🏷️ Spitznamen zeigen aufs neue Produkt
         if new_key != key and key in self.photos and new_key not in self.photos:
             self.photos[new_key] = self.photos.pop(key)
             self.photos[new_key]["name"] = new_key
@@ -1221,19 +1219,52 @@ class EinkaufslisteManager:
         self.pin_hash = None
         self._changed()
 
+    # 🏷️ Ein Spitzname darf zu mehreren Produkten gehören: erstes Ziel in name/note, weitere in „also“
+    @staticmethod
+    def _al_targets(entry: dict[str, Any]) -> list[dict[str, Any]]:
+        return [entry, *entry.get("also", [])]
+
+    def _al_set(self, alias: str, targets: list[dict[str, Any]]) -> None:
+        if not targets:
+            self.aliases.pop(alias, None)
+            return
+        first = {"name": targets[0]["name"], "note": targets[0].get("note")}
+        if len(targets) > 1:
+            first["also"] = [{"name": t["name"], "note": t.get("note")} for t in targets[1:]]
+        self.aliases[alias] = first
+
+    def _al_remove(self, key: str) -> None:
+        for a, e in list(self.aliases.items()):
+            self._al_set(a, [t for t in self._al_targets(e) if product_key(t["name"], t.get("note")) != key])
+
+    def _al_add(self, alias: str, name: str, note: str | None) -> None:
+        targets = self._al_targets(self.aliases[alias]) if alias in self.aliases else []
+        key = product_key(name, note)
+        if not any(product_key(t["name"], t.get("note")) == key for t in targets):
+            targets = [*targets, {"name": name, "note": note}]
+        self._al_set(alias, targets)
+
+    def _al_retarget(self, from_key: str, name: str, note: str | None) -> None:
+        for a, e in list(self.aliases.items()):
+            targets = [{"name": name, "note": note} if product_key(t["name"], t.get("note")) == from_key else t for t in self._al_targets(e)]
+            seen: list[dict[str, Any]] = []
+            for t in targets:  # nach Umbenennen/Zusammenführen keine doppelten Ziele
+                if not any(product_key(x["name"], x.get("note")) == product_key(t["name"], t.get("note")) for x in seen):
+                    seen.append(t)
+            self._al_set(a, seen)
+
     def set_aliases(self, key: str, aliases: list[str]) -> None:
         """Spitznamen eines Produkts setzen (alte werden ersetzt; gehört ein Name schon woanders hin, zieht er um)."""
         key = (key or "").lower()
         prod = next((p for p in self.products() if p["key"] == key), None)
         if prod is None:
             raise ValueError("Dieses Produkt gibt es nicht (mehr).")
-        for a in [a for a, t in self.aliases.items() if product_key(t["name"], t.get("note")) == key]:
-            self.aliases.pop(a, None)
+        self._al_remove(key)
         for raw in aliases:
             alias = " ".join(str(raw).split()).lower()[:40]
             if not alias or alias == prod["name"].lower():
                 continue
-            self.aliases[alias] = {"name": prod["name"], "note": prod["note"]}
+            self._al_add(alias, prod["name"], prod["note"])
         self._changed()
 
     def recipes_with(self, key: str) -> list[str]:
@@ -1253,8 +1284,7 @@ class EinkaufslisteManager:
             self.items.remove(item)
             self._log("remove", item)
         await self.async_forget_product(key)
-        for a in [a for a, t in self.aliases.items() if product_key(t["name"], t.get("note")) == key]:
-            self.aliases.pop(a, None)
+        self._al_remove(key)
         self._changed()
         return {"removed": len(gone), "recipes": in_recipes}
 
@@ -1293,9 +1323,7 @@ class EinkaufslisteManager:
         for bc in self.barcodes.values():
             if bc.get("name") and product_key(bc["name"], bc.get("note")) == from_key:
                 bc["name"], bc["note"] = name, note
-        for a, t in self.aliases.items():
-            if product_key(t["name"], t.get("note")) == from_key:
-                self.aliases[a] = {"name": name, "note": note}
+        self._al_retarget(from_key, name, note)
         if not src["note"] and src["name"].lower() != name.lower() and src["name"].lower() not in self.aliases:
             self.aliases[src["name"].lower()] = {"name": name, "note": note}  # 🏷️ „Tomaten“ landet künftig bei „Tomate“
         # 📷 Fotos: zum Ziel dazu (höchstens MAX_PHOTOS), der Rest wird gelöscht
