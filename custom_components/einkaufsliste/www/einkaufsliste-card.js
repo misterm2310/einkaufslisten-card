@@ -2,10 +2,14 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.46.2";
+const EL_VERSION = "2.47.0";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.46.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.47.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["▥ <b>Barcode nachtragen:</b> Im Katalog hat jedes Produkt jetzt den Knopf <b>„Barcode nachtragen“</b> – Nummer eintippen (Enter bestätigt) oder scannen. Danach schaut die Liste in der Datenbank nach und fragt, ob Name, Notiz und Foto übernommen werden sollen.",
+   "▥ <b>Add a barcode afterwards:</b> in the catalog every product now has an <b>“Add barcode”</b> button – type the number (Enter confirms) or scan it. The list then checks the database and asks whether name, note and photo should be taken over."],
+  ["⌨️ <b>Tastatur &amp; Maus überall:</b> Was im Katalog schon ging, geht jetzt auch in der <b>Einkaufsliste</b>, bei den <b>Rezepten</b> und in der <b>Gelöscht</b>-Liste: ↑↓ blättern (aus dem Suchfeld mit ↓ hinein), <b>Enter</b> oder Doppelklick öffnet bzw. bearbeitet, <b>Leertaste</b> hakt ab, <b>Esc</b> geht zurück; am PC markiert ein Klick die Zeile. Die <b>PIN</b> fürs ⚙️ bestätigst du jetzt auch mit <b>Enter</b>.",
+   "⌨️ <b>Keyboard &amp; mouse everywhere:</b> what already worked in the catalog now works in the <b>shopping list</b>, the <b>recipes</b> and the <b>Deleted</b> list: ↑↓ browse (↓ from the search field jumps in), <b>Enter</b> or double-click opens/edits, <b>Space</b> ticks an item off, <b>Esc</b> goes back; on a PC a click selects the row. You can now confirm the ⚙️ <b>PIN</b> with <b>Enter</b> too."],
   ["🔄 <b>Daten neu laden – mit Auswahl:</b> Im Produkt heißt der Knopf jetzt <b>„Daten neu laden“</b>: Du wählst einzeln, ob <b>Name</b>, <b>Notiz</b> und/oder <b>Foto</b> neu aus der Datenbank kommen (Nutri-Score und Allergene stehen zum Ansehen dabei). Das Wolken-Symbol bei „Alle Produkte“ macht dasselbe für <b>alle Produkte mit Barcode</b> auf einmal (vorausgewählt: nur Foto). Dazu: Die Katalog-Suche findet jetzt auch über <b>Spitznamen, Barcode-Nummer, Kategorie, Geschäft</b> und gelernte Tippfehler, Spitznamen beginnen immer mit einem Großbuchstaben, und die gesperrte Barcode-Notiz steht beim Bearbeiten nicht mehr im Weg.",
    "🔄 <b>Reload data – with a choice:</b> inside a product the button is now called <b>“Reload data”</b>: you choose separately whether <b>name</b>, <b>note</b> and/or <b>photo</b> come fresh from the database (Nutri-Score and allergens are shown for reference). The cloud icon under “All products” does the same for <b>all products with a barcode</b> at once (only the photo is pre-selected). Also: catalog search now finds by <b>nicknames, barcode number, category, store</b> and learned typos, nicknames always start with a capital letter, and the locked barcode note no longer gets in the way when editing."],
   ["✏️ <b>Eigene Notiz:</b> Das einzige Feld, in das du selbst schreibst (Stift-Symbol unter dem Eingabefeld, beim Bearbeiten und im Katalog). Die 📝 Notiz kommt jetzt <b>nur noch aus dem Barcode</b> und lässt sich nicht mehr tippen; alte, selbst getippte Notizen erscheinen automatisch als ✏️ (nichts geht verloren, nichts wird zusammengeführt). Im Katalog steht hinter dem Namen die Barcode-Notiz, sonst deine ✏️. Die ✏️ Notiz bleibt beim Produkt, wird beim nächsten Eintragen wieder vorgeschlagen und von der Produkt-Datenbank <b>nie überschrieben</b>. In der Liste steht sie in derselben gelben Farbe wie die Notiz.",
@@ -585,6 +589,8 @@ const elInHaApp = (hass) => !!(
   || (hass?.auth?.external && !window.__elOfflineApp) // HA selbst weiß es (nicht in unserer Offline-App)
   || /Home ?Assistant\/|HomeAssistant\/|io\.homeassistant/i.test(navigator.userAgent || "")
 );
+// ⌨️ Zeilen, die sich mit der Tastatur anwählen lassen (Katalog hat seine eigene Steuerung)
+const EL_KN = ".item[data-id], .recipe[data-id], .delrow[data-id]";
 // 🖥️ PC/Laptop mit Maus (kein Touch)
 const elIsPc = () => !!window.matchMedia?.("(hover: hover) and (pointer: fine)").matches && !(navigator.maxTouchPoints > 0);
 
@@ -817,7 +823,7 @@ function askPin(title = "🔒 PIN eingeben") {
       <div class="ppad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div></div>`;
     const dots = ov.querySelector(".pdots"), pad = ov.querySelector(".ppad");
     const show = () => { dots.innerHTML = pin ? "●".repeat(pin.length) : "&nbsp;"; };
-    const done = (v) => { ov.remove(); document.removeEventListener("keydown", onKey); resolve(v); };
+    const done = (v) => { ov.remove(); document.removeEventListener("keydown", onKey, true); resolve(v); };
     const press = (k) => {
       if (k === "⌫") pin = pin.slice(0, -1);
       else if (k === "✔") { if (pin.length >= 4) done(pin); return; }
@@ -835,12 +841,17 @@ function askPin(title = "🔒 PIN eingeben") {
     cancel.onclick = () => done(null);
     ov.firstElementChild.append(cancel);
     const onKey = (e) => {
+      const enter = e.key === "Enter" || e.code === "NumpadEnter";
       if (/^\d$/.test(e.key)) press(e.key);
       else if (e.key === "Backspace") press("⌫");
-      else if (e.key === "Enter") press("✔");
+      else if (enter) press("✔");
       else if (e.key === "Escape") done(null);
+      else return;
+      // ⌨️ Taste gehört dem PIN-Fenster: sonst drückt Enter hinterher den Knopf darunter (z. B. das Zahnrad) noch einmal
+      e.preventDefault();
+      e.stopPropagation();
     };
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
   });
 }
 // ✍️ Kleines Eingabefenster (statt prompt(), das in der HA-App nicht überall geht)
@@ -859,6 +870,32 @@ function askText(title, placeholder = "", value = "") {
     cancel.onclick = () => done(null);
     inp.addEventListener("keydown", (e) => { if (e.key === "Enter") ok.onclick(); else if (e.key === "Escape") done(null); });
     ov.querySelector(".abtn").append(cancel, ok);
+    setTimeout(() => inp.focus(), 50);
+  });
+}
+// ▥ Barcode eintippen (Enter bestätigt) oder – wenn möglich – scannen. Gibt Ziffern, "scan" oder null
+function askBarcode(title, canScan) {
+  return new Promise((resolve) => {
+    const ov = makeOverlay();
+    ov.innerHTML = `<div style="max-width:340px;width:100%">
+      <div style="font:600 18px Roboto,sans-serif;margin-bottom:6px">${esc(elT(title))}</div>
+      <div style="opacity:.8;font-size:13px;margin-bottom:10px">${esc(elT("Die Nummer unter dem Strichcode eintippen (8–14 Ziffern)"))}</div>
+      <input inputmode="numeric" autocomplete="off" maxlength="20" style="width:100%;box-sizing:border-box;font:18px Roboto,sans-serif;letter-spacing:2px;padding:12px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee" placeholder="4006381333931">
+      <div class="abtn" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px"></div></div>`;
+    const inp = ov.querySelector("input");
+    const done = (v) => { ov.remove(); resolve(v); };
+    const ok = ovButton("OK", true), cancel = ovButton(elT("Abbrechen"));
+    const digits = () => inp.value.replace(/\D/g, "");
+    ok.onclick = () => { const d = digits(); if (d.length >= 6) done(d); else inp.style.borderColor = "#e53935"; };
+    cancel.onclick = () => done(null);
+    inp.addEventListener("input", () => { inp.style.borderColor = "#555"; });
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.code === "NumpadEnter") { e.preventDefault(); ok.onclick(); }
+      else if (e.key === "Escape") done(null);
+    });
+    const bar = ov.querySelector(".abtn");
+    if (canScan) { const sc = ovButton("📷 " + elT("Scannen")); sc.onclick = () => done("scan"); bar.append(sc); }
+    bar.append(cancel, ok);
     setTimeout(() => inp.focus(), 50);
   });
 }
@@ -1247,6 +1284,8 @@ ha-card.compact .group { margin-top:4px; }
 .xferfmt { margin:4px 0 10px; padding-left:20px; }
 .missed { background:color-mix(in srgb, var(--warning-color,#ffa600) 12%, transparent); border-radius:10px; padding:8px 12px; margin:4px 0 10px; }
 .prodrow.marked { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 10%, transparent); }
+.item.marked, .recipe.marked, .delrow.marked { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 10%, transparent); }
+.item:focus, .recipe:focus, .delrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
 .offgone { opacity:.75; }
@@ -2227,7 +2266,17 @@ class EinkaufslisteCard extends HTMLElement {
       this._renderProducts();
       setTimeout(() => this.$("peName")?.focus(), 30);
     });
-    root.addEventListener("keydown", (e) => { if (this._prodKey(e)) e.preventDefault(); });
+    root.addEventListener("keydown", (e) => { if (this._prodKey(e) || this._knKey(e)) e.preventDefault(); });
+    root.addEventListener("click", (e) => { // 🖥️ Am PC: Klick auf freie Fläche einer Zeile = markieren (Knöpfe tun weiter ihr Ding)
+      if (!elIsPc()) return;
+      const row = e.target.closest?.(EL_KN);
+      if (row && !row.classList.contains("prodrow") && !e.target.closest("button,a,input,select,textarea,[data-act]")) this._knMark(row);
+    });
+    root.addEventListener("dblclick", (e) => { // 🖥️ Doppelklick = bearbeiten / öffnen
+      const row = e.target.closest?.(EL_KN);
+      if (!row || row.classList.contains("prodrow") || e.target.closest("button,a,input,select,textarea")) return;
+      this._knOpen(row);
+    });
     this._setupTabScroll(this.$("tabs"));
     this._setupLongPress(this.$("list"));
     root.addEventListener("change", (e) => this._onChange(e));
@@ -2784,7 +2833,7 @@ class EinkaufslisteCard extends HTMLElement {
     const cat = this._cat(item.category_id);
     const isNew = this._isNew(item);
     return `
-      <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""}" data-id="${item.id}" style="--cc:${esc(cat?.color || "transparent")}${recipe && this._rgroup(recipe.group)?.color ? `;--rc:${esc(this._rgroup(recipe.group).color)}` : ""}">
+      <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""} ${this._knMarked === item.id ? "marked" : ""}" tabindex="0" data-id="${item.id}" style="--cc:${esc(cat?.color || "transparent")}${recipe && this._rgroup(recipe.group)?.color ? `;--rc:${esc(this._rgroup(recipe.group).color)}` : ""}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
           <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${qty}${who}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
@@ -3083,7 +3132,7 @@ class EinkaufslisteCard extends HTMLElement {
       </div>`);
     }
     list.innerHTML = html.join("");
-    if (this._editing) this.$("edName")?.focus();
+    if (this._editing) this.$("edName")?.focus(); else this._knRestore();
   }
 
   // 🔍 Doppelt-Finder: „Tomate“ + „Tomaten“, „Klopapier“ + „Toilettenpapier“ …
@@ -4092,6 +4141,81 @@ class EinkaufslisteCard extends HTMLElement {
     }[f] || (() => true);
   }
 
+  // ⌨️ Einkaufsliste, Rezepte, Gelöscht: wie im Katalog – markieren, blättern, öffnen, zurück
+  _knKind(r) { return r.classList.contains("item") ? "item" : r.classList.contains("recipe") ? "recipe" : "del"; }
+
+  _knRows(row) {
+    const kind = this._knKind(row);
+    return [...this.shadowRoot.querySelectorAll(EL_KN)].filter((r) => !r.classList.contains("prodrow") && this._knKind(r) === kind && r.offsetParent !== null);
+  }
+
+  _knMark(row, focus = false) {
+    const id = row?.dataset?.id;
+    if (!id) return;
+    this._knMarked = id;
+    this._knStamp = Date.now();
+    this.shadowRoot.querySelectorAll(".marked").forEach((r) => { if (!r.classList.contains("prodrow")) r.classList.remove("marked"); });
+    row.classList.add("marked");
+    if (focus) { row.focus({ preventScroll: true }); row.scrollIntoView?.({ block: "nearest" }); }
+  }
+
+  // nach dem Neuzeichnen die Tastatur-Markierung wieder aufnehmen (sonst springt der Fokus weg)
+  _knRestore() {
+    if (!this._knMarked || Date.now() - (this._knStamp || 0) > 1500) return;
+    const row = [...this.shadowRoot.querySelectorAll(EL_KN)].find((r) => r.dataset.id === this._knMarked);
+    if (row && !this._editing) row.focus({ preventScroll: true });
+  }
+
+  _knOpen(row) {
+    const id = row.dataset.id;
+    if (row.classList.contains("item")) {
+      this._knStamp = Date.now();
+      this._knMarked = id;
+      this._editing = id;
+      this._menuId = null;
+      this._renderList();
+    } else if (row.classList.contains("recipe")) {
+      (row.querySelector('[data-act="recipe-edit"]') || row.querySelector('[data-act="recipe-apply"]'))?.click();
+    }
+  }
+
+  _knKey(e) {
+    if (this._view === "settings" && this._prodEdit) return false;
+    // Esc: Bearbeiten / Menü / Zutaten-Auswahl zu
+    if (e.key === "Escape" && !e.target?.closest?.("[data-elov]")) {
+      if (this._editing) { const id = this._editing; this._editing = null; this._knMarked = id; this._knStamp = Date.now(); this._renderList(); return true; }
+      if (this._menuId) { const id = this._menuId; this._menuId = null; this._knMarked = id; this._knStamp = Date.now(); this._renderList(); return true; }
+      if (this._pickRecipe) { const id = this._pickRecipe; this._pickRecipe = null; this._knMarked = id; this._knStamp = Date.now(); this._renderRecipes(); return true; }
+    }
+    const t = e.target;
+    // ↓ aus dem Suchfeld in die Liste
+    const box = { recipeSearch: "#recipeList", recipeSearchS: "#setRecipeList", delSearch: "#delList" }[t?.id];
+    if (box && e.key === "ArrowDown") {
+      const first = [...this.shadowRoot.querySelectorAll(`${box} ${EL_KN}`)].find((r) => r.offsetParent !== null);
+      if (first) { this._knMark(first, true); return true; }
+      return false;
+    }
+    const row = t?.matches?.(EL_KN) ? t : null;
+    if (!row || row.classList.contains("prodrow")) return false;
+    const rows = this._knRows(row);
+    const pos = rows.indexOf(row);
+    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) {
+      let to = e.key === "Home" ? 0 : e.key === "End" ? rows.length - 1 : pos + (e.key === "ArrowDown" ? 1 : -1);
+      if (to < 0) { // über die erste Zeile hinaus: zurück ins Suchfeld
+        const s = this.$(this._knKind(row) === "del" ? "delSearch" : this._view === "settings" ? "recipeSearchS" : "recipeSearch");
+        if (s) s.focus();
+        return true;
+      }
+      to = Math.min(rows.length - 1, to);
+      this._knMark(rows[to], true);
+      return true;
+    }
+    if (e.key === "Enter") { this._knOpen(row); return true; }
+    if (e.key === " " && row.classList.contains("item")) { row.querySelector('[data-act="toggle"]')?.click(); this._knStamp = Date.now(); return true; }
+    if (e.key === "Delete" && row.classList.contains("delrow")) { row.querySelector('[data-act="item-delete"]')?.click(); return true; }
+    return false;
+  }
+
   // ⌨️ Katalog am PC: markieren, blättern, bearbeiten
   _prodMark(key, focus = true) {
     this._prodMarked = key;
@@ -4174,6 +4298,7 @@ class EinkaufslisteCard extends HTMLElement {
           <div class="btnrow">
             ${p.photos ? `<button class="btn" data-act="prod-photos"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Fotos</button>` : ""}
             ${p.barcodes.length ? `<button class="btn" data-act="prod-dbdata" title="Name, Notiz und Foto aus der Produkt-Datenbank neu laden – du wählst einzeln. Nutri-Score und Allergene stehen zum Ansehen dabei"><ha-icon icon="mdi:database-refresh-outline"></ha-icon>Daten neu laden</button>` : ""}
+            <button class="btn" data-act="prod-bc-add" title="Barcode nachtragen – eintippen oder scannen"><ha-icon icon="mdi:barcode-scan"></ha-icon>Barcode nachtragen</button>
             <button class="btn" data-act="prod-merge" title="Dieses Produkt in ein anderes aufgehen lassen (z. B. Tomaten → Tomate)"><ha-icon icon="mdi:call-merge"></ha-icon>Zusammenführen</button>
             <button class="btn danger" data-act="prod-forget" title="Produkt mit Fotos, Barcodes und Vorschlag löschen – auch von der Einkaufsliste"><ha-icon icon="mdi:delete-outline"></ha-icon>Ganz löschen</button>
             <span style="flex:1"></span>
@@ -4205,11 +4330,12 @@ class EinkaufslisteCard extends HTMLElement {
       const st = this._store(i.store_id);
       const info = [st ? st.name : elT("Egal wo"), elT(i.checked ? "erledigt" : "offen"), i.note, i.for_whom && `${elT("für")} ${i.for_whom}`]
         .filter(Boolean).map(esc).join(" · ");
-      return `<div class="srow delrow" data-id="${i.id}">
+      return `<div class="srow delrow ${this._knMarked === i.id ? "marked" : ""}" tabindex="0" data-id="${i.id}">
         <div class="grow delname"><b>${esc(i.name)}</b><small>${info}</small></div>
         <button class="iconbtn" data-act="item-delete" title="Ganz löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
       </div>`;
     }).join("") + (items.length > shown.length ? `<p class="hint">… und ${items.length - shown.length} weitere – tipp oben was ein, um zu suchen.</p>` : "");
+    this._knRestore();
   }
 
   // ---------------------------------------------------------------- Rezepte
@@ -4253,7 +4379,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _recipeSearchHtml(id) {
-    return `<div class="srow rsearch"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="${id}" type="search" placeholder="Rezept oder Zutat suchen …" value="${esc(this._recipeFilter || "")}" autocomplete="off"><button class="iconbtn rclear" data-act="recipe-search-clear" title="Suche löschen" ${this._recipeFilter ? "" : "hidden"}><ha-icon icon="mdi:close"></ha-icon></button></div>`;
+    return `<div class="srow rsearch"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="${id}" type="search" placeholder="Rezept oder Zutat suchen …" value="${esc(this._recipeFilter || "")}" autocomplete="off"><button class="iconbtn rclear" data-act="recipe-search-clear" title="Suche löschen" ${this._recipeFilter ? "" : "hidden"}><ha-icon icon="mdi:close"></ha-icon></button></div>${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = öffnen · ↑↓ = blättern · Esc = zurück</p>` : ""}`;
   }
 
   _renderRecipes() {
@@ -4285,7 +4411,7 @@ class EinkaufslisteCard extends HTMLElement {
         : via ? `🥕 enthält ${this._markHit(via, q)}`
         : ""; // nur bei der Suche: warum gefunden
       html.push(`
-        <div class="recipe" data-id="${r.id}">
+        <div class="recipe ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}">
           <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
           <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)}</b>${sub ? `<small>${sub}</small>` : ""}</div>
           <div class="rbtns">
@@ -4300,6 +4426,7 @@ class EinkaufslisteCard extends HTMLElement {
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`);
     }
     box.innerHTML = html.join("");
+    this._knRestore();
   }
 
   // ⚙️ Rezepte in den Einstellungen – gleiche Suche
@@ -4310,12 +4437,13 @@ class EinkaufslisteCard extends HTMLElement {
     this.shadowRoot.querySelectorAll(".rclear").forEach((b) => { b.hidden = !q; });
     const found = this._recipeMatches(q);
     box.innerHTML = (q && !found.length ? `<p class="hint">Nix gefunden für „${esc(q)}“ 🕵️</p>` : "") + found.map(({ r, via, fuzzy }) => `
-      <div class="recipe" data-id="${r.id}">
+      <div class="recipe ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}">
         <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
         <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)}${this._recipePhotoBtn(r)}</b><small>${
           fuzzy ? "🤓 Meintest du das? · " : via ? `🥕 enthält ${this._markHit(via, q)} · ` : ""}${this._rgroup(r.group) ? esc(this._rgroup(r.group).name) + " · " : "ohne Gruppe · "}${r.items.length} Zutaten${r.steps ? " · 📖 Anleitung" : " · ohne Anleitung"}${(r.heat || []).length ? " · 🔥 Backofen & Co." : ""}</small></div>
         <button class="iconbtn" data-act="recipe-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
       </div>`).join("");
+    this._knRestore();
   }
 
   // 🍳 Erst fragen: Welche Zutaten sollen auf die Liste?
@@ -6389,6 +6517,22 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 🗄️ Katalog: Daten aus der Produkt-Datenbank nachladen
+  // ▥ Barcode zu einem Katalog-Produkt speichern, danach die Datenbank fragen (wie beim Zuordnen in der Liste)
+  async _prodBcSave(p, rawCode) {
+    const code = String(rawCode || "").replace(/\D/g, "");
+    if (code.length < 6) { this._toast("🤔 Das ist kein gültiger Barcode"); return; }
+    let db = null;
+    if (this._hass?.connected !== false) {
+      try { const r = await this._hass.callWS({ type: "einkaufsliste/barcode/lookup", code, fresh: true }); if (r?.found) db = r; } catch (_) { /* egal */ }
+    }
+    try { await this._ws({ type: "einkaufsliste/product/barcode", key: p.key, code }); } catch (_) { return; }
+    this._toast(`▥ Barcode gespeichert – „${p.name}“ wird jetzt beim Scannen erkannt`);
+    await this._loadProducts();
+    this._prodEdit = p.key;
+    this._renderProducts();
+    if (db) this._offerDbData({ name: p.name, note: p.note || null, own_note: p.own_note || null }, db, code);
+  }
+
   async _showDbData(key) {
     const prod = (this._products || []).find((x) => x.key === key);
     const code = prod?.barcodes?.[0];
@@ -7578,6 +7722,17 @@ class EinkaufslisteCard extends HTMLElement {
             this._loadProducts();
           } finally { if (!this._refreshNone) say(""); this._refreshAllBusy = false; }
         })();
+        break;
+      }
+      case "prod-bc-add": { // ▥ Barcode nachtragen: tippen oder scannen
+        const key = el.closest(".prodedit").dataset.key;
+        const p = (this._products || []).find((x) => x.key === key);
+        if (!p) break;
+        askBarcode(`▥ Barcode für „${p.name}“`, this._hasAppScanner()).then((r) => {
+          if (!r) return;
+          if (r === "scan") this._startAppScan((code) => this._prodBcSave(p, code), `▥ Barcode für „${p.name}“`, "Packung scannen – danach frage ich die Produkt-Datenbank.");
+          else this._prodBcSave(p, r);
+        });
         break;
       }
       case "prod-dbdata":

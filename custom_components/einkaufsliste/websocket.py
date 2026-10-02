@@ -47,6 +47,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_check,
         ws_barcode_lookup,
         ws_barcode_assign,
+        ws_product_barcode,
         ws_barcode_info,
         ws_products,
         ws_product_update,
@@ -847,6 +848,23 @@ def ws_barcode_assign(hass, connection, msg):
         return result
 
     _run(hass, connection, msg, _assign)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/product/barcode",
+        vol.Required("key"): str,
+        vol.Required("code"): str,
+    }
+)
+@callback
+def ws_product_barcode(hass, connection, msg):
+    def _add(m):
+        result = m.add_product_barcode(msg["key"], msg["code"])
+        _auto_photo(hass, m, result["code"], result["key"])
+        return result
+
+    _run(hass, connection, msg, _add)
 
 
 @websocket_api.websocket_command(

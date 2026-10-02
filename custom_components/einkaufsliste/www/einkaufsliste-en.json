@@ -1460,5 +1460,13 @@
 "Los geht’s": "Let’s go",
 "Bitte mindestens etwas auswählen.": "Please choose at least one thing.",
 "🔄 Daten werden geholt … {} / {}": "🔄 Fetching data … {0} / {1}",
-"Das Datenbank-Foto wird ersetzt, deine eigenen bleiben, nichts kommt doppelt dazu.": "The database photo is replaced, your own stay, nothing is added twice."
+"Das Datenbank-Foto wird ersetzt, deine eigenen bleiben, nichts kommt doppelt dazu.": "The database photo is replaced, your own stay, nothing is added twice.",
+"⌨️ Klick = markieren · Doppelklick oder Enter = öffnen · ↑↓ = blättern · Esc = zurück": "⌨️ Click = select · double-click or Enter = open · ↑↓ = browse · Esc = back",
+"Barcode nachtragen": "Add barcode",
+"Barcode nachtragen – eintippen oder scannen": "Add barcode – type it or scan it",
+"Die Nummer unter dem Strichcode eintippen (8–14 Ziffern)": "Type the number below the barcode (8–14 digits)",
+"Scannen": "Scan",
+"Packung scannen – danach frage ich die Produkt-Datenbank.": "Scan the pack – then I ask the product database.",
+"🤔 Das ist kein gültiger Barcode": "🤔 That is not a valid barcode",
+"▥ Barcode gespeichert – „{}“ wird jetzt beim Scannen erkannt": "▥ Barcode saved – “{0}” is now recognised when scanning"
 }

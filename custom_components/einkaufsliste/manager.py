@@ -2533,6 +2533,23 @@ class EinkaufslisteManager:
         self._changed()
         return {"code": code, "name": item["name"], "note": item.get("note")}
 
+    @callback
+    def add_product_barcode(self, key: str, code: str) -> dict[str, Any]:
+        """📦 Einem Katalog-Produkt nachträglich einen Barcode zuordnen (getippt oder gescannt)."""
+        key = (key or "").lower()
+        prod = next((p for p in self.products() if p["key"] == key), None)
+        if prod is None:
+            raise ValueError("Dieses Produkt gibt es nicht (mehr).")
+        code = "".join(ch for ch in str(code or "") if ch.isdigit())
+        if len(code) < 6:
+            raise ValueError("Das ist kein gültiger Barcode (mindestens 6 Ziffern).")
+        known = self.barcodes.get(code)
+        if known and known.get("name") and product_key(known["name"], known.get("note")) != key:
+            raise ValueError(f"Dieser Barcode gehört schon zu „{known['name']}“.")
+        self.learn_barcode(code, prod["name"], prod.get("store_id"), prod.get("category_id"), prod.get("note"))
+        self._changed()
+        return {"code": code, "name": prod["name"], "note": prod.get("note"), "key": key}
+
     # ------------------------------------------------------------------ Gesehen
     @callback
     def mark_seen(self, user_id: str, store: str) -> None:

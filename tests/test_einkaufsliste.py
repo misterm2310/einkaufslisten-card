@@ -2752,3 +2752,22 @@ async def test_refresh_replace_removes_identical_duplicates(hass: HomeAssistant,
     # nochmal: nichts ändert sich
     assert (await bc.async_refresh_photo(hass, m, "quark", replace=True))["status"] == "same"
     assert len(m._photo_ids(m.photos["quark"])) == 2
+
+
+async def test_add_product_barcode(hass: HomeAssistant, setup) -> None:
+    """📦 Barcode nachträglich im Katalog: speichert, erkennt Doppelte, lehnt Unsinn ab."""
+    m = mgr(hass)
+    m.add_item("Kaffee", note="Bohnen")
+    res = m.add_product_barcode("kaffee|bohnen", "4006-3813 33931")
+    assert res["code"] == "4006381333931"
+    bc = m.barcodes["4006381333931"]
+    assert bc["name"] == "Kaffee" and bc["note"] == "Bohnen"
+    assert "4006381333931" in next(p for p in m.products() if p["key"] == "kaffee|bohnen")["barcodes"]
+    m.add_product_barcode("kaffee|bohnen", "4006381333931")  # gleicher Barcode beim gleichen Produkt: kein Fehler
+    m.add_item("Tee")
+    with pytest.raises(ValueError):
+        m.add_product_barcode("tee", "4006381333931")  # gehört schon zu Kaffee
+    with pytest.raises(ValueError):
+        m.add_product_barcode("tee", "12")
+    with pytest.raises(ValueError):
+        m.add_product_barcode("gibtsnicht", "4006381333900")
