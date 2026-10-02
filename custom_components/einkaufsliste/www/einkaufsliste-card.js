@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.49.5";
+const EL_VERSION = "2.49.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.49.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -3039,7 +3039,7 @@ class EinkaufslisteCard extends HTMLElement {
         <input class="full" id="edName" value="${esc(item.name)}" placeholder="Name">
         <input id="edQty" value="${esc(item.quantity || "")}" placeholder="Menge">
         <select id="edFor">${this._personOptions(item.for_whom)}</select>
-        ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz (alt)">` : `<input type="hidden" id="edNote" value="${esc(item.note)}">`}` : `<input type="hidden" id="edNote" value="">`}
+        ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz">` : `<input type="hidden" id="edNote" value="${esc(item.note)}">`}` : `<input type="hidden" id="edNote" value="">`}
         ${item.recipe_id ? "" : (item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz – bleibt beim Produkt">`)}
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
@@ -4330,7 +4330,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (this._prodEdit === p.key) {
         return rowHtml + `<div class="prodedit" data-key="${esc(p.key)}">
           <input id="peName" value="${esc(p.name)}" placeholder="Name">
-          ${p.note ? (p.barcodes.length ? `<input type="hidden" id="peNote" value="${esc(p.note)}">` : `<input id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz (alt)">`) : `<input type="hidden" id="peNote" value="">`}
+          ${p.note ? (p.barcodes.length ? `<input type="hidden" id="peNote" value="${esc(p.note)}">` : `<input id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz">`) : `<input type="hidden" id="peNote" value="">`}
           ${p.note && !p.barcodes.length ? `<input type="hidden" id="peOwn" value="${esc(p.own_note || "")}">` : `<input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben" title="Nur für dich: Die Datenbank überschreibt sie nie">`}
           <input id="peAliases" value="${esc(this._capAliases(p.aliases).join(", "))}" data-orig="${esc(this._capAliases(p.aliases).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
           <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
