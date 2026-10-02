@@ -285,6 +285,13 @@ async def async_auto_photo(hass: HomeAssistant, manager: Any, code: str, name: s
     raw = await _download_photo(hass, code)
     if raw is None:
         return False
+    # Inzwischen umbenannt (z. B. „Daten übernehmen“)? Dann zum AKTUELLEN Produkt dieses Barcodes speichern –
+    # sonst taucht das alte Produkt nur mit einem Foto wieder auf.
+    from .manager import product_key
+
+    cur = manager.barcodes.get(code)
+    if cur and cur.get("name"):
+        name = product_key(cur["name"], cur.get("note"))
     # Inzwischen doch ein eigenes Foto gemacht? Dann das eigene behalten.
     if manager.photos.get(name.strip().lower()):
         return False

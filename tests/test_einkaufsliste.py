@@ -2811,3 +2811,23 @@ async def test_own_note_per_variant(hass: HomeAssistant, setup) -> None:
     m._migrate_own_notes()
     assert m.own_notes["batterien|aa"] == "Alter Zettel" and m.own_notes["batterien|aaa"] == "Alter Zettel"
     assert "own_note" not in m.history["batterien"]
+
+
+async def test_auto_photo_follows_rename(hass: HomeAssistant, setup, monkeypatch) -> None:
+    """📸 Wird das Produkt während des Foto-Downloads umbenannt, landet das Foto beim neuen – kein Geister-Produkt."""
+    import custom_components.einkaufsliste.barcode as bc
+
+    m = mgr(hass)
+    m.add_item("Cornflakes", note="Nougat Bitu")
+    m.add_product_barcode("cornflakes|nougat bitu", "4006381333931")
+    jpg = b"\xff\xd8\xff\xe0" + b"x" * 400 + b"\xff\xd9"
+
+    async def fake(hass_, code):
+        m.update_product("cornflakes|nougat bitu", note="Nougat Bits")  # „Daten übernehmen“ während des Downloads
+        return jpg
+
+    monkeypatch.setattr(bc, "_download_photo", fake)
+    assert await bc.async_auto_photo(hass, m, "4006381333931", "cornflakes|nougat bitu")
+    keys = [p["key"] for p in m.products()]
+    assert keys == ["cornflakes|nougat bits"]
+    assert m.products()[0]["photos"] == 1
