@@ -817,11 +817,15 @@ async def ws_check(hass, connection, msg):
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/barcode/lookup", vol.Required("code"): str}
+    {
+        vol.Required("type"): "einkaufsliste/barcode/lookup",
+        vol.Required("code"): str,
+        vol.Optional("fresh"): bool,  # True = Datenbank selbst fragen, nicht das Gemerkte
+    }
 )
 @websocket_api.async_response
 async def ws_barcode_lookup(hass, connection, msg):
-    await _run_async(hass, connection, msg, lambda m: async_lookup(hass, m, msg["code"]))
+    await _run_async(hass, connection, msg, lambda m: async_lookup(hass, m, msg["code"], bool(msg.get("fresh"))))
 
 
 @websocket_api.websocket_command(

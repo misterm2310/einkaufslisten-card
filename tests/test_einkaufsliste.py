@@ -591,6 +591,22 @@ async def test_barcode_lookup(hass, setup, hass_ws_client, aioclient_mock):
     assert res["found"] and res["source"] == "gemerkt" and res["name"] == "Hausmarke Kekse"
     assert res["store_id"] == aldi and aioclient_mock.call_count == calls
 
+    # fresh = die Datenbank selbst fragen, auch wenn der Barcode schon gemerkt ist
+    aioclient_mock.get(
+        "https://world.openfoodfacts.org/api/v2/product/4008400402222.json",
+        json={"status": 1, "product": {"product_name_de": "Pizza Salami", "brands": "Wagner"}},
+    )
+    for base in ("openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{base}.org/api/v2/product/4008400402222.json", status=404)
+    await client.send_json({"id": 7, "type": "einkaufsliste/item/add", "name": "Meine Pizza",
+                            "store_id": aldi, "barcode": "4008400402222"})
+    assert (await client.receive_json())["success"]
+    await client.send_json({"id": 8, "type": "einkaufsliste/barcode/lookup", "code": "4008400402222"})
+    assert (await client.receive_json())["result"]["source"] == "gemerkt"
+    await client.send_json({"id": 9, "type": "einkaufsliste/barcode/lookup", "code": "4008400402222", "fresh": True})
+    res = (await client.receive_json())["result"]
+    assert res["found"] and res["source"] == "Open Food Facts" and res["name"] == "Pizza Salami"
+
     await client.send_json({"id": 6, "type": "einkaufsliste/barcode/lookup", "code": "abc"})
     assert not (await client.receive_json())["success"]
 

@@ -156,13 +156,16 @@ def _product_name(product: dict[str, Any]) -> tuple[str | None, str | None]:
     return name, brand or None
 
 
-async def async_lookup(hass: HomeAssistant, manager: Any, code: str) -> dict[str, Any]:
-    """Barcode nachschlagen. Gibt immer ein Ergebnis zurück (found True/False)."""
+async def async_lookup(hass: HomeAssistant, manager: Any, code: str, fresh: bool = False) -> dict[str, Any]:
+    """Barcode nachschlagen. Gibt immer ein Ergebnis zurück (found True/False).
+
+    fresh=True: das Gemerkte überspringen und die Datenbank selbst fragen
+    (für „Daten aus der Datenbank nachladen“)."""
     code = _clean_code(code)
     if not code:
         raise ValueError("Das ist kein gültiger Barcode.")
 
-    known = manager.barcodes.get(code)
+    known = None if fresh else manager.barcodes.get(code)
     if known:
         return {
             "code": code,
