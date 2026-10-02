@@ -2888,3 +2888,14 @@ async def test_own_notes_in_state(hass: HomeAssistant, setup) -> None:
     m.learn_barcode("333", "Batterie", None, None, "9V Block")
     m.update_product("batterie|9v block", own_note="Rauchmelder")
     assert m.as_dict()["own_notes"]["batterie|9v block"] == "Rauchmelder"
+
+
+async def test_catalog_in_state_and_clash_message(hass: HomeAssistant, setup) -> None:
+    """Ganzer Katalog steht im Zustand (für Vorschläge); „gibt es schon“ nennt die Notiz."""
+    m = mgr(hass)
+    m.add_product("Batterien", note="9V Block")
+    m.add_product("Batterien", note="AA")
+    cat = m.as_dict()["catalog"]
+    assert {"Batterien|9V Block", "Batterien|AA"} <= {f"{c['name']}|{c['note']}" for c in cat}
+    with pytest.raises(ValueError, match="Batterien – AA"):
+        m.update_product("batterien|9v block", note="AA")

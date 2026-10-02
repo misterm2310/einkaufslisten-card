@@ -1476,5 +1476,9 @@
 "✏️ „{}“ gibt es schon ({}) – Eigene Notiz zum Unterscheiden": "✏️ “{0}” already exists ({1}) – own note to tell them apart",
 "z. B. AAA": "e.g. AAA",
 "ohne Notiz": "no note",
-"Dieser Barcode gehört schon zu „{}“.\n\nDort wegnehmen und „{}“ zuordnen?": "This barcode already belongs to “{0}”.\n\nTake it away from there and assign it to “{1}”?"
+"Dieser Barcode gehört schon zu „{}“.\n\nDort wegnehmen und „{}“ zuordnen?": "This barcode already belongs to “{0}”.\n\nTake it away from there and assign it to “{1}”?",
+"„{}“ gibt es schon. Beide zusammenführen? Artikel, Rezepte, Fotos und Barcodes ziehen zu „{}“ um. Das lässt sich nicht rückgängig machen.": "“{0}” already exists. Merge both? Items, recipes, photos and barcodes move to “{1}”. This can't be undone.",
+"🧲 Zusammengeführt mit „{}“": "🧲 Merged with “{0}”",
+"„{}“ gibt es schon – bitte „Zusammenführen“ benutzen.": "“{0}” already exists – please use “Merge”.",
+"„{} – {}“ gibt es schon – bitte „Zusammenführen“ benutzen.": "“{0} – {1}” already exists – please use “Merge”."
 }

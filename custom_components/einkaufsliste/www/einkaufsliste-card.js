@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.49.2";
+const EL_VERSION = "2.49.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.49.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -2684,6 +2684,17 @@ class EinkaufslisteCard extends HTMLElement {
       seenVariant.add(key);
       names.add(name.toLowerCase());
       cands.push({ sc: 1.5, name, item: last || { name, note: nt ? (last?.note ?? nt) : null, checked: true } });
+    }
+    // 📦 Ganzer Katalog: auch Varianten mit Notiz/Eigener Notiz und neue Produkte ohne Verlauf („Batterien · 9V Block“)
+    for (const cp of this._data.catalog || []) {
+      const key = pkey(cp.name, cp.note);
+      if (seenVariant.has(key)) continue;
+      const sc = scoreNN(cp.name, cp.note, cp.own_note);
+      if (sc < 0) continue;
+      seenVariant.add(key);
+      names.add(cp.name.toLowerCase());
+      cands.push({ sc: sc + 0.4, name: cp.name, item: { name: cp.name, note: cp.note || null, own_note: cp.own_note || null,
+        store_id: cp.store_id || null, category_id: cp.category_id || null, checked: true } });
     }
     for (const h of this._data.history || []) {
       const low = h.name.toLowerCase();
@@ -7848,6 +7859,18 @@ class EinkaufslisteCard extends HTMLElement {
           if (list.join(", ") !== pa.dataset.orig) msg.aliases = list;
         }
         if (!msg.name) { this.$("peName").classList.add("shake"); break; }
+        {
+          // 🧲 Gibt es den neuen Namen + Notiz schon? Dann gleich anbieten zusammenzuführen
+          const nk = msg.note ? `${msg.name}|${msg.note}`.toLowerCase() : msg.name.toLowerCase();
+          const clash = nk !== key && (this._products || []).find((x) => x.key === nk);
+          if (clash) {
+            const cn = clash.name + (clash.note ? ` – ${clash.note}` : "");
+            if (!elConfirm(`„${cn}“ gibt es schon.\n\nBeide zusammenführen? Artikel, Rezepte, Fotos und Barcodes ziehen zu „${cn}“ um. Das lässt sich nicht rückgängig machen.`)) break;
+            this._ws({ type: "einkaufsliste/product/merge", from_key: key, into_key: clash.key })
+              .then(() => { this._toast(`🧲 Zusammengeführt mit „${cn}“`); this._prodEdit = null; this._loadProducts(); }).catch(() => {});
+            break;
+          }
+        }
         this._ws(msg).then(() => { this._toast("📦 Produkt gespeichert"); this._prodEdit = null; this._loadProducts(); }).catch(() => {});
         break;
       }

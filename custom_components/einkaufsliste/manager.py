@@ -508,6 +508,9 @@ class EinkaufslisteManager:
             "category_hints": category_hints(self.categories),
             "seen": self.seen,
             "own_notes": self.own_notes,
+            # 📦 ganzer Katalog (kompakt) – damit die Vorschläge beim Eintippen JEDES Produkt kennen, auch Varianten ohne Verlauf
+            "catalog": [{"name": p["name"], "note": p["note"], "own_note": p["own_note"],
+                         "store_id": p["store_id"], "category_id": p["category_id"]} for p in self.products()],
             "history": [{**h, "own_note": self.own_notes.get(h["name"].lower())} for h in history[:300]],
             "barcodes_by_name": self._barcodes_by_name(),
             "aliases": [{"alias": a, "name": t["name"], "note": t.get("note")} for a, e in sorted(self.aliases.items()) for t in self._al_targets(e)],
@@ -1061,7 +1064,7 @@ class EinkaufslisteManager:
         new_key = product_key(new_name, new_note)
         if new_key != key and any(p["key"] == new_key for p in self.products()):
             raise ValueError(
-                f"„{new_name}“ gibt es schon – bitte „Zusammenführen“ benutzen.")
+                f"„{new_name}{' – ' + new_note if new_note else ''}“ gibt es schon – bitte „Zusammenführen“ benutzen.")
         cat = self._check_category(category_id) if category_id is not None else None
         store = self._check_store(store_id) if store_id is not None else None
         if unit and unit not in UNIT_CHOICES:
