@@ -1061,6 +1061,14 @@ class EinkaufslisteManager:
         if not new_name:
             raise ValueError("Der Name darf nicht leer sein.")
         new_note = _note(note) if note is not None else prod["note"]
+        # ✏️ Bei Produkten OHNE Barcode ist die Eigene Notiz das Erkennungsmerkmal (wie beim Eintragen auf der Liste):
+        # neu eingetragen (und gibt es den Namen schon als anderes Produkt), wird sie zur Variante – so werden „Batterien“ + „AA“ und „Batterien“ + „AAA“ nicht zu EINEM Produkt
+        if own_note is not None and not new_note and not prod["barcodes"]:
+            own_txt = _own(own_note)
+            same_name = any(p["key"] != key and p["name"].lower() == new_name.lower() for p in self.products())  # gibt es den Namen noch einmal?
+            if (own_txt and same_name and own_txt != prod.get("own_note")
+                    and own_txt != self.own_notes.get(product_key(new_name, None))):
+                new_note, own_note = _note(own_txt), ""
         new_key = product_key(new_name, new_note)
         if new_key != key and any(p["key"] == new_key for p in self.products()):
             raise ValueError(

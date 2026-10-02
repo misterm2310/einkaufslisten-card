@@ -2899,3 +2899,24 @@ async def test_catalog_in_state_and_clash_message(hass: HomeAssistant, setup) ->
     assert {"Batterien|9V Block", "Batterien|AA"} <= {f"{c['name']}|{c['note']}" for c in cat}
     with pytest.raises(ValueError, match="Batterien – AA"):
         m.update_product("batterien|9v block", note="AA")
+
+
+async def test_old_notes_to_own_notes_no_clash(hass: HomeAssistant, setup) -> None:
+    """Zwei Produkte gleichen Namens: alte Notiz löschen + als Eigene Notiz eintragen führt nicht zu „gibt es schon“."""
+    m = mgr(hass)
+    m.add_item("Batterien", note="AA")
+    m.add_item("Batterien", note="AAA")
+    # 1. Produkt: alte Notiz löschen, speichern – dann Eigene Notiz eintragen
+    m.update_product("batterien|aa", note="")
+    m.update_product("batterien", own_note="AA")
+    keys = {p["key"] for p in m.products()}
+    assert "batterien|aa" in keys and "batterien" not in keys
+    # 2. Produkt: dasselbe – kein Zusammenstoß mit dem ersten
+    m.update_product("batterien|aaa", note="")
+    m.update_product("batterien", own_note="AAA")
+    keys = {p["key"] for p in m.products()}
+    assert {"batterien|aa", "batterien|aaa"} <= keys
+    # Name nur einmal: Eigene Notiz bleibt Eigene Notiz (keine Variante)
+    m.add_item("Kaffee")
+    m.update_product("kaffee", own_note="Fair")
+    assert "kaffee" in {p["key"] for p in m.products()}
