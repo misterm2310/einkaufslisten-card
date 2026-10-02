@@ -181,6 +181,7 @@ def ws_subscribe(hass, connection, msg):
         vol.Optional("category_id"): OPT_STR,
         vol.Optional("quantity"): OPT_STR,
         vol.Optional("note"): OPT_STR,
+        vol.Optional("own_note"): OPT_STR,  # ✏️ Eigene Notiz
         vol.Optional("for_whom"): OPT_STR,
         vol.Optional("barcode"): OPT_STR,
     }
@@ -196,6 +197,7 @@ def ws_item_add(hass, connection, msg):
             category_id=msg["category_id"] if "category_id" in msg else AUTO_CATEGORY,
             quantity=msg.get("quantity"),
             note=msg.get("note"),
+            own_note=msg.get("own_note"),
             for_whom=msg.get("for_whom"),
             added_by=who,
             barcode=msg.get("barcode"),
@@ -225,12 +227,13 @@ def _auto_photo(hass, manager, code, name) -> None:
         vol.Optional("category_id"): OPT_STR,
         vol.Optional("quantity"): OPT_STR,
         vol.Optional("note"): OPT_STR,
+        vol.Optional("own_note"): OPT_STR,  # ✏️ Eigene Notiz
         vol.Optional("for_whom"): OPT_STR,
     }
 )
 @callback
 def ws_item_update(hass, connection, msg):
-    fields = _pick(msg, "name", "store_id", "category_id", "quantity", "note", "for_whom")
+    fields = _pick(msg, "name", "store_id", "category_id", "quantity", "note", "own_note", "for_whom")
     _run(hass, connection, msg, lambda m: m.update_item(msg["item_id"], **fields))
 
 
@@ -499,11 +502,12 @@ def ws_products(hass, connection, msg):
         vol.Optional("unit"): OPT_STR,  # 📏 "" oder None = automatisch lernen
         vol.Optional("aliases"): [str],  # 🏷️ Spitznamen („Tempos“)
         vol.Optional("stores"): [str],  # 🏪 „Gibt's bei“
+        vol.Optional("own_note"): OPT_STR,  # ✏️ Eigene Notiz
     }
 )
 @callback
 def ws_product_update(hass, connection, msg):
-    fields = _pick(msg, "name", "note", "category_id", "store_id", "unit", "stores")
+    fields = _pick(msg, "name", "note", "category_id", "store_id", "unit", "stores", "own_note")
     if "unit" in fields and fields["unit"] is None:
         fields["unit"] = ""
     if "note" in fields and fields["note"] is None:

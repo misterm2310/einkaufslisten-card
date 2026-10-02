@@ -1426,5 +1426,22 @@
 "Meine Daten behalten": "Keep my data",
 "Name und Notiz stimmen schon überein ✅": "Name and note already match ✅",
 "Die Datenbank kennt diesen Barcode als „{}“. Dein Produkt heißt „{}“. Name und Notiz mit den Daten aus der Datenbank überschreiben?": "The database knows this barcode as “{0}”. Your product is called “{1}”. Overwrite name and note with the data from the database?",
-"✅ Name und Notiz übernommen: „{}“": "✅ Name and note applied: “{0}”"
+"✅ Name und Notiz übernommen: „{}“": "✅ Name and note applied: “{0}”",
+"✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben": "✏️ Own note – stays with the product, never overwritten",
+"✏️ Eigene Notiz – bleibt beim Produkt": "✏️ Own note – stays with the product",
+"Eigene Notiz – bleibt beim Produkt": "Own note – stays with the product",
+"Nur für dich: Die Datenbank überschreibt sie nie": "Just for you: the database never overwrites it",
+"Auswahl übernehmen": "Apply selection",
+"✅ Übernommen – deine ✏️ Eigene Notiz bleibt, wie sie ist": "✅ Applied – your ✏️ own note stays as it is",
+"Die bleibt immer, wie sie ist – die Datenbank überschreibt sie nie.": "It always stays as it is – the database never overwrites it.",
+"übernehmen": "apply",
+"stimmt überein ✅": "matches ✅",
+"Eigene Notiz:": "Own note:",
+"📝 Notiz (kommt aus dem Barcode)": "📝 Note (comes from the barcode)",
+"Notiz → ✏️": "Note → ✏️",
+"Die alte Notiz ins ✏️-Feld verschieben (Produkt wird dabei ggf. mit gleichnamigen zusammengeführt)": "Move the old note into the ✏️ field (the product may be merged with ones of the same name)",
+"Kommt aus dem Barcode bzw. der Datenbank. Eigene Texte bitte ins ✏️-Feld.": "Comes from the barcode / database. Please put your own text into the ✏️ field.",
+"Kommt aus dem Barcode – eigene Texte bitte ins ✏️-Feld": "Comes from the barcode – please put your own text into the ✏️ field",
+"Kommt aus dem Barcode bzw. der Datenbank": "Comes from the barcode / database",
+"✏️ Notiz verschoben": "✏️ Note moved"
 }

@@ -2686,3 +2686,39 @@ def test_mail_text_is_capped():
     from custom_components.einkaufsliste.mail_import import MAX_MAIL_CHARS, mail_text
     text = "Milch\n" + "x\n" * MAX_MAIL_CHARS
     assert len(mail_text(text).split("\n")) <= 60
+
+
+async def test_own_note(hass, setup):
+    """✏️ Eigene Notiz: bleibt beim Produkt, ist nicht Teil des Namens, wird vorgeschlagen und im Katalog änderbar."""
+    m = mgr(hass)
+    a = m.add_item("Kaffee", note="Bohnen", own_note="nur die große Packung")
+    assert a["own_note"] == "Nur die große Packung" and a["note"] == "Bohnen"
+    assert m.history_for("Kaffee")["own_note"] == "Nur die große Packung"
+    # nochmal ohne eigene Notiz: die vom letzten Mal kommt wieder mit
+    m.set_checked(a["id"], True)
+    b = m.add_item("Kaffee", note="Bohnen")
+    assert b["id"] == a["id"] and b["own_note"] == "Nur die große Packung"
+    # eigene Notiz trennt keine Artikel: kein zweiter Eintrag
+    assert len([i for i in m.items if i["name"] == "Kaffee"]) == 1
+    # am Artikel ändern / leeren
+    m.update_item(a["id"], own_note="Fair gehandelt")
+    assert m.get_item(a["id"])["own_note"] == "Fair gehandelt"
+    assert m.history_for("Kaffee")["own_note"] == "Fair gehandelt"
+    m.update_item(a["id"], own_note="")
+    assert not m.get_item(a["id"]).get("own_note") and "own_note" not in m.history_for("Kaffee")
+    # im Katalog setzen: Produkt + Artikel
+    p = m.update_product("kaffee|bohnen", own_note="Nur Arabica")
+    assert p["own_note"] == "Nur Arabica"
+    assert m.get_item(a["id"])["own_note"] == "Nur Arabica"
+    m.update_product("kaffee|bohnen", own_note="")
+    assert not m.get_item(a["id"]).get("own_note")
+
+
+async def test_note_move_to_own(hass, setup):
+    """„Notiz → ✏️“: alte Notiz wandert in die Eigene Notiz, das Produkt verliert die 📝 Notiz."""
+    m = mgr(hass)
+    a = m.add_item("Kaffee", note="Bohnen")
+    m.update_product("kaffee|bohnen", note="", own_note="Arabica · Bohnen")
+    it = m.get_item(a["id"])
+    assert not it.get("note") and it["own_note"] == "Arabica · Bohnen"
+    assert m.history_for("Kaffee")["own_note"] == "Arabica · Bohnen"

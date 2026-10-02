@@ -156,6 +156,12 @@ def _note(text: Any) -> str | None:
     return text[:1].upper() + text[1:] if text else None
 
 
+def _own(text: Any) -> str | None:
+    """✏️ Eigene Notiz: wie die Notiz mit Großbuchstaben am Anfang, aber nicht Teil des Produktnamens (und höchstens 120 Zeichen)."""
+    text = _note(text)
+    return text[:120] if text else None
+
+
 def _clean_steps(text: Any) -> str | None:
     """Zubereitung: ein Schritt pro Zeile, leere Zeilen raus."""
     if not text:
@@ -949,6 +955,7 @@ class EinkaufslisteManager:
                     "count": hist.get("count", 0),
                     "last_used": hist.get("last_used"),
                     "aliases": sorted(a for a, t in self.aliases.items() if product_key(t["name"], t.get("note")) == key),
+                    "own_note": hist.get("own_note"),  # ✏️ Eigene Notiz
                     "unit": hist.get("unit"),  # 📏 gemerkte Einheit beim direkten Eintragen
                     "unit_fixed": bool(hist.get("unit_fixed")),
                     "stores": [sid for sid in hist.get("stores", []) if self.store_by_id(sid)],  # 🏪 gibt's bei …
@@ -1018,6 +1025,7 @@ class EinkaufslisteManager:
         store_id: str | None = None,
         unit: str | None = None,
         stores: list[str] | None = None,
+        own_note: str | None = None,
     ) -> dict[str, Any]:
         """Produkt im Katalog ändern – zieht Artikel, Rezepte, Fotos, Barcodes und Verlauf mit.
 
@@ -1102,6 +1110,21 @@ class EinkaufslisteManager:
                 "name": new_name, "count": 0, "last_used": _now_iso(),
                 "store_id": prod["store_id"], "category_id": prod["category_id"]})
             target["stores"] = valid
+        if own_note is not None:  # ✏️ Eigene Notiz beim Produkt (und bei seinen Artikeln auf der Liste)
+            own = _own(own_note)
+            target = self.history.setdefault(new_name.lower(), {
+                "name": new_name, "count": 0, "last_used": _now_iso(),
+                "store_id": prod["store_id"], "category_id": prod["category_id"]})
+            for thing in self.items:
+                if thing["name"].lower() == new_name.lower() and not thing.get("recipe_id"):
+                    if own:
+                        thing["own_note"] = own
+                    else:
+                        thing.pop("own_note", None)
+            if own:
+                target["own_note"] = own
+            else:
+                target.pop("own_note", None)
         if unit is not None and new_name.lower() in self.history:
             target = self.history[new_name.lower()]
             if unit:  # 📏 im Katalog fest eingestellt – wird nicht mehr überschrieben
@@ -1552,6 +1575,11 @@ class EinkaufslisteManager:
                 entry["unit"] = unit
         if not item.get("recipe_id") and item.get("quantity"):
             entry["qty"] = item["quantity"]  # 🔁 für „wie zuletzt“
+        if not item.get("recipe_id"):
+            if item.get("own_note"):
+                entry["own_note"] = item["own_note"]  # ✏️ Eigene Notiz bleibt beim Produkt (Vorschläge füllen sie wieder ein)
+            else:
+                entry.pop("own_note", None)
         self.history[key] = entry
         if len(self.history) > HISTORY_LIMIT:
             oldest = sorted(self.history.items(), key=lambda kv: kv[1].get("last_used", ""))
@@ -1594,6 +1622,7 @@ class EinkaufslisteManager:
         barcode: str | None = None,
         added_by_id: str | None = None,
         from_offer: bool = False,
+        own_note: str | None = None,
     ) -> dict[str, Any]:
         """Artikel hinzufügen.
 
@@ -1624,6 +1653,13 @@ class EinkaufslisteManager:
 
         # Rezept-Zutaten kommen zusätzlich auf die Liste (eigener Eintrag pro Rezept)
         recipe_id = recipe_id if self.recipe_by_id(recipe_id) else None
+        # ✏️ Eigene Notiz: nichts mitgegeben (None) = die vom letzten Mal beim Produkt nehmen, "" = ausdrücklich keine
+        if recipe_id is not None:
+            own = None
+        elif own_note is None:
+            own = (self.history_for(name) or {}).get("own_note")
+        else:
+            own = _own(own_note)
         if bare and quantity and recipe_id is None:  # 📏 nur eine Zahl? Dann die gemerkte Einheit („2“ -> 2 Pck.)
             unit = (self.history_for(name) or {}).get("unit")
             if unit:
@@ -1646,6 +1682,11 @@ class EinkaufslisteManager:
                 )
             if category_id:
                 existing["category_id"] = category_id
+            if own_note is not None and recipe_id is None:
+                if own:
+                    existing["own_note"] = own
+                else:
+                    existing.pop("own_note", None)
             old_qty = existing.get("quantity")
             if quantity:
                 existing["quantity"] = quantity
@@ -1667,6 +1708,7 @@ class EinkaufslisteManager:
             "category_id": category_id or guessed,
             "quantity": quantity,
             "note": note,
+            "own_note": own,
             "for_whom": for_whom,
             "recipe_id": recipe_id,
             "checked": False,
@@ -1722,9 +1764,16 @@ class EinkaufslisteManager:
             item["category_id"] = self._check_category(fields["category_id"])
         if "quantity" in fields:
             item["quantity"] = norm_qty(_clean(fields["quantity"]))
+        if "own_note" in fields and not item.get("recipe_id"):
+            item["own_note"] = _own(fields["own_note"])
         key = item["name"].lower()
         if key in self.history:
             self.history[key].update(store_id=item["store_id"], category_id=item["category_id"])
+            if "own_note" in fields and not item.get("recipe_id"):
+                if item.get("own_note"):
+                    self.history[key]["own_note"] = item["own_note"]
+                else:
+                    self.history[key].pop("own_note", None)
         self._log_changes(before, item)
         self._changed()
         return item
@@ -1741,7 +1790,7 @@ class EinkaufslisteManager:
         parts: list[str] = []
         if before["name"] != item["name"]:
             parts.append(f"Name {before['name']} → {item['name']}")
-        for key, label in (("quantity", "Menge"), ("note", "Notiz"), ("for_whom", "Für wen")):
+        for key, label in (("quantity", "Menge"), ("note", "Notiz"), ("own_note", "Eigene Notiz"), ("for_whom", "Für wen")):
             if (before.get(key) or None) != (item.get(key) or None):
                 parts.append(f"{label} {before.get(key) or '–'} → {item.get(key) or '–'}")
         if before.get("category_id") != item.get("category_id"):
