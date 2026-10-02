@@ -2,10 +2,14 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.48.3";
+const EL_VERSION = "2.49.0";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.48.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.49.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["📦 <b>Gleicher Name, andere Notiz:</b> Im Katalog kannst du mit ➕ (oder per Barcode) ein Produkt anlegen, das es dem Namen nach schon gibt, z. B. „Batterien“ – die Liste fragt dann nach einer <b>✏️ Eigenen Notiz</b> zum Unterscheiden („AA“, „AAA“ …). Alte, selbst getippte Notizen sind überall nur noch die ✏️ Eigene Notiz. Auch beim Eintragen auf der Liste zählt die ✏️ Eigene Notiz als Unterscheidung (bei Produkten ohne Barcode).",
+   "📦 <b>Same name, different note:</b> in the catalog you can add a product with ➕ (or by barcode) even if the name already exists, e.g. “Batteries” – the list then asks for an <b>✏️ own note</b> to tell them apart (“AA”, “AAA” …). Old notes you typed yourself are now simply the ✏️ own note everywhere. When adding on the list, the ✏️ own note also tells products apart (for products without a barcode)."],
+  ["🔎 <b>Rezept-Suche mit Spitznamen:</b> Tippst du einen Spitznamen einer Zutat (z. B. „Paradeiser“ für Tomate), findet die Rezept-Suche alle Rezepte mit diesem Produkt. · ✏️ Im Katalog bleibt die Produktzeile beim Bearbeiten stehen, das Bearbeiten öffnet darunter.",
+   "🔎 <b>Recipe search with nicknames:</b> type a nickname of an ingredient (e.g. “Paradeiser” for tomato) and the recipe search finds every recipe with that product. · ✏️ In the catalog the product row stays visible while you edit; the editor opens below it."],
   ["🟢 <b>Grüner Punkt = nach Hause:</b> Ein Tipp auf den grünen Punkt oben bringt dich von überall (Rezepte, Einstellungen …) zurück auf die Einkaufsliste. · 🏷️ <b>Ein Spitzname für mehrere Produkte:</b> „Batterien“ kann zu „AA“ und „AAA“ gehören – beim Tippen zeigt die Liste dann beide zur Auswahl an. · ✏️ Alte, selbst getippte Notizen haben im Bearbeiten nur noch <b>ein</b> Feld (✏️), damit „Batterien – AA“ und „– AAA“ getrennte Produkte bleiben.",
    "🟢 <b>Green dot = home:</b> tapping the green dot at the top takes you back to the shopping list from anywhere (recipes, settings …). · 🏷️ <b>One nickname for several products:</b> “Batteries” can belong to “AA” and “AAA” – when you type it, the list shows both to choose from. · ✏️ Old notes you typed yourself now have only <b>one</b> field (✏️) when editing, so “Batteries – AA” and “– AAA” stay separate products."],
   ["▥ <b>Barcode nachtragen:</b> Im Katalog hat jedes Produkt jetzt den Knopf <b>„Barcode nachtragen“</b> – Nummer eintippen (Enter bestätigt) oder scannen. Danach schaut die Liste in der Datenbank nach und fragt, ob Name, Notiz und Foto übernommen werden sollen.",
@@ -2270,7 +2274,7 @@ class EinkaufslisteCard extends HTMLElement {
     });
     root.addEventListener("dblclick", (e) => { // 🖥️ Doppelklick im Katalog = bearbeiten
       const row = e.target.closest?.(".prodrow");
-      if (!row) return;
+      if (!row || row.dataset.key === this._prodEdit) return; // wird schon bearbeitet: nichts neu zeichnen (sonst sind getippte Änderungen weg)
       this._prodEdit = row.dataset.key;
       this._renderProducts();
       setTimeout(() => this.$("peName")?.focus(), 30);
@@ -4259,6 +4263,7 @@ class EinkaufslisteCard extends HTMLElement {
       return true;
     }
     if (e.key === "Enter" && pos >= 0) {
+      if (rows[pos].dataset.key === this._prodEdit) return true;
       this._prodEdit = rows[pos].dataset.key;
       this._renderProducts();
       setTimeout(() => this.$("peName")?.focus(), 30);
@@ -4290,8 +4295,12 @@ class EinkaufslisteCard extends HTMLElement {
         p.open ? `<span>🛒 steht drauf</span>` : "",
         this._prodSel === "~old3m" ? `<span>🗓️ ${p.last_bought ? "zuletzt gekauft" : "zuletzt eingetragen"} ${this._prodAgo(p)}</span>` : "",
       ].filter(Boolean).join("");
+      const rowHtml = `<div class="srow delrow prodrow ${this._prodMarked === p.key ? "marked" : ""}" tabindex="0" ${this._prodEdit === p.key ? "" : 'data-act="prod-edit"'} data-key="${esc(p.key)}">
+        <div class="grow delname"><b>${esc(p.name)}${p.note || p.own_note ? ` · ${esc(p.note || p.own_note)}` : ""}</b><small class="pmeta">${p.scanned && !scannedTab ? "<span>📷 neu gescannt</span>" : ""}${bits || "–"}</small></div>
+        ${scannedTab ? `<button class="btn primary" data-act="prod-confirm" data-key="${esc(p.key)}" title="Name stimmt">✔ Passt</button>` : `<ha-icon icon="mdi:chevron-right"></ha-icon>`}
+      </div>`;
       if (this._prodEdit === p.key) {
-        return `<div class="prodedit" data-key="${esc(p.key)}">
+        return rowHtml + `<div class="prodedit" data-key="${esc(p.key)}">
           <input id="peName" value="${esc(p.name)}" placeholder="Name">
           ${p.note ? (p.barcodes.length ? `<input type="hidden" id="peNote" value="${esc(p.note)}">` : `<input id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz (alt)">`) : `<input type="hidden" id="peNote" value="">`}
           ${p.note && !p.barcodes.length ? `<input type="hidden" id="peOwn" value="${esc(p.own_note || "")}">` : `<input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben" title="Nur für dich: Die Datenbank überschreibt sie nie">`}
@@ -4319,10 +4328,7 @@ class EinkaufslisteCard extends HTMLElement {
           </div>
         </div>`;
       }
-      return `<div class="srow delrow prodrow ${this._prodMarked === p.key ? "marked" : ""}" tabindex="0" data-act="prod-edit" data-key="${esc(p.key)}">
-        <div class="grow delname"><b>${esc(p.name)}${p.note || p.own_note ? ` · ${esc(p.note || p.own_note)}` : ""}</b><small class="pmeta">${p.scanned && !scannedTab ? "<span>📷 neu gescannt</span>" : ""}${bits || "–"}</small></div>
-        ${scannedTab ? `<button class="btn primary" data-act="prod-confirm" data-key="${esc(p.key)}" title="Name stimmt">✔ Passt</button>` : `<ha-icon icon="mdi:chevron-right"></ha-icon>`}
-      </div>`;
+      return rowHtml;
     }).join("") + (list.length > shown.length ? `<p class="hint">… und ${list.length - shown.length} weitere – oben suchen.</p>` : "");
   }
 
@@ -4357,6 +4363,8 @@ class EinkaufslisteCard extends HTMLElement {
     q = (q || "").trim().toLowerCase();
     if (!q) return recipes.map((r) => ({ r, sc: 0 }));
     const starts = (low) => low.startsWith(q) || low.split(/[\s\-–,/()]+/).some((w) => w.startsWith(q));
+    const nicks = (this._data.aliases || []).filter((a) => starts(String(a.alias || "").toLowerCase()));
+    const nick = (i) => nicks.some((a) => String(a.name).toLowerCase() === i.name.toLowerCase() && (!a.note || String(a.note).toLowerCase() === String(i.note || "").toLowerCase()));
     const out = [];
     const rest = [];
     for (const r of recipes) {
@@ -4365,7 +4373,8 @@ class EinkaufslisteCard extends HTMLElement {
       // ein einzelner Buchstabe zählt nur am Wortanfang – sonst findet „z“ auch Pi-z-za und Sal-z
       if (q.length > 1 && low.includes(q)) { out.push({ r, sc: 1 }); continue; }
       const ing = r.items.find((i) => starts(i.name.toLowerCase()))
-        || (q.length > 2 ? r.items.find((i) => i.name.toLowerCase().includes(q)) : null);
+        || (q.length > 2 ? r.items.find((i) => i.name.toLowerCase().includes(q)) : null)
+        || r.items.find((i) => nick(i)); // 🏷️ Spitzname der Zutat („Paradeiser“ -> Tomate)
       if (ing) { out.push({ r, sc: 2, via: ing.name }); continue; }
       rest.push(r);
     }
@@ -6529,6 +6538,16 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 🗄️ Katalog: Daten aus der Produkt-Datenbank nachladen
+  // ✏️ Gibt es den Namen schon (z. B. „Batterien“)? Dann nach der Eigenen Notiz zum Unterscheiden fragen. "" = Name ist neu, null = abgebrochen
+  async _prodNoteFor(name) {
+    const low = String(name).trim().toLowerCase();
+    const same = (this._products || []).filter((p) => p.name.toLowerCase() === low);
+    if (!same.length) return "";
+    const have = same.map((p) => p.note || p.own_note || "ohne Notiz").join(", ");
+    const note = await askText(`✏️ „${same[0].name}“ gibt es schon (${have}) – Eigene Notiz zum Unterscheiden`, "z. B. AAA");
+    return note || null;
+  }
+
   // ▥ Barcode zu einem Katalog-Produkt speichern, danach die Datenbank fragen (wie beim Zuordnen in der Liste)
   async _prodBcSave(p, rawCode) {
     const code = String(rawCode || "").replace(/\D/g, "");
@@ -7614,13 +7633,16 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "prod-add": {
         const f = this._prodSel || "";
-        askText("📦 Neues Produkt", "Wie heißt das Produkt?").then((name) => name && this._ws({ type: "einkaufsliste/product/add", name, store_id: f.startsWith("s:") ? f.slice(2) : null, category_id: f.startsWith("c:") ? f.slice(2) : null })
-          .then(async (p) => {
-            this._toast(`📦 „${p.name}“ ist im Katalog`);
-            await this._loadProducts();
-            this._prodEdit = p.key;
-            this._renderProducts();
-          })).catch(() => {});
+        askText("📦 Neues Produkt", "Wie heißt das Produkt?").then(async (name) => {
+          if (!name) return;
+          const note = await this._prodNoteFor(name); // ✏️ gibt es den Namen schon? Dann Eigene Notiz zum Unterscheiden
+          if (note === null) return;
+          const p = await this._ws({ type: "einkaufsliste/product/add", name, ...(note ? { note } : {}), store_id: f.startsWith("s:") ? f.slice(2) : null, category_id: f.startsWith("c:") ? f.slice(2) : null });
+          this._toast(`📦 „${p.name}“ ist im Katalog`);
+          await this._loadProducts();
+          this._prodEdit = p.key;
+          this._renderProducts();
+        }).catch(() => {});
         break;
       }
       case "prod-add-bc": {
@@ -7632,7 +7654,9 @@ class EinkaufslisteCard extends HTMLElement {
           if (res?.found && res.source === "gemerkt") { this._toast(`ℹ️ Kenn ich schon: „${res.name}${res.note ? ` · ${res.note}` : ""}“`); return; }
           const name = await askText("📦 Neues Produkt per Barcode", "Wie heißt das Produkt?", res?.found ? res.name : "");
           if (!name) return;
-          this._ws({ type: "einkaufsliste/product/add", name, barcode: clean,
+          const note = await this._prodNoteFor(name);
+          if (note === null) return;
+          this._ws({ type: "einkaufsliste/product/add", name, barcode: clean, ...(note ? { note } : {}),
             store_id: f.startsWith("s:") ? f.slice(2) : null, category_id: f.startsWith("c:") ? f.slice(2) : (res?.category_id || null) })
             .then(async (p) => {
               this._toast(`📦▥ „${p.name}“ ist im Katalog – mit Barcode`);

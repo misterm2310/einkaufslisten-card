@@ -2831,3 +2831,52 @@ async def test_auto_photo_follows_rename(hass: HomeAssistant, setup, monkeypatch
     keys = [p["key"] for p in m.products()]
     assert keys == ["cornflakes|nougat bits"]
     assert m.products()[0]["photos"] == 1
+
+
+async def test_add_product_same_name_with_note(hass: HomeAssistant, setup) -> None:
+    """📦 Katalog ➕: „Batterien“ gibt es schon -> mit Eigener Notiz zum Unterscheiden anlegen, so oft man will."""
+    m = mgr(hass)
+    m.add_product("Batterien")
+    with pytest.raises(ValueError):
+        m.add_product("Batterien")  # ohne Notiz: gibt es schon
+    p = m.add_product("Batterien", note="AAA")
+    assert p["key"] == "batterien|aaa"
+    m.add_product("Batterien", note="AA")
+    with pytest.raises(ValueError):
+        m.add_product("batterien", note="aa")
+    keys = [x["key"] for x in m.products() if x["name"] == "Batterien"]
+    assert sorted(keys) == ["batterien|aa", "batterien|aaa"]  # der nackte Name steckt hinter den Varianten
+    m.update_product("batterien|aaa", note="AAA 4er")  # Umbenennen zieht die Variante mit
+    assert "batterien|aaa 4er" in [x["key"] for x in m.products()] and "batterien|aaa" not in [x["key"] for x in m.products()]
+    m.add_product("Batterien", note="9V", barcode="4006381333931")
+    assert m.barcodes["4006381333931"]["note"] == "9V"
+    await m.async_forget_product("batterien|aa")
+    assert "batterien|aa" not in [x["key"] for x in m.products()]
+
+
+async def test_own_note_is_identity_without_barcode(hass: HomeAssistant, setup) -> None:
+    """✏️ Eigene Notiz = Erkennungsmerkmal bei Produkten ohne Barcode; mit Barcode bleibt sie getrennt."""
+    m = mgr(hass)
+    a = m.add_item("Batterien", own_note="AA")
+    b = m.add_item("Batterien", own_note="AAA")
+    assert a["id"] != b["id"] and a["note"] == "AA" and b["note"] == "AAA"
+    assert not a.get("own_note")
+    again = m.add_item("Batterien", own_note="AA")
+    assert again["id"] == a["id"]  # gleiche Notiz = dasselbe Produkt
+    # Bearbeiten: neue Eigene Notiz bei Artikel ohne Notiz wird Erkennungsmerkmal
+    c = m.add_item("Kerzen")
+    m.update_item(c["id"], own_note="Weiß")
+    assert m.get_item(c["id"])["note"] == "Weiß"
+    # mit Barcode: bleibt Eigene Notiz, kein neues Produkt
+    m.learn_barcode("4006381333931", "Cola", None, None)
+    d = m.add_item("Cola", own_note="Für Marco")
+    assert not d.get("note") and d["own_note"] == "Für Marco"
+
+
+async def test_own_note_known_stays_on_product(hass: HomeAssistant, setup) -> None:
+    """Hat das Produkt die Eigene Notiz schon (alte Daten), macht erneutes Eintragen kein zweites Produkt daraus."""
+    m = mgr(hass)
+    a = m.add_item("Kaffee")
+    m.update_product("kaffee", own_note="Fair gehandelt")
+    b = m.add_item("Kaffee", own_note="Fair gehandelt")
+    assert b["id"] == a["id"] and not b.get("note")

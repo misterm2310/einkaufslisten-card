@@ -1472,5 +1472,8 @@
 "▥ Barcode gespeichert – „{}“ wird jetzt beim Scannen erkannt": "▥ Barcode saved – “{0}” is now recognised when scanning",
 "Verbunden – alles ist aktuell · antippen = zurück zur Liste": "Connected – everything is up to date · tap = back to the list",
 "⌨️ Von Hand eingeben": "⌨️ Enter by hand",
-"Barcode nachtragen – scannen oder von Hand eingeben": "Add barcode – scan it or enter it by hand"
+"Barcode nachtragen – scannen oder von Hand eingeben": "Add barcode – scan it or enter it by hand",
+"✏️ „{}“ gibt es schon ({}) – Eigene Notiz zum Unterscheiden": "✏️ “{0}” already exists ({1}) – own note to tell them apart",
+"z. B. AAA": "e.g. AAA",
+"ohne Notiz": "no note"
 }

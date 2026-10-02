@@ -892,12 +892,12 @@ def ws_log_settings(hass, connection, msg):
 
 @websocket_api.websocket_command(
     {vol.Required("type"): "einkaufsliste/product/add", vol.Required("name"): str,
-     vol.Optional("category_id"): OPT_STR, vol.Optional("store_id"): OPT_STR, vol.Optional("barcode"): OPT_STR}
+     vol.Optional("category_id"): OPT_STR, vol.Optional("store_id"): OPT_STR, vol.Optional("barcode"): OPT_STR, vol.Optional("note"): OPT_STR}
 )
 @callback
 def ws_product_add(hass, connection, msg):
     def _add(m):
-        result = m.add_product(msg["name"], msg.get("category_id"), msg.get("store_id"), msg.get("barcode"))
+        result = m.add_product(msg["name"], msg.get("category_id"), msg.get("store_id"), msg.get("barcode"), msg.get("note"))
         if result.get("barcodes"):
             _auto_photo(hass, m, result["barcodes"][0], result["key"])
         return result

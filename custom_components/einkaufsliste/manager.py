@@ -276,6 +276,7 @@ class EinkaufslisteManager:
         self.seen: dict[str, dict[str, str]] = {}  # Benutzer -> Geschäft -> zuletzt angeschaut
         self.barcodes: dict[str, dict[str, Any]] = {}  # Barcode -> gelernter Artikel
         self.own_notes: dict[str, str] = {}  # ✏️ Produkt-Schlüssel -> Eigene Notiz
+        self.catalog_extra: dict[str, dict[str, Any]] = {}  # 📦 im Katalog angelegte Varianten ohne Artikel/Barcode
         self.aliases: dict[str, dict[str, Any]] = {}  # 🏷️ Spitzname (klein) -> {"name", "note"} des Produkts
         self.typos: dict[str, dict[str, Any]] = {}  # 🧠 Tippfehler (klein) -> {"right": Name, "n": wie oft korrigiert}
         self.pin_hash: str | None = None  # 🔒 PIN für die Einstellungen (nur als Prüfsumme gespeichert)
@@ -376,6 +377,7 @@ class EinkaufslisteManager:
         self.barcodes = data.get("barcodes", {})
         self.aliases = data.get("aliases", {})
         self.own_notes = data.get("own_notes", {})  # ✏️ Eigene Notiz pro Produkt (Name + Notiz)
+        self.catalog_extra = data.get("catalog_extra", {})
         self._migrate_own_notes()
         self.typos = data.get("typos", {})
         self.pin_hash = data.get("pin")
@@ -438,6 +440,7 @@ class EinkaufslisteManager:
             "history": self.history,
             "aliases": self.aliases,
             "own_notes": self.own_notes,
+            "catalog_extra": self.catalog_extra,
             "typos": self.typos,
             "pin": self.pin_hash,
             "mascot": self.mascot,
@@ -915,32 +918,41 @@ class EinkaufslisteManager:
 
     # ------------------------------------------------------------------ Produkt-Katalog
     def add_product(
-        self, name: str, category_id: str | None = None, store_id: str | None = None, barcode: str | None = None
+        self, name: str, category_id: str | None = None, store_id: str | None = None, barcode: str | None = None,
+        note: str | None = None,
     ) -> dict[str, Any]:
         """📦 Neues Produkt direkt im Katalog – ohne es auf die Liste zu setzen (optional gleich mit Barcode)."""
         name = _nice(name or "")
         if not name or len(name) > 80:
             raise ValueError("Wie heißt das Produkt?")
+        note = _note(note)
         key = name.lower()
-        if key in self.history:
-            raise ValueError(f"„{self.history[key]['name']}“ gibt es schon.")
+        pkey = product_key(name, note)
+        if not note and key in self.history:
+            raise ValueError(f"„{self.history[key]['name']}“ gibt es schon – gib eine Eigene Notiz zum Unterscheiden an.")
+        if note and any(p["key"] == pkey for p in self.products()):
+            raise ValueError(f"„{name} – {note}“ gibt es schon.")
         code = "".join(ch for ch in str(barcode or "") if ch.isdigit())
         if barcode and not code:
             raise ValueError("Das ist kein gültiger Barcode.")
         if code and code in self.barcodes and self.barcodes[code].get("name"):
             raise ValueError(f"Der Barcode gehört schon zu „{self.barcodes[code]['name']}“.")
-        self.history[key] = {
-            "name": name,
-            "count": 0,
-            "store_id": store_id if self.store_by_id(store_id) else None,
-            "category_id": category_id if self.category_by_id(category_id) else self.guess_category(name),
-            "last_used": _now_iso(),
-        }
+        if key not in self.history:
+            self.history[key] = {
+                "name": name,
+                "count": 0,
+                "store_id": store_id if self.store_by_id(store_id) else None,
+                "category_id": category_id if self.category_by_id(category_id) else self.guess_category(name),
+                "last_used": _now_iso(),
+            }
+        h = self.history[key]
+        if note:
+            self.catalog_extra[pkey] = {"name": name, "note": note}
         if code:
-            h = self.history[key]
-            self.learn_barcode(code, name, h["store_id"], h["category_id"])
+            self.learn_barcode(code, name, store_id if self.store_by_id(store_id) else h["store_id"],
+                               category_id if self.category_by_id(category_id) else h["category_id"], note)
         self._changed()
-        return next((p for p in self.products() if p["key"] == product_key(name, None)), {"key": key, "name": name})
+        return next((p for p in self.products() if p["key"] == pkey), {"key": pkey, "name": name})
 
     def products(self) -> list[dict[str, Any]]:
         """Alle bekannten Produkte (Name + Notiz) mit Foto-, Barcode- und Verlaufs-Infos."""
@@ -976,6 +988,8 @@ class EinkaufslisteManager:
 
         for hist in self.history.values():
             entry(hist["name"], None)
+        for extra in self.catalog_extra.values():  # 📦 im Katalog angelegte Varianten („Batterien“ + „AAA“)
+            entry(extra["name"], extra.get("note"))
         for item in self.items:
             e = entry(item["name"], item.get("note"))
             e["items"] += 1
@@ -1084,6 +1098,9 @@ class EinkaufslisteManager:
                 if store_id is not None:
                     bc["store_id"] = store
         self._al_retarget(key, new_name, new_note)  # 🏷️ Spitznamen zeigen aufs neue Produkt
+        if new_key != key and key in self.catalog_extra:
+            self.catalog_extra.pop(key)
+            self.catalog_extra[new_key] = {"name": new_name, "note": new_note}
         if new_key != key and key in self.own_notes:  # ✏️ Eigene Notiz zieht mit um
             self.own_notes.setdefault(new_key, self.own_notes.pop(key))
         if new_key != key and key in self.photos and new_key not in self.photos:
@@ -1352,6 +1369,7 @@ class EinkaufslisteManager:
             if bc.get("name") and product_key(bc["name"], bc.get("note")) == from_key:
                 bc["name"], bc["note"] = name, note
         self._al_retarget(from_key, name, note)
+        self.catalog_extra.pop(from_key, None)
         if from_key in self.own_notes:  # ✏️ Eigene Notiz: die vom Ziel bleibt, sonst zieht sie um
             moved_own = self.own_notes.pop(from_key)
             if into_key not in self.own_notes:
@@ -1423,6 +1441,7 @@ class EinkaufslisteManager:
             self.history.pop(prod["name"].lower(), None)
         await self.async_remove_photo(key)
         self.own_notes.pop(key, None)
+        self.catalog_extra.pop(key, None)
         self._changed()
 
     # ------------------------------------------------------------------ Fehler-Protokoll
@@ -1707,6 +1726,11 @@ class EinkaufslisteManager:
         category_id = None if auto else self._check_category(category_id)
         guessed = self._auto_category(name) if auto else None
         quantity, note, for_whom = norm_qty(_clean(quantity)), _note(note), _clean(for_whom)
+        # ✏️ Eigene Notiz ist bei Produkten OHNE Barcode das Erkennungsmerkmal („Batterien“ + „AAA“ ≠ „Batterien“ + „AA“)
+        if own_note is not None and recipe_id is None and not note and not _clean(barcode):
+            own_txt = _own(own_note)
+            if own_txt and own_txt != self.own_notes.get(product_key(name, None)) and not self.barcodes_for(product_key(name, None)):
+                note, own_note = _note(own_txt), ""  # (gleiche Notiz wie beim Produkt schon gemerkt: bleibt dort)
         if _clean(barcode):
             code = str(barcode).strip()
             is_new = code not in self.barcodes
@@ -1801,6 +1825,12 @@ class EinkaufslisteManager:
         }
         if not new["name"]:
             raise ValueError("Der Name darf nicht leer sein.")
+        # ✏️ neue Eigene Notiz bei einem Produkt ohne Notiz und ohne Barcode: sie wird zum Erkennungsmerkmal
+        if fields.get("own_note") and not item.get("recipe_id") and not new["note"]:
+            txt = _own(fields["own_note"])
+            if txt and txt != (item.get("own_note") or "") and not self.barcodes_for(product_key(new["name"], None)):
+                new["note"] = _note(txt)
+                fields = {**fields, "own_note": ""}
         new["store_id"] = (
             self._check_store(fields["store_id"]) if "store_id" in fields else item["store_id"]
         )
