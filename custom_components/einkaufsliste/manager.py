@@ -2020,12 +2020,19 @@ class EinkaufslisteManager:
 
         sums = await self.hass.async_add_executor_job(_md5s)
         dbs = entry.setdefault("db", [])
-        for pid, digest in sums.items():
-            if digest == new_md5:  # genau dieses Foto ist schon da (= stammt aus der Datenbank)
-                if pid not in dbs:
-                    dbs.append(pid)
-                    self._changed()
-                return "same"
+        same_ids = [pid for pid in ids if sums.get(pid) == new_md5]
+        if same_ids:  # genau dieses Foto ist schon da (= stammt aus der Datenbank)
+            keep, dup = same_ids[0], same_ids[1:]
+            if keep not in dbs:
+                dbs.append(keep)
+                self._changed()
+            if dup:  # Doppelte (gleiche Datei mehrfach) räumen wir auf: nur eines bleibt
+                ids = [i for i in ids if i not in dup]
+                for pid in dup:
+                    await self._async_delete_file(pid)
+                entry.update(id=ids[0], more=ids[1:], db=[i for i in dbs if i not in dup])
+                self._changed()
+            return "same"
         old_db = [i for i in ids if i in dbs]
         if not old_db and len(ids) >= MAX_PHOTOS:
             return "full"

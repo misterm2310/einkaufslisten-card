@@ -1459,5 +1459,6 @@
 "✏️ Deine Eigene Notiz bleibt immer, wie sie ist.": "✏️ Your own note always stays as it is.",
 "Los geht’s": "Let’s go",
 "Bitte mindestens etwas auswählen.": "Please choose at least one thing.",
-"🔄 Daten werden geholt … {} / {}": "🔄 Fetching data … {0} / {1}"
+"🔄 Daten werden geholt … {} / {}": "🔄 Fetching data … {0} / {1}",
+"Das Datenbank-Foto wird ersetzt, deine eigenen bleiben, nichts kommt doppelt dazu.": "The database photo is replaced, your own stay, nothing is added twice."
 }

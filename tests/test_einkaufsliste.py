@@ -2722,3 +2722,33 @@ async def test_note_move_to_own(hass, setup):
     it = m.get_item(a["id"])
     assert not it.get("note") and it["own_note"] == "Arabica · Bohnen"
     assert m.history_for("Kaffee")["own_note"] == "Arabica · Bohnen"
+
+
+async def test_refresh_replace_removes_identical_duplicates(hass: HomeAssistant, setup, monkeypatch) -> None:
+    """Gleiches Datenbank-Foto mehrfach (alter Fehler) -> beim Neuholen bleibt nur eines, eigenes Foto bleibt."""
+    import base64
+
+    import custom_components.einkaufsliste.barcode as bc
+
+    m = mgr(hass)
+    db = b"\xff\xd8\xff\xe0" + b"d" * 400 + b"\xff\xd9"
+    own = b"\xff\xd8\xff\xe0" + b"e" * 400 + b"\xff\xd9"
+    m.learn_barcode("6001", "Quark", None, None)
+    await m.async_set_photo("Quark", base64.b64encode(db).decode(), db=True)
+    await m.async_set_photo("Quark", base64.b64encode(db).decode(), add=True)   # Doppelte (wie früher)
+    await m.async_set_photo("Quark", base64.b64encode(db).decode(), add=True)
+    await m.async_set_photo("Quark", base64.b64encode(own).decode(), add=True)
+    assert len(m._photo_ids(m.photos["quark"])) == 4
+
+    async def fake(hass_, code):
+        return db
+
+    monkeypatch.setattr(bc, "_download_photo", fake)
+    out = await bc.async_refresh_photo(hass, m, "quark", replace=True)
+    assert out["status"] == "same"
+    ids = m._photo_ids(m.photos["quark"])
+    assert len(ids) == 2
+    assert sorted(m._photo_path(i).read_bytes() for i in ids) == sorted([db, own])
+    # nochmal: nichts ändert sich
+    assert (await bc.async_refresh_photo(hass, m, "quark", replace=True))["status"] == "same"
+    assert len(m._photo_ids(m.photos["quark"])) == 2
