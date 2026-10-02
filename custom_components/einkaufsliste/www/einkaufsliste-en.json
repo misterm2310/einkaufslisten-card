@@ -1484,5 +1484,12 @@
 "✏️ Eigene Notiz": "✏️ Own note",
 "Wird bald automatisch abgehakt – am {}": "Will be ticked off automatically soon – on {0}",
 "Ähnliche Angebote – antippen für Details": "Similar offers – tap for details",
-"Ähnlich": "Similar"
+"Ähnlich": "Similar",
+"Eingaben und Filter zurücksetzen": "Reset search and filter",
+"Datenschutz": "Privacy",
+"was wohin geht": "what goes where",
+"Wirklich {} „{}“?": "Really {} “{}”?",
+"„{}“ und „{}“ sind nicht dasselbe Produkt. Was soll mit deinem Produkt passieren?": "“{}” and “{}” are not the same product. What should happen to your product?",
+"➕ Zusätzlich – „{}“ bleibt offen": "➕ Also – “{}” stays open",
+"🔁 Ersetzen – „{}“ wird abgehakt (kommt wieder, falls du das Angebot nicht kaufst)": "🔁 Replace – “{}” is checked off (comes back if you don't buy the offer)"
 }

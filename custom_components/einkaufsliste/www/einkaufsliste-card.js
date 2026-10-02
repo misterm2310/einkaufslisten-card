@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.51.1";
+const EL_VERSION = "2.52.0";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.51.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.52.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🧽 <b>Radiergummi im Katalog:</b> Ein Tipp setzt Suchfeld und Filter bei „Alle Produkte“ zurück. · 🤔 <b>Mengen-Nachfrage:</b> Bei ungewöhnlich großen Mengen (z. B. 300 Eier, 40 kg Mehl) fragt die Liste kurz nach. · 🔒 <b>Datenschutz</b> unter ⚙️ → App &amp; Info: was in Home Assistant bleibt und was ins Internet geht. · „h-milch“ wird zu „H-Milch“. · 🔀 Bei ähnlichen Angeboten fragt „Hier kaufen“, ob dein Produkt ersetzt wird oder zusätzlich offen bleibt.",
+   "🧽 <b>Eraser in the catalog:</b> one tap resets the search and filter under “All products”. · 🤔 <b>Quantity check:</b> for unusually large amounts (e.g. 300 eggs, 40 kg flour) the list asks once more. · 🔒 <b>Privacy</b> under ⚙️ → App &amp; Info: what stays in Home Assistant and what goes to the internet. · “h-milch” becomes “H-Milch”. · 🔀 For similar offers, “Buy here” asks whether your product is replaced or stays open as well."],
   ["🔀 <b>Ähnliche Angebote:</b> Gibt es für einen Artikel (z. B. „H-Milch“ oder „Eat Me! Erdbeer Max Balance“) kein Angebot für genau diesen Namen, zerlegt die Liste den Namen in seine Wörter, sucht einzeln („Milch“) und bewertet die Treffer – auch mit Produkttyp aus der Datenbank, Spitznamen und deiner Kategorie. Höchstens 4, mit 🔀 „Ähnlich“ gekennzeichnet; der Besen bei Artikeln wird rot, wenn sie am nächsten Werktag automatisch abgehakt werden. Gibt es für genau den Artikel eins, kommt nur das.",
    "🔀 <b>Similar offers:</b> if an item (e.g. “UHT milk” or “Eat Me! Strawberry Max Balance”) has no offer for its exact name, the list splits the name into words, searches them one by one (“milk”) and ranks the hits – also using the product type from the database, nicknames and your category. At most 4, marked 🔀 “Similar”. The broom next to an item turns red when it will be ticked off automatically on the next working day. If there is an offer for the exact item, only that is shown."],  ["📦 <b>Gleicher Name, andere Notiz:</b> Im Katalog kannst du mit ➕ (oder per Barcode) ein Produkt anlegen, das es dem Namen nach schon gibt, z. B. „Batterien“ – die Liste fragt dann nach einer <b>✏️ Eigenen Notiz</b> zum Unterscheiden („AA“, „AAA“ …). Alte, selbst getippte Notizen sind überall nur noch die ✏️ Eigene Notiz. Auch beim Eintragen auf der Liste zählt die ✏️ Eigene Notiz als Unterscheidung (bei Produkten ohne Barcode).",
    "📦 <b>Same name, different note:</b> in the catalog you can add a product with ➕ (or by barcode) even if the name already exists, e.g. “Batteries” – the list then asks for an <b>✏️ own note</b> to tell them apart (“AA”, “AAA” …). Old notes you typed yourself are now simply the ✏️ own note everywhere. When adding on the list, the ✏️ own note also tells products apart (for products without a barcode)."],
@@ -282,6 +284,21 @@ function unitOf(q) {
   return c ? c[0] : null;
 }
 const isBareQty = (q) => new RegExp(`^\\s*${QTY_NUM}\\s*$`, "i").test(String(q ?? ""));
+// 🤔 Ungewöhnlich große Menge? („300 Eier“, „40 kg Mehl“) – nur zum Nachfragen beim Eintragen
+function qtyOdd(name, q) {
+  const m = String(q ?? "").trim().replace(/\s+/g, " ").match(QTY_RX);
+  if (!m) return false;
+  const r = m[1].trim().match(QTY_RANGE_RX);
+  const v = r ? Math.max(qtyValue(r[1]) ?? 0, r[2] ? qtyValue(r[2]) ?? 0 : 0) : 0;
+  const u = unitOf(q);
+  if (!v || !u) return false;
+  const egg = /\bei(er)?\b/i.test(name);
+  if (isBareQty(q)) return v > (egg ? 60 : 1000); // nur eine Zahl: die Einheit kennt Home Assistant („200 Mehl“ = 200 g) – nur Eier und grobe Tippfehler
+  if (u === "x") return v > (egg ? 60 : 50);
+  if (u === "kg" || u === "L") return v > 10;
+  if (u === "g" || u === "ml") return v > 10000;
+  return false;
+}
 // Andere Einheit an die Zahl: („2x“, „Pck.“) -> „2 Pck.“
 function applyUnit(q, unit) {
   const m = String(q ?? "").trim().replace(/\s+/g, " ").match(QTY_RX);
@@ -3603,6 +3620,7 @@ class EinkaufslisteCard extends HTMLElement {
           : `<p class="hint">Alle Produkte, die die Liste kennt. Antippen = ändern oder ganz löschen. Umbenennen zieht Fotos, Barcodes, Artikel und Rezepte mit.</p>`}
         <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen …" value="${esc(this._prodFilter || "")}"></div>
         ${this._prodTab === "scanned" ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:filter-variant"></ha-icon><select class="grow" id="prodFilterSel" title="Filter">${this._prodFilterOptions()}</select>
+          <button class="btn" id="prodClear" data-act="prod-clear" title="Eingaben und Filter zurücksetzen" aria-label="Eingaben und Filter zurücksetzen" ${this._prodFilter || this._prodSel ? "" : "hidden"}><ha-icon icon="mdi:eraser"></ha-icon></button>
           <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog" aria-label="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon></button>
           <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog" aria-label="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
           <button class="btn" data-act="prod-refresh-all" title="Alles neu holen (Name, Notiz, Foto) – für alle Produkte mit Barcode, mit Auswahl" aria-label="Alles neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon></button></div>
@@ -3613,6 +3631,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
       { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_NEWS_VERSION}`, html: () => this._newsHtml() },
+      { key: "privacy", icon: "mdi:shield-lock-outline", title: "Datenschutz", info: "was wohin geht", html: () => this._privacyHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
       { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
       { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher & Umfang", html: () => `
@@ -3720,7 +3739,7 @@ class EinkaufslisteCard extends HTMLElement {
       ["🎛️ Extras", ["offers", "spend", "autoshop", "mascot"]],
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
-      ["📱 App & Info", ["app", "theme", "pin", "news", "credits"]],
+      ["📱 App & Info", ["app", "theme", "pin", "privacy", "news", "credits"]],
     ];
     const kw = {
       stores: "laden markt zone standort icon eigenmarken", categories: "kategorie farbe reihenfolge", persons: "für wen namen familie",
@@ -3728,7 +3747,7 @@ class EinkaufslisteCard extends HTMLElement {
       offers: "angebote marktguru preise plz", spend: "protokoll bon kasse kosten einkauf",
       autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
       log: "verlauf wer wann", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel sensor", errors: "fehler protokoll kopieren",
-      stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", pin: "pin schutz sperre", news: "neu version", credits: "über danke lizenz github",
+      stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr", news: "neu version", credits: "über danke lizenz github",
     };
     const q = (this._setQ || "").trim().toLowerCase();
     const byKey = Object.fromEntries(sections.map((x) => [x.key, x]));
@@ -4313,6 +4332,7 @@ class EinkaufslisteCard extends HTMLElement {
   _renderProducts() {
     const box = this.$("prodList");
     if (!box || !this._products) return;
+    const pc = this.$("prodClear"); if (pc) pc.hidden = !(this._prodFilter || this._prodSel); // 🧽 nur zeigen, wenn es etwas zurückzusetzen gibt
     const q = (this._prodFilter || "").trim().toLowerCase();
     const scannedTab = this._prodTab === "scanned";
     const ff = scannedTab ? () => true : this._prodFilterFn();
@@ -5928,7 +5948,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>ℹ️ Infos</b> zeigt aus der Produkt-Datenbank: Nutri-Score, Allergene, mögliche Spuren, Siegel und Zutaten (alles ohne Gewähr).</li>
         <li>Menge direkt ändern: auf die Menge tippen, dann <span class="elg-k">−</span> und <span class="elg-k">＋</span>.</li>
         <li>Unter dem Artikel steht klein: das <b>Geschäft in seiner Farbe</b> (nur im Reiter „Alle“), die <b>📝 Notiz</b> (gelb hinterlegt), ▥ (Barcode da), wer eingetragen hat (wenn die Karten-Option an ist) und wer abgehakt hat. Dazu je nach Fall: <b>🍽️ Rezeptname</b> (kam aus einem Rezept), <b>🧹 Tag</b> (wird an diesem Tag automatisch abgehakt), <b>↩️ statt Kaffee</b> (Angebots-Artikel – das Original ist abgehakt), <b>⏳</b> (wartet auf Netz).</li>
-        <li><b>🏷️</b> vorn am Artikel = gerade im Angebot (nur wenn in den Einstellungen eingeschaltet). Antippen oder lange drücken → <b>Angebote</b>: Geschäft, Preis, wie lange. <b>🛒 Hier kaufen</b> legt den Angebots-Artikel in diesem Geschäft an (mit Name und „🏷️ Preis bis Tag“ in einem eigenen Feld) und hakt das ursprüngliche Produkt ab. Heißt das Angebot genauso wie dein Produkt, bleibt dein Produkt: Es wandert ins Geschäft des Angebots und bekommt den Preis, abgehakt wird nichts. Passt das Geschäft des Angebots zu keinem deiner Geschäfte, fragt die Liste, ob sie es anlegen soll oder „Egal wo“. Artikel, die erst durch ein Angebot entstanden sind, sind beim Abhaken ganz weg.</li>
+        <li><b>🏷️</b> vorn am Artikel = gerade im Angebot (nur wenn in den Einstellungen eingeschaltet). Antippen oder lange drücken → <b>Angebote</b>: Geschäft, Preis, wie lange. <b>🛒 Hier kaufen</b> legt den Angebots-Artikel in diesem Geschäft an (mit Name und „🏷️ Preis bis Tag“ in einem eigenen Feld) und hakt das ursprüngliche Produkt ab. Heißt das Angebot genauso wie dein Produkt, bleibt dein Produkt: Es wandert ins Geschäft des Angebots und bekommt den Preis, abgehakt wird nichts. Passt das Geschäft des Angebots zu keinem deiner Geschäfte, fragt die Liste, ob sie es anlegen soll oder „Egal wo“. Artikel, die erst durch ein Angebot entstanden sind, sind beim Abhaken ganz weg. Steht vorn stattdessen <b>🔀</b> (blau), gibt es für genau dieses Produkt nichts, aber <b>ähnliche Angebote</b> (z. B. „Milch“ für „H-Milch“) – höchstens 4, mit „Ähnlich“ im Fenster. Auch sie nimmst du mit <b>🛒 Hier kaufen</b> – weil es ein anderes Produkt ist, fragt die Liste: <b>Ersetzen</b> (dein Produkt wird abgehakt und kommt zurück, wenn das Angebot vorbei ist) oder <b>Zusätzlich</b> (dein Produkt bleibt offen).</li>
         <li><b>Angebote suchen:</b> Einfach das Produkt oben eintippen (z. B. „Kaffee“) – unter den Vorschlägen steht <b>🏷️ Angebote für „Kaffee“ anzeigen</b>. Dort mit <b>➕ Auf die Liste</b> gleich beim richtigen Geschäft eintragen.</li>
         <li><b>⌛ Angebot vorbei</b> = das Angebot ist abgelaufen. Der Artikel bleibt auf der Liste, nur der Angebotspreis ist weg; der Hinweis steht 1 Tag. Ein Artikel, der erst durch das Angebot entstanden ist, wird dann gelöscht und dein ursprüngliches Produkt kommt wieder auf die Liste.</li>
         <li>Ehrlich gesagt: Die Angebote kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren.</li></ul>`)}
@@ -6061,7 +6081,8 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("🎛️", "Extras", `<ul>
         <li>Each row has its <b>own page</b> with an on/off button: 🏷️ offers, 🧾 purchase log, 📍 shop mode automatic, 🛒😊 mascot.</li>
         <li><b>Applies to all devices:</b> purchase log, auto-ask, shop mode automatic and mascot. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
-        <li><b>🏷️ Offers</b> need a postcode (admins only). Also: <b>“Only these stores”</b> (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b> and <b>Switch off</b>. A status line shows the number of offers and the last check (“⚠️ currently unavailable” if Marktguru does not answer). They come unofficially from Marktguru and can stop working at any time.</li>
+        <li><b>🏷️ Offers</b> need a postcode (admins only). Also: <b>“Only these stores”</b> (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b> and <b>Switch off</b>. A status line shows the number of offers and the last check (“⚠️ currently unavailable” if Marktguru does not answer). They come unofficially from Marktguru and can stop working at any time. If there is no exact offer for an item, the list automatically looks for <b>similar</b> ones (🔀, at most 4): using the single words of the name, the product type from the database, nicknames and the category. Only the names of open items go to Marktguru for this.</li>
+        <li><b>🔒 Privacy</b> (under “App &amp; Info”) says in plain words what stays in your Home Assistant and what goes to the internet.</li>
         <li><b>📍 Automatic shop mode</b> needs a 📍 zone at the store (Stores → Location) and your phone set up as a person in Home Assistant. What you switch on or off yourself is left alone by the automation.</li>
         <li><b>🧾 Purchase log:</b> its own switch plus <b>“🎉 Ask automatically”</b> (only appears once the log is on) and an “Open” button. Switching it off only hides the display – the entries stay saved.</li></ul>`)}
       ${sec("💾", "Data", `<ul>
@@ -6109,7 +6130,8 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("🎛️", "Extras", `<ul>
         <li>Jede Zeile hat ihre <b>eigene Seite</b> mit einem Ein/Ausschalten-Knopf: 🏷️ Angebote, 🧾 Einkaufs-Protokoll, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen.</li>
         <li><b>Gilt für alle Geräte:</b> Protokoll, automatisch fragen, Laden-Modus automatisch und Maskottchen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
-        <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl (nur Admins). Dazu: <b>„Nur diese Geschäfte“</b> (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b> und <b>Ausschalten</b>. Eine Statuszeile zeigt die Zahl der Angebote und die letzte Prüfung („⚠️ gerade nicht verfügbar“, wenn Marktguru nicht antwortet). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren.</li>
+        <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl (nur Admins). Dazu: <b>„Nur diese Geschäfte“</b> (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b> und <b>Ausschalten</b>. Eine Statuszeile zeigt die Zahl der Angebote und die letzte Prüfung („⚠️ gerade nicht verfügbar“, wenn Marktguru nicht antwortet). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren. Gibt es für einen Artikel kein genaues Angebot, sucht die Liste automatisch <b>ähnliche</b> (🔀, höchstens 4): über die einzelnen Wörter des Namens, den Produkttyp aus der Datenbank, Spitznamen und die Kategorie. Dafür gehen nur die Namen offener Artikel an Marktguru.</li>
+        <li><b>🔒 Datenschutz</b> (unter „App &amp; Info“) zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht.</li>
         <li><b>📍 Laden-Modus automatisch</b> braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</li>
         <li><b>🧾 Einkaufs-Protokoll:</b> eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist) und ein „Öffnen“-Knopf. Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert.</li></ul>`)}
       ${sec("💾", "Daten", `<ul>
@@ -6160,6 +6182,31 @@ class EinkaufslisteCard extends HTMLElement {
     return `<div ${en ? 'translate="no"' : ""}><p class="hint">${en ? "The latest new features (version" : "Die letzten Neuerungen (Version"} <b>${EL_NEWS_VERSION}</b>):</p><ul>${EL_NEWS.map((n) => `<li>${en ? n[1] : n[0]}</li>`).join("")}</ul></div>`;
   }
 
+  // 🔒 Datenschutz: ehrlich, was in Home Assistant bleibt und was ins Internet geht
+  _privacyHtml(en = EL_LANG !== "de") {
+    const t = (de, eng) => (en ? eng : de);
+    return `<div translate="no">
+      <p class="hint">🏠 <b>${t("Das bleibt in deinem Home Assistant", "This stays in your Home Assistant")}</b>: ${t(
+        "deine Liste, Rezepte, Fotos, Verlauf, Einstellungen und Sicherungen. Es gibt keine Cloud vom Entwickler, keine Werbung und kein Tracking.",
+        "your list, recipes, photos, history, settings and backups. There is no developer cloud, no ads and no tracking.")}</p>
+      <p class="hint">▥ <b>${t("Barcode nachschlagen", "Barcode lookup")}</b>: ${t(
+        "Es geht nur die Barcode-Nummer an die offene Datenbank Open Food Facts (Name, Marke, Foto und Produkttyp kommen zurück). Das passiert nur, wenn ein Barcode gescannt oder neu geholt wird.",
+        "Only the barcode number goes to the open database Open Food Facts (name, brand, photo and product type come back). This only happens when a barcode is scanned or fetched again.")}</p>
+      <p class="hint">🏷️ <b>${t("Angebote", "Offers")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
+        "Es gehen die Namen offener Artikel und deine Postleitzahl an Marktguru. Sonst nichts – keine Namen von Personen, keine Fotos. Inoffiziell, kann jederzeit aufhören zu funktionieren.",
+        "The names of open items and your postcode go to Marktguru. Nothing else – no names of people, no photos. Unofficial, can stop working at any time.")}</p>
+      <p class="hint">🍽️ <b>${t("Rezept-Import aus einem Link", "Recipe import from a link")}</b>: ${t(
+        "Dein Home Assistant ruft die Webseite des Links ab. Es geht nur die Adresse hin.",
+        "Your Home Assistant fetches the web page of the link. Only the address is sent.")}</p>
+      <p class="hint">📋 <b>${t("Einkaufszettel abfotografieren", "Photographing a shopping note")}</b>: ${t(
+        "Die Texterkennung läuft auf deinem Gerät. Das Foto wird nicht verschickt.",
+        "The text recognition runs on your device. The photo is not sent anywhere.")}</p>
+      <p class="hint">📧 <b>${t("E-Mail-Import", "E-mail import")}</b> (${t("nur wenn eingerichtet", "only if set up")}): ${t(
+        "Gelesen wird nur das Postfach, das du in Home Assistant selbst angebunden hast.",
+        "Only the mailbox you connected in Home Assistant yourself is read.")}</p>
+    </div>`;
+  }
+
   _creditsHtml(en = EL_LANG !== "de") {
     const repo = "https://github.com/misterm2310/einkaufslisten-card";
     const t = (de, eng) => (en ? eng : de);
@@ -6172,8 +6219,8 @@ class EinkaufslisteCard extends HTMLElement {
         <a class="elcbtn" href="${repo}" target="_blank" rel="noopener">🐙 GitHub</a>
         <a class="elcbtn" href="${repo}/issues" target="_blank" rel="noopener">🐞 ${t("Fehler melden / Wunsch äußern", "Report a bug / request a feature")}</a>
       </div>
-      <p>🔒 ${t("Alle Daten bleiben in deinem Home Assistant. Ins Internet geht nur, was du selbst anstößt: ein gescannter Barcode (Nachschlagen bei Open Food Facts) oder ein Rezept-Link.",
-        "All data stays in your Home Assistant. Only what you trigger yourself goes to the internet: a scanned barcode (looked up at Open Food Facts) or a recipe link.")}</p>
+      <p>🔒 ${t("Alle Daten bleiben in deinem Home Assistant. Ins Internet geht nur, was du selbst anstößt: ein gescannter Barcode (Nachschlagen bei Open Food Facts), ein Rezept-Link oder – wenn du sie einschaltest – die Angebote. Mehr unter ⚙️ → Datenschutz.",
+        "All data stays in your Home Assistant. Only what you trigger yourself goes to the internet: a scanned barcode (looked up at Open Food Facts), a recipe link or – if you switch them on – the offers. More under ⚙️ → Privacy.")}</p>
       <p class="elcsmall">${t("Lizenz", "License")}: MIT</p>
     </div>`;
   }
@@ -6255,7 +6302,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>ℹ️ Info</b> shows from the product database: Nutri-Score, allergens, possible traces, labels and ingredients (no guarantee).</li>
         <li>Change the quantity directly: tap the quantity, then <span class="elg-k">−</span> and <span class="elg-k">＋</span>.</li>
         <li>Below the item in small print: the <b>store in its color</b> (only in the “All” tab), the <b>📝 note</b> (yellow background), ▥ (has a barcode), who added it (if the card option is on) and who checked it off. Plus, depending on the case: <b>🍽️ recipe name</b> (came from a recipe), <b>🧹 day</b> (is checked off automatically on that day), <b>↩️ instead of coffee</b> (offer item – the original is checked off), <b>⏳</b> (waiting for network).</li>
-        <li><b>🏷️</b> at the front of an item = on offer right now (only if turned on in the settings). Tap or long-press → <b>Offers</b>: store, price, how long. <b>🛒 Buy here</b> creates the offer item at that store (with its name and “🏷️ price until day” in its own field) and checks off the original product. If the offer has the same name as your product, your product stays: it moves to the offer's store and gets the price, nothing is checked off. If the offer's store matches none of your stores, the list asks whether to create it or use “Anywhere”. Items that only exist because of an offer are gone completely when you check them off.</li>
+        <li><b>🏷️</b> at the front of an item = on offer right now (only if turned on in the settings). Tap or long-press → <b>Offers</b>: store, price, how long. <b>🛒 Buy here</b> creates the offer item at that store (with its name and “🏷️ price until day” in its own field) and checks off the original product. If the offer has the same name as your product, your product stays: it moves to the offer's store and gets the price, nothing is checked off. If the offer's store matches none of your stores, the list asks whether to create it or use “Anywhere”. Items that only exist because of an offer are gone completely when you check them off. If you see <b>🔀</b> (blue) instead, there is nothing for exactly this product, but there are <b>similar offers</b> (e.g. “milk” for “UHT milk”) – at most 4, marked “Similar” in the window. You take them with <b>🛒 Buy here</b> too – since it is a different product, the list asks: <b>Replace</b> (your product is checked off and comes back when the offer is over) or <b>Also</b> (your product stays open).</li>
         <li><b>Searching offers:</b> just type the product at the top (e.g. “coffee”) – below the suggestions there's <b>🏷️ Show offers for “coffee”</b>. Use <b>➕ Add to list</b> to put it on the list at the right store.</li>
         <li><b>⌛ Offer over</b> = the offer has expired. The item stays on the list, only the offer price is gone; the note shows for 1 day. An item that was created by the offer is then deleted and your original product goes back on the list.</li>
         <li>Honestly: the offers come unofficially from Marktguru and may stop working at any time.</li></ul>`)}
@@ -6516,6 +6563,15 @@ class EinkaufslisteCard extends HTMLElement {
 
   // 🛒 Angebot übernehmen: Geschäft zuordnen (sonst fragen: anlegen oder „Egal wo“), Preis als Notiz
   async _takeOffer(o, { item = null, name = null } = {}) {
+    // 🔀 Ähnliches Angebot = anderes Produkt: erst fragen, ob dein Produkt ersetzt wird oder offen bleibt
+    let extra = false;
+    const mine = item || (name ? this._data.items.find((i) => !i.checked && !i.from_offer && !i.recipe_id && i.name.trim().toLowerCase() === name.trim().toLowerCase()) : null);
+    if (o.alt && mine) {
+      const how = await askChoice(`„${mine.name}“ und „${o.d || o.r}“ sind nicht dasselbe Produkt. Was soll mit deinem Produkt passieren?`,
+        [["replace", `🔁 Ersetzen – „${mine.name}“ wird abgehakt (kommt wieder, falls du das Angebot nicht kaufst)`], ["extra", `➕ Zusätzlich – „${mine.name}“ bleibt offen`]]);
+      if (!how) return false;
+      extra = how === "extra";
+    }
     let store = this._storeForRetailer(o.r);
     if (!store) {
       const how = await askChoice(`„${o.r}“ gibt es bei dir noch nicht als Geschäft.`, [["new", `➕ „${o.r}“ anlegen`], ["none", "🤷 Egal wo"]]);
@@ -6526,7 +6582,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     try {
       const res = await this._ws({ type: "einkaufsliste/offers/take", offer: { p: o.p, to: o.to || null, from: o.from || null, r: o.r, d: o.d || null },
-        ...(item ? { item_id: item.id } : { name }), store_id: store?.id || null });
+        ...(item ? { item_id: item.id } : { name }), store_id: store?.id || null, ...(extra ? { extra: true } : {}) });
       this._toast(`🛒 ${res?.name || item?.name || name}: ${store ? store.name : "Egal wo"} · ${Number(o.p).toFixed(2).replace(".", ",")} €`);
       return true;
     } catch (_) { return false; }
@@ -6541,7 +6597,7 @@ class EinkaufslisteCard extends HTMLElement {
       : last ? `<p><b>✅ An</b> <span>· zuletzt</span> ${WD_SHORT[pyWd(last)]}. ${String(last.getHours()).padStart(2, "0")}:${String(last.getMinutes()).padStart(2, "0")} <span>·</span> ${o.count || 0} <span>Angebote gefunden</span></p>`
       : `<p><b>✅ An</b> <span>– die ersten Angebote kommen in ein paar Minuten.</span></p>`;
     return `
-      <p class="hint"><b>🏷️ Angebote aus den Prospekten</b>: Steht etwas von deiner Liste gerade im Angebot, bekommt der Artikel ein kleines 🏷️. Lange drücken → <b>Angebote</b> zeigt Geschäft, Preis und wie lange es gilt.</p>
+      <p class="hint"><b>🏷️ Angebote aus den Prospekten</b>: Steht etwas von deiner Liste gerade im Angebot, bekommt der Artikel ein kleines 🏷️. Lange drücken → <b>Angebote</b> zeigt Geschäft, Preis und wie lange es gilt. Gibt es nichts Genaues, aber Ähnliches (z. B. „Milch“ für „H-Milch“), steht stattdessen ein blaues <b>🔀</b> – höchstens 4 Treffer.</p>
       <p class="hint warnbox">⚠️ <b>Inoffiziell.</b> Die Angebote kommen von Marktguru – ohne Absprache mit Marktguru, so wie die Webseite sie auch jedem Browser zeigt. Das kann <b>jederzeit ohne Vorwarnung aufhören</b> zu funktionieren. Die Einkaufsliste selbst läuft dann ganz normal weiter. Nachgeschaut werden nur die Namen offener Artikel und deine Postleitzahl – sonst nichts.</p>
       ${status}
       ${admin ? `
@@ -7072,6 +7128,11 @@ class EinkaufslisteCard extends HTMLElement {
     if (!msg.quantity) { const sp = splitQty(name); if (sp.qty) { msg.name = sp.name; msg.quantity = sp.bare ? sp.num : sp.qty; } }
     // 📏 Nur eine Zahl? Selbst gewählte Einheit dran – sonst nimmt Home Assistant die gemerkte Einheit (oder x)
     if (msg.quantity && isBareQty(msg.quantity) && this._qtyUnit) msg.quantity = qtyFmt(msg.quantity, this._qtyUnit);
+    // 🤔 Wirklich so viel? (nur bei ungewöhnlich großen Mengen)
+    if (msg.quantity && qtyOdd(msg.name, msg.quantity) && !elConfirm(`Wirklich ${msg.quantity} „${msg.name}“?`)) {
+      this.$("inQty")?.focus?.();
+      return;
+    }
     // Steht das schon bei einem anderen Geschäft offen? Dann erst fragen: verschieben oder zusätzlich?
     const other = this._openElsewhere({ name: msg.name, note: msg.note, for_whom: msg.for_whom }, msg.store_id);
     if (other) {
@@ -7111,6 +7172,7 @@ class EinkaufslisteCard extends HTMLElement {
         category_id: cat && this._cat(cat) ? cat : null,
       };
       if (sp.qty) msg.quantity = sp.bare ? sp.num : sp.qty; // nur Zahl -> Home Assistant nimmt die gemerkte Einheit
+      if (msg.quantity && qtyOdd(name, msg.quantity) && !elConfirm(`Wirklich ${msg.quantity} „${name}“?`)) continue; // 🤔 ungewöhnlich viel
       if (forWhom) msg.for_whom = forWhom;
       try { await this._ws(msg); added++; } catch (_) { /* Meldung kam schon */ }
     }
@@ -7825,6 +7887,14 @@ class EinkaufslisteCard extends HTMLElement {
             this._loadProducts();
           } finally { if (!this._refreshNone) say(""); this._refreshAllBusy = false; }
         })();
+        break;
+      }
+      case "prod-clear": { // 🧽 Radiergummi im Katalog: Suchfeld leeren + Filter zurück auf „alle“
+        this._prodFilter = ""; this._prodSel = "";
+        const si = this.$("prodSearch"); if (si) si.value = "";
+        const fs = this.$("prodFilterSel"); if (fs) fs.value = fs.options[0]?.value ?? "";
+        this._renderProducts();
+        si?.focus?.();
         break;
       }
       case "prod-refresh-close": { // ✖ Bericht von „Alles neu holen“ schließen (nur der Bericht, nicht der laufende Fortschritt)

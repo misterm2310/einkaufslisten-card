@@ -961,7 +961,8 @@ OFFER = vol.Schema({vol.Required("p"): vol.Coerce(float), vol.Optional("to"): OP
 
 @websocket_api.websocket_command(
     {vol.Required("type"): "einkaufsliste/offers/take", vol.Required("offer"): OFFER, vol.Optional("item_id"): OPT_STR,
-     vol.Optional("name"): OPT_STR, vol.Optional("store_id"): OPT_STR, vol.Optional("via"): vol.In(VIA)}
+     vol.Optional("name"): OPT_STR, vol.Optional("store_id"): OPT_STR, vol.Optional("via"): vol.In(VIA),
+     vol.Optional("extra"): bool}
 )
 @callback
 def ws_offers_take(hass, connection, msg):
@@ -969,7 +970,7 @@ def ws_offers_take(hass, connection, msg):
     who = _user_name(hass, connection)
     uid = connection.user.id if connection.user else None
     _run(hass, connection, msg, lambda m: m.take_offer(msg["offer"], msg.get("item_id") or None, msg.get("name") or None,
-                                                       msg.get("store_id") or None, who, uid))
+                                                       msg.get("store_id") or None, who, uid, bool(msg.get("extra"))))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/stats"})

@@ -92,6 +92,10 @@ def _norm_name(text: Any) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^\wäöüß]+", " ", str(text or "").lower())).strip()
 
 
+_HYPHEN_WORD = re.compile(r"(?<=[A-Za-zÄÖÜäöüß])-([a-zäöüß]+)")
+_HYPHEN_SMALL = {"und", "oder", "in", "mit", "aus", "ohne", "für", "von", "zum", "zur", "im", "an", "auf", "bei"}
+
+
 def _nice(text: Any) -> str | None:
     """Namen aufhübschen: Leerzeichen säubern, erster Buchstabe groß.
 
@@ -103,6 +107,10 @@ def _nice(text: Any) -> str | None:
     text = " ".join(text.split())
     if text[0].islower() and (len(text) == 1 or not text[1].isupper()):
         text = text[0].upper() + text[1:]
+        # „h-milch“ -> „H-Milch“, „coca-cola“ -> „Coca-Cola“ (nur wenn klein getippt; „und“, „mit“ & Co. bleiben)
+        text = _HYPHEN_WORD.sub(
+            lambda m: m.group(0) if m.group(1) in _HYPHEN_SMALL else f"-{m.group(1)[0].upper()}{m.group(1)[1:]}",
+            text)
     return text
 
 
@@ -594,8 +602,9 @@ class EinkaufslisteManager:
         return f"🏷️ {price} €"
 
     def take_offer(self, offer: dict[str, Any], item_id: str | None = None, name: str | None = None,
-                   store_id: str | None = None, by: str | None = None, by_id: str | None = None) -> dict[str, Any]:
-        """🛒 Angebot übernehmen: neuer Artikel mit dem Namen des Angebots (im Geschäft des Angebots),
+                   store_id: str | None = None, by: str | None = None, by_id: str | None = None,
+                   extra: bool = False) -> dict[str, Any]:
+        """🛒 Angebot übernehmen (extra=True: „zusätzlich“ – dein Produkt bleibt offen, wird nicht abgehakt): neuer Artikel mit dem Namen des Angebots (im Geschäft des Angebots),
         das Angebot steht in einem eigenen Feld (nicht in der Notiz), das ursprüngliche Produkt wird abgehakt.
         Artikel aus Angeboten verschwinden beim Abhaken ganz."""
         store_id = self._check_store(store_id)
@@ -605,6 +614,8 @@ class EinkaufslisteManager:
             original = next((i for i in self.items if not i["checked"] and not i.get("from_offer")
                              and not i.get("recipe_id") and i["name"].strip().lower() == low), None)
         offer_name = (offer.get("d") or name or (original or {}).get("name") or "").strip()
+        if extra:  # 🔀 ähnliches Angebot „zusätzlich“: dein Produkt bleibt, wie es ist (nicht abhaken, nicht merken)
+            original = None
         created = False
         if original is not None and (not offer_name or offer_name.lower() == original["name"].strip().lower()):
             item = original  # gleicher Name = dein Produkt: das Angebot hängt nur daran, es wird nie gelöscht

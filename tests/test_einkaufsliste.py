@@ -496,7 +496,7 @@ async def test_photo_kept_for_recipe(hass, setup):
 async def test_names_are_tidied(hass, setup):
     m = mgr(hass)
     assert m.add_item("  milch   ")["name"] == "Milch"
-    assert m.add_item("h-milch")["name"] == "H-milch"
+    assert m.add_item("h-milch")["name"] == "H-Milch"
     assert m.add_item("iPhone Kabel")["name"] == "iPhone Kabel"
     assert m.add_item("MILCH") is m.items[0]  # gleicher Artikel, keine Dopplung
     r = m.add_recipe("freitags   fisch", [{"name": "fischstäbchen"}])
@@ -2976,3 +2976,33 @@ async def test_offers_words_and_category(hass: HomeAssistant, setup) -> None:
     got = m.offers_data["h-milch"]
     assert "H-Milch" in queries and queries.index("H-Milch") < len(queries) - 1
     assert len(got) == 4 and all(o["alt"] == "Milch" for o in got) and got[0]["p"] == 1.5
+
+
+def test_nice_hyphen_words():
+    from custom_components.einkaufsliste.manager import _nice
+
+    assert _nice("h-milch") == "H-Milch"
+    assert _nice("coca-cola") == "Coca-Cola"
+    assert _nice("ben-und-jerry") == "Ben-und-Jerry"
+    assert _nice("iPhone-case") == "iPhone-case"  # groß/gemischt getippt bleibt
+    assert _nice("  t-shirt ") == "T-Shirt"
+
+
+async def test_offer_take_extra_keeps_my_product(hass: HomeAssistant, setup) -> None:
+    """🔀 Ähnliches Angebot „zusätzlich“: dein Produkt bleibt offen, Angebots-Artikel kommt dazu und geht mit dem Angebot wieder."""
+    from datetime import timedelta as td
+    m = mgr(hass)
+    now = dt_util.utcnow()
+    soon = (now + td(days=2)).isoformat()
+    milch = m.add_item("H-Milch", store_id=None)
+    off = m.take_offer({"p": 0.99, "to": soon, "r": "Lidl", "d": "Frische Vollmilch"}, item_id=milch["id"], store_id=None, extra=True)
+    assert off["name"] == "Frische Vollmilch" and off["from_offer"] and "orig" not in off
+    assert not milch["checked"] and milch in m.items  # dein Produkt bleibt offen
+    m.expire_offers(now + td(days=3))
+    m.expire_offers(now + td(days=4, hours=1))
+    assert off not in m.items  # Angebots-Artikel ist weg
+    assert milch in m.items and not milch["checked"]  # dein Produkt unverändert
+    # zum Vergleich „ersetzen“: Original wird abgehakt
+    kaffee = m.add_item("Kaffee", store_id=None)
+    jac = m.take_offer({"p": 4.99, "to": soon, "r": "Lidl", "d": "Jacobs"}, item_id=kaffee["id"], store_id=None)
+    assert kaffee["checked"] and jac["orig"]["name"] == "Kaffee"
