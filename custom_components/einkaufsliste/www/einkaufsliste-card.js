@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.49.4";
+const EL_VERSION = "2.49.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.49.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -2798,8 +2798,12 @@ class EinkaufslisteCard extends HTMLElement {
       return;
     }
     set("inQty", i.quantity);
-    set("inNote", i.note);
-    const own = i.own_note ?? (this._data.history || []).find((h) => h.name.toLowerCase() === String(c.name).toLowerCase())?.own_note ?? "";
+    // ✏️ Eigene Notiz genau dieser Variante (Name + Notiz) – nie die einer anderen Variante desselben Namens („AA“ bei „9V Block“)
+    let own = i.own_note || this._ownNote(c.name, i.note) || "";
+    let note = i.note;
+    // ✏️ Eine alte, selbst getippte Notiz (ohne Barcode) gibt es nur noch als Eigene Notiz – nicht mehr als „alte Notiz“ dazu
+    if (note && !own && this._noteIsOwn(c.name, note)) { own = note; note = null; }
+    set("inNote", note);
     set("inOwn", own); // ✏️ Eigene Notiz vom letzten Mal
     this.$("inOwn").hidden = !own;
     const f = this.$("inFor");
@@ -2811,7 +2815,7 @@ class EinkaufslisteCard extends HTMLElement {
     f.value = i.for_whom || "";
     if (!this._fixedStore && i.store_id && this._store(i.store_id)) this.$("inStore").value = i.store_id;
     if (i.category_id && this._cat(i.category_id)) { this.$("inCat").value = i.category_id; this._catManual = true; }
-    this.$("inNote").hidden = !i.note;
+    this.$("inNote").hidden = !note;
     this._renderQtyChips();
     this._renderForChips();
   }
