@@ -2,14 +2,16 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.45.0";
+const EL_VERSION = "2.46.0";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.45.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.46.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🔄 <b>Daten neu laden – mit Auswahl:</b> Im Produkt heißt der Knopf jetzt <b>„Daten neu laden“</b>: Du wählst einzeln, ob <b>Name</b>, <b>Notiz</b> und/oder <b>Foto</b> neu aus der Datenbank kommen (Nutri-Score und Allergene stehen zum Ansehen dabei). Das Wolken-Symbol bei „Alle Produkte“ macht dasselbe für <b>alle Produkte mit Barcode</b> auf einmal (vorausgewählt: nur Foto). Dazu: Die Katalog-Suche findet jetzt auch über <b>Spitznamen, Barcode-Nummer, Kategorie, Geschäft</b> und gelernte Tippfehler, Spitznamen beginnen immer mit einem Großbuchstaben, und die gesperrte Barcode-Notiz steht beim Bearbeiten nicht mehr im Weg.",
+   "🔄 <b>Reload data – with a choice:</b> inside a product the button is now called <b>“Reload data”</b>: you choose separately whether <b>name</b>, <b>note</b> and/or <b>photo</b> come fresh from the database (Nutri-Score and allergens are shown for reference). The cloud icon under “All products” does the same for <b>all products with a barcode</b> at once (only the photo is pre-selected). Also: catalog search now finds by <b>nicknames, barcode number, category, store</b> and learned typos, nicknames always start with a capital letter, and the locked barcode note no longer gets in the way when editing."],
   ["✏️ <b>Eigene Notiz:</b> Das einzige Feld, in das du selbst schreibst (Stift-Symbol unter dem Eingabefeld, beim Bearbeiten und im Katalog). Die 📝 Notiz kommt jetzt <b>nur noch aus dem Barcode</b> und lässt sich nicht mehr tippen; alte, selbst getippte Notizen erscheinen automatisch als ✏️ (nichts geht verloren, nichts wird zusammengeführt). Im Katalog steht hinter dem Namen die Barcode-Notiz, sonst deine ✏️. Die ✏️ Notiz bleibt beim Produkt, wird beim nächsten Eintragen wieder vorgeschlagen und von der Produkt-Datenbank <b>nie überschrieben</b>. In der Liste steht sie in derselben gelben Farbe wie die Notiz.",
    "✏️ <b>Own note:</b> the only field you type into yourself (pencil symbol below the input field, when editing and in the catalog). The 📝 note now comes <b>only from the barcode</b> and can no longer be typed; old notes you typed yourself now appear as ✏️ automatically (nothing is lost, nothing is merged). In the catalog the barcode note follows the name, otherwise your ✏️. The ✏️ note stays with the product, is suggested again next time and is <b>never overwritten</b> by the product database. In the list it has the same yellow colour as the note."],
-  ["🗄️ <b>Daten aus der Datenbank nachladen:</b> In ⚙️ → Produkte → „Alle Produkte“ zeigt bei jedem Produkt mit Barcode der Knopf <b>„Daten aus Datenbank“</b>, wie die Produkt-Datenbank es kennt (Name, Notiz, Nutri-Score, Allergene) – und du wählst einzeln, ob <b>Name</b> und/oder <b>Notiz</b> übernommen werden oder deine Daten bleiben.",
-   "🗄️ <b>Reload data from the database:</b> in ⚙️ → Products → “All products” the button <b>“Data from database”</b> shows for every product with a barcode how the product database knows it (name, note, Nutri-Score, allergens) – and you choose separately whether the <b>name</b> and/or the <b>note</b> are applied or your data stays."],
+  ["🗄️ <b>Daten aus der Datenbank nachladen:</b> In ⚙️ → Produkte → „Alle Produkte“ zeigt bei jedem Produkt mit Barcode der Knopf <b>„Daten aus Datenbank“</b> (inzwischen „Daten neu laden“), wie die Produkt-Datenbank es kennt (Name, Notiz, Nutri-Score, Allergene) – und du wählst einzeln, ob <b>Name</b> und/oder <b>Notiz</b> übernommen werden oder deine Daten bleiben.",
+   "🗄️ <b>Reload data from the database:</b> in ⚙️ → Products → “All products” the button <b>“Data from database”</b> (now “Reload data”) shows for every product with a barcode how the product database knows it (name, note, Nutri-Score, allergens) – and you choose separately whether the <b>name</b> and/or the <b>note</b> are applied or your data stays."],
   ["▥ <b>Barcode zu einem bestehenden Produkt:</b> Ordnest du einem Artikel in der Liste einen Barcode zu (lange drücken → Barcode), schaut die Liste in der Datenbank nach. Heißt das Produkt dort anders, fragt sie, ob Name und Notiz <b>überschrieben</b> werden sollen.",
    "▥ <b>Barcode for an existing product:</b> when you assign a barcode to an item in the list (long-press → Barcode), the list checks the database. If the product has a different name there, it asks whether name and note should be <b>overwritten</b>."],
   ["📖 <b>Anleitungen mit Suche:</b> Beide Anleitungen (🛒 für alle und ⚙️ für die Einstellungen) haben oben eine <b>Suchleiste</b> und sind überarbeitet: verständlicher, vollständiger – mit neuem Barcode-Abschnitt („Was passiert beim Scannen?“).",
@@ -2948,7 +2950,7 @@ class EinkaufslisteCard extends HTMLElement {
         <input class="full" id="edName" value="${esc(item.name)}" placeholder="Name">
         <input id="edQty" value="${esc(item.quantity || "")}" placeholder="Menge">
         <select id="edFor">${this._personOptions(item.for_whom)}</select>
-        ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz (alt)">` : `<input class="full" id="edNote" value="${esc(item.note)}" readonly title="Kommt aus dem Barcode – eigene Texte bitte ins ✏️-Feld" placeholder="📝 Notiz">`}` : `<input type="hidden" id="edNote" value="">`}
+        ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz (alt)">` : `<input type="hidden" id="edNote" value="${esc(item.note)}">`}` : `<input type="hidden" id="edNote" value="">`}
         ${item.recipe_id ? "" : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz – bleibt beim Produkt">`}
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
@@ -3503,7 +3505,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${this._prodTab === "scanned" ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:filter-variant"></ha-icon><select class="grow" id="prodFilterSel" title="Filter">${this._prodFilterOptions()}</select>
           <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog" aria-label="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon></button>
           <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog" aria-label="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
-          <button class="btn" data-act="prod-refresh-all" title="Alle Fotos neu holen" aria-label="Alle Fotos neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon></button></div>
+          <button class="btn" data-act="prod-refresh-all" title="Alles neu holen (Name, Notiz, Foto) – für alle Produkte mit Barcode, mit Auswahl" aria-label="Alles neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon></button></div>
         <p class="hint" id="prodRefreshMsg" ${this._refreshNone ? "" : "hidden"}>${esc(this._refreshNone ? elT(this._refreshNone) : "")}</p>
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
@@ -4135,7 +4137,7 @@ class EinkaufslisteCard extends HTMLElement {
     const q = (this._prodFilter || "").trim().toLowerCase();
     const scannedTab = this._prodTab === "scanned";
     const ff = scannedTab ? () => true : this._prodFilterFn();
-    let list = this._products.filter((p) => (!scannedTab || p.scanned) && ff(p) && (!q || `${p.name} ${p.note || ""} ${p.own_note || ""}`.toLowerCase().includes(q)));
+    let list = this._products.filter((p) => (!scannedTab || p.scanned) && ff(p) && (!q || this._prodSearchText(p).includes(q)));
     if (scannedTab) list = list.sort((a, b) => String(b.scanned_at || "").localeCompare(String(a.scanned_at || "")));
     if (!list.length) { this._oldKeys = null; box.innerHTML = `<p class="hint">${q ? `Nichts gefunden zu „${esc(q)}“.` : this._prodSel === "~old3m" ? "Nichts Altes – alles wurde in den letzten 3 Monaten gekauft. 👍" : scannedTab ? "Alles geprüft – nichts Neues gescannt. 👍" : "Noch keine Produkte."}</p>`; return; }
     const shown = list.slice(0, 80);
@@ -4146,7 +4148,7 @@ class EinkaufslisteCard extends HTMLElement {
       const bits = [
         st ? `<span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>` : "",
         cat ? `<span>${esc(cat.name)}</span>` : "",
-        (p.aliases || []).length ? `<span title="Spitznamen">🏷️ ${esc(p.aliases.join(", "))}</span>` : "",
+        (p.aliases || []).length ? `<span title="Spitznamen">🏷️ ${esc(this._capAliases(p.aliases).join(", "))}</span>` : "",
         p.barcodes.length ? `<span>▥ ${p.barcodes.length}</span>` : "",
         p.photos ? `<span>📷 ${p.photos}${p.photos >= 6 ? " (voll)" : ""}</span>` : "",
         p.open ? `<span>🛒 steht drauf</span>` : "",
@@ -4155,9 +4157,9 @@ class EinkaufslisteCard extends HTMLElement {
       if (this._prodEdit === p.key) {
         return `<div class="prodedit" data-key="${esc(p.key)}">
           <input id="peName" value="${esc(p.name)}" placeholder="Name">
-          ${p.note ? (p.barcodes.length ? `<input id="peNote" value="${esc(p.note)}" readonly placeholder="📝 Notiz" title="Kommt aus dem Barcode bzw. der Datenbank">` : `<input id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz (alt)">`) : `<input type="hidden" id="peNote" value="">`}
+          ${p.note ? (p.barcodes.length ? `<input type="hidden" id="peNote" value="${esc(p.note)}">` : `<input id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz (alt)">`) : `<input type="hidden" id="peNote" value="">`}
           <input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben" title="Nur für dich: Die Datenbank überschreibt sie nie">
-          <input id="peAliases" value="${esc((p.aliases || []).join(", "))}" data-orig="${esc((p.aliases || []).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
+          <input id="peAliases" value="${esc(this._capAliases(p.aliases).join(", "))}" data-orig="${esc(this._capAliases(p.aliases).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
           <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
           <select id="peStore">${this._selectOptions(this._data.stores, p.store_id, "🛒 Kein Standard-Geschäft")}</select>
           ${this._data.stores.length > 1 ? `<div class="pestores" title="In welchen Geschäften gibt es das? Lernt sich beim Abhaken auch von selbst.">🏪 Gibt's bei: ${this._data.stores.map((st) =>
@@ -4171,8 +4173,7 @@ class EinkaufslisteCard extends HTMLElement {
             <button class="btn primary" data-act="prod-merge-go"><ha-icon icon="mdi:call-merge"></ha-icon>Jetzt zusammenführen</button></div>` : ""}
           <div class="btnrow">
             ${p.photos ? `<button class="btn" data-act="prod-photos"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Fotos</button>` : ""}
-            ${p.barcodes.length ? `<button class="btn" data-act="prod-refresh" title="Foto noch einmal aus der Barcode-Datenbank holen (abgeschnittene Fotos werden ersetzt)"><ha-icon icon="mdi:cloud-download-outline"></ha-icon>Foto neu holen</button>` : ""}
-            ${p.barcodes.length ? `<button class="btn" data-act="prod-dbdata" title="Name, Notiz und Infos (z. B. Nutri-Score) aus der Produkt-Datenbank ansehen und auf Wunsch deinen Namen/Notiz überschreiben"><ha-icon icon="mdi:database-refresh-outline"></ha-icon>Daten aus Datenbank</button>` : ""}
+            ${p.barcodes.length ? `<button class="btn" data-act="prod-dbdata" title="Name, Notiz und Foto aus der Produkt-Datenbank neu laden – du wählst einzeln. Nutri-Score und Allergene stehen zum Ansehen dabei"><ha-icon icon="mdi:database-refresh-outline"></ha-icon>Daten neu laden</button>` : ""}
             <button class="btn" data-act="prod-merge" title="Dieses Produkt in ein anderes aufgehen lassen (z. B. Tomaten → Tomate)"><ha-icon icon="mdi:call-merge"></ha-icon>Zusammenführen</button>
             <button class="btn danger" data-act="prod-forget" title="Produkt mit Fotos, Barcodes und Vorschlag löschen – auch von der Einkaufsliste"><ha-icon icon="mdi:delete-outline"></ha-icon>Ganz löschen</button>
             <span style="flex:1"></span>
@@ -4928,6 +4929,26 @@ class EinkaufslisteCard extends HTMLElement {
     return this._noteIsOwn(name, note)
       ? `<span class="inote iown" title="Eigene Notiz">✏️ ${esc(note)}</span>`
       : `<span class="inote">📝 ${esc(note)}</span>`;
+  }
+
+  _capAlias(a) {
+    const t = String(a || "").trim();
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+  }
+
+  _capAliases(list) {
+    return (list || []).map((a) => this._capAlias(a)).filter(Boolean);
+  }
+
+  // 🔎 Katalog-Suche: Name, Notizen, Spitznamen, Barcode-Nummer, Kategorie, Geschäft, gelernte Tippfehler
+  _prodSearchText(p) {
+    const d = this._data || {};
+    const stores = new Set([p.store_id, ...(p.stores || [])].filter(Boolean));
+    const typos = Object.entries(d.typos || {}).filter(([, r]) => String(r).toLowerCase() === p.name.toLowerCase()).map(([w]) => w);
+    return [
+      p.name, p.note, p.own_note, ...(p.aliases || []), ...(p.barcodes || []),
+      this._cat(p.category_id)?.name, ...[...stores].map((id) => this._store(id)?.name), ...typos,
+    ].filter(Boolean).join(" ").toLowerCase();
   }
 
   _barcodesOf(key) {
@@ -5835,12 +5856,11 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>People:</b> the names for the quick buttons at “For whom?”. Without people the 👤 stays hidden in the list.</li>
         <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK; “Save” also counts as checked) and <b>Delete shopping-list items</b>.</li>
         <li><b>Search and filters in “All products”:</b> search field plus filters such as no category, no store, is on the list, with/without photo, with/without barcode, by store or by category. On a PC the keyboard works too.</li>
-        <li><b>Inside a product:</b> name, note (📝 read-only, from the barcode; old notes you typed yourself show as ✏️ and stay editable) and <b>✏️ own note</b> (just for you, never overwritten), <b>🏷️ nicknames</b> (type “Tempos” and the list lands at “tissues”), category and default store, <b>“🏪 Available at”</b> (a tick per store), <b>🧠 learned typos</b> (with “Forget”), delete single barcodes, <b>🗄️ Data from database</b> (for products with a barcode: shows name, note, Nutri-Score and allergens from the database next to your data – you choose “apply name” and/or “apply note” separately, or “Keep my data”; your ✏️ own note stays), 📷 photos (order, ⭐ main photo, delete) and “Delete completely”. When merging, the old name becomes a nickname.</li>
+        <li><b>Inside a product:</b> name, note (📝 read-only, from the barcode; old notes you typed yourself show as ✏️ and stay editable) and <b>✏️ own note</b> (just for you, never overwritten), <b>🏷️ nicknames</b> (type “Tempos” and the list lands at “tissues”), category and default store, <b>“🏪 Available at”</b> (a tick per store), <b>🧠 learned typos</b> (with “Forget”), delete single barcodes, <b>🗄️ Reload data</b> (for products with a barcode: shows name, note, Nutri-Score and allergens from the database next to your data – you tick separately name, note and/or <b>photo</b> (cut-off photos are replaced, a whole one stays), or “Keep my data”; your ✏️ own note stays), 📷 photos (order, ⭐ main photo, delete) and “Delete completely”. When merging, the old name becomes a nickname.</li>
         <li><b>Delete shopping-list items:</b> deletes items from the list for good, also from “Done”. Barcode and suggestion stay; the photo only goes if it is not needed anywhere else.</li>
         <li><b>Filter “🗓️ Not bought for 3 months”:</b> shows products that were last checked off more than 3 months ago (never checked off: counted from when they were added). Products on the list or in a recipe are not shown. Tap one to look at it, or <b>Delete all</b> in one go.</li>
         <li><b>➕ New product / ▥ By barcode</b> (icons only): adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
-        <li><b>📥 Fetch photo again:</b> inside a product (with a barcode) fetches the photo from the barcode database again. Cut-off photos are replaced.</li>
-        <li><b>🔄 Fetch all photos again</b> (cloud icon under “All products”): fetches the photos from the database again for every product with a barcode and replaces old database photos with newer ones. Your own photos stay, nothing is added twice. At the end it lists where the database has no photo.</li>
+        <li><b>🔄 Fetch everything again</b> (cloud icon under “All products”): first you choose what – <b>photo</b> (pre-selected), <b>name</b> and/or <b>note</b> – then it goes through every product with a barcode, one after the other. Newer database photos replace old database photos; your own photos and your ✏️ own note stay. An empty database note never deletes anything. At the end it lists where the database has no photo.</li>
         <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
         <li><b>Recipes:</b> a tab for the recipes (button <b>“New recipe”</b>, search field, ✏️ per row) and one for the groups (Fish, Meat, Pastry …; the group's icon and colour tint the recipes).</li>
         <li><b>Recipe editor:</b> name and group (the group is suggested automatically, “✨ suggested”), “The quantities are for N people/trays”, recipe photo, ingredients (entered like in the list, with units and 🧂 “we always have it”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>Oven &amp; co.</b> (degrees, minutes), the instructions (one step per line), photos per step (only after the first save), delete, cancel, save. Foreign measures (cup, oz, °F) from recipe links are converted.</li></ul>`)}
@@ -5884,12 +5904,11 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Personen:</b> die Namen für die Schnellknöpfe bei „Für wen?“. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.</li>
         <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt; „Speichern“ zählt auch als geprüft) und <b>Einkaufsliste Produkte löschen</b>.</li>
         <li><b>Suche und Filter bei „Alle Produkte“:</b> Suchfeld, dazu Filter wie ohne Kategorie, ohne Geschäft, steht auf der Liste, mit/ohne Foto, mit/ohne Barcode, nach Geschäft oder nach Kategorie. Am PC geht auch die Tastatur.</li>
-        <li><b>Im Produkt:</b> Name, Notiz (📝 nur lesbar, aus dem Barcode; alte selbst getippte Notizen zeigt die Liste als ✏️ und sie bleiben änderbar) und <b>✏️ Eigene Notiz</b> (nur für dich, wird nie überschrieben), <b>🏷️ Spitznamen</b> (tippst du „Tempos“, landet die Liste bei „Taschentücher“), Kategorie und Standard-Geschäft, <b>„🏪 Gibt’s bei“</b> (Häkchen pro Geschäft), <b>🧠 gelernte Tippfehler</b> (mit „Vergessen“), einzelne Barcodes löschen, <b>🗄️ Daten aus Datenbank</b> (bei Produkten mit Barcode: zeigt Name, Notiz, Nutri-Score und Allergene aus der Datenbank neben deinen Daten – du wählst einzeln „Name übernehmen“ und/oder „Notiz übernehmen“ oder „Meine Daten behalten“; deine ✏️ Eigene Notiz bleibt), 📷 Fotos (Reihenfolge, ⭐ Hauptfoto, löschen) und „Ganz löschen“. Beim Zusammenführen wird der alte Name zum Spitznamen.</li>
+        <li><b>Im Produkt:</b> Name, Notiz (📝 nur lesbar, aus dem Barcode; alte selbst getippte Notizen zeigt die Liste als ✏️ und sie bleiben änderbar) und <b>✏️ Eigene Notiz</b> (nur für dich, wird nie überschrieben), <b>🏷️ Spitznamen</b> (tippst du „Tempos“, landet die Liste bei „Taschentücher“), Kategorie und Standard-Geschäft, <b>„🏪 Gibt’s bei“</b> (Häkchen pro Geschäft), <b>🧠 gelernte Tippfehler</b> (mit „Vergessen“), einzelne Barcodes löschen, <b>🗄️ Daten neu laden</b> (bei Produkten mit Barcode: zeigt Name, Notiz, Nutri-Score und Allergene aus der Datenbank neben deinen Daten – du hakst einzeln Name, Notiz und/oder <b>Foto</b> an (abgeschnittene Fotos werden ersetzt, ein ganzes bleibt) oder wählst „Meine Daten behalten“; deine ✏️ Eigene Notiz bleibt), 📷 Fotos (Reihenfolge, ⭐ Hauptfoto, löschen) und „Ganz löschen“. Beim Zusammenführen wird der alte Name zum Spitznamen.</li>
         <li><b>Einkaufsliste Produkte löschen:</b> löscht Artikel endgültig von der Liste, auch aus „Erledigt“. Barcode und Vorschlag bleiben; das Foto geht nur mit, wenn es sonst nirgends mehr gebraucht wird.</li>
         <li><b>Filter „🗓️ Seit 3 Monaten nicht gekauft“:</b> zeigt Produkte, die vor mehr als 3 Monaten zuletzt abgehakt wurden (nie abgehakt: gezählt ab dem Eintragen). Produkte, die auf der Liste oder in einem Rezept stehen, fehlen hier. Antippen zum Ansehen, oder <b>Alle löschen</b> auf einmal.</li>
         <li><b>➕ Neues Produkt / ▥ Per Barcode</b> (nur Symbole): legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
-        <li><b>📥 Foto neu holen:</b> im Produkt (mit Barcode) holt das Foto noch einmal aus der Barcode-Datenbank. Abgeschnittene Fotos werden ersetzt.</li>
-        <li><b>🔄 Alle Fotos neu holen</b> (Wolken-Symbol bei „Alle Produkte“): holt für alle Produkte mit Barcode die Fotos aus der Datenbank neu und ersetzt alte Datenbank-Fotos durch neuere. Eigene Fotos bleiben, nichts kommt doppelt dazu. Am Ende steht, wo die Datenbank kein Foto hat.</li>
+        <li><b>🔄 Alles neu holen</b> (Wolken-Symbol bei „Alle Produkte“): Du wählst erst, was – <b>Foto</b> (vorausgewählt), <b>Name</b> und/oder <b>Notiz</b> – dann geht es nacheinander durch alle Produkte mit Barcode. Neuere Datenbank-Fotos ersetzen alte Datenbank-Fotos; eigene Fotos und deine ✏️ Eigene Notiz bleiben. Eine leere Datenbank-Notiz löscht nie etwas. Am Ende steht, wo die Datenbank kein Foto hat.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
         <li><b>Rezepte:</b> ein Reiter für die Rezepte (Knopf <b>„Neues Rezept“</b>, Suchfeld, pro Zeile ✏️), einer für die Gruppen (Fisch, Fleisch, Gebäck …; Icon und Farbe der Gruppe färben die Rezepte).</li>
         <li><b>Rezept-Editor:</b> Name und Gruppe (die Gruppe wird automatisch vorgeschlagen, „✨ vorgeschlagen“), „Die Mengen sind für N Personen/Bleche“, Rezept-Foto, Zutaten (eintragen wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten), die Zubereitung (ein Schritt pro Zeile), Fotos pro Schritt (erst nach dem ersten Speichern), Löschen, Abbrechen, Speichern. Aus Rezept-Links werden fremde Maße (cup, oz, °F) umgerechnet.</li></ul>`)}
@@ -6349,14 +6368,24 @@ class EinkaufslisteCard extends HTMLElement {
     return low(own.name) !== low(db.name) || low(own.note) !== low(db.note);
   }
 
-  _applyDbData(key, db, sel = { name: true, note: true }) {
-    const msg = { type: "einkaufsliste/product/update", key };
-    if (sel.name) msg.name = db.name;
-    if (sel.note) msg.note = db.note || "";
-    if (!sel.name && !sel.note) return Promise.resolve();
-    return this._ws(msg)
-      .then(() => { this._toast("✅ Übernommen – deine ✏️ Eigene Notiz bleibt, wie sie ist"); this._prodEdit = null; this._loadProducts?.(); })
-      .catch(() => {});
+  async _applyDbData(key, db, sel = { name: true, note: true }) {
+    try {
+      if (sel.photo) { // Foto zuerst (unter dem alten Schlüssel) – beim Umbenennen zieht es mit um
+        this._toast("🔄 Foto wird geholt …");
+        await this._ws({ type: "einkaufsliste/product/refresh", key });
+      }
+      if (sel.name || sel.note) {
+        const msg = { type: "einkaufsliste/product/update", key };
+        if (sel.name) msg.name = db.name;
+        if (sel.note) msg.note = db.note || "";
+        await this._ws(msg);
+      }
+      if (sel.photo || sel.name || sel.note) {
+        this._toast("✅ Übernommen – deine ✏️ Eigene Notiz bleibt, wie sie ist");
+        this._prodEdit = null;
+        this._loadProducts?.();
+      }
+    } catch (_) { /* Meldung kam schon */ }
   }
 
   // 🗄️ Katalog: Daten aus der Produkt-Datenbank nachladen
@@ -6401,33 +6430,64 @@ class EinkaufslisteCard extends HTMLElement {
         <div style="font:600 19px Roboto,sans-serif;margin-bottom:10px">🗄️ Daten aus der Datenbank</div>
         <div style="${grid};color:#bbb;font-size:13px"><span></span><b>Deine Daten</b><b>Datenbank</b></div>
         ${row("Name", own.name, db.name, "dbName", nameDiff)}${row("Notiz", own.note, db.note, "dbNote", noteDiff)}
+        ${ask ? "" : `<div style="${grid}"><span style="color:#999">Foto</span><span style="color:#bbb;font-size:13px">${this._hasPhoto(key) ? "Foto vorhanden" : "noch keins"}</span><span><label style="display:block;color:#ddd"><input type="checkbox" id="dbPhoto" checked> neu holen</label><span style="display:block;color:#888;font-size:12px">Abgeschnittene werden ersetzt, ein ganzes bleibt (höchstens 6).</span></span></div>`}
         <div style="margin:6px 0;padding:6px 8px;border-radius:8px;background:color-mix(in srgb, #f9a825 16%, transparent)">✏️ <b>Eigene Notiz:</b> ${esc(own.own_note || "–")}<span style="display:block;color:#bbb;font-size:12px">Die bleibt immer, wie sie ist – die Datenbank überschreibt sie nie.</span></div>
         ${info ? `<div style="margin-top:10px">${info.nutriscore ? `<span style="background:${ns[info.nutriscore]};color:#fff;font:700 18px Roboto,sans-serif;border-radius:8px;padding:2px 10px">${esc(info.nutriscore)}</span> Nutri-Score` : "Kein Nutri-Score bekannt"}</div>
         ${info.found ? `<div style="margin-top:6px"><b>⚠️ Allergene:</b> ${list(info.allergens)}</div>` : ""}` : ""}
         <div style="color:#888;font-size:12px;margin-top:10px">Quelle: ${esc(db.source)} · Barcode ${esc(code)} · Angaben ohne Gewähr</div>`;
-      if (nameDiff || noteDiff) {
+      if (nameDiff || noteDiff || !ask) {
         const go = ovButton("Auswahl übernehmen", true);
         go.style.marginTop = "14px";
         go.onclick = () => {
-          const sel = { name: !!card.querySelector("#dbName")?.checked, note: !!card.querySelector("#dbNote")?.checked };
+          const sel = { name: !!card.querySelector("#dbName")?.checked, note: !!card.querySelector("#dbNote")?.checked, photo: !!card.querySelector("#dbPhoto")?.checked };
           ov.remove();
           this._applyDbData(key, db, sel);
         };
         card.appendChild(go);
-      } else if (!ask) {
-        const ok = document.createElement("div");
-        ok.style.marginTop = "10px";
-        ok.textContent = "Name und Notiz stimmen schon überein ✅";
-        card.appendChild(ok);
       }
     }
     const diff = db?.found && this._dbDiffers(own, db);
-    const b = ovButton(diff ? "Meine Daten behalten" : "Schließen", false);
+    const b = ovButton(diff || (db?.found && !ask) ? "Meine Daten behalten" : "Schließen", false);
     b.style.marginTop = "10px";
     b.onclick = () => ov.remove();
     card.appendChild(b);
     ov.appendChild(card);
     ov.addEventListener("click", (e) => { if (e.target === ov) ov.remove(); });
+  }
+
+  // 🔄 „Alles neu holen“ für alle Produkte: erst wählen, was; Foto ist vorausgewählt, Name/Notiz bewusst anhaken
+  _bulkChoice(n) {
+    return new Promise((resolve) => {
+      const ov = makeOverlay();
+      ov.style.justifyContent = "flex-start";
+      ov.style.overflowY = "auto";
+      ov.style.touchAction = "auto";
+      const card = document.createElement("div");
+      Object.assign(card.style, { background: "#1e1e1e", borderRadius: "16px", padding: "18px", maxWidth: "460px", width: "100%", marginTop: "4vh", lineHeight: "1.45" });
+      const cb = (id, label, hint, on) => `<label style="display:block;margin:10px 0 2px;color:#eee"><input type="checkbox" id="${id}" ${on ? "checked" : ""}> <b>${label}</b></label><div style="color:#999;font-size:12px;margin-left:24px">${hint}</div>`;
+      card.innerHTML = `<div style="font:600 19px Roboto,sans-serif;margin-bottom:6px">🔄 Alles neu holen</div>
+        <div style="color:#bbb">Für alle <b>${n}</b> Produkte mit Barcode – das geht nacheinander und kann etwas dauern. Was soll neu aus der Datenbank kommen?</div>
+        ${cb("bkPhoto", "Foto", "Neueres Foto ersetzt das alte Datenbank-Foto. Deine eigenen Fotos bleiben.", true)}
+        ${cb("bkName", "Name", "Heißt das Produkt dort anders, wird es umbenannt (kann Produkte zusammenführen).", false)}
+        ${cb("bkNote", "Notiz", "Die 📝 Notiz aus dem Barcode. Ist sie dort leer, wird nichts gelöscht.", false)}
+        <div style="margin-top:10px;padding:6px 8px;border-radius:8px;background:color-mix(in srgb, #f9a825 16%, transparent)">✏️ Deine Eigene Notiz bleibt immer, wie sie ist.</div>`;
+      const go = ovButton("Los geht’s", true);
+      go.style.marginTop = "14px";
+      go.onclick = () => {
+        const sel = { photo: !!card.querySelector("#bkPhoto").checked, name: !!card.querySelector("#bkName").checked, note: !!card.querySelector("#bkNote").checked };
+        if (!sel.photo && !sel.name && !sel.note) { this._toast("Bitte mindestens etwas auswählen."); return; }
+        if ((sel.name || sel.note) && !elConfirm(`Wirklich für bis zu ${n} Produkte ${[sel.name ? "den Namen" : "", sel.note ? "die Notiz" : ""].filter(Boolean).join(" und ")} aus der Datenbank übernehmen?\n\nDas ändert Produkte im Katalog und lässt sich nicht automatisch zurücknehmen.`)) return;
+        ov.remove();
+        resolve(sel);
+      };
+      const no = ovButton("Abbrechen", false);
+      no.style.marginTop = "10px";
+      no.onclick = () => { ov.remove(); resolve(null); };
+      card.appendChild(go);
+      card.appendChild(no);
+      ov.appendChild(card);
+      ov.addEventListener("click", (e) => { if (e.target === ov) { ov.remove(); resolve(null); } });
+    });
   }
 
   async _showProductInfo(item) {
@@ -7439,49 +7499,62 @@ class EinkaufslisteCard extends HTMLElement {
         this._prodEdit = null;
         this._renderProducts();
         break;
-      case "prod-refresh": { // 🔄 Foto neu aus der Barcode-Datenbank holen
-        const key = el.closest(".prodedit").dataset.key;
-        const prod = (this._products || []).find((x) => x.key === key);
-        const label = prod ? prod.name + (prod.note ? ` · ${prod.note}` : "") : key;
-        if (!elConfirm(`Foto für „${label}“ neu aus der Barcode-Datenbank holen?\n\nAbgeschnittene (halbe) Fotos werden ersetzt. Ein ganzes Foto bleibt, das neue kommt dazu (höchstens 6).`)) break;
-        this._toast("🔄 Foto wird geholt …");
-        this._ws({ type: "einkaufsliste/product/refresh", key })
-          .then(() => { this._toast(`📷 Foto für „${label}“ neu geholt`); this._loadProducts(); })
-          .catch(() => {});
-        break;
-      }
       case "undo-go": {
         const fn = this._undoFn;
         this._undoHide();
         fn?.();
         break;
       }
-      case "prod-refresh-all": { // 🔄 Fotos für ALLE Produkte mit Barcode nachholen (nacheinander, mit Fortschritt)
+      case "prod-refresh-all": { // 🔄 Alles neu holen (Name, Notiz, Foto) für ALLE Produkte mit Barcode – mit Auswahl, nacheinander, mit Fortschritt
         if (this._refreshAllBusy) break;
-        this._refreshAllBusy = true;
         const say = (t) => { const m = this.$("prodRefreshMsg"); if (m) { m.hidden = !t; m.textContent = t ? elT(t) : ""; } };
         (async () => {
+          let plan;
+          try { plan = await this._ws({ type: "einkaufsliste/photos/refresh_plan" }); } catch (_) { return; }
+          const keys = plan.all || [];
+          const n = keys.length;
+          if (!n) { this._toast("Kein Produkt hat einen Barcode."); return; }
+          const sel = await this._bulkChoice(n);
+          if (!sel) return;
+          this._refreshAllBusy = true;
+          this._refreshNone = "";
+          const codes = {};
+          for (const p of this._products || []) if (p.barcodes?.length) codes[p.key] = p.barcodes[0];
+          let same = 0, changed = 0, full = 0, renamed = 0;
+          const none = [];
           try {
-            this._refreshNone = "";
-            const plan = await this._ws({ type: "einkaufsliste/photos/refresh_plan" });
-            const keys = plan.all || [];
-            const n = keys.length;
-            if (!n) { this._toast("Kein Produkt hat einen Barcode."); return; }
-            if (!elConfirm(`Für alle ${n} Produkte mit Barcode die Fotos aus der Datenbank neu holen?\n\nDas geht nacheinander und kann etwas dauern. Gibt es ein neueres Foto, ersetzt es das alte Datenbank-Foto. Deine eigenen Fotos bleiben unangetastet.`)) return;
-            let same = 0, changed = 0, full = 0;
-            const none = [];
             for (let i = 0; i < n; i++) {
-              say(`🔄 Fotos werden geholt … ${i + 1} / ${n}`);
-              try {
-                const r = await this._hass.callWS({ type: "einkaufsliste/product/refresh", key: keys[i], replace: true });
-                if (r.status === "same") same++; else if (r.status === "full") full++; else changed++;
-              } catch (_) { none.push((plan.names || {})[keys[i]] || keys[i]); }
+              say(`🔄 Daten werden geholt … ${i + 1} / ${n}`);
+              let key = keys[i];
+              const label = (plan.names || {})[key] || key;
+              if (sel.photo) {
+                try {
+                  const r = await this._hass.callWS({ type: "einkaufsliste/product/refresh", key, replace: true });
+                  if (r.status === "same") same++; else if (r.status === "full") full++; else changed++;
+                } catch (_) { none.push(label); }
+              }
+              if ((sel.name || sel.note) && codes[key]) {
+                try {
+                  const db = await this._hass.callWS({ type: "einkaufsliste/barcode/lookup", code: codes[key], fresh: true });
+                  if (db?.found && db.name) {
+                    const prod = (this._products || []).find((x) => x.key === key) || {};
+                    const low = (x) => String(x || "").trim().toLowerCase();
+                    const msg = { type: "einkaufsliste/product/update", key };
+                    if (sel.name && low(prod.name) !== low(db.name)) msg.name = db.name;
+                    if (sel.note && db.note && low(prod.note) !== low(db.note)) msg.note = db.note; // leere Datenbank-Notiz löscht nie etwas
+                    if (msg.name !== undefined || msg.note !== undefined) { await this._hass.callWS(msg); renamed++; }
+                  }
+                } catch (_) { /* nächstes Produkt */ }
+              }
             }
-            this._toast(`📷 Fertig: ${changed} neu oder ersetzt, ${same} schon aktuell${full ? `, ${full}× Platz voll` : ""}${none.length ? `, ${none.length}× keins in der Datenbank` : ""}`);
-            this._refreshNone = none.length ? `Kein Foto in der Datenbank: ${none.join(", ")}` : "";
+            const bits = [];
+            if (sel.photo) bits.push(`📷 ${changed} neu oder ersetzt, ${same} schon aktuell${full ? `, ${full}× Platz voll` : ""}${none.length ? `, ${none.length}× keins in der Datenbank` : ""}`);
+            if (sel.name || sel.note) bits.push(`📝 ${renamed} Produkt(e) angepasst`);
+            this._toast("✅ Fertig: " + bits.join(" · "));
+            this._refreshNone = sel.photo && none.length ? `Kein Foto in der Datenbank: ${none.join(", ")}` : "";
             say(this._refreshNone);
             this._loadProducts();
-          } catch (_) { /* Meldung kam schon */ } finally { if (!this._refreshNone) say(""); this._refreshAllBusy = false; }
+          } finally { if (!this._refreshNone) say(""); this._refreshAllBusy = false; }
         })();
         break;
       }
@@ -7502,7 +7575,10 @@ class EinkaufslisteCard extends HTMLElement {
         const boxes = [...this.shadowRoot.querySelectorAll(".prodedit input.pestore")];
         if (boxes.length) msg.stores = boxes.filter((b) => b.checked).map((b) => b.value);
         const pa = this.$("peAliases");
-        if (pa && pa.value.trim() !== pa.dataset.orig) msg.aliases = pa.value.split(/[,;]/).map((x) => x.trim()).filter(Boolean);
+        if (pa) {
+          const list = this._capAliases(pa.value.split(/[,;]/));
+          if (list.join(", ") !== pa.dataset.orig) msg.aliases = list;
+        }
         if (!msg.name) { this.$("peName").classList.add("shake"); break; }
         this._ws(msg).then(() => { this._toast("📦 Produkt gespeichert"); this._prodEdit = null; this._loadProducts(); }).catch(() => {});
         break;

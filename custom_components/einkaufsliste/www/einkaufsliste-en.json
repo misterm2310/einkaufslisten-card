@@ -1443,5 +1443,21 @@
 "Kommt aus dem Barcode bzw. der Datenbank. Eigene Texte bitte ins ✏️-Feld.": "Comes from the barcode / database. Please put your own text into the ✏️ field.",
 "Kommt aus dem Barcode – eigene Texte bitte ins ✏️-Feld": "Comes from the barcode – please put your own text into the ✏️ field",
 "Kommt aus dem Barcode bzw. der Datenbank": "Comes from the barcode / database",
-"✏️ Notiz verschoben": "✏️ Note moved"
+"✏️ Notiz verschoben": "✏️ Note moved",
+"Daten neu laden": "Reload data",
+"Name, Notiz und Foto aus der Produkt-Datenbank neu laden – du wählst einzeln. Nutri-Score und Allergene stehen zum Ansehen dabei": "Reload name, note and photo from the product database – you choose separately. Nutri-Score and allergens are shown for reference",
+"Alles neu holen (Name, Notiz, Foto) – für alle Produkte mit Barcode, mit Auswahl": "Fetch everything again (name, note, photo) – for all products with a barcode, with a choice",
+"Alles neu holen": "Fetch everything again",
+"🔄 Alles neu holen": "🔄 Fetch everything again",
+"neu holen": "fetch again",
+"Foto vorhanden": "Photo present",
+"noch keins": "none yet",
+"Abgeschnittene werden ersetzt, ein ganzes bleibt (höchstens 6).": "Cut-off ones are replaced, a whole one stays (up to 6).",
+"Neueres Foto ersetzt das alte Datenbank-Foto. Deine eigenen Fotos bleiben.": "A newer photo replaces the old database photo. Your own photos stay.",
+"Heißt das Produkt dort anders, wird es umbenannt (kann Produkte zusammenführen).": "If the product has a different name there, it is renamed (can merge products).",
+"Die 📝 Notiz aus dem Barcode. Ist sie dort leer, wird nichts gelöscht.": "The 📝 note from the barcode. If it is empty there, nothing is deleted.",
+"✏️ Deine Eigene Notiz bleibt immer, wie sie ist.": "✏️ Your own note always stays as it is.",
+"Los geht’s": "Let’s go",
+"Bitte mindestens etwas auswählen.": "Please choose at least one thing.",
+"🔄 Daten werden geholt … {} / {}": "🔄 Fetching data … {0} / {1}"
 }
