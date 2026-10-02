@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.46.0";
+const EL_VERSION = "2.46.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.46.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -3506,7 +3506,7 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog" aria-label="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon></button>
           <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog" aria-label="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
           <button class="btn" data-act="prod-refresh-all" title="Alles neu holen (Name, Notiz, Foto) – für alle Produkte mit Barcode, mit Auswahl" aria-label="Alles neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon></button></div>
-        <p class="hint" id="prodRefreshMsg" ${this._refreshNone ? "" : "hidden"}>${esc(this._refreshNone ? elT(this._refreshNone) : "")}</p>
+        <p class="hint" id="prodRefreshMsg" style="white-space:pre-line" ${this._refreshNone ? "" : "hidden"}>${esc(this._refreshNone ? elT(this._refreshNone) : "")}</p>
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
       { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_NEWS_VERSION}`, html: () => this._newsHtml() },
@@ -5860,7 +5860,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Delete shopping-list items:</b> deletes items from the list for good, also from “Done”. Barcode and suggestion stay; the photo only goes if it is not needed anywhere else.</li>
         <li><b>Filter “🗓️ Not bought for 3 months”:</b> shows products that were last checked off more than 3 months ago (never checked off: counted from when they were added). Products on the list or in a recipe are not shown. Tap one to look at it, or <b>Delete all</b> in one go.</li>
         <li><b>➕ New product / ▥ By barcode</b> (icons only): adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
-        <li><b>🔄 Fetch everything again</b> (cloud icon under “All products”): first you choose what – <b>photo</b> (pre-selected), <b>name</b> and/or <b>note</b> – then it goes through every product with a barcode, one after the other. Newer database photos replace old database photos; your own photos and your ✏️ own note stay. An empty database note never deletes anything. At the end it lists where the database has no photo.</li>
+        <li><b>🔄 Fetch everything again</b> (cloud icon under “All products”): first you choose what – <b>photo</b> (pre-selected), <b>name</b> and/or <b>note</b> – then it goes through every product with a barcode, one after the other. Newer database photos replace old database photos; your own photos and your ✏️ own note stay. An empty database note never deletes anything. It pauses briefly between products and retries on errors and with several barcodes. At the end you get a <b>report</b>: what was changed, what was already the same, which products the database does not know or could not be reached for – and where it has no photo.</li>
         <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
         <li><b>Recipes:</b> a tab for the recipes (button <b>“New recipe”</b>, search field, ✏️ per row) and one for the groups (Fish, Meat, Pastry …; the group's icon and colour tint the recipes).</li>
         <li><b>Recipe editor:</b> name and group (the group is suggested automatically, “✨ suggested”), “The quantities are for N people/trays”, recipe photo, ingredients (entered like in the list, with units and 🧂 “we always have it”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>Oven &amp; co.</b> (degrees, minutes), the instructions (one step per line), photos per step (only after the first save), delete, cancel, save. Foreign measures (cup, oz, °F) from recipe links are converted.</li></ul>`)}
@@ -5908,7 +5908,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Einkaufsliste Produkte löschen:</b> löscht Artikel endgültig von der Liste, auch aus „Erledigt“. Barcode und Vorschlag bleiben; das Foto geht nur mit, wenn es sonst nirgends mehr gebraucht wird.</li>
         <li><b>Filter „🗓️ Seit 3 Monaten nicht gekauft“:</b> zeigt Produkte, die vor mehr als 3 Monaten zuletzt abgehakt wurden (nie abgehakt: gezählt ab dem Eintragen). Produkte, die auf der Liste oder in einem Rezept stehen, fehlen hier. Antippen zum Ansehen, oder <b>Alle löschen</b> auf einmal.</li>
         <li><b>➕ Neues Produkt / ▥ Per Barcode</b> (nur Symbole): legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
-        <li><b>🔄 Alles neu holen</b> (Wolken-Symbol bei „Alle Produkte“): Du wählst erst, was – <b>Foto</b> (vorausgewählt), <b>Name</b> und/oder <b>Notiz</b> – dann geht es nacheinander durch alle Produkte mit Barcode. Neuere Datenbank-Fotos ersetzen alte Datenbank-Fotos; eigene Fotos und deine ✏️ Eigene Notiz bleiben. Eine leere Datenbank-Notiz löscht nie etwas. Am Ende steht, wo die Datenbank kein Foto hat.</li>
+        <li><b>🔄 Alles neu holen</b> (Wolken-Symbol bei „Alle Produkte“): Du wählst erst, was – <b>Foto</b> (vorausgewählt), <b>Name</b> und/oder <b>Notiz</b> – dann geht es nacheinander durch alle Produkte mit Barcode. Neuere Datenbank-Fotos ersetzen alte Datenbank-Fotos; eigene Fotos und deine ✏️ Eigene Notiz bleiben. Eine leere Datenbank-Notiz löscht nie etwas. Zwischen den Produkten macht sie kleine Pausen und probiert bei Fehlern und bei mehreren Barcodes nach. Am Ende steht ein <b>Bericht</b>: was angepasst wurde, was schon gleich war, bei welchen Produkten die Datenbank nichts kennt oder nicht erreichbar war – und wo sie kein Foto hat.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
         <li><b>Rezepte:</b> ein Reiter für die Rezepte (Knopf <b>„Neues Rezept“</b>, Suchfeld, pro Zeile ✏️), einer für die Gruppen (Fisch, Fleisch, Gebäck …; Icon und Farbe der Gruppe färben die Rezepte).</li>
         <li><b>Rezept-Editor:</b> Name und Gruppe (die Gruppe wird automatisch vorgeschlagen, „✨ vorgeschlagen“), „Die Mengen sind für N Personen/Bleche“, Rezept-Foto, Zutaten (eintragen wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten), die Zubereitung (ein Schritt pro Zeile), Fotos pro Schritt (erst nach dem ersten Speichern), Löschen, Abbrechen, Speichern. Aus Rezept-Links werden fremde Maße (cup, oz, °F) umgerechnet.</li></ul>`)}
@@ -7519,13 +7519,29 @@ class EinkaufslisteCard extends HTMLElement {
           this._refreshAllBusy = true;
           this._refreshNone = "";
           const codes = {};
-          for (const p of this._products || []) if (p.barcodes?.length) codes[p.key] = p.barcodes[0];
-          let same = 0, changed = 0, full = 0, renamed = 0;
-          const none = [];
+          for (const p of this._products || []) if (p.barcodes?.length) codes[p.key] = p.barcodes.slice();
+          let same = 0, changed = 0, full = 0;
+          const none = [], done = [], equal = [], unknown = [];
+          const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+          const low = (x) => String(x || "").trim().toLowerCase();
+          // Datenbank fragen: alle Barcodes des Produkts, bei „nichts“ ein zweiter Versuch (sie bremst bei vielen Anfragen)
+          const lookup = async (list) => {
+            for (let round = 0; round < 2; round++) {
+              for (const code of list) {
+                try {
+                  const db = await this._hass.callWS({ type: "einkaufsliste/barcode/lookup", code, fresh: true });
+                  if (db?.found && db.name) return db;
+                } catch (_) { /* nächster Barcode / Versuch */ }
+                await wait(300);
+              }
+              if (round === 0) await wait(1500);
+            }
+            return null;
+          };
           try {
             for (let i = 0; i < n; i++) {
               say(`🔄 Daten werden geholt … ${i + 1} / ${n}`);
-              let key = keys[i];
+              const key = keys[i];
               const label = (plan.names || {})[key] || key;
               if (sel.photo) {
                 try {
@@ -7533,25 +7549,31 @@ class EinkaufslisteCard extends HTMLElement {
                   if (r.status === "same") same++; else if (r.status === "full") full++; else changed++;
                 } catch (_) { none.push(label); }
               }
-              if ((sel.name || sel.note) && codes[key]) {
-                try {
-                  const db = await this._hass.callWS({ type: "einkaufsliste/barcode/lookup", code: codes[key], fresh: true });
-                  if (db?.found && db.name) {
-                    const prod = (this._products || []).find((x) => x.key === key) || {};
-                    const low = (x) => String(x || "").trim().toLowerCase();
-                    const msg = { type: "einkaufsliste/product/update", key };
-                    if (sel.name && low(prod.name) !== low(db.name)) msg.name = db.name;
-                    if (sel.note && db.note && low(prod.note) !== low(db.note)) msg.note = db.note; // leere Datenbank-Notiz löscht nie etwas
-                    if (msg.name !== undefined || msg.note !== undefined) { await this._hass.callWS(msg); renamed++; }
-                  }
-                } catch (_) { /* nächstes Produkt */ }
+              if (sel.name || sel.note) {
+                const list = codes[key] || [];
+                const db = list.length ? await lookup(list) : null;
+                if (!db) { unknown.push(label); }
+                else {
+                  const prod = (this._products || []).find((x) => x.key === key) || {};
+                  const msg = { type: "einkaufsliste/product/update", key };
+                  if (sel.name && low(prod.name) !== low(db.name)) msg.name = db.name;
+                  if (sel.note && db.note && low(prod.note) !== low(db.note)) msg.note = db.note; // leere Datenbank-Notiz löscht nie etwas
+                  if (msg.name !== undefined || msg.note !== undefined) {
+                    try { await this._hass.callWS(msg); done.push(label); } catch (_) { unknown.push(label); }
+                  } else equal.push(label);
+                }
+                await wait(600); // kleine Pause – die Datenbank bremst sonst
               }
             }
-            const bits = [];
-            if (sel.photo) bits.push(`📷 ${changed} neu oder ersetzt, ${same} schon aktuell${full ? `, ${full}× Platz voll` : ""}${none.length ? `, ${none.length}× keins in der Datenbank` : ""}`);
-            if (sel.name || sel.note) bits.push(`📝 ${renamed} Produkt(e) angepasst`);
-            this._toast("✅ Fertig: " + bits.join(" · "));
-            this._refreshNone = sel.photo && none.length ? `Kein Foto in der Datenbank: ${none.join(", ")}` : "";
+            const lines = ["📋 Bericht"];
+            if (sel.photo) lines.push(`📷 Fotos: ${changed} neu oder ersetzt, ${same} schon aktuell${full ? `, ${full}× Platz voll` : ""}${none.length ? `, ${none.length}× kein Foto in der Datenbank: ${none.join(", ")}` : ""}`);
+            if (sel.name || sel.note) {
+              lines.push(`✅ Angepasst (${done.length})${done.length ? ": " + done.join(", ") : ""}`);
+              lines.push(`＝ Schon gleich / nichts zu ändern (${equal.length})`);
+              lines.push(`❓ Datenbank kennt nichts oder war nicht erreichbar (${unknown.length})${unknown.length ? ": " + unknown.join(", ") : ""}`);
+            }
+            this._toast(`✅ Fertig: ${done.length} angepasst${unknown.length ? `, ${unknown.length}× keine Daten` : ""}`);
+            this._refreshNone = lines.join("\n");
             say(this._refreshNone);
             this._loadProducts();
           } finally { if (!this._refreshNone) say(""); this._refreshAllBusy = false; }
