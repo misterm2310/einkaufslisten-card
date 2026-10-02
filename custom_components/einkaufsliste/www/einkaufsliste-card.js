@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.48.1";
+const EL_VERSION = "2.48.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.48.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -4310,7 +4310,7 @@ class EinkaufslisteCard extends HTMLElement {
           <div class="btnrow">
             ${p.photos ? `<button class="btn" data-act="prod-photos"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Fotos</button>` : ""}
             ${p.barcodes.length ? `<button class="btn" data-act="prod-dbdata" title="Name, Notiz und Foto aus der Produkt-Datenbank neu laden – du wählst einzeln. Nutri-Score und Allergene stehen zum Ansehen dabei"><ha-icon icon="mdi:database-refresh-outline"></ha-icon>Daten neu laden</button>` : ""}
-            <button class="btn" data-act="prod-bc-add" title="Barcode nachtragen – eintippen oder scannen"><ha-icon icon="mdi:barcode-scan"></ha-icon>Barcode nachtragen</button>
+            <button class="btn" data-act="prod-bc-add" title="Barcode nachtragen – scannen oder von Hand eingeben"><ha-icon icon="mdi:barcode-scan"></ha-icon>Barcode nachtragen</button>
             <button class="btn" data-act="prod-merge" title="Dieses Produkt in ein anderes aufgehen lassen (z. B. Tomaten → Tomate)"><ha-icon icon="mdi:call-merge"></ha-icon>Zusammenführen</button>
             <button class="btn danger" data-act="prod-forget" title="Produkt mit Fotos, Barcodes und Vorschlag löschen – auch von der Einkaufsliste"><ha-icon icon="mdi:delete-outline"></ha-icon>Ganz löschen</button>
             <span style="flex:1"></span>
@@ -7760,11 +7760,16 @@ class EinkaufslisteCard extends HTMLElement {
         const key = el.closest(".prodedit").dataset.key;
         const p = (this._products || []).find((x) => x.key === key);
         if (!p) break;
-        askBarcode(`▥ Barcode für „${p.name}“`, this._hasAppScanner()).then((r) => {
-          if (!r) return;
-          if (r === "scan") this._startAppScan((code) => this._prodBcSave(p, code), `▥ Barcode für „${p.name}“`, "Packung scannen – danach frage ich die Produkt-Datenbank.");
-          else this._prodBcSave(p, r);
-        });
+        const title = `▥ Barcode für „${p.name}“`;
+        const typeIt = () => askBarcode(title, false).then((r) => { if (r) this._prodBcSave(p, r); });
+        if (this._hasAppScanner()) { // 📷 zuerst scannen, darunter ein Knopf zum Eintippen
+          this._appScan({
+            title, description: "Packung scannen – danach frage ich die Produkt-Datenbank.",
+            altLabel: "⌨️ Von Hand eingeben",
+            onCode: (code) => this._prodBcSave(p, code),
+            onAlt: typeIt,
+          });
+        } else typeIt();
         break;
       }
       case "prod-dbdata":
