@@ -28,6 +28,8 @@ _LOGGER = logging.getLogger(__name__)
 INTERVALS = (3, 6, 12, 24)  # Stunden zwischen zwei Abfragen
 MAX_ITEMS = 40  # höchstens so viele offene Artikel pro Durchgang
 MAX_OFFERS = 5  # pro Artikel
+MAX_ALT = 4  # 🔀 „Andere Marke“-Treffer pro Artikel (gleicher Typ, wenn es für den genauen Artikel nichts gibt)
+MAX_TYPE_LOOKUPS = 10  # so viele Produkttypen pro Durchgang aus der Datenbank holen
 MAX_SCRIPTS = 20
 _BROWSER = {
     "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36",
@@ -239,6 +241,55 @@ class Offers:
         finally:
             self._busy = False
 
+    async def _type_of(self, item: dict[str, Any] | None, name: str, lookups: list[int]) -> str | None:
+        """Produkttyp eines Barcode-Artikels (gemerkt am Barcode; fehlt er, einmal aus der Datenbank holen)."""
+        from .barcode import async_product_type
+        from .manager import product_key
+
+        if not item:
+            return None
+        m = self.manager
+        codes = m.barcodes_for(product_key(item["name"], item.get("note")))
+        if not codes:
+            return None
+        bc = m.barcodes[codes[0]]
+        if "type" in bc:
+            return bc["type"] or None
+        if lookups[0] >= MAX_TYPE_LOOKUPS:
+            return None
+        lookups[0] += 1
+        got = await async_product_type(self.hass, codes[0], name)
+        if got is False:  # Datenbank nicht erreichbar: nächstes Mal wieder versuchen
+            return None
+        bc["type"] = got or ""
+        m._schedule_save()
+        return got or None
+
+    async def _alt_offers(self, session: aiohttp.ClientSession, dom: str, key: str, cfg: dict[str, Any],
+                          item: dict[str, Any] | None, name: str, wanted_stores: list[str], now: Any,
+                          lookups: list[int]) -> list[dict[str, Any]]:
+        typ = await self._type_of(item, name, lookups)
+        if not typ or _norm(typ) == _norm(name):
+            return []
+        await asyncio.sleep(1)
+        results = await self._search(session, dom, key, typ, cfg["zip"])
+        out: list[dict[str, Any]] = []
+        for raw in results or []:
+            if not matches(typ, raw):
+                continue
+            o = slim(raw, dom)
+            if not o:
+                continue
+            if wanted_stores and not any(w in o["r"].lower() or o["r"].lower() in w for w in wanted_stores):
+                continue
+            to = dt_util.parse_datetime(o["to"]) if o.get("to") else None
+            if to and to < now:
+                continue
+            o["alt"] = typ
+            out.append(o)
+        out.sort(key=lambda o: o["p"])
+        return out[:MAX_ALT]
+
     async def _run(self, cfg: dict[str, Any]) -> dict[str, Any]:
         m = self.manager
         dom = domain(getattr(self.hass.config, "country", None))
@@ -255,11 +306,14 @@ class Offers:
             m._changed()
             return {"ok": False}
         names: list[str] = []
+        first: dict[str, dict[str, Any]] = {}
         for item in m.items:
             if not item["checked"] and item["name"].lower() not in (n.lower() for n in names):
                 names.append(item["name"])
+                first[item["name"].lower()] = item
         wanted_stores = [s["name"].strip().lower() for s in m.stores if s["id"] in (cfg.get("stores") or [])]
         found: dict[str, list[dict[str, Any]]] = {}
+        lookups = [0]
         for name in names[:MAX_ITEMS]:
             results = await self._search(session, dom, key, name, cfg["zip"])
             if results is None:
@@ -280,6 +334,10 @@ class Offers:
             if offers:
                 offers.sort(key=lambda o: o["p"])
                 found[name.lower()] = offers[:MAX_OFFERS]
+            else:  # 🔀 nichts für genau diesen Artikel: Angebote für den Typ („Proteinriegel“), andere Marke
+                alt = await self._alt_offers(session, dom, key, cfg, first.get(name.lower()), name, wanted_stores, now, lookups)
+                if alt:
+                    found[name.lower()] = alt
             await asyncio.sleep(1)  # sparsam: eine Anfrage pro Sekunde
         m.offers_data = found
         cfg["ok"] = True

@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.49.6";
+const EL_VERSION = "2.50.0";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.49.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.50.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🔀 <b>Angebote auch für „andere Marke“:</b> Gibt es für einen Barcode-Artikel (z. B. „Eat Me! Erdbeer Max Balance“) kein Angebot, sucht die Liste automatisch Angebote für den <b>Produkttyp</b> aus der Datenbank (z. B. „Proteinriegel“) – höchstens 4, mit 🔀 „Andere Marke“ gekennzeichnet. Gibt es für genau den Artikel eins, kommt nur das.",
+   "🔀 <b>Offers for “other brands” too:</b> if a barcode item (e.g. “Eat Me! Strawberry Max Balance”) has no offer, the list automatically looks for offers for the <b>product type</b> from the database (e.g. “protein bar”) – at most 4, marked 🔀 “Other brand”. If there is an offer for the exact item, only that is shown."],
   ["📦 <b>Gleicher Name, andere Notiz:</b> Im Katalog kannst du mit ➕ (oder per Barcode) ein Produkt anlegen, das es dem Namen nach schon gibt, z. B. „Batterien“ – die Liste fragt dann nach einer <b>✏️ Eigenen Notiz</b> zum Unterscheiden („AA“, „AAA“ …). Alte, selbst getippte Notizen sind überall nur noch die ✏️ Eigene Notiz. Auch beim Eintragen auf der Liste zählt die ✏️ Eigene Notiz als Unterscheidung (bei Produkten ohne Barcode).",
    "📦 <b>Same name, different note:</b> in the catalog you can add a product with ➕ (or by barcode) even if the name already exists, e.g. “Batteries” – the list then asks for an <b>✏️ own note</b> to tell them apart (“AA”, “AAA” …). Old notes you typed yourself are now simply the ✏️ own note everywhere. When adding on the list, the ✏️ own note also tells products apart (for products without a barcode)."],
   ["🔎 <b>Rezept-Suche mit Spitznamen:</b> Tippst du einen Spitznamen einer Zutat (z. B. „Paradeiser“ für Tomate), findet die Rezept-Suche alle Rezepte mit diesem Produkt. · ✏️ Im Katalog bleibt die Produktzeile beim Bearbeiten stehen, das Bearbeiten öffnet darunter.",
@@ -2849,7 +2851,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (codes.length && !this._shopMode) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥</span>`);
     const off = item.offer;
     if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
-    else if (!item.checked && this._offersFor(item).length) meta.unshift(`<span class="offtag" data-act="offers-show" data-id="${item.id}" title="Im Angebot – antippen für Details">🏷️</span>`); // 🏷️ ganz vorn, vor dem Geschäft
+    else if (!item.checked && this._offersFor(item).length) meta.unshift(`<span class="offtag" data-act="offers-show" data-id="${item.id}" title="${this._offersFor(item).every((o) => o.alt) ? "Angebote für andere Marken – antippen für Details" : "Im Angebot – antippen für Details"}">${this._offersFor(item).every((o) => o.alt) ? "🔀" : "🏷️"}</span>`); // 🏷️ ganz vorn, vor dem Geschäft
     else if (!item.checked && off?.expired && Date.now() - new Date(off.expired) < DAY) meta.unshift(`<span class="offgone" title="Das Angebot ist abgelaufen">⌛ Angebot vorbei</span>`);
     // ✍️ Wer & wann: „✍️ Anna, Mo.“ (heute: „vor 5 Min“)
     const when = c.show_dates && !item.checked && !this._shopMode && item.added_at ? fmtWhen(item.added_at) : "";
@@ -6479,7 +6481,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${list.map((o, n) => `<div style="padding:10px 0;border-top:1px solid #333"><div style="display:flex;gap:12px;align-items:center">
         ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
         <div style="flex:1;min-width:0">
-          <div><b translate="no">${esc(o.r)}</b></div>
+          <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span style="font-size:12px;color:#ffb74d">🔀 <span>Andere Marke</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
           <div style="color:#ccc;font-size:13px" translate="no">${esc(o.d || "")}${o.q ? ` · ${esc(o.q)}` : ""}</div>
           <div style="font-size:13px;color:#aaa">${o.from ? `<span>ab</span> ${esc(day(o.from))} ` : ""}${o.to ? `<span>bis</span> ${esc(day(o.to))}` : ""}</div>
         </div>

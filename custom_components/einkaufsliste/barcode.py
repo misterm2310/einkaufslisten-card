@@ -218,6 +218,57 @@ async def async_lookup(hass: HomeAssistant, manager: Any, code: str, fresh: bool
     return {"code": code, "found": False}
 
 
+TYPE_FIELDS = "generic_name_de,generic_name,categories_tags,product_name_de,product_name"
+
+
+def product_type(product: dict[str, Any], name: str | None = None) -> str | None:
+    """🔀 Produkttyp für die Angebote-Suche („Proteinriegel“) – steht oft nicht im Namen („Eat Me! Erdbeer Max Balance“).
+
+    Erst der allgemeine deutsche Name der Datenbank, sonst die genaueste deutsche Kategorie. Zu lange oder
+    gleich lautende Angaben zählen nicht."""
+    def clean(text: str) -> str | None:
+        t = " ".join(str(text or "").replace("-", " ").replace("_", " ").split())
+        if not t or len(t) < 4 or len(t.split()) > 3 or t.lower() == (name or "").lower():
+            return None
+        return t
+    got = clean(product.get("generic_name_de") or "")
+    if got:
+        return got
+    for tag in reversed(product.get("categories_tags") or []):
+        if isinstance(tag, str) and tag.startswith("de:"):
+            got = clean(tag[3:])
+            if got:
+                return got
+    return None
+
+
+async def async_product_type(hass: HomeAssistant, code: str, name: str | None = None) -> str | None | bool:
+    """Produkttyp zu einem Barcode aus der Datenbank. None = Datenbank kennt keinen, False = nicht erreichbar."""
+    session = async_get_clientsession(hass)
+    reached = False
+    for source, base in SOURCES:
+        try:
+            async with asyncio.timeout(8):
+                resp = await session.get(
+                    f"{base}/api/v2/product/{code}.json",
+                    params={"fields": TYPE_FIELDS},
+                    headers={"User-Agent": USER_AGENT},
+                )
+                if resp.status != 200:
+                    continue
+                data = await resp.json(content_type=None)
+        except (TimeoutError, aiohttp.ClientError, ValueError) as err:
+            _LOGGER.debug("%s nicht erreichbar: %s", source, err)
+            continue
+        reached = True
+        if not isinstance(data, dict) or data.get("status") != 1:
+            continue
+        got = product_type(data.get("product") or {}, name)
+        if got:
+            return got
+    return None if reached else False
+
+
 # Bilder nur von den offiziellen Bild-Servern der Datenbanken laden
 IMAGE_HOSTS = (
     "images.openfoodfacts.org",

@@ -2920,3 +2920,33 @@ async def test_old_notes_to_own_notes_no_clash(hass: HomeAssistant, setup) -> No
     m.add_item("Kaffee")
     m.update_product("kaffee", own_note="Fair")
     assert "kaffee" in {p["key"] for p in m.products()}
+
+
+async def test_offers_alt_type(hass: HomeAssistant, setup) -> None:
+    """🔀 Barcode-Artikel ohne eigenes Angebot: Angebote für den Typ („Proteinriegel“), höchstens 4, als „Andere Marke“."""
+    from custom_components.einkaufsliste import barcode as bc
+    from custom_components.einkaufsliste import offers as mod
+    assert bc.product_type({"generic_name_de": "Proteinriegel"}, "Erdbeer Max Balance") == "Proteinriegel"
+    assert bc.product_type({"categories_tags": ["en:snacks", "de:protein-riegel"]}) == "protein riegel"
+    assert bc.product_type({"generic_name_de": "Erdbeer Max Balance"}, "Erdbeer Max Balance") is None
+    m = mgr(hass)
+    m.learn_barcode("4001234567890", "Erdbeer Max Balance", None, None, "Eat Me!")
+    m.add_item("Erdbeer Max Balance", note="Eat Me!")
+    base = {"price": 1.0, "advertisers": [{"name": "Lidl"}], "description": "",
+            "validityDates": [{"from": "2026-01-01T00:00:00Z", "to": "2099-01-01T00:00:00Z"}]}
+    riegel = [{**base, "id": n, "price": 1.0 + n / 10, "product": {"name": "Proteinriegel Schoko"}} for n in range(6)]
+
+    async def fake_search(session, dom, key, query, zip_code, limit=20):
+        return riegel if query == "Proteinriegel" else []
+
+    async def fake_type(hass_, code, name=None):
+        return "Proteinriegel"
+    with patch("custom_components.einkaufsliste.offers.asyncio.sleep"), \
+         patch.object(mod.Offers, "_search", side_effect=fake_search), \
+         patch("custom_components.einkaufsliste.barcode.async_product_type", side_effect=fake_type):
+        m.offers_cfg = {"enabled": True, "zip": "48565", "key": "K", "stores": [], "hours": 6}
+        res = await m.offers._run(m.offers_cfg)
+    assert res["ok"]
+    got = m.offers_data["erdbeer max balance"]
+    assert len(got) == 4 and all(o["alt"] == "Proteinriegel" for o in got) and got[0]["p"] == 1.0
+    assert m.barcodes["4001234567890"]["type"] == "Proteinriegel"
