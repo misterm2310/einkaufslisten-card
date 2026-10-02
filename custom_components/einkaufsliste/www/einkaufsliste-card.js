@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.51.0";
+const EL_VERSION = "2.51.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.51.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1302,7 +1302,7 @@ ha-card.compact .group { margin-top:4px; }
 .item:focus, .recipe:focus, .delrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
-.broomred ha-icon { --mdc-icon-size:1.15em; color:#e53935; vertical-align:-0.2em; }
+.broomred ha-icon { --mdc-icon-size:15px; color:#e53935; vertical-align:-0.2em; }
 .offgone { opacity:.75; }
 .health { display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 10px; padding:10px 12px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-left-width:5px; background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
 .health.ok { border-left-color:#43a047; } .health.warn { border-left-color:#fb8c00; } .health.bad { border-left-color:#e53935; } .health.wait { border-left-color:#9e9e9e; }
