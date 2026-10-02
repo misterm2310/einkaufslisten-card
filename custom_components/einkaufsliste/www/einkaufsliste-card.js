@@ -2,13 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.50.0";
+const EL_VERSION = "2.51.0";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.50.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.51.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
-  ["🔀 <b>Angebote auch für „andere Marke“:</b> Gibt es für einen Barcode-Artikel (z. B. „Eat Me! Erdbeer Max Balance“) kein Angebot, sucht die Liste automatisch Angebote für den <b>Produkttyp</b> aus der Datenbank (z. B. „Proteinriegel“) – höchstens 4, mit 🔀 „Andere Marke“ gekennzeichnet. Gibt es für genau den Artikel eins, kommt nur das.",
-   "🔀 <b>Offers for “other brands” too:</b> if a barcode item (e.g. “Eat Me! Strawberry Max Balance”) has no offer, the list automatically looks for offers for the <b>product type</b> from the database (e.g. “protein bar”) – at most 4, marked 🔀 “Other brand”. If there is an offer for the exact item, only that is shown."],
-  ["📦 <b>Gleicher Name, andere Notiz:</b> Im Katalog kannst du mit ➕ (oder per Barcode) ein Produkt anlegen, das es dem Namen nach schon gibt, z. B. „Batterien“ – die Liste fragt dann nach einer <b>✏️ Eigenen Notiz</b> zum Unterscheiden („AA“, „AAA“ …). Alte, selbst getippte Notizen sind überall nur noch die ✏️ Eigene Notiz. Auch beim Eintragen auf der Liste zählt die ✏️ Eigene Notiz als Unterscheidung (bei Produkten ohne Barcode).",
+  ["🔀 <b>Ähnliche Angebote:</b> Gibt es für einen Artikel (z. B. „H-Milch“ oder „Eat Me! Erdbeer Max Balance“) kein Angebot für genau diesen Namen, zerlegt die Liste den Namen in seine Wörter, sucht einzeln („Milch“) und bewertet die Treffer – auch mit Produkttyp aus der Datenbank, Spitznamen und deiner Kategorie. Höchstens 4, mit 🔀 „Ähnlich“ gekennzeichnet; der Besen bei Artikeln wird rot, wenn sie am nächsten Werktag automatisch abgehakt werden. Gibt es für genau den Artikel eins, kommt nur das.",
+   "🔀 <b>Similar offers:</b> if an item (e.g. “UHT milk” or “Eat Me! Strawberry Max Balance”) has no offer for its exact name, the list splits the name into words, searches them one by one (“milk”) and ranks the hits – also using the product type from the database, nicknames and your category. At most 4, marked 🔀 “Similar”. The broom next to an item turns red when it will be ticked off automatically on the next working day. If there is an offer for the exact item, only that is shown."],  ["📦 <b>Gleicher Name, andere Notiz:</b> Im Katalog kannst du mit ➕ (oder per Barcode) ein Produkt anlegen, das es dem Namen nach schon gibt, z. B. „Batterien“ – die Liste fragt dann nach einer <b>✏️ Eigenen Notiz</b> zum Unterscheiden („AA“, „AAA“ …). Alte, selbst getippte Notizen sind überall nur noch die ✏️ Eigene Notiz. Auch beim Eintragen auf der Liste zählt die ✏️ Eigene Notiz als Unterscheidung (bei Produkten ohne Barcode).",
    "📦 <b>Same name, different note:</b> in the catalog you can add a product with ➕ (or by barcode) even if the name already exists, e.g. “Batteries” – the list then asks for an <b>✏️ own note</b> to tell them apart (“AA”, “AAA” …). Old notes you typed yourself are now simply the ✏️ own note everywhere. When adding on the list, the ✏️ own note also tells products apart (for products without a barcode)."],
   ["🔎 <b>Rezept-Suche mit Spitznamen:</b> Tippst du einen Spitznamen einer Zutat (z. B. „Paradeiser“ für Tomate), findet die Rezept-Suche alle Rezepte mit diesem Produkt. · ✏️ Im Katalog bleibt die Produktzeile beim Bearbeiten stehen, das Bearbeiten öffnet darunter.",
    "🔎 <b>Recipe search with nicknames:</b> type a nickname of an ingredient (e.g. “Paradeiser” for tomato) and the recipe search finds every recipe with that product. · ✏️ In the catalog the product row stays visible while you edit; the editor opens below it."],
@@ -183,6 +182,12 @@ const esc = (s) =>
 const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
 const dayDiff = (a, b) => Math.round((startOfDay(a) - startOfDay(b)) / DAY);
 const fmtDay = (d) => `${WD_SHORT[pyWd(d)]} ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
+// 🧹 Ein Werktag (Mo–Fr) vor dem Abhak-Datum? Dann ist heute der letzte Werktag davor oder später
+const broomWarn = (d, now = new Date()) => {
+  let w = new Date(startOfDay(d));
+  do { w = new Date(w.getTime() - DAY); } while ([0, 6].includes(w.getDay())); // Sa/So zählen nicht
+  return startOfDay(now) >= startOfDay(w);
+};
 const stripMdi = (icon) => String(icon || "").replace(/^mdi:/, "");
 // 🔢 Mengen einheitlich schreiben – GENAU dieselben Regeln wie quantity.py im Server.
 // „3el“ -> „3 EL“, „1“ -> „1x“, „1/2 tl“ -> „0,5 TL“, „2 bis 3 el“ -> „2-3 EL“, „2 tasse“ -> „2 Tassen“
@@ -1297,6 +1302,7 @@ ha-card.compact .group { margin-top:4px; }
 .item:focus, .recipe:focus, .delrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
+.broomred ha-icon { --mdc-icon-size:1.15em; color:#e53935; vertical-align:-0.2em; }
 .offgone { opacity:.75; }
 .health { display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 10px; padding:10px 12px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-left-width:5px; background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
 .health.ok { border-left-color:#43a047; } .health.warn { border-left-color:#fb8c00; } .health.bad { border-left-color:#e53935; } .health.wait { border-left-color:#9e9e9e; }
@@ -2851,7 +2857,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (codes.length && !this._shopMode) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥</span>`);
     const off = item.offer;
     if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
-    else if (!item.checked && this._offersFor(item).length) meta.unshift(`<span class="offtag" data-act="offers-show" data-id="${item.id}" title="${this._offersFor(item).every((o) => o.alt) ? "Angebote für andere Marken – antippen für Details" : "Im Angebot – antippen für Details"}">${this._offersFor(item).every((o) => o.alt) ? "🔀" : "🏷️"}</span>`); // 🏷️ ganz vorn, vor dem Geschäft
+    else if (!item.checked && this._offersFor(item).length) meta.unshift(`<span class="offtag" data-act="offers-show" data-id="${item.id}" title="${this._offersFor(item).every((o) => o.alt) ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}">${this._offersFor(item).every((o) => o.alt) ? "🔀" : "🏷️"}</span>`); // 🏷️ ganz vorn, vor dem Geschäft
     else if (!item.checked && off?.expired && Date.now() - new Date(off.expired) < DAY) meta.unshift(`<span class="offgone" title="Das Angebot ist abgelaufen">⌛ Angebot vorbei</span>`);
     // ✍️ Wer & wann: „✍️ Anna, Mo.“ (heute: „vor 5 Min“)
     const when = c.show_dates && !item.checked && !this._shopMode && item.added_at ? fmtWhen(item.added_at) : "";
@@ -2865,7 +2871,9 @@ class EinkaufslisteCard extends HTMLElement {
         // (wer abgehakt hat, steht schon oben)
       } else {
         const auto = this._autoCheckDate(item);
-        if (auto) meta.push(`<span title="Wird an diesem Tag automatisch abgehakt">🧹 ${fmtDay(auto)}</span>`);
+        if (auto) meta.push(broomWarn(auto) // 🔴 ab einem Werktag vorher: roter Besen
+          ? `<span class="broomred" title="Wird bald automatisch abgehakt – am ${fmtDay(auto)}"><ha-icon icon="mdi:broom"></ha-icon> ${fmtDay(auto)}</span>`
+          : `<span title="Wird an diesem Tag automatisch abgehakt">🧹 ${fmtDay(auto)}</span>`);
       }
     }
     // hinter dem Namen: für wen es ist (wer es eingetragen hat, steht klein darunter)
@@ -6481,7 +6489,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${list.map((o, n) => `<div style="padding:10px 0;border-top:1px solid #333"><div style="display:flex;gap:12px;align-items:center">
         ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
         <div style="flex:1;min-width:0">
-          <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span style="font-size:12px;color:#ffb74d">🔀 <span>Andere Marke</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
+          <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span style="font-size:12px;color:#ffb74d">🔀 <span>Ähnlich</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
           <div style="color:#ccc;font-size:13px" translate="no">${esc(o.d || "")}${o.q ? ` · ${esc(o.q)}` : ""}</div>
           <div style="font-size:13px;color:#aaa">${o.from ? `<span>ab</span> ${esc(day(o.from))} ` : ""}${o.to ? `<span>bis</span> ${esc(day(o.to))}` : ""}</div>
         </div>

@@ -29,6 +29,7 @@ INTERVALS = (3, 6, 12, 24)  # Stunden zwischen zwei Abfragen
 MAX_ITEMS = 40  # höchstens so viele offene Artikel pro Durchgang
 MAX_OFFERS = 5  # pro Artikel
 MAX_ALT = 4  # 🔀 „Andere Marke“-Treffer pro Artikel (gleicher Typ, wenn es für den genauen Artikel nichts gibt)
+MAX_ALT_SEARCHES = 3  # so viele zusätzliche Suchen pro Artikel (Typ, Spitznamen, einzelne Wörter)
 MAX_TYPE_LOOKUPS = 10  # so viele Produkttypen pro Durchgang aus der Datenbank holen
 MAX_SCRIPTS = 20
 _BROWSER = {
@@ -64,26 +65,48 @@ def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^\wäöüß ]", " ", str(text or "").lower())).strip()
 
 
+def _hay_tokens(offer: dict[str, Any]) -> list[str]:
+    hay = _norm(" ".join(str(x or "") for x in (
+        (offer.get("product") or {}).get("name"), offer.get("description"), (offer.get("brand") or {}).get("name"))))
+    return hay.split()
+
+
+def _word_hit(w: str, tokens: list[str]) -> bool:
+    # Deutsch: das Hauptwort steht hinten („Marken-butter“, „Voll-milch“) – „Milch-schnitte“ ist keine Milch.
+    # Einzahl/Mehrzahl dürfen etwas abweichen („Tomaten“ ↔ „Rispentomate“, „Ei“ ↔ „Eier“).
+    stems = {w}
+    for cut in ("en", "n", "e", "s", "er"):
+        if w.endswith(cut) and len(w) - len(cut) >= 4:
+            stems.add(w[: -len(cut)])
+    return any(t == w or any(t.endswith(st) or t[:-1].endswith(st) or t[:-2].endswith(st) for st in stems) for t in tokens)
+
+
 def matches(item_name: str, offer: dict[str, Any]) -> bool:
     """Passt das Angebot wirklich zum Artikel? (Marktguru sucht sehr großzügig – „Milch“ findet auch Milchschnitte-Deko)"""
     want = _norm(item_name)
     if not want:
         return False
-    hay = _norm(" ".join(str(x or "") for x in (
-        (offer.get("product") or {}).get("name"), offer.get("description"), (offer.get("brand") or {}).get("name"))))
-    tokens = hay.split()
+    tokens = _hay_tokens(offer)
     words = [w for w in want.split() if len(w) >= 3] or want.split()
+    return all(_word_hit(w, tokens) for w in words)
 
-    def hit(w: str) -> bool:
-        # Deutsch: das Hauptwort steht hinten („Marken-butter“, „Voll-milch“) – „Milch-schnitte“ ist keine Milch.
-        # Einzahl/Mehrzahl dürfen etwas abweichen („Tomaten“ ↔ „Rispentomate“, „Ei“ ↔ „Eier“).
-        stems = {w}
-        for cut in ("en", "n", "e", "s", "er"):
-            if w.endswith(cut) and len(w) - len(cut) >= 4:
-                stems.add(w[: -len(cut)])
-        return any(t == w or any(t.endswith(st) or t[:-1].endswith(st) or t[:-2].endswith(st) for st in stems) for t in tokens)
 
-    return all(hit(w) for w in words)
+# Füllwörter, die als Suchwort nichts taugen
+STOP_WORDS = {
+    "bio", "frisch", "frische", "frischer", "original", "classic", "classico", "natur", "naturell", "premium", "extra",
+    "light", "mini", "maxi", "vegan", "pack", "packung", "stück", "stueck", "sorte", "sorten", "mit", "ohne", "und",
+    "style", "typ", "art", "aus", "von", "das", "der", "die", "den", "dem", "geschmack", "gut", "mehr", "super",
+}
+
+
+def name_words(text: Any) -> list[str]:
+    """🔤 Wörter eines Artikelnamens, die als Suchwort taugen: mind. 4 Buchstaben, keine Zahlen/Mengen, keine Füllwörter."""
+    out: list[str] = []
+    for w in re.split(r"[^\wäöüß]+", str(text or "").lower()):
+        if len(w) < 4 or w in STOP_WORDS or re.fullmatch(r"\d+[a-zäöüß%]*", w) or w in out:
+            continue
+        out.append(w)
+    return out
 
 
 def slim(offer: dict[str, Any], dom: str) -> dict[str, Any] | None:
@@ -268,27 +291,48 @@ class Offers:
     async def _alt_offers(self, session: aiohttp.ClientSession, dom: str, key: str, cfg: dict[str, Any],
                           item: dict[str, Any] | None, name: str, wanted_stores: list[str], now: Any,
                           lookups: list[int]) -> list[dict[str, Any]]:
+        """🔀 Für genau diesen Namen gibt es nichts: Namen in Wörter zerlegen, einzeln suchen, nach Treffern bewerten."""
+        from .manager import product_key
+
+        m = self.manager
+        pk = product_key(item["name"], item.get("note")) if item else None
+        brand_words = name_words(item.get("note")) if item else []
+        nicks = [a for a, e in m.aliases.items() if pk and any(product_key(t["name"], t.get("note")) == pk for t in m._al_targets(e))]
         typ = await self._type_of(item, name, lookups)
-        if not typ or _norm(typ) == _norm(name):
-            return []
-        await asyncio.sleep(1)
-        results = await self._search(session, dom, key, typ, cfg["zip"])
-        out: list[dict[str, Any]] = []
-        for raw in results or []:
-            if not matches(typ, raw):
-                continue
-            o = slim(raw, dom)
-            if not o:
-                continue
-            if wanted_stores and not any(w in o["r"].lower() or o["r"].lower() in w for w in wanted_stores):
-                continue
-            to = dt_util.parse_datetime(o["to"]) if o.get("to") else None
-            if to and to < now:
-                continue
-            o["alt"] = typ
-            out.append(o)
-        out.sort(key=lambda o: o["p"])
-        return out[:MAX_ALT]
+        cat = m.category_by_id(item.get("category_id")) if item and item.get("category_id") else None
+        cat_words = name_words((cat or {}).get("name"))
+        words = name_words(name)
+        terms: list[str] = []
+        for t in ([typ] if typ else []) + nicks + sorted(words, key=len, reverse=True):
+            if t and _norm(t) != _norm(name) and _norm(t) not in (_norm(x) for x in terms):
+                terms.append(t)
+        score_words: list[str] = []
+        for w in words + name_words(typ) + [x for n in nicks for x in name_words(n)]:
+            if w not in score_words:
+                score_words.append(w)
+        best: dict[Any, tuple[float, dict[str, Any]]] = {}
+        for term in terms[:MAX_ALT_SEARCHES]:
+            await asyncio.sleep(1)
+            for raw in await self._search(session, dom, key, term, cfg["zip"]) or []:
+                if not matches(term, raw):
+                    continue
+                o = slim(raw, dom)
+                if not o or o["id"] in best:
+                    continue
+                if wanted_stores and not any(w in o["r"].lower() or o["r"].lower() in w for w in wanted_stores):
+                    continue
+                to = dt_util.parse_datetime(o["to"]) if o.get("to") else None
+                if to and to < now:
+                    continue
+                tokens = _hay_tokens(raw) + _norm(" ".join(
+                    str((c or {}).get("name") or "") for c in (raw.get("categories") or []) if isinstance(c, dict))).split()
+                hits = [w for w in score_words if _word_hit(w, tokens)]
+                score = len(hits) + (0.5 if any(_word_hit(b, tokens) for b in brand_words) else 0) \
+                    + (1 if any(_word_hit(c, tokens) for c in cat_words) else 0)
+                o["alt"] = " ".join(w.capitalize() for w in hits[:2]) or term.capitalize()
+                best[o["id"]] = (score, o)
+        ranked = sorted(best.values(), key=lambda so: (-so[0], so[1]["p"]))
+        return [o for _, o in ranked[:MAX_ALT]]
 
     async def _run(self, cfg: dict[str, Any]) -> dict[str, Any]:
         m = self.manager

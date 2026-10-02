@@ -2948,5 +2948,31 @@ async def test_offers_alt_type(hass: HomeAssistant, setup) -> None:
         res = await m.offers._run(m.offers_cfg)
     assert res["ok"]
     got = m.offers_data["erdbeer max balance"]
-    assert len(got) == 4 and all(o["alt"] == "Proteinriegel" for o in got) and got[0]["p"] == 1.0
+    assert len(got) == 4 and all("Proteinriegel" in o["alt"] for o in got) and got[0]["p"] == 1.0
     assert m.barcodes["4001234567890"]["type"] == "Proteinriegel"
+
+
+async def test_offers_words_and_category(hass: HomeAssistant, setup) -> None:
+    """🔤 „H-Milch“: Namen in Wörter zerlegen, einzeln suchen („Milch“), nach Treffern + Kategorie bewerten, höchstens 4."""
+    from custom_components.einkaufsliste import offers as mod
+    assert mod.name_words("H-Milch 3,5% Weihenstephan 1L") == ["milch", "weihenstephan"]
+    assert mod.name_words("Eat Me! Erdbeer Max Balance") == ["erdbeer", "balance"]
+    m = mgr(hass)
+    cat = next(c for c in m.categories if c["name"] != "")
+    m.add_item("H-Milch", category_id=cat["id"])
+    base = {"advertisers": [{"name": "Lidl"}], "description": "",
+            "validityDates": [{"from": "2026-01-01T00:00:00Z", "to": "2099-01-01T00:00:00Z"}]}
+    milch = [{**base, "id": n, "price": 2.0 - n / 10, "product": {"name": "Frische Vollmilch"}} for n in range(6)]
+    queries: list[str] = []
+
+    async def fake_search(session, dom, key, query, zip_code, limit=20):
+        queries.append(query)
+        return milch if query == "milch" else []
+    with patch("custom_components.einkaufsliste.offers.asyncio.sleep"), \
+         patch.object(mod.Offers, "_search", side_effect=fake_search):
+        m.offers_cfg = {"enabled": True, "zip": "48565", "key": "K", "stores": [], "hours": 6}
+        res = await m.offers._run(m.offers_cfg)
+    assert res["ok"]
+    got = m.offers_data["h-milch"]
+    assert "H-Milch" in queries and queries.index("H-Milch") < len(queries) - 1
+    assert len(got) == 4 and all(o["alt"] == "Milch" for o in got) and got[0]["p"] == 1.5
