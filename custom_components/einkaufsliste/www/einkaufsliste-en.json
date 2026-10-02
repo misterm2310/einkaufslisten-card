@@ -1475,5 +1475,6 @@
 "Barcode nachtragen – scannen oder von Hand eingeben": "Add barcode – scan it or enter it by hand",
 "✏️ „{}“ gibt es schon ({}) – Eigene Notiz zum Unterscheiden": "✏️ “{0}” already exists ({1}) – own note to tell them apart",
 "z. B. AAA": "e.g. AAA",
-"ohne Notiz": "no note"
+"ohne Notiz": "no note",
+"Dieser Barcode gehört schon zu „{}“.\n\nDort wegnehmen und „{}“ zuordnen?": "This barcode already belongs to “{0}”.\n\nTake it away from there and assign it to “{1}”?"
 }

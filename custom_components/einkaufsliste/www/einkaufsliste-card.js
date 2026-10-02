@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.49.0";
+const EL_VERSION = "2.49.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.49.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1052,7 +1052,7 @@ button { font:inherit; color:inherit; }
 .wizard li { counter-increment:wz; display:flex; align-items:center; gap:8px; }
 .wizard li::before { content:counter(wz); flex:none; width:24px; height:24px; border-radius:50%; background:var(--primary-color,#03a9f4); color:#fff; display:grid; place-items:center; font-weight:700; font-size:.85em; }
 .wizard li span { flex:1; }
-.badge { background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border-radius:999px; padding:1px 9px; font-size:.75em; font-weight:600; }
+.badge { cursor:pointer; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border-radius:999px; padding:1px 9px; font-size:.75em; font-weight:600; }
 .iconbtn { background:none; border:0; cursor:pointer; padding:6px; border-radius:50%; display:inline-flex; color:var(--secondary-text-color); line-height:0; }
 .iconbtn:hover { background:var(--secondary-background-color, rgba(127,127,127,.12)); color:var(--primary-text-color); }
 .iconbtn[disabled] { opacity:.3; pointer-events:none; }
@@ -2198,7 +2198,7 @@ class EinkaufslisteCard extends HTMLElement {
       <style>${STYLE}</style>
       <ha-card>
         <div class="head">
-          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="guide" title="📖 Anleitung – antippen"></ha-icon><span id="mascot" data-act="guide" title="📖 Anleitung – antippen" hidden></span><span class="live" id="liveDot" title="Verbindung" data-act="home"></span><span class="badge" id="count" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
+          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="guide" title="📖 Anleitung – antippen"></ha-icon><span id="mascot" data-act="guide" title="📖 Anleitung – antippen" hidden></span><span class="live" id="liveDot" title="Verbindung" data-act="home"></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon></button>
           <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon></button>
           <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon></button>
@@ -2630,8 +2630,9 @@ class EinkaufslisteCard extends HTMLElement {
     recipe = recipe || this._formMode === "recipe";
     const score = (low) => (low.startsWith(q) || low.split(/\s+/).some((w) => w.startsWith(q)) ? 0 : low.includes(q) ? 1 : -1);
     // Name oder Notiz: „paprika“ findet auch „Gewürze · 📝 Paprika“ (Treffer in der Notiz etwas weiter hinten)
-    const scoreNN = (name, note) => { const a = score(name.toLowerCase()); const b = note ? score(note.toLowerCase()) : -1;
-      return a >= 0 ? a : b >= 0 ? b + 1 : -1; };
+    const scoreNN = (name, note, own) => { const a = score(name.toLowerCase()); const b = note ? score(note.toLowerCase()) : -1;
+      const o = own ? score(String(own).toLowerCase()) : -1; // ✏️ Eigene Notiz zählt auch
+      return a >= 0 ? a : b >= 0 ? b + 1 : o >= 0 ? o + 1 : -1; };
     // Ein Produkt = Name + Notiz („Gewürze“ und „Gewürze · Paprika“ sind zwei Produkte)
     const pkey = (name, note) => `${name.toLowerCase()}|${(note || "").toLowerCase()}`;
     const cands = [];
@@ -2657,7 +2658,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     for (const i of items) {
       if (i.recipe_id) continue;
-      const sc = scoreNN(i.name, i.note);
+      const sc = scoreNN(i.name, i.note, i.own_note || this._ownNote(i.name, i.note));
       if (sc < 0) continue;
       const key = pkey(i.name, i.note);
       if (seenVariant.has(key)) continue; // 1 Vorschlag pro Produkt (der vom letzten Mal)
@@ -2673,6 +2674,17 @@ class EinkaufslisteCard extends HTMLElement {
       names.add(a.name.toLowerCase());
       cands.push({ sc: 0, name: a.name, alias: a.alias, item: last || { name: a.name, note: a.note || null, checked: true } });
     }
+    // ✏️ Eigene Notiz getippt („9V“ -> Batterien mit dieser Notiz), auch wenn noch nie auf der Liste
+    if (q.length >= 2) for (const [key, text] of Object.entries(this._data.own_notes || {})) {
+      if (seenVariant.has(key) || score(String(text).toLowerCase()) < 0) continue;
+      const [nm, nt] = [key.split("|")[0], key.split("|").slice(1).join("|")];
+      const h = (this._data.history || []).find((x) => x.name.toLowerCase() === nm);
+      const last = items.find((i) => !i.recipe_id && pkey(i.name, i.note) === key);
+      const name = last?.name || h?.name || nm.charAt(0).toUpperCase() + nm.slice(1);
+      seenVariant.add(key);
+      names.add(name.toLowerCase());
+      cands.push({ sc: 1.5, name, item: last || { name, note: nt ? (last?.note ?? nt) : null, checked: true } });
+    }
     for (const h of this._data.history || []) {
       const low = h.name.toLowerCase();
       if (names.has(low)) continue;
@@ -2686,7 +2698,7 @@ class EinkaufslisteCard extends HTMLElement {
       for (const ri of r.items || []) {
         const key = pkey(ri.name, ri.note);
         if (seenVariant.has(key) || (!ri.note && names.has(ri.name.toLowerCase()))) continue;
-        const sc = scoreNN(ri.name, ri.note);
+        const sc = scoreNN(ri.name, ri.note, this._ownNote(ri.name, ri.note));
         if (sc < 0) continue;
         seenVariant.add(key);
         names.add(ri.name.toLowerCase());
@@ -3092,6 +3104,7 @@ class EinkaufslisteCard extends HTMLElement {
     const typed = this._shopMode ? "" : splitMany(this.$("inName").value).pop() || "";
     const filter = (splitQty(typed).name || typed).trim().toLowerCase();
     const hit = (i) => i.name.toLowerCase().includes(filter) || (i.note || "").toLowerCase().includes(filter)
+      || String(i.own_note || this._ownNote(i.name, i.note) || "").toLowerCase().includes(filter)
       || (filter.length >= 2 && (i.for_whom || "").toLowerCase().startsWith(filter));
     let done = items.filter((i) => i.checked);
     if (filter) done = done.filter(hit);
@@ -4337,7 +4350,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (!box || !this._data) return;
     const q = (this._delFilter || "").trim().toLowerCase();
     const items = this._data.items
-      .filter((i) => !q || i.name.toLowerCase().includes(q))
+      .filter((i) => !q || `${i.name} ${i.note || ""} ${i.own_note || this._ownNote(i.name, i.note) || ""}`.toLowerCase().includes(q))
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
     if (!items.length) {
       box.innerHTML = `<p class="hint">${q ? `Nichts gefunden zu „${esc(q)}“.` : "Die Liste ist leer."}</p>`;
@@ -4374,6 +4387,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (q.length > 1 && low.includes(q)) { out.push({ r, sc: 1 }); continue; }
       const ing = r.items.find((i) => starts(i.name.toLowerCase()))
         || (q.length > 2 ? r.items.find((i) => i.name.toLowerCase().includes(q)) : null)
+        || (q.length > 1 ? r.items.find((i) => String(this._ownNote(i.name, i.note) || "").toLowerCase().includes(q)) : null) // ✏️ Eigene Notiz der Zutat
         || r.items.find((i) => nick(i)); // 🏷️ Spitzname der Zutat („Paradeiser“ -> Tomate)
       if (ing) { out.push({ r, sc: 2, via: ing.name }); continue; }
       rest.push(r);
@@ -5090,6 +5104,12 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 🔎 Katalog-Suche: Name, Notizen, Spitznamen, Barcode-Nummer, Kategorie, Geschäft, gelernte Tippfehler
+  // ✏️ Eigene Notiz zu Name + Notiz (für alle Suchen)
+  _ownNote(name, note) {
+    const k = `${String(name || "").toLowerCase()}|${String(note || "").toLowerCase()}`.replace(/\|$/, "");
+    return (this._data?.own_notes || {})[k] || "";
+  }
+
   _prodSearchText(p) {
     const d = this._data || {};
     const stores = new Set([p.store_id, ...(p.stores || [])].filter(Boolean));
@@ -7348,6 +7368,16 @@ class EinkaufslisteCard extends HTMLElement {
         if (!item) { this._renderList(); this._toast("Den Artikel gibt es nicht mehr."); break; }
         const own = { name: item.name, note: item.note || null, own_note: item.own_note || null };
         this._startAppScan(async (code) => {
+          // ⚠️ Gehört der Barcode schon zu einem anderen Produkt? Dann erst fragen – er zieht sonst still um
+          const clean = String(code).replace(/\D/g, "");
+          const bare = (x) => String(x).replace(/^0+/, "");
+          const mine = this._pk(item.name, item.note);
+          const owner = Object.keys(this._data.barcodes_by_name || {}).find((k) => k !== mine && this._data.barcodes_by_name[k].some((c) => c === clean || bare(c) === bare(clean)));
+          if (owner) {
+            const [on, ot = ""] = owner.split("|");
+            const label = `${on.replace(/^./, (c) => c.toUpperCase())}${ot ? ` – ${ot.replace(/^./, (c) => c.toUpperCase())}` : ""}`;
+            if (!elConfirm(`Dieser Barcode gehört schon zu „${label}“.\n\nDort wegnehmen und „${item.name}${item.note ? ` – ${item.note}` : ""}“ zuordnen?`)) return;
+          }
           // 🔎 Vorher die Produkt-Datenbank fragen (frisch, nicht das Gemerkte) – ohne Netz einfach überspringen
           let db = null;
           if (this._hass?.connected !== false) {

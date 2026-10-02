@@ -507,6 +507,7 @@ class EinkaufslisteManager:
             "recipe_groups": self.recipe_groups,
             "category_hints": category_hints(self.categories),
             "seen": self.seen,
+            "own_notes": self.own_notes,
             "history": [{**h, "own_note": self.own_notes.get(h["name"].lower())} for h in history[:300]],
             "barcodes_by_name": self._barcodes_by_name(),
             "aliases": [{"alias": a, "name": t["name"], "note": t.get("note")} for a, e in sorted(self.aliases.items()) for t in self._al_targets(e)],

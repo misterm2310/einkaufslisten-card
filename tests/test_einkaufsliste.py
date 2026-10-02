@@ -2880,3 +2880,11 @@ async def test_own_note_known_stays_on_product(hass: HomeAssistant, setup) -> No
     m.update_product("kaffee", own_note="Fair gehandelt")
     b = m.add_item("Kaffee", own_note="Fair gehandelt")
     assert b["id"] == a["id"] and not b.get("note")
+
+
+async def test_own_notes_in_state(hass: HomeAssistant, setup) -> None:
+    """✏️ Eigene Notizen stehen im Zustand, damit alle Suchen in der Karte danach suchen können."""
+    m = mgr(hass)
+    m.learn_barcode("333", "Batterie", None, None, "9V Block")
+    m.update_product("batterie|9v block", own_note="Rauchmelder")
+    assert m.as_dict()["own_notes"]["batterie|9v block"] == "Rauchmelder"
