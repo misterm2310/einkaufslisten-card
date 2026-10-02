@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.47.0";
+const EL_VERSION = "2.47.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.47.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1344,6 +1344,12 @@ label.btn { cursor:pointer; }
 .picker .none { grid-column:1/-1; font-size:.8em; color:var(--secondary-text-color); padding:4px; }
 .sec p { margin:4px 0; font-size:.9em; line-height:1.4; }
 .hint { color:var(--secondary-text-color); font-size:.8em !important; }
+/* 📋 Bericht von „Alles neu holen“: eigener Kasten, ✖ zum Schließen (erst wenn fertig), lange Berichte scrollen */
+.refrep { position:relative; margin:6px 0; padding:8px 10px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; }
+.refrep > .iconbtn { display:none; position:absolute; top:2px; right:2px; }
+.refrep.done > .iconbtn { display:inline-flex; }
+.refrep > .hint { margin:0; white-space:pre-line; overflow-wrap:anywhere; max-height:45vh; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; }
+.refrep.done { padding-right:42px; } /* Platz für das ✖ – so liegt es weder über dem Text noch über dem Scrollbalken */
 .btnrow { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 .btn { border:1px solid var(--divider-color, rgba(127,127,127,.35)); background:transparent; border-radius:10px; padding:8px 12px; cursor:pointer; font-size:.9em; display:inline-flex; align-items:center; gap:6px; }
 .btn.danger { color:var(--error-color,#db4437); border-color:color-mix(in srgb, var(--error-color,#db4437) 50%, transparent); }
@@ -3555,7 +3561,10 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog" aria-label="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon></button>
           <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog" aria-label="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
           <button class="btn" data-act="prod-refresh-all" title="Alles neu holen (Name, Notiz, Foto) – für alle Produkte mit Barcode, mit Auswahl" aria-label="Alles neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon></button></div>
-        <p class="hint" id="prodRefreshMsg" style="white-space:pre-line" ${this._refreshNone ? "" : "hidden"}>${esc(this._refreshNone ? elT(this._refreshNone) : "")}</p>
+        <div class="refrep${this._refreshNone ? " done" : ""}" id="prodRefreshBox" ${this._refreshNone ? "" : "hidden"}>
+          <button type="button" class="iconbtn" data-act="prod-refresh-close" title="Bericht schließen" aria-label="Bericht schließen"><ha-icon icon="mdi:close"></ha-icon></button>
+          <p class="hint" id="prodRefreshMsg" tabindex="0">${esc(this._refreshNone ? elT(this._refreshNone) : "")}</p>
+        </div>
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
       { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_NEWS_VERSION}`, html: () => this._newsHtml() },
@@ -7651,7 +7660,12 @@ class EinkaufslisteCard extends HTMLElement {
       }
       case "prod-refresh-all": { // 🔄 Alles neu holen (Name, Notiz, Foto) für ALLE Produkte mit Barcode – mit Auswahl, nacheinander, mit Fortschritt
         if (this._refreshAllBusy) break;
-        const say = (t) => { const m = this.$("prodRefreshMsg"); if (m) { m.hidden = !t; m.textContent = t ? elT(t) : ""; } };
+        // Kasten zeigen/verstecken; „fertig“ = Bericht steht da → ✖ zum Schließen erscheint, nach oben gescrollt
+        const say = (t, fertig = false) => {
+          const box = this.$("prodRefreshBox"), m = this.$("prodRefreshMsg");
+          if (m) { m.textContent = t ? elT(t) : ""; if (fertig) m.scrollTop = 0; }
+          if (box) { box.hidden = !t; box.classList.toggle("done", !!t && fertig); }
+        };
         (async () => {
           let plan;
           try { plan = await this._ws({ type: "einkaufsliste/photos/refresh_plan" }); } catch (_) { return; }
@@ -7718,10 +7732,18 @@ class EinkaufslisteCard extends HTMLElement {
             }
             this._toast(`✅ Fertig: ${done.length} angepasst${unknown.length ? `, ${unknown.length}× keine Daten` : ""}`);
             this._refreshNone = lines.join("\n");
-            say(this._refreshNone);
+            say(this._refreshNone, true);
             this._loadProducts();
           } finally { if (!this._refreshNone) say(""); this._refreshAllBusy = false; }
         })();
+        break;
+      }
+      case "prod-refresh-close": { // ✖ Bericht von „Alles neu holen“ schließen (nur der Bericht, nicht der laufende Fortschritt)
+        if (this._refreshAllBusy) break;
+        this._refreshNone = "";
+        const box = this.$("prodRefreshBox"), m = this.$("prodRefreshMsg");
+        if (m) m.textContent = "";
+        if (box) { box.hidden = true; box.classList.remove("done"); }
         break;
       }
       case "prod-bc-add": { // ▥ Barcode nachtragen: tippen oder scannen
