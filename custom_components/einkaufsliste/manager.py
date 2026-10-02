@@ -275,6 +275,7 @@ class EinkaufslisteManager:
         self.photos: dict[str, dict[str, Any]] = {}  # Produktname (klein) -> Foto
         self.seen: dict[str, dict[str, str]] = {}  # Benutzer -> Geschäft -> zuletzt angeschaut
         self.barcodes: dict[str, dict[str, Any]] = {}  # Barcode -> gelernter Artikel
+        self.own_notes: dict[str, str] = {}  # ✏️ Produkt-Schlüssel -> Eigene Notiz
         self.aliases: dict[str, dict[str, Any]] = {}  # 🏷️ Spitzname (klein) -> {"name", "note"} des Produkts
         self.typos: dict[str, dict[str, Any]] = {}  # 🧠 Tippfehler (klein) -> {"right": Name, "n": wie oft korrigiert}
         self.pin_hash: str | None = None  # 🔒 PIN für die Einstellungen (nur als Prüfsumme gespeichert)
@@ -374,6 +375,8 @@ class EinkaufslisteManager:
             cat.setdefault("color", CATEGORY_COLORS[k % len(CATEGORY_COLORS)])
         self.barcodes = data.get("barcodes", {})
         self.aliases = data.get("aliases", {})
+        self.own_notes = data.get("own_notes", {})  # ✏️ Eigene Notiz pro Produkt (Name + Notiz)
+        self._migrate_own_notes()
         self.typos = data.get("typos", {})
         self.pin_hash = data.get("pin")
         self.mascot = bool(data.get("mascot", False))
@@ -434,6 +437,7 @@ class EinkaufslisteManager:
             "seen": self.seen,
             "history": self.history,
             "aliases": self.aliases,
+            "own_notes": self.own_notes,
             "typos": self.typos,
             "pin": self.pin_hash,
             "mascot": self.mascot,
@@ -500,7 +504,7 @@ class EinkaufslisteManager:
             "recipe_groups": self.recipe_groups,
             "category_hints": category_hints(self.categories),
             "seen": self.seen,
-            "history": history[:300],
+            "history": [{**h, "own_note": self.own_notes.get(h["name"].lower())} for h in history[:300]],
             "barcodes_by_name": self._barcodes_by_name(),
             "aliases": [{"alias": a, "name": t["name"], "note": t.get("note")} for a, e in sorted(self.aliases.items()) for t in self._al_targets(e)],
             "typos": {k: v["right"] for k, v in self.typos.items() if v.get("n", 0) >= TYPO_LEARN_AFTER},
@@ -955,7 +959,7 @@ class EinkaufslisteManager:
                     "count": hist.get("count", 0),
                     "last_used": hist.get("last_used"),
                     "aliases": sorted(a for a, e in self.aliases.items() if any(product_key(t["name"], t.get("note")) == key for t in self._al_targets(e))),
-                    "own_note": hist.get("own_note"),  # ✏️ Eigene Notiz
+                    "own_note": self.own_notes.get(key),  # ✏️ Eigene Notiz (pro Produkt)
                     "unit": hist.get("unit"),  # 📏 gemerkte Einheit beim direkten Eintragen
                     "unit_fixed": bool(hist.get("unit_fixed")),
                     "stores": [sid for sid in hist.get("stores", []) if self.store_by_id(sid)],  # 🏪 gibt's bei …
@@ -1080,6 +1084,8 @@ class EinkaufslisteManager:
                 if store_id is not None:
                     bc["store_id"] = store
         self._al_retarget(key, new_name, new_note)  # 🏷️ Spitznamen zeigen aufs neue Produkt
+        if new_key != key and key in self.own_notes:  # ✏️ Eigene Notiz zieht mit um
+            self.own_notes.setdefault(new_key, self.own_notes.pop(key))
         if new_key != key and key in self.photos and new_key not in self.photos:
             self.photos[new_key] = self.photos.pop(key)
             self.photos[new_key]["name"] = new_key
@@ -1109,20 +1115,7 @@ class EinkaufslisteManager:
                 "store_id": prod["store_id"], "category_id": prod["category_id"]})
             target["stores"] = valid
         if own_note is not None:  # ✏️ Eigene Notiz beim Produkt (und bei seinen Artikeln auf der Liste)
-            own = _own(own_note)
-            target = self.history.setdefault(new_name.lower(), {
-                "name": new_name, "count": 0, "last_used": _now_iso(),
-                "store_id": prod["store_id"], "category_id": prod["category_id"]})
-            for thing in self.items:
-                if thing["name"].lower() == new_name.lower() and not thing.get("recipe_id"):
-                    if own:
-                        thing["own_note"] = own
-                    else:
-                        thing.pop("own_note", None)
-            if own:
-                target["own_note"] = own
-            else:
-                target.pop("own_note", None)
+            self._set_own_note(new_name, new_note, _own(own_note))
         if unit is not None and new_name.lower() in self.history:
             target = self.history[new_name.lower()]
             if unit:  # 📏 im Katalog fest eingestellt – wird nicht mehr überschrieben
@@ -1218,6 +1211,41 @@ class EinkaufslisteManager:
         """PIN vergessen? Admin setzt sie unter Geräte & Dienste → Einkaufsliste → Konfigurieren zurück."""
         self.pin_hash = None
         self._changed()
+
+    def _migrate_own_notes(self) -> None:
+        """✏️ Früher hing die Eigene Notiz am Namen: jetzt bekommt jede Variante (Name + Notiz) ihre eigene."""
+        for hist in self.history.values():
+            text = hist.pop("own_note", None)
+            if not text:
+                continue
+            name = hist["name"].lower()
+            keys = {product_key(i["name"], i.get("note")) for i in self.items if i["name"].lower() == name and not i.get("recipe_id")}
+            keys |= {product_key(bc["name"], bc.get("note")) for bc in self.barcodes.values() if bc.get("name") and bc["name"].lower() == name}
+            keys.add(product_key(hist["name"], None))
+            for k in keys:
+                self.own_notes.setdefault(k, text)
+        for item in self.items:  # Artikel und Merkzettel gleichziehen
+            if item.get("recipe_id"):
+                continue
+            okey = product_key(item["name"], item.get("note"))
+            if item.get("own_note"):
+                self.own_notes.setdefault(okey, item["own_note"])
+            elif self.own_notes.get(okey):
+                item["own_note"] = self.own_notes[okey]
+
+    def _set_own_note(self, name: str, note: str | None, text: str | None) -> None:
+        """✏️ Eigene Notiz eines Produkts setzen/löschen – auch bei seinen Artikeln auf der Liste."""
+        key = product_key(name, note)
+        if text:
+            self.own_notes[key] = text
+        else:
+            self.own_notes.pop(key, None)
+        for thing in self.items:
+            if not thing.get("recipe_id") and product_key(thing["name"], thing.get("note")) == key:
+                if text:
+                    thing["own_note"] = text
+                else:
+                    thing.pop("own_note", None)
 
     # 🏷️ Ein Spitzname darf zu mehreren Produkten gehören: erstes Ziel in name/note, weitere in „also“
     @staticmethod
@@ -1324,6 +1352,10 @@ class EinkaufslisteManager:
             if bc.get("name") and product_key(bc["name"], bc.get("note")) == from_key:
                 bc["name"], bc["note"] = name, note
         self._al_retarget(from_key, name, note)
+        if from_key in self.own_notes:  # ✏️ Eigene Notiz: die vom Ziel bleibt, sonst zieht sie um
+            moved_own = self.own_notes.pop(from_key)
+            if into_key not in self.own_notes:
+                self._set_own_note(name, note, moved_own)
         if not src["note"] and src["name"].lower() != name.lower() and src["name"].lower() not in self.aliases:
             self.aliases[src["name"].lower()] = {"name": name, "note": note}  # 🏷️ „Tomaten“ landet künftig bei „Tomate“
         # 📷 Fotos: zum Ziel dazu (höchstens MAX_PHOTOS), der Rest wird gelöscht
@@ -1390,6 +1422,7 @@ class EinkaufslisteManager:
         if not others:
             self.history.pop(prod["name"].lower(), None)
         await self.async_remove_photo(key)
+        self.own_notes.pop(key, None)
         self._changed()
 
     # ------------------------------------------------------------------ Fehler-Protokoll
@@ -1603,11 +1636,13 @@ class EinkaufslisteManager:
                 entry["unit"] = unit
         if not item.get("recipe_id") and item.get("quantity"):
             entry["qty"] = item["quantity"]  # 🔁 für „wie zuletzt“
+        entry.pop("own_note", None)
         if not item.get("recipe_id"):
+            okey = product_key(item["name"], item.get("note"))
             if item.get("own_note"):
-                entry["own_note"] = item["own_note"]  # ✏️ Eigene Notiz bleibt beim Produkt (Vorschläge füllen sie wieder ein)
+                self.own_notes[okey] = item["own_note"]  # ✏️ Eigene Notiz bleibt beim Produkt (Vorschläge füllen sie wieder ein)
             else:
-                entry.pop("own_note", None)
+                self.own_notes.pop(okey, None)
         self.history[key] = entry
         if len(self.history) > HISTORY_LIMIT:
             oldest = sorted(self.history.items(), key=lambda kv: kv[1].get("last_used", ""))
@@ -1685,7 +1720,7 @@ class EinkaufslisteManager:
         if recipe_id is not None:
             own = None
         elif own_note is None:
-            own = (self.history_for(name) or {}).get("own_note")
+            own = self.own_notes.get(product_key(name, note))
         else:
             own = _own(own_note)
         if bare and quantity and recipe_id is None:  # 📏 nur eine Zahl? Dann die gemerkte Einheit („2“ -> 2 Pck.)
@@ -1715,6 +1750,8 @@ class EinkaufslisteManager:
                     existing["own_note"] = own
                 else:
                     existing.pop("own_note", None)
+            elif own and recipe_id is None and not existing.get("own_note"):
+                existing["own_note"] = own
             old_qty = existing.get("quantity")
             if quantity:
                 existing["quantity"] = quantity
@@ -1797,11 +1834,8 @@ class EinkaufslisteManager:
         key = item["name"].lower()
         if key in self.history:
             self.history[key].update(store_id=item["store_id"], category_id=item["category_id"])
-            if "own_note" in fields and not item.get("recipe_id"):
-                if item.get("own_note"):
-                    self.history[key]["own_note"] = item["own_note"]
-                else:
-                    self.history[key].pop("own_note", None)
+        if "own_note" in fields and not item.get("recipe_id"):
+            self._set_own_note(item["name"], item.get("note"), item.get("own_note"))
         self._log_changes(before, item)
         self._changed()
         return item

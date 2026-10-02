@@ -2693,7 +2693,7 @@ async def test_own_note(hass, setup):
     m = mgr(hass)
     a = m.add_item("Kaffee", note="Bohnen", own_note="nur die große Packung")
     assert a["own_note"] == "Nur die große Packung" and a["note"] == "Bohnen"
-    assert m.history_for("Kaffee")["own_note"] == "Nur die große Packung"
+    assert m.own_notes["kaffee|bohnen"] == "Nur die große Packung"
     # nochmal ohne eigene Notiz: die vom letzten Mal kommt wieder mit
     m.set_checked(a["id"], True)
     b = m.add_item("Kaffee", note="Bohnen")
@@ -2703,9 +2703,9 @@ async def test_own_note(hass, setup):
     # am Artikel ändern / leeren
     m.update_item(a["id"], own_note="Fair gehandelt")
     assert m.get_item(a["id"])["own_note"] == "Fair gehandelt"
-    assert m.history_for("Kaffee")["own_note"] == "Fair gehandelt"
+    assert m.own_notes["kaffee|bohnen"] == "Fair gehandelt"
     m.update_item(a["id"], own_note="")
-    assert not m.get_item(a["id"]).get("own_note") and "own_note" not in m.history_for("Kaffee")
+    assert not m.get_item(a["id"]).get("own_note") and "kaffee|bohnen" not in m.own_notes
     # im Katalog setzen: Produkt + Artikel
     p = m.update_product("kaffee|bohnen", own_note="Nur Arabica")
     assert p["own_note"] == "Nur Arabica"
@@ -2721,7 +2721,7 @@ async def test_note_move_to_own(hass, setup):
     m.update_product("kaffee|bohnen", note="", own_note="Arabica · Bohnen")
     it = m.get_item(a["id"])
     assert not it.get("note") and it["own_note"] == "Arabica · Bohnen"
-    assert m.history_for("Kaffee")["own_note"] == "Arabica · Bohnen"
+    assert m.own_notes["kaffee"] == "Arabica · Bohnen"
 
 
 async def test_refresh_replace_removes_identical_duplicates(hass: HomeAssistant, setup, monkeypatch) -> None:
@@ -2789,3 +2789,25 @@ async def test_alias_for_several_products(hass: HomeAssistant, setup) -> None:
     m.set_aliases("batterien|aaa", [])  # nur dieses Produkt verliert ihn
     rows = [r for r in m.as_dict()["aliases"] if r["alias"] == "akku"]
     assert [r["note"] for r in rows] == ["AA 1,5V"]
+
+
+async def test_own_note_per_variant(hass: HomeAssistant, setup) -> None:
+    """✏️ Eigene Notiz hängt pro Variante (Name + Notiz): Batterien AA und AAA getrennt; alte Namens-Notiz wird verteilt."""
+    m = mgr(hass)
+    m.learn_barcode("111", "Batterien", None, None, "AA")
+    m.learn_barcode("222", "Batterien", None, None, "AAA")
+    m.update_product("batterien|aa", own_note="für die Fernbedienung")
+    m.update_product("batterien|aaa", own_note="Schublade im Flur")
+    prods = {p["key"]: p for p in m.products()}
+    assert prods["batterien|aa"]["own_note"] == "Für die Fernbedienung"
+    assert prods["batterien|aaa"]["own_note"] == "Schublade im Flur"
+    a = m.add_item("Batterien", note="AAA")
+    assert a["own_note"] == "Schublade im Flur"
+    m.update_product("batterien|aa", own_note="")  # löscht nur bei AA
+    assert m.own_notes["batterien|aaa"] == "Schublade im Flur"
+    # alte Daten: Notiz hing am Namen -> beide Varianten bekommen sie
+    m.history["batterien"]["own_note"] = "Alter Zettel"
+    m.own_notes.clear()
+    m._migrate_own_notes()
+    assert m.own_notes["batterien|aa"] == "Alter Zettel" and m.own_notes["batterien|aaa"] == "Alter Zettel"
+    assert "own_note" not in m.history["batterien"]
