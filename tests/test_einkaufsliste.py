@@ -3487,3 +3487,60 @@ async def test_recipe_ai_flag(hass, setup, hass_ws_client):
     res = await client.receive_json()
     assert res["success"] and "ai" not in res["result"]
     assert m.recipe_by_id(rid)["ai"] is True and m.recipe_by_id(rid)["name"] == "Meine Nudeln"
+
+
+async def test_ai_cook_servings(hass, setup, hass_ws_client):
+    """👥 Personenzahl landet im Auftrag an die KI."""
+    from homeassistant.core import SupportsResponse
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    seen = {}
+
+    async def process(call):
+        seen["text"] = call.data["text"]
+        return {"response": {"response_type": "action_done", "speech": {"plain": {"speech": '{"ideas":[{"name":"Reis","steps":["Kochen"]}]}'}}}}
+
+    hass.services.async_register("conversation", "process", process, supports_response=SupportsResponse.ONLY)
+    hass.states.async_set("conversation.test_ki", "unknown")
+    await client.send_json({"id": 1, "type": "einkaufsliste/ai/agent", "entity_id": "conversation.test_ki"})
+    assert (await client.receive_json())["success"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/ai/cook", "ingredients": ["Reis"], "servings": 4})
+    assert (await client.receive_json())["success"] and "für 4 Personen" in seen["text"]
+    seen.clear()
+    await client.send_json({"id": 3, "type": "einkaufsliste/ai/cook", "ingredients": ["Reis"]})
+    assert (await client.receive_json())["success"] and "Personen" not in seen["text"]
+    await client.send_json({"id": 4, "type": "einkaufsliste/ai/cook", "ingredients": ["Reis"], "servings": 99})
+    assert not (await client.receive_json())["success"]
+
+
+async def test_ai_prefs(hass, setup, hass_ws_client, hass_read_only_access_token):
+    """🧂 „Immer im Haus“ und 🚫 „Das nie vorschlagen“ gehen in den Auftrag an die KI (nur Admin darf ändern)."""
+    from homeassistant.core import SupportsResponse
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    seen = {}
+
+    async def process(call):
+        seen["text"] = call.data["text"]
+        return {"response": {"response_type": "action_done", "speech": {"plain": {"speech": '{"ideas":[{"name":"Reis","steps":["Kochen"]}]}'}}}}
+
+    hass.services.async_register("conversation", "process", process, supports_response=SupportsResponse.ONLY)
+    hass.states.async_set("conversation.test_ki", "unknown")
+    await client.send_json({"id": 1, "type": "einkaufsliste/ai/agent", "entity_id": "conversation.test_ki"})
+    assert (await client.receive_json())["success"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/ai/prefs", "pantry": "Salz, Öl\nMehl; salz", "avoid": "Nüsse, Fisch"})
+    assert (await client.receive_json())["success"]
+    assert m.ai_pantry == ["Salz", "Öl", "Mehl"] and m.ai_avoid == ["Nüsse", "Fisch"]
+    st = m.as_dict()["settings"]
+    assert st["ai_pantry"] == ["Salz", "Öl", "Mehl"] and st["ai_avoid"] == ["Nüsse", "Fisch"]
+    await client.send_json({"id": 3, "type": "einkaufsliste/ai/cook", "ingredients": ["Reis", "Öl"]})
+    assert (await client.receive_json())["success"]
+    assert "Immer im Haus" in seen["text"] and "Salz, Mehl" in seen["text"] and "Nüsse, Fisch" in seen["text"]
+    # nur eine Liste ändern lässt die andere stehen
+    await client.send_json({"id": 4, "type": "einkaufsliste/ai/prefs", "avoid": ""})
+    assert (await client.receive_json())["success"] and m.ai_avoid == [] and m.ai_pantry == ["Salz", "Öl", "Mehl"]
+    ro = await hass_ws_client(hass, hass_read_only_access_token)
+    await ro.send_json({"id": 5, "type": "einkaufsliste/ai/prefs", "pantry": "x"})
+    assert not (await ro.receive_json())["success"]
+    # übersteht Speichern und Laden
+    assert m._to_storage()["ai_pantry"] == ["Salz", "Öl", "Mehl"]

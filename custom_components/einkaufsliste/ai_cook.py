@@ -86,7 +86,8 @@ def parse_ideas(text: str) -> list[dict[str, Any]]:
 
 
 async def async_cook(hass: HomeAssistant, manager: EinkaufslisteManager, ingredients: list[str],
-                     use_list: bool, wishes: str = "", count: int = 3) -> list[dict[str, Any]]:
+                     use_list: bool, wishes: str = "", count: int = 3,
+                     servings: int | None = None) -> list[dict[str, Any]]:
     agent = manager.ai_agent if manager.ai_on else None
     if not agent:
         raise ValueError("KI-Kochen ist aus. Ein Admin kann es in den ⚙️ Einstellungen → Extras einschalten.")
@@ -101,8 +102,16 @@ async def async_cook(hass: HomeAssistant, manager: EinkaufslisteManager, ingredi
     if not names:
         raise ValueError("Trag ein paar Zutaten ein (oder nimm die Einkaufsliste mit) – sonst weiß die KI nicht, womit sie kochen soll.")
     wish = " ".join(str(wishes or "").split())[:200]
-    text = PROMPT.format(items="\n".join(f"- {n}" for n in names),
-                         wishes=f"Wünsche: {wish}\n" if wish else "", n=max(1, min(int(count), 5)))
+    try:
+        people = int(servings) if servings else 0
+    except (TypeError, ValueError):
+        people = 0
+    pantry = [n for n in manager.ai_pantry if n.lower() not in [x.lower() for x in names]]
+    wish_line = ((f"Immer im Haus (darfst du voraussetzen): {', '.join(pantry)}\n" if pantry else "")
+                 + (f"Niemals verwenden oder vorschlagen (Allergie/Abneigung): {', '.join(manager.ai_avoid)}\n" if manager.ai_avoid else "")
+                 + (f"Wünsche: {wish}\n" if wish else "")
+                 + (f"Rechne die Mengen für {people} Personen.\n" if 1 <= people <= 20 else ""))
+    text = PROMPT.format(items="\n".join(f"- {n}" for n in names), wishes=wish_line, n=max(1, min(int(count), 5)))
     try:
         async with asyncio.timeout(TIMEOUT):
             result = await hass.services.async_call(

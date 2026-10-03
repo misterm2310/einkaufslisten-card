@@ -267,6 +267,19 @@ def person_name_for_user(hass: HomeAssistant, user_id: str | None) -> str | None
 AUTO_CATEGORY: Any = object()  # add_item: „Kategorie nicht angegeben“ (≠ ausdrücklich keine)
 
 
+def _name_list(value: Any, limit: int = 40, size: int = 60) -> list[str]:
+    """Text (Zeilen/Komma/Semikolon) oder Liste -> saubere Liste kurzer Namen ohne Doppelte."""
+    raw = re.split(r"[\n,;]+", value) if isinstance(value, str) else (value if isinstance(value, list) else [])
+    out: list[str] = []
+    for x in raw:
+        t = " ".join(str(x or "").split())[:size]
+        if t and t.lower() not in [o.lower() for o in out]:
+            out.append(t)
+        if len(out) >= limit:
+            break
+    return out
+
+
 class EinkaufslisteManager:
     """Verwaltet alle Daten der Einkaufsliste."""
 
@@ -294,6 +307,8 @@ class EinkaufslisteManager:
         self.note_templates: list[str] | None = None  # 📝 Vorlagen für die Eigene Notiz (None = Standard-Vorschläge)
         self.ai_agent: str | None = None  # 🤖 KI-Kochen: gewählter Home-Assistant-Assistent (bleibt gemerkt, auch wenn aus)
         self.ai_on: bool = False  # 🤖 KI-Kochen an/aus (Standard aus)
+        self.ai_pantry: list[str] = []  # 🧂 „Immer im Haus“ – geht bei jeder KI-Kochen-Anfrage mit
+        self.ai_avoid: list[str] = []  # 🚫 „Das nie vorschlagen“ (Allergien, Abneigungen)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
         self.privacy: bool = False  # 🔒 Datenschutz an = keine Kamera, keine Fotos, kein Barcode-Scanner (für alle Geräte)
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
@@ -406,6 +421,8 @@ class EinkaufslisteManager:
         ag = data.get("ai_agent")
         self.ai_agent = str(ag) if isinstance(ag, str) and ag.startswith("conversation.") else None
         self.ai_on = bool(data.get("ai_on", False)) and self.ai_agent is not None
+        self.ai_pantry = _name_list(data.get("ai_pantry"))
+        self.ai_avoid = _name_list(data.get("ai_avoid"))
         self.privacy = bool(data.get("privacy", False))
         self.spend = bool(data.get("spend", False))
         self.spend_auto = bool(data.get("spend_auto", False))
@@ -477,6 +494,8 @@ class EinkaufslisteManager:
             "note_templates": self.note_templates,
             "ai_agent": self.ai_agent,
             "ai_on": self.ai_on,
+            "ai_pantry": self.ai_pantry,
+            "ai_avoid": self.ai_avoid,
             "privacy": self.privacy,
             "spend": self.spend,
             "spend_auto": self.spend_auto,
@@ -564,6 +583,8 @@ class EinkaufslisteManager:
                 "note_templates_custom": self.note_templates is not None,
                 "ai_agent": self.ai_agent,
                 "ai_on": self.ai_on,
+                "ai_pantry": self.ai_pantry,
+                "ai_avoid": self.ai_avoid,
                 "privacy": self.privacy,
                 "cards_on": self.cards_on,
                 "spend": self.spend,
@@ -896,6 +917,14 @@ class EinkaufslisteManager:
         if want and not self.ai_agent:
             raise ValueError("Bitte erst einen Assistenten wählen.")
         self.ai_on = want
+        self._changed()
+
+    def set_ai_prefs(self, pantry: Any = None, avoid: Any = None) -> None:
+        """🤖 KI-Kochen: „Immer im Haus“ und „Das nie vorschlagen“ (je eine Liste von Namen; None = nicht ändern)."""
+        if pantry is not None:
+            self.ai_pantry = _name_list(pantry)
+        if avoid is not None:
+            self.ai_avoid = _name_list(avoid)
         self._changed()
 
     def set_cards_on(self, on: bool) -> None:

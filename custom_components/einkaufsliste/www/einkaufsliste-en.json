@@ -1704,5 +1704,19 @@
 "Bitte erst einen Assistenten wählen.": "Please choose an assistant first.",
 "📷 Foto zu diesem Schritt": "📷 Photo for this step",
 "Von der KI vorgeschlagen": "Suggested by AI",
-"Suchtext löschen": "Clear search"
+"Suchtext löschen": "Clear search",
+"Tipp auf eine Zutat verschiebt sie zwischen „Hast du“ und „Fehlt“.": "Tap an ingredient to move it between “You have” and “Missing”.",
+"Doch nicht da – auf „Fehlt“ setzen": "Not there after all – move to “Missing”",
+"Doch da – auf „Hast du“ setzen": "Actually there – move to “You have”",
+"👥 Für": "👥 For",
+"Wünsche, z. B. vegetarisch, schnell": "Wishes, e.g. vegetarian, quick",
+"– geht bei jeder Anfrage automatisch mit (eine Zutat pro Zeile oder mit Komma):": "– goes along with every request automatically (one ingredient per line or separated by commas):",
+"– Allergien und Abneigungen:": "– allergies and dislikes:",
+"🔒 Auch diese Namen gehen mit jeder Anfrage an den Assistenten – bitte keine Namen von Personen eintragen.": "🔒 These names also go to the assistant with every request – please do not enter names of people.",
+"Listen speichern": "Save lists",
+"Salz, Pfeffer, Öl, Mehl, Zwiebeln": "Salt, pepper, oil, flour, onions",
+"Nüsse, Fisch, Koriander": "Nuts, fish, coriander",
+"🤖 Gespeichert": "🤖 Saved",
+"🧂 Immer im Haus": "🧂 Always at home",
+"🚫 Das nie vorschlagen": "🚫 Never suggest"
 }

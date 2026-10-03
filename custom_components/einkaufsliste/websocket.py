@@ -76,6 +76,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_catalog_csv,
         ws_note_templates,
         ws_ai_agent,
+        ws_ai_prefs,
         ws_ai_cook,
         ws_grocy_set,
         ws_grocy_clear,
@@ -1290,10 +1291,25 @@ def ws_ai_agent(hass, connection, msg):
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): "einkaufsliste/ai/prefs",
+        vol.Optional("pantry"): vol.All(str, vol.Length(max=1200)),
+        vol.Optional("avoid"): vol.All(str, vol.Length(max=1200)),
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_ai_prefs(hass, connection, msg):
+    """🤖 KI-Kochen: „Immer im Haus“ und „Das nie vorschlagen“ speichern."""
+    _run(hass, connection, msg, lambda m: m.set_ai_prefs(msg.get("pantry"), msg.get("avoid")))
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required("type"): "einkaufsliste/ai/cook",
         vol.Optional("ingredients", default=list): [vol.All(str, vol.Length(max=120))],
         vol.Optional("use_list", default=False): bool,
         vol.Optional("wishes", default=""): vol.All(str, vol.Length(max=300)),
+        vol.Optional("servings"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=20))),
     }
 )
 @websocket_api.async_response
@@ -1304,7 +1320,7 @@ async def ws_ai_cook(hass, connection, msg):
         connection.send_error(msg["id"], "not_ready", "Die Einkaufsliste ist noch nicht bereit.")
         return
     try:
-        ideas = await async_cook(hass, manager, msg["ingredients"], msg["use_list"], msg["wishes"])
+        ideas = await async_cook(hass, manager, msg["ingredients"], msg["use_list"], msg["wishes"], servings=msg.get("servings"))
     except ValueError as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return

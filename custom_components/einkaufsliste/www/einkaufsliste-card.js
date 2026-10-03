@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.8";
+const EL_VERSION = "2.53.9";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.53.8"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.53.9"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🤖 <b>KI-Kochen wird alltagstauglicher:</b> Beim Tippen im Zutaten-Feld kommen Vorschläge aus dem Katalog (höchstens 2). · 👥 Eine Personenzahl mit − und + sagt der KI, für wie viele sie rechnen soll. · ✅🛒 In jedem Vorschlag verschiebt ein Tipp auf eine Zutat sie zwischen „Hast du“ und „Fehlt“. · 🧂🚫 In ⚙️ → Extras → KI-Kochen (Admin) gibt es „Immer im Haus“ und „Das nie vorschlagen“ (Allergien, Abneigungen), die bei jeder Anfrage mitgehen.",
+   "🤖 <b>AI cooking gets more practical:</b> typing in the ingredients field now shows catalogue suggestions (at most 2). · 👥 A number of people with − and + tells the AI how many to cook for. · ✅🛒 In every suggestion a tap on an ingredient moves it between “You have” and “Missing”. · 🧂🚫 ⚙️ → Extras → AI cooking (admin) has “Always at home” and “Never suggest” (allergies, dislikes), which go along with every request."],
   ["🧽 <b>Radiergummi überall:</b> Neben den Suchfeldern steht ein 🧽, sobald etwas drinsteht – und in jedem Textfeld erscheint beim Tippen ein 🧽 am rechten Rand, der nur dieses Feld leert. · 📝 <b>Notiz-Vorlagen mit Filter:</b> Unter „✏️ Eigene Notiz“ erscheinen die Vorlagen erst ab dem ersten Buchstaben und nur die passenden. · 🤖 <b>KI-Kochen:</b> „Offene Artikel mitnehmen“ ist jetzt standardmäßig aus.",
    "🧽 <b>Eraser everywhere:</b> search fields get a 🧽 as soon as they contain text – and every text field shows a 🧽 at its right edge while you type, clearing only that field. · 📝 <b>Note templates with filter:</b> under “✏️ Own note” the templates only appear from the first letter and only the matching ones. · 🤖 <b>AI cooking:</b> “Include open items” is now off by default."],
   ["📷 <b>Fotos beim Kochen:</b> Im Koch-Modus gibt es bei jedem Schritt ohne Foto den Knopf „📷 Foto zu diesem Schritt“ – das Foto wird sofort gespeichert. · 🤖 <b>KI-Rezepte erkennbar:</b> Rezepte, die über „Was kann ich kochen?“ gespeichert wurden, zeigen ein 🤖 links neben dem 📷 (bleibt dran, auch nach dem Bearbeiten). · 🧽 <b>Radiergummi bei jeder Suche:</b> Neben den Suchfeldern (⚙️, Verlauf, Katalog, Protokoll, Rezepte, Anleitungen, Gar-Zeiten) löscht ein Tipp den Suchtext. · 🔒 Unter ⚙️ → Datenschutz steht jetzt auch, was bei KI-Kochen verschickt wird.",
@@ -4314,7 +4316,13 @@ class EinkaufslisteCard extends HTMLElement {
       </select></div>
       <div class="btnrow">${on
         ? `<button class="btn primary" data-act="ai-on"><ha-icon icon="mdi:content-save-outline"></ha-icon>Assistent speichern</button><button class="btn" data-act="ai-off"><ha-icon icon="mdi:toggle-switch-off-outline"></ha-icon>Ausschalten</button>`
-        : `<button class="btn primary" data-act="ai-on"><ha-icon icon="mdi:toggle-switch-outline"></ha-icon>Einschalten</button>`}</div>`;
+        : `<button class="btn primary" data-act="ai-on"><ha-icon icon="mdi:toggle-switch-outline"></ha-icon>Einschalten</button>`}</div>
+      <p class="hint"><b>🧂 Immer im Haus</b> – geht bei jeder Anfrage automatisch mit (eine Zutat pro Zeile oder mit Komma):</p>
+      <textarea class="full" id="aiPantry" rows="2" maxlength="1200" placeholder="Salz, Pfeffer, Öl, Mehl, Zwiebeln">${esc((this._data.settings?.ai_pantry || []).join(", "))}</textarea>
+      <p class="hint"><b>🚫 Das nie vorschlagen</b> – Allergien und Abneigungen:</p>
+      <textarea class="full" id="aiAvoid" rows="2" maxlength="1200" placeholder="Nüsse, Fisch, Koriander">${esc((this._data.settings?.ai_avoid || []).join(", "))}</textarea>
+      <p class="hint">🔒 Auch diese Namen gehen mit jeder Anfrage an den Assistenten – bitte keine Namen von Personen eintragen.</p>
+      <div class="btnrow"><button class="btn primary" data-act="ai-prefs"><ha-icon icon="mdi:content-save-outline"></ha-icon>Listen speichern</button></div>`;
   }
 
   // … und der Dialog: Zutaten eintippen, Ideen holen, Fehlendes auf die Liste oder als Rezept
@@ -4324,18 +4332,72 @@ class EinkaufslisteCard extends HTMLElement {
     Object.assign(ov.style, { justifyContent: "flex-start", overflowY: "auto", touchAction: "auto" });
     const agentName = this._hass?.states?.[this._data.settings?.ai_agent]?.attributes?.friendly_name || this._data.settings?.ai_agent || "KI";
     const fld = "width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee";
-    const last = this._aiLast || { text: "", wish: "", list: false };
+    const last = this._aiLast || { text: "", wish: "", list: false, servings: 2 };
+    const svb = "width:38px;height:38px;border-radius:50%;border:1px solid #666;background:#2a2a2a;color:#eee;font:600 20px Roboto,sans-serif;cursor:pointer;padding:0";
     ov.innerHTML = `<div style="max-width:560px;width:100%;display:flex;flex-direction:column;gap:10px;margin:auto 0">
       <div style="font:600 19px Roboto,sans-serif;text-align:center">🤖 Was kann ich kochen?</div>
       <div style="opacity:.8;font-size:.92em">Schreib auf, was du da hast – es müssen keine Produkte aus dem Katalog sein. Eine Zutat pro Zeile oder mit Komma.</div>
       <textarea data-in rows="5" style="${fld}" placeholder="Nudeln&#10;2 Tomaten&#10;Feta&#10;Reste vom Hähnchen"></textarea>
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-list> <span>Offene Artikel von der Einkaufsliste mitnehmen</span></label>
-      <input data-wish style="${fld}" maxlength="200" placeholder="Wünsche, z. B. vegetarisch, schnell, für 4">
+      <input data-wish style="${fld}" maxlength="200" placeholder="Wünsche, z. B. vegetarisch, schnell">
+      <div data-sv style="display:flex;gap:10px;align-items:center"><span>👥 Für</span><button type="button" data-svm style="${svb}" aria-label="Weniger">−</button><b data-svn style="min-width:1.5em;text-align:center">2</b><button type="button" data-svp style="${svb}" aria-label="Mehr">+</button><span>Personen</span></div>
       <div style="opacity:.65;font-size:.82em">🔒 Die Namen der Zutaten gehen an den Assistenten „${esc(agentName)}“ in Home Assistant. Antworten einer KI können falsch sein – bitte kurz prüfen.</div>
       <div data-btns style="display:flex;gap:10px;justify-content:flex-end"></div>
       <div data-res></div></div>`;
     const $ = (sel) => ov.querySelector(sel);
     $("[data-in]").value = last.text; $("[data-wish]").value = last.wish; $("[data-list]").checked = last.list === true;
+    let servings = Math.min(20, Math.max(1, Number(last.servings) || 2));
+    const svShow = () => { $("[data-svn]").textContent = String(servings); };
+    $("[data-svm]").onclick = () => { servings = Math.max(1, servings - 1); svShow(); };
+    $("[data-svp]").onclick = () => { servings = Math.min(20, servings + 1); svShow(); };
+    svShow();
+    // 📚 Vorschläge aus dem Katalog beim Tippen (nur Namen; es gehen weiter nur die Zutaten aus der Liste an die KI)
+    const ta = $("[data-in]");
+    const sug = document.createElement("div");
+    sug.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-top:-4px";
+    ta.after(sug);
+    const frag = () => {
+      const pos = ta.selectionStart ?? ta.value.length;
+      const before = ta.value.slice(0, pos);
+      const text = before.match(/[^\n,;]*$/)[0];
+      const qm = text.match(/^(\s*[\d.,½¼¾]+\s*(?:x|kg|g|l|ml|stk\.?|stück|el|tl|pck|pkg|dose|dosen)?\s+)?([\s\S]*)$/i);
+      return { start: pos - text.length, end: pos, prefix: qm[1] || "", rest: (qm[2] || "").trim() };
+    };
+    const drawSug = () => {
+      sug.innerHTML = "";
+      const f = frag();
+      const q = f.rest.toLowerCase();
+      if (!q) return;
+      const seen = new Set();
+      const out = [];
+      for (const c of this._suggestList(q)) { // wie beim Eintragen: höchstens 2 Vorschläge
+        const k = String(c.name).toLowerCase();
+        if (seen.has(k) || k === q) continue;
+        seen.add(k);
+        out.push(c.name);
+        if (out.length >= 2) break;
+      }
+      for (const n of out) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = n;
+        b.style.cssText = "font:14px Roboto,sans-serif;padding:5px 11px;border-radius:16px;border:1px solid #555;background:#2a2a2a;color:#eee;cursor:pointer";
+        b.addEventListener("pointerdown", (e) => e.preventDefault()); // Fokus bleibt im Feld
+        b.onclick = () => {
+          const g = frag();
+          const lead = g.prefix ? g.prefix : (ta.value.slice(g.start, g.end).match(/^\s*/)[0] || "");
+          ta.value = ta.value.slice(0, g.start) + lead + n + ta.value.slice(g.end);
+          const np = g.start + lead.length + n.length;
+          ta.setSelectionRange(np, np);
+          ta.focus();
+          ta.dispatchEvent(new Event("input", { bubbles: true }));
+        };
+        sug.append(b);
+      }
+    };
+    ta.addEventListener("input", drawSug);
+    ta.addEventListener("click", drawSug);
+    ta.addEventListener("keyup", (e) => { if (e.key.startsWith("Arrow")) drawSug(); });
     const res = $("[data-res]");
     const close = ovButton("Schließen");
     const go = ovButton("🤖 Ideen holen", true);
@@ -4347,23 +4409,55 @@ class EinkaufslisteCard extends HTMLElement {
       box.style.cssText = "background:rgba(255,255,255,.09);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px";
       const list = (a) => a.map(esc).join(", ");
       box.innerHTML = `<div><b style="font-size:1.08em" translate="no">${esc(idea.name)}</b>${idea.time || idea.servings ? ` <small style="opacity:.7">${[idea.time, idea.servings ? `${idea.servings} ${elT("Portionen")}` : ""].filter(Boolean).map(esc).join(" · ")}</small>` : ""}</div>
-        ${idea.have.length ? `<div style="font-size:.92em">✅ <b>${elT("Hast du")}:</b> <span translate="no">${list(idea.have)}</span></div>` : ""}
-        ${idea.missing.length ? `<div style="font-size:.92em">🛒 <b>${elT("Fehlt")}:</b> <span translate="no">${list(idea.missing)}</span></div>` : `<div style="font-size:.92em">👍 ${elT("Es fehlt nichts")}</div>`}
+        <div data-hm style="display:flex;flex-direction:column;gap:6px"></div>
         ${idea.steps.length ? `<details><summary style="cursor:pointer">${elT("Zubereitung")}</summary><ol style="margin:6px 0 0;padding-left:20px" translate="no">${idea.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></details>` : ""}
         <div data-ab style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"></div>`;
       const ab = box.querySelector("[data-ab]");
-      if (idea.missing.length) {
-        const b = ovButton("🛒 Fehlendes auf die Liste");
-        b.onclick = async () => {
-          b.disabled = true;
-          try {
-            const r = await this._ws({ type: "einkaufsliste/import/text", text: idea.missing.join("\n") });
-            this._toast(`🛒 ${r?.added || 0} Artikel auf der Liste`);
-            b.textContent = "✅ Auf der Liste";
-          } catch (_) { b.disabled = false; }
+      // ✅/🛒 Zutaten antippen: von „Hast du“ nach „Fehlt“ (und zurück) verschieben
+      const hm = box.querySelector("[data-hm]");
+      const chipCss = "font:14px Roboto,sans-serif;padding:4px 10px;border-radius:14px;border:1px solid #666;background:#2a2a2a;color:#eee;cursor:pointer;margin:2px 4px 2px 0";
+      let b = null;
+      const draw = () => {
+        const row = (icon, title, arr, from, to) => {
+          const d = document.createElement("div");
+          d.style.cssText = "font-size:.92em";
+          d.innerHTML = `${icon} <b>${elT(title)}:</b> `;
+          const w = document.createElement("span");
+          w.setAttribute("translate", "no");
+          for (const x of arr) {
+            const c = document.createElement("button");
+            c.type = "button";
+            c.textContent = x;
+            c.title = elT(from === "have" ? "Doch nicht da – auf „Fehlt“ setzen" : "Doch da – auf „Hast du“ setzen");
+            c.style.cssText = chipCss;
+            c.onclick = () => { arr.splice(arr.indexOf(x), 1); to.push(x); draw(); };
+            w.append(c);
+          }
+          d.append(w);
+          return d;
         };
-        ab.append(b);
-      }
+        hm.innerHTML = "";
+        if (idea.have.length) hm.append(row("✅", "Hast du", idea.have, "have", idea.missing));
+        if (idea.missing.length) hm.append(row("🛒", "Fehlt", idea.missing, "missing", idea.have));
+        else { const n = document.createElement("div"); n.style.fontSize = ".92em"; n.textContent = `👍 ${elT("Es fehlt nichts")}`; hm.append(n); }
+        if (idea.have.length + idea.missing.length) {
+          const t = document.createElement("div");
+          t.style.cssText = "opacity:.6;font-size:.8em";
+          t.textContent = elT("Tipp auf eine Zutat verschiebt sie zwischen „Hast du“ und „Fehlt“.");
+          hm.append(t);
+        }
+        if (b) { b.hidden = !idea.missing.length; b.disabled = false; b.textContent = elT("🛒 Fehlendes auf die Liste"); }
+      };
+      b = ovButton("🛒 Fehlendes auf die Liste");
+      b.onclick = async () => {
+        b.disabled = true;
+        try {
+          const r = await this._ws({ type: "einkaufsliste/import/text", text: idea.missing.join("\n") });
+          this._toast(`🛒 ${r?.added || 0} Artikel auf der Liste`);
+          b.textContent = "✅ Auf der Liste";
+        } catch (_) { b.disabled = false; }
+      };
+      ab.append(b);
       const rb = ovButton("👨‍🍳 Als Rezept speichern");
       rb.onclick = async () => {
         rb.disabled = true;
@@ -4386,15 +4480,16 @@ class EinkaufslisteCard extends HTMLElement {
         } catch (_) { rb.disabled = false; }
       };
       ab.append(rb);
+      draw();
       return box;
     };
     go.onclick = async () => {
       const ingredients = names(), use_list = $("[data-list]").checked, wishes = $("[data-wish]").value.trim();
-      this._aiLast = { text: $("[data-in]").value, wish: wishes, list: use_list };
+      this._aiLast = { text: $("[data-in]").value, wish: wishes, list: use_list, servings };
       go.disabled = true;
       res.innerHTML = `<p style="text-align:center;opacity:.8">⏳ ${elT("Die KI überlegt … das kann bis zu einer Minute dauern.")}</p>`;
       try {
-        const r = await this._hass.callWS({ type: "einkaufsliste/ai/cook", ingredients, use_list, wishes });
+        const r = await this._hass.callWS({ type: "einkaufsliste/ai/cook", ingredients, use_list, wishes, servings });
         res.innerHTML = "";
         const wrap = document.createElement("div");
         wrap.style.cssText = "display:flex;flex-direction:column;gap:10px";
@@ -6999,8 +7094,8 @@ class EinkaufslisteCard extends HTMLElement {
         "Es gehen die Namen offener Artikel und deine Postleitzahl an Marktguru. Sonst nichts – keine Namen von Personen, keine Fotos. Inoffiziell, kann jederzeit aufhören zu funktionieren.",
         "The names of open items and your postcode go to Marktguru. Nothing else – no names of people, no photos. Unofficial, can stop working at any time.")}</p>
       <p class="hint">🤖 <b>${t("KI-Kochen", "AI cooking")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
-        "Es gehen die Namen der Zutaten (und auf Wunsch die offenen Artikel der Liste und deine Wünsche) an den KI-Assistenten, den ein Admin gewählt hat. Bei einem Cloud-Assistenten geht das ins Internet, bei einem lokalen (z. B. Ollama) bleibt es zu Hause. Keine Fotos, keine Namen von Personen. Bei „Datenschutz an“ geht nichts raus.",
-        "The names of the ingredients (and, if you wish, the open items of the list and your wishes) go to the AI assistant an admin has chosen. With a cloud assistant that goes over the internet, with a local one (e.g. Ollama) it stays at home. No photos, no names of people. With “Privacy on” nothing is sent.")}</p>
+        "Es gehen die Namen der Zutaten (und auf Wunsch die offenen Artikel der Liste und deine Wünsche) an den KI-Assistenten, den ein Admin gewählt hat. Bei einem Cloud-Assistenten geht das ins Internet, bei einem lokalen (z. B. Ollama) bleibt es zu Hause. Dazu gehören auch die Listen „Immer im Haus“ und „Das nie vorschlagen“ aus den Einstellungen. Keine Fotos, keine Namen von Personen. Bei „Datenschutz an“ geht nichts raus.",
+        "The names of the ingredients (and, if you wish, the open items of the list and your wishes) go to the AI assistant an admin has chosen. With a cloud assistant that goes over the internet, with a local one (e.g. Ollama) it stays at home. This includes the lists “Always at home” and “Never suggest” from the settings. No photos, no names of people. With “Privacy on” nothing is sent.")}</p>
       <p class="hint">🍽️ <b>${t("Rezept-Import aus einem Link", "Recipe import from a link")}</b>: ${t(
         "Dein Home Assistant ruft die Webseite des Links ab. Es geht nur die Adresse hin.",
         "Your Home Assistant fetches the web page of the link. Only the address is sent.")}</p>
@@ -8363,6 +8458,13 @@ class EinkaufslisteCard extends HTMLElement {
       case "csv-go":
         this._csvImport();
         break;
+      case "ai-prefs": {
+        const pantry = this.$("aiPantry")?.value || "";
+        const avoid = this.$("aiAvoid")?.value || "";
+        this._ws({ type: "einkaufsliste/ai/prefs", pantry, avoid })
+          .then(() => { this._toast("🤖 Gespeichert"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+        break;
+      }
       case "ai-on":
       case "ai-off": {
         const turnOn = act === "ai-on";
