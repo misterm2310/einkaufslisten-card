@@ -3356,3 +3356,118 @@ async def test_grocy_sync_full(hass, setup, hass_ws_client, aioclient_mock):
     assert {"shopping_list_id": 1, "amount": 2.0, "product_id": 2} in posts
     assert {"shopping_list_id": 1, "amount": 1, "note": "Kerzen"} in posts
     assert set(m.grocy["links"]) == {"77"}
+
+
+async def test_catalog_csv_import(hass, setup, hass_ws_client, hass_read_only_access_token):
+    """📄 CSV/Text in den Katalog: Kopfzeile oder feste Reihenfolge, Kategorie, Barcode, Notiz; nur Admin."""
+    m = mgr(hass)
+    m.add_item("Milch")
+    client = await hass_ws_client(hass)
+    csv_text = "Name;Kategorie;EAN;Notiz\nMilch;Milchprodukte;4006381333931;Bio\nKekse;Süßes;4001234567894;Schoko\n;leer\nBrot;;;\n"
+    await client.send_json({"id": 1, "type": "einkaufsliste/import/catalog", "text": csv_text, "preview": True})
+    res = await client.receive_json()
+    assert res["success"] and res["result"] == {"rows": 3, "exists": 1, "sample": ["Milch", "Kekse", "Brot"]}
+    assert "kekse" not in m.history  # Vorschau legt nichts an
+    await client.send_json({"id": 2, "type": "einkaufsliste/import/catalog", "text": csv_text})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["added"] == 2 and res["result"]["exists"] == 1, res
+    assert "kekse" in m.history and "brot" in m.history
+    assert m.barcodes["4001234567894"]["name"] == "Kekse" and m.barcodes["4001234567894"]["note"] == "Schoko"
+    assert any(c["name"] == "Süßes" for c in m.categories)
+    # einfache Liste ohne Spalten
+    await client.send_json({"id": 3, "type": "einkaufsliste/import/catalog", "text": "Butter\nQuark\n"})
+    assert (await client.receive_json())["result"]["added"] == 2
+    ro = await hass_ws_client(hass, hass_read_only_access_token)
+    await ro.send_json({"id": 4, "type": "einkaufsliste/import/catalog", "text": "Nutella"})
+    assert not (await ro.receive_json())["success"]
+
+
+async def test_barcode_twins(hass, setup):
+    """▥ Derselbe Barcode mit anderen Nullen: wird beim Zuordnen abgelehnt und in „Alles ok?“ gemeldet."""
+    m = mgr(hass)
+    a = m.add_product("Cola")
+    b = m.add_product("Fanta")
+    m.add_product_barcode(a["key"], "0012345678905")
+    with pytest.raises(ValueError, match="anderen Nullen"):
+        m.add_product_barcode(b["key"], "12345678905")
+    # über alte Daten (z. B. Sicherung) trotzdem vorhanden -> Fund
+    m.learn_barcode("12345678905", "Fanta", None, None)
+    res = await m.async_check()
+    ids = [f["id"] for f in res["items"]]
+    assert any(i.startswith("bc_dup:") for i in ids), res
+    # dasselbe Produkt, zwei Schreibweisen -> Vorschlag löscht den kürzeren
+    m.barcodes.pop("12345678905")
+    m.learn_barcode("12345678905", "Cola", None, None)
+    res = await m.async_check(fix=True)
+    assert "12345678905" not in m.barcodes and "0012345678905" in m.barcodes
+
+
+async def test_note_templates(hass, setup, hass_ws_client):
+    """📝 Notiz-Vorlagen: Standard, eigene Liste, zurücksetzen."""
+    m = mgr(hass)
+    assert "Bio" in m.as_dict()["settings"]["note_templates"] and not m.as_dict()["settings"]["note_templates_custom"]
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/note_templates/set", "items": ["bio", "BIO", " mit Zwiebeln ", ""]})
+    res = await client.receive_json()
+    assert res["success"] and res["result"] == ["Bio", "Mit Zwiebeln"]
+    assert m.as_dict()["settings"]["note_templates_custom"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/note_templates/set", "items": None})
+    assert "ohne Laktose" in (await client.receive_json())["result"]
+
+
+async def test_ai_cook(hass, setup, hass_ws_client, hass_read_only_access_token):
+    """🤖 KI-Kochen: aus ohne Assistent, Antwort mit ```json``` wird gelesen, Datenschutz sperrt, Fehler verständlich."""
+    from homeassistant.core import SupportsResponse
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    seen = {}
+    reply = {"text": '```json\n{"ideas":[{"name":"Tomatennudeln","time":"20 Min.","servings":2,"have":["Nudeln","2 Tomaten"],'
+                     '"missing":["Basilikum"],"steps":["Wasser kochen","Nudeln rein"]},{"name":""},"quatsch"]}\n```', "type": "final_answer"}
+
+    async def process(call):
+        seen.update(call.data)
+        return {"response": {"response_type": reply["type"], "speech": {"plain": {"speech": reply["text"]}}}}
+
+    hass.services.async_register("conversation", "process", process, supports_response=SupportsResponse.ONLY)
+    hass.states.async_set("conversation.test_ki", "unknown")
+    await client.send_json({"id": 1, "type": "einkaufsliste/ai/cook", "ingredients": ["Nudeln"]})
+    assert "aus" in (await client.receive_json())["error"]["message"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/ai/agent", "entity_id": "conversation.nix"})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 3, "type": "einkaufsliste/ai/agent", "entity_id": "conversation.test_ki"})
+    assert (await client.receive_json())["success"] and m.ai_agent == "conversation.test_ki" and m.ai_on
+    ro = await hass_ws_client(hass, hass_read_only_access_token)
+    await ro.send_json({"id": 4, "type": "einkaufsliste/ai/agent", "entity_id": None})
+    assert not (await ro.receive_json())["success"]
+    m.add_item("Zwiebeln")
+    await client.send_json({"id": 5, "type": "einkaufsliste/ai/cook", "ingredients": ["Nudeln", "Fisch?"], "use_list": True, "wishes": "vegetarisch"})
+    res = await client.receive_json()
+    assert res["success"], res
+    idea = res["result"]["ideas"][0]
+    assert len(res["result"]["ideas"]) == 1 and idea["name"] == "Tomatennudeln" and idea["missing"] == ["Basilikum"]
+    assert idea["steps"] == ["Wasser kochen", "Nudeln rein"] and idea["servings"] == 2
+    assert seen["agent_id"] == "conversation.test_ki" and "Zwiebeln" in seen["text"] and "vegetarisch" in seen["text"]
+    # ausschalten: Assistent bleibt gemerkt, geht aber nichts mehr raus; wieder an ohne neu zu wählen
+    await client.send_json({"id": 61, "type": "einkaufsliste/ai/agent", "entity_id": None, "on": False})
+    assert (await client.receive_json())["success"] and not m.ai_on and m.ai_agent == "conversation.test_ki"
+    assert m.as_dict()["settings"]["ai_on"] is False
+    await client.send_json({"id": 62, "type": "einkaufsliste/ai/cook", "ingredients": ["Reis"]})
+    assert "aus" in (await client.receive_json())["error"]["message"]
+    await client.send_json({"id": 63, "type": "einkaufsliste/ai/agent", "entity_id": None, "on": True})
+    assert (await client.receive_json())["success"] and m.ai_on
+    # nichts eingetragen
+    await client.send_json({"id": 64, "type": "einkaufsliste/ai/cook", "ingredients": []})
+    assert "Zutaten" in (await client.receive_json())["error"]["message"]
+    # Müll-Antwort
+    reply["text"] = "Ich koche gern, aber kein JSON."
+    await client.send_json({"id": 65, "type": "einkaufsliste/ai/cook", "ingredients": ["Reis"]})
+    assert "lesbare" in (await client.receive_json())["error"]["message"]
+    # Fehler des Assistenten
+    reply.update(text="Sorry, ich bin nicht erreichbar", type="error")
+    await client.send_json({"id": 66, "type": "einkaufsliste/ai/cook", "ingredients": ["Reis"]})
+    assert "Fehler" in (await client.receive_json())["error"]["message"]
+    # Datenschutz an -> nichts geht raus
+    m.set_privacy(True)
+    seen.clear()
+    await client.send_json({"id": 67, "type": "einkaufsliste/ai/cook", "ingredients": ["Reis"]})
+    assert "Datenschutz" in (await client.receive_json())["error"]["message"] and not seen

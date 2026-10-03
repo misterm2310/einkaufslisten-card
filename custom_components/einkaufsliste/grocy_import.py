@@ -7,8 +7,10 @@ Der API-Schlüssel wird nur für diese eine Abfrage benutzt und NICHT gespeicher
 from __future__ import annotations
 
 import asyncio
+import csv
 import json
 import logging
+import re
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
@@ -163,7 +165,7 @@ def import_rows(manager: EinkaufslisteManager, rows: list[dict[str, Any]], make_
                 cats_made += 1
             cat_id = cat["id"] if cat else None
         try:
-            prod = manager.add_product(name, category_id=cat_id)
+            prod = manager.add_product(name, category_id=cat_id, note=row.get("note") or None)
         except ValueError:
             exists += 1
             continue
@@ -176,3 +178,45 @@ def import_rows(manager: EinkaufslisteManager, rows: list[dict[str, Any]], make_
                 codes_skipped += 1  # gehört schon zu einem anderen Produkt
     return {"added": added, "exists": exists, "failed": failed, "codes_added": codes_added,
             "codes_skipped": codes_skipped, "categories_made": cats_made}
+
+
+# ---------------------------------------------------------------- 📄 Katalog aus CSV / Text
+_HEAD = {
+    "name": {"name", "produkt", "artikel", "bezeichnung", "product", "item", "title", "titel"},
+    "group": {"kategorie", "category", "gruppe", "group", "produktgruppe", "warengruppe"},
+    "barcode": {"barcode", "ean", "gtin", "code", "strichcode"},
+    "note": {"notiz", "note", "bemerkung", "kommentar", "comment", "marke", "brand"},
+}
+
+
+def parse_catalog_text(text: str) -> list[dict[str, Any]]:
+    """CSV oder einfache Liste lesen: eine Zeile = ein Produkt.
+
+    Trenner ; , oder Tab (wird erkannt). Mit Kopfzeile (Name, Kategorie, Barcode, Notiz – in beliebiger Reihenfolge)
+    oder ohne: dann gilt die Reihenfolge Name; Kategorie; Barcode; Notiz.
+    """
+    lines = [ln for ln in str(text or "").replace("\r\n", "\n").replace("\r", "\n").split("\n") if ln.strip()]
+    if not lines:
+        return []
+    sample = "\n".join(lines[:5])
+    delim = max((";", "\t", ","), key=lambda d: sample.count(d))
+    if sample.count(delim) == 0:
+        delim = "\x00"  # keine Spalten: jede Zeile ist ein Name
+    rows = list(csv.reader(lines, delimiter=delim)) if delim != "\x00" else [[ln] for ln in lines]
+    cols = {"name": 0, "group": 1, "barcode": 2, "note": 3}
+    first = [c.strip().lower() for c in rows[0]]
+    mapped = {k: i for i, c in enumerate(first) for k, names in _HEAD.items() if c in names}
+    if "name" in mapped:  # Kopfzeile
+        cols = {k: mapped.get(k) for k in cols}
+        rows = rows[1:]
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        def cell(key: str) -> str:
+            i = cols.get(key)
+            return " ".join(r[i].split()) if i is not None and i < len(r) else ""
+        name = cell("name")
+        if not name:
+            continue
+        codes = [c for c in re.split(r"[\s,;|]+", cell("barcode")) if c.isdigit() and 6 <= len(c) <= 14]
+        out.append({"name": name, "group": cell("group") or None, "barcodes": codes, "note": cell("note")[:80] or None})
+    return out

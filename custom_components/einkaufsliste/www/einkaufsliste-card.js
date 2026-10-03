@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.4";
+const EL_VERSION = "2.53.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.53.4"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.53.5"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🤖 <b>KI-Kochen:</b> ⚙️ → Extras → KI-Kochen: einen KI-Assistenten aus Home Assistant wählen, dann steht bei den Rezepten „Was kann ich kochen?“ (links neben den Gar-Zeiten). Zutaten eintippen – auch Dinge, die nicht im Katalog stehen –, Fehlendes mit einem Tipp auf die Liste oder das Gericht als Rezept speichern. · 📝 <b>Notiz-Vorlagen:</b> Knöpfe unter der ✏️ Eigenen Notiz („Bio“, „ohne Laktose“ …), selbst pflegbar. · 📄 <b>Katalog aus CSV</b> (⚙️ → Import &amp; Sicherung). · ▥ <b>Barcode-Duplikate</b> (nur Nullen anders) meldet „Alles ok?“. · 📷 <b>Fotos zur Zubereitung</b> gibt es jetzt auch bei neuen Schritten. · 🗣️ Anleitung für <b>Siri-Kurzbefehle</b>.",
+   "🤖 <b>AI cooking:</b> ⚙️ → Extras → AI cooking: choose an AI assistant from Home Assistant, then Recipes shows “What can I cook?” (left of the cooking times). Type ingredients – also things that are not in the catalogue –, put what is missing on the list with one tap or save the dish as a recipe. · 📝 <b>Note templates:</b> buttons under the ✏️ Own note (“Organic”, “lactose-free” …), maintainable. · 📄 <b>Catalogue from CSV</b> (⚙️ → Import &amp; backup). · ▥ <b>Duplicate barcodes</b> (only zeros differ) are reported by “All OK?”. · 📷 <b>Photos for preparation</b> now also for new steps. · 🗣️ Guide for <b>Siri shortcuts</b>."],
   ["🔄 <b>Grocy-Dauerabgleich:</b> ⚙️ → Import &amp; Sicherung → Grocy. Zwei Teile, jeder einzeln an/aus: 🛒 die <b>Einkaufsliste</b> abgleichen (Grocy-Zeilen holen &amp; dort löschen, bei beiden behalten oder voller Abgleich) · 📦 <b>neue Produkte</b> automatisch in den Katalog. Der API-Schlüssel bleibt auf dem Server (nie auf Handys, nie in Sicherungen). · 📥 <b>„Rezepte aus Datei“</b> steht jetzt in ⚙️ → Rezepte neben den Rezept-Gruppen. · 💳 Im Laden-Modus sind 💳 und Laden-Modus-Knopf getauscht.",
    "🔄 <b>Grocy continuous sync:</b> ⚙️ → Import &amp; backup → Grocy. Two parts, each on/off by itself: 🛒 sync the <b>shopping list</b> (fetch Grocy rows &amp; delete them there, keep on both, or full sync) · 📦 <b>new products</b> automatically into the catalogue. The API key stays on the server (never on phones, never in backups). · 📥 <b>“Recipes from file”</b> is now in ⚙️ → Recipes next to the recipe groups. · 💳 In shop mode the 💳 and shop-mode buttons swapped places."],
   ["⭐ <b>Favoriten:</b> Produkte beim Bearbeiten (Liste oder Katalog) mit „⭐ Favorit“ markieren – der ⭐-Knopf unter dem Eingabefeld setzt dann alle auf einmal auf die Liste, nichts doppelt. · 💳 <b>Kundenkarten:</b> Payback &amp; Co. einscannen oder eintippen und an der Kasse groß zeigen (QR oder Strichcode). Einschalten: ⚙️ → Extras → Kundenkarten, dann steht oben ein 💳-Knopf (auch im Laden-Modus). · 🔢 <b>Menge vor dem Produkt:</b> überall „2 L Milch“. · 🥫 <b>Grocy-Import:</b> ⚙️ → Import &amp; Sicherung → Grocy holt Produkte (Name, Barcodes, Produktgruppe) aus Grocy in den Katalog.",
@@ -1341,6 +1343,10 @@ form.add .sugg { grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:6px; mar
 .sug .on { font-size:.75em; opacity:.7; }
 .sug.fuzzy { border-style:dashed; }
 .chips { display:flex; flex-wrap:wrap; gap:6px; }
+.tplchips { margin:2px 0 6px; }
+.tplchips .chip2 { padding:3px 10px; min-width:0; font-size:.82em; }
+input[hidden] + .tplchips { display:none; }
+.tplchips:empty { display:none; }
 .chip2 { border:1.5px solid var(--divider-color, rgba(127,127,127,.35)); background:transparent; border-radius:999px; padding:7px 14px; cursor:pointer; font-size:.95em; min-width:44px; }
 .chip2.sel { background:var(--primary-color,#03a9f4); border-color:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
 .lastq { border-style:dashed; }
@@ -2501,6 +2507,7 @@ class EinkaufslisteCard extends HTMLElement {
               </div>
               <input id="inNote" placeholder="📝 Notiz (kommt aus dem Barcode)" readonly hidden title="Kommt aus dem Barcode bzw. der Datenbank. Eigene Texte bitte ins ✏️-Feld.">
               <input id="inOwn" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt" maxlength="120" hidden>
+              <div class="chips tplchips" id="inTpl"></div>
               <div class="chips" id="noteChips" hidden></div>
               <div id="forBox" class="chipbox" hidden><div class="chips" id="forChips"></div></div>
               <select id="inFor" title="Für wen?" hidden></select>
@@ -2772,6 +2779,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   _renderAll() {
     if (!this._built || !this._config) return;
+    this._refreshTplChips();
     this.toggleAttribute("privacy", this._privacyOn());
     queueMicrotask(() => this._emitNav());
     if (this._shopMode === undefined) {
@@ -3327,7 +3335,7 @@ class EinkaufslisteCard extends HTMLElement {
         <input id="edQty" value="${esc(item.quantity || "")}" placeholder="${esc(`${EL_LANG === "de" ? "Menge" : "Quantity"}, ${this._qtyExample(item.name)}`)}">
         <select id="edFor">${this._personOptions(item.for_whom)}</select>
         ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz, z. B. große Packung">` : `<input type="hidden" id="edNote" value="${esc(item.note)}">`}` : `<input type="hidden" id="edNote" value="">`}
-        ${item.recipe_id ? "" : (item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt">`)}
+        ${item.recipe_id ? "" : (item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt">${this._tplChipsHtml()}`)}
         <input class="full" id="edAliases" value="${esc(this._itemAliases(item).join(", "))}" data-orig="${esc(this._itemAliases(item).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
@@ -3924,6 +3932,11 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow"><button class="btn primary" data-act="app-copy"><ha-icon icon="mdi:content-copy"></ha-icon>Kopieren</button></div>
         <p class="hint">Kopieren, im Handy-Browser einfügen, fertig. Die Adresse funktioniert zu Hause und unterwegs.</p>`
           : `<p class="hint">⚠️ Home Assistant kennt keine https-Adresse für unterwegs. Mit <b>Nabu Casa</b> (Einstellungen → Home Assistant Cloud → Fernzugriff) oder einer eigenen https-Adresse (Einstellungen → System → Netzwerk) klappt es.</p>`}` },
+      { key: "notetpl", icon: "mdi:text-box-multiple-outline", title: "Notiz-Vorlagen", info: (this._data.settings?.note_templates || []).slice(0, 3).join(", ") || "keine", html: () => `
+        <p class="hint">Kleine Knöpfe unter dem ✏️ <b>Eigene Notiz</b>-Feld (beim Eintragen, beim Bearbeiten und im Katalog): ein Tipp setzt den Text ein. Ein Text pro Zeile. Gilt für alle Geräte.</p>
+        <textarea id="tplText" rows="8" placeholder="Bio&#10;ohne Laktose&#10;große Packung">${esc((this._data.settings?.note_templates || []).join("\n"))}</textarea>
+        <div class="btnrow"><button class="btn primary" data-act="tpl-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>${this._data.settings?.note_templates_custom ? `<button class="btn" data-act="tpl-reset"><ha-icon icon="mdi:restore"></ha-icon>Standard</button>` : ""}</div>` },
+      { key: "aicook", icon: "mdi:robot-happy-outline", title: "KI-Kochen", info: this._data.settings?.ai_on ? "an" : "aus", html: () => this._aiSettingsHtml() },
       { key: "mascot", icon: "mdi:emoticon-happy-outline", title: "Maskottchen", info: this._data.settings?.mascot ? "an – für alle" : "aus", html: () => `
         <p class="hint">Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen öffnet wie gewohnt die Anleitung.</p>
         <div class="mascotprev">${mascotSvg("happy", null)}${mascotSvg("busy", null)}${mascotSvg("full", null)}${mascotSvg("sleep", null)}</div>
@@ -4004,11 +4017,27 @@ class EinkaufslisteCard extends HTMLElement {
     this._renderDelList();
   }
 
+  // 📝 Vorlagen für die Eigene Notiz: ein Tipp setzt den Text ins Feld davor
+  _tplButtons() {
+    return (this._data?.settings?.note_templates || []).map((t) => `<button type="button" class="chip2" data-act="tpl-chip" data-t="${esc(t)}">${esc(t)}</button>`).join("");
+  }
+
+  _tplChipsHtml() {
+    return `<div class="chips tplchips">${this._tplButtons()}</div>`;
+  }
+
+  _refreshTplChips() {
+    const box = this.$("inTpl");
+    if (!box) return;
+    const html = this._tplButtons();
+    if (box.dataset.h !== html) { box.dataset.h = html; box.innerHTML = html; }
+  }
+
   // 🗂️ Einstellungen als Liste: Überschriften nach Zweck, eine Ebene tief, mit Suche
   _settingsListHtml(sections) {
     const groups = [
       ["📋 Meine Liste", ["stores", "categories", "persons", "products", "recipes"]],
-      ["🎛️ Extras", ["offers", "spend", "cards", "autoshop", "mascot"]],
+      ["🎛️ Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"]],
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
       ["📱 App & Info", ["app", "theme", "pin", "privacy", "news", "credits"]],
@@ -4017,6 +4046,7 @@ class EinkaufslisteCard extends HTMLElement {
       stores: "laden markt zone standort icon eigenmarken", categories: "kategorie farbe reihenfolge", persons: "für wen namen familie",
       products: "katalog barcode foto löschen zusammenführen scan alt monate", recipes: "rezept gruppen kochen zutaten datei import txt csv json",
       offers: "angebote marktguru preise plz", spend: "protokoll bon kasse kosten einkauf",
+      notetpl: "notiz vorlagen eigene notiz bio laktose chips", aicook: "ki kochen assistent chatgpt openai gemini ollama rezept idee",
       autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
       log: "verlauf wer wann", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel sensor", errors: "fehler protokoll kopieren",
       stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr kamera foto scanner sperre", news: "neu version", credits: "über danke lizenz github",
@@ -4127,6 +4157,11 @@ class EinkaufslisteCard extends HTMLElement {
         <textarea id="xferText" rows="6" placeholder="Milch&#10;2 Äpfel&#10;- Brot&#10;☐ Butter"></textarea>
         <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="xferTextStore">${stores}</select></div>
         <div class="btnrow"><button class="btn primary" data-act="xfer-text"><ha-icon icon="mdi:playlist-plus"></ha-icon>Auf die Liste</button></div>
+        ${admin ? `<p class="hint" style="margin-top:14px"><b>📄 Katalog aus CSV oder Liste</b>: Eine Datei (CSV/Text) oder eingefügte Zeilen als <b>Produkte in den Katalog</b> – nicht auf die Einkaufsliste. Eine Zeile pro Produkt. Mit Kopfzeile (<code>Name; Kategorie; Barcode; Notiz</code>, Reihenfolge egal) oder ohne – dann gilt genau diese Reihenfolge. Trenner <code>;</code> , oder Tab. Was es schon gibt, wird nicht überschrieben.</p>
+        <textarea id="csvText" rows="5" placeholder="Name;Kategorie;Barcode;Notiz&#10;Milch;Milchprodukte;4006381333931;Bio&#10;Brot"></textarea>
+        <div class="btnrow"><label class="btn"><ha-icon icon="mdi:file-delimited-outline"></ha-icon>Datei wählen …<input type="file" id="csvFile" accept=".csv,.txt,text/csv,text/plain" hidden></label></div>
+        <label class="favrow"><input type="checkbox" id="csvCats" checked><span>Kategorien neu anlegen, falls es sie hier noch nicht gibt</span></label>
+        <div class="btnrow"><button class="btn primary" data-act="csv-go"><ha-icon icon="mdi:database-import-outline"></ha-icon>In den Katalog</button></div>` : ""}
         <div id="xferRes"></div>`;
     } else if (tab === "grocy") {
       body = admin ? this._grocyHtml() : `<p class="hint">🔒 Produkte aus Grocy holen darf nur ein Admin – es ruft ein anderes Gerät im Netz ab.</p>`;
@@ -4225,6 +4260,134 @@ class EinkaufslisteCard extends HTMLElement {
   _xferStore(id) {
     const v = this.$(id)?.value;
     return v && v !== "~none" ? v : null;
+  }
+
+  // 📄 Katalog aus CSV/Liste: erst zählen, dann fragen, dann importieren
+  async _csvImport() {
+    const text = this.$("csvText")?.value || "";
+    if (!text.trim()) { this._toast("Erst eine Datei wählen oder Zeilen einfügen 😉"); return; }
+    try {
+      const pre = await this._ws({ type: "einkaufsliste/import/catalog", text, preview: true });
+      if (!pre.rows) { this._toast("Keine Produkte erkannt – eine Zeile pro Produkt, der Name zuerst"); return; }
+      const first = (pre.sample || []).join(", ");
+      if (!elConfirm(`${pre.rows} Produkte erkannt${pre.exists ? ` (${pre.exists} gibt es schon und werden übersprungen)` : ""}: ${first}${pre.rows > 5 ? " …" : ""}. In den Katalog übernehmen?`)) return;
+      const res = await this._ws({ type: "einkaufsliste/import/catalog", text, make_categories: !!this.$("csvCats")?.checked });
+      this._toast(`📄 ${res.added} Produkte im Katalog`);
+      this._xferResult(`<p class="hint">✅ ${res.added} Produkte übernommen${res.exists ? `, ${res.exists} gab es schon` : ""}${res.codes_added ? ` · Barcodes: ${res.codes_added}` : ""}${res.codes_skipped ? ` (${res.codes_skipped}× gehörte der Barcode schon zu einem anderen Produkt)` : ""}${res.categories_made ? ` · neue Kategorien: ${res.categories_made}` : ""}${res.failed ? ` · ${res.failed} nicht möglich (Name leer oder zu lang)` : ""}.</p>`);
+      const ta = this.$("csvText");
+      if (ta) ta.value = "";
+    } catch (_) { /* Meldung kam schon */ }
+  }
+
+  // 🤖 KI-Kochen: Einstellung (nur Admin) …
+  _aiSettingsHtml() {
+    const cur = this._data.settings?.ai_agent || "";
+    const on = !!this._data.settings?.ai_on;
+    const admin = !!this._hass?.user?.is_admin;
+    const agents = Object.keys(this._hass?.states || {}).filter((k) => k.startsWith("conversation.")).sort();
+    if (cur && !agents.includes(cur)) agents.unshift(cur);
+    const intro = `<p class="hint">„Was kann ich kochen?“: Du schreibst auf, was du da hast (auch Dinge, die nicht im Katalog stehen) – ein <b>KI-Assistent aus Home Assistant</b> schlägt Gerichte vor. Das Fehlende kommt mit einem Tipp auf die Einkaufsliste, oder das Gericht wird als Rezept gespeichert. Der Knopf sitzt oben bei den <b>Rezepten</b>, links neben den Gar-Zeiten.</p>
+      <p class="hint">🔒 Dafür gehen die <b>Namen der Zutaten</b> an den Assistenten, den du hier wählst – bei einem Cloud-Assistenten also ins Internet, bei einem lokalen (z. B. Ollama) bleibt alles im Haus. Bei eingeschaltetem <b>Datenschutz</b> geht nichts raus. Die Antworten einer KI können falsch sein – bitte kurz prüfen.</p>`;
+    if (!admin) return `${intro}<p><b>${on ? "🤖 KI-Kochen ist an." : "KI-Kochen ist aus."}</b> Ein Admin kann es hier ändern.</p>`;
+    if (!agents.length) return `${intro}<p class="hint">⚠️ In Home Assistant ist noch kein Assistent eingerichtet. Unter Einstellungen → Geräte &amp; Dienste z. B. <b>OpenAI</b>, <b>Google Generative AI</b>, <b>Anthropic</b> oder <b>Ollama</b> hinzufügen – danach taucht er hier auf.</p>`;
+    return `${intro}<p><b>${on ? "🤖 KI-Kochen ist an." : "KI-Kochen ist aus."}</b></p>
+      <div class="srow"><ha-icon class="prev" icon="mdi:robot-outline"></ha-icon><select class="grow" id="aiAgent">
+      ${cur ? "" : `<option value="" selected>Assistent wählen …</option>`}${agents.map((a) => `<option value="${esc(a)}" ${a === cur ? "selected" : ""}>${esc(this._hass.states[a]?.attributes?.friendly_name || a)}</option>`).join("")}
+      </select></div>
+      <div class="btnrow">${on
+        ? `<button class="btn primary" data-act="ai-on"><ha-icon icon="mdi:content-save-outline"></ha-icon>Assistent speichern</button><button class="btn" data-act="ai-off"><ha-icon icon="mdi:toggle-switch-off-outline"></ha-icon>Ausschalten</button>`
+        : `<button class="btn primary" data-act="ai-on"><ha-icon icon="mdi:toggle-switch-outline"></ha-icon>Einschalten</button>`}</div>`;
+  }
+
+  // … und der Dialog: Zutaten eintippen, Ideen holen, Fehlendes auf die Liste oder als Rezept
+  _aiCook() {
+    if (this._privacyBlock()) return;
+    const ov = makeOverlay();
+    Object.assign(ov.style, { justifyContent: "flex-start", overflowY: "auto", touchAction: "auto" });
+    const agentName = this._hass?.states?.[this._data.settings?.ai_agent]?.attributes?.friendly_name || this._data.settings?.ai_agent || "KI";
+    const fld = "width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee";
+    const last = this._aiLast || { text: "", wish: "", list: true };
+    ov.innerHTML = `<div style="max-width:560px;width:100%;display:flex;flex-direction:column;gap:10px;margin:auto 0">
+      <div style="font:600 19px Roboto,sans-serif;text-align:center">🤖 Was kann ich kochen?</div>
+      <div style="opacity:.8;font-size:.92em">Schreib auf, was du da hast – es müssen keine Produkte aus dem Katalog sein. Eine Zutat pro Zeile oder mit Komma.</div>
+      <textarea data-in rows="5" style="${fld}" placeholder="Nudeln&#10;2 Tomaten&#10;Feta&#10;Reste vom Hähnchen"></textarea>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-list> <span>Offene Artikel von der Einkaufsliste mitnehmen</span></label>
+      <input data-wish style="${fld}" maxlength="200" placeholder="Wünsche, z. B. vegetarisch, schnell, für 4">
+      <div style="opacity:.65;font-size:.82em">🔒 Die Namen der Zutaten gehen an den Assistenten „${esc(agentName)}“ in Home Assistant. Antworten einer KI können falsch sein – bitte kurz prüfen.</div>
+      <div data-btns style="display:flex;gap:10px;justify-content:flex-end"></div>
+      <div data-res></div></div>`;
+    const $ = (sel) => ov.querySelector(sel);
+    $("[data-in]").value = last.text; $("[data-wish]").value = last.wish; $("[data-list]").checked = last.list !== false;
+    const res = $("[data-res]");
+    const close = ovButton("Schließen");
+    const go = ovButton("🤖 Ideen holen", true);
+    $("[data-btns]").append(close, go);
+    close.onclick = () => ov.remove();
+    const names = () => $("[data-in]").value.split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean);
+    const card = (idea) => {
+      const box = document.createElement("div");
+      box.style.cssText = "background:rgba(255,255,255,.09);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px";
+      const list = (a) => a.map(esc).join(", ");
+      box.innerHTML = `<div><b style="font-size:1.08em" translate="no">${esc(idea.name)}</b>${idea.time || idea.servings ? ` <small style="opacity:.7">${[idea.time, idea.servings ? `${idea.servings} ${elT("Portionen")}` : ""].filter(Boolean).map(esc).join(" · ")}</small>` : ""}</div>
+        ${idea.have.length ? `<div style="font-size:.92em">✅ <b>${elT("Hast du")}:</b> <span translate="no">${list(idea.have)}</span></div>` : ""}
+        ${idea.missing.length ? `<div style="font-size:.92em">🛒 <b>${elT("Fehlt")}:</b> <span translate="no">${list(idea.missing)}</span></div>` : `<div style="font-size:.92em">👍 ${elT("Es fehlt nichts")}</div>`}
+        ${idea.steps.length ? `<details><summary style="cursor:pointer">${elT("Zubereitung")}</summary><ol style="margin:6px 0 0;padding-left:20px" translate="no">${idea.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></details>` : ""}
+        <div data-ab style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"></div>`;
+      const ab = box.querySelector("[data-ab]");
+      if (idea.missing.length) {
+        const b = ovButton("🛒 Fehlendes auf die Liste");
+        b.onclick = async () => {
+          b.disabled = true;
+          try {
+            const r = await this._ws({ type: "einkaufsliste/import/text", text: idea.missing.join("\n") });
+            this._toast(`🛒 ${r?.added || 0} Artikel auf der Liste`);
+            b.textContent = "✅ Auf der Liste";
+          } catch (_) { b.disabled = false; }
+        };
+        ab.append(b);
+      }
+      const rb = ovButton("👨‍🍳 Als Rezept speichern");
+      rb.onclick = async () => {
+        rb.disabled = true;
+        try {
+          const lines = [...idea.have, ...idea.missing];
+          let items = [];
+          if (lines.length) {
+            const imp = await this._ws({ type: "einkaufsliste/recipe/import", text: lines.join("\n") }).catch(() => null);
+            items = (imp?.items || lines.map((name) => ({ name }))).map((i) => {
+              const o = { name: i.name };
+              for (const k of ["quantity", "note", "store_id", "category_id"]) if (i[k]) o[k] = i[k];
+              return o;
+            });
+          }
+          const msg = { type: "einkaufsliste/recipe/add", name: idea.name, items, steps: idea.steps.join("\n") || null };
+          if (idea.servings) msg.servings = idea.servings;
+          await this._ws(msg);
+          this._toast(`👨‍🍳 Rezept „${idea.name}“ gespeichert`);
+          rb.textContent = "✅ Als Rezept gespeichert";
+        } catch (_) { rb.disabled = false; }
+      };
+      ab.append(rb);
+      return box;
+    };
+    go.onclick = async () => {
+      const ingredients = names(), use_list = $("[data-list]").checked, wishes = $("[data-wish]").value.trim();
+      this._aiLast = { text: $("[data-in]").value, wish: wishes, list: use_list };
+      go.disabled = true;
+      res.innerHTML = `<p style="text-align:center;opacity:.8">⏳ ${elT("Die KI überlegt … das kann bis zu einer Minute dauern.")}</p>`;
+      try {
+        const r = await this._hass.callWS({ type: "einkaufsliste/ai/cook", ingredients, use_list, wishes });
+        res.innerHTML = "";
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "display:flex;flex-direction:column;gap:10px";
+        (r.ideas || []).forEach((i) => wrap.append(card(i)));
+        res.append(wrap);
+        elTranslateTree(res);
+      } catch (err) {
+        res.innerHTML = `<p style="color:#ffb74d;text-align:center">⚠️ ${esc(elT(err?.message || "Das hat nicht geklappt 🙈"))}</p>`;
+      }
+      go.disabled = false;
+    };
   }
 
   // 🥫 Produkte aus Grocy holen (Adresse + API-Schlüssel eintippen, Vorschau, Häkchen, übernehmen)
@@ -4781,7 +4944,7 @@ class EinkaufslisteCard extends HTMLElement {
         return rowHtml + `<div class="prodedit" data-key="${esc(p.key)}">
           <input id="peName" value="${esc(p.name)}" placeholder="Name, z. B. Milch">
           ${p.note ? (p.barcodes.length ? `<input type="hidden" id="peNote" value="${esc(p.note)}">` : `<input id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz, z. B. große Packung">`) : `<input type="hidden" id="peNote" value="">`}
-          ${p.note && !p.barcodes.length ? `<input type="hidden" id="peOwn" value="${esc(p.own_note || "")}">` : `<input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Nur für dich: Die Datenbank überschreibt sie nie">`}
+          ${p.note && !p.barcodes.length ? `<input type="hidden" id="peOwn" value="${esc(p.own_note || "")}">` : `<input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Nur für dich: Die Datenbank überschreibt sie nie">${this._tplChipsHtml()}`}
           <input id="peAliases" value="${esc(this._capAliases(p.aliases).join(", "))}" data-orig="${esc(this._capAliases(p.aliases).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
           <label class="favrow" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" id="peFav" ${p.favorite ? "checked" : ""} data-orig="${p.favorite ? 1 : 0}"> ⭐ Favorit</label>
           <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
@@ -4888,8 +5051,9 @@ class EinkaufslisteCard extends HTMLElement {
     const ov = this.$("otherView");
     const count = (this._data.recipes || []).length;
     // Suchfeld nur einmal bauen – sonst springt beim Tippen der Cursor raus
-    if (!ov.querySelector("#recipeList") || !!ov.querySelector("#recipeSearch") !== count > 0) {
-      ov.innerHTML = `<div class="sec"><h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span><button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:timer-outline"></ha-icon>Gar-Zeiten</button></h3>${
+    const aiOn = !!this._data.settings?.ai_on && !this._privacyOn();
+    if (!ov.querySelector("#recipeList") || !!ov.querySelector("#recipeSearch") !== count > 0 || !!ov.querySelector('[data-act="ai-cook"]') !== aiOn) {
+      ov.innerHTML = `<div class="sec"><h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon>Was kann ich kochen?</button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:timer-outline"></ha-icon>Gar-Zeiten</button></h3>${
         count ? this._recipeSearchHtml("recipeSearch") : ""}<div id="recipeList"></div></div>`;
     }
     this._renderRecipeList();
@@ -5125,13 +5289,15 @@ class EinkaufslisteCard extends HTMLElement {
         <span class="stnum" translate="no">${n + 1}.</span>
         <textarea class="stin" rows="1" data-k="${r.k}" placeholder="z. B. Nudeln 10 Minuten kochen">${esc(r.t)}</textarea>
         <span class="stbtns">${key ? `${has ? `<button type="button" class="btn" data-act="sphoto-view" data-n="${r.o}" data-pos="${n}"><ha-icon icon="mdi:image-outline"></ha-icon>${cnt}</button>` : ""}
-        <button type="button" class="btn" data-act="sphoto-take" data-n="${r.o}" ${cnt >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${has ? "Dazu" : "Foto"}</button>` : ""}
+        <button type="button" class="btn" data-act="sphoto-take" data-n="${r.o}" ${cnt >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${has ? "Dazu" : "Foto"}</button>`
+        : `${(r.np || []).length ? `<button type="button" class="btn" data-act="sphoto-newdel" data-k="${r.k}" title="Neue Fotos wieder entfernen"><ha-icon icon="mdi:image-outline"></ha-icon>${r.np.length}</button>` : ""}
+        <button type="button" class="btn" data-act="sphoto-new" data-k="${r.k}" data-pos="${n}" ${(r.np || []).length >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${(r.np || []).length ? "Dazu" : "Foto"}</button>`}
         <button type="button" class="btn danger" data-act="step-del" data-k="${r.k}" title="Schritt löschen" aria-label="Schritt löschen"><ha-icon icon="mdi:close"></ha-icon></button>
       </div>`;
     }).join("");
     const hint = this.$("rStepPhotos");
-    if (hint) hint.innerHTML = rows.some((r) => r.t.trim() && (!dr.id || r.o == null))
-      ? `<p class="hint">📷 Fotos zu Schritten (erscheinen im Koch-Modus) gehen bei Schritten, die schon gespeichert sind${dr.id ? "" : " – also Rezept einmal speichern, dann wieder öffnen"}. Verschieben: am ⠿ ziehen (oder ⠿ antippen und ↑ ↓ drücken) – die Fotos wandern mit.</p>` : "";
+    if (hint) hint.innerHTML = rows.some((r) => r.t.trim() && r.o == null)
+      ? `<p class="hint">📷 Fotos zu neuen Schritten werden beim Speichern mitgespeichert. Verschieben: am ⠿ ziehen (oder ⠿ antippen und ↑ ↓ drücken) – die Fotos wandern mit.</p>` : "";
     box.querySelectorAll(".stin").forEach((ta) => this._wireStepInput(ta));
     box.querySelectorAll(".sthandle").forEach((h) => this._wireStepHandle(h));
     if (focusK != null) box.querySelector(`.stin[data-k="${focusK}"]`)?.focus();
@@ -5527,6 +5693,19 @@ class EinkaufslisteCard extends HTMLElement {
           add = true;
         }
         for (const k of [...this._photoCache.keys()]) if (k.startsWith(key + "#")) this._photoCache.delete(k);
+      }
+      if (rid) { // 📷 Fotos zu neuen Schritten hochladen (Platz = Nummer im gespeicherten Rezept)
+        let at = 0, failed = 0;
+        for (const r of this._stepRowsOf(dr)) {
+          if (!r.t.replace(/\s+/g, "").length) continue;
+          const key = this._stepPhotoKey(rid, at++);
+          let add = false;
+          for (const data of r.np || []) {
+            try { await this._ws({ type: "einkaufsliste/photo/set", name: key, data, add }); add = true; } catch (_) { failed++; }
+          }
+          if (add) for (const k of [...this._photoCache.keys()]) if (k.startsWith(key)) this._photoCache.delete(k);
+        }
+        if (failed) this._toast(`📷 ${failed} Schritt-Foto(s) konnten nicht gespeichert werden – bitte nochmal am Schritt hinzufügen`);
       }
       this._toast(`Rezept „${msg.name}“ gespeichert 👨‍🍳`);
       this._draft = null;
@@ -6095,6 +6274,13 @@ class EinkaufslisteCard extends HTMLElement {
     }
     if (!data) return; // abgebrochen
     if (target.ocr) { this._photoTarget = null; target.ocr(data); return; } // 🔎 „Text aus Foto“: das Foto geht an die Texterkennung
+    if (target.stepRow && this._draft) { // Foto zu einem neuen Schritt: wird beim Speichern mitgespeichert
+      (target.stepRow.np ||= []).push(data);
+      this._photoTarget = null;
+      this._renderSteps();
+      this._toast("📷 Foto dazu – wird beim Speichern mitgespeichert");
+      return;
+    }
     if (target.recipeDraft && this._draft) {
       // Rezept-Foto: wird beim Speichern mitgespeichert
       (this._draft.newPhotos ||= []).push(data);
@@ -6473,6 +6659,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 📷 Foto · ⭐ alle Favoriten auf die Liste · 📋 Liste aus Foto einlesen · 🧽 alles leeren.</li>
         <li><b>⭐ Favoriten:</b> Beim Bearbeiten eines Artikels (oder eines Produkts im Katalog) „⭐ Favorit“ ankreuzen – dann steht ein ⭐ vor dem Foto-Symbol. Der ⭐-Knopf unter dem Eingabefeld setzt <b>alle</b> Favoriten sofort auf die Liste; was schon offen draufsteht, kommt nicht doppelt.</li>
         <li><b>💳 Kundenkarten</b> (nur wenn in ⚙️ → Extras eingeschaltet): Der 💳-Knopf oben (auch im Laden-Modus) zeigt deine Karten. „➕ Karte“: einscannen oder Nummer eintippen, Namen geben, „für alle“ oder „nur für mich“ wählen. Antippen zeigt den Code groß auf weißem Grund für die Kasse; „🔄 Anderes Format“ wechselt zwischen QR und Strichcode.</li>
+        <li><b>📝 Notiz-Vorlagen</b> (⚙️ → Extras): Kleine Knöpfe unter dem ✏️ Eigene Notiz-Feld (beim Eintragen, Bearbeiten und im Katalog) – ein Tipp setzt „Bio“, „ohne Laktose“ & Co. ein. Die Texte pflegst du selbst, ein Text pro Zeile.</li>
+        <li><b>🤖 KI-Kochen</b> (⚙️ → Extras, nur Admin): Du wählst einen KI-Assistenten aus Home Assistant (z. B. OpenAI, Google, Anthropic oder lokal Ollama). Dann steht bei den <b>Rezepten</b> oben links neben den Gar-Zeiten „Was kann ich kochen?“: Zutaten eintippen (auch Dinge, die nicht im Katalog stehen), optional die offenen Artikel der Liste mitnehmen und Wünsche dazuschreiben. Zu jedem Vorschlag: „Fehlendes auf die Liste“ oder „Als Rezept speichern“. Die Namen der Zutaten gehen an den gewählten Assistenten; bei eingeschaltetem Datenschutz geht nichts raus. Antworten einer KI können falsch sein.</li>
         <li><b>✏️ Eigene Notiz:</b> Hier schreibst du etwas nur für dich hin, z. B. „nur die große Packung“. Sie steht in der Liste gelb wie die 📝 Notiz (mit ✏️ davor), <b>bleibt beim Produkt</b> und kommt beim nächsten Eintragen von selbst wieder. Die 📝 Notiz dagegen kommt nur aus dem Barcode (Marke/Sorte aus der Datenbank) und ist nicht tippbar. Die ✏️ Notiz macht kein neues Produkt, und die Produkt-Datenbank überschreibt sie nie. Ändern geht beim Bearbeiten des Artikels oder im Katalog; leer lassen löscht sie dort.</li>
         <li>Darunter <b>„Welches Geschäft?“</b> – oder „Egal wo“. Meist ist es schon richtig ausgewählt (so wie zuletzt).</li>
         <li>Daneben die <b>Kategorie</b> – die sucht sich die Liste meist selbst aus. Passt sie nicht, einfach ändern.</li>
@@ -6663,6 +6851,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Import &amp; backup</b> has four tabs:
           <ul><li><b>From other apps:</b> several Alexa/to-do lists, each with its own store, either 🔁 <b>fetch automatically</b> (Fetch &amp; delete there · Keep in both · Full sync) – admins only – or <b>fetch once</b>. Plus <b>“Paste text”</b> (e.g. copy a list from Bring! or Google Keep and paste it) – anyone may do that.</li>
           <li><b>🥫 Grocy:</b> fetch products from Grocy into the catalogue – type the address and API key (the key is not stored for the one-time fetch), preview with tick boxes, then name, barcodes and the product group (as a category) come over. Whatever already exists is not overwritten. Below it the <b>🔄 continuous sync</b> with two separate switches: 🛒 <b>shopping list</b> (every 3 minutes; “Fetch &amp; delete there”, “Keep on both” or “Full sync”) and 📦 <b>new products</b> (every 1–24 hours, nothing is overwritten or deleted). Here Home Assistant keeps the key on the server – never on phones, never in backups. “Remove connection” deletes it again – admins only.</li>
+          <li><b>📄 Catalogue from CSV:</b> (tab “From other apps”) a CSV or text file – or pasted lines – as products in the catalogue (not on the shopping list). Columns: Name; Category; Barcode; Note, with or without a header row. Whatever already exists is not overwritten – admins only.</li>
+          <li><b>🗣️ Siri / Shortcuts (iPhone):</b> in the Shortcuts app create a new shortcut, choose the Home Assistant app’s “Call service” action, service <code>einkaufsliste.add_item</code>, data <code>name: Milk</code> (leave the name on “Ask each time”). Call it e.g. “Shopping” – then “Hey Siri, Shopping” is enough. To tick off use <code>einkaufsliste.check_item</code> the same way. Action names can differ slightly depending on the app version; it has not been tested on an iPhone.</li>
           <li><b>📧 E-mail:</b> IMAP mailbox, allowed senders, store via subject or heading in the mail (“Aldi:”), and what happens to the mail afterwards (leave it · mark as read · delete) – admins only.</li>
           <li><b>Backup:</b> download a .zip or “Restore backup” (replaces everything!) – admins only.</li></ul></li>
         <li><b>History:</b> who did what and when, with filters (person, store, action) and search, “Show more” and a symbol legend. At the top is <b>📈 Often not available</b> – ✖ hides an entry. “Keep for 7/30/90/180/365 days” is set there, “Clear history” deletes it. One button opens the purchase log.</li>
@@ -6713,6 +6903,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Import &amp; Sicherung</b> hat vier Reiter:
           <ul><li><b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen, jede mit eigenem Geschäft, entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich) – nur Admins – oder <b>einmal herüberholen</b>. Dazu <b>„Text einfügen“</b> (z. B. eine Liste aus Bring! oder Google Keep kopieren und einfügen) – das darf jeder.</li>
           <li><b>🥫 Grocy:</b> Produkte aus Grocy in den Katalog holen – Adresse und API-Schlüssel eintippen (der Schlüssel wird bei der einmaligen Abfrage nicht gespeichert), Vorschau mit Häkchen, dann kommen Name, Barcodes und die Produktgruppe (als Kategorie) rüber. Was es schon gibt, wird nicht überschrieben. Darunter der <b>🔄 Dauerabgleich</b> mit zwei getrennten Schaltern: 🛒 <b>Einkaufsliste</b> (alle 3 Minuten; „Holen &amp; dort löschen“, „Bei beiden behalten“ oder „Voller Abgleich“) und 📦 <b>neue Produkte</b> (alle 1–24 Stunden, nichts wird überschrieben oder gelöscht). Hier legt Home Assistant den Schlüssel auf dem Server ab – nie auf Handys, nie in Sicherungen. „Verbindung entfernen“ löscht ihn wieder – nur Admins.</li>
+          <li><b>📄 Katalog aus CSV:</b> (Tab „Aus anderen Apps“) Eine CSV- oder Textdatei – oder eingefügte Zeilen – als Produkte in den Katalog (nicht auf die Einkaufsliste). Spalten: Name; Kategorie; Barcode; Notiz, mit oder ohne Kopfzeile. Was es schon gibt, wird nicht überschrieben – nur Admins.</li>
+          <li><b>🗣️ Siri / Kurzbefehle (iPhone):</b> In der Kurzbefehle-App einen neuen Kurzbefehl anlegen, Aktion „Dienst aufrufen“ der Home-Assistant-App wählen, Dienst <code>einkaufsliste.add_item</code>, Daten <code>name: Milch</code> (den Namen mit „Nach Eingabe fragen“ offen lassen). Nenn ihn z. B. „Einkauf“ – dann reicht „Hey Siri, Einkauf“. Zum Abhaken genauso <code>einkaufsliste.check_item</code>. Die Namen der Aktionen können je nach App-Version leicht anders heißen; auf einem iPhone getestet ist es nicht.</li>
           <li><b>📧 E-Mail:</b> IMAP-Postfach, erlaubte Absender, Geschäft über Betreff oder Überschrift in der Mail („Aldi:“), und was mit der Mail danach passiert (liegen lassen · als gelesen markieren · löschen) – nur Admins.</li>
           <li><b>Sicherung:</b> .zip herunterladen oder „Sicherung einspielen“ (ersetzt alles!) – nur Admins.</li></ul></li>
         <li><b>Verlauf:</b> wer hat wann was gemacht, mit Filtern (Person, Geschäft, Aktion) und Suche, „Mehr anzeigen“ und einer Symbol-Legende. Oben steht <b>📈 Oft nicht bekommen</b> – mit ✖ blendest du einen Eintrag aus. „Aufheben für 7/30/90/180/365 Tage“ stellst du dort ein, „Verlauf leeren“ löscht ihn. Ein Knopf öffnet das Einkaufs-Protokoll.</li>
@@ -6845,6 +7037,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li>The buttons below: 🔢 quantity · ✏️ own note · 👤 for whom · 📷 photo · ⭐ all favourites onto the list · 📋 read a list from a photo · 🧽 clear everything.</li>
         <li><b>⭐ Favourites:</b> when editing an item (or a catalogue product) tick “⭐ Favourite” – a ⭐ then shows before the photo icon. The ⭐ button under the input field puts <b>all</b> favourites on the list at once; whatever is already open on it is not added twice.</li>
         <li><b>💳 Loyalty cards</b> (only if switched on in ⚙️ → Extras): the 💳 button at the top (also in shop mode) shows your cards. “➕ Card”: scan it or type the number, give it a name, choose “for everyone” or “only me”. Tapping shows the code big on white for the checkout; “🔄 Other format” switches between QR and barcode.</li>
+        <li><b>📝 Note templates</b> (⚙️ → Extras): small buttons under the ✏️ Own note field (when adding, editing and in the catalogue) – one tap inserts “Organic”, “lactose-free” & co. You maintain the texts yourself, one per line.</li>
+        <li><b>🤖 AI cooking</b> (⚙️ → Extras, admin only): you choose an AI assistant from Home Assistant (e.g. OpenAI, Google, Anthropic or local Ollama). Then <b>Recipes</b> shows “What can I cook?” at the top left, next to the cooking times: type ingredients (also things that are not in the catalogue), optionally include the open items of the list and add wishes. For every suggestion: “Missing items to the list” or “Save as recipe”. The ingredient names go to the chosen assistant; with Privacy switched on nothing is sent. AI answers can be wrong.</li>
         <li><b>✏️ Own note:</b> write something just for yourself here, e.g. “only the big pack”. In the list it is yellow like the 📝 note (with ✏️ in front), <b>stays with the product</b> and comes back by itself next time you add it. The 📝 note, by contrast, comes only from the barcode (brand/variety from the database) and cannot be typed. The ✏️ note does not create a new product, and the product database never overwrites it. You change it when editing the item or in the catalog; leaving it empty there deletes it.</li>
         <li>Below that <b>“Which store?”</b> – or “Anywhere”. Usually it's already picked correctly (like last time).</li>
         <li>Next to it the <b>category</b> – the list usually picks it itself. If it's wrong, just change it.</li>
@@ -8107,6 +8301,42 @@ class EinkaufslisteCard extends HTMLElement {
       case "tool":
         this._toggleTool(el.dataset.field);
         break;
+      case "tpl-chip": { // 📝 Notiz-Vorlage ins Feld davor (schon Text da? dann mit Komma anhängen)
+        const inp = el.closest(".tplchips")?.previousElementSibling;
+        if (!inp || inp.tagName !== "INPUT") break;
+        const t = el.dataset.t || "";
+        const cur = inp.value.trim();
+        if (!cur) inp.value = t;
+        else if (!cur.toLowerCase().includes(t.toLowerCase())) inp.value = `${cur}, ${t}`.slice(0, inp.maxLength > 0 ? inp.maxLength : 120);
+        inp.dispatchEvent(new Event("input", { bubbles: true }));
+        inp.focus();
+        break;
+      }
+      case "csv-go":
+        this._csvImport();
+        break;
+      case "ai-on":
+      case "ai-off": {
+        const turnOn = act === "ai-on";
+        const entity_id = turnOn ? (this.$("aiAgent")?.value || null) : null;
+        if (turnOn && !entity_id) { this._toast("Bitte erst einen Assistenten wählen."); break; }
+        this._ws({ type: "einkaufsliste/ai/agent", entity_id, on: turnOn })
+          .then(() => { this._toast(turnOn ? "🤖 KI-Kochen ist an" : "🤖 KI-Kochen ist aus"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+        break;
+      }
+      case "ai-cook":
+        this._aiCook();
+        break;
+      case "tpl-save": {
+        const lines = (this.$("tplText")?.value || "").split("\n").map((x) => x.trim()).filter(Boolean);
+        this._ws({ type: "einkaufsliste/note_templates/set", items: lines })
+          .then(() => { this._toast("📝 Vorlagen gespeichert"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+        break;
+      }
+      case "tpl-reset":
+        this._ws({ type: "einkaufsliste/note_templates/set", items: null })
+          .then(() => { this._toast("📝 Wieder die Standard-Vorlagen"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+        break;
       case "clear-form":
         this._clearForm();
         this._toast("🧽 Alles geleert");
@@ -9173,6 +9403,21 @@ class EinkaufslisteCard extends HTMLElement {
         this._pickFile("photoFile", this._photoHeading(this._photoTarget.name));
         break;
       }
+      case "sphoto-new": { // 📷 Schritt noch nicht gespeichert: Foto wird gemerkt und beim Speichern mitgespeichert
+        const row = (this._stepRowsOf(this._draft) || []).find((r) => String(r.k) === el.dataset.k);
+        if (!row) break;
+        this._photoTarget = { stepRow: row };
+        this._pickFile("photoFile", `🍳 Foto zu Schritt ${Number(el.dataset.pos) + 1}`);
+        break;
+      }
+      case "sphoto-newdel": {
+        const row = (this._stepRowsOf(this._draft) || []).find((r) => String(r.k) === el.dataset.k);
+        if (row?.np?.length && elConfirm(row.np.length === 1 ? "Das neue Foto wieder entfernen?" : `Die ${row.np.length} neuen Fotos wieder entfernen?`)) {
+          row.np = [];
+          this._renderSteps();
+        }
+        break;
+      }
       case "sphoto-view": {
         const dr = this._draft;
         if (dr?.id) this._openPhoto(this._stepPhotoKey(dr.id, el.dataset.n), `${dr.name || "Rezept"} – Schritt ${Number(el.dataset.pos ?? el.dataset.n) + 1}`, 0, () => this._renderSteps());
@@ -9244,6 +9489,12 @@ class EinkaufslisteCard extends HTMLElement {
 
   _onChange(e) {
     const t = e.target;
+    if (t.id === "csvFile") {
+      const file = t.files?.[0];
+      t.value = "";
+      if (file) file.text().then((txt) => { const ta = this.$("csvText"); if (ta) ta.value = txt.replace(/^\uFEFF/, ""); }).catch(() => this._toast("Die Datei konnte nicht gelesen werden 🙈"));
+      return;
+    }
     if (t.id === "xferRecipeFile" || t.id === "xferRestore") {
       const file = t.files?.[0];
       t.value = "";

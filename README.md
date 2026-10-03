@@ -169,6 +169,18 @@ Du nutzt Grocy? Dann kannst du deine Produkte in den Katalog holen: **⚙️ →
 
 Dafür liegt der API-Schlüssel auf dem Server (nie auf Handys, nie in Sicherungen). „Verbindung entfernen“ löscht ihn wieder. *Hinweis: gegen ein echtes Grocy bisher nur nach dessen API-Beschreibung gebaut – Rückmeldungen willkommen.*
 
+### 📄 Katalog aus CSV
+**⚙️ → Import & Sicherung → Aus anderen Apps → 📄 Katalog aus CSV oder Liste** (nur Admins): eine CSV- oder Textdatei (oder eingefügte Zeilen) kommt als **Produkte in den Katalog** – nicht auf die Einkaufsliste. Spalten `Name; Kategorie; Barcode; Notiz`, mit oder ohne Kopfzeile (Reihenfolge egal, wenn eine Kopfzeile da ist). Trenner `;` `,` oder Tab. Vorher sagt dir die Karte, wie viele Produkte sie erkannt hat. Was es schon gibt, wird nicht überschrieben.
+
+### 🤖 „Was kann ich kochen?“ (mit KI)
+**⚙️ → Extras → KI-Kochen** (nur Admin, standardmäßig **aus**): Du wählst einen **KI-Assistenten aus Home Assistant** (z. B. OpenAI, Google, Anthropic oder lokal Ollama) und schaltest es mit **Einschalten / Ausschalten** an oder aus (der Assistent bleibt dabei gemerkt). Danach steht bei den **Rezepten** oben links neben den Gar-Zeiten der Knopf „Was kann ich kochen?“. Zutaten eintippen – auch Dinge, die nicht im Katalog stehen –, auf Wunsch die offenen Artikel der Liste mitnehmen. Pro Vorschlag: **Fehlendes auf die Liste** oder **Als Rezept speichern**. 🔒 Die **Namen der Zutaten** gehen an den gewählten Assistenten (Cloud: ins Internet, lokal: bleibt zu Hause); bei eingeschaltetem **Datenschutz** geht nichts raus. Antworten einer KI können falsch sein. *Gegen einen echten KI-Assistenten noch nicht ausprobiert – nur mit einer Attrappe getestet.*
+
+### 📝 Notiz-Vorlagen
+**⚙️ → Extras → Notiz-Vorlagen**: kleine Knöpfe unter dem ✏️ Eigene-Notiz-Feld („Bio“, „ohne Laktose“, „große Packung“ …). Die Texte pflegst du selbst, für alle Geräte.
+
+### 🗣️ Siri / Kurzbefehle (iPhone)
+In der Kurzbefehle-App einen neuen Kurzbefehl anlegen, die Aktion **„Dienst aufrufen“** der Home-Assistant-App wählen, Dienst `einkaufsliste.add_item`, Daten `name: Milch` (den Namen „Nach Eingabe fragen“). Als „Einkauf“ benannt reicht „Hey Siri, Einkauf“. Zum Abhaken `einkaufsliste.check_item`. *Auf einem iPhone nicht getestet; die Namen der Aktionen können je nach App-Version leicht anders heißen.*
+
 ### 🧾 Einkaufs-Protokoll
 In **⚙️ → Extras → Einkaufs-Protokoll** einschalten (gilt für alle, standardmäßig **aus**). Dann sitzt oben in der Karte ein **🧾-Knopf** (und einer im Verlauf). **➕ Eintragen:** nach dem Einkauf Geschäft, Betrag und Datum – **wer** und **wann** setzt die Liste selbst. **📊 Auswertung:** zusammengerechnet, **pro Geschäft** und **pro Monat**, mit Filtern nach **Person**, **Geschäft** und **Datum** (Schnellwahl *Dieser Monat / Letzter Monat / Alles*). Unabhängig von den Listen – der Betrag wird von Hand eingetragen. Alle in der Familie sehen alles; falsch eingetragen → ✖. **🎉 Automatisch fragen (Option):** Im selben Kasten kannst du einschalten, dass der Eintragen-Dialog von selbst aufgeht, sobald alles auf der Liste abgehakt ist (Geschäft schon ausgewählt, gilt für alle). Ausschalten versteckt nur die Anzeige, die Einträge bleiben gespeichert.
 

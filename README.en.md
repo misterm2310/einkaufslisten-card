@@ -158,6 +158,18 @@ Using Grocy? You can bring your products into the catalogue: **⚙️ → Tools 
 
 For this the API key is kept on the server (never on phones, never in backups). “Remove connection” deletes it again. *Note: so far built against Grocy's API description only, not a real Grocy – feedback welcome.*
 
+### 📄 Catalogue from CSV
+**⚙️ → Import & backup → From other apps → 📄 Catalogue from CSV or list** (admins only): a CSV or text file (or pasted lines) becomes **products in the catalogue** – not items on the shopping list. Columns `Name; Category; Barcode; Note`, with or without a header row (any order if there is a header). Separator `;` `,` or tab. The card tells you how many products it recognised before importing. Whatever already exists is not overwritten.
+
+### 🤖 “What can I cook?” (with AI)
+**⚙️ → Extras → AI cooking** (admin only, **off** by default): choose an **AI assistant from Home Assistant** (e.g. OpenAI, Google, Anthropic or local Ollama) and switch it on or off with **Turn on / Turn off** (the assistant stays remembered). Then **Recipes** shows the button “What can I cook?” at the top left, next to the cooking times. Type ingredients – also things that are not in the catalogue – and optionally include the open items of the list. For every suggestion: **Missing items to the list** or **Save as recipe**. 🔒 The **ingredient names** go to the chosen assistant (cloud: over the internet, local: stays at home); with **Privacy** switched on nothing is sent. AI answers can be wrong. *Not tried against a real AI assistant yet – only tested with a stand-in.*
+
+### 📝 Note templates
+**⚙️ → Extras → Note templates**: small buttons under the ✏️ Own note field (“Organic”, “lactose-free”, “large pack” …). You maintain the texts yourself, for all devices.
+
+### 🗣️ Siri / Shortcuts (iPhone)
+In the Shortcuts app create a new shortcut, choose the Home Assistant app’s **“Call service”** action, service `einkaufsliste.add_item`, data `name: Milk` (set the name to “Ask each time”). Named “Shopping”, “Hey Siri, Shopping” is enough. To tick off use `einkaufsliste.check_item`. *Not tested on an iPhone; action names can differ slightly depending on the app version.*
+
 ### 🧾 Purchase log
 Turn it on in **⚙️ → App & look → Purchase log** (applies to everyone, **off** by default). A **🧾 button** then appears at the top of the card (and one in the history). **➕ Add:** after shopping, enter store, amount and date – the list fills in **who** and **when**. **📊 Overview:** in total, **per store** and **per month**, with filters for **person**, **store** and **date** (quick buttons *This month / Last month / All*). Independent of the lists – the amount is entered by hand. Everyone in the family sees everything; entered wrong → ✖. Turning it off only hides the display, the entries stay saved.
 

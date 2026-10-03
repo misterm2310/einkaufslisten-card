@@ -291,6 +291,9 @@ class EinkaufslisteManager:
         self.cards_on: bool = False  # 💳 Kundenkarten-Funktion an/aus (standardmäßig aus) – gilt für alle
         self.typos: dict[str, dict[str, Any]] = {}  # 🧠 Tippfehler (klein) -> {"right": Name, "n": wie oft korrigiert}
         self.pin_hash: str | None = None  # 🔒 PIN für die Einstellungen (nur als Prüfsumme gespeichert)
+        self.note_templates: list[str] | None = None  # 📝 Vorlagen für die Eigene Notiz (None = Standard-Vorschläge)
+        self.ai_agent: str | None = None  # 🤖 KI-Kochen: gewählter Home-Assistant-Assistent (bleibt gemerkt, auch wenn aus)
+        self.ai_on: bool = False  # 🤖 KI-Kochen an/aus (Standard aus)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
         self.privacy: bool = False  # 🔒 Datenschutz an = keine Kamera, keine Fotos, kein Barcode-Scanner (für alle Geräte)
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
@@ -398,6 +401,11 @@ class EinkaufslisteManager:
         self.typos = data.get("typos", {})
         self.pin_hash = data.get("pin")
         self.mascot = bool(data.get("mascot", False))
+        nt = data.get("note_templates")
+        self.note_templates = [str(x) for x in nt][:30] if isinstance(nt, list) else None
+        ag = data.get("ai_agent")
+        self.ai_agent = str(ag) if isinstance(ag, str) and ag.startswith("conversation.") else None
+        self.ai_on = bool(data.get("ai_on", False)) and self.ai_agent is not None
         self.privacy = bool(data.get("privacy", False))
         self.spend = bool(data.get("spend", False))
         self.spend_auto = bool(data.get("spend_auto", False))
@@ -466,6 +474,9 @@ class EinkaufslisteManager:
             "typos": self.typos,
             "pin": self.pin_hash,
             "mascot": self.mascot,
+            "note_templates": self.note_templates,
+            "ai_agent": self.ai_agent,
+            "ai_on": self.ai_on,
             "privacy": self.privacy,
             "spend": self.spend,
             "spend_auto": self.spend_auto,
@@ -549,6 +560,10 @@ class EinkaufslisteManager:
                 "pin": bool(self.pin_hash),
                 "app_url": self._app_url(),
                 "mascot": self.mascot,
+                "note_templates": self.effective_note_templates(),
+                "note_templates_custom": self.note_templates is not None,
+                "ai_agent": self.ai_agent,
+                "ai_on": self.ai_on,
                 "privacy": self.privacy,
                 "cards_on": self.cards_on,
                 "spend": self.spend,
@@ -850,6 +865,39 @@ class EinkaufslisteManager:
         self.mascot = bool(on)
         self._changed()
 
+    DEFAULT_NOTE_TEMPLATES = ("Bio", "ohne Laktose", "ohne Gluten", "große Packung", "kleine Packung", "Sonderangebot")
+
+    def effective_note_templates(self) -> list[str]:
+        return list(self.note_templates) if self.note_templates is not None else list(self.DEFAULT_NOTE_TEMPLATES)
+
+    def set_note_templates(self, items: list[str] | None) -> list[str]:
+        """📝 Vorlagen für die Eigene Notiz setzen (None = zurück zu den Standard-Vorschlägen)."""
+        if items is None:
+            self.note_templates = None
+        else:
+            clean: list[str] = []
+            for raw in items:
+                t = _note(raw)
+                if t and t.lower() not in [c.lower() for c in clean]:
+                    clean.append(t)
+            self.note_templates = clean[:30]
+        self._changed()
+        return self.effective_note_templates()
+
+    def set_ai_agent(self, entity_id: str | None, on: bool | None = None) -> None:
+        """🤖 KI-Kochen: Assistenten wählen und an-/ausschalten (der gewählte Assistent bleibt beim Ausschalten gemerkt)."""
+        if entity_id:
+            if not str(entity_id).startswith("conversation."):
+                raise ValueError("Bitte einen Assistenten aus Home Assistant wählen (conversation.…).")
+            if self.hass.states.get(entity_id) is None:
+                raise ValueError("Diesen Assistenten gibt es in Home Assistant nicht (mehr).")
+            self.ai_agent = entity_id
+        want = bool(entity_id) if on is None else bool(on)
+        if want and not self.ai_agent:
+            raise ValueError("Bitte erst einen Assistenten wählen.")
+        self.ai_on = want
+        self._changed()
+
     def set_cards_on(self, on: bool) -> None:
         """💳 Kundenkarten für alle an- oder ausschalten (die gespeicherten Karten bleiben erhalten)."""
         self.cards_on = bool(on)
@@ -1124,6 +1172,19 @@ class EinkaufslisteManager:
         self.missed_hidden = {k: v for k, v in self.missed_hidden.items() if k.rsplit("|", 1)[-1] in stores}
         self._changed()
 
+    @staticmethod
+    def _bc_norm(code: str) -> str:
+        """Barcode ohne führende Nullen: EAN-13 „0012345678905“ und UPC-A „12345678905“ sind dieselbe Packung."""
+        return str(code).lstrip("0") or "0"
+
+    def _barcode_twin(self, code: str) -> tuple[str, dict[str, Any]] | None:
+        """Gibt es schon einen ANDEREN Barcode, der nur mit Nullen davor/dahinter anders geschrieben ist?"""
+        norm = self._bc_norm(code)
+        for other, bc in self.barcodes.items():
+            if other != code and bc.get("name") and self._bc_norm(other) == norm:
+                return other, bc
+        return None
+
     def _barcodes_by_name(self) -> dict[str, list[str]]:
         out: dict[str, list[str]] = {}
         for code, entry in self.barcodes.items():
@@ -1152,6 +1213,9 @@ class EinkaufslisteManager:
             raise ValueError("Das ist kein gültiger Barcode.")
         if code and code in self.barcodes and self.barcodes[code].get("name"):
             raise ValueError(f"Der Barcode gehört schon zu „{self.barcodes[code]['name']}“.")
+        twin = self._barcode_twin(code) if code else None
+        if twin:
+            raise ValueError(f"Den Barcode gibt es schon, nur mit anderen Nullen geschrieben ({twin[0]}): er gehört zu „{twin[1]['name']}“.")
         if key not in self.history:
             self.history[key] = {
                 "name": name,
@@ -2725,6 +2789,31 @@ class EinkaufslisteManager:
                 add(f"bc_noname:{code}", f"▥ Barcode {code} hat keinen Produktnamen", "Barcode löschen",
                     lambda _v, code=code: self.barcodes.pop(code, None))
 
+        # ▥ Derselbe Barcode zweimal (nur mit anderen Nullen geschrieben) – bei einem Produkt oder bei zwei verschiedenen
+        by_norm: dict[str, list[str]] = {}
+        for code, bc in self.barcodes.items():
+            if bc.get("name"):
+                by_norm.setdefault(self._bc_norm(code), []).append(code)
+        for norm, codes in by_norm.items():
+            if len(codes) < 2:
+                continue
+            codes = sorted(codes, key=lambda c: (-len(c), c))  # der längste (meist EAN-13) bleibt
+            first = codes[0]
+            for other in codes[1:]:
+                a, b = self.barcodes[first], self.barcodes[other]
+                la = (a["name"] + (f" · {a['note']}" if a.get("note") else ""))
+                lb = (b["name"] + (f" · {b['note']}" if b.get("note") else ""))
+                if product_key(a["name"], a.get("note")) == product_key(b["name"], b.get("note")):
+                    add(f"bc_dup:{other}", f"▥ „{la}“ hat denselben Barcode zweimal: {first} und {other} (nur Nullen anders)",
+                        f"{other} löschen, {first} bleibt", lambda _v, other=other: self.barcodes.pop(other, None),
+                        edit={"kind": "product", "id": product_key(a["name"], a.get("note"))})
+                else:
+                    opts = [{"value": "this", "label": f"🗑️ Barcode {other} bei „{lb}“ löschen"},
+                            {"value": "other", "label": f"🗑️ Barcode {first} bei „{la}“ löschen"}]
+                    add(f"bc_dup:{other}", f"▥ Barcode {first} („{la}“) und {other} („{lb}“) sind dieselbe Packung – aber bei zwei Produkten",
+                        "Beim falschen Produkt löschen", lambda v, other=other, first=first: self.barcodes.pop(first if v == "other" else other, None),
+                        opts, "this", edit={"kind": "product", "id": product_key(b["name"], b.get("note"))})
+
         def ref(pid: str, thing: dict[str, Any], label: str, fields: tuple[str, ...] = ("store_id", "category_id"),
                 edit: dict[str, str] | None = None) -> None:
             for field in fields:
@@ -2875,6 +2964,9 @@ class EinkaufslisteManager:
         known = self.barcodes.get(code)
         if known and known.get("name") and product_key(known["name"], known.get("note")) != key:
             raise ValueError(f"Dieser Barcode gehört schon zu „{known['name']}“.")
+        twin = self._barcode_twin(code)
+        if twin and product_key(twin[1]["name"], twin[1].get("note")) != key:
+            raise ValueError(f"Diesen Barcode gibt es schon, nur mit anderen Nullen geschrieben ({twin[0]}): er gehört zu „{twin[1]['name']}“.")
         self.learn_barcode(code, prod["name"], prod.get("store_id"), prod.get("category_id"), prod.get("note"))
         self._changed()
         return {"code": code, "name": prod["name"], "note": prod.get("note"), "key": key}

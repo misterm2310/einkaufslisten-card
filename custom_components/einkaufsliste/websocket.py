@@ -13,7 +13,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .barcode import async_auto_photo, async_lookup, async_product_info, async_refresh_photo
-from .grocy_import import async_fetch, clean_base, import_rows
+from .ai_cook import async_cook
+from .grocy_import import async_fetch, clean_base, import_rows, parse_catalog_text
 from .recipe_import import async_import
 from .const import DOMAIN, SIGNAL_UPDATED
 from .mail_import import mail_sources
@@ -72,6 +73,10 @@ def async_register(hass: HomeAssistant) -> None:
         ws_cards_enable,
         ws_grocy_preview,
         ws_grocy_import,
+        ws_catalog_csv,
+        ws_note_templates,
+        ws_ai_agent,
+        ws_ai_cook,
         ws_grocy_set,
         ws_grocy_clear,
         ws_grocy_run,
@@ -1243,3 +1248,63 @@ async def ws_grocy_run(hass, connection, msg):
         return
     status = await gs.run(force_b=True)
     connection.send_result(msg["id"], {"status": status})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/import/catalog", vol.Required("text"): vol.All(str, vol.Length(max=2_000_000)),
+     vol.Optional("make_categories", default=True): bool, vol.Optional("preview", default=False): bool}
+)
+@websocket_api.require_admin
+@callback
+def ws_catalog_csv(hass, connection, msg):
+    """📄 Produkte aus CSV/Text in den Katalog (preview = nur zählen, nichts anlegen)."""
+    rows = parse_catalog_text(msg["text"])
+    if msg["preview"]:
+        m = _manager(hass)
+        have = sum(1 for r in rows if m is not None and r["name"].lower() in m.history)
+        connection.send_result(msg["id"], {"rows": len(rows), "exists": have,
+                                           "sample": [r["name"] for r in rows[:5]]})
+        return
+    _run(hass, connection, msg, lambda m: import_rows(m, rows, msg["make_categories"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/note_templates/set", vol.Required("items"): vol.Any(None, [vol.All(str, vol.Length(max=80))])}
+)
+@callback
+def ws_note_templates(hass, connection, msg):
+    """📝 Vorlagen für die Eigene Notiz (null = Standard)."""
+    _run(hass, connection, msg, lambda m: m.set_note_templates(msg["items"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/ai/agent", vol.Required("entity_id"): vol.Any(None, str), vol.Optional("on"): bool}
+)
+@websocket_api.require_admin
+@callback
+def ws_ai_agent(hass, connection, msg):
+    """🤖 KI-Assistent fürs Kochen wählen (null = aus)."""
+    _run(hass, connection, msg, lambda m: m.set_ai_agent(msg["entity_id"] or None, msg.get("on")))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/ai/cook",
+        vol.Optional("ingredients", default=list): [vol.All(str, vol.Length(max=120))],
+        vol.Optional("use_list", default=False): bool,
+        vol.Optional("wishes", default=""): vol.All(str, vol.Length(max=300)),
+    }
+)
+@websocket_api.async_response
+async def ws_ai_cook(hass, connection, msg):
+    """🤖 „Was kann ich damit kochen?“ – Ideen vom KI-Assistenten."""
+    manager = _manager(hass)
+    if manager is None:
+        connection.send_error(msg["id"], "not_ready", "Die Einkaufsliste ist noch nicht bereit.")
+        return
+    try:
+        ideas = await async_cook(hass, manager, msg["ingredients"], msg["use_list"], msg["wishes"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], {"ideas": ideas})
