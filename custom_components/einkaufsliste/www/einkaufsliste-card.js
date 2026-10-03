@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.11";
+const EL_VERSION = "2.53.12";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.53.9"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1371,7 +1371,8 @@ form.add .row2 { grid-column: 1 / -1; display:grid; grid-auto-flow:column; grid-
 /* Geschäft + Kategorie nebeneinander: etwas kompakter, damit „Welches Geschäft?“ ganz draufpasst */
 form.add .row2 select { font-size:.88em; padding:9px 4px 9px 7px; letter-spacing:-.1px; }
 form.add.fixed .sel { grid-template-columns:1fr; }
-input, select { font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; min-width:0; width:100%; outline:none; }
+input, select, textarea { font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; min-width:0; width:100%; outline:none; }
+textarea { box-sizing:border-box; resize:vertical; line-height:1.35; }
 input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .primary { background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border:0; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
 .primary:active { transform:scale(.96); }
@@ -1602,7 +1603,7 @@ ha-card.compact .group { margin-top:4px; }
 .grocyrow input { width:auto; flex:none; }
 .grocyrow.have { opacity:.6; }
 .grocyrow small { color:var(--secondary-text-color); white-space:nowrap; }
-#xferText { width:100%; box-sizing:border-box; font:inherit; padding:8px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:var(--card-background-color); color:var(--primary-text-color); margin:4px 0 6px; }
+#xferText { margin:4px 0 6px; }
 label.btn { cursor:pointer; }
 .logfilter { display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px; margin:4px 0; }
 .logday { font-size:.78em; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--secondary-text-color); margin:10px 2px 2px; }
@@ -9831,75 +9832,110 @@ class EinkaufslisteCardEditor extends HTMLElement {
 }
 
 
-// 🧽 Ein Radiergummi für JEDES Textfeld: erscheint am rechten Rand, solange man im Feld ist und etwas drinsteht.
-// Ein einziger schwebender Knopf für die ganze Seite (auch in Dialogen und im Shadow-DOM) – es ändert sich nichts am Aufbau der Felder.
+// 🧽 Fester roter Radiergummi an JEDEM Textfeld (wie „Alles leeren“ in der Einkaufsliste): erscheint rechts im Feld, solange etwas drinsteht – leeres Feld = kein Radiergummi.
+// Technik: eine unsichtbare Ebene über der Seite, pro gefülltem Feld ein Knopf, der dem Feld folgt (am Aufbau der Felder ändert sich nichts).
 // Ausgenommen: PIN/Passwort/API-Schlüssel, Nur-Lesen-Felder, Suchfelder und das Eintragen-Formular, die schon ihren eigenen Radiergummi haben.
 (function elInitErasers() {
   if (window.__elErasers) return;
   window.__elErasers = true;
   const OWN = new Set(["delSearch", "prodSearch", "setSearch", "logSearch", "recipeSearch", "recipeSearchS"]);
   const SECRET = /pin|pass|schl[uü]ssel|api|token|secret/i;
-  let btn = null, cur = null, timer = 0;
+  const TYPES = ["text", "search", "email", "url", "tel", ""];
+  const SIZE = 28;
+  const btns = new Map(); // Feld → Knopf
+  let layer = null, raf = 0, timer = 0;
   const eligible = (el) => {
-    if (!el || !(el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return false;
-    if (el.tagName === "INPUT" && !["text", "search", "email", "url", "tel", ""].includes((el.getAttribute("type") || "").toLowerCase())) return false;
+    if (el.tagName === "INPUT" && !TYPES.includes((el.getAttribute("type") || "").toLowerCase())) return false;
     if (el.readOnly || el.disabled || el.hidden || el.dataset.noerase !== undefined) return false;
-    if (OWN.has(el.id) || el.classList.contains("elg-q") || el.closest(".gsearch")) return false;
-    if (el.closest("#addForm")) return false; // Eintragen-Formular hat schon den festen Radiergummi „Alles leeren“
+    if (OWN.has(el.id) || el.classList.contains("elg-q") || el.closest(".gsearch") || el.closest("#addForm")) return false;
     if (SECRET.test(`${el.id} ${el.name || ""} ${el.getAttribute("placeholder") || ""} ${el.getAttribute("autocomplete") || ""}`)) return false;
     return true;
   };
-  const ensure = () => {
-    if (btn) return btn;
-    btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = "🧽";
-    btn.hidden = true;
-    btn.setAttribute("aria-label", "Feld leeren");
-    btn.title = "Feld leeren";
-    btn.style.cssText = "position:fixed;z-index:2147483000;width:30px;height:30px;padding:0;border:0;border-radius:50%;cursor:pointer;font-size:17px;line-height:30px;text-align:center;background:rgba(127,127,127,.28);color:inherit;touch-action:manipulation";
-    btn.addEventListener("pointerdown", (e) => e.preventDefault()); // Fokus bleibt im Feld
-    btn.addEventListener("mousedown", (e) => e.preventDefault());
-    btn.addEventListener("click", () => {
-      const el = cur;
-      if (!el) return;
+  const ensureLayer = () => {
+    if (layer && layer.isConnected) return layer;
+    layer = document.createElement("div");
+    layer.setAttribute("aria-hidden", "false");
+    layer.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;z-index:2147483000;pointer-events:none";
+    document.body.appendChild(layer);
+    return layer;
+  };
+  const makeBtn = (el) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.title = "Feld leeren";
+    b.setAttribute("aria-label", "Feld leeren");
+    b.style.cssText = `position:fixed;display:flex;align-items:center;justify-content:center;width:${SIZE}px;height:${SIZE}px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer;pointer-events:auto;color:var(--error-color,#db4437);--mdc-icon-size:20px;touch-action:manipulation`;
+    const ic = document.createElement("ha-icon");
+    ic.setAttribute("icon", "mdi:eraser");
+    b.appendChild(ic);
+    b.addEventListener("pointerdown", (e) => e.preventDefault()); // Fokus bleibt im Feld
+    b.addEventListener("mousedown", (e) => e.preventDefault());
+    b.addEventListener("click", () => {
       el.value = "";
       el.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
-      hide();
+      el.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+      schedule();
       try { el.focus(); } catch (_) { /* egal */ }
     });
-    document.body.appendChild(btn);
-    return btn;
+    ensureLayer().appendChild(b);
+    return b;
   };
-  const hide = () => {
-    if (cur && cur.dataset.erPad !== undefined) { cur.style.paddingRight = cur.dataset.erPad; delete cur.dataset.erPad; }
-    if (btn) btn.hidden = true;
-    cur = null;
-    clearInterval(timer);
-    timer = 0;
+  const drop = (el) => {
+    const b = btns.get(el);
+    if (b) b.remove();
+    btns.delete(el);
+    if (el.dataset.erPad !== undefined) { el.style.paddingRight = el.dataset.erPad; delete el.dataset.erPad; }
   };
-  const place = () => {
-    if (!cur || !cur.isConnected || !cur.value) { hide(); return; }
-    const r = cur.getBoundingClientRect();
-    if (r.width < 90 || r.bottom < 0 || r.top > innerHeight) { if (btn) btn.hidden = true; return; }
-    const b = ensure();
-    b.hidden = false;
-    const top = cur.tagName === "TEXTAREA" ? r.top + 6 : r.top + (r.height - 30) / 2;
-    b.style.top = `${Math.max(0, top)}px`;
-    b.style.left = `${Math.max(0, r.right - 34)}px`;
+  // Sichtbarer Ausschnitt des Feldes: Bildschirm und alle scrollenden Eltern (auch über Shadow-DOM hinweg)
+  const clip = (el, r) => {
+    let l = 0, t = 0, rr = innerWidth, bb = innerHeight;
+    for (let n = el.parentNode; n; n = n.parentNode || n.host) {
+      if (n.nodeType === 1) {
+        const o = getComputedStyle(n).overflow + getComputedStyle(n).overflowY;
+        if (/auto|scroll|hidden|clip/.test(o) && n !== document.documentElement && n !== document.body) {
+          const c = n.getBoundingClientRect();
+          l = Math.max(l, c.left); t = Math.max(t, c.top); rr = Math.min(rr, c.right); bb = Math.min(bb, c.bottom);
+        }
+      }
+      if (n.nodeType === 11 && !n.host) break;
+    }
+    return { l, t, r: rr, b: bb };
   };
-  const show = (el) => {
-    if (cur && cur !== el) hide();
-    cur = el;
-    if (cur.dataset.erPad === undefined) { cur.dataset.erPad = cur.style.paddingRight || ""; cur.style.paddingRight = "38px"; }
-    place();
-    if (!timer) timer = setInterval(place, 300); // falls der Dialog scrollt oder sich verschiebt
+  const place = (el, b) => {
+    const r = el.getBoundingClientRect();
+    if (r.width < 90 || r.height < 20) return false;
+    const c = clip(el, r);
+    const top = el.tagName === "TEXTAREA" ? r.top + 6 : r.top + (r.height - SIZE) / 2;
+    const left = r.right - SIZE - 6;
+    if (top < c.t || top + SIZE > c.b || left < c.l || left + SIZE > c.r) return false;
+    b.style.top = `${Math.round(top)}px`;
+    b.style.left = `${Math.round(left)}px`;
+    return true;
   };
-  const target = (e) => (e.composedPath ? e.composedPath()[0] : e.target);
-  document.addEventListener("focusin", (e) => { const el = target(e); if (eligible(el) && el.value) show(el); else if (cur) hide(); }, true);
-  document.addEventListener("input", (e) => { const el = target(e); if (!eligible(el)) return; if (el.value) show(el); else if (cur === el) hide(); }, true);
-  document.addEventListener("focusout", (e) => { if (target(e) === cur) setTimeout(() => { if (cur && !(cur.getRootNode().activeElement === cur)) hide(); }, 150); }, true);
-  addEventListener("resize", () => cur && place());
+  const cards = () => [...document.querySelectorAll("einkaufsliste-card")].filter((c) => c.shadowRoot);
+  const sync = () => {
+    raf = 0;
+    const want = new Set();
+    for (const c of cards()) {
+      for (const el of c.shadowRoot.querySelectorAll("input,textarea")) {
+        if (el.value && eligible(el) && el.getClientRects().length) want.add(el);
+      }
+    }
+    for (const el of [...btns.keys()]) if (!want.has(el) || !el.isConnected) drop(el);
+    for (const el of want) {
+      let b = btns.get(el);
+      if (!b) { b = makeBtn(el); btns.set(el, b); }
+      if (el.dataset.erPad === undefined) { el.dataset.erPad = el.style.paddingRight || ""; el.style.paddingRight = "40px"; }
+      b.hidden = !place(el, b);
+    }
+  };
+  const schedule = () => { if (!raf) raf = requestAnimationFrame(sync); };
+  document.addEventListener("input", schedule, true);
+  document.addEventListener("change", schedule, true);
+  document.addEventListener("focusin", schedule, true);
+  document.addEventListener("scroll", schedule, true);
+  addEventListener("resize", schedule);
+  timer = setInterval(() => { if (!document.hidden && (btns.size || cards().length)) sync(); }, 400); // Felder, die per Code gefüllt oder ein-/ausgeblendet werden
 })();
 
 if (!customElements.get("einkaufsliste-card")) customElements.define("einkaufsliste-card", EinkaufslisteCard);
