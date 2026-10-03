@@ -111,7 +111,7 @@ class GeschaeftSensor(_Base):
         return {
             "geschaeft": self.name,
             "artikel": [
-                i["name"] + (f" ({i['quantity']})" if i.get("quantity") else "") + (f" · {i['note']}" if i.get("note") else "")
+                (f"{i['quantity']} " if i.get("quantity") else "") + i["name"] + (f" · {i['note']}" if i.get("note") else "")
                 for i in self._open()
             ],
         }

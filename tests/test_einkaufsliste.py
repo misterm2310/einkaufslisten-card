@@ -460,6 +460,79 @@ async def test_step_photos_move_with_steps(hass, setup, hass_ws_client):
     assert m.photos[f"rezept#{rid}#s0".lower()]["id"] == id0
 
 
+async def test_favorites_add_all(hass, setup, hass_ws_client):
+    """⭐ Favoriten markieren, Knopf setzt alle auf die Liste (nichts doppelt), Umbenennen zieht mit."""
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    m.add_item("Milch", quantity="2 L")
+    m.add_item("Brot")
+    m.add_item("Eier", quantity="10x")
+    for n in m.items:  # alles erledigt – die Produkte bleiben im Gedächtnis
+        m.set_checked(n["id"], True, None)
+    for i, name in enumerate(["Milch", "Brot"], start=1):
+        await client.send_json({"id": i, "type": "einkaufsliste/favorite/set", "name": name, "value": True})
+        assert (await client.receive_json())["success"]
+    await client.send_json({"id": 5, "type": "einkaufsliste/favorite/set", "name": "Gibt es nicht", "value": True})
+    assert not (await client.receive_json())["success"]
+    assert sorted(m.as_dict()["favorites"]) == ["brot", "milch"]
+    m.add_item("Brot")  # steht schon offen drauf
+    await client.send_json({"id": 6, "type": "einkaufsliste/favorites/add"})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["added"] == ["Milch"] and res["result"]["skipped"] == 1
+    open_ = {i["name"]: i for i in m.items if not i["checked"]}
+    assert set(open_) == {"Milch", "Brot"} and open_["Milch"]["quantity"] == "2 L"  # Menge wie zuletzt
+    # zweimal drücken: nichts doppelt
+    await client.send_json({"id": 7, "type": "einkaufsliste/favorites/add"})
+    res = await client.receive_json()
+    assert res["result"]["added"] == [] and res["result"]["skipped"] == 2
+    # Umbenennen im Katalog: der Favorit zieht mit
+    m.update_product("milch", name="H-Milch")
+    assert "h-milch" in m.as_dict()["favorites"] and "milch" not in m.as_dict()["favorites"]
+    # loslassen
+    await client.send_json({"id": 8, "type": "einkaufsliste/favorite/set", "name": "H-Milch", "value": False})
+    assert (await client.receive_json())["success"]
+    assert "h-milch" not in m.as_dict()["favorites"]
+
+
+async def test_loyalty_cards(hass, setup, hass_ws_client, hass_admin_user):
+    """💳 Kundenkarten: Schalter standardmäßig aus; „für alle“ oder nur für mich; Codes nie in der großen Antwort."""
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    assert m.as_dict()["settings"]["cards_on"] is False
+    await client.send_json({"id": 1, "type": "einkaufsliste/cards/enable", "on": True})
+    assert (await client.receive_json())["success"] and m.as_dict()["settings"]["cards_on"] is True
+    await client.send_json({"id": 2, "type": "einkaufsliste/card/add", "name": "Payback", "code": "1234567890123", "fmt": "ean13", "shared": True})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["shared"] is True
+    shared_id = res["result"]["id"]
+    await client.send_json({"id": 3, "type": "einkaufsliste/card/add", "name": "dm", "code": "https://x.example/abc", "fmt": "qr", "shared": False, "color": "#ff0000"})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["shared"] is False
+    mine_id = res["result"]["id"]
+    # gleicher Name nochmal: Fehler; leerer Code: Fehler
+    await client.send_json({"id": 4, "type": "einkaufsliste/card/add", "name": "payback", "code": "1", "shared": True})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 5, "type": "einkaufsliste/card/add", "name": "Rewe", "code": "  ", "shared": True})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 6, "type": "einkaufsliste/cards/list"})
+    res = await client.receive_json()
+    assert [c["name"] for c in res["result"]] == ["dm", "Payback"]  # erst eigene, dann „für alle“
+    # die große Daten-Antwort enthält KEINE Codes
+    assert "1234567890123" not in str(m.as_dict()) and "x.example" not in str(m.as_dict())
+    # ein anderer Benutzer sieht nur die geteilten
+    assert [c["name"] for c in m.cards_for("anderer-benutzer")] == ["Payback"]
+    with pytest.raises(ValueError):
+        m.update_card(mine_id, "anderer-benutzer", name="Hack")
+    with pytest.raises(ValueError):
+        m.remove_card(mine_id, "anderer-benutzer")
+    # ändern + löschen
+    await client.send_json({"id": 7, "type": "einkaufsliste/card/update", "card_id": shared_id, "code": "999"})
+    assert (await client.receive_json())["result"]["code"] == "999"
+    await client.send_json({"id": 8, "type": "einkaufsliste/card/remove", "card_id": mine_id})
+    assert (await client.receive_json())["success"]
+    assert [c["name"] for c in m.cards_for(hass_admin_user.id)] == ["Payback"]
+
+
 async def test_persons(hass, setup, hass_ws_client):
     client = await hass_ws_client(hass)
     m = mgr(hass)
@@ -1642,7 +1715,7 @@ async def test_more_sensors(hass: HomeAssistant, setup) -> None:
         m.add_item("Milch", store_id=aldi["id"], quantity="2 L", note="Laktosefrei")
     await hass.async_block_till_done()
     st = hass.states.get("sensor.einkaufsliste_aldi")
-    assert st.state == "1" and st.attributes["artikel"] == ["Milch (2 L) · Laktosefrei"]
+    assert st.state == "1" and st.attributes["artikel"] == ["2 L Milch · Laktosefrei"]
     assert hass.states.get("binary_sensor.einkaufsliste_etwas_zu_kaufen").state == "on"
     last = hass.states.get("sensor.einkaufsliste_zuletzt_eingetragen")
     assert last.state == "Milch"
@@ -3097,3 +3170,77 @@ async def test_privacy_switch(hass: HomeAssistant, setup) -> None:
     assert m._to_storage()["privacy"] is True
     m.set_privacy(False)
     assert m.as_dict()["settings"]["privacy"] is False
+
+
+async def test_grocy_import(hass, setup, hass_ws_client, hass_read_only_access_token, aioclient_mock):
+    """🥫 Grocy-Import: Vorschau (Schlüssel im Header, nicht gespeichert), Auswahl, Katalog, Barcodes, Kategorien."""
+    from custom_components.einkaufsliste.grocy_import import clean_base
+    assert clean_base("192.168.1.5:9283/api/") == "http://192.168.1.5:9283"
+    assert clean_base("https://grocy.example.org/") == "https://grocy.example.org"
+    assert clean_base("http://grocy.local/grocy/api") == "http://grocy.local/grocy"
+    for bad in ("", "ftp://x", "http://user:pw@host/"):
+        with pytest.raises(ValueError):
+            clean_base(bad)
+    m = mgr(hass)
+    m.add_item("Milch")  # gibt es schon
+    base = "http://grocy.local:9283/api/objects"
+    aioclient_mock.get(f"{base}/products", json=[
+        {"id": "1", "name": "Cookies", "product_group_id": "1"},
+        {"id": "2", "name": "Milch", "product_group_id": "2"},
+        {"id": "3", "name": "  Nudeln   Spaghetti ", "product_group_id": None, "active": "1"},
+        {"id": "4", "name": "Altlast", "active": "0"},
+        {"id": "5", "name": ""},
+    ])
+    aioclient_mock.get(f"{base}/product_barcodes", json=[
+        {"product_id": "1", "barcode": "4006381333931"},
+        {"product_id": "1", "barcode": "4006381333931"},
+        {"product_id": "1", "barcode": "MDETEST24"},
+        {"product_id": "3", "barcode": "22111968"},
+        {"product_id": "3", "barcode": "123"},
+    ])
+    aioclient_mock.get(f"{base}/product_groups", json=[{"id": "1", "name": "Süßes"}, {"id": "2", "name": "Milchprodukte"}])
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/grocy/preview", "url": "grocy.local:9283", "api_key": "GEHEIM"})
+    res = await client.receive_json()
+    assert res["success"], res
+    rows = {r["name"]: r for r in res["result"]["rows"]}
+    assert set(rows) == {"Cookies", "Milch", "Nudeln Spaghetti"}  # inaktiv und namenlos fehlen
+    assert rows["Cookies"]["barcodes"] == ["4006381333931"] and rows["Cookies"]["group"] == "Süßes"
+    assert rows["Nudeln Spaghetti"]["barcodes"] == ["22111968"] and rows["Nudeln Spaghetti"]["group"] is None
+    assert rows["Milch"]["exists"] is True and rows["Cookies"]["exists"] is False
+    assert res["result"]["inactive"] == 1 and res["result"]["bad_codes"] == 2
+    assert aioclient_mock.mock_calls[0][3]["GROCY-API-KEY"] == "GEHEIM"
+    assert "GEHEIM" not in str(m.as_dict()) and "GEHEIM" not in str(m._to_storage())  # Schlüssel wird nicht gespeichert
+    # übernehmen: Cookies + Nudeln (Milch gibt es schon -> übersprungen)
+    await client.send_json({"id": 2, "type": "einkaufsliste/grocy/import", "make_categories": True, "rows": [
+        {"name": "Cookies", "group": "Süßes", "barcodes": ["4006381333931"]},
+        {"name": "Milch", "group": "Milchprodukte", "barcodes": []},
+        {"name": "Nudeln Spaghetti", "group": None, "barcodes": ["22111968", "4006381333931"]},
+    ]})
+    res = await client.receive_json()
+    assert res["success"] and res["result"] == {"added": 2, "exists": 1, "failed": 0, "codes_added": 2,
+                                                "codes_skipped": 1, "categories_made": 1}, res
+    keys = {p["key"]: p for p in m.products()}
+    assert "cookies" in keys and keys["cookies"]["barcodes"] == ["4006381333931"]
+    assert m.category_by_id(keys["cookies"]["category_id"])["name"] == "Süßes"
+    assert not any(c["name"] == "Milchprodukte" for c in m.categories)  # Milch wurde übersprungen -> keine Kategorie
+    # nur Admins
+    ro = await hass_ws_client(hass, hass_read_only_access_token)
+    await ro.send_json({"id": 1, "type": "einkaufsliste/grocy/preview", "url": "x", "api_key": "y"})
+    assert (await ro.receive_json())["error"]["code"] == "unauthorized"
+
+
+async def test_grocy_errors(hass, setup, hass_ws_client, aioclient_mock):
+    """🥫 Grocy-Fehler kommen als verständliche Meldung (falscher Schlüssel, falsche Adresse, nicht erreichbar)."""
+    import aiohttp
+    client = await hass_ws_client(hass)
+    aioclient_mock.get("http://g1/api/objects/products", status=401)
+    aioclient_mock.get("http://g2/api/objects/products", status=404)
+    aioclient_mock.get("http://g3/api/objects/products", exc=aiohttp.ClientError())
+    aioclient_mock.get("http://g4/api/objects/products", text="<html>kein json</html>")
+    for n, (host, text) in enumerate([("g1", "Schlüssel"), ("g2", "kein Grocy"), ("g3", "nicht erreichbar"), ("g4", "lesbare")], 1):
+        await client.send_json({"id": n, "type": "einkaufsliste/grocy/preview", "url": host, "api_key": "k"})
+        res = await client.receive_json()
+        assert not res["success"] and text in res["error"]["message"], res
+    await client.send_json({"id": 9, "type": "einkaufsliste/grocy/preview", "url": "g1", "api_key": " "})
+    assert "Schlüssel" in (await client.receive_json())["error"]["message"]

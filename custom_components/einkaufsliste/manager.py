@@ -286,6 +286,9 @@ class EinkaufslisteManager:
         self.own_notes: dict[str, str] = {}  # ✏️ Produkt-Schlüssel -> Eigene Notiz
         self.catalog_extra: dict[str, dict[str, Any]] = {}  # 📦 im Katalog angelegte Varianten ohne Artikel/Barcode
         self.aliases: dict[str, dict[str, Any]] = {}  # 🏷️ Spitzname (klein) -> {"name", "note"} des Produkts
+        self.favorites: dict[str, dict[str, Any]] = {}  # ⭐ Produkt-Schlüssel -> {"name", "note"} (Favoriten für „alle auf die Liste“)
+        self.cards: list[dict[str, Any]] = []  # 💳 Kundenkarten {"id","name","code","fmt","owner","owner_name","color"} (owner = Benutzer-ID, None = für alle)
+        self.cards_on: bool = False  # 💳 Kundenkarten-Funktion an/aus (standardmäßig aus) – gilt für alle
         self.typos: dict[str, dict[str, Any]] = {}  # 🧠 Tippfehler (klein) -> {"right": Name, "n": wie oft korrigiert}
         self.pin_hash: str | None = None  # 🔒 PIN für die Einstellungen (nur als Prüfsumme gespeichert)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
@@ -385,6 +388,9 @@ class EinkaufslisteManager:
             cat.setdefault("color", CATEGORY_COLORS[k % len(CATEGORY_COLORS)])
         self.barcodes = data.get("barcodes", {})
         self.aliases = data.get("aliases", {})
+        self.favorites = data.get("favorites", {})
+        self.cards = data.get("cards", [])
+        self.cards_on = bool(data.get("cards_on", False))
         self.own_notes = data.get("own_notes", {})  # ✏️ Eigene Notiz pro Produkt (Name + Notiz)
         self.catalog_extra = data.get("catalog_extra", {})
         self._migrate_own_notes()
@@ -449,6 +455,9 @@ class EinkaufslisteManager:
             "seen": self.seen,
             "history": self.history,
             "aliases": self.aliases,
+            "favorites": self.favorites,
+            "cards": self.cards,
+            "cards_on": self.cards_on,
             "own_notes": self.own_notes,
             "catalog_extra": self.catalog_extra,
             "typos": self.typos,
@@ -519,6 +528,7 @@ class EinkaufslisteManager:
             "category_hints": category_hints(self.categories),
             "seen": self.seen,
             "own_notes": self.own_notes,
+            "favorites": sorted(self.favorites),  # ⭐ Produkt-Schlüssel (Name|Notiz, klein)
             # 📦 ganzer Katalog (kompakt) – damit die Vorschläge beim Eintippen JEDES Produkt kennen, auch Varianten ohne Verlauf
             "catalog": [{"name": p["name"], "note": p["note"], "own_note": p["own_note"],
                          "store_id": p["store_id"], "category_id": p["category_id"]} for p in self.products()],
@@ -536,6 +546,7 @@ class EinkaufslisteManager:
                 "app_url": self._app_url(),
                 "mascot": self.mascot,
                 "privacy": self.privacy,
+                "cards_on": self.cards_on,
                 "spend": self.spend,
                 "spend_auto": self.spend_auto,
                 "auto_shop": self.auto_shop,
@@ -781,6 +792,128 @@ class EinkaufslisteManager:
         self.mascot = bool(on)
         self._changed()
 
+    def set_cards_on(self, on: bool) -> None:
+        """💳 Kundenkarten für alle an- oder ausschalten (die gespeicherten Karten bleiben erhalten)."""
+        self.cards_on = bool(on)
+        self._changed()
+
+    # ------------------------------------------------------------------ ⭐ Favoriten
+    def set_favorite(self, name: str, note: str | None, value: bool) -> bool:
+        """⭐ Produkt als Favorit merken oder wieder loslassen."""
+        name = _nice(name)
+        if not name:
+            raise ValueError("Welches Produkt?")
+        key = product_key(name, _note(note))
+        prod = next((p for p in self.products() if p["key"] == key), None)
+        if value:
+            if prod is None:
+                raise ValueError("Dieses Produkt gibt es nicht (mehr).")
+            self.favorites[key] = {"name": prod["name"], "note": prod["note"]}
+        else:
+            self.favorites.pop(key, None)
+        self._changed()
+        return bool(value)
+
+    def _fav_move(self, from_key: str, name: str, note: str | None) -> None:
+        """⭐ Produkt umbenannt/zusammengeführt: der Favorit zieht mit um."""
+        if from_key in self.favorites:
+            self.favorites.pop(from_key, None)
+            self.favorites[product_key(name, note)] = {"name": name, "note": note}
+
+    def add_favorites(self, added_by: str | None = None, added_by_id: str | None = None) -> dict[str, Any]:
+        """⭐ Alle Favoriten auf die Einkaufsliste. Was schon offen darauf steht, kommt nicht doppelt."""
+        prods = {p["key"]: p for p in self.products()}
+        added: list[str] = []
+        skipped = 0
+        for key in list(self.favorites):
+            prod = prods.get(key)
+            if prod is None:  # Produkt gibt es nicht mehr
+                self.favorites.pop(key, None)
+                continue
+            if any(
+                not i["checked"] and not i.get("recipe_id") and product_key(i["name"], i.get("note")) == key
+                for i in self.items
+            ):
+                skipped += 1
+                continue
+            hist = self.history_for(prod["name"]) or {}
+            item = self.add_item(
+                prod["name"],
+                store_id=prod.get("store_id") if self.store_by_id(prod.get("store_id")) else None,
+                category_id=prod["category_id"] if self.category_by_id(prod.get("category_id")) else AUTO_CATEGORY,
+                quantity=hist.get("qty"),
+                note=prod["note"],
+                added_by=added_by,
+                added_by_id=added_by_id,
+            )
+            added.append(item["name"])
+        self._changed()
+        return {"added": added, "skipped": skipped}
+
+    # ------------------------------------------------------------------ 💳 Kundenkarten
+    CARD_FORMATS = ("auto", "qr", "ean13", "ean8", "code128")
+
+    def cards_for(self, user_id: str | None) -> list[dict[str, Any]]:
+        """💳 Die Karten, die dieser Benutzer sehen darf: seine eigenen und die „für alle“."""
+        out = []
+        for c in self.cards:
+            if c.get("owner") is None or (user_id and c.get("owner") == user_id):
+                out.append({
+                    "id": c["id"], "name": c["name"], "code": c["code"], "fmt": c.get("fmt", "auto"),
+                    "color": c.get("color"), "shared": c.get("owner") is None,
+                    "owner_name": c.get("owner_name"),
+                })
+        return sorted(out, key=lambda c: (c["shared"], c["name"].lower()))  # erst die eigenen, dann die für alle
+
+    def _card_checked(self, name: Any, code: Any, fmt: Any, color: Any) -> dict[str, Any]:
+        name = (_clean(name) or "")[:30]
+        code = (str(code or "").strip())[:300]
+        if not name:
+            raise ValueError("Die Karte braucht einen Namen, z. B. Payback.")
+        if not code:
+            raise ValueError("Ohne Nummer oder Code geht's nicht – bitte einscannen oder eintippen.")
+        fmt = fmt if fmt in self.CARD_FORMATS else "auto"
+        color = str(color or "").strip()
+        if color and not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
+            color = ""
+        return {"name": name, "code": code, "fmt": fmt, "color": color or None}
+
+    def add_card(self, name: Any, code: Any, fmt: Any, color: Any, shared: bool, user_id: str | None, user_name: str | None) -> dict[str, Any]:
+        """💳 Neue Karte: „für alle“ oder nur für den, der sie anlegt."""
+        fields = self._card_checked(name, code, fmt, color)
+        if len(self.cards) >= 80:
+            raise ValueError("Das sind schon sehr viele Karten – bitte erst eine löschen.")
+        if not shared and not user_id:
+            raise ValueError("Eine persönliche Karte geht nur mit Benutzerkonto – wähle „für alle“.")
+        if any(c["name"].lower() == fields["name"].lower() and (c.get("owner") is None or c.get("owner") == user_id) for c in self.cards):
+            raise ValueError(f"Die Karte „{fields['name']}“ gibt es schon.")
+        card = {"id": _new_id(), **fields, "owner": None if shared else user_id, "owner_name": None if shared else user_name}
+        self.cards.append(card)
+        self._changed()
+        return next(c for c in self.cards_for(user_id) if c["id"] == card["id"])
+
+    def _card_mine(self, card_id: str, user_id: str | None) -> dict[str, Any]:
+        card = next((c for c in self.cards if c["id"] == card_id), None)
+        if card is None or not (card.get("owner") is None or (user_id and card.get("owner") == user_id)):
+            raise ValueError("Diese Karte gibt es nicht (mehr).")
+        return card
+
+    def update_card(self, card_id: str, user_id: str | None, **fields: Any) -> dict[str, Any]:
+        card = self._card_mine(card_id, user_id)
+        new = self._card_checked(fields.get("name", card["name"]), fields.get("code", card["code"]),
+                                 fields.get("fmt", card.get("fmt")), fields.get("color", card.get("color")))
+        if any(c is not card and c["name"].lower() == new["name"].lower() and (c.get("owner") is None or c.get("owner") == user_id)
+               for c in self.cards):
+            raise ValueError(f"Die Karte „{new['name']}“ gibt es schon.")
+        card.update(new)
+        self._changed()
+        return next(c for c in self.cards_for(user_id) if c["id"] == card_id)
+
+    def remove_card(self, card_id: str, user_id: str | None) -> None:
+        card = self._card_mine(card_id, user_id)
+        self.cards.remove(card)
+        self._changed()
+
     # ------------------------------------------------------------------ 🧾 Einkaufs-Protokoll
     def set_spend(self, on: bool) -> None:
         """🧾 Einkaufs-Protokoll für alle an- oder ausschalten (die Einträge bleiben erhalten)."""
@@ -1007,6 +1140,7 @@ class EinkaufslisteManager:
                     "last_bought": None,  # 🗓️ zuletzt abgehakt
                     "last_added": None,  # 🗓️ zuletzt eingetragen
                     "in_recipes": 0,  # 🍳 in so vielen Rezepten
+                    "favorite": key in self.favorites,  # ⭐
                 }
             return out[key]
 
@@ -1130,6 +1264,7 @@ class EinkaufslisteManager:
                 if store_id is not None:
                     bc["store_id"] = store
         self._al_retarget(key, new_name, new_note)  # 🏷️ Spitznamen zeigen aufs neue Produkt
+        self._fav_move(key, new_name, new_note)  # ⭐ Favorit zieht mit
         if new_key != key and key in self.catalog_extra:
             self.catalog_extra.pop(key)
             self.catalog_extra[new_key] = {"name": new_name, "note": new_note}
@@ -1401,6 +1536,7 @@ class EinkaufslisteManager:
             if bc.get("name") and product_key(bc["name"], bc.get("note")) == from_key:
                 bc["name"], bc["note"] = name, note
         self._al_retarget(from_key, name, note)
+        self._fav_move(from_key, name, note)  # ⭐ ist eines von beiden Favorit, bleibt das Ziel Favorit
         self.catalog_extra.pop(from_key, None)
         if from_key in self.own_notes:  # ✏️ Eigene Notiz: die vom Ziel bleibt, sonst zieht sie um
             moved_own = self.own_notes.pop(from_key)
@@ -1474,6 +1610,7 @@ class EinkaufslisteManager:
         await self.async_remove_photo(key)
         self.own_notes.pop(key, None)
         self.catalog_extra.pop(key, None)
+        self.favorites.pop(key, None)
         self._changed()
 
     # ------------------------------------------------------------------ Fehler-Protokoll
@@ -1906,6 +2043,9 @@ class EinkaufslisteManager:
             if old_pkey != new_pkey:  # umbenannt: die alten Spitznamen ziehen mit
                 self._al_retarget(old_pkey, item["name"], item.get("note"))
             self.set_aliases(new_pkey, aliases)
+        new_fav_key = product_key(item["name"], item.get("note"))
+        if old_pkey != new_fav_key:  # ⭐ umbenannt: der Favorit zieht mit
+            self._fav_move(old_pkey, item["name"], item.get("note"))
         self._changed()
         return item
 

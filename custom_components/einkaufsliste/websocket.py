@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .barcode import async_auto_photo, async_lookup, async_product_info, async_refresh_photo
+from .grocy_import import async_fetch, import_rows
 from .recipe_import import async_import
 from .const import DOMAIN, SIGNAL_UPDATED
 from .mail_import import mail_sources
@@ -68,6 +69,15 @@ def async_register(hass: HomeAssistant) -> None:
         ws_mail_sources,
         ws_mail_import,
         ws_mascot,
+        ws_cards_enable,
+        ws_grocy_preview,
+        ws_grocy_import,
+        ws_cards_list,
+        ws_card_add,
+        ws_card_update,
+        ws_card_remove,
+        ws_favorite_set,
+        ws_favorites_add,
         ws_privacy_set,
         ws_spend_set,
         ws_auto_shop_set,
@@ -1041,3 +1051,134 @@ def ws_errors_report(hass, connection, msg):
 @websocket_api.async_response
 async def ws_product_merge(hass, connection, msg):
     await _run_async(hass, connection, msg, lambda m: m.async_merge_products(msg["from_key"], msg["into_key"]))
+
+
+# ---------------------------------------------------------------- ⭐ Favoriten
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/favorite/set",
+        vol.Required("name"): str,
+        vol.Optional("note"): OPT_STR,
+        vol.Required("value"): bool,
+    }
+)
+@callback
+def ws_favorite_set(hass, connection, msg):
+    """⭐ Produkt als Favorit merken/loslassen."""
+    _run(hass, connection, msg, lambda m: m.set_favorite(msg["name"], msg.get("note"), msg["value"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/favorites/add"})
+@callback
+def ws_favorites_add(hass, connection, msg):
+    """⭐ Alle Favoriten auf die Einkaufsliste."""
+    _run(
+        hass, connection, msg,
+        lambda m: m.add_favorites(_user_name(hass, connection), connection.user.id if connection.user else None),
+    )
+
+
+# ---------------------------------------------------------------- 💳 Kundenkarten
+def _uid(connection) -> str | None:
+    return connection.user.id if connection.user else None
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/cards/enable", vol.Required("on"): bool})
+@callback
+def ws_cards_enable(hass, connection, msg):
+    """💳 Kundenkarten für alle an/aus."""
+    _run(hass, connection, msg, lambda m: m.set_cards_on(msg["on"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/cards/list"})
+@callback
+def ws_cards_list(hass, connection, msg):
+    """💳 Meine Karten (eigene + „für alle“). Die Codes gehen NICHT in die große Daten-Antwort, damit „nur für mich“ privat bleibt."""
+    _run(hass, connection, msg, lambda m: m.cards_for(_uid(connection)))
+
+
+CARD_FIELDS = {
+    vol.Required("name"): str,
+    vol.Required("code"): str,
+    vol.Optional("fmt"): str,
+    vol.Optional("color"): OPT_STR,
+}
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/card/add", **CARD_FIELDS, vol.Optional("shared", default=True): bool}
+)
+@callback
+def ws_card_add(hass, connection, msg):
+    """💳 Karte anlegen („für alle“ oder nur für mich)."""
+    _run(
+        hass, connection, msg,
+        lambda m: m.add_card(msg["name"], msg["code"], msg.get("fmt"), msg.get("color"), msg["shared"],
+                             _uid(connection), _user_name(hass, connection)),
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/card/update",
+        vol.Required("card_id"): str,
+        vol.Optional("name"): str,
+        vol.Optional("code"): str,
+        vol.Optional("fmt"): str,
+        vol.Optional("color"): OPT_STR,
+    }
+)
+@callback
+def ws_card_update(hass, connection, msg):
+    """💳 Karte ändern."""
+    fields = _pick(msg, "name", "code", "fmt", "color")
+    _run(hass, connection, msg, lambda m: m.update_card(msg["card_id"], _uid(connection), **fields))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/card/remove", vol.Required("card_id"): str})
+@callback
+def ws_card_remove(hass, connection, msg):
+    """💳 Karte löschen."""
+    _run(hass, connection, msg, lambda m: m.remove_card(msg["card_id"], _uid(connection)))
+
+
+# ---------------------------------------------------------------- 🥫 Grocy-Import (nur Admin: es ruft ein anderes Gerät im Netz ab)
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/grocy/preview", vol.Required("url"): str, vol.Required("api_key"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_grocy_preview(hass, connection, msg):
+    """🥫 Produkte aus Grocy holen (Vorschau). Der Schlüssel wird nicht gespeichert."""
+    try:
+        res = await async_fetch(hass, msg["url"], msg["api_key"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    existing = {}
+    manager = _manager(hass)
+    if manager is not None:
+        existing = manager.history
+    for row in res["rows"]:
+        row["exists"] = row["name"].lower() in existing
+    connection.send_result(msg["id"], res)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/grocy/import",
+        vol.Required("rows"): [
+            {
+                vol.Required("name"): str,
+                vol.Optional("group"): OPT_STR,
+                vol.Optional("barcodes"): [str],
+            }
+        ],
+        vol.Optional("make_categories", default=True): bool,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_grocy_import(hass, connection, msg):
+    """🥫 Die gewählten Grocy-Produkte in den Katalog übernehmen."""
+    _run(hass, connection, msg, lambda m: import_rows(m, msg["rows"], msg["make_categories"]))
