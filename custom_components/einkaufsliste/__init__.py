@@ -19,8 +19,8 @@ from homeassistant.helpers.typing import ConfigType
 
 from . import errors as error_log
 from . import websocket as ws
-from .const import DOMAIN
-from .frontend import async_setup_frontend
+from .const import CONF_SIDEBAR, DOMAIN
+from .frontend import async_set_sidebar, async_setup_frontend
 from .transfer import async_register_views
 from .manager import EinkaufslisteManager, person_name_for_user
 from .todo_sync import TodoSync
@@ -86,6 +86,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(lambda: error_log.detach(handler))
     entry.async_on_unload(manager.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+    await async_set_sidebar(hass, bool(entry.options.get(CONF_SIDEBAR, False)))  # 📌 nur wenn eingeschaltet
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -93,6 +94,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
+        await async_set_sidebar(hass, False)
         manager: EinkaufslisteManager | None = hass.data[DOMAIN].pop("manager", None)
         if manager is not None:
             await manager.async_save_now()

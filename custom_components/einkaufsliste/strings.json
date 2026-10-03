@@ -7,12 +7,14 @@
         "data": {
           "cleanup_weekday": "Cleanup weekday",
           "cleanup_time": "Time",
-          "min_age_days": "Minimum days on the list"
+          "min_age_days": "Minimum days on the list",
+          "sidebar": "📌 Show in sidebar"
         },
         "data_description": {
           "cleanup_weekday": "Day of the weekly cleanup.",
           "cleanup_time": "Time of the cleanup.",
-          "min_age_days": "On cleanup day, open items that have been on the list at least this many days are checked automatically. Nothing is deleted."
+          "min_age_days": "On cleanup day, open items that have been on the list at least this many days are checked automatically. Nothing is deleted.",
+          "sidebar": "Adds a \"Einkaufsliste\" entry to the sidebar (full-page view). Off by default."
         }
       }
     },
@@ -28,13 +30,15 @@
           "cleanup_weekday": "Cleanup weekday",
           "cleanup_time": "Time",
           "min_age_days": "Minimum days on the list",
-          "reset_pin": "🔒 PIN für die Einstellungen zurücksetzen"
+          "reset_pin": "🔒 PIN für die Einstellungen zurücksetzen",
+          "sidebar": "📌 Show in sidebar"
         },
         "data_description": {
           "cleanup_weekday": "Day of the weekly cleanup.",
           "cleanup_time": "Time of the cleanup.",
           "min_age_days": "On cleanup day, open items that have been on the list at least this many days are checked automatically. Nothing is deleted.",
-          "reset_pin": "Anhaken, wenn die PIN für das Zahnrad in der Karte vergessen wurde. Danach ist das Zahnrad wieder ohne PIN offen."
+          "reset_pin": "Anhaken, wenn die PIN für das Zahnrad in der Karte vergessen wurde. Danach ist das Zahnrad wieder ohne PIN offen.",
+          "sidebar": "Adds a \"Einkaufsliste\" entry to the sidebar (full-page view). Off by default."
         }
       }
     }

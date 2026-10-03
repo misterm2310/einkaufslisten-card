@@ -2895,6 +2895,8 @@ class EinkaufslisteManager:
             recipe["items"] = new_items
         if "steps" in fields:
             recipe["steps"] = _clean_steps(fields["steps"])
+            if fields.get("step_map") is not None:
+                self._remap_step_photos(recipe_id, fields["step_map"], recipe_step_count(recipe))
         if "heat" in fields:
             recipe["heat"] = _clean_heat(fields["heat"])
         if "servings" in fields:
@@ -2905,6 +2907,28 @@ class EinkaufslisteManager:
             recipe["group"] = self._group(fields["group"])
         self._changed()
         return recipe
+
+    def _remap_step_photos(self, recipe_id: str, step_map: list[int | None], count: int) -> None:
+        """↕️ Schritte wurden verschoben/gelöscht: die Schritt-Fotos wandern mit.
+
+        step_map[neu] = alter Platz des Schritts (None = neuer Schritt). Fotos von Schritten,
+        die es nicht mehr gibt, werden gelöscht.
+        """
+        base = recipe_photo_key(recipe_id) + "#s"
+        old: dict[int, dict[str, Any]] = {}
+        for key in [k for k in self.photos if k.startswith(base) and k[len(base):].isdigit()]:
+            old[int(key[len(base):])] = self.photos.pop(key)
+        if not old:
+            return
+        used: set[int] = set()
+        for new_i, old_i in enumerate(list(step_map)[:count]):
+            if isinstance(old_i, int) and not isinstance(old_i, bool) and old_i in old and old_i not in used:
+                self.photos[recipe_step_photo_key(recipe_id, new_i)] = old[old_i]
+                used.add(old_i)
+        for old_i, entry in old.items():
+            if old_i not in used:
+                for pid in self._photo_ids(entry):
+                    self.hass.async_create_task(self._async_delete_file(pid))
 
     @callback
     def remove_recipe(self, recipe_id: str) -> None:

@@ -34,6 +34,7 @@
 | ⏲️ **Gar-Zeiten** | Spickzettel nach Gerät: 🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse. |
 | 🧹 **Aufräumen** | Einmal pro Woche wird Altes **abgehakt**, gelöscht wird nichts. |
 | 🔒 **PIN** | Das Zahnrad (Einstellungen) nur mit PIN – die Liste bleibt für alle offen. |
+| 📌 **Seitenleiste** | Auf Wunsch ein eigener Eintrag links in der Seitenleiste (die Liste auf der ganzen Seite, ohne eigenes Dashboard). Standardmäßig **aus**: Geräte & Dienste → Einkaufsliste → Konfigurieren → „In der Seitenleiste anzeigen“. |
 | 📸 **Text aus Foto** | Einkaufszettel oder Kassenbon fotografieren, die Karte liest den Text direkt auf dem Gerät (Handschrift klappt nur mit Glück – Text vorher korrigierbar). Überschriften wie „Aldi:“ im Zettel ordnen Artikel dem Geschäft zu, beim Bon kannst du bei mehreren Beträgen den richtigen antippen. Dazu: 🩺 Gesundheits-Ampel (auch als Sensor `sensor.einkaufsliste_gesundheit`), 🐞 Fehler-Protokoll, 🧲 Produkte zusammenführen. |
 | 🌍 **Deutsch & Englisch** | Die Karte spricht die Sprache von Home Assistant. |
 
@@ -130,7 +131,7 @@ Die Einstellungen sind eine **Liste mit Überschriften** – **📋 Meine Liste 
 |---|---|
 | 🏪 **Geschäfte** | Jedes Geschäft als eigene Kachel. Antippen = Name, Farbe, Icon, Reihenfolge, 📍 Zonen (mehrere, z. B. für mehrere Filialen), 🏷️ Eigenmarken und 🗺️ **Kategorien-Folge** (Standard: wie überall – oder eigene, so wie du durch den Laden läufst). Ohne eigenes Icon nimmt die Liste das Icon der Zone (falls sie eins hat), sonst 🛒. |
 | 🗂️ **Kategorien** · 👥 **Personen** | Anlegen, umbenennen, Farbe, Icon (einfach „hund“ tippen, ohne „mdi:“), sortieren. |
-| 👨‍🍳 **Rezepte** | Zwei Reiter: **Rezepte** (neu, bearbeiten, löschen) und **Rezept-Gruppen**. |
+| 👨‍🍳 **Rezepte** | Zwei Reiter: **Rezepte** (neu, bearbeiten, löschen) und **Rezept-Gruppen**. Die Zubereitung hat **eine Zeile pro Schritt** (mit Foto); die Schritte lassen sich am **⠿** ziehen (oder mit ↑ ↓) **verschieben** – die Fotos wandern mit. |
 | 📦 **Produkte** | Alles, was die Liste kennt: umbenennen, Kategorie, Geschäft („Gibt's bei“), Spitznamen, Fotos, Barcodes, gelernte Tippfehler, ganz löschen. Dazu „Neu gescannt“ zum Prüfen, 🔽 Filter (ohne Kategorie, ohne Foto, pro Geschäft …) und **➕** (neues Produkt) und **▥** (per Barcode: scannen, Namen bestätigen). Der Filter **🗓️ Seit 3 Monaten nicht gekauft** (zuletzt abgehakt, sonst zuletzt eingetragen; nichts, was auf der Liste oder in einem Rezept steht) zeigt Produkte zum Aufräumen – einzeln oder **alle auf einmal löschen**. Am PC: Klick markiert, ↑↓ blättert, Doppelklick/Enter bearbeitet – genauso in **Einkaufsliste**, **Rezepten** und **Gelöscht** (Leertaste hakt ab, Esc geht zurück, die ⚙️-PIN bestätigt Enter). · **▥ Barcode nachtragen** (im Produkt: Nummer tippen – Enter bestätigt – oder scannen; danach schaut die Liste in der Datenbank nach) · **🗄️ Daten neu laden** (Produkt mit Barcode: zeigt Name, Notiz, Nutri-Score und Allergene aus der Datenbank neben deinen Daten; du hakst einzeln Name, Notiz und/oder Foto an) · **✏️ Eigene Notiz** (das einzige Notiz-Feld zum Selbertippen, bleibt beim Produkt, wird von der Datenbank nie überschrieben; die 📝 Notiz kommt nur noch aus dem Barcode; alte, selbst getippte Notizen zeigt die Liste automatisch als ✏️; im Katalog steht hinter dem Namen die Barcode-Notiz, sonst die ✏️) · **🔄 Alles neu holen** (Wolken-Symbol bei „Alle Produkte“: du wählst Foto (vorausgewählt), Name und/oder Notiz, dann geht es nacheinander durch alle Produkte mit Barcode; eigene Fotos und ✏️ Eigene Notiz bleiben; kleine Pausen, Wiederholung bei Fehlern, alle Barcodes werden probiert; am Ende ein Bericht pro Produkt: angepasst, schon gleich, Datenbank kennt nichts/nicht erreichbar, kein Foto) · **🔎 Suche** findet nach Name, Notizen, Spitznamen, Barcode-Nummer, Kategorie, Geschäft und gelernten Tippfehlern · **🏷️ Spitznamen** lassen sich auch beim Bearbeiten eines Artikels eintragen (lange drücken → Bearbeiten, mehrere mit Komma) |
 | 💾🩺 **Daten & Gesundheit** | **Alles ok?** (findet kaputte Einträge; bei jedem Fund 🔧 Beheben, ✏️ Selbst ändern und – wo nötig – eine Auswahl, oder anhaken und alles auf einmal reparieren) · **Import & Sicherung** (Rezepte aus Datei, Listen aus anderen Apps – einmal oder 🔁 automatisch –, Sicherung als .zip; Datei-Import und Sicherung nur Admins) · **Verlauf** (wer hat wann was gemacht, „📈 Oft nicht bekommen“, per ✖ ausblendbar) · **Aufräumen** · **📊 Ressourcen** (wie viel Platz Daten und Fotos brauchen) · **🏷️ Angebote** (siehe unten) |
 | 🎛️📱 **Extras, App & Info** | **Offline-App** (deine Adresse mit „Kopieren“) · **Maskottchen** 🛒😊 (Schalter gilt für alle) · **📍 Laden-Modus automatisch** (Schalter gilt für alle Geräte, auch in der Offline-App; der Standort bleibt bei jedem selbst: er geht nur an, wenn *dein* Handy in die Zone kommt) · **🧾 Einkaufs-Protokoll** (Schalter gilt für alle, siehe unten) · **Schutz** (PIN 4–8 Ziffern fürs Zahnrad; vergessen? Geräte & Dienste → Einkaufsliste → Konfigurieren → „PIN zurücksetzen“, nur Admins – ehrlich gesagt: Schutz vor Verstellen, kein Tresor). Solange das Zahnrad offen ist, steht oben ein 🔓 – antippen sperrt sofort · **Hell / Dunkel** (nur in der Offline-App: automatisch, hell oder dunkel) |
@@ -244,6 +245,13 @@ actions:
 **Wo liegen die Daten?** Lokal in Home Assistant (`/config/.storage/einkaufsliste.data`, Fotos in `/config/einkaufsliste_fotos`). Keine Cloud. Deine HA-Backups sichern alles mit, dazu gibt's ⚙️ → Daten → Import & Sicherung.
 
 **Die Karte sagt „Integration nicht eingerichtet“.** Dann fehlt Schritt 4 der Installation.
+
+---
+
+## 💡 Ideen, Wünsche und Fehler
+
+- **Idee oder Wunsch?** Schreib sie bei den [Diskussionen](https://github.com/misterm2310/einkaufslisten-card/discussions) (Kategorie **Ideas**). Dort kann jeder mit 👍 zustimmen und mitreden. Auch **Abstimmungen** laufen dort.
+- **Etwas funktioniert nicht?** Mach ein [Issue](https://github.com/misterm2310/einkaufslisten-card/issues) auf. Hilfreich: deine Version (steht unter ⚙️ → Credits), was du getan hast und was passiert ist. Das **🐞 Fehler-Protokoll** (⚙️ → Gesundheit) hat oft schon die Antwort; es lässt sich mit einem Tipp kopieren.
 
 ---
 

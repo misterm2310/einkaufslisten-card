@@ -369,7 +369,7 @@ async def test_config_flow(hass):
             {"cleanup_weekday": "5", "cleanup_time": "04:30:00", "min_age_days": 14},
         )
     assert result["type"] == "create_entry"
-    assert result["options"] == {"cleanup_weekday": 5, "cleanup_time": "04:30:00", "min_age_days": 14}
+    assert result["options"] == {"cleanup_weekday": 5, "cleanup_time": "04:30:00", "min_age_days": 14, "sidebar": False}
 
 
 async def test_card_is_registered_as_resource(hass, hass_storage):
@@ -395,6 +395,69 @@ async def test_card_is_registered_as_resource(hass, hass_storage):
     items = hass.data[LOVELACE_DATA].resources.async_items()
     urls = [i["url"] for i in items if "einkaufsliste" in i["url"]]
     assert urls == [f"/einkaufsliste_files/einkaufsliste-card.js?v={VERSION}"]  # kein Doppel
+
+
+async def test_sidebar_panel_is_an_option(hass):
+    """📌 Seitenleiste: standardmäßig aus, per Option an, beim Ausschalten wieder weg."""
+    from homeassistant.components import frontend
+
+    await hass.config.async_set_time_zone(TZ)
+    assert await async_setup_component(hass, "http", {})
+    assert await async_setup_component(hass, "lovelace", {})
+    hass.config.components.add("frontend")
+    entry = MockConfigEntry(domain=DOMAIN, options={"cleanup_weekday": 6, "cleanup_time": "03:00:00", "min_age_days": 7})
+    entry.add_to_hass(hass)
+    with patch("custom_components.einkaufsliste.frontend.add_extra_js_url"):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        panels = lambda: hass.data.get(frontend.DATA_PANELS, {})  # noqa: E731
+        assert "einkaufsliste" not in panels()  # Standard: kein Eintrag
+
+        hass.config_entries.async_update_entry(entry, options={**entry.options, "sidebar": True})
+        await hass.async_block_till_done()
+        panel = panels()["einkaufsliste"]
+        assert panel.sidebar_title == "Einkaufsliste" and panel.sidebar_icon == "mdi:cart"
+        assert panel.require_admin is False
+        assert panel.config["_panel_custom"]["module_url"].startswith("/einkaufsliste_files/einkaufsliste-panel.js")
+        assert panel.config["card_url"].startswith("/einkaufsliste_files/einkaufsliste-card.js")
+
+        hass.config_entries.async_update_entry(entry, options={**entry.options, "sidebar": False})
+        await hass.async_block_till_done()
+        assert "einkaufsliste" not in panels()
+
+
+async def test_step_photos_move_with_steps(hass, setup, hass_ws_client):
+    """↕️ Schritte verschieben/löschen: die Schritt-Fotos wandern mit, Fotos gelöschter Schritte verschwinden."""
+    import base64
+
+    m = mgr(hass)
+    r = m.add_recipe("Nudeln", [{"name": "Nudeln"}], steps="Wasser kochen\nNudeln rein\nAbgießen")
+    rid = r["id"]
+    for n in (0, 2):
+        await m.async_set_photo(f"rezept#{rid}#s{n}", base64.b64encode(JPEG).decode())
+    id0 = m.photos[f"rezept#{rid}#s0".lower()]["id"]
+    id2 = m.photos[f"rezept#{rid}#s2".lower()]["id"]
+    client = await hass_ws_client(hass)
+    # neue Reihenfolge: Abgießen(alt 2), Wasser kochen(alt 0), neuer Schritt; „Nudeln rein“ (alt 1) fliegt raus
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/update", "recipe_id": rid,
+                            "steps": "Abgießen\nWasser kochen\nSoße rühren", "step_map": [2, 0, None]})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert m.photos[f"rezept#{rid}#s0".lower()]["id"] == id2
+    assert m.photos[f"rezept#{rid}#s1".lower()]["id"] == id0
+    assert f"rezept#{rid}#s2".lower() not in m.photos
+    # Schritt gelöscht: sein Foto geht mit
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/update", "recipe_id": rid,
+                            "steps": "Wasser kochen", "step_map": [1]})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert list(k for k in m.photos if k.startswith(f"rezept#{rid}#s".lower())) == [f"rezept#{rid}#s0".lower()]
+    assert m.photos[f"rezept#{rid}#s0".lower()]["id"] == id0
+    assert not m._photo_path(id2).exists()
+    # ohne step_map bleibt alles beim Alten
+    await client.send_json({"id": 3, "type": "einkaufsliste/recipe/update", "recipe_id": rid, "steps": "Wasser sieden"})
+    assert (await client.receive_json())["success"]
+    assert m.photos[f"rezept#{rid}#s0".lower()]["id"] == id0
 
 
 async def test_persons(hass, setup, hass_ws_client):

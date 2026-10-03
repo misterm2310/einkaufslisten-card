@@ -1511,5 +1511,13 @@
 "Neue Kategorie, z. B. Getränke": "New category, e.g. beverages",
 "z. B. 4": "e.g. 4",
 "z. B. Milch": "e.g. milk",
-"z. B. 4012345678901": "e.g. 4012345678901"
+"z. B. 4012345678901": "e.g. 4012345678901",
+"z. B. Nudeln 10 Minuten kochen": "e.g. Boil pasta for 10 minutes",
+"Schritt": "Step",
+"Zum Verschieben ziehen (oder ↑ ↓ drücken)": "Drag to move (or press ↑ ↓)",
+"Schritt verschieben": "Move step",
+"Schritt löschen": "Delete step",
+"Dieser Schritt hat Fotos. Schritt trotzdem löschen? (Die Fotos gehen beim Speichern mit weg.)": "This step has photos. Delete it anyway? (The photos are removed when you save.)",
+"📷 Fotos zu Schritten (erscheinen im Koch-Modus) gehen bei Schritten, die schon gespeichert sind. Verschieben: am ⠿ ziehen (oder ⠿ antippen und ↑ ↓ drücken) – die Fotos wandern mit.": "📷 Step photos (shown in cooking mode) work for steps that are already saved. Moving: drag the ⠿ (or tap ⠿ and press ↑ ↓) – the photos move along.",
+"📷 Fotos zu Schritten (erscheinen im Koch-Modus) gehen bei Schritten, die schon gespeichert sind – also Rezept einmal speichern, dann wieder öffnen. Verschieben: am ⠿ ziehen (oder ⠿ antippen und ↑ ↓ drücken) – die Fotos wandern mit.": "📷 Step photos (shown in cooking mode) work for steps that are already saved – so save the recipe once, then open it again. Moving: drag the ⠿ (or tap ⠿ and press ↑ ↓) – the photos move along."
 }

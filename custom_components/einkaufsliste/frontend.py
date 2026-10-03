@@ -9,7 +9,7 @@ from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 
-from .const import CARD_FILENAME, STATIC_URL, VERSION
+from .const import CARD_FILENAME, PANEL_FILENAME, PANEL_URL_PATH, STATIC_URL, VERSION
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -67,3 +67,26 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
             exc_info=True,
         )
         add_extra_js_url(hass, versioned)
+
+
+async def async_set_sidebar(hass: HomeAssistant, enabled: bool) -> None:
+    """📌 Einkaufsliste als eigener Eintrag in der Seitenleiste (Option, standardmäßig aus)."""
+    from homeassistant.components import frontend, panel_custom  # noqa: PLC0415
+
+    if not enabled:
+        if PANEL_URL_PATH in hass.data.get(frontend.DATA_PANELS, {}):
+            frontend.async_remove_panel(hass, PANEL_URL_PATH)
+        return
+    try:
+        await panel_custom.async_register_panel(
+            hass,
+            webcomponent_name="einkaufsliste-panel",
+            frontend_url_path=PANEL_URL_PATH,
+            module_url=f"{STATIC_URL}/{PANEL_FILENAME}?v={VERSION}",
+            sidebar_title="Einkaufsliste",
+            sidebar_icon="mdi:cart",
+            require_admin=False,
+            config={"card_url": f"{CARD_URL}?v={VERSION}"},
+        )
+    except Exception:  # noqa: BLE001
+        _LOGGER.warning("Seitenleisten-Eintrag konnte nicht angelegt werden", exc_info=True)

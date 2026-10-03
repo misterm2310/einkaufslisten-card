@@ -2,10 +2,14 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.1";
+const EL_VERSION = "2.53.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.53.1"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.53.2"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["📌 <b>Seitenleiste (Option):</b> Unter Geräte &amp; Dienste → Einkaufsliste → Konfigurieren gibt es „In der Seitenleiste anzeigen“ – dann steht die Liste links als eigener Eintrag auf der ganzen Seite. Standardmäßig aus. · ↕️ <b>Rezept-Schritte:</b> Im Rezept-Editor hat jeder Schritt der Zubereitung eine eigene Zeile mit Foto; am ⠿ ziehen (oder ↑ ↓) verschiebt sie, die Fotos wandern mit. ➕ Schritt, ✖ löschen.",
+   "📌 <b>Sidebar (option):</b> under Devices &amp; services → Einkaufsliste → Configure there is “Show in sidebar” – the list then gets its own full-page entry on the left. Off by default. · ↕️ <b>Recipe steps:</b> in the recipe editor every step of the instructions has its own row with a photo; drag the ⠿ (or ↑ ↓) to move it, the photos move along. ➕ Step, ✖ delete."],
+  ["💡 <b>Ideen und Fehler melden:</b> In den Credits gibt es jetzt zwei Knöpfe: „💡 Idee oder Wunsch“ (GitHub-Diskussionen, dort läuft auch die Abstimmung) und „🐞 Fehler melden“.",
+   "💡 <b>Report ideas and bugs:</b> the credits now have two buttons: “💡 Idea or request” (GitHub Discussions, where polls run too) and “🐞 Report a bug”."],
   ["🏷️ <b>Spitznamen beim Bearbeiten:</b> Artikel lange drücken → Bearbeiten hat jetzt ein Feld für Spitznamen (mehrere mit Komma). · 💡 <b>Beispiele in leeren Feldern:</b> Alle leeren Eingabefelder zeigen ein grau hinterlegtes Beispiel, z. B. „z. B. Milch“. Beim Mengen-Feld passt es zum Produkt („z. B. 2 L“, „z. B. 10x“, „z. B. 500 g“).",
    "🏷️ <b>Nicknames when editing:</b> long-press an item → Edit now has a field for nicknames (several separated by commas). · 💡 <b>Examples in empty fields:</b> every empty input field shows a grey example, e.g. “e.g. milk”. For the quantity field it fits the product (“e.g. 2 L”, “e.g. 10x”, “e.g. 500 g”)."],
   ["🌓 <b>Anleitungen in Hell und Dunkel:</b> Die Anleitungen (🛒 und ⚙️) sind nicht mehr immer dunkel, sondern folgen der Karte – in der Offline-App deiner Auswahl, sonst dem Home-Assistant-Design.",
@@ -1332,6 +1336,15 @@ ha-card.compact .group { margin-top:4px; }
 .health small { display:block; color:var(--secondary-text-color); }
 .errrow { padding:6px 8px; border-radius:10px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:4px 0; font-size:.9em; word-break:break-word; }
 .errrow small { color:var(--secondary-text-color); display:block; }
+.strows { display:flex; flex-direction:column; gap:6px; margin:6px 0; }
+.strow { display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px; }
+.strow.dropbefore { box-shadow:0 -3px 0 0 var(--primary-color); } .strow.dropafter { box-shadow:0 3px 0 0 var(--primary-color); }
+.strow.dragging { position:relative; z-index:2; opacity:.7; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:10px; }
+.sthandle { flex:none; border:none; background:none; color:var(--secondary-text-color); font-size:1.3em; line-height:1; padding:8px 4px; cursor:grab; touch-action:none; user-select:none; }
+.sthandle:focus-visible { outline:2px solid var(--primary-color); border-radius:6px; }
+.stbtns { display:flex; gap:6px; flex:none; margin-left:auto; padding-left:30px; }
+.stnum { flex:none; padding-top:9px; min-width:1.6em; text-align:right; color:var(--secondary-text-color); font-size:.9em; }
+.stin { flex:1 1 150px; min-width:0; box-sizing:border-box; font:inherit; font-size:.92em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:8px 10px; resize:none; overflow:hidden; }
 .sprow { display:flex; align-items:center; gap:6px; margin:4px 0; }
 .sprow .sptxt { flex:1; font-size:.9em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pemerge { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; border-radius:10px; border:1px dashed var(--divider-color, rgba(127,127,127,.4)); }
@@ -1937,6 +1950,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._pending = new Set();
     this._picker = null; // welches Icon-Feld gerade sucht
     this._photoCache = new Map();
+    this._stepSeq = 0;
     this._newPhoto = null;
   }
 
@@ -2943,7 +2957,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", codes ? "Barcode ✓" : "Barcode", codes ? "#8e24aa" : "") : ""}
         ${codes ? b("menu-info", "mdi:information-outline", "Infos", "#00acc1") : ""}
         ${this._offersFor(item).length ? b("menu-offers", "mdi:tag-outline", "Angebote", "#e53935") : ""}
-        <button class="iconbtn" data-act="menu-close" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
+        <button class="iconbtn" data-act="menu-close" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></span>
       </div>`;
   }
 
@@ -4621,8 +4635,8 @@ class EinkaufslisteCard extends HTMLElement {
 
   _openRecipe(recipe) {
     this._draft = recipe
-      ? { id: recipe.id, name: recipe.name, group: recipe.group || null, steps: recipe.steps || "", servings: recipe.servings || null, servings_unit: recipe.servings_unit || "persons", heat: (recipe.heat || []).map((h) => ({ ...h })), items: abcSort(recipe.items.map((i) => ({ ...i }))) }
-      : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [], heat: [] };
+      ? { id: recipe.id, name: recipe.name, group: recipe.group || null, steps: recipe.steps || "", stepRows: this._stepLines(recipe.steps).map((t, i) => ({ k: ++this._stepSeq, t, o: i })), servings: recipe.servings || null, servings_unit: recipe.servings_unit || "persons", heat: (recipe.heat || []).map((h) => ({ ...h })), items: abcSort(recipe.items.map((i) => ({ ...i }))) }
+      : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [], heat: [], stepRows: [] };
     this._view = "recipe";
     this._draftRendered = false;
     this._renderAll();
@@ -4672,7 +4686,8 @@ class EinkaufslisteCard extends HTMLElement {
         <div id="rHeat"></div>
         <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
         <h3 class="rsub"><ha-icon icon="mdi:chef-hat"></ha-icon>Zubereitung</h3>
-        <textarea id="rSteps" class="rsteps" rows="5" placeholder="Ein Schritt pro Zeile, z. B.&#10;Nudeln 10 Minuten kochen&#10;Soße anrühren">${esc(dr.steps || "")}</textarea>
+        <div id="rStepRows" class="strows"></div>
+        <div class="btnrow"><button type="button" class="btn" data-act="step-add"><ha-icon icon="mdi:plus"></ha-icon>Schritt</button></div>
         <div id="rStepPhotos"></div>
         <p class="hint">Eintragen geht genau wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode (auch „📦 Mehrere scannen“) – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie, die bei diesem Produkt zuletzt benutzt wurden.</p>
         <div class="btnrow" style="justify-content:space-between">
@@ -4687,8 +4702,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._renderRecipeItems();
     this._renderHeat();
     this._renderRecipePhoto();
-    this._renderStepPhotos();
-    this.$("rSteps")?.addEventListener("input", () => { clearTimeout(this._spT); this._spT = setTimeout(() => this._renderStepPhotos(), 400); });
+    this._renderSteps();
     this._groupAuto = !dr.group; // ohne Gruppe: aus dem Namen vorschlagen
     this._autoGroup();
   }
@@ -4700,21 +4714,131 @@ class EinkaufslisteCard extends HTMLElement {
   _stepPhotoKey(id, n) { return `rezept#${id}#s${n}`.toLowerCase(); }
   _stepLines(text) { return String(text || "").split(/\n+/).map((x) => x.trim()).filter(Boolean); }
 
-  _renderStepPhotos() {
-    const box = this.$("rStepPhotos");
+  // 👨‍🍳 Zubereitung: ein Schritt = eine Zeile (mit Foto), per ⠿ ziehen (oder ↑ ↓) verschiebbar.
+  // dr.stepRows: { k: Zeilen-Nr., t: Text, o: alter Platz im gespeicherten Rezept (null = neu) } –
+  // die Fotos hängen am alten Platz und wandern beim Speichern (step_map) mit.
+  _stepRowsOf(dr) {
+    if (!dr.stepRows) dr.stepRows = this._stepLines(dr.steps).map((t, i) => ({ k: ++this._stepSeq, t, o: dr.id ? i : null }));
+    if (!dr.stepRows.length) dr.stepRows.push({ k: ++this._stepSeq, t: "", o: null });
+    return dr.stepRows;
+  }
+
+  _setStepsText(text) { // aus Rezept-Import / Foto: nur wenn noch nichts da ist
+    const dr = this._draft;
+    if (!dr) return;
+    dr.stepRows = this._stepLines(text).map((t) => ({ k: ++this._stepSeq, t, o: null }));
+    this._renderSteps();
+  }
+
+  _renderSteps(focusK) {
+    const box = this.$("rStepRows");
     const dr = this._draft;
     if (!box || !dr) return;
-    const lines = this._stepLines(this.$("rSteps")?.value);
-    if (!lines.length) { box.innerHTML = ""; return; }
-    if (!dr.id) { box.innerHTML = `<p class="hint">📷 Fotos zu einzelnen Schritten gehen, sobald das Rezept einmal gespeichert ist.</p>`; return; }
-    box.innerHTML = `<p class="hint">📷 Fotos zu den Schritten (erscheinen im Koch-Modus):</p>` + lines.map((t, n) => {
-      const key = this._stepPhotoKey(dr.id, n);
-      const has = this._hasPhoto(key);
-      const cnt = this._photoCount(key);
-      return `<div class="sprow"><span class="sptxt" translate="no">${n + 1}. ${esc(t.length > 60 ? t.slice(0, 60) + "…" : t)}</span>
-        ${has ? `<button type="button" class="btn" data-act="sphoto-view" data-n="${n}"><ha-icon icon="mdi:image-outline"></ha-icon>${cnt}</button>` : ""}
-        <button type="button" class="btn" data-act="sphoto-take" data-n="${n}" ${cnt >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${has ? "Dazu" : "Foto"}</button></div>`;
-    }).join("") + `<p class="hint">Die Fotos hängen an der Schrittnummer – ändert sich die Reihenfolge, bitte kurz prüfen.</p>`;
+    const rows = this._stepRowsOf(dr);
+    box.innerHTML = rows.map((r, n) => {
+      const key = dr.id && r.o != null ? this._stepPhotoKey(dr.id, r.o) : "";
+      const has = key && this._hasPhoto(key);
+      const cnt = key ? this._photoCount(key) : 0;
+      return `<div class="strow" data-k="${r.k}">
+        <button type="button" class="sthandle" title="Zum Verschieben ziehen (oder ↑ ↓ drücken)" aria-label="Schritt verschieben">⠿</button>
+        <span class="stnum" translate="no">${n + 1}.</span>
+        <textarea class="stin" rows="1" data-k="${r.k}" placeholder="z. B. Nudeln 10 Minuten kochen">${esc(r.t)}</textarea>
+        <span class="stbtns">${key ? `${has ? `<button type="button" class="btn" data-act="sphoto-view" data-n="${r.o}" data-pos="${n}"><ha-icon icon="mdi:image-outline"></ha-icon>${cnt}</button>` : ""}
+        <button type="button" class="btn" data-act="sphoto-take" data-n="${r.o}" ${cnt >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${has ? "Dazu" : "Foto"}</button>` : ""}
+        <button type="button" class="btn danger" data-act="step-del" data-k="${r.k}" title="Schritt löschen" aria-label="Schritt löschen"><ha-icon icon="mdi:close"></ha-icon></button>
+      </div>`;
+    }).join("");
+    const hint = this.$("rStepPhotos");
+    if (hint) hint.innerHTML = rows.some((r) => r.t.trim() && (!dr.id || r.o == null))
+      ? `<p class="hint">📷 Fotos zu Schritten (erscheinen im Koch-Modus) gehen bei Schritten, die schon gespeichert sind${dr.id ? "" : " – also Rezept einmal speichern, dann wieder öffnen"}. Verschieben: am ⠿ ziehen (oder ⠿ antippen und ↑ ↓ drücken) – die Fotos wandern mit.</p>` : "";
+    box.querySelectorAll(".stin").forEach((ta) => this._wireStepInput(ta));
+    box.querySelectorAll(".sthandle").forEach((h) => this._wireStepHandle(h));
+    if (focusK != null) box.querySelector(`.stin[data-k="${focusK}"]`)?.focus();
+  }
+
+  _fitStep(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + 2 + "px"; }
+
+  _wireStepInput(ta) {
+    requestAnimationFrame(() => this._fitStep(ta));
+    const rows = () => this._draft.stepRows;
+    const row = () => rows().find((r) => String(r.k) === ta.dataset.k);
+    ta.addEventListener("input", () => {
+      const r = row();
+      if (!r) return;
+      if (/\n/.test(ta.value)) { // mehrere Zeilen eingefügt (oder Enter): jede Zeile wird ein eigener Schritt
+        const parts = ta.value.split(/\n+/).map((x) => x.trim());
+        r.t = parts.shift() || "";
+        const at = rows().indexOf(r);
+        const fresh = parts.filter(Boolean).map((t) => ({ k: ++this._stepSeq, t, o: null }));
+        if (!fresh.length) fresh.push({ k: ++this._stepSeq, t: "", o: null }); // Enter am Ende: neuer leerer Schritt
+        rows().splice(at + 1, 0, ...fresh);
+        this._renderSteps(fresh[fresh.length - 1].k);
+        return;
+      }
+      r.t = ta.value;
+      this._fitStep(ta);
+    });
+    ta.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !ta.value && rows().length > 1) {
+        const at = rows().findIndex((r) => String(r.k) === ta.dataset.k);
+        rows().splice(at, 1);
+        this._renderSteps(rows()[Math.max(0, at - 1)].k);
+        e.preventDefault();
+      }
+    });
+  }
+
+  _wireStepHandle(h) {
+    const move = (rowEl, dir) => { // ↑ ↓ per Tastatur
+      const dr = this._draft, k = Number(rowEl.dataset.k), rows = dr.stepRows;
+      const at = rows.findIndex((r) => r.k === k), to = at + dir;
+      if (to < 0 || to >= rows.length) return;
+      [rows[at], rows[to]] = [rows[to], rows[at]];
+      this._renderSteps();
+      this.$("rStepRows").querySelector(`.strow[data-k="${k}"] .sthandle`)?.focus();
+    };
+    h.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); move(h.closest(".strow"), e.key === "ArrowUp" ? -1 : 1); }
+    });
+    h.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      const box = this.$("rStepRows"), rowEl = h.closest(".strow");
+      const startY = e.clientY;
+      let idx = null;
+      try { h.setPointerCapture(e.pointerId); } catch (_) { /* geht auch ohne */ }
+      rowEl.classList.add("dragging");
+      const others = () => [...box.querySelectorAll(".strow")].filter((x) => x !== rowEl);
+      const mark = (list) => { // Einfüge-Strich zeigen; die Zeile selbst bleibt im DOM (sonst reißt das Ziehen ab)
+        list.forEach((x) => x.classList.remove("dropbefore", "dropafter"));
+        if (idx == null) return;
+        if (list[idx]) list[idx].classList.add("dropbefore"); else list[list.length - 1]?.classList.add("dropafter");
+      };
+      const onMove = (ev) => {
+        const list = others();
+        rowEl.style.transform = `translateY(${ev.clientY - startY}px)`;
+        idx = list.filter((x) => { const b = x.getBoundingClientRect(); return b.top + b.height / 2 < ev.clientY; }).length;
+        mark(list);
+      };
+      const done = () => {
+        h.removeEventListener("pointermove", onMove);
+        h.removeEventListener("pointerup", done);
+        h.removeEventListener("pointercancel", done);
+        rowEl.style.transform = "";
+        rowEl.classList.remove("dragging");
+        const dr = this._draft, list = others();
+        list.forEach((x) => x.classList.remove("dropbefore", "dropafter"));
+        if (idx != null) {
+          const byK = new Map(dr.stepRows.map((r) => [String(r.k), r]));
+          const order = list.map((x) => byK.get(x.dataset.k)).filter(Boolean);
+          order.splice(idx, 0, byK.get(rowEl.dataset.k));
+          dr.stepRows = order.filter(Boolean);
+        }
+        this._renderSteps();
+      };
+      h.addEventListener("pointermove", onMove);
+      h.addEventListener("pointerup", done);
+      h.addEventListener("pointercancel", done);
+    });
   }
 
   _recipePhotoBtn(r) {
@@ -4783,8 +4907,7 @@ class EinkaufslisteCard extends HTMLElement {
       abcSort(dr.items);
       const nameEl = this.$("rName");
       if (res.name && !nameEl.value.trim()) { nameEl.value = res.name; this._autoGroup(); }
-      const stepsEl = this.$("rSteps");
-      if (res.steps && stepsEl && !stepsEl.value.trim()) stepsEl.value = res.steps;
+      if (res.steps && !this._stepLines(dr.stepRows ? dr.stepRows.map((r) => r.t).join("\n") : dr.steps).length) this._setStepsText(res.steps);
       const hasPhoto = (dr.newPhotos || []).length || this._recipeSavedPhotos();
       if (res.image && !hasPhoto) dr.newPhotos = [res.image];
       ta.value = "";
@@ -4978,7 +5101,7 @@ class EinkaufslisteCard extends HTMLElement {
     const dr = this._draft;
     dr.name = this.$("rName").value;
     if (this.$("rGroup")) dr.group = this.$("rGroup").value || null;
-    if (this.$("rSteps")) dr.steps = this.$("rSteps").value;
+    dr.steps = this._stepRowsOf(dr).map((r) => r.t.replace(/\s*\n+\s*/g, " ").trim()).filter(Boolean).join("\n");
     if (this.$("rServings")) { const n = parseInt(this.$("rServings").value, 10); dr.servings = n >= 1 && n <= 99 ? n : null; }
     if (this.$("rServUnit")) dr.servings_unit = this.$("rServUnit").value === "trays" ? "trays" : "persons";
     this._readHeat();
@@ -5007,6 +5130,10 @@ class EinkaufslisteCard extends HTMLElement {
     const msg = { name: dr.name.trim(), group: dr.group || null, items, steps: (dr.steps || "").trim() || null, heat, servings: dr.servings || null, servings_unit: dr.servings_unit || "persons" };
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {
+      if (dr.id) { // ↕️ Fotos wandern mit den Schritten
+        msg.step_map = this._stepRowsOf(dr).filter((r) => r.t.replace(/\s+/g, "").length).map((r) => (r.o == null ? null : r.o));
+        for (const k of [...this._photoCache.keys()]) if (k.startsWith(this._recipePhotoKey(dr.id) + "#s")) this._photoCache.delete(k);
+      }
       const saved = dr.id
         ? await this._ws({ type: "einkaufsliste/recipe/update", recipe_id: dr.id, ...msg })
         : await this._ws({ type: "einkaufsliste/recipe/add", ...msg });
@@ -6029,7 +6156,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Woher kommt das Foto?</b> Am Handy fragt die Karte: <b>📷 Kamera</b> · <b>🖼️ Galerie</b> · <b>📋 Einfügen</b> (ein kopiertes Bild). Am PC öffnet sich ein Fenster: Bild <b>reinziehen</b>, <b>Strg + V</b> drücken oder klicken. <b>Strg + V</b> geht am PC auch direkt in der Liste: Das kopierte Bild wird gleich zum Foto fürs Eintragen (im Rezept-Editor zum Rezept-Foto). In der HA-App im WLAN (lokale http-Adresse) gibt es die Kamera nicht – dort kommt statt der Kamera die Galerie (und „Einfügen“, wenn es geht).</li>
         <li><b>Drehen &amp; zuschneiden:</b> Vor dem Speichern kannst du das Foto drehen und den Ausschnitt wählen.</li>
         <li><b>Rezept-Fotos:</b> Im Rezept-Editor (⚙️ → Rezepte) Fotos zum Rezept hinzufügen. In der Rezept-Ansicht öffnet das <b>📷</b> in der Zeile unter dem Namen die Fotos.</li>
-        <li><b>Foto zu einem Koch-Schritt:</b> Im Rezept-Editor stehen unter der Zubereitung alle Schritte. Bei jedem Schritt <b>„Foto“</b> bzw. <b>„Dazu“</b> tippen (geht, sobald das Rezept einmal gespeichert ist). Im <b>Koch-Modus</b> erscheint das Foto bei genau diesem Schritt. Die Fotos hängen an der Schrittnummer – ändert sich die Reihenfolge, bitte kurz prüfen.</li>
+        <li><b>Foto zu einem Koch-Schritt:</b> Im Rezept-Editor hat jeder Schritt der Zubereitung eine eigene Zeile. Bei jedem Schritt <b>„Foto“</b> bzw. <b>„Dazu“</b> tippen (geht bei Schritten, die schon gespeichert sind). Im <b>Koch-Modus</b> erscheint das Foto bei genau diesem Schritt.</li>
+        <li><b>Schritte verschieben:</b> Am <b>⠿</b> vor der Zeile ziehen – oder ⠿ antippen und mit <b>↑ ↓</b> verschieben. Die Fotos wandern mit (nach dem Speichern). <b>➕ Schritt</b> fügt eine Zeile hinzu, <b>✖</b> löscht sie (mit Foto: vorher Nachfrage). Mehrere Zeilen auf einmal einfügen? Jede wird ein eigener Schritt.</li>
         <li><b>Kassenbon-Foto:</b> Im Einkaufs-Protokoll hängt beim Eintragen „📷 Kassenbon lesen“ das Bon-Foto automatisch an. Bei einem Eintrag ohne Foto gibt es das Symbol <b>➕📷</b>, mit Foto öffnet das <b>📷</b> es.</li>
         <li><b>🎉 Automatisch fragen (Option):</b> In den Einstellungen beim Einkaufs-Protokoll einschaltbar (gilt für alle). Ist alles auf der Liste abgehakt, geht „Einkauf eintragen“ von selbst auf – mit dem Geschäft schon ausgewählt. Höchstens alle 10 Minuten.</li>
         <li><b>Ohne Netz:</b> Fotos, die du in der Offline-App ohne Netz machst, werden vorgemerkt („📴 Foto vorgemerkt“) und hochgeladen, sobald wieder Netz da ist. Sehr große Fotos (über ca. 3 MB) gehen nur mit Netz.</li>
@@ -6140,7 +6268,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>🔄 Fetch everything again</b> (cloud icon under “All products”): first you choose what – <b>photo</b> (pre-selected), <b>name</b> and/or <b>note</b> – then it goes through every product with a barcode, one after the other. Newer database photos replace old database photos; your own photos and your ✏️ own note stay. An empty database note never deletes anything. It pauses briefly between products and retries on errors and with several barcodes. At the end you get a <b>report</b>: what was changed, what was already the same, which products the database does not know or could not be reached for – and where it has no photo.</li>
         <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
         <li><b>Recipes:</b> a tab for the recipes (button <b>“New recipe”</b>, search field, ✏️ per row) and one for the groups (Fish, Meat, Pastry …; the group's icon and colour tint the recipes).</li>
-        <li><b>Recipe editor:</b> name and group (the group is suggested automatically, “✨ suggested”), “The quantities are for N people/trays”, recipe photo, ingredients (entered like in the list, with units and 🧂 “we always have it”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>Oven &amp; co.</b> (degrees, minutes), the instructions (one step per line), photos per step (only after the first save), delete, cancel, save. Foreign measures (cup, oz, °F) from recipe links are converted.</li></ul>`)}
+        <li><b>Recipe editor:</b> name and group (the group is suggested automatically, “✨ suggested”), “The quantities are for N people/trays”, recipe photo, ingredients (entered like in the list, with units and 🧂 “we always have it”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>Oven &amp; co.</b> (degrees, minutes), the instructions (one row per step, movable via ⠿), photos per step (for steps that are already saved), delete, cancel, save. Foreign measures (cup, oz, °F) from recipe links are converted.</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
         <li>Each row has its <b>own page</b> with an on/off button: 🏷️ offers, 🧾 purchase log, 📍 shop mode automatic, 🛒😊 mascot.</li>
         <li><b>Applies to all devices:</b> purchase log, auto-ask, shop mode automatic and mascot. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
@@ -6190,7 +6318,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>🔄 Alles neu holen</b> (Wolken-Symbol bei „Alle Produkte“): Du wählst erst, was – <b>Foto</b> (vorausgewählt), <b>Name</b> und/oder <b>Notiz</b> – dann geht es nacheinander durch alle Produkte mit Barcode. Neuere Datenbank-Fotos ersetzen alte Datenbank-Fotos; eigene Fotos und deine ✏️ Eigene Notiz bleiben. Eine leere Datenbank-Notiz löscht nie etwas. Zwischen den Produkten macht sie kleine Pausen und probiert bei Fehlern und bei mehreren Barcodes nach. Am Ende steht ein <b>Bericht</b>: was angepasst wurde, was schon gleich war, bei welchen Produkten die Datenbank nichts kennt oder nicht erreichbar war – und wo sie kein Foto hat.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
         <li><b>Rezepte:</b> ein Reiter für die Rezepte (Knopf <b>„Neues Rezept“</b>, Suchfeld, pro Zeile ✏️), einer für die Gruppen (Fisch, Fleisch, Gebäck …; Icon und Farbe der Gruppe färben die Rezepte).</li>
-        <li><b>Rezept-Editor:</b> Name und Gruppe (die Gruppe wird automatisch vorgeschlagen, „✨ vorgeschlagen“), „Die Mengen sind für N Personen/Bleche“, Rezept-Foto, Zutaten (eintragen wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten), die Zubereitung (ein Schritt pro Zeile), Fotos pro Schritt (erst nach dem ersten Speichern), Löschen, Abbrechen, Speichern. Aus Rezept-Links werden fremde Maße (cup, oz, °F) umgerechnet.</li></ul>`)}
+        <li><b>Rezept-Editor:</b> Name und Gruppe (die Gruppe wird automatisch vorgeschlagen, „✨ vorgeschlagen“), „Die Mengen sind für N Personen/Bleche“, Rezept-Foto, Zutaten (eintragen wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten), die Zubereitung (eine Zeile pro Schritt, per ⠿ verschiebbar), Fotos pro Schritt (bei schon gespeicherten Schritten), Löschen, Abbrechen, Speichern. Aus Rezept-Links werden fremde Maße (cup, oz, °F) umgerechnet.</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
         <li>Jede Zeile hat ihre <b>eigene Seite</b> mit einem Ein/Ausschalten-Knopf: 🏷️ Angebote, 🧾 Einkaufs-Protokoll, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen.</li>
         <li><b>Gilt für alle Geräte:</b> Protokoll, automatisch fragen, Laden-Modus automatisch und Maskottchen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
@@ -6289,7 +6417,8 @@ class EinkaufslisteCard extends HTMLElement {
       <p>${t("Ich versuche, Updates und Fehler-Korrekturen zeitnah zu erledigen.", "I try to ship updates and fixes promptly.")}</p>
       <div class="elcbtns">
         <a class="elcbtn" href="${repo}" target="_blank" rel="noopener">🐙 GitHub</a>
-        <a class="elcbtn" href="${repo}/issues" target="_blank" rel="noopener">🐞 ${t("Fehler melden / Wunsch äußern", "Report a bug / request a feature")}</a>
+        <a class="elcbtn" href="${repo}/discussions" target="_blank" rel="noopener">💡 ${t("Idee oder Wunsch", "Idea or request")}</a>
+        <a class="elcbtn" href="${repo}/issues" target="_blank" rel="noopener">🐞 ${t("Fehler melden", "Report a bug")}</a>
       </div>
       <p>🔒 ${t("Alle Daten bleiben in deinem Home Assistant. Ins Internet geht nur, was du selbst anstößt: ein gescannter Barcode (Nachschlagen bei Open Food Facts), ein Rezept-Link oder – wenn du sie einschaltest – die Angebote. Mehr unter ⚙️ → Datenschutz.",
         "All data stays in your Home Assistant. Only what you trigger yourself goes to the internet: a scanned barcode (looked up at Open Food Facts), a recipe link or – if you switch them on – the offers. More under ⚙️ → Privacy.")}</p>
@@ -6397,7 +6526,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Where does the photo come from?</b> On a phone the card asks: <b>📷 Camera</b> · <b>🖼️ Gallery</b> · <b>📋 Paste</b> (a copied image). On a PC a window opens: <b>drag in</b> an image, press <b>Ctrl + V</b> or click. <b>Ctrl + V</b> also works directly in the list on a PC: the copied image immediately becomes the photo for the item you are adding (in the recipe editor the recipe photo). In the HA app on Wi-Fi (local http address) there is no camera – you get the gallery (and “Paste”, if possible) instead.</li>
         <li><b>Rotate &amp; crop:</b> Before saving you can rotate the photo and choose the crop.</li>
         <li><b>Recipe photos:</b> Add photos to a recipe in the recipe editor (⚙️ → Recipes). In the recipe view the <b>📷</b> in the row below the name opens them.</li>
-        <li><b>Photo for a cooking step:</b> In the recipe editor all steps are listed below the instructions. Tap <b>“Photo”</b> or <b>“Add”</b> at a step (works once the recipe has been saved). In <b>cooking mode</b> the photo shows up at exactly that step. The photos are tied to the step number – if you change the order, please check them.</li>
+        <li><b>Photo for a cooking step:</b> In the recipe editor every step of the instructions has its own row. Tap <b>“Photo”</b> or <b>“Add”</b> at a step (works for steps that are already saved). In <b>cooking mode</b> the photo shows up at exactly that step.</li>
+        <li><b>Moving steps:</b> Drag the <b>⠿</b> in front of the row – or tap ⠿ and use <b>↑ ↓</b>. The photos move along (after saving). <b>➕ Step</b> adds a row, <b>✖</b> deletes it (with a photo you are asked first). Paste several lines at once? Each becomes its own step.</li>
         <li><b>Receipt photo:</b> In the purchase log “📷 Read receipt” attaches the receipt photo automatically. An entry without a photo has a <b>➕📷</b> symbol; with a photo the <b>📷</b> opens it.</li>
         <li><b>🎉 Ask automatically (option):</b> can be switched on in the settings under the purchase log (applies to everyone). Once everything on the list is checked off, “log purchase” opens by itself – with the store already chosen. At most every 10 minutes.</li>
         <li><b>Without network:</b> Photos you take in the offline app without network are queued (“📴 Photo queued”) and uploaded as soon as the network is back. Very large photos (over about 3 MB) need a connection.</li>
@@ -7690,9 +7820,9 @@ class EinkaufslisteCard extends HTMLElement {
       case "rimport-photo":
         this._ocrStart("🔎 Rezept wird gelesen", (text) => {
           const parts = elOcrRecipeParts(text);
-          const nameEl = this.$("rName"), stepsEl = this.$("rSteps"), ta = this.$("rImportText");
+          const nameEl = this.$("rName"), ta = this.$("rImportText");
           if (nameEl && parts.name && !nameEl.value.trim()) { nameEl.value = parts.name; this._autoGroup?.(); }
-          if (stepsEl && parts.steps && !stepsEl.value.trim()) { stepsEl.value = parts.steps; this._renderStepPhotos?.(); }
+          if (parts.steps && this._draft && !(this._draft.stepRows || []).some((r) => r.t.trim())) this._setStepsText(parts.steps);
           if (ta) { this.$("rImport").hidden = false; ta.value = parts.ingredients; ta.focus(); }
           this._toast("📷 Gelesen – bitte die Zutaten prüfen und auf „Übernehmen“ tippen");
         }, "🍳 Rezept abfotografieren");
@@ -8423,17 +8553,36 @@ class EinkaufslisteCard extends HTMLElement {
           }).catch(() => {});
         break;
       }
+      case "step-add": {
+        const dr = this._draft;
+        if (!dr) break;
+        const row = { k: ++this._stepSeq, t: "", o: null };
+        this._stepRowsOf(dr).push(row);
+        this._renderSteps(row.k);
+        break;
+      }
+      case "step-del": {
+        const dr = this._draft;
+        if (!dr) break;
+        const rows = this._stepRowsOf(dr), at = rows.findIndex((r) => String(r.k) === el.dataset.k);
+        if (at < 0) break;
+        const r = rows[at];
+        if (r.o != null && this._hasPhoto(this._stepPhotoKey(dr.id, r.o)) && !elConfirm("Dieser Schritt hat Fotos. Schritt trotzdem löschen? (Die Fotos gehen beim Speichern mit weg.)")) break;
+        rows.splice(at, 1);
+        this._renderSteps();
+        break;
+      }
       case "sphoto-take": {
         const dr = this._draft;
         if (!dr?.id) break;
         this._photoTarget = { name: this._stepPhotoKey(dr.id, el.dataset.n), keepEdit: true,
-          onDone: () => { this._toast("📸 Foto zum Schritt gespeichert"); setTimeout(() => this._renderStepPhotos(), 500); } };
+          onDone: () => { this._toast("📸 Foto zum Schritt gespeichert"); setTimeout(() => this._renderSteps(), 500); } };
         this._pickFile("photoFile", this._photoHeading(this._photoTarget.name));
         break;
       }
       case "sphoto-view": {
         const dr = this._draft;
-        if (dr?.id) this._openPhoto(this._stepPhotoKey(dr.id, el.dataset.n), `${dr.name || "Rezept"} – Schritt ${Number(el.dataset.n) + 1}`, 0, () => this._renderStepPhotos());
+        if (dr?.id) this._openPhoto(this._stepPhotoKey(dr.id, el.dataset.n), `${dr.name || "Rezept"} – Schritt ${Number(el.dataset.pos ?? el.dataset.n) + 1}`, 0, () => this._renderSteps());
         break;
       }
       case "rphoto-take":

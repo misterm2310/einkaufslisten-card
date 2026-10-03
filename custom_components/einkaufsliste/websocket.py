@@ -428,11 +428,12 @@ def ws_recipe_add(hass, connection, msg):
         vol.Optional("servings"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=99))),
         vol.Optional("servings_unit"): vol.In(["persons", "trays"]),
         vol.Optional("group"): vol.Any(None, str),
+        vol.Optional("step_map"): [vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=999)))],
     }
 )
 @callback
 def ws_recipe_update(hass, connection, msg):
-    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group")
+    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map")
     _run(hass, connection, msg, lambda m: m.update_recipe(msg["recipe_id"], **fields))
 
 

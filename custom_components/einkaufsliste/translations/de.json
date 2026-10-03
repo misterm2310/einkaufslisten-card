@@ -7,12 +7,14 @@
         "data": {
           "cleanup_weekday": "Aufräum-Tag",
           "cleanup_time": "Uhrzeit",
-          "min_age_days": "Mindestens so viele Tage auf der Liste"
+          "min_age_days": "Mindestens so viele Tage auf der Liste",
+          "sidebar": "📌 In der Seitenleiste anzeigen"
         },
         "data_description": {
           "cleanup_weekday": "An diesem Tag wird aufgeräumt.",
           "cleanup_time": "Um diese Uhrzeit wird aufgeräumt.",
-          "min_age_days": "Beim Aufräumen werden offene Artikel automatisch abgehakt, wenn sie mindestens so viele Tage auf der Liste stehen (7 = eine Woche). Gelöscht wird nichts."
+          "min_age_days": "Beim Aufräumen werden offene Artikel automatisch abgehakt, wenn sie mindestens so viele Tage auf der Liste stehen (7 = eine Woche). Gelöscht wird nichts.",
+          "sidebar": "Legt links in der Seitenleiste einen Eintrag „Einkaufsliste“ an (die Liste auf der ganzen Seite). Standardmäßig aus."
         }
       }
     },
@@ -28,13 +30,15 @@
           "cleanup_weekday": "Aufräum-Tag",
           "cleanup_time": "Uhrzeit",
           "min_age_days": "Mindestens so viele Tage auf der Liste",
-          "reset_pin": "🔒 PIN für die Einstellungen zurücksetzen"
+          "reset_pin": "🔒 PIN für die Einstellungen zurücksetzen",
+          "sidebar": "📌 In der Seitenleiste anzeigen"
         },
         "data_description": {
           "cleanup_weekday": "An diesem Tag wird aufgeräumt.",
           "cleanup_time": "Um diese Uhrzeit wird aufgeräumt.",
           "min_age_days": "Beim Aufräumen werden offene Artikel automatisch abgehakt, wenn sie mindestens so viele Tage auf der Liste stehen (7 = eine Woche). Gelöscht wird nichts.",
-          "reset_pin": "Anhaken, wenn die PIN für das Zahnrad in der Karte vergessen wurde. Danach ist das Zahnrad wieder ohne PIN offen."
+          "reset_pin": "Anhaken, wenn die PIN für das Zahnrad in der Karte vergessen wurde. Danach ist das Zahnrad wieder ohne PIN offen.",
+          "sidebar": "Legt links in der Seitenleiste einen Eintrag „Einkaufsliste“ an (die Liste auf der ganzen Seite). Standardmäßig aus."
         }
       }
     }

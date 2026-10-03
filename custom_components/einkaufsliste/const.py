@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.53.1"
+VERSION = "2.53.2"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
@@ -20,11 +20,15 @@ CARD_FILENAME = "einkaufsliste-card.js"
 CONF_CLEANUP_WEEKDAY = "cleanup_weekday"  # 0 = Montag ... 6 = Sonntag
 CONF_CLEANUP_TIME = "cleanup_time"  # "HH:MM:SS"
 CONF_MIN_AGE_DAYS = "min_age_days"
+CONF_SIDEBAR = "sidebar"  # Eintrag in der Seitenleiste (Standard: aus)
+PANEL_URL_PATH = "einkaufsliste"
+PANEL_FILENAME = "einkaufsliste-panel.js"
 
 DEFAULT_OPTIONS = {
     CONF_CLEANUP_WEEKDAY: 6,
     CONF_CLEANUP_TIME: "03:00:00",
     CONF_MIN_AGE_DAYS: 7,
+    CONF_SIDEBAR: False,
 }
 
 WEEKDAYS_DE = [

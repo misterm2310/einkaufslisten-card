@@ -24,6 +24,7 @@ from .const import (
     CONF_CLEANUP_TIME,
     CONF_CLEANUP_WEEKDAY,
     CONF_MIN_AGE_DAYS,
+    CONF_SIDEBAR,
     DEFAULT_OPTIONS,
     DOMAIN,
     WEEKDAYS_DE,
@@ -50,6 +51,7 @@ def _schema(values: dict[str, Any]) -> vol.Schema:
                     min=0, max=60, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Tage"
                 )
             ),
+            vol.Optional(CONF_SIDEBAR, default=bool(values.get(CONF_SIDEBAR, False))): BooleanSelector(),
         }
     )
 
@@ -59,6 +61,7 @@ def _normalize(user_input: dict[str, Any]) -> dict[str, Any]:
         CONF_CLEANUP_WEEKDAY: int(user_input[CONF_CLEANUP_WEEKDAY]),
         CONF_CLEANUP_TIME: str(user_input[CONF_CLEANUP_TIME]),
         CONF_MIN_AGE_DAYS: int(user_input[CONF_MIN_AGE_DAYS]),
+        CONF_SIDEBAR: bool(user_input.get(CONF_SIDEBAR, False)),
     }
 
 
