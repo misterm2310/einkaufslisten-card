@@ -3244,3 +3244,115 @@ async def test_grocy_errors(hass, setup, hass_ws_client, aioclient_mock):
         assert not res["success"] and text in res["error"]["message"], res
     await client.send_json({"id": 9, "type": "einkaufsliste/grocy/preview", "url": "g1", "api_key": " "})
     assert "Schlüssel" in (await client.receive_json())["error"]["message"]
+
+
+async def _grocy_set(client, n, **kw):
+    await client.send_json({"id": n, "type": "einkaufsliste/grocy/set", **kw})
+    return await client.receive_json()
+
+
+async def test_grocy_sync_products_and_secret(hass, setup, hass_ws_client, hass_read_only_access_token, aioclient_mock):
+    """📦 Dauer-Sync B: neue Produkte kommen von selbst, nichts wird überschrieben; Schlüssel bleibt geheim."""
+    import io, json, zipfile
+    from custom_components.einkaufsliste.transfer import async_export
+    m = mgr(hass)
+    m.add_item("Milch")
+    base = "http://grocy.local:9283/api/objects"
+    aioclient_mock.get(f"{base}/products", json=[{"id": "1", "name": "Cookies"}, {"id": "2", "name": "Milch"}])
+    aioclient_mock.get(f"{base}/product_barcodes", json=[{"product_id": "1", "barcode": "4006381333931"}])
+    aioclient_mock.get(f"{base}/product_groups", json=[])
+    client = await hass_ws_client(hass)
+    res = await _grocy_set(client, 1, url="grocy.local:9283", api_key="GEHEIM", b_on=True, b_hours=3)
+    assert res["success"], res
+    await hass.async_block_till_done()
+    assert "Cookies" in [h for h in m.history.values() for h in [h.get("name", "")]] or "cookies" in m.history
+    info = m.as_dict()["settings"]["grocy"]
+    assert info["has_key"] and info["b_on"] and not info["a_on"] and info["count_b"] == 1 and info["status"]["ok"]
+    assert "GEHEIM" not in str(m.as_dict())
+    # Sicherung enthält den Schlüssel nicht
+    raw = await async_export(m)
+    with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+        assert "GEHEIM" not in zf.read("data.json").decode()
+    # nur Admin
+    ro = await hass_ws_client(hass, hass_read_only_access_token)
+    await ro.send_json({"id": 5, "type": "einkaufsliste/grocy/set", "url": "x", "api_key": "y"})
+    assert not (await ro.receive_json())["success"]
+    # Schlüssel leer lassen = alten behalten; ohne Schlüssel anschalten = Fehler
+    res = await _grocy_set(client, 2, url="grocy.local:9283", api_key="", b_on=True)
+    assert res["success"] and m.grocy["api_key"] == "GEHEIM"
+    res = await _grocy_set(client, 3, url="andere:1", api_key="", b_on=True)
+    assert not res["success"] and "Schlüssel" in res["error"]["message"]
+    res = await _grocy_set(client, 4, url="grocy.local:9283", a_mode="quatsch", a_on=True)
+    assert not res["success"]
+    # Entfernen
+    await client.send_json({"id": 6, "type": "einkaufsliste/grocy/clear"})
+    assert (await client.receive_json())["success"] and not m.grocy and m.as_dict()["settings"]["grocy"] is None
+
+
+async def test_grocy_sync_lists(hass, setup, hass_ws_client, aioclient_mock):
+    """🛒 Dauer-Sync A: Holen & löschen, behalten + abhaken, voller Abgleich."""
+    m = mgr(hass)
+    base = "http://g:9283/api/objects"
+    rows = [{"id": "10", "shopping_list_id": "1", "product_id": "1", "amount": "3", "note": None},
+            {"id": "11", "shopping_list_id": "1", "product_id": None, "amount": "1", "note": "Grillkohle"},
+            {"id": "12", "shopping_list_id": "2", "product_id": None, "note": "andere Liste"}]
+    aioclient_mock.get(f"{base}/shopping_list", json=rows)
+    aioclient_mock.get(f"{base}/products", json=[{"id": "1", "name": "Bananen"}, {"id": "2", "name": "Brot"}])
+    aioclient_mock.delete(f"{base}/shopping_list/10", status=204)
+    aioclient_mock.delete(f"{base}/shopping_list/11", status=204)
+    client = await hass_ws_client(hass)
+    # --- move
+    res = await _grocy_set(client, 1, url="g:9283", api_key="GEHEIMKEY9", a_on=True, a_mode="move")
+    assert res["success"], res
+    await hass.async_block_till_done()
+    names = {i["name"]: i for i in m.items}
+    assert set(names) == {"Bananen", "Grillkohle"} and names["Bananen"]["quantity"] == "3x"
+    deleted = [c[1].path for c in aioclient_mock.mock_calls if c[0] == "DELETE"]
+    assert sorted(deleted) == ["/api/objects/shopping_list/10", "/api/objects/shopping_list/11"]
+    assert not m.grocy["links"]
+    # --- keep: verknüpft, Abhaken löscht die Grocy-Zeile (Grocy-Attrappe, die gelöschte Zeilen wirklich vergisst)
+    for i in list(m.items):
+        m.remove_item(i["id"])
+    from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMockResponse as _R  # noqa: PLC0415
+    gone: set[str] = set()
+    aioclient_mock.clear_requests()
+    async def _list(method, url, data):
+        return _R("GET", url, json=[r for r in rows[:2] if r["id"] not in gone])
+
+    async def _del(method, url, data):
+        gone.add("10")
+        return _R("DELETE", url, status=204)
+
+    aioclient_mock.get(f"{base}/shopping_list", side_effect=_list)
+    aioclient_mock.get(f"{base}/products", json=[{"id": "1", "name": "Bananen"}])
+    aioclient_mock.delete(f"{base}/shopping_list/10", side_effect=_del)
+    await _grocy_set(client, 2, url="g:9283", a_on=True, a_mode="keep")
+    await hass.async_block_till_done()
+    banana = next(i for i in m.items if i["name"] == "Bananen" and not i["checked"])
+    assert "10" in m.grocy["links"] and not [c for c in aioclient_mock.mock_calls if c[0] == "DELETE"]
+    m.set_checked(banana["id"], True, by="Test")
+    await client.send_json({"id": 3, "type": "einkaufsliste/grocy/run"})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["status"]["ok"]
+    assert [c[1].path for c in aioclient_mock.mock_calls if c[0] == "DELETE"] == ["/api/objects/shopping_list/10"]
+    assert "10" not in m.grocy["links"]
+    assert "GEHEIMKEY9" not in str(m.as_dict())
+
+
+async def test_grocy_sync_full(hass, setup, hass_ws_client, aioclient_mock):
+    """🛒 Voller Abgleich: Offenes von uns wandert nach Grocy (Produkt oder Notiz), Zeile weg -> bei uns abgehakt."""
+    m = mgr(hass)
+    base = "http://g:9283/api/objects"
+    aioclient_mock.get(f"{base}/shopping_list", json=[])
+    aioclient_mock.get(f"{base}/products", json=[{"id": "2", "name": "Brot"}])
+    aioclient_mock.post(f"{base}/shopping_list", json={"created_object_id": 77})
+    m.add_item("Brot", quantity="2x")
+    m.add_item("Kerzen")
+    client = await hass_ws_client(hass)
+    res = await _grocy_set(client, 1, url="g:9283", api_key="K", a_on=True, a_mode="sync")
+    assert res["success"], res
+    await hass.async_block_till_done()
+    posts = [c[2] for c in aioclient_mock.mock_calls if c[0] == "POST"]
+    assert {"shopping_list_id": 1, "amount": 2.0, "product_id": 2} in posts
+    assert {"shopping_list_id": 1, "amount": 1, "note": "Kerzen"} in posts
+    assert set(m.grocy["links"]) == {"77"}

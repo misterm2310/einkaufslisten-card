@@ -299,6 +299,7 @@ class EinkaufslisteManager:
         self.health_cache: dict[str, Any] = {}  # 🩺 letztes Ergebnis für den Gesundheits-Sensor
         self.purchases: list[dict[str, Any]] = []  # 🧾 {"id","t","s","sn","w","wi","a"} – wer, wann, wo, wie viel
         self.todo_syncs: list[dict[str, Any]] = []  # 🔁 je To-do-Liste {"entity_id", "store_id", "count", "mode", "links"} – herüberholen
+        self.grocy: dict[str, Any] = {}  # 🛒 Grocy-Dauerabgleich {"url","api_key","a_on",…} – der Schlüssel verlässt den Server nie
         self.offers_cfg: dict[str, Any] | None = None  # 🏷️ {"enabled", "zip", "stores", "hours", "key", "last", "ok", "error", "count"}
         self.offers_data: dict[str, list[dict[str, Any]]] = {}  # 🏷️ Artikelname klein -> Angebote
         self.mail_seen: list[str] = []  # 📧 zuletzt eingetragene Mails (Nummer|Datum) – gegen doppeltes Eintragen
@@ -409,6 +410,8 @@ class EinkaufslisteManager:
         self.mail_import = data.get("mail_import") or None
         self.mail_seen = [str(k) for k in (data.get("mail_seen") or [])][-50:]
         self.offers_cfg = data.get("offers_cfg") or None
+        g = data.get("grocy")
+        self.grocy = dict(g) if isinstance(g, dict) else {}
         self.offers_data = dict(data.get("offers_data") or {})
         for store in self.stores:  # 📍 früher eine Zone pro Geschäft, jetzt beliebig viele
             if "zones" not in store:
@@ -472,6 +475,7 @@ class EinkaufslisteManager:
             "mail_import": self.mail_import,
             "mail_seen": self.mail_seen[-50:],
             "offers_cfg": self.offers_cfg,
+            "grocy": self.grocy,
             "offers_data": self.offers_data,
             "last_cleanup": self.last_cleanup,
             "log": self.log,
@@ -553,6 +557,7 @@ class EinkaufslisteManager:
                 "todo_syncs": [self._todo_sync_info(c) for c in self.todo_syncs],
                 "mail_import": self._mail_import_info(),
                 "offers": self._offers_info(),
+                "grocy": self.grocy_info(),
                 "errors": len(self.errors),
                 "errors_24h": self._errors_since(timedelta(hours=24)),
             },
@@ -743,6 +748,59 @@ class EinkaufslisteManager:
             self.offers.start()
         self._changed()
         return self._offers_info()
+
+    def grocy_info(self) -> dict[str, Any] | None:
+        """🛒 Grocy-Abgleich für die Karte – NIE mit Schlüssel und Verknüpfungen."""
+        cfg = self.grocy
+        if not cfg or not cfg.get("url"):
+            return None
+        keys = ("url", "list_id", "a_on", "a_mode", "a_store_id", "b_on", "b_hours", "b_cats",
+                "status", "checked_at", "count_a", "count_b")
+        out = {k: cfg.get(k) for k in keys}
+        out["has_key"] = bool(cfg.get("api_key"))
+        return out
+
+    def set_grocy(self, url: str | None = None, api_key: str | None = None, list_id: Any = None,
+                  a_on: bool = False, a_mode: str = "move", a_store_id: str | None = None,
+                  b_on: bool = False, b_hours: int = 6, b_cats: bool = True) -> dict[str, Any] | None:
+        """🛒 Dauerabgleich mit Grocy einstellen (A = Einkaufsliste, B = neue Produkte). Leerer Schlüssel = alten behalten."""
+        from .grocy_import import clean_base  # noqa: PLC0415
+        from .grocy_sync import MODES  # noqa: PLC0415
+
+        old = dict(self.grocy or {})
+        base = clean_base(url or old.get("url") or "")
+        key = (api_key or "").strip() or (old.get("api_key") if old.get("url") == base else "")
+        if (a_on or b_on) and not key:
+            raise ValueError("Bitte den Grocy-API-Schlüssel eintragen.")
+        if a_mode not in MODES:
+            raise ValueError("Unbekannte Art des Abgleichs.")
+        try:
+            list_id = int(list_id or old.get("list_id") or 1)
+        except (TypeError, ValueError) as err:
+            raise ValueError("Die Listen-Nummer muss eine Zahl sein.") from err
+        cfg = {
+            "url": base, "api_key": key, "list_id": list_id, "a_on": bool(a_on), "a_mode": a_mode,
+            "a_store_id": self._check_store(a_store_id) if a_store_id else None,
+            "b_on": bool(b_on), "b_hours": b_hours if b_hours in (1, 3, 6, 12, 24) else 6, "b_cats": bool(b_cats),
+        }
+        same = old.get("url") == base
+        for k in ("links", "last_b", "count_a", "count_b"):
+            if same and k in old:
+                cfg[k] = old[k]
+        self.grocy = cfg
+        self._changed()
+        gs = getattr(self, "grocy_sync", None)
+        if gs is not None:
+            gs.start()
+        return self.grocy_info()
+
+    def clear_grocy(self) -> None:
+        """🛒 Verbindung zu Grocy entfernen (Schlüssel wird gelöscht)."""
+        self.grocy = {}
+        gs = getattr(self, "grocy_sync", None)
+        if gs is not None:
+            gs.stop()
+        self._changed()
 
     def _mail_import_info(self) -> dict[str, Any] | None:
         if not self.mail_import:
@@ -2942,6 +3000,8 @@ class EinkaufslisteManager:
             self.mail.stop()
         if getattr(self, "offers", None) is not None:
             self.offers.stop()
+        if getattr(self, "grocy_sync", None) is not None:
+            self.grocy_sync.stop()
         if getattr(self, "_unsub_offer_exp", None):
             self._unsub_offer_exp()
             self._unsub_offer_exp = None

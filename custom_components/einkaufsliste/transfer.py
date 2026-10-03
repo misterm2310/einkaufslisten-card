@@ -35,8 +35,11 @@ MAX_RECIPES = 500
 
 async def async_export(manager: EinkaufslisteManager) -> bytes:
     """Alles in eine Zip-Datei: data.json (Liste, Rezepte, Produkte …) + alle Fotos."""
+    stored = manager._to_storage()
+    if stored.get("grocy"):  # 🔐 API-Schlüssel und Verknüpfungen gehören nicht in eine Datei, die man herumschickt
+        stored["grocy"] = {k: v for k, v in stored["grocy"].items() if k not in ("api_key", "links")}
     data = {"format": BACKUP_FORMAT, "version": VERSION, "created": dt_util.utcnow().isoformat(),
-            "data": manager._to_storage()}
+            "data": stored}
     ids = {pid for entry in manager.photos.values() for pid in manager._photo_ids(entry)}
 
     def build() -> bytes:
@@ -86,6 +89,14 @@ async def async_restore(manager: EinkaufslisteManager, raw: bytes) -> dict[str, 
             manager._photo_path(pid).write_bytes(blob)
 
     await manager.hass.async_add_executor_job(write_photos)
+    old_g = dict(manager.grocy or {})
+    g = data.get("grocy")
+    if isinstance(g, dict) and g.get("url"):
+        if old_g.get("url") == g.get("url") and old_g.get("api_key"):
+            g = {**g, "api_key": old_g["api_key"], "links": old_g.get("links", {})}
+        else:  # ohne Schlüssel kann nichts laufen -> ausschalten statt ins Leere zu laufen
+            g = {**g, "api_key": "", "a_on": False, "b_on": False, "links": {}}
+        data = {**data, "grocy": g}
     await manager._store.async_save(data)
     await manager.async_load()
     if getattr(manager, "sync", None) is not None:
@@ -94,6 +105,8 @@ async def async_restore(manager: EinkaufslisteManager, raw: bytes) -> dict[str, 
         manager.mail.start()
     if getattr(manager, "offers", None) is not None:
         manager.offers.start()  # 🏷️ Angebote
+    if getattr(manager, "grocy_sync", None) is not None:
+        manager.grocy_sync.start()
     # Fotos, die jetzt zu nichts mehr gehören, wegräumen
     await manager.async_check(fixes={"photo_orphans": ""})
     manager._changed()

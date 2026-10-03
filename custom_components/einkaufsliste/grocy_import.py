@@ -47,17 +47,20 @@ def clean_base(url: Any) -> str:
     return f"{parts.scheme}://{parts.netloc}{path}"
 
 
-async def _get(session: aiohttp.ClientSession, base: str, key: str, endpoint: str) -> Any:
+async def _request(session: aiohttp.ClientSession, method: str, base: str, key: str, endpoint: str,
+                   body: dict | None = None, params: dict | None = None) -> Any:
+    """Eine Anfrage an die Grocy-API. Antwort als JSON (bei „kein Inhalt“ None). Fehler als verständliche ValueError."""
     try:
         async with asyncio.timeout(20):
-            resp = await session.get(
-                f"{base}/api/{endpoint}", headers={"GROCY-API-KEY": key, "accept": "application/json"}
+            resp = await session.request(
+                method, f"{base}/api/{endpoint}", params=params, json=body,
+                headers={"GROCY-API-KEY": key, "accept": "application/json"},
             )
             if resp.status in (401, 403):
                 raise ValueError("Grocy lehnt den API-Schlüssel ab – bitte prüfen (in Grocy beim Benutzer unter „API-Schlüssel“).")
             if resp.status == 404:
                 raise ValueError("Unter dieser Adresse habe ich kein Grocy gefunden – stimmt Adresse und Port?")
-            if resp.status != 200:
+            if resp.status >= 400:
                 raise ValueError(f"Grocy antwortet mit Fehler {resp.status}.")
             raw = await read_limited(resp.content, MAX_BYTES)
     except (TimeoutError, aiohttp.ClientError) as err:
@@ -65,10 +68,16 @@ async def _get(session: aiohttp.ClientSession, base: str, key: str, endpoint: st
         raise ValueError("Grocy ist von Home Assistant aus nicht erreichbar – Adresse und Netzwerk prüfen.") from err
     if raw is None:
         raise ValueError("Die Antwort von Grocy ist ungewöhnlich groß – abgebrochen.")
+    if not raw.strip():
+        return None
     try:
         return json.loads(raw)
     except ValueError as err:
         raise ValueError("Grocy hat keine lesbare Antwort geschickt – ist das die richtige Adresse?") from err
+
+
+async def _get(session: aiohttp.ClientSession, base: str, key: str, endpoint: str, params: dict | None = None) -> Any:
+    return await _request(session, "GET", base, key, endpoint, params=params)
 
 
 async def async_fetch(hass, url: Any, api_key: Any) -> dict[str, Any]:

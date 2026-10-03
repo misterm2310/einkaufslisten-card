@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .barcode import async_auto_photo, async_lookup, async_product_info, async_refresh_photo
-from .grocy_import import async_fetch, import_rows
+from .grocy_import import async_fetch, clean_base, import_rows
 from .recipe_import import async_import
 from .const import DOMAIN, SIGNAL_UPDATED
 from .mail_import import mail_sources
@@ -72,6 +72,9 @@ def async_register(hass: HomeAssistant) -> None:
         ws_cards_enable,
         ws_grocy_preview,
         ws_grocy_import,
+        ws_grocy_set,
+        ws_grocy_clear,
+        ws_grocy_run,
         ws_cards_list,
         ws_card_add,
         ws_card_update,
@@ -1144,19 +1147,26 @@ def ws_card_remove(hass, connection, msg):
 
 # ---------------------------------------------------------------- 🥫 Grocy-Import (nur Admin: es ruft ein anderes Gerät im Netz ab)
 @websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/grocy/preview", vol.Required("url"): str, vol.Required("api_key"): str}
+    {vol.Required("type"): "einkaufsliste/grocy/preview", vol.Optional("url", default=""): str,
+     vol.Optional("api_key", default=""): str}
 )
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_grocy_preview(hass, connection, msg):
     """🥫 Produkte aus Grocy holen (Vorschau). Der Schlüssel wird nicht gespeichert."""
+    manager = _manager(hass)
+    url, key = msg["url"].strip(), msg["api_key"].strip()
+    saved = (manager.grocy if manager is not None else {}) or {}
+    if not url:  # nichts getippt -> gespeicherte Verbindung nehmen
+        url = saved.get("url", "")
+    if not key and saved.get("api_key") and (not msg["url"].strip() or clean_base_safe(url) == saved.get("url")):
+        key = saved["api_key"]
     try:
-        res = await async_fetch(hass, msg["url"], msg["api_key"])
+        res = await async_fetch(hass, url, key)
     except ValueError as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return
     existing = {}
-    manager = _manager(hass)
     if manager is not None:
         existing = manager.history
     for row in res["rows"]:
@@ -1182,3 +1192,54 @@ async def ws_grocy_preview(hass, connection, msg):
 def ws_grocy_import(hass, connection, msg):
     """🥫 Die gewählten Grocy-Produkte in den Katalog übernehmen."""
     _run(hass, connection, msg, lambda m: import_rows(m, msg["rows"], msg["make_categories"]))
+
+
+def clean_base_safe(url: str) -> str:
+    try:
+        return clean_base(url)
+    except ValueError:
+        return ""
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/grocy/set",
+        vol.Optional("url", default=""): str,
+        vol.Optional("api_key", default=""): str,
+        vol.Optional("list_id", default=1): vol.Any(int, str),
+        vol.Optional("a_on", default=False): bool,
+        vol.Optional("a_mode", default="move"): str,
+        vol.Optional("a_store_id"): OPT_STR,
+        vol.Optional("b_on", default=False): bool,
+        vol.Optional("b_hours", default=6): int,
+        vol.Optional("b_cats", default=True): bool,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_grocy_set(hass, connection, msg):
+    """🛒 Dauerabgleich mit Grocy einstellen (Schlüssel bleibt auf dem Server)."""
+    fields = {k: v for k, v in msg.items() if k not in ("id", "type")}
+    _run(hass, connection, msg, lambda m: m.set_grocy(**fields))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/grocy/clear"})
+@websocket_api.require_admin
+@callback
+def ws_grocy_clear(hass, connection, msg):
+    """🛒 Verbindung zu Grocy entfernen."""
+    _run(hass, connection, msg, lambda m: m.clear_grocy())
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/grocy/run"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_grocy_run(hass, connection, msg):
+    """🛒 Jetzt sofort mit Grocy abgleichen."""
+    manager = _manager(hass)
+    gs = getattr(manager, "grocy_sync", None) if manager is not None else None
+    if gs is None or not (manager.grocy or {}).get("url"):
+        connection.send_error(msg["id"], "invalid", "Grocy ist noch nicht eingerichtet.")
+        return
+    status = await gs.run(force_b=True)
+    connection.send_result(msg["id"], {"status": status})

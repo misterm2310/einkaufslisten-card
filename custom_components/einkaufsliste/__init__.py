@@ -24,6 +24,7 @@ from .frontend import async_set_sidebar, async_setup_frontend
 from .transfer import async_register_views
 from .manager import EinkaufslisteManager, person_name_for_user
 from .todo_sync import TodoSync
+from .grocy_sync import GrocySync
 from .mail_import import MailImport
 from .offers import Offers
 
@@ -82,6 +83,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     manager.mail.start()
     manager.offers = Offers(hass, manager)  # 🏷️ Angebote aus Prospekten (inoffiziell, standardmäßig aus)
     manager.offers.start()
+    manager.grocy_sync = GrocySync(hass, manager)  # 🛒 Dauerabgleich mit Grocy (standardmäßig aus)
+    manager.grocy_sync.start()
     handler = error_log.attach(manager)  # 🐞 Fehler-Protokoll
     entry.async_on_unload(lambda: error_log.detach(handler))
     entry.async_on_unload(manager.async_stop)

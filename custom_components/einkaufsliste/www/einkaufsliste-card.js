@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.3";
+const EL_VERSION = "2.53.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.53.3"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.53.4"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🔄 <b>Grocy-Dauerabgleich:</b> ⚙️ → Import &amp; Sicherung → Grocy. Zwei Teile, jeder einzeln an/aus: 🛒 die <b>Einkaufsliste</b> abgleichen (Grocy-Zeilen holen &amp; dort löschen, bei beiden behalten oder voller Abgleich) · 📦 <b>neue Produkte</b> automatisch in den Katalog. Der API-Schlüssel bleibt auf dem Server (nie auf Handys, nie in Sicherungen). · 📥 <b>„Rezepte aus Datei“</b> steht jetzt in ⚙️ → Rezepte neben den Rezept-Gruppen. · 💳 Im Laden-Modus sind 💳 und Laden-Modus-Knopf getauscht.",
+   "🔄 <b>Grocy continuous sync:</b> ⚙️ → Import &amp; backup → Grocy. Two parts, each on/off by itself: 🛒 sync the <b>shopping list</b> (fetch Grocy rows &amp; delete them there, keep on both, or full sync) · 📦 <b>new products</b> automatically into the catalogue. The API key stays on the server (never on phones, never in backups). · 📥 <b>“Recipes from file”</b> is now in ⚙️ → Recipes next to the recipe groups. · 💳 In shop mode the 💳 and shop-mode buttons swapped places."],
   ["⭐ <b>Favoriten:</b> Produkte beim Bearbeiten (Liste oder Katalog) mit „⭐ Favorit“ markieren – der ⭐-Knopf unter dem Eingabefeld setzt dann alle auf einmal auf die Liste, nichts doppelt. · 💳 <b>Kundenkarten:</b> Payback &amp; Co. einscannen oder eintippen und an der Kasse groß zeigen (QR oder Strichcode). Einschalten: ⚙️ → Extras → Kundenkarten, dann steht oben ein 💳-Knopf (auch im Laden-Modus). · 🔢 <b>Menge vor dem Produkt:</b> überall „2 L Milch“. · 🥫 <b>Grocy-Import:</b> ⚙️ → Import &amp; Sicherung → Grocy holt Produkte (Name, Barcodes, Produktgruppe) aus Grocy in den Katalog.",
    "⭐ <b>Favourites:</b> mark products with “⭐ Favourite” when editing (list or catalogue) – the ⭐ button under the input field then puts them all on the list at once, nothing twice. · 💳 <b>Loyalty cards:</b> scan or type Payback &amp; co. and show them big at the checkout (QR or barcode). Switch on: ⚙️ → Extras → Loyalty cards, then a 💳 button appears at the top (also in shop mode). · 🔢 <b>Quantity before the product:</b> “2 L milk” everywhere. · 🥫 <b>Grocy import:</b> ⚙️ → Import &amp; backup → Grocy fetches products (name, barcodes, product group) from Grocy into the catalogue."],
   ["📌 <b>Seitenleiste (Option):</b> Unter Geräte &amp; Dienste → Einkaufsliste → Konfigurieren gibt es „In der Seitenleiste anzeigen“ – dann steht die Liste links als eigener Eintrag auf der ganzen Seite. Standardmäßig aus. · ↕️ <b>Rezept-Schritte:</b> Im Rezept-Editor hat jeder Schritt der Zubereitung eine eigene Zeile mit Foto; am ⠿ ziehen (oder ↑ ↓) verschiebt sie, die Fotos wandern mit. ➕ Schritt, ✖ löschen.",
@@ -1405,6 +1407,8 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 .qval { min-width:44px; text-align:center; font-weight:600; font-size:1.1em; }
 ha-card.shop form.add { display:none; }
 ha-card.shop #btnRecipes, ha-card.shop #btnSettings { display:none; }
+ha-card.shop #btnCards { order:1; } /* im Laden-Modus: 💳 vor dem Laden-Modus-Knopf (Plätze getauscht) */
+ha-card.shop #btnShop { order:2; }
 ha-card.shop .item { padding:11px 5px; font-size:1.2em; }
 ha-card.shop .item .name { font-weight:600; }
 ha-card.shop .item .check { padding:9px; --mdc-icon-size:38px; }
@@ -3841,12 +3845,13 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="picker" hidden></div>
         <p class="hint">Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>` },
       { key: "recipes", icon: "mdi:chef-hat", title: "Rezepte", info: `${recipes.length ? (recipes.length === 1 ? "1 Rezept" : `${recipes.length} Rezepte`) : "noch keine"} · ${(d.recipe_groups || []).length} Gruppen`, html: () => `
-        ${this._recTab === "groups" ? "" : `<button class="newrec" type="button" data-act="recipe-new"><ha-icon icon="mdi:chef-hat"></ha-icon><span>Neues Rezept</span><ha-icon icon="mdi:plus-circle-outline"></ha-icon></button>`}
+        ${this._recTab === "groups" || this._recTab === "file" ? "" : `<button class="newrec" type="button" data-act="recipe-new"><ha-icon icon="mdi:chef-hat"></ha-icon><span>Neues Rezept</span><ha-icon icon="mdi:plus-circle-outline"></ha-icon></button>`}
         <div class="subtabs">
-          <button class="tab ${this._recTab !== "groups" ? "active" : ""}" data-act="rec-tab" data-tab="recipes"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</button>
+          <button class="tab ${(this._recTab || "recipes") === "recipes" ? "active" : ""}" data-act="rec-tab" data-tab="recipes"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</button>
           <button class="tab ${this._recTab === "groups" ? "active" : ""}" data-act="rec-tab" data-tab="groups"><ha-icon icon="mdi:tag-multiple-outline"></ha-icon>Rezept-Gruppen</button>
+          <button class="tab ${this._recTab === "file" ? "active" : ""}" data-act="rec-tab" data-tab="file"><ha-icon icon="mdi:file-document-outline"></ha-icon>Rezepte aus Datei</button>
         </div>
-        ${this._recTab === "groups" ? `
+        ${this._recTab === "file" ? this._recFileHtml() : this._recTab === "groups" ? `
         ${(d.recipe_groups || []).map((e, i) => row("recipe_groups", e, i, d.recipe_groups.length)).join("")}
         <form class="srow" data-addkind="recipe_groups">
           <ha-icon class="prev" icon="mdi:tag-plus-outline"></ha-icon>
@@ -3904,7 +3909,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow"><button class="btn primary" data-act="check-run"><ha-icon icon="mdi:magnify"></ha-icon>Jetzt prüfen</button></div>
         <div id="checkRes"></div>` },
       { key: "errors", icon: "mdi:bug-outline", title: "Fehler-Protokoll", info: (this._data.settings?.errors || 0) ? `${this._data.settings.errors} Meldungen` : "keine Fehler 🎉", html: () => this._errorsHtml() },
-      { key: "transfer", icon: "mdi:database-import-outline", title: "Import & Sicherung", info: "Rezepte, andere Apps, Backup", html: () => this._xferHtml() },
+      { key: "transfer", icon: "mdi:database-import-outline", title: "Import & Sicherung", info: "andere Apps, Grocy, Backup", html: () => this._xferHtml() },
       { key: "app", icon: "mdi:cellphone-arrow-down", title: "Offline-App", info: "Liste auch ohne Netz", html: () => `
         <p class="hint">Eine eigene kleine App nur für die Einkaufsliste. Sie öffnet sich auch <b>ohne Netz</b> (z. B. im Funkloch im Geschäft), zeigt den letzten Stand, lässt dich abhaken und eintragen und schickt alles nach, sobald wieder Netz da ist.</p>
         <ol class="hint xferfmt">
@@ -3993,7 +3998,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (cur.key === "stats") this._loadStats();
     if (cur.key === "errors") this._loadErrors();
     if (cur.key === "products" && this._prodTab !== "delete") { this._renderProducts(); this._loadProducts(); }
-    if (cur.key === "recipes" && this._recTab !== "groups") this._renderSetRecipeList();
+    if (cur.key === "recipes" && this._recTab !== "groups" && this._recTab !== "file") this._renderSetRecipeList();
     if (cur.key === "transfer" && this._xferTab === "apps") this._loadTodoLists();
     if (cur.key === "transfer" && this._xferTab === "mail") this._loadMailSources();
     this._renderDelList();
@@ -4010,7 +4015,7 @@ class EinkaufslisteCard extends HTMLElement {
     ];
     const kw = {
       stores: "laden markt zone standort icon eigenmarken", categories: "kategorie farbe reihenfolge", persons: "für wen namen familie",
-      products: "katalog barcode foto löschen zusammenführen scan alt monate", recipes: "rezept gruppen kochen zutaten",
+      products: "katalog barcode foto löschen zusammenführen scan alt monate", recipes: "rezept gruppen kochen zutaten datei import txt csv json",
       offers: "angebote marktguru preise plz", spend: "protokoll bon kasse kosten einkauf",
       autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
       log: "verlauf wer wann", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel sensor", errors: "fehler protokoll kopieren",
@@ -4089,22 +4094,12 @@ class EinkaufslisteCard extends HTMLElement {
 
   // 📥 Import & Sicherung: Rezepte aus Datei, andere Apps, Backup
   _xferHtml() {
-    const tab = this._xferTab || "recipes";
+    const tab = !this._xferTab || this._xferTab === "recipes" ? "apps" : this._xferTab; // „Rezepte aus Datei“ ist jetzt unter ⚙️ → Rezepte
     const admin = !!this._hass?.user?.is_admin;
     const t = (k, icon, label) => `<button class="tab ${tab === k ? "active" : ""}" data-act="xfer-tab" data-tab="${k}"><ha-icon icon="${icon}"></ha-icon>${label}</button>`;
     const stores = this._selectOptions(this._data.stores, this._data.stores[0]?.id, "🛒 Welches Geschäft?");
     let body = "";
-    if (tab === "recipes") {
-      body = `
-        <p class="hint">Eine Datei mit Rezepten einlesen – z. B. aus einer anderen Rezept-App oder selbst getippt. Amerikanische Maße (cup, oz, lb, tbsp, °F) werden dabei automatisch umgerechnet.</p>
-        <ul class="hint xferfmt">
-          <li><b>.txt / .md</b>: jedes Rezept beginnt mit <code># Name</code>, danach „Zutaten“ (eine pro Zeile) und „Zubereitung“.</li>
-          <li><b>.csv</b>: Spalten <code>Rezept;Menge;Einheit;Zutat;Notiz;Zubereitung</code> – eine Zeile pro Zutat.</li>
-          <li><b>.json</b>: Rezepte aus einer Sicherung oder im gleichen Aufbau.</li>
-        </ul>
-        ${admin ? `<div class="btnrow"><label class="btn primary"><ha-icon icon="mdi:file-upload-outline"></ha-icon>Datei auswählen<input type="file" id="xferRecipeFile" accept=".txt,.md,.csv,.json,text/*,application/json" hidden></label></div>` : `<p class="hint">🔒 Rezepte einlesen darf nur ein Admin.</p>`}
-        <div id="xferRes"></div>`;
-    } else if (tab === "apps") {
+    if (tab === "apps") {
       const syncs = this._data.settings?.todo_syncs || [];
       const modeName = { move: "herüberholen & dort löschen", keep: "bei beiden behalten", sync: "voller Abgleich" };
       const editSync = syncs.find((x) => x.entity_id === this._syncSel) || null;
@@ -4145,7 +4140,21 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow"><label class="btn" style="--c:var(--error-color,#db4437)"><ha-icon icon="mdi:backup-restore"></ha-icon>Sicherung einspielen …<input type="file" id="xferRestore" accept=".zip,application/zip" hidden></label></div>
         <div id="xferRes"></div>` : `<p class="hint">🔒 Sicherungen darf nur ein Admin herunterladen oder einspielen.</p>`;
     }
-    return `<div class="subtabs">${t("recipes", "mdi:file-document-outline", "Rezepte aus Datei")}${t("apps", "mdi:swap-horizontal-circle-outline", "Aus anderen Apps")}${t("grocy", "mdi:fridge-outline", "Grocy")}${t("mail", "mdi:email-outline", "E-Mail")}${t("backup", "mdi:content-save-outline", "Sicherung")}</div>${body}`;
+    return `<div class="subtabs">${t("apps", "mdi:swap-horizontal-circle-outline", "Aus anderen Apps")}${t("grocy", "mdi:fridge-outline", "Grocy")}${t("mail", "mdi:email-outline", "E-Mail")}${t("backup", "mdi:content-save-outline", "Sicherung")}</div>${body}`;
+  }
+
+  // 📥 Rezepte aus Datei einlesen (⚙️ → Rezepte, dritter Reiter)
+  _recFileHtml() {
+    const admin = !!this._hass?.user?.is_admin;
+    return `
+        <p class="hint">Eine Datei mit Rezepten einlesen – z. B. aus einer anderen Rezept-App oder selbst getippt. Amerikanische Maße (cup, oz, lb, tbsp, °F) werden dabei automatisch umgerechnet.</p>
+        <ul class="hint xferfmt">
+          <li><b>.txt / .md</b>: jedes Rezept beginnt mit <code># Name</code>, danach „Zutaten“ (eine pro Zeile) und „Zubereitung“.</li>
+          <li><b>.csv</b>: Spalten <code>Rezept;Menge;Einheit;Zutat;Notiz;Zubereitung</code> – eine Zeile pro Zutat.</li>
+          <li><b>.json</b>: Rezepte aus einer Sicherung oder im gleichen Aufbau.</li>
+        </ul>
+        ${admin ? `<div class="btnrow"><label class="btn primary"><ha-icon icon="mdi:file-upload-outline"></ha-icon>Datei auswählen<input type="file" id="xferRecipeFile" accept=".txt,.md,.csv,.json,text/*,application/json" hidden></label></div>` : `<p class="hint">🔒 Rezepte einlesen darf nur ein Admin.</p>`}
+        <div id="xferRes"></div>`;
   }
 
   // 📧 Per E-Mail auf die Liste (über die IMAP-Integration von Home Assistant)
@@ -4220,7 +4229,9 @@ class EinkaufslisteCard extends HTMLElement {
 
   // 🥫 Produkte aus Grocy holen (Adresse + API-Schlüssel eintippen, Vorschau, Häkchen, übernehmen)
   _grocyHtml() {
+    const sv = this._data?.settings?.grocy;
     let url = this._grocyUrl;
+    if (url == null && sv?.url) url = this._grocyUrl = sv.url;
     if (url == null) { try { url = localStorage.getItem("einkaufsliste_grocy_url") || ""; } catch (_) { url = ""; } this._grocyUrl = url; }
     return `
       <div class="syncbox">
@@ -4228,14 +4239,89 @@ class EinkaufslisteCard extends HTMLElement {
       <ul class="hint xferfmt">
         <li>In Grocy: oben rechts auf deinen Benutzer → <b>API-Schlüssel verwalten</b> → neuen Schlüssel anlegen und kopieren.</li>
         <li>Die Adresse ist die, mit der du Grocy im Browser öffnest, z. B. <code>http://192.168.1.20:9283</code>. Home Assistant muss Grocy erreichen können.</li>
-        <li>Der Schlüssel wird <b>nicht gespeichert</b> – nur für diese eine Abfrage benutzt.</li>
+        <li>Bei der einmaligen Abfrage wird der Schlüssel <b>nicht gespeichert</b>. Nur wenn du unten den <b>Dauerabgleich</b> einschaltest, legt Home Assistant ihn auf dem Server ab – nie auf Handys, nie in Sicherungen.</li>
       </ul>
       <div class="srow"><ha-icon class="prev" icon="mdi:web"></ha-icon><input class="grow" id="grocyUrl" value="${esc(url)}" placeholder="Grocy-Adresse, z. B. http://192.168.1.20:9283" translate="no" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
       <div class="srow"><ha-icon class="prev" icon="mdi:key-outline"></ha-icon><input class="grow" id="grocyKey" type="password" value="${esc(this._grocyKey || "")}" placeholder="API-Schlüssel" translate="no" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
       <div class="btnrow"><button class="btn primary" data-act="grocy-fetch"><ha-icon icon="mdi:cloud-download-outline"></ha-icon>Produkte holen</button></div>
       <div id="grocyOut">${this._grocyOutHtml()}</div>
       </div>
+      <div class="syncbox" id="grocySync">${this._grocySyncHtml()}</div>
       <div id="xferRes"></div>`;
+  }
+
+  // 🔄 Grocy-Dauerabgleich: A = Einkaufsliste, B = neue Produkte – jeder Teil einzeln an/aus
+  _grocySyncHtml() {
+    const g = this._data?.settings?.grocy || null;
+    const mode = g?.a_mode || "move";
+    const hours = g?.b_hours || 6;
+    const when = (iso) => { try { return new Date(iso).toLocaleString([], { dateStyle: "short", timeStyle: "short" }); } catch (_) { return ""; } };
+    const st = g?.status;
+    const stLine = !g ? "" : st
+      ? `<p class="hint">${st.ok ? "✅ <span>Läuft</span>" : `⚠️ ${esc(st.msg || "Fehler")}`}${g.checked_at ? ` · <span>zuletzt geprüft</span> ${esc(when(g.checked_at))}` : ""}${g.count_a ? ` · 🛒 ${g.count_a} <span>geholt</span>` : ""}${g.count_b ? ` · 📦 ${g.count_b} <span>neue Produkte</span>` : ""}</p>`
+      : `<p class="hint">⏳ Noch nicht gelaufen.</p>`;
+    return `
+      <p class="hint"><b>🔄 Dauerabgleich</b><span>: Home Assistant schaut regelmäßig bei Grocy nach.</span> <span>Du schaltest</span> <b>jeden Teil einzeln</b> <span>ein – oder beide.</span> ${g ? `<span>Verbunden mit</span> <b translate="no">${esc(g.url)}</b> · <span>🔐 Schlüssel liegt auf dem Server.</span>` : "<span>Trag oben Adresse und Schlüssel ein, dann einschalten und speichern.</span>"}</p>
+      <label class="favrow"><input type="checkbox" id="gsA" ${g?.a_on ? "checked" : ""}><span>🛒 <b>Einkaufsliste</b> abgleichen (alle 3 Minuten)</span></label>
+      <div class="srow"><ha-icon class="prev" icon="mdi:swap-horizontal"></ha-icon><select class="grow" id="gsMode">
+        <option value="move" ${mode === "move" ? "selected" : ""}>Holen &amp; dort löschen</option>
+        <option value="keep" ${mode === "keep" ? "selected" : ""}>Bei beiden behalten</option>
+        <option value="sync" ${mode === "sync" ? "selected" : ""}>Voller Abgleich</option>
+      </select></div>
+      <ul class="hint xferfmt">
+        <li><b>Holen &amp; dort löschen:</b> Alles aus Grocy landet hier, die Zeile in Grocy verschwindet – die Grocy-Liste bleibt leer.</li>
+        <li><b>Bei beiden behalten:</b> Beides bleibt stehen. Hakst du hier ab, verschwindet die Zeile in Grocy; ist sie in Grocy weg, wird sie hier abgehakt.</li>
+        <li><b>Voller Abgleich:</b> Wie „Bei beiden behalten“ – und was bei dir offen ist, geht zusätzlich nach Grocy.</li>
+      </ul>
+      <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="gsStore" title="Geschäft für Artikel aus Grocy">${this._selectOptions(this._data.stores, g?.a_store_id || null, "🛒 Egal wo")}</select></div>
+      <div class="srow"><ha-icon class="prev" icon="mdi:format-list-numbered"></ha-icon><input class="grow" id="gsList" type="number" min="1" value="${esc(g?.list_id || 1)}" title="Nummer der Grocy-Einkaufsliste (Standard: 1)" placeholder="Grocy-Liste Nr. (Standard 1)"></div>
+      <label class="favrow"><input type="checkbox" id="gsB" ${g?.b_on ? "checked" : ""}><span>📦 <b>Neue Produkte</b> automatisch in den Katalog (nichts wird überschrieben oder gelöscht)</span></label>
+      <div class="srow"><ha-icon class="prev" icon="mdi:timer-outline"></ha-icon><select class="grow" id="gsHours" title="Wie oft nach neuen Produkten schauen">
+        ${[1, 3, 6, 12, 24].map((h) => `<option value="${h}" ${h === hours ? "selected" : ""}>Alle ${h} ${h === 1 ? "Stunde" : "Stunden"}</option>`).join("")}
+      </select></div>
+      <label class="favrow"><input type="checkbox" id="gsCats" ${g?.b_cats === false ? "" : "checked"}><span>Produktgruppen als Kategorien anlegen</span></label>
+      ${stLine}
+      <div class="btnrow">
+        <button class="btn primary" data-act="grocy-sync-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
+        ${g ? `<button class="btn" data-act="grocy-sync-run"><ha-icon icon="mdi:sync"></ha-icon>Jetzt abgleichen</button><button class="btn" data-act="grocy-sync-clear"><ha-icon icon="mdi:link-off"></ha-icon>Verbindung entfernen</button>` : ""}
+      </div>`;
+  }
+
+  _grocySyncRefresh() {
+    const box = this.$("grocySync");
+    if (box) box.innerHTML = this._grocySyncHtml();
+  }
+
+  async _grocySyncSave() {
+    const url = this.$("grocyUrl")?.value.trim() || "", key = this.$("grocyKey")?.value.trim() || "";
+    const a_on = !!this.$("gsA")?.checked, b_on = !!this.$("gsB")?.checked;
+    if (!url && !this._data?.settings?.grocy) { this._toast("Erst oben die Grocy-Adresse eintragen 😉"); return; }
+    try {
+      await this._ws({ type: "einkaufsliste/grocy/set", url, api_key: key, list_id: this.$("gsList")?.value || "1",
+        a_on, a_mode: this.$("gsMode")?.value || "move", a_store_id: this.$("gsStore")?.value || null,
+        b_on, b_hours: parseInt(this.$("gsHours")?.value || "6", 10), b_cats: !!this.$("gsCats")?.checked });
+      this._grocyKey = ""; const k = this.$("grocyKey"); if (k) k.value = "";
+      this._toast(a_on || b_on ? "🔄 Gespeichert – Abgleich läuft" : "💾 Gespeichert (Abgleich aus)");
+      this._grocySyncRefresh();
+    } catch (_) { /* Meldung kam schon */ }
+  }
+
+  async _grocySyncRun(btn) {
+    if (btn) btn.disabled = true;
+    try {
+      const res = await this._ws({ type: "einkaufsliste/grocy/run" });
+      this._toast(res?.status?.ok === false ? `⚠️ ${res.status.msg}` : "🔄 Abgeglichen");
+    } catch (_) { /* Meldung kam schon */ }
+    this._grocySyncRefresh();
+  }
+
+  async _grocySyncClear() {
+    if (!elConfirm("Verbindung zu Grocy entfernen? Der Schlüssel wird gelöscht, der Abgleich stoppt. Deine Liste und Produkte bleiben.")) return;
+    try {
+      await this._ws({ type: "einkaufsliste/grocy/clear" });
+      this._toast("🔗 Verbindung entfernt");
+      this._grocySyncRefresh();
+    } catch (_) { /* Meldung kam schon */ }
   }
 
   _grocyOutHtml() {
@@ -6564,7 +6650,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Adding a barcode later</b> (inside a product): scan first; below it there is “Enter by hand” for typing. With “Privacy on” only typing is offered.</li>
         <li><b>🔄 Fetch everything again</b> (cloud icon under “All products”): first you choose what – <b>photo</b> (pre-selected), <b>name</b> and/or <b>note</b> – then it goes through every product with a barcode, one after the other. Newer database photos replace old database photos; your own photos and your ✏️ own note stay. An empty database note never deletes anything. It pauses briefly between products and retries on errors and with several barcodes. At the end you get a <b>report</b>: what was changed, what was already the same, which products the database does not know or could not be reached for – and where it has no photo.</li>
         <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
-        <li><b>Recipes:</b> a tab for the recipes (button <b>“New recipe”</b>, search field, ✏️ per row) and one for the groups (Fish, Meat, Pastry …; the group's icon and colour tint the recipes).</li>
+        <li><b>Recipes:</b> a tab for the recipes (button <b>“New recipe”</b>, search field, ✏️ per row) one for the groups (Fish, Meat, Pastry …; the group's icon and colour tint the recipes) and <b>Recipes from a file</b> (.txt, .md, .csv, .json; US measures are converted – admins only).</li>
         <li><b>Recipe editor:</b> name and group (the group is suggested automatically, “✨ suggested”), “The quantities are for N people/trays”, recipe photo, ingredients (entered like in the list, with units and 🧂 “we always have it”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>Oven &amp; co.</b> (degrees, minutes), the instructions (one row per step, movable via ⠿), photos per step (for steps that are already saved), delete, cancel, save. Foreign measures (cup, oz, °F) from recipe links are converted.</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
         <li>Each row has its <b>own page</b> with an on/off button: 🏷️ offers, 🧾 purchase log, 💳 loyalty cards, 📍 shop mode automatic, 🛒😊 mascot.</li>
@@ -6574,10 +6660,9 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>📍 Automatic shop mode</b> needs a 📍 zone at the store (Stores → Location) and your phone set up as a person in Home Assistant. What you switch on or off yourself is left alone by the automation.</li>
         <li><b>🧾 Purchase log:</b> its own switch plus <b>“🎉 Ask automatically”</b> (only appears once the log is on) and an “Open” button. Switching it off only hides the display – the entries stay saved.</li></ul>`)}
       ${sec("💾", "Data", `<ul>
-        <li><b>Import &amp; backup</b> has five tabs:
-          <ul><li><b>Recipes from a file</b> (.txt, .md, .csv, .json; US measures are converted) – admins only.</li>
-          <li><b>From other apps:</b> several Alexa/to-do lists, each with its own store, either 🔁 <b>fetch automatically</b> (Fetch &amp; delete there · Keep in both · Full sync) – admins only – or <b>fetch once</b>. Plus <b>“Paste text”</b> (e.g. copy a list from Bring! or Google Keep and paste it) – anyone may do that.</li>
-          <li><b>🥫 Grocy:</b> fetch products from Grocy into the catalogue – type the address and API key (the key is not stored), preview with tick boxes, then name, barcodes and the product group (as a category) come over. Whatever already exists is not overwritten – admins only.</li>
+        <li><b>Import &amp; backup</b> has four tabs:
+          <ul><li><b>From other apps:</b> several Alexa/to-do lists, each with its own store, either 🔁 <b>fetch automatically</b> (Fetch &amp; delete there · Keep in both · Full sync) – admins only – or <b>fetch once</b>. Plus <b>“Paste text”</b> (e.g. copy a list from Bring! or Google Keep and paste it) – anyone may do that.</li>
+          <li><b>🥫 Grocy:</b> fetch products from Grocy into the catalogue – type the address and API key (the key is not stored for the one-time fetch), preview with tick boxes, then name, barcodes and the product group (as a category) come over. Whatever already exists is not overwritten. Below it the <b>🔄 continuous sync</b> with two separate switches: 🛒 <b>shopping list</b> (every 3 minutes; “Fetch &amp; delete there”, “Keep on both” or “Full sync”) and 📦 <b>new products</b> (every 1–24 hours, nothing is overwritten or deleted). Here Home Assistant keeps the key on the server – never on phones, never in backups. “Remove connection” deletes it again – admins only.</li>
           <li><b>📧 E-mail:</b> IMAP mailbox, allowed senders, store via subject or heading in the mail (“Aldi:”), and what happens to the mail afterwards (leave it · mark as read · delete) – admins only.</li>
           <li><b>Backup:</b> download a .zip or “Restore backup” (replaces everything!) – admins only.</li></ul></li>
         <li><b>History:</b> who did what and when, with filters (person, store, action) and search, “Show more” and a symbol legend. At the top is <b>📈 Often not available</b> – ✖ hides an entry. “Keep for 7/30/90/180/365 days” is set there, “Clear history” deletes it. One button opens the purchase log.</li>
@@ -6615,7 +6700,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Barcode nachtragen</b> (im Produkt): erst scannen; darunter steht „Von Hand eingeben“ zum Eintippen. Bei „Datenschutz an“ gibt es nur das Eintippen.</li>
         <li><b>🔄 Alles neu holen</b> (Wolken-Symbol bei „Alle Produkte“): Du wählst erst, was – <b>Foto</b> (vorausgewählt), <b>Name</b> und/oder <b>Notiz</b> – dann geht es nacheinander durch alle Produkte mit Barcode. Neuere Datenbank-Fotos ersetzen alte Datenbank-Fotos; eigene Fotos und deine ✏️ Eigene Notiz bleiben. Eine leere Datenbank-Notiz löscht nie etwas. Zwischen den Produkten macht sie kleine Pausen und probiert bei Fehlern und bei mehreren Barcodes nach. Am Ende steht ein <b>Bericht</b>: was angepasst wurde, was schon gleich war, bei welchen Produkten die Datenbank nichts kennt oder nicht erreichbar war – und wo sie kein Foto hat.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
-        <li><b>Rezepte:</b> ein Reiter für die Rezepte (Knopf <b>„Neues Rezept“</b>, Suchfeld, pro Zeile ✏️), einer für die Gruppen (Fisch, Fleisch, Gebäck …; Icon und Farbe der Gruppe färben die Rezepte).</li>
+        <li><b>Rezepte:</b> ein Reiter für die Rezepte (Knopf <b>„Neues Rezept“</b>, Suchfeld, pro Zeile ✏️), einer für die Gruppen (Fisch, Fleisch, Gebäck …; Icon und Farbe der Gruppe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).</li>
         <li><b>Rezept-Editor:</b> Name und Gruppe (die Gruppe wird automatisch vorgeschlagen, „✨ vorgeschlagen“), „Die Mengen sind für N Personen/Bleche“, Rezept-Foto, Zutaten (eintragen wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten), die Zubereitung (eine Zeile pro Schritt, per ⠿ verschiebbar), Fotos pro Schritt (bei schon gespeicherten Schritten), Löschen, Abbrechen, Speichern. Aus Rezept-Links werden fremde Maße (cup, oz, °F) umgerechnet.</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
         <li>Jede Zeile hat ihre <b>eigene Seite</b> mit einem Ein/Ausschalten-Knopf: 🏷️ Angebote, 🧾 Einkaufs-Protokoll, 💳 Kundenkarten, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen.</li>
@@ -6625,10 +6710,9 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>📍 Laden-Modus automatisch</b> braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</li>
         <li><b>🧾 Einkaufs-Protokoll:</b> eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist) und ein „Öffnen“-Knopf. Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert.</li></ul>`)}
       ${sec("💾", "Daten", `<ul>
-        <li><b>Import &amp; Sicherung</b> hat fünf Reiter:
-          <ul><li><b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet) – nur Admins.</li>
-          <li><b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen, jede mit eigenem Geschäft, entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich) – nur Admins – oder <b>einmal herüberholen</b>. Dazu <b>„Text einfügen“</b> (z. B. eine Liste aus Bring! oder Google Keep kopieren und einfügen) – das darf jeder.</li>
-          <li><b>🥫 Grocy:</b> Produkte aus Grocy in den Katalog holen – Adresse und API-Schlüssel eintippen (der Schlüssel wird nicht gespeichert), Vorschau mit Häkchen, dann kommen Name, Barcodes und die Produktgruppe (als Kategorie) rüber. Was es schon gibt, wird nicht überschrieben – nur Admins.</li>
+        <li><b>Import &amp; Sicherung</b> hat vier Reiter:
+          <ul><li><b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen, jede mit eigenem Geschäft, entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich) – nur Admins – oder <b>einmal herüberholen</b>. Dazu <b>„Text einfügen“</b> (z. B. eine Liste aus Bring! oder Google Keep kopieren und einfügen) – das darf jeder.</li>
+          <li><b>🥫 Grocy:</b> Produkte aus Grocy in den Katalog holen – Adresse und API-Schlüssel eintippen (der Schlüssel wird bei der einmaligen Abfrage nicht gespeichert), Vorschau mit Häkchen, dann kommen Name, Barcodes und die Produktgruppe (als Kategorie) rüber. Was es schon gibt, wird nicht überschrieben. Darunter der <b>🔄 Dauerabgleich</b> mit zwei getrennten Schaltern: 🛒 <b>Einkaufsliste</b> (alle 3 Minuten; „Holen &amp; dort löschen“, „Bei beiden behalten“ oder „Voller Abgleich“) und 📦 <b>neue Produkte</b> (alle 1–24 Stunden, nichts wird überschrieben oder gelöscht). Hier legt Home Assistant den Schlüssel auf dem Server ab – nie auf Handys, nie in Sicherungen. „Verbindung entfernen“ löscht ihn wieder – nur Admins.</li>
           <li><b>📧 E-Mail:</b> IMAP-Postfach, erlaubte Absender, Geschäft über Betreff oder Überschrift in der Mail („Aldi:“), und was mit der Mail danach passiert (liegen lassen · als gelesen markieren · löschen) – nur Admins.</li>
           <li><b>Sicherung:</b> .zip herunterladen oder „Sicherung einspielen“ (ersetzt alles!) – nur Admins.</li></ul></li>
         <li><b>Verlauf:</b> wer hat wann was gemacht, mit Filtern (Person, Geschäft, Aktion) und Suche, „Mehr anzeigen“ und einer Symbol-Legende. Oben steht <b>📈 Oft nicht bekommen</b> – mit ✖ blendest du einen Eintrag aus. „Aufheben für 7/30/90/180/365 Tage“ stellst du dort ein, „Verlauf leeren“ löscht ihn. Ein Knopf öffnet das Einkaufs-Protokoll.</li>
@@ -8938,6 +9022,15 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "grocy-go":
         this._grocyGo();
+        break;
+      case "grocy-sync-save":
+        this._grocySyncSave();
+        break;
+      case "grocy-sync-run":
+        this._grocySyncRun(el);
+        break;
+      case "grocy-sync-clear":
+        this._grocySyncClear();
         break;
       case "grocy-all":
         if (this._grocy) {
