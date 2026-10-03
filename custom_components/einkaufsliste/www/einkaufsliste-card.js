@@ -5313,7 +5313,7 @@ class EinkaufslisteCard extends HTMLElement {
         </div>
         <div class="srow rgrouprow">
           <ha-icon class="prev" icon="mdi:tag-outline"></ha-icon>
-          <span class="grow">🏷️ Gruppe</span>
+          <span class="grow">Gruppe</span>
           <small id="rGroupHint" class="hint" hidden>✨ vorgeschlagen</small>
           <select id="rGroup">
             <option value="">– keine –</option>
