@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.7";
+const EL_VERSION = "2.53.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.53.7"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.53.8"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🧽 <b>Radiergummi überall:</b> Neben den Suchfeldern steht ein 🧽, sobald etwas drinsteht – und in jedem Textfeld erscheint beim Tippen ein 🧽 am rechten Rand, der nur dieses Feld leert. · 📝 <b>Notiz-Vorlagen mit Filter:</b> Unter „✏️ Eigene Notiz“ erscheinen die Vorlagen erst ab dem ersten Buchstaben und nur die passenden. · 🤖 <b>KI-Kochen:</b> „Offene Artikel mitnehmen“ ist jetzt standardmäßig aus.",
+   "🧽 <b>Eraser everywhere:</b> search fields get a 🧽 as soon as they contain text – and every text field shows a 🧽 at its right edge while you type, clearing only that field. · 📝 <b>Note templates with filter:</b> under “✏️ Own note” the templates only appear from the first letter and only the matching ones. · 🤖 <b>AI cooking:</b> “Include open items” is now off by default."],
   ["📷 <b>Fotos beim Kochen:</b> Im Koch-Modus gibt es bei jedem Schritt ohne Foto den Knopf „📷 Foto zu diesem Schritt“ – das Foto wird sofort gespeichert. · 🤖 <b>KI-Rezepte erkennbar:</b> Rezepte, die über „Was kann ich kochen?“ gespeichert wurden, zeigen ein 🤖 links neben dem 📷 (bleibt dran, auch nach dem Bearbeiten). · 🧽 <b>Radiergummi bei jeder Suche:</b> Neben den Suchfeldern (⚙️, Verlauf, Katalog, Protokoll, Rezepte, Anleitungen, Gar-Zeiten) löscht ein Tipp den Suchtext. · 🔒 Unter ⚙️ → Datenschutz steht jetzt auch, was bei KI-Kochen verschickt wird.",
    "📷 <b>Photos while cooking:</b> in cooking mode every step without a photo has the button “📷 Photo for this step” – the photo is saved right away. · 🤖 <b>AI recipes are recognisable:</b> recipes saved through “What can I cook?” show a 🤖 to the left of the 📷 (it stays, even after editing). · 🧽 <b>Eraser at every search:</b> next to the search fields (⚙️, history, catalogue, log, recipes, guides, cooking times) one tap clears the search text. · 🔒 ⚙️ → Privacy now also says what is sent with AI cooking."],
   ["🤖 <b>KI-Kochen:</b> ⚙️ → Extras → KI-Kochen: einen KI-Assistenten aus Home Assistant wählen, dann steht bei den Rezepten „Was kann ich kochen?“ (links neben den Gar-Zeiten). Zutaten eintippen – auch Dinge, die nicht im Katalog stehen –, Fehlendes mit einem Tipp auf die Liste oder das Gericht als Rezept speichern. · 📝 <b>Notiz-Vorlagen:</b> Knöpfe unter der ✏️ Eigenen Notiz („Bio“, „ohne Laktose“ …), selbst pflegbar. · 📄 <b>Katalog aus CSV</b> (⚙️ → Import &amp; Sicherung). · ▥ <b>Barcode-Duplikate</b> (nur Nullen anders) meldet „Alles ok?“. · 📷 <b>Fotos zur Zubereitung</b> gibt es jetzt auch bei neuen Schritten. · 🗣️ Anleitung für <b>Siri-Kurzbefehle</b>.",
@@ -1349,6 +1351,7 @@ form.add .sugg { grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:6px; mar
 .tplchips .chip2 { padding:3px 10px; min-width:0; font-size:.82em; }
 input[hidden] + .tplchips { display:none; }
 .tplchips:empty { display:none; }
+.tplchips:not(:has(.chip2:not([hidden]))) { display:none; }
 .chip2 { border:1.5px solid var(--divider-color, rgba(127,127,127,.35)); background:transparent; border-radius:999px; padding:7px 14px; cursor:pointer; font-size:.95em; min-width:44px; }
 .chip2.sel { background:var(--primary-color,#03a9f4); border-color:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
 .lastq { border-style:dashed; }
@@ -1915,7 +1918,7 @@ function showGarTable() {
   </style>
   <div class="gar" translate="no">
     <h2>⏲️ ${en ? "Cooking times" : "Gar-Zeiten"}</h2>
-    <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}">🧽</button></div>
+    <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}">🧽</button></div>
     <div class="gtabs"></div>
     <p class="sub devhint"></p>
     <div class="garlist"></div>
@@ -1958,7 +1961,9 @@ function showGarTable() {
   };
   tabs.addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) { dev = Number(b.dataset.d); draw(); ov.scrollTop = 0; } });
   inp.addEventListener("input", draw);
-  ov.querySelector(".gerase").onclick = () => { inp.value = ""; draw(); inp.focus(); };
+  const ge = ov.querySelector(".gerase");
+  inp.addEventListener("input", () => { ge.hidden = !inp.value; });
+  ge.onclick = () => { inp.value = ""; ge.hidden = true; draw(); inp.focus(); };
   draw();
   const bClose = ovButton(en ? "Close" : "Schließen", true);
   Object.assign(bClose.style, { marginTop: "16px" });
@@ -3341,7 +3346,7 @@ class EinkaufslisteCard extends HTMLElement {
         <input id="edQty" value="${esc(item.quantity || "")}" placeholder="${esc(`${EL_LANG === "de" ? "Menge" : "Quantity"}, ${this._qtyExample(item.name)}`)}">
         <select id="edFor">${this._personOptions(item.for_whom)}</select>
         ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz, z. B. große Packung">` : `<input type="hidden" id="edNote" value="${esc(item.note)}">`}` : `<input type="hidden" id="edNote" value="">`}
-        ${item.recipe_id ? "" : (item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt">${this._tplChipsHtml()}`)}
+        ${item.recipe_id ? "" : (item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt">${this._tplChipsHtml(item.own_note || "")}`)}
         <input class="full" id="edAliases" value="${esc(this._itemAliases(item).join(", "))}" data-orig="${esc(this._itemAliases(item).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
@@ -3894,12 +3899,12 @@ class EinkaufslisteCard extends HTMLElement {
         </div>
         ${this._prodTab === "delete" ? `
         <p class="hint">Hier verschwinden Artikel endgültig von der Einkaufsliste, auch aus „Erledigt“. Barcode und Vorschlag bleiben; das Foto kommt mit weg, wenn das Produkt sonst nirgends mehr steht. Ganz löschen geht unter „Alle Produkte“.</p>
-        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="delSearch" placeholder="Artikel suchen, z. B. Milch" value="${esc(this._delFilter || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="delSearch" title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
+        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="delSearch" placeholder="Artikel suchen, z. B. Milch" value="${esc(this._delFilter || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="delSearch" ${this._delFilter ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
         <div id="delList"></div>` : `
         ${this._prodTab === "scanned"
           ? `<p class="hint">Hier stehen Produkte, die neu gescannt wurden. Kurz prüfen: Stimmt der Name? Dann <b>✔ Passt</b>. Sonst antippen und korrigieren – Speichern zählt auch als geprüft.</p>`
           : `<p class="hint">Alle Produkte, die die Liste kennt. Antippen = ändern oder ganz löschen. Umbenennen zieht Fotos, Barcodes, Artikel und Rezepte mit.</p>`}
-        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen, z. B. Milch" value="${esc(this._prodFilter || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="prodSearch" title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
+        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen, z. B. Milch" value="${esc(this._prodFilter || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="prodSearch" ${this._prodFilter ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
         ${this._prodTab === "scanned" ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:filter-variant"></ha-icon><select class="grow" id="prodFilterSel" title="Filter">${this._prodFilterOptions()}</select>
           <button class="btn" id="prodClear" data-act="prod-clear" title="Eingaben und Filter zurücksetzen" aria-label="Eingaben und Filter zurücksetzen" ${this._prodFilter || this._prodSel ? "" : "hidden"}><ha-icon icon="mdi:eraser"></ha-icon></button>
           <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog" aria-label="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon></button>
@@ -3989,7 +3994,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="sec">
           <h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3>
           <button class="health wait" id="healthBar" data-act="set-sec" data-sec="check"><span>⚪</span><span><b>Prüfe …</b></span></button>
-          <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="setSearch" placeholder="In den Einstellungen suchen, z. B. Foto" value="${esc(this._setQ || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="setSearch" title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
+          <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="setSearch" placeholder="In den Einstellungen suchen, z. B. Foto" value="${esc(this._setQ || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="setSearch" ${this._setQ ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
           <div id="setList">${this._settingsListHtml(sections)}</div>
           <div class="btnrow" style="margin-top:14px"><button class="btn" data-act="guide-settings"><ha-icon icon="mdi:book-open-variant"></ha-icon>Anleitung Einstellungen</button></div>
         </div>
@@ -4024,18 +4029,25 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 📝 Vorlagen für die Eigene Notiz: ein Tipp setzt den Text ins Feld davor
-  _tplButtons() {
-    return (this._data?.settings?.note_templates || []).map((t) => `<button type="button" class="chip2" data-act="tpl-chip" data-t="${esc(t)}">${esc(t)}</button>`).join("");
+  // 📝 Vorlagen erst ab dem ersten Buchstaben und nur die passenden (gefiltert wird nach dem Teil hinter dem letzten Komma)
+  _tplMatch(t, value) {
+    const q = String(value || "").split(",").pop().trim().toLowerCase();
+    const tl = String(t).toLowerCase();
+    return !!q && tl.includes(q) && tl !== q;
   }
 
-  _tplChipsHtml() {
-    return `<div class="chips tplchips">${this._tplButtons()}</div>`;
+  _tplButtons(value = "") {
+    return (this._data?.settings?.note_templates || []).map((t) => `<button type="button" class="chip2" data-act="tpl-chip" data-t="${esc(t)}" ${this._tplMatch(t, value) ? "" : "hidden"}>${esc(t)}</button>`).join("");
+  }
+
+  _tplChipsHtml(value = "") {
+    return `<div class="chips tplchips">${this._tplButtons(value)}</div>`;
   }
 
   _refreshTplChips() {
     const box = this.$("inTpl");
     if (!box) return;
-    const html = this._tplButtons();
+    const html = this._tplButtons(this.$("inOwn")?.value || "");
     if (box.dataset.h !== html) { box.dataset.h = html; box.innerHTML = html; }
   }
 
@@ -4312,7 +4324,7 @@ class EinkaufslisteCard extends HTMLElement {
     Object.assign(ov.style, { justifyContent: "flex-start", overflowY: "auto", touchAction: "auto" });
     const agentName = this._hass?.states?.[this._data.settings?.ai_agent]?.attributes?.friendly_name || this._data.settings?.ai_agent || "KI";
     const fld = "width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee";
-    const last = this._aiLast || { text: "", wish: "", list: true };
+    const last = this._aiLast || { text: "", wish: "", list: false };
     ov.innerHTML = `<div style="max-width:560px;width:100%;display:flex;flex-direction:column;gap:10px;margin:auto 0">
       <div style="font:600 19px Roboto,sans-serif;text-align:center">🤖 Was kann ich kochen?</div>
       <div style="opacity:.8;font-size:.92em">Schreib auf, was du da hast – es müssen keine Produkte aus dem Katalog sein. Eine Zutat pro Zeile oder mit Komma.</div>
@@ -4323,7 +4335,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div data-btns style="display:flex;gap:10px;justify-content:flex-end"></div>
       <div data-res></div></div>`;
     const $ = (sel) => ov.querySelector(sel);
-    $("[data-in]").value = last.text; $("[data-wish]").value = last.wish; $("[data-list]").checked = last.list !== false;
+    $("[data-in]").value = last.text; $("[data-wish]").value = last.wish; $("[data-list]").checked = last.list === true;
     const res = $("[data-res]");
     const close = ovButton("Schließen");
     const go = ovButton("🤖 Ideen holen", true);
@@ -4657,7 +4669,7 @@ class EinkaufslisteCard extends HTMLElement {
         <select id="logStore" title="Geschäft">${opt("", "🏪 Alle", f.store)}${this._data.stores.map((st) => opt(st.id, st.name, f.store)).join("")}${opt("~none", "Egal wo", f.store)}</select>
         <select id="logAct" title="Aktion">${opt("", "⚡ Alles", f.act)}${Object.entries(LOG_ACT).map(([k, v]) => opt(k, v.label, f.act)).join("")}</select>
       </div>
-      <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="logSearch" placeholder="Artikel suchen, z. B. Milch" value="${esc(f.q)}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="logSearch" title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
+      <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="logSearch" placeholder="Artikel suchen, z. B. Milch" value="${esc(f.q)}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="logSearch" ${f.q ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
       ${this._data.settings?.spend ? `<div class="btnrow"><button class="btn" data-act="spend"><ha-icon icon="mdi:receipt-text-outline"></ha-icon>🧾 Einkaufs-Protokoll öffnen</button></div>` : ""}
       <div id="logMissed"></div>
       <div id="logList"><p class="hint">Lade Verlauf …</p></div>
@@ -4950,7 +4962,7 @@ class EinkaufslisteCard extends HTMLElement {
         return rowHtml + `<div class="prodedit" data-key="${esc(p.key)}">
           <input id="peName" value="${esc(p.name)}" placeholder="Name, z. B. Milch">
           ${p.note ? (p.barcodes.length ? `<input type="hidden" id="peNote" value="${esc(p.note)}">` : `<input id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz, z. B. große Packung">`) : `<input type="hidden" id="peNote" value="">`}
-          ${p.note && !p.barcodes.length ? `<input type="hidden" id="peOwn" value="${esc(p.own_note || "")}">` : `<input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Nur für dich: Die Datenbank überschreibt sie nie">${this._tplChipsHtml()}`}
+          ${p.note && !p.barcodes.length ? `<input type="hidden" id="peOwn" value="${esc(p.own_note || "")}">` : `<input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Nur für dich: Die Datenbank überschreibt sie nie">${this._tplChipsHtml(p.own_note || "")}`}
           <input id="peAliases" value="${esc(this._capAliases(p.aliases).join(", "))}" data-orig="${esc(this._capAliases(p.aliases).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
           <label class="favrow" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" id="peFav" ${p.favorite ? "checked" : ""} data-orig="${p.favorite ? 1 : 0}"> ⭐ Favorit</label>
           <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
@@ -6790,10 +6802,12 @@ class EinkaufslisteCard extends HTMLElement {
       const en = EL_LANG !== "de";
       const bar = document.createElement("div");
       bar.className = "elg-search";
-      bar.innerHTML = `<input type="search" class="elg-q" placeholder="${en ? "🔎 Search this guide, e.g. photo" : "🔎 In dieser Anleitung suchen, z. B. Foto"}" aria-label="${en ? "Search this guide" : "In dieser Anleitung suchen"}" autocomplete="off" enterkeyhint="search"><button type="button" class="elg-erase" title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}" style="background:none;border:0;cursor:pointer;font-size:20px;padding:0 6px">🧽</button><p class="elg-none" hidden>${en ? "Nothing found 🤷 – try another word." : "Nichts gefunden 🤷 – versuch ein anderes Wort."}</p>`;
+      bar.innerHTML = `<input type="search" class="elg-q" placeholder="${en ? "🔎 Search this guide, e.g. photo" : "🔎 In dieser Anleitung suchen, z. B. Foto"}" aria-label="${en ? "Search this guide" : "In dieser Anleitung suchen"}" autocomplete="off" enterkeyhint="search"><button type="button" class="elg-erase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}" style="background:none;border:0;cursor:pointer;font-size:20px;padding:0 6px">🧽</button><p class="elg-none" hidden>${en ? "Nothing found 🤷 – try another word." : "Nichts gefunden 🤷 – versuch ein anderes Wort."}</p>`;
       sub.after(bar);
       const q = bar.querySelector(".elg-q"), none = bar.querySelector(".elg-none");
-      bar.querySelector(".elg-erase").onclick = () => { q.value = ""; q.dispatchEvent(new Event("input")); q.focus(); };
+      const eg = bar.querySelector(".elg-erase");
+      q.addEventListener("input", () => { eg.hidden = !q.value; });
+      eg.onclick = () => { q.value = ""; q.dispatchEvent(new Event("input")); q.focus(); };
       const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ß/g, "ss");
       const secs = [...ov.querySelectorAll("details.elg-sec")].map((d) => ({ d, text: norm(d.textContent) }));
       q.addEventListener("input", () => {
@@ -8039,6 +8053,10 @@ class EinkaufslisteCard extends HTMLElement {
 
   _onInput(e) {
     const t = e.target;
+    if (t.tagName === "INPUT" && t.nextElementSibling?.classList?.contains("tplchips")) { // 📝 passende Vorlagen zeigen
+      for (const b of t.nextElementSibling.querySelectorAll(".chip2")) b.hidden = !this._tplMatch(b.dataset.t, t.value);
+    }
+    if (t.id) { const er = this.shadowRoot.querySelector(`[data-act="search-erase"][data-for="${t.id}"]`); if (er) er.hidden = !t.value; } // 🧽 nur zeigen, wenn etwas im Feld steht
     if (t.id === "rName") { this._autoGroup(); return; }
     if (t.id === "delSearch") {
       this._delFilter = t.value;
@@ -8332,9 +8350,12 @@ class EinkaufslisteCard extends HTMLElement {
         const inp = el.closest(".tplchips")?.previousElementSibling;
         if (!inp || inp.tagName !== "INPUT") break;
         const t = el.dataset.t || "";
-        const cur = inp.value.trim();
-        if (!cur) inp.value = t;
-        else if (!cur.toLowerCase().includes(t.toLowerCase())) inp.value = `${cur}, ${t}`.slice(0, inp.maxLength > 0 ? inp.maxLength : 120);
+        const parts = inp.value.split(",").map((x) => x.trim());
+        const last = (parts.pop() || "").toLowerCase();
+        if (last && t.toLowerCase().includes(last)) parts.push(t); // angetippten Anfang durch die Vorlage ersetzen
+        else if (parts.concat(last).some((x) => x && x.toLowerCase() === t.toLowerCase())) parts.push(last);
+        else parts.push(...(last ? [inp.value.split(",").pop().trim(), t] : [t]));
+        inp.value = parts.filter(Boolean).join(", ").slice(0, inp.maxLength > 0 ? inp.maxLength : 120);
         inp.dispatchEvent(new Event("input", { bubbles: true }));
         inp.focus();
         break;
@@ -9706,6 +9727,77 @@ class EinkaufslisteCardEditor extends HTMLElement {
     this._form.schema = this._schema();
   }
 }
+
+
+// 🧽 Ein Radiergummi für JEDES Textfeld: erscheint am rechten Rand, solange man im Feld ist und etwas drinsteht.
+// Ein einziger schwebender Knopf für die ganze Seite (auch in Dialogen und im Shadow-DOM) – es ändert sich nichts am Aufbau der Felder.
+// Ausgenommen: PIN/Passwort/API-Schlüssel, Nur-Lesen-Felder und Suchfelder, die schon ihren eigenen Radiergummi haben.
+(function elInitErasers() {
+  if (window.__elErasers) return;
+  window.__elErasers = true;
+  const OWN = new Set(["delSearch", "prodSearch", "setSearch", "logSearch", "recipeSearch", "recipeSearchS"]);
+  const SECRET = /pin|pass|schl[uü]ssel|api|token|secret/i;
+  let btn = null, cur = null, timer = 0;
+  const eligible = (el) => {
+    if (!el || !(el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return false;
+    if (el.tagName === "INPUT" && !["text", "search", "email", "url", "tel", ""].includes((el.getAttribute("type") || "").toLowerCase())) return false;
+    if (el.readOnly || el.disabled || el.hidden || el.dataset.noerase !== undefined) return false;
+    if (OWN.has(el.id) || el.classList.contains("elg-q") || el.closest(".gsearch")) return false;
+    if (SECRET.test(`${el.id} ${el.name || ""} ${el.getAttribute("placeholder") || ""} ${el.getAttribute("autocomplete") || ""}`)) return false;
+    return true;
+  };
+  const ensure = () => {
+    if (btn) return btn;
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "🧽";
+    btn.hidden = true;
+    btn.setAttribute("aria-label", "Feld leeren");
+    btn.title = "Feld leeren";
+    btn.style.cssText = "position:fixed;z-index:2147483000;width:30px;height:30px;padding:0;border:0;border-radius:50%;cursor:pointer;font-size:17px;line-height:30px;text-align:center;background:rgba(127,127,127,.28);color:inherit;touch-action:manipulation";
+    btn.addEventListener("pointerdown", (e) => e.preventDefault()); // Fokus bleibt im Feld
+    btn.addEventListener("mousedown", (e) => e.preventDefault());
+    btn.addEventListener("click", () => {
+      const el = cur;
+      if (!el) return;
+      el.value = "";
+      el.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+      hide();
+      try { el.focus(); } catch (_) { /* egal */ }
+    });
+    document.body.appendChild(btn);
+    return btn;
+  };
+  const hide = () => {
+    if (cur && cur.dataset.erPad !== undefined) { cur.style.paddingRight = cur.dataset.erPad; delete cur.dataset.erPad; }
+    if (btn) btn.hidden = true;
+    cur = null;
+    clearInterval(timer);
+    timer = 0;
+  };
+  const place = () => {
+    if (!cur || !cur.isConnected || !cur.value) { hide(); return; }
+    const r = cur.getBoundingClientRect();
+    if (r.width < 90 || r.bottom < 0 || r.top > innerHeight) { if (btn) btn.hidden = true; return; }
+    const b = ensure();
+    b.hidden = false;
+    const top = cur.tagName === "TEXTAREA" ? r.top + 6 : r.top + (r.height - 30) / 2;
+    b.style.top = `${Math.max(0, top)}px`;
+    b.style.left = `${Math.max(0, r.right - 34)}px`;
+  };
+  const show = (el) => {
+    if (cur && cur !== el) hide();
+    cur = el;
+    if (cur.dataset.erPad === undefined) { cur.dataset.erPad = cur.style.paddingRight || ""; cur.style.paddingRight = "38px"; }
+    place();
+    if (!timer) timer = setInterval(place, 300); // falls der Dialog scrollt oder sich verschiebt
+  };
+  const target = (e) => (e.composedPath ? e.composedPath()[0] : e.target);
+  document.addEventListener("focusin", (e) => { const el = target(e); if (eligible(el) && el.value) show(el); else if (cur) hide(); }, true);
+  document.addEventListener("input", (e) => { const el = target(e); if (!eligible(el)) return; if (el.value) show(el); else if (cur === el) hide(); }, true);
+  document.addEventListener("focusout", (e) => { if (target(e) === cur) setTimeout(() => { if (cur && !(cur.getRootNode().activeElement === cur)) hide(); }, 150); }, true);
+  addEventListener("resize", () => cur && place());
+})();
 
 if (!customElements.get("einkaufsliste-card")) customElements.define("einkaufsliste-card", EinkaufslisteCard);
 if (!customElements.get("einkaufsliste-card-editor")) customElements.define("einkaufsliste-card-editor", EinkaufslisteCardEditor);

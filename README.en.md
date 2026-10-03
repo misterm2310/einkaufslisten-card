@@ -165,7 +165,7 @@ For this the API key is kept on the server (never on phones, never in backups). 
 **⚙️ → Extras → AI cooking** (admin only, **off** by default): choose an **AI assistant from Home Assistant** (e.g. OpenAI, Google, Anthropic or local Ollama) and switch it on or off with **Turn on / Turn off** (the assistant stays remembered). Then **Recipes** shows the button “What can I cook?” at the top left, next to the cooking times. Type ingredients – also things that are not in the catalogue – and optionally include the open items of the list. For every suggestion: **Missing items to the list** or **Save as recipe**. 🔒 The **ingredient names** go to the chosen assistant (cloud: over the internet, local: stays at home); with **Privacy** switched on nothing is sent. AI answers can be wrong. *Not tried against a real AI assistant yet – only tested with a stand-in.*
 
 ### 📝 Note templates
-**⚙️ → Extras → Note templates**: small buttons under the ✏️ Own note field (“Organic”, “lactose-free”, “large pack” …). You maintain the texts yourself, for all devices.
+**⚙️ → Extras → Note templates**: small buttons under the ✏️ Own note field (“Organic”, “lactose-free”, “large pack” …). They only appear once you type the first letter and show only the matching ones; a tap replaces what you typed with the template. You maintain the texts yourself, for all devices.
 
 ### 🗣️ Siri / Shortcuts (iPhone)
 In the Shortcuts app create a new shortcut, choose the Home Assistant app’s **“Call service”** action, service `einkaufsliste.add_item`, data `name: Milk` (set the name to “Ask each time”). Named “Shopping”, “Hey Siri, Shopping” is enough. To tick off use `einkaufsliste.check_item`. *Not tested on an iPhone; action names can differ slightly depending on the app version.*
