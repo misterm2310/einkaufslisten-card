@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.12";
+const EL_VERSION = "2.53.13";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.53.9"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1299,6 +1299,7 @@ button { font:inherit; color:inherit; }
 .wizard li::before { content:counter(wz); flex:none; width:24px; height:24px; border-radius:50%; background:var(--primary-color,#03a9f4); color:#fff; display:grid; place-items:center; font-weight:700; font-size:.85em; }
 .wizard li span { flex:1; }
 .badge { cursor:pointer; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border-radius:999px; padding:1px 9px; font-size:.75em; font-weight:600; }
+.iconbtn.serase, .iconbtn.rclear, .rclear, #prodClear { color:var(--error-color,#db4437); }
 .iconbtn { background:none; border:0; cursor:pointer; padding:6px; border-radius:50%; display:inline-flex; color:var(--secondary-text-color); line-height:0; }
 .iconbtn:hover { background:var(--secondary-background-color, rgba(127,127,127,.12)); color:var(--primary-text-color); }
 .iconbtn[disabled] { opacity:.3; pointer-events:none; }
@@ -1904,7 +1905,7 @@ function showGarTable() {
     .gar .sub { color:#aaa; font-size:13px; margin:0 0 10px; }
     .gar .gsearch { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
     .gar .gsearch input { flex:1; width:auto; min-width:0; margin:0; }
-    .gar .gerase { background:none; border:0; cursor:pointer; font-size:20px; padding:0 6px; }
+    .gar .gerase { background:none; border:0; cursor:pointer; padding:0 6px; line-height:0; color:var(--error-color,#db4437); --mdc-icon-size:22px; }
     .gar input { width:100%; box-sizing:border-box; font:inherit; padding:10px 12px; border-radius:10px; border:1px solid #444; background:#1e1e1e; color:#eee; margin-bottom:10px; }
     .gar .gtabs { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px; }
     .gar .gtabs button { font:inherit; font-size:14px; hyphens:manual; overflow-wrap:anywhere; color:#eee; background:#1e1e1e; border:1px solid #444; border-radius:12px; padding:8px 4px; cursor:pointer; line-height:1.2; }
@@ -1921,7 +1922,7 @@ function showGarTable() {
   </style>
   <div class="gar" translate="no">
     <h2>⏲️ ${en ? "Cooking times" : "Gar-Zeiten"}</h2>
-    <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}">🧽</button></div>
+    <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
     <div class="gtabs"></div>
     <p class="sub devhint"></p>
     <div class="garlist"></div>
@@ -6898,7 +6899,7 @@ class EinkaufslisteCard extends HTMLElement {
       const en = EL_LANG !== "de";
       const bar = document.createElement("div");
       bar.className = "elg-search";
-      bar.innerHTML = `<input type="search" class="elg-q" placeholder="${en ? "🔎 Search this guide, e.g. photo" : "🔎 In dieser Anleitung suchen, z. B. Foto"}" aria-label="${en ? "Search this guide" : "In dieser Anleitung suchen"}" autocomplete="off" enterkeyhint="search"><button type="button" class="elg-erase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}" style="background:none;border:0;cursor:pointer;font-size:20px;padding:0 6px">🧽</button><p class="elg-none" hidden>${en ? "Nothing found 🤷 – try another word." : "Nichts gefunden 🤷 – versuch ein anderes Wort."}</p>`;
+      bar.innerHTML = `<input type="search" class="elg-q" placeholder="${en ? "🔎 Search this guide, e.g. photo" : "🔎 In dieser Anleitung suchen, z. B. Foto"}" aria-label="${en ? "Search this guide" : "In dieser Anleitung suchen"}" autocomplete="off" enterkeyhint="search"><button type="button" class="elg-erase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}" style="background:none;border:0;cursor:pointer;padding:0 6px;line-height:0;color:var(--error-color,#db4437);--mdc-icon-size:22px"><ha-icon icon="mdi:eraser"></ha-icon></button><p class="elg-none" hidden>${en ? "Nothing found 🤷 – try another word." : "Nichts gefunden 🤷 – versuch ein anderes Wort."}</p>`;
       sub.after(bar);
       const q = bar.querySelector(".elg-q"), none = bar.querySelector(".elg-none");
       const eg = bar.querySelector(".elg-erase");
@@ -9916,8 +9917,10 @@ class EinkaufslisteCardEditor extends HTMLElement {
   const sync = () => {
     raf = 0;
     const want = new Set();
-    for (const c of cards()) {
-      for (const el of c.shadowRoot.querySelectorAll("input,textarea")) {
+    const roots = cards().map((c) => c.shadowRoot);
+    document.querySelectorAll("[data-elov]").forEach((o) => roots.push(o)); // Fenster außerhalb der Karte (z. B. KI-Kochen)
+    for (const root of roots) {
+      for (const el of root.querySelectorAll("input,textarea")) {
         if (el.value && eligible(el) && el.getClientRects().length) want.add(el);
       }
     }
@@ -9935,7 +9938,7 @@ class EinkaufslisteCardEditor extends HTMLElement {
   document.addEventListener("focusin", schedule, true);
   document.addEventListener("scroll", schedule, true);
   addEventListener("resize", schedule);
-  timer = setInterval(() => { if (!document.hidden && (btns.size || cards().length)) sync(); }, 400); // Felder, die per Code gefüllt oder ein-/ausgeblendet werden
+  timer = setInterval(() => { if (!document.hidden && (btns.size || cards().length || document.querySelector("[data-elov]"))) sync(); }, 400); // Felder, die per Code gefüllt oder ein-/ausgeblendet werden
 })();
 
 if (!customElements.get("einkaufsliste-card")) customElements.define("einkaufsliste-card", EinkaufslisteCard);
