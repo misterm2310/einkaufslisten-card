@@ -1850,6 +1850,8 @@ class EinkaufslisteManager:
     @callback
     def update_item(self, item_id: str, **fields: Any) -> dict[str, Any]:
         item = self.get_item(item_id)
+        aliases = fields.pop("aliases", None)  # 🏷️ Spitznamen des Produkts (None = nicht ändern)
+        old_pkey = product_key(item["name"], item.get("note"))
         new = {
             "name": _nice(fields.get("name", item["name"])),
             "note": _note(fields.get("note", item.get("note"))),
@@ -1899,6 +1901,11 @@ class EinkaufslisteManager:
         if "own_note" in fields and not item.get("recipe_id"):
             self._set_own_note(item["name"], item.get("note"), item.get("own_note"))
         self._log_changes(before, item)
+        if aliases is not None:
+            new_pkey = product_key(item["name"], item.get("note"))
+            if old_pkey != new_pkey:  # umbenannt: die alten Spitznamen ziehen mit
+                self._al_retarget(old_pkey, item["name"], item.get("note"))
+            self.set_aliases(new_pkey, aliases)
         self._changed()
         return item
 

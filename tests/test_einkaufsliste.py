@@ -2791,6 +2791,23 @@ async def test_alias_for_several_products(hass: HomeAssistant, setup) -> None:
     assert [r["note"] for r in rows] == ["AA 1,5V"]
 
 
+async def test_item_edit_sets_aliases(hass: HomeAssistant, setup) -> None:
+    """🏷️ Beim Bearbeiten eines Artikels lassen sich Spitznamen setzen; Umbenennen zieht sie mit."""
+    m = mgr(hass)
+    it = m.add_item("Taschentücher")
+    m.update_item(it["id"], aliases=["Tempos", "Tempo"])
+    prod = next(p for p in m.products() if p["key"] == "taschentücher")
+    assert sorted(prod["aliases"]) == ["tempo", "tempos"]
+    m.update_item(it["id"], name="Papiertücher")  # ohne aliases: Spitznamen bleiben beim alten Namen unangetastet
+    m.update_item(it["id"], name="Taschentücher", aliases=["Tempos"])
+    prod = next(p for p in m.products() if p["key"] == "taschentücher")
+    assert prod["aliases"] == ["tempos"]
+    m.update_item(it["id"], name="Tücher", aliases=["Tempos"])  # umbenannt + Spitznamen mitgeschickt
+    assert "tempos" in next(p for p in m.products() if p["key"] == "tücher")["aliases"]
+    m.update_item(it["id"], aliases=[])
+    assert next(p for p in m.products() if p["key"] == "tücher")["aliases"] == []
+
+
 async def test_own_note_per_variant(hass: HomeAssistant, setup) -> None:
     """✏️ Eigene Notiz hängt pro Variante (Name + Notiz): Batterien AA und AAA getrennt; alte Namens-Notiz wird verteilt."""
     m = mgr(hass)
