@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.9";
+const EL_VERSION = "2.53.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.53.9"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -9833,7 +9833,7 @@ class EinkaufslisteCardEditor extends HTMLElement {
 
 // 🧽 Ein Radiergummi für JEDES Textfeld: erscheint am rechten Rand, solange man im Feld ist und etwas drinsteht.
 // Ein einziger schwebender Knopf für die ganze Seite (auch in Dialogen und im Shadow-DOM) – es ändert sich nichts am Aufbau der Felder.
-// Ausgenommen: PIN/Passwort/API-Schlüssel, Nur-Lesen-Felder und Suchfelder, die schon ihren eigenen Radiergummi haben.
+// Ausgenommen: PIN/Passwort/API-Schlüssel, Nur-Lesen-Felder, Suchfelder und das Eintragen-Formular, die schon ihren eigenen Radiergummi haben.
 (function elInitErasers() {
   if (window.__elErasers) return;
   window.__elErasers = true;
@@ -9845,6 +9845,7 @@ class EinkaufslisteCardEditor extends HTMLElement {
     if (el.tagName === "INPUT" && !["text", "search", "email", "url", "tel", ""].includes((el.getAttribute("type") || "").toLowerCase())) return false;
     if (el.readOnly || el.disabled || el.hidden || el.dataset.noerase !== undefined) return false;
     if (OWN.has(el.id) || el.classList.contains("elg-q") || el.closest(".gsearch")) return false;
+    if (el.closest("#addForm")) return false; // Eintragen-Formular hat schon den festen Radiergummi „Alles leeren“
     if (SECRET.test(`${el.id} ${el.name || ""} ${el.getAttribute("placeholder") || ""} ${el.getAttribute("autocomplete") || ""}`)) return false;
     return true;
   };
