@@ -1896,6 +1896,9 @@ function showGarTable() {
     .gar { width:100%; max-width:560px; color:#eee; font:15px/1.4 Roboto,sans-serif; }
     .gar h2 { font-size:20px; margin:4px 0 10px; }
     .gar .sub { color:#aaa; font-size:13px; margin:0 0 10px; }
+    .gar .gsearch { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
+    .gar .gsearch input { flex:1; width:auto; min-width:0; margin:0; }
+    .gar .gerase { background:none; border:0; cursor:pointer; font-size:20px; padding:0 6px; }
     .gar input { width:100%; box-sizing:border-box; font:inherit; padding:10px 12px; border-radius:10px; border:1px solid #444; background:#1e1e1e; color:#eee; margin-bottom:10px; }
     .gar .gtabs { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px; }
     .gar .gtabs button { font:inherit; font-size:14px; hyphens:manual; overflow-wrap:anywhere; color:#eee; background:#1e1e1e; border:1px solid #444; border-radius:12px; padding:8px 4px; cursor:pointer; line-height:1.2; }
@@ -1912,13 +1915,13 @@ function showGarTable() {
   </style>
   <div class="gar" translate="no">
     <h2>⏲️ ${en ? "Cooking times" : "Gar-Zeiten"}</h2>
-    <input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}">
+    <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}">🧽</button></div>
     <div class="gtabs"></div>
     <p class="sub devhint"></p>
     <div class="garlist"></div>
     <p class="sub">${en ? "Guide values – always check the package." : "Richtwerte – im Zweifel gilt die Packung."}</p>
   </div>`;
-  const list = ov.querySelector(".garlist"), inp = ov.querySelector("input"), tabs = ov.querySelector(".gtabs"), hint = ov.querySelector(".devhint");
+  const list = ov.querySelector(".garlist"), inp = ov.querySelector(".gsearch input"), tabs = ov.querySelector(".gtabs"), hint = ov.querySelector(".devhint");
   const name = (r) => esc(en ? r[1] : r[0]);
   const noteOf = (r, col) => {
     const n = en ? r[6] : r[5];
@@ -1955,6 +1958,7 @@ function showGarTable() {
   };
   tabs.addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) { dev = Number(b.dataset.d); draw(); ov.scrollTop = 0; } });
   inp.addEventListener("input", draw);
+  ov.querySelector(".gerase").onclick = () => { inp.value = ""; draw(); inp.focus(); };
   draw();
   const bClose = ovButton(en ? "Close" : "Schließen", true);
   Object.assign(bClose.style, { marginTop: "16px" });
@@ -3890,12 +3894,12 @@ class EinkaufslisteCard extends HTMLElement {
         </div>
         ${this._prodTab === "delete" ? `
         <p class="hint">Hier verschwinden Artikel endgültig von der Einkaufsliste, auch aus „Erledigt“. Barcode und Vorschlag bleiben; das Foto kommt mit weg, wenn das Produkt sonst nirgends mehr steht. Ganz löschen geht unter „Alle Produkte“.</p>
-        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="delSearch" placeholder="Artikel suchen, z. B. Milch" value="${esc(this._delFilter || "")}"></div>
+        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="delSearch" placeholder="Artikel suchen, z. B. Milch" value="${esc(this._delFilter || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="delSearch" title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
         <div id="delList"></div>` : `
         ${this._prodTab === "scanned"
           ? `<p class="hint">Hier stehen Produkte, die neu gescannt wurden. Kurz prüfen: Stimmt der Name? Dann <b>✔ Passt</b>. Sonst antippen und korrigieren – Speichern zählt auch als geprüft.</p>`
           : `<p class="hint">Alle Produkte, die die Liste kennt. Antippen = ändern oder ganz löschen. Umbenennen zieht Fotos, Barcodes, Artikel und Rezepte mit.</p>`}
-        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen, z. B. Milch" value="${esc(this._prodFilter || "")}"></div>
+        <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen, z. B. Milch" value="${esc(this._prodFilter || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="prodSearch" title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
         ${this._prodTab === "scanned" ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:filter-variant"></ha-icon><select class="grow" id="prodFilterSel" title="Filter">${this._prodFilterOptions()}</select>
           <button class="btn" id="prodClear" data-act="prod-clear" title="Eingaben und Filter zurücksetzen" aria-label="Eingaben und Filter zurücksetzen" ${this._prodFilter || this._prodSel ? "" : "hidden"}><ha-icon icon="mdi:eraser"></ha-icon></button>
           <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog" aria-label="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon></button>
@@ -3985,7 +3989,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="sec">
           <h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3>
           <button class="health wait" id="healthBar" data-act="set-sec" data-sec="check"><span>⚪</span><span><b>Prüfe …</b></span></button>
-          <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="setSearch" placeholder="In den Einstellungen suchen, z. B. Foto" value="${esc(this._setQ || "")}"></div>
+          <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="setSearch" placeholder="In den Einstellungen suchen, z. B. Foto" value="${esc(this._setQ || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="setSearch" title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
           <div id="setList">${this._settingsListHtml(sections)}</div>
           <div class="btnrow" style="margin-top:14px"><button class="btn" data-act="guide-settings"><ha-icon icon="mdi:book-open-variant"></ha-icon>Anleitung Einstellungen</button></div>
         </div>
@@ -4653,7 +4657,7 @@ class EinkaufslisteCard extends HTMLElement {
         <select id="logStore" title="Geschäft">${opt("", "🏪 Alle", f.store)}${this._data.stores.map((st) => opt(st.id, st.name, f.store)).join("")}${opt("~none", "Egal wo", f.store)}</select>
         <select id="logAct" title="Aktion">${opt("", "⚡ Alles", f.act)}${Object.entries(LOG_ACT).map(([k, v]) => opt(k, v.label, f.act)).join("")}</select>
       </div>
-      <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="logSearch" placeholder="Artikel suchen, z. B. Milch" value="${esc(f.q)}"></div>
+      <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="logSearch" placeholder="Artikel suchen, z. B. Milch" value="${esc(f.q)}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="logSearch" title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
       ${this._data.settings?.spend ? `<div class="btnrow"><button class="btn" data-act="spend"><ha-icon icon="mdi:receipt-text-outline"></ha-icon>🧾 Einkaufs-Protokoll öffnen</button></div>` : ""}
       <div id="logMissed"></div>
       <div id="logList"><p class="hint">Lade Verlauf …</p></div>
@@ -5045,7 +5049,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _recipeSearchHtml(id) {
-    return `<div class="srow rsearch"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="${id}" type="search" placeholder="Rezept oder Zutat suchen, z. B. Nudeln" value="${esc(this._recipeFilter || "")}" autocomplete="off"><button class="iconbtn rclear" data-act="recipe-search-clear" title="Suche löschen" ${this._recipeFilter ? "" : "hidden"}><ha-icon icon="mdi:close"></ha-icon></button></div>${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = öffnen · ↑↓ = blättern · Esc = zurück</p>` : ""}`;
+    return `<div class="srow rsearch"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="${id}" type="search" placeholder="Rezept oder Zutat suchen, z. B. Nudeln" value="${esc(this._recipeFilter || "")}" autocomplete="off"><button class="iconbtn rclear" data-act="recipe-search-clear" title="Suche löschen" aria-label="Suche löschen" ${this._recipeFilter ? "" : "hidden"}><ha-icon icon="mdi:eraser"></ha-icon></button></div>${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = öffnen · ↑↓ = blättern · Esc = zurück</p>` : ""}`;
   }
 
   _renderRecipes() {
@@ -6646,7 +6650,9 @@ class EinkaufslisteCard extends HTMLElement {
       .elg b { color:var(--g-strong); }
       .elg .elg-k { display:inline-block; background:var(--g-key); border-radius:6px; padding:0 6px; }
       .elg .elg-url { width:100%; box-sizing:border-box; font:14px monospace; padding:9px 10px; border-radius:10px; border:1px solid var(--g-fline); background:var(--g-field); color:var(--g-text); margin:6px 0; }
-      .elg .elg-search { margin:0 0 10px; }
+      .elg .elg-search { margin:0 0 10px; display:flex; align-items:center; flex-wrap:wrap; }
+      .elg .elg-search .elg-q { flex:1; width:auto; min-width:0; }
+      .elg .elg-none { flex-basis:100%; }
       .elg .elg-q { width:100%; box-sizing:border-box; font:16px Roboto, sans-serif; padding:10px 12px; border-radius:12px; border:1px solid var(--g-fline); background:var(--g-card); color:var(--g-text); }
       .elg .elg-none { color:var(--g-mute); margin:8px 2px; }
       .elg-sec[hidden] { display:none; }
@@ -6729,7 +6735,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>📊 Auswertung</b>: zusammengerechnet, pro Geschäft und pro Monat. Filter für Person, Geschäft und Datum, Schnellwahl <b>Dieser Monat / Letzter Monat / Alles</b>.</li>
         <li>Falsch eingetragen? Beim Einkauf auf <b>✖</b> tippen.</li></ul>`)}
       ${sec("📷", "Fotos", `<ul>
-        <li><b>🔒 Datenschutz an?</b> Dann gibt es keine Kamera und keine Fotos (auch nicht aus Galerie oder Zwischenablage), die Knöpfe sind ausgegraut. Der Schalter liegt in ⚙️ → App &amp; Info → Datenschutz (nur Admins).</li>
+        <li><b>🔒 Datenschutz an?</b> Dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage) und kein KI-Kochen, die Knöpfe sind ausgegraut. Der Schalter liegt in ⚙️ → App &amp; Info → Datenschutz (nur Admins).</li>
         <li><b>Produkt-Foto:</b> Beim Eintragen auf das <b>📷</b> unter dem Eingabefeld tippen – oder später den Artikel <b>lange drücken → Foto</b>. Das Foto gehört zum Produkt und ist beim nächsten Mal wieder da. Am Artikel zeigt das kleine <b>📷</b> es groß; wischen = blättern. Bis zu <b>6 Fotos</b> pro Produkt, ein neues ersetzt nie ein altes.</li>
         <li><b>Woher kommt das Foto?</b> Am Handy fragt die Karte: <b>📷 Kamera</b> · <b>🖼️ Galerie</b> · <b>📋 Einfügen</b> (ein kopiertes Bild). Am PC öffnet sich ein Fenster: Bild <b>reinziehen</b>, <b>Strg + V</b> drücken oder klicken. <b>Strg + V</b> geht am PC auch direkt in der Liste: Das kopierte Bild wird gleich zum Foto fürs Eintragen (im Rezept-Editor zum Rezept-Foto). In der HA-App im WLAN (lokale http-Adresse) gibt es die Kamera nicht – dort kommt statt der Kamera die Galerie (und „Einfügen“, wenn es geht).</li>
         <li><b>Drehen &amp; zuschneiden:</b> Vor dem Speichern kannst du das Foto drehen und den Ausschnitt wählen.</li>
@@ -6784,9 +6790,10 @@ class EinkaufslisteCard extends HTMLElement {
       const en = EL_LANG !== "de";
       const bar = document.createElement("div");
       bar.className = "elg-search";
-      bar.innerHTML = `<input type="search" class="elg-q" placeholder="${en ? "🔎 Search this guide, e.g. photo" : "🔎 In dieser Anleitung suchen, z. B. Foto"}" aria-label="${en ? "Search this guide" : "In dieser Anleitung suchen"}" autocomplete="off" enterkeyhint="search"><p class="elg-none" hidden>${en ? "Nothing found 🤷 – try another word." : "Nichts gefunden 🤷 – versuch ein anderes Wort."}</p>`;
+      bar.innerHTML = `<input type="search" class="elg-q" placeholder="${en ? "🔎 Search this guide, e.g. photo" : "🔎 In dieser Anleitung suchen, z. B. Foto"}" aria-label="${en ? "Search this guide" : "In dieser Anleitung suchen"}" autocomplete="off" enterkeyhint="search"><button type="button" class="elg-erase" title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}" style="background:none;border:0;cursor:pointer;font-size:20px;padding:0 6px">🧽</button><p class="elg-none" hidden>${en ? "Nothing found 🤷 – try another word." : "Nichts gefunden 🤷 – versuch ein anderes Wort."}</p>`;
       sub.after(bar);
       const q = bar.querySelector(".elg-q"), none = bar.querySelector(".elg-none");
+      bar.querySelector(".elg-erase").onclick = () => { q.value = ""; q.dispatchEvent(new Event("input")); q.focus(); };
       const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ß/g, "ss");
       const secs = [...ov.querySelectorAll("details.elg-sec")].map((d) => ({ d, text: norm(d.textContent) }));
       q.addEventListener("input", () => {
@@ -6872,7 +6879,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("📱", "App & info", `<ul>
         <li><b>Offline app:</b> your own address with “Copy” (it needs an https address, e.g. Nabu Casa). Open it in the phone browser and add it to the home screen. Almost everything works offline; not available are looking up new barcodes, product info, recipe links, uploading new photos and the backup. The first time you scan, the phone asks once for the camera.</li>
         <li><b>Light / dark:</b> the choice (light, dark, automatic) exists only in the offline app. In the dashboard card everything follows the Home Assistant theme. The guides follow the same: light or dark, just like the card.</li>
-        <li><b>🔒 Privacy:</b> says in plain words what stays in your Home Assistant and what goes to the internet. An admin also switches <b>“Privacy on”</b> for all devices there: then there is no camera, no photos (not even from gallery or clipboard) and no barcode scanner – the buttons are greyed out, and barcodes can only be typed by hand. Off = as usual.</li>
+        <li><b>🔒 Privacy:</b> says in plain words what stays in your Home Assistant and what goes to the internet. An admin also switches <b>“Privacy on”</b> for all devices there: then there is no camera, no photos (not even from gallery or clipboard), no barcode scanner and no AI cooking – the buttons are greyed out, and barcodes can only be typed by hand. Off = as usual.</li>
         <li><b>Protection (PIN):</b> with a PIN the ⚙️ only opens after entering it (4–8 digits, remembered for 10 minutes on this device). The 🔓 button locks at once. Forgot it? An admin resets it in Settings → Devices &amp; services → Shopping list → Configure. The page also has “Change PIN” and “Switch PIN off”. The list itself (adding, checking off, recipes, shop mode) stays open for everyone. The PIN protects against accidents, it is not a safe.</li>
         <li><b>What's new</b> and <b>Credits</b> are at the end of the list.</li></ul>`)}
     </div>`;
@@ -6924,7 +6931,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("📱", "App & Info", `<ul>
         <li><b>Offline-App:</b> deine eigene Adresse mit „Kopieren“ (sie braucht eine https-Adresse, z. B. Nabu Casa). Im Handy-Browser öffnen und zum Startbildschirm hinzufügen. Offline geht fast alles; nicht gehen neue Barcodes nachschlagen, Produkt-Infos, Rezept-Links, neue Fotos hochladen und die Sicherung. Beim ersten Scannen fragt das Handy einmal nach der Kamera.</li>
         <li><b>Hell / Dunkel:</b> Die Auswahl (hell, dunkel, automatisch) gibt es nur in der Offline-App. In der Karte im Dashboard richtet sich alles nach dem Home-Assistant-Design. Die Anleitungen folgen dem jeweils: hell oder dunkel, genau wie die Karte.</li>
-        <li><b>🔒 Datenschutz:</b> zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht. Dort schaltet ein Admin auch <b>„Datenschutz an“</b> für alle Geräte: Dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage) und keinen Barcode-Scanner – die Knöpfe sind ausgegraut, Barcodes gehen nur noch von Hand. Aus = alles wie gehabt.</li>
+        <li><b>🔒 Datenschutz:</b> zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht. Dort schaltet ein Admin auch <b>„Datenschutz an“</b> für alle Geräte: Dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage), keinen Barcode-Scanner und kein KI-Kochen – die Knöpfe sind ausgegraut, Barcodes gehen nur noch von Hand. Aus = alles wie gehabt.</li>
         <li><b>Schutz (PIN):</b> mit PIN geht das ⚙️ erst nach Eingabe auf (4–8 Ziffern, auf diesem Gerät 10 Minuten gemerkt). Der 🔓-Knopf sperrt sofort. Vergessen? Ein Admin setzt sie zurück: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es auch „PIN ändern“ und „PIN ausschalten“. Die Liste selbst (Eintragen, Abhaken, Rezepte, Laden-Modus) bleibt für alle offen. Die PIN schützt vor Versehen, ein Tresor ist sie nicht.</li>
         <li><b>Was ist neu</b> und <b>Credits</b> stehen am Ende der Liste.</li></ul>`)}
     </div>`;
@@ -6963,9 +6970,9 @@ class EinkaufslisteCard extends HTMLElement {
     const sw = `<div class="privrow"><b>${on ? t("🔒 Datenschutz ist AN", "🔒 Privacy is ON") : t("🔓 Datenschutz ist aus", "🔓 Privacy is off")}</b>
         ${admin ? `<button class="btn ${on ? "" : "primary"}" data-act="privacy-toggle"><ha-icon icon="mdi:shield-lock-outline"></ha-icon>${on ? t("Ausschalten", "Switch off") : t("Einschalten", "Switch on")}</button>`
           : `<span class="hint">${t("🔒 Umschalten kann nur ein Admin.", "🔒 Only an admin can switch this.")}</span>`}</div>
-      <p class="hint">${on ? t("Es gibt keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage), keinen Zettel-Foto-Import und keinen Barcode-Scanner – für alle Geräte. Barcode von Hand tippen geht weiter.",
-        "There is no camera, no photos (not even from gallery or clipboard), no photo import of notes and no barcode scanner – for all devices. Typing a barcode by hand still works.")
-        : t("Aus = alles wie gehabt. An = keine Kamera, keine Fotos, kein Barcode-Scanner (für alle Geräte).", "Off = as usual. On = no camera, no photos, no barcode scanner (for all devices).")}</p>`;
+      <p class="hint">${on ? t("Es gibt keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage), keinen Zettel-Foto-Import, keinen Barcode-Scanner und kein KI-Kochen – für alle Geräte. Barcode von Hand tippen geht weiter.",
+        "There is no camera, no photos (not even from gallery or clipboard), no photo import of notes, no barcode scanner and no AI cooking – for all devices. Typing a barcode by hand still works.")
+        : t("Aus = alles wie gehabt. An = keine Kamera, keine Fotos, kein Barcode-Scanner, kein KI-Kochen (für alle Geräte).", "Off = as usual. On = no camera, no photos, no barcode scanner, no AI cooking (for all devices).")}</p>`;
     return `<div translate="no">
       ${sw}
       <p class="hint">🏠 <b>${t("Das bleibt in deinem Home Assistant", "This stays in your Home Assistant")}</b>: ${t(
@@ -6977,6 +6984,9 @@ class EinkaufslisteCard extends HTMLElement {
       <p class="hint">🏷️ <b>${t("Angebote", "Offers")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
         "Es gehen die Namen offener Artikel und deine Postleitzahl an Marktguru. Sonst nichts – keine Namen von Personen, keine Fotos. Inoffiziell, kann jederzeit aufhören zu funktionieren.",
         "The names of open items and your postcode go to Marktguru. Nothing else – no names of people, no photos. Unofficial, can stop working at any time.")}</p>
+      <p class="hint">🤖 <b>${t("KI-Kochen", "AI cooking")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
+        "Es gehen die Namen der Zutaten (und auf Wunsch die offenen Artikel der Liste und deine Wünsche) an den KI-Assistenten, den ein Admin gewählt hat. Bei einem Cloud-Assistenten geht das ins Internet, bei einem lokalen (z. B. Ollama) bleibt es zu Hause. Keine Fotos, keine Namen von Personen. Bei „Datenschutz an“ geht nichts raus.",
+        "The names of the ingredients (and, if you wish, the open items of the list and your wishes) go to the AI assistant an admin has chosen. With a cloud assistant that goes over the internet, with a local one (e.g. Ollama) it stays at home. No photos, no names of people. With “Privacy on” nothing is sent.")}</p>
       <p class="hint">🍽️ <b>${t("Rezept-Import aus einem Link", "Recipe import from a link")}</b>: ${t(
         "Dein Home Assistant ruft die Webseite des Links ab. Es geht nur die Adresse hin.",
         "Your Home Assistant fetches the web page of the link. Only the address is sent.")}</p>
@@ -7108,7 +7118,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Entered something wrong? Tap <b>✖</b> on the purchase.</li></ul>`)}
       ${sec("📷", "Photos", `<ul>
         <li><b>Product photo:</b> When adding, tap the <b>📷</b> below the input field – or later <b>long-press the item → Photo</b>. The photo belongs to the product and is there again next time. On the item the small <b>📷</b> shows it large; swipe = browse. Up to <b>6 photos</b> per product, a new one never replaces an old one.</li>
-        <li><b>🔒 Privacy on?</b> Then there is no camera and no photos (not even from gallery or clipboard); the buttons are greyed out. The switch is in ⚙️ → App &amp; info → Privacy (admins only).</li>
+        <li><b>🔒 Privacy on?</b> Then there is no camera, no photos (not even from gallery or clipboard) and no AI cooking; the buttons are greyed out. The switch is in ⚙️ → App &amp; info → Privacy (admins only).</li>
         <li><b>Where does the photo come from?</b> On a phone the card asks: <b>📷 Camera</b> · <b>🖼️ Gallery</b> · <b>📋 Paste</b> (a copied image). On a PC a window opens: <b>drag in</b> an image, press <b>Ctrl + V</b> or click. <b>Ctrl + V</b> also works directly in the list on a PC: the copied image immediately becomes the photo for the item you are adding (in the recipe editor the recipe photo). In the HA app on Wi-Fi (local http address) there is no camera – you get the gallery (and “Paste”, if possible) instead.</li>
         <li><b>Rotate &amp; crop:</b> Before saving you can rotate the photo and choose the crop.</li>
         <li><b>Recipe photos:</b> Add photos to a recipe in the recipe editor (⚙️ → Recipes). In the recipe view the <b>📷</b> in the row below the name opens them.</li>
@@ -9308,6 +9318,11 @@ class EinkaufslisteCard extends HTMLElement {
         if (!text.trim()) { this._toast("Erst etwas einfügen 😉"); break; }
         this._ws({ type: "einkaufsliste/import/text", text, store_id: this._xferStore("xferTextStore") })
           .then((res) => { this._xferImported(res); if (res?.added) this.$("xferText").value = ""; }).catch(() => {});
+        break;
+      }
+      case "search-erase": { // 🧽 Suchtext löschen (Einstellungen, Verlauf, Katalog, Protokoll)
+        const inp = this.$(el.dataset.for);
+        if (inp) { inp.value = ""; inp.dispatchEvent(new Event("input", { bubbles: true, composed: true })); inp.focus(); }
         break;
       }
       case "recipe-search-clear": {
