@@ -3471,3 +3471,19 @@ async def test_ai_cook(hass, setup, hass_ws_client, hass_read_only_access_token)
     seen.clear()
     await client.send_json({"id": 67, "type": "einkaufsliste/ai/cook", "ingredients": ["Reis"]})
     assert "Datenschutz" in (await client.receive_json())["error"]["message"] and not seen
+
+
+async def test_recipe_ai_flag(hass, setup, hass_ws_client):
+    """🤖 Rezepte von der KI tragen ein Kennzeichen, das auch nach dem Bearbeiten bleibt."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/add", "name": "KI-Nudeln", "items": [], "steps": "Kochen", "ai": True})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["ai"] is True
+    rid = res["result"]["id"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/update", "recipe_id": rid, "name": "Meine Nudeln", "steps": "Kochen\nEssen"})
+    assert (await client.receive_json())["success"]
+    await client.send_json({"id": 3, "type": "einkaufsliste/recipe/add", "name": "Selbstgemacht", "items": []})
+    res = await client.receive_json()
+    assert res["success"] and "ai" not in res["result"]
+    assert m.recipe_by_id(rid)["ai"] is True and m.recipe_by_id(rid)["name"] == "Meine Nudeln"

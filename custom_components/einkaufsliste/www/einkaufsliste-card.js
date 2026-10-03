@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.5";
+const EL_VERSION = "2.53.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.53.5"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.53.6"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["📷 <b>Fotos beim Kochen:</b> Im Koch-Modus gibt es bei jedem Schritt ohne Foto den Knopf „📷 Foto zu diesem Schritt“ – das Foto wird sofort gespeichert. · 🤖 <b>KI-Rezepte erkennbar:</b> Rezepte, die über „Was kann ich kochen?“ gespeichert wurden, zeigen ein 🤖 links neben dem 📷 (bleibt dran, auch nach dem Bearbeiten).",
+   "📷 <b>Photos while cooking:</b> in cooking mode every step without a photo has the button “📷 Photo for this step” – the photo is saved right away. · 🤖 <b>AI recipes are recognisable:</b> recipes saved through “What can I cook?” show a 🤖 to the left of the 📷 (it stays, even after editing)."],
   ["🤖 <b>KI-Kochen:</b> ⚙️ → Extras → KI-Kochen: einen KI-Assistenten aus Home Assistant wählen, dann steht bei den Rezepten „Was kann ich kochen?“ (links neben den Gar-Zeiten). Zutaten eintippen – auch Dinge, die nicht im Katalog stehen –, Fehlendes mit einem Tipp auf die Liste oder das Gericht als Rezept speichern. · 📝 <b>Notiz-Vorlagen:</b> Knöpfe unter der ✏️ Eigenen Notiz („Bio“, „ohne Laktose“ …), selbst pflegbar. · 📄 <b>Katalog aus CSV</b> (⚙️ → Import &amp; Sicherung). · ▥ <b>Barcode-Duplikate</b> (nur Nullen anders) meldet „Alles ok?“. · 📷 <b>Fotos zur Zubereitung</b> gibt es jetzt auch bei neuen Schritten. · 🗣️ Anleitung für <b>Siri-Kurzbefehle</b>.",
    "🤖 <b>AI cooking:</b> ⚙️ → Extras → AI cooking: choose an AI assistant from Home Assistant, then Recipes shows “What can I cook?” (left of the cooking times). Type ingredients – also things that are not in the catalogue –, put what is missing on the list with one tap or save the dish as a recipe. · 📝 <b>Note templates:</b> buttons under the ✏️ Own note (“Organic”, “lactose-free” …), maintainable. · 📄 <b>Catalogue from CSV</b> (⚙️ → Import &amp; backup). · ▥ <b>Duplicate barcodes</b> (only zeros differ) are reported by “All OK?”. · 📷 <b>Photos for preparation</b> now also for new steps. · 🗣️ Guide for <b>Siri shortcuts</b>."],
   ["🔄 <b>Grocy-Dauerabgleich:</b> ⚙️ → Import &amp; Sicherung → Grocy. Zwei Teile, jeder einzeln an/aus: 🛒 die <b>Einkaufsliste</b> abgleichen (Grocy-Zeilen holen &amp; dort löschen, bei beiden behalten oder voller Abgleich) · 📦 <b>neue Produkte</b> automatisch in den Katalog. Der API-Schlüssel bleibt auf dem Server (nie auf Handys, nie in Sicherungen). · 📥 <b>„Rezepte aus Datei“</b> steht jetzt in ⚙️ → Rezepte neben den Rezept-Gruppen. · 💳 Im Laden-Modus sind 💳 und Laden-Modus-Knopf getauscht.",
@@ -4360,7 +4362,7 @@ class EinkaufslisteCard extends HTMLElement {
               return o;
             });
           }
-          const msg = { type: "einkaufsliste/recipe/add", name: idea.name, items, steps: idea.steps.join("\n") || null };
+          const msg = { type: "einkaufsliste/recipe/add", name: idea.name, items, steps: idea.steps.join("\n") || null, ai: true };
           if (idea.servings) msg.servings = idea.servings;
           await this._ws(msg);
           this._toast(`👨‍🍳 Rezept „${idea.name}“ gespeichert`);
@@ -5085,7 +5087,7 @@ class EinkaufslisteCard extends HTMLElement {
           </div>
         </div>
         <div class="rtools" data-id="${r.id}">
-          ${this._recipePhotoToolBtn(r)}
+          ${this._recipeAiMark(r)}${this._recipePhotoToolBtn(r)}
           ${(r.steps || "").trim() ? `<button class="btn" data-act="recipe-cook"><ha-icon icon="mdi:fire"></ha-icon>Kochen</button>` : ""}
           <button class="btn" data-act="recipe-share"><ha-icon icon="mdi:share-variant-outline"></ha-icon>Teilen</button>
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`);
@@ -5104,7 +5106,7 @@ class EinkaufslisteCard extends HTMLElement {
     box.innerHTML = (q && !found.length ? `<p class="hint">Nix gefunden für „${esc(q)}“ 🕵️</p>` : "") + found.map(({ r, via, fuzzy }) => `
       <div class="recipe ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}">
         <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
-        <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)}${this._recipePhotoBtn(r)}</b><small>${
+        <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${this._recipePhotoBtn(r)}</b><small>${
           fuzzy ? "🤓 Meintest du das? · " : via ? `🥕 enthält ${this._markHit(via, q)} · ` : ""}${this._rgroup(r.group) ? esc(this._rgroup(r.group).name) + " · " : "ohne Gruppe · "}${r.items.length} Zutaten${r.steps ? " · 📖 Anleitung" : " · ohne Anleitung"}${(r.heat || []).length ? " · 🔥 Backofen & Co." : ""}</small></div>
         <button class="iconbtn" data-act="recipe-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
       </div>`).join("");
@@ -5386,6 +5388,11 @@ class EinkaufslisteCard extends HTMLElement {
       h.addEventListener("pointerup", done);
       h.addEventListener("pointercancel", done);
     });
+  }
+
+  // 🤖 Rezept kam von der KI (bleibt für immer dran) – steht links neben dem 📷
+  _recipeAiMark(r) {
+    return r?.ai ? `<span class="aimark" title="Von der KI vorgeschlagen" style="font-size:15px;line-height:1;align-self:center">🤖</span>` : "";
   }
 
   _recipePhotoBtn(r) {
@@ -7197,6 +7204,16 @@ class EinkaufslisteCard extends HTMLElement {
           pic.append(img);
           pic.style.display = "block";
         }).catch(() => { /* kein Foto – kein Problem */ });
+      } else if (skey) { // 📷 noch kein Foto: gleich beim Kochen eins dazu machen
+        const at = idx;
+        const add = ovButton("📷 Foto zu diesem Schritt");
+        add.onclick = () => {
+          this._photoTarget = { name: skey, keepEdit: true,
+            onDone: () => { this._toast("📸 Foto zum Schritt gespeichert"); setTimeout(() => { if (at === idx) show(); }, 600); } };
+          this._pickFile("photoFile", `🍳 Foto zu Schritt ${at + 1}`);
+        };
+        pic.append(add);
+        pic.style.display = "block";
       }
       bPrev.style.visibility = idx ? "visible" : "hidden";
       bNext.textContent = idx < steps.length - 1 ? "Weiter ›" : "✔ Fertig – guten Appetit!";

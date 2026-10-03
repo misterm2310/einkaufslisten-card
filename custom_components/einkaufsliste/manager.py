@@ -3155,6 +3155,7 @@ class EinkaufslisteManager:
         servings: int | None = None,
         servings_unit: str | None = None,
         group: str | None = None,
+        ai: bool = False,
     ) -> dict[str, Any]:
         recipe = {
             "id": _new_id(),
@@ -3167,6 +3168,8 @@ class EinkaufslisteManager:
             "servings_unit": _servings_unit(servings_unit),
             "group": self._group(group),
         }
+        if ai:  # 🤖 von der KI vorgeschlagen – bleibt für immer dran, auch nach dem Bearbeiten
+            recipe["ai"] = True
         self.recipes.append(recipe)
         self._changed()
         return recipe
