@@ -68,6 +68,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_mail_sources,
         ws_mail_import,
         ws_mascot,
+        ws_privacy_set,
         ws_spend_set,
         ws_auto_shop_set,
         ws_spend_auto_set,
@@ -629,6 +630,14 @@ def ws_mail_import(hass, connection, msg):
 def ws_auto_shop_set(hass, connection, msg):
     """📍 Laden-Modus automatisch für alle an/aus."""
     _run(hass, connection, msg, lambda m: m.set_auto_shop(msg["on"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/privacy/set", vol.Required("on"): bool})
+@websocket_api.require_admin
+@callback
+def ws_privacy_set(hass, connection, msg):
+    """🔒 Datenschutz für alle an/aus (an = keine Kamera, keine Fotos, kein Barcode-Scanner)."""
+    _run(hass, connection, msg, lambda m: m.set_privacy(msg["on"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/mascot/set", vol.Required("on"): bool})

@@ -3006,3 +3006,14 @@ async def test_offer_take_extra_keeps_my_product(hass: HomeAssistant, setup) -> 
     kaffee = m.add_item("Kaffee", store_id=None)
     jac = m.take_offer({"p": 4.99, "to": soon, "r": "Lidl", "d": "Jacobs"}, item_id=kaffee["id"], store_id=None)
     assert kaffee["checked"] and jac["orig"]["name"] == "Kaffee"
+
+
+async def test_privacy_switch(hass: HomeAssistant, setup) -> None:
+    """🔒 Datenschutz-Schalter: gilt für alle, steht im Zustand und bleibt nach dem Neustart."""
+    m = mgr(hass)
+    assert m.as_dict()["settings"]["privacy"] is False
+    m.set_privacy(True)
+    assert m.as_dict()["settings"]["privacy"] is True
+    assert m._to_storage()["privacy"] is True
+    m.set_privacy(False)
+    assert m.as_dict()["settings"]["privacy"] is False

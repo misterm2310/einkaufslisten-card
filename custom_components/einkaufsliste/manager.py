@@ -289,6 +289,7 @@ class EinkaufslisteManager:
         self.typos: dict[str, dict[str, Any]] = {}  # 🧠 Tippfehler (klein) -> {"right": Name, "n": wie oft korrigiert}
         self.pin_hash: str | None = None  # 🔒 PIN für die Einstellungen (nur als Prüfsumme gespeichert)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
+        self.privacy: bool = False  # 🔒 Datenschutz an = keine Kamera, keine Fotos, kein Barcode-Scanner (für alle Geräte)
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
         self.auto_shop: bool = False  # 📍 Laden-Modus geht in der Zone von selbst an – ein Schalter für alle Geräte
         self.spend_auto: bool = False  # 🧾 Protokoll von selbst anbieten, wenn alles abgehakt ist (Option, standardmäßig aus)
@@ -390,6 +391,7 @@ class EinkaufslisteManager:
         self.typos = data.get("typos", {})
         self.pin_hash = data.get("pin")
         self.mascot = bool(data.get("mascot", False))
+        self.privacy = bool(data.get("privacy", False))
         self.spend = bool(data.get("spend", False))
         self.spend_auto = bool(data.get("spend_auto", False))
         self.auto_shop = bool(data.get("auto_shop", False))
@@ -452,6 +454,7 @@ class EinkaufslisteManager:
             "typos": self.typos,
             "pin": self.pin_hash,
             "mascot": self.mascot,
+            "privacy": self.privacy,
             "spend": self.spend,
             "spend_auto": self.spend_auto,
             "auto_shop": self.auto_shop,
@@ -532,6 +535,7 @@ class EinkaufslisteManager:
                 "pin": bool(self.pin_hash),
                 "app_url": self._app_url(),
                 "mascot": self.mascot,
+                "privacy": self.privacy,
                 "spend": self.spend,
                 "spend_auto": self.spend_auto,
                 "auto_shop": self.auto_shop,
@@ -766,6 +770,11 @@ class EinkaufslisteManager:
         mail = getattr(self, "mail", None)
         if mail is not None:
             mail.start()
+
+    def set_privacy(self, on: bool) -> None:
+        """🔒 Datenschutz für alle an- oder ausschalten (an = keine Kamera, keine Fotos, kein Barcode-Scanner)."""
+        self.privacy = bool(on)
+        self._changed()
 
     def set_mascot(self, on: bool) -> None:
         """🛒😊 Maskottchen für alle an- oder ausschalten."""

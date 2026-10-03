@@ -1491,5 +1491,7 @@
 "Wirklich {} „{}“?": "Really {} “{}”?",
 "„{}“ und „{}“ sind nicht dasselbe Produkt. Was soll mit deinem Produkt passieren?": "“{}” and “{}” are not the same product. What should happen to your product?",
 "➕ Zusätzlich – „{}“ bleibt offen": "➕ Also – “{}” stays open",
-"🔁 Ersetzen – „{}“ wird abgehakt (kommt wieder, falls du das Angebot nicht kaufst)": "🔁 Replace – “{}” is checked off (comes back if you don't buy the offer)"
+"🔁 Ersetzen – „{}“ wird abgehakt (kommt wieder, falls du das Angebot nicht kaufst)": "🔁 Replace – “{}” is checked off (comes back if you don't buy the offer)",
+"🔒 Datenschutz ist an – Kamera, Fotos und Scanner sind aus. Ändern: ⚙️ → Datenschutz": "🔒 Privacy is on – camera, photos and scanner are off. Change: ⚙️ → Privacy",
+"an – keine Kamera/Fotos": "on – no camera/photos"
 }

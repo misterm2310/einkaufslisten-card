@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.52.0";
+const EL_VERSION = "2.53.0";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.52.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.53.0"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🔒 <b>Datenschutz-Schalter:</b> Unter ⚙️ → Datenschutz kann ein Admin für alle Geräte „Datenschutz an“ einschalten – dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage) und keinen Barcode-Scanner. Die Knöpfe sind ausgegraut. Aus = alles wie gehabt.",
+   "🔒 <b>Privacy switch:</b> under ⚙️ → Privacy an admin can switch “Privacy on” for all devices – then there is no camera, no photos (not even from gallery or clipboard) and no barcode scanner. The buttons are greyed out. Off = as usual."],
   ["🧽 <b>Radiergummi im Katalog:</b> Ein Tipp setzt Suchfeld und Filter bei „Alle Produkte“ zurück. · 🤔 <b>Mengen-Nachfrage:</b> Bei ungewöhnlich großen Mengen (z. B. 300 Eier, 40 kg Mehl) fragt die Liste kurz nach. · 🔒 <b>Datenschutz</b> unter ⚙️ → App &amp; Info: was in Home Assistant bleibt und was ins Internet geht. · „h-milch“ wird zu „H-Milch“. · 🔀 Bei ähnlichen Angeboten fragt „Hier kaufen“, ob dein Produkt ersetzt wird oder zusätzlich offen bleibt.",
    "🧽 <b>Eraser in the catalog:</b> one tap resets the search and filter under “All products”. · 🤔 <b>Quantity check:</b> for unusually large amounts (e.g. 300 eggs, 40 kg flour) the list asks once more. · 🔒 <b>Privacy</b> under ⚙️ → App &amp; Info: what stays in Home Assistant and what goes to the internet. · “h-milch” becomes “H-Milch”. · 🔀 For similar offers, “Buy here” asks whether your product is replaced or stays open as well."],
   ["🔀 <b>Ähnliche Angebote:</b> Gibt es für einen Artikel (z. B. „H-Milch“ oder „Eat Me! Erdbeer Max Balance“) kein Angebot für genau diesen Namen, zerlegt die Liste den Namen in seine Wörter, sucht einzeln („Milch“) und bewertet die Treffer – auch mit Produkttyp aus der Datenbank, Spitznamen und deiner Kategorie. Höchstens 4, mit 🔀 „Ähnlich“ gekennzeichnet; der Besen bei Artikeln wird rot, wenn sie am nächsten Werktag automatisch abgehakt werden. Gibt es für genau den Artikel eins, kommt nur das.",
@@ -1444,6 +1446,10 @@ label.btn { cursor:pointer; }
   background:color-mix(in srgb, var(--primary-color,#03a9f4) 14%, transparent); }
 .zchip .zx { border:0; background:none; color:inherit; cursor:pointer; font:inherit; padding:2px 6px; opacity:.7; }
 .zadd { flex:1 1 140px; min-width:0; }
+:host([privacy]) [data-act="scan"], :host([privacy]) [data-act="new-barcode"], :host([privacy]) [data-act="barcode-assign"], :host([privacy]) [data-act="new-photo"],
+:host([privacy]) [data-act="photo-take"], :host([privacy]) [data-act="ocr-list"], :host([privacy]) [data-act="rimport-photo"], :host([privacy]) [data-act="prod-add-bc"],
+:host([privacy]) [data-act="sphoto-take"], :host([privacy]) [data-act="rphoto-take"] { opacity:.35; filter:grayscale(1); }
+.privrow { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0 12px; }
 .mascotprev { display:flex; gap:14px; align-items:center; margin:8px 0; color:var(--primary-text-color); }
 .mascotprev svg { width:48px; height:43px; }
 [hidden] { display:none !important; }
@@ -2519,8 +2525,17 @@ class EinkaufslisteCard extends HTMLElement {
     try { window.dispatchEvent(new CustomEvent("einkaufsliste-nav")); } catch (_) { /* egal */ }
   }
 
+  // 🔒 Datenschutz an = keine Kamera, keine Fotos, kein Scanner (Schalter in ⚙️ → Datenschutz, gilt für alle Geräte)
+  _privacyOn() { return !!this._data?.settings?.privacy; }
+  _privacyBlock() {
+    if (!this._privacyOn()) return false;
+    this._toast("🔒 Datenschutz ist an – Kamera, Fotos und Scanner sind aus. Ändern: ⚙️ → Datenschutz");
+    return true;
+  }
+
   _renderAll() {
     if (!this._built || !this._config) return;
+    this.toggleAttribute("privacy", this._privacyOn());
     queueMicrotask(() => this._emitNav());
     if (this._shopMode === undefined) {
       try { this._shopMode = localStorage.getItem("einkaufsliste_shopmode") === "1"; } catch (_) { this._shopMode = false; }
@@ -3631,7 +3646,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
       { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_NEWS_VERSION}`, html: () => this._newsHtml() },
-      { key: "privacy", icon: "mdi:shield-lock-outline", title: "Datenschutz", info: "was wohin geht", html: () => this._privacyHtml() },
+      { key: "privacy", icon: "mdi:shield-lock-outline", title: "Datenschutz", info: this._privacyOn() ? "an – keine Kamera/Fotos" : "aus", html: () => this._privacyHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
       { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
       { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher & Umfang", html: () => `
@@ -3747,7 +3762,7 @@ class EinkaufslisteCard extends HTMLElement {
       offers: "angebote marktguru preise plz", spend: "protokoll bon kasse kosten einkauf",
       autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
       log: "verlauf wer wann", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel sensor", errors: "fehler protokoll kopieren",
-      stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr", news: "neu version", credits: "über danke lizenz github",
+      stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr kamera foto scanner sperre", news: "neu version", credits: "über danke lizenz github",
     };
     const q = (this._setQ || "").trim().toLowerCase();
     const byKey = Object.fromEntries(sections.map((x) => [x.key, x]));
@@ -5175,6 +5190,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   // 📷 Foto holen: erst fragen woher (Kamera, Galerie, Einfügen), dann wie gewohnt weiter
   async _pickFile(id, heading) {
+    if (this._privacyBlock()) return;
     const input = this.$(id);
     const browse = () => { input.removeAttribute("capture"); input.value = ""; input.click(); };
     if (elIsPc()) { // 🖥️ PC: Fenster zum Reinziehen / Strg + V / Auswählen
@@ -5206,6 +5222,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _photoFromFile(id, file) {
+    if (this._privacyBlock()) return;
     const e = { target: { files: [file] } };
     if (id === "newPhotoFile") this._onNewPhotoFile(e);
     else this._onPhotoFile(e);
@@ -5217,6 +5234,7 @@ class EinkaufslisteCard extends HTMLElement {
     const item = [...(e.clipboardData?.items || [])].find((i) => i.kind === "file" && i.type.startsWith("image/"));
     const file = item?.getAsFile();
     if (!file) return;
+    if (this._privacyOn()) return; // 🔒 Datenschutz an: Bilder aus der Zwischenablage werden nicht angenommen
     if (this._view === "recipe" && this._draft) {
       e.preventDefault();
       this._photoTarget = { recipeDraft: true };
@@ -6082,7 +6100,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Each row has its <b>own page</b> with an on/off button: 🏷️ offers, 🧾 purchase log, 📍 shop mode automatic, 🛒😊 mascot.</li>
         <li><b>Applies to all devices:</b> purchase log, auto-ask, shop mode automatic and mascot. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
         <li><b>🏷️ Offers</b> need a postcode (admins only). Also: <b>“Only these stores”</b> (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b> and <b>Switch off</b>. A status line shows the number of offers and the last check (“⚠️ currently unavailable” if Marktguru does not answer). They come unofficially from Marktguru and can stop working at any time. If there is no exact offer for an item, the list automatically looks for <b>similar</b> ones (🔀, at most 4): using the single words of the name, the product type from the database, nicknames and the category. Only the names of open items go to Marktguru for this.</li>
-        <li><b>🔒 Privacy</b> (under “App &amp; Info”) says in plain words what stays in your Home Assistant and what goes to the internet.</li>
+        <li><b>🔒 Privacy</b> (under “App &amp; Info”) says in plain words what stays in your Home Assistant and what goes to the internet. An admin also switches <b>“Privacy on”</b> for all devices there: then there is no camera, no photos and no barcode scanner (the buttons are greyed out). Off = as usual.</li>
         <li><b>📍 Automatic shop mode</b> needs a 📍 zone at the store (Stores → Location) and your phone set up as a person in Home Assistant. What you switch on or off yourself is left alone by the automation.</li>
         <li><b>🧾 Purchase log:</b> its own switch plus <b>“🎉 Ask automatically”</b> (only appears once the log is on) and an “Open” button. Switching it off only hides the display – the entries stay saved.</li></ul>`)}
       ${sec("💾", "Data", `<ul>
@@ -6131,7 +6149,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Jede Zeile hat ihre <b>eigene Seite</b> mit einem Ein/Ausschalten-Knopf: 🏷️ Angebote, 🧾 Einkaufs-Protokoll, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen.</li>
         <li><b>Gilt für alle Geräte:</b> Protokoll, automatisch fragen, Laden-Modus automatisch und Maskottchen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
         <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl (nur Admins). Dazu: <b>„Nur diese Geschäfte“</b> (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b> und <b>Ausschalten</b>. Eine Statuszeile zeigt die Zahl der Angebote und die letzte Prüfung („⚠️ gerade nicht verfügbar“, wenn Marktguru nicht antwortet). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren. Gibt es für einen Artikel kein genaues Angebot, sucht die Liste automatisch <b>ähnliche</b> (🔀, höchstens 4): über die einzelnen Wörter des Namens, den Produkttyp aus der Datenbank, Spitznamen und die Kategorie. Dafür gehen nur die Namen offener Artikel an Marktguru.</li>
-        <li><b>🔒 Datenschutz</b> (unter „App &amp; Info“) zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht.</li>
+        <li><b>🔒 Datenschutz</b> (unter „App &amp; Info“) zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht. Dort schaltet ein Admin auch <b>„Datenschutz an“</b> für alle Geräte: Dann gibt es keine Kamera, keine Fotos und keinen Barcode-Scanner (die Knöpfe sind ausgegraut). Aus = alles wie gehabt.</li>
         <li><b>📍 Laden-Modus automatisch</b> braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</li>
         <li><b>🧾 Einkaufs-Protokoll:</b> eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist) und ein „Öffnen“-Knopf. Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert.</li></ul>`)}
       ${sec("💾", "Daten", `<ul>
@@ -6179,13 +6197,21 @@ class EinkaufslisteCard extends HTMLElement {
 
   // 🙏 Credits – in ⚙️ und in der Anleitung (dort dunkel)
   _newsHtml(en = EL_LANG !== "de") {
-    return `<div ${en ? 'translate="no"' : ""}><p class="hint">${en ? "The latest new features (version" : "Die letzten Neuerungen (Version"} <b>${EL_NEWS_VERSION}</b>):</p><ul>${EL_NEWS.map((n) => `<li>${en ? n[1] : n[0]}</li>`).join("")}</ul></div>`;
+    return `<div ${en ? 'translate="no"' : ""}><p class="hint">${en ? "The latest new features (version" : "Die letzten Neuerungen (Version"} <b>${EL_NEWS_VERSION}</b>):</p><ul>${EL_NEWS.map((n) => (en ? n[1] : n[0]).split(" · ").map((x) => `<li>${x}</li>`).join("")).join("")}</ul></div>`;
   }
 
   // 🔒 Datenschutz: ehrlich, was in Home Assistant bleibt und was ins Internet geht
   _privacyHtml(en = EL_LANG !== "de") {
     const t = (de, eng) => (en ? eng : de);
+    const on = this._privacyOn(), admin = !!this._hass?.user?.is_admin;
+    const sw = `<div class="privrow"><b>${on ? t("🔒 Datenschutz ist AN", "🔒 Privacy is ON") : t("🔓 Datenschutz ist aus", "🔓 Privacy is off")}</b>
+        ${admin ? `<button class="btn ${on ? "" : "primary"}" data-act="privacy-toggle"><ha-icon icon="mdi:shield-lock-outline"></ha-icon>${on ? t("Ausschalten", "Switch off") : t("Einschalten", "Switch on")}</button>`
+          : `<span class="hint">${t("🔒 Umschalten kann nur ein Admin.", "🔒 Only an admin can switch this.")}</span>`}</div>
+      <p class="hint">${on ? t("Es gibt keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage), keinen Zettel-Foto-Import und keinen Barcode-Scanner – für alle Geräte. Barcode von Hand tippen geht weiter.",
+        "There is no camera, no photos (not even from gallery or clipboard), no photo import of notes and no barcode scanner – for all devices. Typing a barcode by hand still works.")
+        : t("Aus = alles wie gehabt. An = keine Kamera, keine Fotos, kein Barcode-Scanner (für alle Geräte).", "Off = as usual. On = no camera, no photos, no barcode scanner (for all devices).")}</p>`;
     return `<div translate="no">
+      ${sw}
       <p class="hint">🏠 <b>${t("Das bleibt in deinem Home Assistant", "This stays in your Home Assistant")}</b>: ${t(
         "deine Liste, Rezepte, Fotos, Verlauf, Einstellungen und Sicherungen. Es gibt keine Cloud vom Entwickler, keine Werbung und kein Tracking.",
         "your list, recipes, photos, history, settings and backups. There is no developer cloud, no ads and no tracking.")}</p>
@@ -6828,6 +6854,7 @@ class EinkaufslisteCard extends HTMLElement {
    * onAlt: was beim Zusatz-Knopf passiert (z. B. „Mehrere scannen“ oder „Fertig“).
    */
   _appScan({ title, description, altLabel, series = false, onCode, onAlt, onEnd }) {
+    if (this._privacyBlock()) return;
     const ext = this._hass?.auth?.external;
     if (!ext) return;
     this._listenToApp();
@@ -7911,7 +7938,7 @@ class EinkaufslisteCard extends HTMLElement {
         if (!p) break;
         const title = `▥ Barcode für „${p.name}“`;
         const typeIt = () => askBarcode(title, false).then((r) => { if (r) this._prodBcSave(p, r); });
-        if (this._hasAppScanner()) { // 📷 zuerst scannen, darunter ein Knopf zum Eintippen
+        if (this._hasAppScanner() && !this._privacyOn()) { // 📷 zuerst scannen, darunter ein Knopf zum Eintippen (bei Datenschutz an: nur Eintippen)
           this._appScan({
             title, description: "Packung scannen – danach frage ich die Produkt-Datenbank.",
             altLabel: "⌨️ Von Hand eingeben",
@@ -8190,6 +8217,10 @@ class EinkaufslisteCard extends HTMLElement {
       case "pin-set":
       case "pin-off":
         this._pinChange(act === "pin-off");
+        break;
+      case "privacy-toggle":
+        this._ws({ type: "einkaufsliste/privacy/set", on: !this._privacyOn() })
+          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
         break;
       case "mascot-toggle":
         this._ws({ type: "einkaufsliste/mascot/set", on: !this._data.settings?.mascot })
