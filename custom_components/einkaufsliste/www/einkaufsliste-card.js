@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.55.03";
+const EL_VERSION = "2.55.04";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.55.03"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -3165,9 +3165,13 @@ class EinkaufslisteCard extends HTMLElement {
     const ovs = document.querySelectorAll("[data-elov]");
     if (ovs.length) {
       const ov = ovs[ovs.length - 1];
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      // Nur das OBERSTE Fenster schließen (z. B. Gar-Zeiten über dem Kochen) – ein „Escape“ würde alle offenen Fenster zumachen
+      const btns = [...ov.querySelectorAll("button")];
+      const close = btns.find((b) => /^\s*(✕|✖️?|×)\s*$|^\s*(✕|✖️?|×)?\s*(Schließen|Abbrechen|Close|Cancel)\b/i.test(b.textContent || ""));
+      if (close) { close.click(); return true; }
+      if (ovs.length === 1) document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
       if (ov.isConnected) {
-        const btn = [...ov.querySelectorAll("button")].find((b) => /^\s*(✕|×)?\s*(Schließen|Abbrechen|Fertig|Beenden|Close|Cancel|Done|Finish)\b/i.test(b.textContent || ""));
+        const btn = btns.find((b) => /^\s*(✕|×)?\s*(Fertig|Beenden|Done|Finish)\b/i.test(b.textContent || ""));
         if (btn) btn.click(); else ov.remove();
       }
       return true;
@@ -7205,10 +7209,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Namen werden aufgeräumt:</b> „h-milch“ wird zu „H-Milch“.</li>
         <li>Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 📷 Foto · ⭐ alle Favoriten auf die Liste · 📋 Liste aus Foto einlesen · 🧽 alles leeren.</li>
         <li><b>⭐ Favoriten:</b> Beim Bearbeiten eines Artikels (oder eines Produkts im Katalog) „⭐ Favorit“ ankreuzen – dann steht ein ⭐ vor dem Foto-Symbol. Der ⭐-Knopf unter dem Eingabefeld setzt <b>alle</b> Favoriten sofort auf die Liste; was schon offen draufsteht, kommt nicht doppelt.</li>
-        <li><b>💳 Kundenkarten</b> (nur wenn in ⚙️ → Extras eingeschaltet): Der 💳-Knopf oben (auch im Laden-Modus) zeigt deine Karten. „➕ Karte“: einscannen oder Nummer eintippen, Namen geben, „für alle“ oder „nur für mich“ wählen. Antippen zeigt den Code groß auf weißem Grund für die Kasse; „🔄 Anderes Format“ wechselt zwischen QR und Strichcode.</li>
-        <li><b>📷 Einscannen</b> hat eine <b>eigene Kamera in der Karte</b> und liest QR-Codes, Aztec-Codes (z. B. der Penny-Vorteilscode) und Strichcodes von selbst – das Format musst du nicht wählen. <b>📷 Foto der Karte</b> legt zusätzlich ein Foto ab (liegt nur auf deinem Home Assistant). Ein „Rollcode“, der ständig wechselt, geht damit nicht.</li>
         <li><b>📝 Notiz-Vorlagen</b> (⚙️ → Extras): Kleine Knöpfe unter dem ✏️ Eigene Notiz-Feld (beim Eintragen, Bearbeiten und im Katalog) – ein Tipp setzt „Bio“, „ohne Laktose“ & Co. ein. Die Texte pflegst du selbst, ein Text pro Zeile.</li>
-        <li><b>🤖 KI-Kochen</b> (⚙️ → Extras, nur Admin): Du wählst einen KI-Assistenten aus Home Assistant (z. B. OpenAI, Google, Anthropic oder lokal Ollama). Dann steht bei den <b>Rezepten</b> oben links neben den Gar-Zeiten „Was kann ich kochen?“: Zutaten eintippen (auch Dinge, die nicht im Katalog stehen), optional die offenen Artikel der Liste mitnehmen und Wünsche dazuschreiben. Zu jedem Vorschlag: „Fehlendes auf die Liste“ oder „Als Rezept speichern“. Die Namen der Zutaten gehen an den gewählten Assistenten; bei eingeschaltetem Datenschutz geht nichts raus. Antworten einer KI können falsch sein.</li>
         <li><b>✏️ Eigene Notiz:</b> Hier schreibst du etwas nur für dich hin, z. B. „nur die große Packung“. Sie steht in der Liste gelb wie die 📝 Notiz (mit ✏️ davor), <b>bleibt beim Produkt</b> und kommt beim nächsten Eintragen von selbst wieder. Die 📝 Notiz dagegen kommt nur aus dem Barcode (Marke/Sorte aus der Datenbank) und ist nicht tippbar. Die ✏️ Notiz macht kein neues Produkt, und die Produkt-Datenbank überschreibt sie nie. Ändern geht beim Bearbeiten des Artikels oder im Katalog; leer lassen löscht sie dort.</li>
         <li>Darunter <b>„Welches Geschäft?“</b> – oder „Egal wo“. Meist ist es schon richtig ausgewählt (so wie zuletzt).</li>
         <li>Daneben die <b>Kategorie</b> – die sucht sich die Liste meist selbst aus. Passt sie nicht, einfach ändern.</li>
@@ -7295,6 +7296,10 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Neues Produkt mit eigenem Namen?</b> Beim Eintragen das <b>▥ mit Plus</b> (neben dem Foto-Symbol) antippen, scannen, Namen tippen, ✔ – der Barcode gehört dann gleich dazu.</li>
         <li><b>Ohne Netz:</b> Nachschlagen in der Datenbank geht nur mit Netz. Ohne Netz kennt die Liste nur Barcodes, die sie schon gespeichert hat.</li>
         <li>Zur Datenschutz-Frage: Beim Scannen geht nur die Barcode-Nummer an die offene Datenbank Open Food Facts. Deine Liste und deine Fotos bleiben in Home Assistant. Ist <b>🔒 Datenschutz an</b> (⚙️ → App &amp; Info), gibt es keinen Scanner; einen Barcode kannst du dann nur von Hand eintippen.</li></ul>`)}
+      ${sec("💳", "Kundenkarten", `<ul>
+        <li><b>💳 Kundenkarten</b> (nur wenn in ⚙️ → Extras eingeschaltet): Der 💳-Knopf oben (auch im Laden-Modus) zeigt deine Karten. „➕ Karte“: einscannen oder Nummer eintippen, Namen geben, „für alle“ oder „nur für mich“ wählen. Antippen zeigt den Code groß auf weißem Grund für die Kasse; „🔄 Anderes Format“ wechselt zwischen QR und Strichcode.</li>
+        <li><b>📷 Einscannen</b> hat eine <b>eigene Kamera in der Karte</b> und liest QR-Codes, Aztec-Codes (z. B. der Penny-Vorteilscode) und Strichcodes von selbst – das Format musst du nicht wählen. <b>📷 Foto der Karte</b> legt zusätzlich ein Foto ab (liegt nur auf deinem Home Assistant). Ein „Rollcode“, der ständig wechselt, geht damit nicht.</li>
+      </ul>`)}
       ${sec("👨‍🍳", "Rezepte", `<ul>
         <li>Die <b>Kochmütze</b> oben öffnet die Rezepte. Das Suchfeld findet auch Zutaten (z. B. „Zucchini“) – und über Spitznamen („Paradeiser“ findet die Rezepte mit Tomate). Neue Rezepte anlegen und ändern geht nur über das <b>⚙️-Zahnrad</b> (⚙️ → Rezepte).</li>
         <li><b>Auf die Liste</b>: Anhaken, was du brauchst – mit „Alle“ oder „Keine“ geht es schneller. Was schon draufsteht („steht schon drauf“, nur bei gleichem Namen und gleicher Notiz) oder „haben wir immer“ ist (🧂), ist nicht angehakt. Rezept-Zutaten auf der Liste tragen den Rezeptnamen, eingefärbt wie die Rezept-Gruppe.</li>
@@ -7303,6 +7308,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Von der Liste (3)</b> nimmt die Zutaten dieses Rezepts wieder runter.</li>
         <li>📷 = Rezept-Fotos · <b>🔥 Kochen</b> = Schritt für Schritt in großer Schrift („Schritt 2 von 6“, oben die Icons <b>📷</b> Foto zum Schritt (nur wenn es noch keins gibt), <b>🥕</b> Zutaten und ⏲️ Gar-Zeiten, darunter orange die Backofen-Einstellungen, danach das Foto zum Schritt; ist noch kein Rezept-Foto da, kommt als letzter Schritt „📸 Foto vom fertigen Gericht“; der Bildschirm bleibt an; im Querformat bleibt „Weiter“ immer sichtbar) · <b>Teilen</b> = z. B. per WhatsApp.</li>
         <li>Abgehakte Rezept-Zutaten verschwinden ganz (nicht bei „Erledigt“).</li>
+        <li><b>🤖 KI-Kochen</b> (⚙️ → Extras, nur Admin): Du wählst einen KI-Assistenten aus Home Assistant (z. B. OpenAI, Google, Anthropic oder lokal Ollama). Dann steht bei den <b>Rezepten</b> oben links neben den Gar-Zeiten „Was kann ich kochen?“: Zutaten eintippen (auch Dinge, die nicht im Katalog stehen), optional die offenen Artikel der Liste mitnehmen und Wünsche dazuschreiben. Zu jedem Vorschlag: „Fehlendes auf die Liste“ oder „Als Rezept speichern“. Die Namen der Zutaten gehen an den gewählten Assistenten; bei eingeschaltetem Datenschutz geht nichts raus. Antworten einer KI können falsch sein.</li>
         <li><b>⏲️ Gar-Zeiten</b> (oben bei den Rezepten und im Koch-Modus): Spickzettel nach Gerät: 🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse.</li></ul>`)}
       ${sec("🟢", "Was bedeuten die Zeichen oben?", `<ul>
         <li>Von links: <b>🛒 Einkaufswagen</b> (oder das Maskottchen, wenn eingeschaltet) = diese Anleitung · <b>🟢 Punkt</b> · <b>Zahl</b> · <b>▥ Barcode</b> (nur mit Scanner) · <b>🧾</b> Einkaufs-Protokoll (nur wenn eingeschaltet) · <b>🔓</b> sperrt das ⚙️ sofort (nur mit PIN).</li>
@@ -7594,10 +7600,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Names get tidied:</b> “h-milk” becomes “H-Milk”.</li>
         <li>The buttons below: 🔢 quantity · ✏️ own note · 👤 for whom · 📷 photo · ⭐ all favourites onto the list · 📋 read a list from a photo · 🧽 clear everything.</li>
         <li><b>⭐ Favourites:</b> when editing an item (or a catalogue product) tick “⭐ Favourite” – a ⭐ then shows before the photo icon. The ⭐ button under the input field puts <b>all</b> favourites on the list at once; whatever is already open on it is not added twice.</li>
-        <li><b>💳 Loyalty cards</b> (only if switched on in ⚙️ → Extras): the 💳 button at the top (also in shop mode) shows your cards. “➕ Card”: scan it or type the number, give it a name, choose “for everyone” or “only me”. Tapping shows the code big on white for the checkout; “🔄 Other format” switches between QR and barcode.</li>
-        <li><b>📷 Scan</b> has its <b>own camera in the card</b> and reads QR codes, Aztec codes (e.g. Penny’s benefit code) and barcodes by itself – you don’t have to choose the format. <b>📷 Photo of the card</b> also stores a photo (only on your Home Assistant). A “rolling code” that keeps changing does not work with it.</li>
         <li><b>📝 Note templates</b> (⚙️ → Extras): small buttons under the ✏️ Own note field (when adding, editing and in the catalogue) – one tap inserts “Organic”, “lactose-free” & co. You maintain the texts yourself, one per line.</li>
-        <li><b>🤖 AI cooking</b> (⚙️ → Extras, admin only): you choose an AI assistant from Home Assistant (e.g. OpenAI, Google, Anthropic or local Ollama). Then <b>Recipes</b> shows “What can I cook?” at the top left, next to the cooking times: type ingredients (also things that are not in the catalogue), optionally include the open items of the list and add wishes. For every suggestion: “Missing items to the list” or “Save as recipe”. The ingredient names go to the chosen assistant; with Privacy switched on nothing is sent. AI answers can be wrong.</li>
         <li><b>✏️ Own note:</b> write something just for yourself here, e.g. “only the big pack”. In the list it is yellow like the 📝 note (with ✏️ in front), <b>stays with the product</b> and comes back by itself next time you add it. The 📝 note, by contrast, comes only from the barcode (brand/variety from the database) and cannot be typed. The ✏️ note does not create a new product, and the product database never overwrites it. You change it when editing the item or in the catalog; leaving it empty there deletes it.</li>
         <li>Below that <b>“Which store?”</b> – or “Anywhere”. Usually it's already picked correctly (like last time).</li>
         <li>Next to it the <b>category</b> – the list usually picks it itself. If it's wrong, just change it.</li>
@@ -7684,6 +7687,10 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>New product with your own name?</b> When adding, tap the <b>▥ with a plus</b> (next to the photo icon), scan, type the name, ✔ – the barcode belongs to it right away.</li>
         <li><b>Without network:</b> Looking things up in the database only works with a connection. Without it the list only knows barcodes it has already saved.</li>
         <li>On privacy: when scanning, only the barcode number goes to the open database Open Food Facts. Your list and your photos stay in Home Assistant. If <b>🔒 Privacy is on</b> (⚙️ → App &amp; info) there is no scanner; you can only type a barcode by hand.</li></ul>`)}
+      ${sec("💳", "Loyalty cards", `<ul>
+        <li><b>💳 Loyalty cards</b> (only if switched on in ⚙️ → Extras): the 💳 button at the top (also in shop mode) shows your cards. “➕ Card”: scan it or type the number, give it a name, choose “for everyone” or “only me”. Tapping shows the code big on white for the checkout; “🔄 Other format” switches between QR and barcode.</li>
+        <li><b>📷 Scan</b> has its <b>own camera in the card</b> and reads QR codes, Aztec codes (e.g. Penny’s benefit code) and barcodes by itself – you don’t have to choose the format. <b>📷 Photo of the card</b> also stores a photo (only on your Home Assistant). A “rolling code” that keeps changing does not work with it.</li>
+      </ul>`)}
       ${sec("👨‍🍳", "Recipes", `<ul>
         <li>The <b>chef's hat</b> at the top opens the recipes. The search also finds ingredients (e.g. “zucchini”) – and nicknames (“Paradeiser” finds the recipes with tomato). Creating and changing recipes only works via the <b>⚙️ gear</b> (⚙️ → Recipes).</li>
         <li><b>Add to list</b>: tick what you need – “All” or “None” is faster. Whatever is already on the list (“already on it”, only with the same name and note) or “we always have it” (🧂) is not ticked. Recipe ingredients on the list carry the recipe name, coloured like the recipe group.</li>
@@ -7692,6 +7699,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Off the list (3)</b> takes this recipe's ingredients off again.</li>
         <li>📷 = recipe photos · <b>🔥 Cook</b> = step by step in large print (“Step 2 of 6”, icons at the top: <b>📷</b> photo for the step (only if there is none yet), <b>🥕</b> ingredients and ⏲️ cooking times; below them the orange oven settings, then the photo for the step; if the recipe has no photo yet, the last step is “📸 Photo of the finished dish”; the screen stays on; in landscape “Next” always stays visible) · <b>Share</b> = e.g. via WhatsApp.</li>
         <li>Checked recipe ingredients disappear completely (not under “Done”).</li>
+        <li><b>🤖 AI cooking</b> (⚙️ → Extras, admin only): you choose an AI assistant from Home Assistant (e.g. OpenAI, Google, Anthropic or local Ollama). Then <b>Recipes</b> shows “What can I cook?” at the top left, next to the cooking times: type ingredients (also things that are not in the catalogue), optionally include the open items of the list and add wishes. For every suggestion: “Missing items to the list” or “Save as recipe”. The ingredient names go to the chosen assistant; with Privacy switched on nothing is sent. AI answers can be wrong.</li>
         <li><b>⏲️ Cooking times</b> (at the top of the recipes and in cook mode): cheat sheet by appliance: 🍲 stove, 🔥 oven, 💨 air fryer.</li></ul>`)}
       ${sec("🟢", "What do the symbols at the top mean?", `<ul>
         <li>From the left: <b>🛒 shopping cart</b> (or the mascot, if switched on) = this guide · <b>🟢 dot</b> · <b>number</b> · <b>▥ barcode</b> (only with a scanner) · <b>🧾</b> purchase log (only if switched on) · <b>🔓</b> locks the ⚙️ at once (only with a PIN).</li>
