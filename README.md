@@ -143,6 +143,8 @@ Am Aufräum-Tag wird alles **abgehakt**, was mindestens 7 Tage (einstellbar) off
 
 **🧽 Liste löschen (nur Admins):** Unter ⚙️ → Aufräumen ein Geschäft (oder „Alle Geschäfte“) wählen, dann **„Erledigte löschen“** (nur Abgehaktes) oder **„Liste leeren“** (offen und erledigt – gut am Sonntag für die neue Woche). Vorher kommt eine Frage mit der Anzahl. Der **Katalog bleibt**: Produkte erscheinen beim Tippen weiter als Vorschlag, Fotos, Barcodes, Notizen und Favoriten bleiben. Nicht rückgängig.
 
+**📊 Last-Anzeige:** ⚙️ → „Alles ok?“ zeigt unten „📊 Last“ mit Änderungen pro Minute, gesendeten Paketen und der Größe eines Pakets (siehe auch die Attribute von `sensor.einkaufsliste_gesundheit`).
+
 **⚡ Weniger Last:** Viele schnelle Änderungen (z. B. mehrere Artikel nacheinander abhaken) werden jetzt zu **einem** Paket an die Karten und Apps gebündelt (max. alle 0,3 Sekunden), statt bei jeder Änderung die komplette Liste neu zu senden. Bei Last-Problemen hilft die Diagnose: Der Gesundheits-Sensor zeigt in den Attributen `aenderungen_gesamt`, `aenderungen_pro_minute`, `pakete_an_karten_gesamt` und `laufzeit_minuten`. Wenn `aenderungen_pro_minute` dauerhaft hoch ist, ändert sich ständig etwas – bitte als Issue melden.
 
 **🗂️ Eigene Kategorien pro Geschäft:** Auf der Seite eines Geschäfts (⚙️ → Geschäfte) wählst du „Alle Kategorien wie überall“ oder „Eigene Kategorien“. Bei „Eigene“ hakst du an, welche Kategorien es in diesem Geschäft gibt, und kannst eine neue nur dafür anlegen. Die Liste dieses Reiters und das Kategorie-Ändern zeigen dann nur diese; Artikel aus einer abgewählten Kategorie stehen dort unter „Ohne Kategorie“ (die Kategorie des Artikels bleibt unverändert). Zusammen mit der eigenen Kategorien-Folge nutzbar.

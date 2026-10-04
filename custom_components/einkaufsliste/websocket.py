@@ -74,6 +74,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_labels,
         ws_catalog_wipe,
         ws_factory_reset,
+        ws_load,
         ws_items_purge,
         ws_cards_enable,
         ws_grocy_preview,
@@ -599,6 +600,13 @@ def ws_items_purge(hass, connection, msg):
 async def ws_catalog_wipe(hass, connection, msg):
     # 🧹 Einkaufsliste + ganzer Katalog mit Fotos, Barcodes usw. löschen (nur Admins; Rezepte, Geschäfte … bleiben)
     await _run_async(hass, connection, msg, lambda m: m.async_delete_all_products())
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/load"})
+@callback
+def ws_load(hass, connection, msg):
+    # 📊 Last-Zahlen (Änderungen pro Minute, gesendete Pakete, Paketgröße)
+    _run(hass, connection, msg, lambda m: m.load_info())
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/factory_reset"})

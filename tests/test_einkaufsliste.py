@@ -3710,3 +3710,11 @@ async def test_pakete_werden_gebuendelt(hass, hass_ws_client, setup):
         except asyncio.TimeoutError:
             break
     assert last and len(last["event"]["items"]) == 20
+
+
+async def test_last_anzeige(hass, setup):
+    """📊 load_info liefert Zähler und Paketgröße."""
+    m = mgr(hass)
+    m.add_item("Milch")
+    info = m.load_info()
+    assert info["changes"] >= 1 and info["items"] == 1 and info["packet_kb"] >= 1 and info["per_minute"] > 0

@@ -133,6 +133,8 @@ On cleanup day everything that has been open for at least 7 days (adjustable) ge
 
 **🧽 Delete list (admins only):** under ⚙️ → Tidy up pick a store (or “All stores”), then **“Delete done items”** (only what is checked off) or **“Empty list”** (open and done – good on Sunday for the new week). A question with the number comes first. The **catalogue stays**: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.
 
+**📊 Load display:** ⚙️ → “All OK?” shows “📊 Load” at the bottom with changes per minute, packets sent and the size of one packet (also in the attributes of `sensor.einkaufsliste_gesundheit`).
+
 **⚡ Less load:** many quick changes (e.g. ticking off several items in a row) are now bundled into **one** packet to cards and apps (at most every 0.3 seconds) instead of resending the whole list on every change. For load problems there is a diagnosis: the health sensor shows `aenderungen_gesamt`, `aenderungen_pro_minute`, `pakete_an_karten_gesamt` and `laufzeit_minuten` in its attributes. If `aenderungen_pro_minute` stays high, something keeps changing – please report it as an issue.
 
 **🗂️ Own categories per store:** on a store's page (⚙️ → Stores) choose “All categories as everywhere” or “Own categories”. With “Own” you tick which categories exist in this store and can create a new one just for it. The list of that tab and the category picker then show only those; items from an unticked category show under “No category” there (the item's own category stays unchanged). Works together with the own category order.

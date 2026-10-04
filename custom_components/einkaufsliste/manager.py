@@ -6,6 +6,7 @@ import base64
 import binascii
 import hashlib
 import hmac
+import json
 import re
 import secrets
 from collections.abc import Callable, Iterator
@@ -3150,6 +3151,23 @@ class EinkaufslisteManager:
         self._changed()
 
     # ------------------------------------------------------------------ 🩺 Gesundheit (für den Sensor)
+    def load_info(self) -> dict[str, Any]:
+        """📊 Last-Zahlen für ⚙️ → Alles ok?: Änderungen, gesendete Pakete, Größe eines Pakets."""
+        mins = max((_monotonic() - self.stat_start) / 60, 1 / 60)
+        try:
+            kb = len(json.dumps(self.as_dict(), default=str)) // 1024
+        except (TypeError, ValueError):
+            kb = None
+        return {
+            "changes": self.stat_changes,
+            "per_minute": round(self.stat_changes / mins, 2),
+            "pushes": self.stat_pushes,
+            "minutes": round(mins),
+            "packet_kb": kb,
+            "items": len(self.items),
+            "products": len(self.products()),
+        }
+
     async def async_health(self) -> dict[str, Any]:
         """Prüft wie „Alles ok?“ (ohne etwas zu reparieren) und merkt sich das Ergebnis: ok / hinweis / problem."""
         try:

@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.59.01";
+const EL_VERSION = "2.59.02";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.59.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.59.02"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["📊 <b>Last-Anzeige:</b> ⚙️ → Alles ok? zeigt jetzt unten „📊 Last“: wie oft sich etwas ändert (pro Minute), wie viele Pakete an Karten und Apps gingen und wie groß ein Paket ist. Hilft, wenn der Server unter Last steht. Dazu: Schnelle Änderungen werden gebündelt gesendet, und die Häkchen bei „Eigene Kategorien“ sitzen jetzt sauber.",
+   "📊 <b>Load display:</b> ⚙️ → All OK? now shows “📊 Load” at the bottom: how often something changes (per minute), how many packets went to cards and apps and how big a packet is. Helps when the server is under load. Also: quick changes are sent bundled, and the ticks under “Own categories” now look right."],
   ["🗂️ <b>Eigene Kategorien pro Geschäft:</b> Auf der Seite eines Geschäfts wählst du „Alle Kategorien wie überall“ oder „Eigene Kategorien“. Bei „Eigene“ hakst du an, welche Kategorien es dort gibt, und kannst eine neue nur für dieses Geschäft anlegen. Die Liste des Reiters und das Kategorie-Ändern zeigen dann nur diese. Zusammen mit der eigenen Kategorien-Folge.",
    "🗂️ <b>Own categories per store:</b> on a store's page choose “All categories as everywhere” or “Own categories”. With “Own” you tick which categories exist there and can create a new one just for this store. The tab's list and the category picker then show only those. Works together with the own category order."],
   ["💣 <b>Werkseinstellungen:</b> ⚙️ → Aufräumen hat einen neuen Knopf (nur Admins): setzt <b>alles</b> auf Anfang zurück wie bei einer frischen Installation – Liste, Katalog, Fotos, Geschäfte, Kategorien, Rezepte, Karten, Grocy-Verbindung. Nur die PIN bleibt. Mit Erklärung und zwei Sicherheitsfragen. Nützlich nach einem Grocy-Import, wenn du ganz neu anfangen willst.",
@@ -1978,6 +1980,8 @@ ha-card.compact .group { margin-top:4px; }
 .elcsmall { opacity:.7; font-size:.9em; }
 .catordlist { display:flex; flex-direction:column; gap:2px; margin:4px 0 6px; }
 .catord { display:flex; align-items:center; gap:8px; padding:3px 6px; border-radius:8px; background:var(--secondary-background-color, rgba(127,127,127,.06)); }
+.catord input[type=checkbox] { flex:none; width:20px; height:20px; margin:0; padding:0; accent-color:var(--primary-color, #03a9f4); }
+label.catord { cursor:pointer; }
 .catord .con { min-width:1.6em; opacity:.6; font-variant-numeric:tabular-nums; }
 .catord .grow { flex:1; min-width:0; }
 .missed .mrow { margin-top:4px; display:flex; align-items:center; gap:6px; }
@@ -3931,7 +3935,7 @@ class EinkaufslisteCard extends HTMLElement {
         </select></div>
       ${own ? `<div class="catordlist">${this._data.categories.map((c) => `<label class="catord"><input type="checkbox" data-catset="${esc(c.id)}" data-store="${esc(store.id)}" ${store.cats.includes(c.id) ? "checked" : ""}><ha-icon icon="${esc(c.icon || "mdi:tag-outline")}"></ha-icon><span class="grow" translate="no">${esc(c.name)}</span></label>`).join("")}</div>
       <div class="srow"><input class="grow" id="catSetNew" placeholder="Neue Kategorie nur hier …" maxlength="40"><button type="button" class="btn" data-act="catset-new" data-store="${esc(store.id)}"><ha-icon icon="mdi:plus"></ha-icon>Neu</button></div>
-      <p class="hint">🗂️ Nur Häkchen gesetzte Kategorien gibt es in diesem Geschäft: in der Liste dieses Reiters und beim Kategorie-Ändern. Artikel aus einer abgewählten Kategorie stehen hier unter „Ohne Kategorie“ (ihre Kategorie selbst bleibt unverändert). „Neu“ legt eine Kategorie an und hakt sie nur für dieses Geschäft an.</p>` : ""}
+      <p class="hint">🗂️ Nur angehakte Kategorien gibt es in diesem Geschäft: in der Liste dieses Reiters und beim Kategorie-Ändern. Artikel aus einer abgewählten Kategorie stehen hier unter „Ohne Kategorie“ (ihre Kategorie selbst bleibt unverändert). „Neu“ legt eine Kategorie an und hakt sie nur für dieses Geschäft an.</p>` : ""}
     </div>`;
   }
 
@@ -4486,7 +4490,10 @@ class EinkaufslisteCard extends HTMLElement {
       { key: "check", icon: "mdi:check-decagram-outline", title: "Alles ok?", info: "prüfen & reparieren", html: () => `
         <p class="hint">Sucht nach kaputten oder unvollständigen Einträgen: Produkte ohne Kategorie, Artikel ohne Geschäft, fehlende oder übrige Fotos, Barcodes ohne Produkt und Verweise auf Gelöschtes. Jeder Fund steht einzeln da – mit Haken und wie repariert wird. Repariert wird nur, was du anhakst.</p>
         <div class="btnrow"><button class="btn primary" data-act="check-run"><ha-icon icon="mdi:magnify"></ha-icon>Jetzt prüfen</button></div>
-        <div id="checkRes"></div>` },
+        <div id="checkRes"></div>
+        <hr><p><b>📊 Last</b><br>Wie stark arbeitet die Einkaufsliste gerade? Bei hoher Auslastung des Servers hilft das, die Ursache zu finden.</p>
+        <div id="loadRes" class="hint">Tippe auf „Last anzeigen“.</div>
+        <div class="btnrow"><button class="btn" data-act="load-run"><ha-icon icon="mdi:speedometer"></ha-icon>Last anzeigen</button></div>` },
       { key: "errors", icon: "mdi:bug-outline", title: "Fehler-Protokoll", info: (this._data.settings?.errors || 0) ? `${this._data.settings.errors} Meldungen` : "keine Fehler 🎉", html: () => this._errorsHtml() },
       { key: "transfer", icon: "mdi:database-import-outline", title: "Import & Sicherung", info: "andere Apps, Grocy, Backup", html: () => this._xferHtml() },
       { key: "app", icon: "mdi:cellphone-arrow-down", title: "Offline-App", info: "Liste auch ohne Netz", html: () => `
@@ -7594,7 +7601,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>🧽 Delete list</b> (admins only): pick a store (or “All stores”), then <b>“Delete done items”</b> (only what is checked off, open items stay) or <b>“Empty list”</b> (open and done, the list is empty again – good for Sunday). A question with the number comes first. The <b>catalogue stays</b>: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.</li>
         <li><b>🧹 Delete everything</b> (admins only): <b>“Delete catalogue &amp; list completely”</b> deletes the shopping list and the whole catalogue with all photos, barcodes, nicknames, own notes, favourites and learned typos. Two safety questions, <b>cannot be undone</b> – better make a backup first (⚙️ → Import &amp; backup). Stores, categories, people, recipes, loyalty cards and settings stay.</li></ul>`)}
       ${sec("🩺", "Health", `<ul>
-        <li><b>All OK?</b> looks for broken entries (photos, barcodes, recipes). For every finding: <b>🔧 Fix</b> (just this one), <b>✏️ Change it myself</b> (jumps to the product, item or recipe) and – where there is more than one way – a choice. Or tick and repair everything at once.</li>
+        <li><b>All OK?</b> looks for broken entries (photos, barcodes, recipes). For every finding: <b>🔧 Fix</b> (just this one), <b>✏️ Change it myself</b> (jumps to the product, item or recipe) and – where there is more than one way – a choice. Or tick and repair everything at once. At the bottom there is <b>📊 Load</b>: changes per minute, packets sent and packet size – helps with high server load.</li>
         <li><b>Error log:</b> technical errors with “Copy” and “Clear” buttons – handy if you need help. If there are only error messages from the last 24 hours, the bar at the top opens the error log instead of “All OK?”; if the check could not run, it shows ⚪ “Could not check”.</li>
         <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> shows the health light in Home Assistant (ok / hinweis / problem) – you can use it in automations, e.g. a message to your phone.</li>
         <li><b>Resources:</b> how big the data and photos are.</li></ul>`)}
@@ -7649,7 +7656,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>🧽 Liste löschen</b> (nur Admins): Geschäft wählen (oder „Alle Geschäfte“), dann <b>„Erledigte löschen“</b> (nur Abgehaktes, Offenes bleibt) oder <b>„Liste leeren“</b> (offen und erledigt, die Liste ist wieder leer – gut für den Sonntag). Vorher kommt eine Frage mit der Anzahl. Der <b>Katalog bleibt</b>: Die Produkte kommen beim Tippen weiter als Vorschlag, Fotos, Barcodes, Notizen und Favoriten bleiben. Nicht rückgängig zu machen.</li>
         <li><b>🧹 Alles löschen</b> (nur Admins): <b>„Katalog &amp; Liste komplett löschen“</b> löscht die Einkaufsliste und den ganzen Katalog mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. Zwei Sicherheitsfragen, <b>nicht rückgängig</b> – vorher lieber eine Sicherung machen (⚙️ → Import &amp; Sicherung). Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.</li></ul>`)}
       ${sec("🩺", "Gesundheit", `<ul>
-        <li><b>Alles ok?</b> sucht kaputte Einträge (Fotos, Barcodes, Rezepte). Bei jedem Fund: <b>🔧 Beheben</b> (nur dieser eine), <b>✏️ Selbst ändern</b> (springt zum Produkt, Artikel oder Rezept) und – wo es mehrere Wege gibt – eine Auswahl. Oder anhaken und alles auf einmal reparieren.</li>
+        <li><b>Alles ok?</b> sucht kaputte Einträge (Fotos, Barcodes, Rezepte). Bei jedem Fund: <b>🔧 Beheben</b> (nur dieser eine), <b>✏️ Selbst ändern</b> (springt zum Produkt, Artikel oder Rezept) und – wo es mehrere Wege gibt – eine Auswahl. Oder anhaken und alles auf einmal reparieren. Unten gibt es <b>📊 Last</b>: Änderungen pro Minute, gesendete Pakete und Paketgröße – hilft bei hoher Serverlast.</li>
         <li><b>Fehler-Protokoll:</b> technische Fehler mit „Kopieren“- und „Leeren“-Knopf – praktisch, wenn du Hilfe brauchst. Gibt es nur Fehlermeldungen der letzten 24 Stunden, öffnet der Balken oben das Fehler-Protokoll statt „Alles ok?“; konnte die Prüfung nicht laufen, zeigt er ⚪ „Konnte nicht prüfen“.</li>
         <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> zeigt die Ampel in Home Assistant (ok / hinweis / problem) – nutzbar in Automationen, z. B. für eine Meldung aufs Handy.</li>
         <li><b>Ressourcen:</b> wie groß Daten und Fotos sind.</li></ul>`)}
@@ -10059,6 +10066,18 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "check-run":
         this._runCheck();
+        break;
+      case "load-run":
+        this._ws({ type: "einkaufsliste/load" }).then((r) => {
+          const box = this.$("loadRes");
+          if (!box) return;
+          const hi = r.per_minute > 20;
+          box.innerHTML = `<ul>
+            <li>🔄 Änderungen: <b>${r.changes}</b> seit dem Start (${r.minutes} Min.) = <b>${r.per_minute}</b> pro Minute ${hi ? "⚠️ viel" : "👍"}</li>
+            <li>📦 Pakete an Karten/Apps: <b>${r.pushes}</b></li>
+            <li>⚖️ Ein Paket ist etwa <b>${r.packet_kb ?? "?"} KB</b> groß (${r.items} Artikel, ${r.products} Produkte im Katalog)</li></ul>
+            <p class="hint">Wie lesen? Ein paar Änderungen pro Minute sind normal, solange jemand die Liste benutzt. Bleibt der Wert auch bei Ruhe <b>dauerhaft hoch</b>, ändert sich ständig etwas – bitte als Issue auf GitHub melden, mit dieser Zahl.</p>`;
+        }).catch(() => this._toast("Das hat nicht geklappt"));
         break;
       case "check-all":
       case "check-none":
