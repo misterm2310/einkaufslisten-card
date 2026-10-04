@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.14";
+const EL_VERSION = "2.54.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.53.14"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -952,16 +952,54 @@ const elCodeSvg = (code, fmt, scanFmt) => {
   return { kind, svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} 60" preserveAspectRatio="none" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>` };
 };
 
-// 📷 Code aus einem Foto lesen – nur wenn der Browser einen Code-Leser hat (BarcodeDetector). Gibt {code, kind} oder null.
+// 📷 Code aus einem Foto lesen (QR, Aztec, Strichcodes). Erst der eingebaute Leser (Android/Chrome), sonst ZXing (liegt schon für die Offline-App bei).
+// Auf einem Handyfoto ist der Code oft klein – darum sucht ZXing auch in Ausschnitten. Gibt {code, kind} oder null.
+let elZxingLoad = null;
+const elLoadZxing = () => (window.ZXing ? Promise.resolve(window.ZXing) : (elZxingLoad = elZxingLoad || new Promise((ok, fail) => {
+  const sc = document.createElement("script");
+  sc.src = `/einkaufsliste/app/zxing.min.js?v=${EL_VERSION}`;
+  sc.onload = () => (window.ZXing ? ok(window.ZXing) : fail(new Error("zxing")));
+  sc.onerror = () => { elZxingLoad = null; fail(new Error("zxing")); };
+  document.head.append(sc);
+})));
 async function elReadCodeFromFile(file) {
+  const make = (raw, fmt) => { const k = elCodeKind(raw, "auto", fmt); return { code: k.code, kind: k.kind }; };
   try {
-    if (!window.BarcodeDetector) return null;
-    const bmp = await createImageBitmap(file);
-    const hit = (await new BarcodeDetector().detect(bmp))?.[0];
-    if (!hit?.rawValue) return null;
-    const k = elCodeKind(hit.rawValue, "auto", hit.format);
-    return { code: k.code, kind: k.kind };
-  } catch (_) { return null; }
+    if (window.BarcodeDetector) {
+      const bmp = await createImageBitmap(file);
+      const hit = (await new BarcodeDetector().detect(bmp))?.[0];
+      if (hit?.rawValue) return make(hit.rawValue, hit.format);
+    }
+  } catch (_) { /* dann ZXing */ }
+  try {
+    const Z = await elLoadZxing();
+    const F = Z.BarcodeFormat;
+    const names = { [F.AZTEC]: "aztec", [F.QR_CODE]: "qr_code", [F.EAN_13]: "ean_13", [F.EAN_8]: "ean_8", [F.UPC_A]: "upc_a", [F.UPC_E]: "upc_e", [F.CODE_128]: "code_128", [F.CODE_39]: "code_39", [F.ITF]: "itf" };
+    const reader = new Z.MultiFormatReader();
+    const hint = (hard) => reader.setHints(new Map([[Z.DecodeHintType.POSSIBLE_FORMATS, Object.keys(names).map(Number)], ...(hard ? [[Z.DecodeHintType.TRY_HARDER, true]] : [])]));
+    const img = await loadImage(file);
+    const W = img.naturalWidth, H = img.naturalHeight, cv = document.createElement("canvas");
+    const ctx = cv.getContext("2d", { willReadFrequently: true });
+    const wins = [[0, 0, W, H]];
+    for (const f of [0.7, 0.5, 0.35]) { // Ausschnitte: erst groß, dann kleiner, jeweils über das ganze Bild verteilt
+      const sq = Math.min(W, H) * f, step = sq / 2;
+      for (let y = 0; y + sq <= H + 1; y += step) for (let x = 0; x + sq <= W + 1; x += step) wins.push([x, y, sq, sq]);
+    }
+    for (const hard of [false, true]) { // erst schnell über alle Ausschnitte, nur wenn nichts gefunden wird noch einmal gründlich
+      hint(hard);
+      for (const [x, y, w, h] of wins) {
+        const scale = Math.min(2.5, Math.max(0.4, (hard ? 900 : 600) / Math.max(w, h)));
+        cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
+        ctx.drawImage(img, x, y, w, h, 0, 0, cv.width, cv.height);
+        try {
+          const r = reader.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv))));
+          if (r.getText()) return make(r.getText(), names[r.getBarcodeFormat()]);
+        } catch (_) { /* nichts gefunden – nächster Ausschnitt */ } finally { reader.reset(); }
+        await new Promise((ok) => setTimeout(ok, 0)); // die Anzeige bleibt flüssig
+      }
+    }
+  } catch (_) { /* ZXing nicht erreichbar: bleibt beim Foto */ }
+  return null;
 }
 
 // 🌓 Fenster (Gar-Zeiten, KI-Kochen, Scanner, Foto …) sind im Code dunkel gebaut. Ist die Karte hell, werden ihre Grautöne hier umgedreht:
@@ -975,8 +1013,28 @@ function elLightOverlay(ov) {
   const parse = (v) => { const m = RGB.exec(v || ""); return m ? [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]] : null; };
   const grey = (c) => c && Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]) <= 40;
   const flip = (c) => { const l = 255 - Math.round((c[0] + c[1] + c[2]) / 3); return `rgba(${l},${l},${l},${c[3]})`; };
-  const seen = new WeakMap();
+  const PROPS = ["color", "backgroundColor", "borderTopColor", "borderRightColor", "borderBottomColor", "borderLeftColor"];
+  const seen = new WeakMap(); // Element → Farben nach unserer Umrechnung
+  const mine = new WeakMap(); // Element → { Eigenschaft: { orig, set } } – damit wir unsere Werte wieder wegnehmen können
+  const sigOf = (cs) => PROPS.map((k) => cs[k]).join("|");
+  const kebab = (k) => k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
   let obs = null;
+  const undo = (el) => { // unsere eigenen Farben entfernen, damit z. B. eine neue Klasse („angedrückt“ = grün) wieder wirkt
+    const m = mine.get(el);
+    if (!m) return;
+    for (const k of Object.keys(m)) {
+      if (el.style.getPropertyValue(kebab(k)) !== m[k].set) continue; // inzwischen von anderem Code geändert: lassen
+      if (m[k].orig) el.style.setProperty(kebab(k), m[k].orig, m[k].prio); else el.style.removeProperty(kebab(k));
+    }
+    mine.delete(el);
+  };
+  const put = (el, k, v) => {
+    const m = mine.get(el) || {};
+    if (!m[k]) m[k] = { orig: el.style.getPropertyValue(kebab(k)), prio: el.style.getPropertyPriority(kebab(k)) };
+    el.style.setProperty(kebab(k), v, "important"); // „important“, damit auch feste CSS-Farben (z. B. der weiße Rand der Farbwahl) umgedreht werden
+    m[k].set = el.style.getPropertyValue(kebab(k));
+    mine.set(el, m);
+  };
   const pass = () => {
     if (ov.dataset.elthemed) return; // z. B. die Anleitung – hat ihre eigene Hell/Dunkel-Farbgebung
     if (obs) obs.disconnect();
@@ -984,32 +1042,37 @@ function elLightOverlay(ov) {
     const all = [ov, ...ov.querySelectorAll("*")];
     for (const el of all) {
       if (!el.style || el.closest("svg") || /^(IMG|VIDEO|CANVAS|SCRIPT|STYLE)$/.test(el.tagName)) continue;
+      if (seen.get(el) === sigOf(getComputedStyle(el))) continue; // nichts Neues
+      undo(el);
       const cs = getComputedStyle(el);
-      const sig = `${cs.color}|${cs.backgroundColor}|${cs.borderTopColor}|${cs.borderBottomColor}|${cs.borderLeftColor}|${cs.borderRightColor}`;
-      if (seen.get(el) === sig) continue;
       const parent = el === ov ? null : getComputedStyle(el.parentElement);
       const col = parse(cs.color), bg = parse(cs.backgroundColor);
-      // Hintergrund (nicht vererbt)
-      if (el === ov) el.style.backgroundColor = "#f2f2f2"; // wie die Anleitung: heller, nicht durchscheinender Grund
-      else if (bg && bg[3] > 0 && grey(bg)) el.style.backgroundColor = flip(bg);
+      if (el === ov) put(el, "backgroundColor", "#f2f2f2"); // wie die Anleitung: heller, nicht durchscheinender Grund
+      else if (bg && bg[3] > 0 && grey(bg)) put(el, "backgroundColor", flip(bg));
       // Schrift: nur wenn sie nicht einfach von oben geerbt ist und nicht auf buntem Grund steht
       if (col && grey(col) && (!parent || parent.color !== cs.color)) {
         let n = el, onColor = false;
         while (n && n !== ov.parentElement) { const b = parse(getComputedStyle(n).backgroundColor); if (b && b[3] > 0.5) { onColor = !grey(b); break; } n = n.parentElement; }
-        if (!onColor) el.style.color = flip(col);
+        if (!onColor) put(el, "color", flip(col));
       }
-      // Rahmen (die Standardfarbe folgt der Schrift und braucht nichts)
+      // Rahmen
       for (const side of ["Top", "Right", "Bottom", "Left"]) {
         if (cs[`border${side}Style`] === "none" || cs[`border${side}Width`] === "0px") continue;
-        const b = parse(cs[`border${side}Color`]);
-        if (b && grey(b) && cs[`border${side}Color`] !== cs.color) el.style[`border${side}Color`] = flip(b);
+        const bc = parse(cs[`border${side}Color`]);
+        if (bc && grey(bc) && !(parent && cs[`border${side}Color`] === cs.color && parent.color === cs.color)) put(el, `border${side}Color`, flip(bc)); // folgt der Rahmen nur der geerbten Schrift, ist er schon umgedreht
       }
-      const ns = getComputedStyle(el);
-      seen.set(el, `${ns.color}|${ns.backgroundColor}|${ns.borderTopColor}|${ns.borderBottomColor}|${ns.borderLeftColor}|${ns.borderRightColor}`);
+      seen.set(el, sigOf(getComputedStyle(el)));
     }
     if (obs) obs.observe(ov, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class"] });
   };
-  obs = new MutationObserver(pass); // läuft vor dem ersten Zeichnen – kein Aufblitzen
+  obs = new MutationObserver((recs) => { // läuft vor dem ersten Zeichnen – kein Aufblitzen
+    for (const r of recs) { // geänderte Elemente (z. B. neue Klasse „angedrückt“) und ihre Kinder neu berechnen
+      if (r.type !== "attributes") continue;
+      seen.delete(r.target);
+      r.target.querySelectorAll?.("*").forEach((n) => seen.delete(n));
+    }
+    pass();
+  });
   ov.style.colorScheme = "light";
   obs.observe(ov, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class"] });
   new MutationObserver((_, o) => { if (!ov.isConnected) { obs.disconnect(); o.disconnect(); } }).observe(document.body, { childList: true });
@@ -1017,8 +1080,10 @@ function elLightOverlay(ov) {
 
 function makeOverlay() {
   const ov = document.createElement("div");
+  // 🪟 Ein neues Fenster liegt immer über den schon offenen (z. B. die Kamera über „Karte ändern“)
+  const top = Math.max(0, ...[...document.querySelectorAll("[data-elov]")].map((o) => parseInt(o.style.zIndex, 10) || 0));
   Object.assign(ov.style, {
-    position: "fixed", inset: "0", background: "rgba(0,0,0,.9)", zIndex: "10000",
+    position: "fixed", inset: "0", background: "rgba(0,0,0,.9)", zIndex: String(Math.max(10000, top + 1)),
     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
     padding: "16px", boxSizing: "border-box", color: "#fff", font: "15px Roboto, sans-serif",
     touchAction: "none", colorScheme: "dark",
@@ -8076,7 +8141,7 @@ class EinkaufslisteCard extends HTMLElement {
   // ➕ / ✏️ Karte anlegen oder ändern. card = null: neu. done: danach Liste neu holen.
   _editCard(card, done) {
     const ov = makeOverlay();
-    Object.assign(ov.style, { background: "rgba(0,0,0,.92)", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y", zIndex: "10001",
+    Object.assign(ov.style, { background: "rgba(0,0,0,.92)", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
       paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
     const COLORS = ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#00897b", "#1e88e5", "#5e35b1", "#d81b60", "#6d4c41", "#546e7a"];
     const NAMES = ["Payback", "DeutschlandCard", "Kaufland Card", "Lidl Plus", "REWE Bonus", "Edeka", "dm", "Rossmann", "IKEA Family", "Aldi", "Penny", "Netto", "Müller"];
@@ -8143,9 +8208,11 @@ class EinkaufslisteCard extends HTMLElement {
           while (url.length > 300000 && q > 0.4) { q -= 0.12; url = await shrinkImage(file, 1280, q); }
           if (url.length > 300000) url = await shrinkImage(file, 900, 0.6);
           st.photo = url.split(",")[1]; st.hasPhoto = true; photoInfo();
-          const found = await elReadCodeFromFile(file); // geht nur, wenn der Browser einen Code-Leser hat – sonst bleibt es beim Foto
-          if (found && !$("#cdCode").value.trim()) { $("#cdCode").value = found.code; st.fmt = found.kind; preview(); this._toast("📷 Foto übernommen – Code erkannt"); }
-          else this._toast("📷 Foto übernommen – es wird beim Speichern abgelegt");
+          this._toast("📷 Foto übernommen – ich suche den Code im Bild …");
+          const found = await elReadCodeFromFile(file); // findet er keinen, bleibt es beim Foto
+          if (found && !$("#cdCode").value.trim()) { $("#cdCode").value = found.code; st.fmt = found.kind; preview(); this._toast("📷 Code im Foto erkannt ✅"); }
+          else if (found) this._toast("📷 Code im Foto erkannt – du hattest schon einen eingetragen, der bleibt");
+          else this._toast("📷 Im Foto ist kein Code lesbar – das Foto wird beim Speichern abgelegt");
         } catch (_) { this._toast("Das Foto konnte nicht gelesen werden 🙈"); }
       };
       $("#cdTop").append(pb);

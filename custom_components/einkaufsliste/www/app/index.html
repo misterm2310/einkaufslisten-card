@@ -323,7 +323,7 @@ async function cacheGet(msg) { try { const c = await caches.open("einkaufsliste-
 // Die Karte kennt den Scanner der Home-Assistant-App. Diese Seite spielt genau diesen Scanner nach –
 // so funktionieren alle Scan-Sachen der Karte (eintragen, mehrere scannen, im Laden abhaken, zuordnen).
 // Android/Chrome hat einen Barcode-Leser eingebaut; sonst (z. B. iPhone) liest ZXing (Apache 2.0) die Bilder.
-const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf", "qr_code"];
+const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf", "qr_code", "aztec"];
 const EXT = {
   config: { hasBarCodeScanner: !!(window.isSecureContext && navigator.mediaDevices?.getUserMedia) },
   receiveMessage() {}, // wird von der Karte „angezapft“
@@ -360,11 +360,11 @@ async function makeReader() {
   const Z = await loadZxing();
   const reader = new Z.MultiFormatReader();
   const F = Z.BarcodeFormat;
-  const hints = new Map([[Z.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39, F.ITF, F.QR_CODE]], [Z.DecodeHintType.TRY_HARDER, true]]);
+  const hints = new Map([[Z.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39, F.ITF, F.QR_CODE, F.AZTEC]], [Z.DecodeHintType.TRY_HARDER, true]]);
   reader.setHints(hints);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  const names = { [F.EAN_13]: "ean_13", [F.EAN_8]: "ean_8", [F.UPC_A]: "upc_a", [F.UPC_E]: "upc_e", [F.CODE_128]: "code_128", [F.CODE_39]: "code_39", [F.ITF]: "itf", [F.QR_CODE]: "qr_code" };
+  const names = { [F.EAN_13]: "ean_13", [F.EAN_8]: "ean_8", [F.UPC_A]: "upc_a", [F.UPC_E]: "upc_e", [F.CODE_128]: "code_128", [F.CODE_39]: "code_39", [F.ITF]: "itf", [F.QR_CODE]: "qr_code", [F.AZTEC]: "aztec" };
   return async (video) => {
     const w = video.videoWidth, h = video.videoHeight;
     if (!w || !h) return null;
