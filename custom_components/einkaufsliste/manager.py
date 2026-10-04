@@ -986,7 +986,9 @@ class EinkaufslisteManager:
         return {"added": added, "skipped": skipped}
 
     # ------------------------------------------------------------------ 💳 Kundenkarten
-    CARD_FORMATS = ("auto", "qr", "ean13", "ean8", "code128")
+    CARD_FORMATS = ("auto", "qr", "ean13", "ean8", "code128", "aztec")
+    CARD_PHOTO_MAX = 400_000  # Bytes je Kartenfoto (die Karte verkleinert vorher auf ca. 150 KB)
+    CARD_PHOTO_LIMIT = 20  # so viele Kartenfotos insgesamt
 
     def cards_for(self, user_id: str | None) -> list[dict[str, Any]]:
         """💳 Die Karten, die dieser Benutzer sehen darf: seine eigenen und die „für alle“."""
@@ -996,26 +998,44 @@ class EinkaufslisteManager:
                 out.append({
                     "id": c["id"], "name": c["name"], "code": c["code"], "fmt": c.get("fmt", "auto"),
                     "color": c.get("color"), "shared": c.get("owner") is None,
-                    "owner_name": c.get("owner_name"),
+                    "owner_name": c.get("owner_name"), "has_photo": bool(c.get("photo")),
                 })
         return sorted(out, key=lambda c: (c["shared"], c["name"].lower()))  # erst die eigenen, dann die für alle
 
-    def _card_checked(self, name: Any, code: Any, fmt: Any, color: Any) -> dict[str, Any]:
+    def _card_checked(self, name: Any, code: Any, fmt: Any, color: Any, has_photo: bool = False) -> dict[str, Any]:
         name = (_clean(name) or "")[:30]
         code = (str(code or "").strip())[:300]
         if not name:
             raise ValueError("Die Karte braucht einen Namen, z. B. Payback.")
-        if not code:
-            raise ValueError("Ohne Nummer oder Code geht's nicht – bitte einscannen oder eintippen.")
+        if not code and not has_photo:
+            raise ValueError("Ohne Nummer, Code oder Foto geht's nicht – bitte einscannen, eintippen oder fotografieren.")
         fmt = fmt if fmt in self.CARD_FORMATS else "auto"
         color = str(color or "").strip()
         if color and not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
             color = ""
         return {"name": name, "code": code, "fmt": fmt, "color": color or None}
 
-    def add_card(self, name: Any, code: Any, fmt: Any, color: Any, shared: bool, user_id: str | None, user_name: str | None) -> dict[str, Any]:
-        """💳 Neue Karte: „für alle“ oder nur für den, der sie anlegt."""
-        fields = self._card_checked(name, code, fmt, color)
+    def _card_photo_checked(self, photo: Any, skip: dict[str, Any] | None = None) -> str:
+        """💳 Kartenfoto prüfen: nur ein echtes JPEG, nicht zu groß, nicht zu viele. Gibt den Base64-Text zurück."""
+        text = str(photo or "").strip()
+        if "," in text[:80]:  # „data:image/jpeg;base64,…“ → nur den Teil hinter dem Komma
+            text = text.split(",", 1)[1]
+        try:
+            raw = base64.b64decode(text, validate=True)
+        except (binascii.Error, ValueError) as err:
+            raise ValueError("Das Foto konnte nicht gelesen werden.") from err
+        if not raw.startswith(b"\xff\xd8"):
+            raise ValueError("Das Foto muss ein JPEG sein.")
+        if len(raw) > self.CARD_PHOTO_MAX:
+            raise ValueError("Das Foto ist zu groß.")
+        if sum(1 for c in self.cards if c.get("photo") and c is not skip) >= self.CARD_PHOTO_LIMIT:
+            raise ValueError("Das sind schon sehr viele Kartenfotos – bitte erst bei einer Karte eins löschen.")
+        return text
+
+    def add_card(self, name: Any, code: Any, fmt: Any, color: Any, shared: bool, user_id: str | None, user_name: str | None,
+                 photo: Any = None) -> dict[str, Any]:
+        """💳 Neue Karte: „für alle“ oder nur für den, der sie anlegt. Mit Foto geht sie auch ohne lesbaren Code."""
+        fields = self._card_checked(name, code, fmt, color, bool(photo))
         if len(self.cards) >= 80:
             raise ValueError("Das sind schon sehr viele Karten – bitte erst eine löschen.")
         if not shared and not user_id:
@@ -1023,6 +1043,8 @@ class EinkaufslisteManager:
         if any(c["name"].lower() == fields["name"].lower() and (c.get("owner") is None or c.get("owner") == user_id) for c in self.cards):
             raise ValueError(f"Die Karte „{fields['name']}“ gibt es schon.")
         card = {"id": _new_id(), **fields, "owner": None if shared else user_id, "owner_name": None if shared else user_name}
+        if photo:
+            card["photo"] = self._card_photo_checked(photo)
         self.cards.append(card)
         self._changed()
         return next(c for c in self.cards_for(user_id) if c["id"] == card["id"])
@@ -1035,14 +1057,26 @@ class EinkaufslisteManager:
 
     def update_card(self, card_id: str, user_id: str | None, **fields: Any) -> dict[str, Any]:
         card = self._card_mine(card_id, user_id)
+        photo = card.get("photo")
+        if "photo" in fields:  # "" = Foto löschen, sonst neues Foto
+            photo = self._card_photo_checked(fields["photo"], skip=card) if fields["photo"] else None
         new = self._card_checked(fields.get("name", card["name"]), fields.get("code", card["code"]),
-                                 fields.get("fmt", card.get("fmt")), fields.get("color", card.get("color")))
+                                 fields.get("fmt", card.get("fmt")), fields.get("color", card.get("color")), bool(photo))
         if any(c is not card and c["name"].lower() == new["name"].lower() and (c.get("owner") is None or c.get("owner") == user_id)
                for c in self.cards):
             raise ValueError(f"Die Karte „{new['name']}“ gibt es schon.")
         card.update(new)
+        if photo:
+            card["photo"] = photo
+        else:
+            card.pop("photo", None)
         self._changed()
         return next(c for c in self.cards_for(user_id) if c["id"] == card_id)
+
+    def card_photo(self, card_id: str, user_id: str | None) -> dict[str, Any]:
+        """💳 Das Kartenfoto – nur für den, der die Karte sehen darf."""
+        card = self._card_mine(card_id, user_id)
+        return {"photo": card.get("photo") or ""}
 
     def remove_card(self, card_id: str, user_id: str | None) -> None:
         card = self._card_mine(card_id, user_id)

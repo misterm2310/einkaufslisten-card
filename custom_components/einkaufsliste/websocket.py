@@ -85,6 +85,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_card_add,
         ws_card_update,
         ws_card_remove,
+        ws_card_photo,
         ws_favorite_set,
         ws_favorites_add,
         ws_privacy_set,
@@ -1112,6 +1113,7 @@ CARD_FIELDS = {
     vol.Required("code"): str,
     vol.Optional("fmt"): str,
     vol.Optional("color"): OPT_STR,
+    vol.Optional("photo"): str,
 }
 
 
@@ -1124,7 +1126,7 @@ def ws_card_add(hass, connection, msg):
     _run(
         hass, connection, msg,
         lambda m: m.add_card(msg["name"], msg["code"], msg.get("fmt"), msg.get("color"), msg["shared"],
-                             _uid(connection), _user_name(hass, connection)),
+                             _uid(connection), _user_name(hass, connection), msg.get("photo")),
     )
 
 
@@ -1136,13 +1138,21 @@ def ws_card_add(hass, connection, msg):
         vol.Optional("code"): str,
         vol.Optional("fmt"): str,
         vol.Optional("color"): OPT_STR,
+        vol.Optional("photo"): str,
     }
 )
 @callback
 def ws_card_update(hass, connection, msg):
     """💳 Karte ändern."""
-    fields = _pick(msg, "name", "code", "fmt", "color")
+    fields = _pick(msg, "name", "code", "fmt", "color", "photo")
     _run(hass, connection, msg, lambda m: m.update_card(msg["card_id"], _uid(connection), **fields))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/card/photo", vol.Required("card_id"): str})
+@callback
+def ws_card_photo(hass, connection, msg):
+    """💳 Das Foto einer Karte holen (nur wer die Karte sehen darf)."""
+    _run(hass, connection, msg, lambda m: m.card_photo(msg["card_id"], _uid(connection)))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/card/remove", vol.Required("card_id"): str})

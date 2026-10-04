@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.53.13";
+const EL_VERSION = "2.53.14";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.53.9"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.53.14"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["💳 <b>Kundenkarten mit Aztec und Foto:</b> Der Scanner liest jetzt auch <b>Aztec-Codes</b> (z. B. der Vorteilscode von Penny), und die Karte zeichnet sie an der Kasse wieder. Die Auswahl „Darstellung“ ist weg – das Format kommt automatisch vom Scanner. · 📷 Neu: <b>Foto der Karte</b> für Karten, die sich nicht einscannen lassen (liegt nur auf deinem Home Assistant, steht im Datenschutz; ein „Rollcode“, der ständig wechselt, geht damit nicht). · ⏲️ Im Rezept-Editor öffnet ein Knopf neben „Backofen & Co.“ die Gar-Zeiten. · 🧽 Der Radiergummi ist überall rot und fest, die Fenster (KI-Kochen, Gar-Zeiten, Scanner …) sind hell oder dunkel wie die Karte, und die Eingabefelder in den Einstellungen sind einheitlich groß.",
+   "💳 <b>Loyalty cards with Aztec and photo:</b> the scanner now also reads <b>Aztec codes</b> (e.g. Penny’s benefit code), and the card draws them again at the checkout. The “Display” choice is gone – the format comes automatically from the scanner. · 📷 New: <b>photo of the card</b> for cards that cannot be scanned (stored only on your Home Assistant, covered in the privacy section; a “rolling code” that keeps changing does not work with it). · ⏲️ In the recipe editor a button next to “Oven & Co.” opens the cooking times. · 🧽 The eraser is red and fixed everywhere, the windows (AI cooking, cooking times, scanner …) are light or dark like the card, and the input fields in the settings are the same size."],
   ["🤖 <b>KI-Kochen wird alltagstauglicher:</b> Beim Tippen im Zutaten-Feld kommen Vorschläge aus dem Katalog (höchstens 2). · 👥 Eine Personenzahl mit − und + sagt der KI, für wie viele sie rechnen soll. · ✅🛒 In jedem Vorschlag verschiebt ein Tipp auf eine Zutat sie zwischen „Hast du“ und „Fehlt“. · 🧂🚫 In ⚙️ → Extras → KI-Kochen (Admin) gibt es „Immer im Haus“ und „Das nie vorschlagen“ (Allergien, Abneigungen), die bei jeder Anfrage mitgehen.",
    "🤖 <b>AI cooking gets more practical:</b> typing in the ingredients field now shows catalogue suggestions (at most 2). · 👥 A number of people with − and + tells the AI how many to cook for. · ✅🛒 In every suggestion a tap on an ingredient moves it between “You have” and “Missing”. · 🧂🚫 ⚙️ → Extras → AI cooking (admin) has “Always at home” and “Never suggest” (allergies, dislikes), which go along with every request."],
   ["🧽 <b>Radiergummi überall:</b> Neben den Suchfeldern steht ein 🧽, sobald etwas drinsteht – und in jedem Textfeld erscheint beim Tippen ein 🧽 am rechten Rand, der nur dieses Feld leert. · 📝 <b>Notiz-Vorlagen mit Filter:</b> Unter „✏️ Eigene Notiz“ erscheinen die Vorlagen erst ab dem ersten Buchstaben und nur die passenden. · 🤖 <b>KI-Kochen:</b> „Offene Artikel mitnehmen“ ist jetzt standardmäßig aus.",
@@ -774,11 +776,151 @@ const elBars = (code, fmt) => {
   return null;
 };
 
-// Welche Darstellung passt? format = was der Scanner gemeldet hat (qr_code, ean_13 …) oder "auto"/"qr"/"ean13"/"ean8"/"code128"
+// 🔷 Aztec-Code (Binär-Modus, ISO/IEC 24778): zeichnet Karten wie die Penny-App. Ergebnis: Matrix aus 0/1 oder null.
+const elAztecMatrix = (text) => {
+  const data = Array.from(new TextEncoder().encode(String(text)));
+  if (!data.length || data.length > 1500) return null;
+  // 1) Bits: Binary-Shift (31) + Länge + Bytes
+  const bits = [];
+  const put = (v, n) => { for (let i = n - 1; i >= 0; i--) bits.push((v >> i) & 1); };
+  put(31, 5);
+  if (data.length > 31) { put(0, 5); put(data.length - 31, 11); } else put(data.length, 5);
+  data.forEach((b) => put(b, 8));
+  // 2) Reed-Solomon-Rechner
+  const gfs = {};
+  const gf = (prim, size) => {
+    const k = `${prim}/${size}`;
+    if (gfs[k]) return gfs[k];
+    const exp = new Array(size * 2), log = new Array(size);
+    let x = 1;
+    for (let i = 0; i < size; i++) { exp[i] = x; x <<= 1; if (x >= size) { x ^= prim; x &= size - 1; } }
+    for (let i = 0; i < size - 1; i++) log[exp[i]] = i;
+    for (let i = size - 1; i < size * 2; i++) exp[i] = exp[i - (size - 1)];
+    return (gfs[k] = { exp, log, size });
+  };
+  const rs = (words, nCheck, wordSize) => {
+    const f = { 4: gf(0x13, 16), 6: gf(0x43, 64), 8: gf(0x12d, 256), 10: gf(0x409, 1024), 12: gf(0x1069, 4096) }[wordSize];
+    const mul = (a, b) => (a === 0 || b === 0 ? 0 : f.exp[(f.log[a] + f.log[b]) % (f.size - 1)]);
+    let g = [1];
+    for (let d = 1; d <= nCheck; d++) { // g = g * (x + alpha^d)
+      const n = new Array(g.length + 1).fill(0);
+      g.forEach((c, i) => { n[i] ^= c; n[i + 1] ^= mul(c, f.exp[d]); });
+      g = n;
+    }
+    const rem = words.concat(new Array(nCheck).fill(0));
+    for (let i = 0; i < words.length; i++) {
+      const c = rem[i];
+      if (c) for (let j = 1; j <= nCheck; j++) rem[i + j] ^= mul(g[j], c);
+    }
+    return rem.slice(words.length);
+  };
+  const checkWords = (bitArr, totalBits, wordSize) => {
+    const msgWords = bitArr.length / wordSize, totalWords = Math.floor(totalBits / wordSize);
+    const w = [];
+    for (let i = 0; i < msgWords; i++) { let v = 0; for (let j = 0; j < wordSize; j++) v = (v << 1) | bitArr[i * wordSize + j]; w.push(v); }
+    const all = w.concat(rs(w, totalWords - msgWords, wordSize));
+    const out = new Array(totalBits % wordSize).fill(0);
+    all.forEach((v) => { for (let j = wordSize - 1; j >= 0; j--) out.push((v >> j) & 1); });
+    return out;
+  };
+  const stuff = (arr, wordSize) => {
+    const out = [], mask = (1 << wordSize) - 2;
+    const n = arr.length;
+    for (let i = 0; i < n; i += wordSize) {
+      let word = 0;
+      for (let j = 0; j < wordSize; j++) if (i + j >= n || arr[i + j]) word |= 1 << (wordSize - 1 - j);
+      let v = word;
+      if ((word & mask) === mask) { v = word & mask; i--; } else if ((word & mask) === 0) { v = word | 1; i--; }
+      for (let j = wordSize - 1; j >= 0; j--) out.push((v >> j) & 1);
+    }
+    return out;
+  };
+  // 3) Größe wählen (33 % Fehlerkorrektur wie ZXing)
+  const eccBits = Math.floor(bits.length * 33 / 100) + 11;
+  const totalSize = bits.length + eccBits;
+  const WS = (l) => (l <= 2 ? 6 : l <= 8 ? 8 : l <= 22 ? 10 : 12);
+  let compact = true, layers = 1, wordSize = 0, stuffed = null, found = false;
+  for (let i = 0; i <= 35; i++) {
+    compact = i <= 3;
+    layers = compact ? i + 1 : i;
+    if (layers < 1 || layers > 32) continue;
+    const cap = ((compact ? 88 : 112) + 16 * layers) * layers;
+    if (cap > totalSize + 100000) break;
+    if (cap < totalSize) continue;
+    if (wordSize !== WS(layers)) { wordSize = WS(layers); stuffed = stuff(bits, wordSize); }
+    if (compact && stuffed.length > wordSize * 64) continue;
+    if (stuffed.length + eccBits > cap - (cap % wordSize)) continue;
+    found = true;
+    break;
+  }
+  if (!found) return null;
+  const totalBitsInLayer = ((compact ? 88 : 112) + 16 * layers) * layers;
+  const messageBits = checkWords(stuffed, totalBitsInLayer, wordSize);
+  const msgWords = stuffed.length / wordSize;
+  const mm = [];
+  const mput = (v, n) => { for (let i = n - 1; i >= 0; i--) mm.push((v >> i) & 1); };
+  if (compact) { mput(layers - 1, 2); mput(msgWords - 1, 6); } else { mput(layers - 1, 5); mput(msgWords - 1, 11); }
+  const modeMessage = checkWords(mm, compact ? 28 : 40, 4);
+  // 4) Matrix
+  const base = (compact ? 11 : 14) + layers * 4;
+  const align = new Array(base);
+  let size;
+  if (compact) { size = base; for (let i = 0; i < base; i++) align[i] = i; }
+  else {
+    size = base + 1 + 2 * Math.floor((Math.floor(base / 2) - 1) / 15);
+    const orig = Math.floor(base / 2), center = Math.floor(size / 2);
+    for (let i = 0; i < orig; i++) { const off = i + Math.floor(i / 15); align[orig - i - 1] = center - off - 1; align[orig + i] = center + off + 1; }
+  }
+  const m = Array.from({ length: size }, () => new Array(size).fill(0));
+  const set = (x, y) => { m[y][x] = 1; };
+  for (let i = 0, rowOffset = 0; i < layers; i++) {
+    const rowSize = (layers - i) * 4 + (compact ? 9 : 12);
+    for (let j = 0; j < rowSize; j++) {
+      const colOffset = j * 2;
+      for (let k = 0; k < 2; k++) {
+        if (messageBits[rowOffset + colOffset + k]) set(align[i * 2 + k], align[i * 2 + j]);
+        if (messageBits[rowOffset + rowSize * 2 + colOffset + k]) set(align[i * 2 + j], align[base - 1 - i * 2 - k]);
+        if (messageBits[rowOffset + rowSize * 4 + colOffset + k]) set(align[base - 1 - i * 2 - k], align[base - 1 - i * 2 - j]);
+        if (messageBits[rowOffset + rowSize * 6 + colOffset + k]) set(align[base - 1 - i * 2 - j], align[i * 2 + k]);
+      }
+    }
+    rowOffset += rowSize * 8;
+  }
+  const c = size >> 1;
+  if (compact) {
+    for (let i = 0; i < 7; i++) {
+      const o = c - 3 + i;
+      if (modeMessage[i]) set(o, c - 5);
+      if (modeMessage[i + 7]) set(c + 5, o);
+      if (modeMessage[20 - i]) set(o, c + 5);
+      if (modeMessage[27 - i]) set(c - 5, o);
+    }
+  } else {
+    for (let i = 0; i < 10; i++) {
+      const o = c - 5 + i + Math.floor(i / 5);
+      if (modeMessage[i]) set(o, c - 7);
+      if (modeMessage[i + 10]) set(c + 7, o);
+      if (modeMessage[29 - i]) set(o, c + 7);
+      if (modeMessage[39 - i]) set(c - 7, o);
+    }
+  }
+  const eye = compact ? 5 : 7;
+  for (let i = 0; i < eye; i += 2) for (let j = c - i; j <= c + i; j++) { set(j, c - i); set(j, c + i); set(c - i, j); set(c + i, j); }
+  set(c - eye, c - eye); set(c - eye + 1, c - eye); set(c - eye, c - eye + 1);
+  set(c + eye, c - eye); set(c + eye, c - eye + 1); set(c + eye, c + eye - 1);
+  if (!compact) {
+    for (let i = 0, j = 0; i < Math.floor(base / 2) - 1; i += 15, j += 16) {
+      for (let k = c & 1; k < size; k += 2) { set(c - j, k); set(c + j, k); set(k, c - j); set(k, c + j); }
+    }
+  }
+  return m;
+};
+
+// Welche Darstellung passt? format = was der Scanner gemeldet hat (qr_code, aztec, ean_13 …) oder "auto"/"qr"/"aztec"/"ean13"/"ean8"/"code128"
 const elCodeKind = (code, fmt, scanFmt) => {
   const c = String(code);
-  const asFmt = { qr_code: "qr", ean_13: "ean13", ean_8: "ean8", code_128: "code128", code_39: "code128", itf: "code128", upc_e: "code128" }[scanFmt];
-  let k = ["qr", "ean13", "ean8", "code128"].includes(fmt) ? fmt : asFmt;
+  const asFmt = { qr_code: "qr", aztec: "aztec", ean_13: "ean13", ean_8: "ean8", code_128: "code128", code_39: "code128", itf: "code128", upc_e: "code128" }[scanFmt];
+  let k = ["qr", "aztec", "ean13", "ean8", "code128"].includes(fmt) ? fmt : asFmt;
   if (!k && scanFmt === "upc_a" && /^\d{12}$/.test(c)) return { kind: "ean13", code: "0" + c };
   if (!k) {
     if (/^\d{13}$/.test(c) && elEanCheck(c)) k = "ean13";
@@ -794,8 +936,8 @@ const elCodeKind = (code, fmt, scanFmt) => {
 // SVG-Text eines Codes (schwarz auf weiß, mit Ruhezone). viewBox passt sich an, Größe macht das CSS.
 const elCodeSvg = (code, fmt, scanFmt) => {
   const { kind, code: c } = elCodeKind(code, fmt, scanFmt);
-  if (kind === "qr") {
-    const m = elQrMatrix(c);
+  if (kind === "qr" || kind === "aztec") {
+    const m = kind === "aztec" ? elAztecMatrix(c) : elQrMatrix(c);
     if (!m) return null;
     const n = m.length, q = 4;
     let d = "";
@@ -810,6 +952,69 @@ const elCodeSvg = (code, fmt, scanFmt) => {
   return { kind, svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} 60" preserveAspectRatio="none" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>` };
 };
 
+// 📷 Code aus einem Foto lesen – nur wenn der Browser einen Code-Leser hat (BarcodeDetector). Gibt {code, kind} oder null.
+async function elReadCodeFromFile(file) {
+  try {
+    if (!window.BarcodeDetector) return null;
+    const bmp = await createImageBitmap(file);
+    const hit = (await new BarcodeDetector().detect(bmp))?.[0];
+    if (!hit?.rawValue) return null;
+    const k = elCodeKind(hit.rawValue, "auto", hit.format);
+    return { code: k.code, kind: k.kind };
+  } catch (_) { return null; }
+}
+
+// 🌓 Fenster (Gar-Zeiten, KI-Kochen, Scanner, Foto …) sind im Code dunkel gebaut. Ist die Karte hell, werden ihre Grautöne hier umgedreht:
+// dunkel ↔ hell. Bunte Farben (grüne/blaue Knöpfe, Warnrot) bleiben, Bilder/Video/Codes werden nicht angefasst.
+function elIsDark() {
+  const c = [...document.querySelectorAll("einkaufsliste-card")].find((x) => x.shadowRoot);
+  return c ? c.hasAttribute("dark") : true;
+}
+function elLightOverlay(ov) {
+  const RGB = /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\s*\)/;
+  const parse = (v) => { const m = RGB.exec(v || ""); return m ? [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]] : null; };
+  const grey = (c) => c && Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]) <= 40;
+  const flip = (c) => { const l = 255 - Math.round((c[0] + c[1] + c[2]) / 3); return `rgba(${l},${l},${l},${c[3]})`; };
+  const seen = new WeakMap();
+  let obs = null;
+  const pass = () => {
+    if (ov.dataset.elthemed) return; // z. B. die Anleitung – hat ihre eigene Hell/Dunkel-Farbgebung
+    if (obs) obs.disconnect();
+    ov.style.colorScheme = "light";
+    const all = [ov, ...ov.querySelectorAll("*")];
+    for (const el of all) {
+      if (!el.style || el.closest("svg") || /^(IMG|VIDEO|CANVAS|SCRIPT|STYLE)$/.test(el.tagName)) continue;
+      const cs = getComputedStyle(el);
+      const sig = `${cs.color}|${cs.backgroundColor}|${cs.borderTopColor}|${cs.borderBottomColor}|${cs.borderLeftColor}|${cs.borderRightColor}`;
+      if (seen.get(el) === sig) continue;
+      const parent = el === ov ? null : getComputedStyle(el.parentElement);
+      const col = parse(cs.color), bg = parse(cs.backgroundColor);
+      // Hintergrund (nicht vererbt)
+      if (el === ov) el.style.backgroundColor = "#f2f2f2"; // wie die Anleitung: heller, nicht durchscheinender Grund
+      else if (bg && bg[3] > 0 && grey(bg)) el.style.backgroundColor = flip(bg);
+      // Schrift: nur wenn sie nicht einfach von oben geerbt ist und nicht auf buntem Grund steht
+      if (col && grey(col) && (!parent || parent.color !== cs.color)) {
+        let n = el, onColor = false;
+        while (n && n !== ov.parentElement) { const b = parse(getComputedStyle(n).backgroundColor); if (b && b[3] > 0.5) { onColor = !grey(b); break; } n = n.parentElement; }
+        if (!onColor) el.style.color = flip(col);
+      }
+      // Rahmen (die Standardfarbe folgt der Schrift und braucht nichts)
+      for (const side of ["Top", "Right", "Bottom", "Left"]) {
+        if (cs[`border${side}Style`] === "none" || cs[`border${side}Width`] === "0px") continue;
+        const b = parse(cs[`border${side}Color`]);
+        if (b && grey(b) && cs[`border${side}Color`] !== cs.color) el.style[`border${side}Color`] = flip(b);
+      }
+      const ns = getComputedStyle(el);
+      seen.set(el, `${ns.color}|${ns.backgroundColor}|${ns.borderTopColor}|${ns.borderBottomColor}|${ns.borderLeftColor}|${ns.borderRightColor}`);
+    }
+    if (obs) obs.observe(ov, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class"] });
+  };
+  obs = new MutationObserver(pass); // läuft vor dem ersten Zeichnen – kein Aufblitzen
+  ov.style.colorScheme = "light";
+  obs.observe(ov, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class"] });
+  new MutationObserver((_, o) => { if (!ov.isConnected) { obs.disconnect(); o.disconnect(); } }).observe(document.body, { childList: true });
+}
+
 function makeOverlay() {
   const ov = document.createElement("div");
   Object.assign(ov.style, {
@@ -820,6 +1025,7 @@ function makeOverlay() {
   });
   ov.dataset.elov = "1"; // ↩️ für die Zurück-Taste der Offline-App
   document.body.appendChild(ov);
+  if (!elIsDark()) elLightOverlay(ov); // 🌓 helle Karte = helles Fenster
   elWatch(ov, false);
   return ov;
 }
@@ -3959,9 +4165,9 @@ class EinkaufslisteCard extends HTMLElement {
         <p><b>${this._data.settings?.mascot ? "🛒😊 Das Maskottchen ist an." : "Das Maskottchen ist aus."}</b> Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App.</p>
         <div class="btnrow"><button class="btn primary" data-act="mascot-toggle"><ha-icon icon="${this._data.settings?.mascot ? "mdi:emoticon-neutral-outline" : "mdi:emoticon-happy-outline"}"></ha-icon>${this._data.settings?.mascot ? "Ausschalten" : "Einschalten"}</button></div>` },
       { key: "cards", icon: "mdi:credit-card-outline", title: "Kundenkarten", info: this._data.settings?.cards_on ? "an – für alle" : "aus", html: () => `
-        <p class="hint">Payback, Lidl Plus & Co. immer dabei: Karte einscannen oder Nummer eintippen, an der Kasse groß anzeigen – als QR-Code oder Strichcode auf weißem Grund. Du entscheidest beim Anlegen, ob die Karte <b>für alle</b> oder <b>nur für dich</b> ist.</p>
+        <p class="hint">Payback, Lidl Plus & Co. immer dabei: Karte einscannen (QR-Code, Aztec-Code oder Strichcode), Nummer eintippen oder die Karte fotografieren – und an der Kasse groß anzeigen, auf weißem Grund. Ein Foto hilft nur bei Karten mit festem Code (ein „Rollcode“, der ständig wechselt, geht nicht). Du entscheidest beim Anlegen, ob die Karte <b>für alle</b> oder <b>nur für dich</b> ist.</p>
         <p><b>${this._data.settings?.cards_on ? "💳 Kundenkarten sind an." : "Kundenkarten sind aus."}</b> Der Schalter gilt für <b>alle</b> Geräte. Ist er an, steht oben in der Karte der 💳-Knopf (auch im Laden-Modus) – dort legst du Karten an und zeigst sie.</p>
-        <p class="hint">Die Karten bleiben für die Offline-App auf dem Gerät gemerkt. Bei 🔒 Datenschutz ist der Scanner aus, Eintippen geht weiter. Ausschalten versteckt nur den Knopf – die Karten bleiben gespeichert.</p>
+        <p class="hint">Die Karten bleiben für die Offline-App auf dem Gerät gemerkt. Bei 🔒 Datenschutz sind Scanner und Foto aus, Eintippen geht weiter. Ausschalten versteckt nur den Knopf – die Karten bleiben gespeichert.</p>
         <div class="btnrow"><button class="btn primary" data-act="cards-toggle"><ha-icon icon="mdi:credit-card-outline"></ha-icon>${this._data.settings?.cards_on ? "Ausschalten" : "Einschalten"}</button></div>` },
       { key: "autoshop", icon: "mdi:map-marker-radius-outline", title: "Laden-Modus automatisch", info: this._data.settings?.auto_shop ? "an – für alle" : "aus", html: () => `
         <p class="hint">Kommst du in die 📍 Zone eines Geschäfts, geht der Laden-Modus von selbst an – und wieder aus, sobald du den Laden verlässt. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</p>
@@ -5342,7 +5548,8 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="redithint" id="rEditHint" hidden>✏️ Du bearbeitest eine Zutat – ✔ speichert sie. <button class="linkbtn" data-act="ritem-edit-cancel">Abbrechen</button></div>
         <div id="rFormSlot"></div>
         <div id="rItems"></div>
-        <h3 class="rsub"><ha-icon icon="mdi:stove"></ha-icon>Backofen &amp; Co.</h3>
+        <h3 class="rsub"><ha-icon icon="mdi:stove"></ha-icon>Backofen &amp; Co.
+          <button class="btn rimportbtn" type="button" data-act="gar" title="Gar-Zeiten">⏲️ Gar-Zeiten</button></h3>
         <div id="rHeat"></div>
         <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
         <h3 class="rsub"><ha-icon icon="mdi:chef-hat"></ha-icon>Zubereitung</h3>
@@ -6729,6 +6936,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   _showGuide(kind = "user") {
     const ov = makeOverlay();
+    ov.dataset.elthemed = "1"; // eigene Hell/Dunkel-Farben (siehe unten)
     // 🌓 Hell oder Dunkel: wie die Karte gerade (Offline-App: deine Auswahl in ⚙️, sonst das Home-Assistant-Design)
     const dk = this.hasAttribute("dark");
     ov.style.colorScheme = dk ? "dark" : "light";
@@ -7098,6 +7306,9 @@ class EinkaufslisteCard extends HTMLElement {
       <p class="hint">🤖 <b>${t("KI-Kochen", "AI cooking")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
         "Es gehen die Namen der Zutaten (und auf Wunsch die offenen Artikel der Liste und deine Wünsche) an den KI-Assistenten, den ein Admin gewählt hat. Bei einem Cloud-Assistenten geht das ins Internet, bei einem lokalen (z. B. Ollama) bleibt es zu Hause. Dazu gehören auch die Listen „Immer im Haus“ und „Das nie vorschlagen“ aus den Einstellungen. Keine Fotos, keine Namen von Personen. Bei „Datenschutz an“ geht nichts raus.",
         "The names of the ingredients (and, if you wish, the open items of the list and your wishes) go to the AI assistant an admin has chosen. With a cloud assistant that goes over the internet, with a local one (e.g. Ollama) it stays at home. This includes the lists “Always at home” and “Never suggest” from the settings. No photos, no names of people. With “Privacy on” nothing is sent.")}</p>
+      <p class="hint">💳 <b>${t("Kundenkarten", "Loyalty cards")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
+        "Nummer und Code einer Karte (und auf Wunsch ein Foto der Karte) liegen nur in deinem Home Assistant und gehen nirgendwohin. Sehen darf sie nur, wer die Karte sehen darf: „Nur für mich“ oder „Für alle“. Ein Foto wird mit der Karte gelöscht. Auf dem Gerät, mit dem du die Karte zeigst, wird sie für die Offline-Nutzung gemerkt. Beim Foto wird der Code, wenn der Browser das kann, auf deinem Gerät aus dem Bild gelesen – das Bild wird dafür nicht verschickt.",
+        "The number and code of a card (and, if you wish, a photo of the card) stay in your Home Assistant and go nowhere else. Only those who may see the card can see them: “Only me” or “Everyone”. A photo is deleted together with the card. On the device you show the card with, it is kept for offline use. For a photo, the code is read from the image on your device if the browser can do that – the image is not sent anywhere.")}</p>
       <p class="hint">🍽️ <b>${t("Rezept-Import aus einem Link", "Recipe import from a link")}</b>: ${t(
         "Dein Home Assistant ruft die Webseite des Links ab. Es geht nur die Adresse hin.",
         "Your Home Assistant fetches the web page of the link. Only the address is sent.")}</p>
@@ -7755,7 +7966,7 @@ class EinkaufslisteCard extends HTMLElement {
         .ce { background:rgba(255,255,255,.22); border:0; border-radius:10px; color:#fff; font-size:16px; padding:8px 10px; cursor:pointer; }
         .cn { color:#bbb; text-align:center; padding:26px 8px; }
       </style><div class="cw"><div class="ch"><h2>💳 Meine Karten</h2></div>
-        ${cards.map((c) => `<button type="button" class="cc" data-id="${esc(c.id)}" style="${c.color ? `--c:${esc(c.color)}` : ""}"><span class="ci"><span translate="no">${esc(c.name)}</span><small>${c.shared ? "👪 für alle" : "👤 nur ich"}</small></span><span class="ce" data-edit="${esc(c.id)}" title="Bearbeiten">✏️</span></button>`).join("")
+        ${cards.map((c) => `<button type="button" class="cc" data-id="${esc(c.id)}" style="${c.color ? `--c:${esc(c.color)}` : ""}"><span class="ci"><span translate="no">${esc(c.name)}</span><small>${c.shared ? "👪 für alle" : "👤 nur ich"}${c.has_photo ? " · 📷" : ""}</small></span><span class="ce" data-edit="${esc(c.id)}" title="Bearbeiten">✏️</span></button>`).join("")
           || `<div class="cn">Noch keine Karte. Tipp auf „➕ Karte“ – dann scannen oder die Nummer eintippen.</div>`}
         ${offline ? `<div class="cn">📴 Kein Netz – das sind die zuletzt gemerkten Karten.</div>` : ""}</div>`;
       const head = ov.querySelector(".ch");
@@ -7776,31 +7987,90 @@ class EinkaufslisteCard extends HTMLElement {
     this._cardsFetch().then((l) => { if (!ov.isConnected) return; if (l) { cards = l; offline = false; } else offline = true; draw(); });
   }
 
-  // 🔍 Der Code ganz groß auf weißem Grund – so liest ihn der Scanner an der Kasse
+  // 💳 Foto einer Karte (liegt nur auf dem Home Assistant, nur für den, der die Karte sehen darf) – gemerkt auf diesem Gerät, damit es auch ohne Netz geht
+  _cardPhotoKey(id) { return `einkaufsliste_cardphoto_${this._hass?.user?.id || "x"}_${id}`; }
+  _cardPhotoForget(id) { try { localStorage.removeItem(this._cardPhotoKey(id)); } catch (_) { /* egal */ } }
+  async _cardPhoto(card) {
+    const key = this._cardPhotoKey(card.id);
+    try {
+      const r = await this._hass.callWS({ type: "einkaufsliste/card/photo", card_id: card.id });
+      if (!r?.photo) return null;
+      try { localStorage.setItem(key, r.photo); } catch (_) { /* Speicher voll/gesperrt: egal */ }
+      return `data:image/jpeg;base64,${r.photo}`;
+    } catch (_) {
+      try { const c = localStorage.getItem(key); return c ? `data:image/jpeg;base64,${c}` : null; } catch (__) { return null; }
+    }
+  }
+
+  // 📷 Ein Bild für die Karte holen: Kamera · Galerie · Einfügen (wie bei den Produktfotos). null = abgebrochen
+  async _cardImageFile() {
+    if (this._privacyBlock()) return null;
+    const pick = (capture) => new Promise((resolve) => {
+      const i = document.createElement("input");
+      i.type = "file"; i.accept = "image/*"; i.style.display = "none";
+      if (capture) i.setAttribute("capture", "environment");
+      i.onchange = () => { resolve(i.files?.[0] || null); i.remove(); };
+      i.oncancel = () => { resolve(null); i.remove(); };
+      document.body.appendChild(i);
+      i.click();
+    });
+    if (elIsPc()) {
+      const r = await askPhotoDrop("📷 Foto der Karte");
+      return r === "browse" ? pick(false) : (r || null);
+    }
+    const camera = window.isSecureContext || !elInHaApp(this._hass);
+    if (!camera && !elCanPaste()) return pick(false);
+    const how = await askPhotoSource(camera, "📷 Foto der Karte");
+    if (!how) return null;
+    if (how === "paste") { try { return await elClipboardImage(); } catch (_) { return null; } }
+    if (how === "camera") {
+      const f = await elCameraShot();
+      if (f) return f;
+      if (f === null) return null;
+      return pick(true);
+    }
+    return pick(false);
+  }
+
+  // 🔍 Der Code ganz groß auf weißem Grund – so liest ihn der Scanner an der Kasse. Gibt es ein Foto der Karte, lässt es sich umschalten.
   _showCard(card) {
     const ov = makeOverlay();
+    ov.dataset.elthemed = "1"; // bleibt immer weiß: so liest die Kasse den Code
     Object.assign(ov.style, { background: "#fff", color: "#000", colorScheme: "light", justifyContent: "center", touchAction: "manipulation" });
     let wake = null;
     try { navigator.wakeLock?.request("screen").then((w) => { wake = w; }).catch(() => {}); } catch (_) { /* Bildschirm bleibt halt nicht extra an */ }
-    const kinds = ["qr", "ean13", "ean8", "code128"].filter((k) => elCodeSvg(card.code, k)?.kind === k);
-    let cur = elCodeSvg(card.code, card.fmt)?.kind || "qr";
+    const kinds = card.code ? ["qr", "aztec", "ean13", "ean8", "code128"].filter((k) => elCodeSvg(card.code, k)?.kind === k) : [];
+    const hasCode = kinds.length > 0;
+    let cur = hasCode ? (elCodeSvg(card.code, card.fmt)?.kind || "qr") : "";
+    let mode = hasCode ? "code" : "photo";
+    let photo; // undefined = lädt noch, null = nicht verfügbar
     const draw = () => {
-      const r = elCodeSvg(card.code, cur);
-      const sq = r?.kind === "qr";
+      const r = mode === "code" ? elCodeSvg(card.code, cur) : null;
+      const sq = r?.kind === "qr" || r?.kind === "aztec";
+      const body = mode === "photo"
+        ? (photo ? `<img alt="" src="${photo}" style="display:block;margin:0 auto;max-width:min(96vw,640px);max-height:72vh;object-fit:contain">`
+          : photo === null ? `<p>Das Foto ist gerade nicht verfügbar (kein Netz).</p>` : `<p>Foto wird geladen …</p>`)
+        : `${r ? r.svg.replace("<svg ", `<svg style="${sq ? "width:min(92vw,56vh,520px);height:min(92vw,56vh,520px)" : "width:min(94vw,620px);height:min(34vh,220px)"}" `) : `<p>Dieser Code lässt sich nicht zeichnen.</p>`}
+        <div class="num" translate="no">${esc(card.code.length > 60 ? "" : card.code)}</div>`;
       ov.innerHTML = `<style>
         .cf { width:100%; max-width:640px; text-align:center; font-family:Roboto,sans-serif; color:#000; }
         .cf h1 { margin:0 0 12px; font-size:26px; } .cf svg { display:block; margin:0 auto; background:#fff; }
         .cf .num { margin:14px 0 4px; font:600 28px/1.2 ui-monospace,Menlo,Consolas,monospace; letter-spacing:.06em; word-break:break-all; }
-        .cf .row { display:flex; gap:10px; justify-content:center; margin-top:18px; }
+        .cf .row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
         .cf button { border:0; border-radius:12px; padding:12px 18px; font:600 16px Roboto,sans-serif; background:#e8e8e8; color:#000; cursor:pointer; }
-      </style><div class="cf"><h1 translate="no">${esc(card.name)}</h1>
-        ${r ? r.svg.replace("<svg ", `<svg style="${sq ? "width:min(92vw,56vh,520px);height:min(92vw,56vh,520px)" : "width:min(94vw,620px);height:min(34vh,220px)"}" `) : `<p>Dieser Code lässt sich nicht zeichnen.</p>`}
-        <div class="num" translate="no">${esc(card.code.length > 60 ? "" : card.code)}</div>
-        <div class="row">${kinds.length > 1 ? `<button type="button" data-a="fmt">🔄 Anderes Format</button>` : ""}<button type="button" data-a="x">✖ Schließen</button></div></div>`;
+      </style><div class="cf"><h1 translate="no">${esc(card.name)}</h1>${body}
+        <div class="row">${mode === "code" && kinds.length > 1 ? `<button type="button" data-a="fmt">🔄 Anderes Format</button>` : ""}${hasCode && card.has_photo ? `<button type="button" data-a="mode">${mode === "code" ? "🖼️ Foto zeigen" : "🔳 Code zeigen"}</button>` : ""}<button type="button" data-a="x">✖ Schließen</button></div></div>`;
       ov.querySelector('[data-a="x"]').onclick = () => { try { wake?.release(); } catch (_) { /* egal */ } ov.remove(); };
       ov.querySelector('[data-a="fmt"]')?.addEventListener("click", () => { cur = kinds[(kinds.indexOf(cur) + 1) % kinds.length]; draw(); });
+      ov.querySelector('[data-a="mode"]')?.addEventListener("click", () => { mode = mode === "code" ? "photo" : "code"; draw(); loadPhoto(); });
+    };
+    const loadPhoto = async () => {
+      if (mode !== "photo" || !card.has_photo || photo !== undefined) return;
+      photo = await this._cardPhoto(card);
+      if (ov.isConnected) draw();
     };
     draw();
+    loadPhoto();
   }
 
   // ➕ / ✏️ Karte anlegen oder ändern. card = null: neu. done: danach Liste neu holen.
@@ -7810,8 +8080,10 @@ class EinkaufslisteCard extends HTMLElement {
       paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
     const COLORS = ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#00897b", "#1e88e5", "#5e35b1", "#d81b60", "#6d4c41", "#546e7a"];
     const NAMES = ["Payback", "DeutschlandCard", "Kaufland Card", "Lidl Plus", "REWE Bonus", "Edeka", "dm", "Rossmann", "IKEA Family", "Aldi", "Penny", "Netto", "Müller"];
-    const st = { color: card?.color || "", shared: card ? card.shared : true };
+    // fmt = Darstellung: kommt automatisch vom Scanner (qr, aztec, ean13 …); von Hand getippt = "auto" (die Karte rät)
+    const st = { color: card?.color || "", shared: card ? card.shared : true, fmt: card?.fmt || "auto", photo: undefined, hasPhoto: !!card?.has_photo };
     const canScan = this._hasAppScanner() && !this._privacyOn();
+    const canPhoto = !this._privacyOn();
     ov.innerHTML = `<style>
       .cw { width:100%; max-width:520px; font:15px/1.4 Roboto,sans-serif; color:#eee; display:flex; flex-direction:column; gap:10px; }
       .cw h2 { margin:6px 0 0; font-size:20px; }
@@ -7821,41 +8093,62 @@ class EinkaufslisteCard extends HTMLElement {
       .cw .sw.on { border-color:#fff !important; } .cw .pv { background:#fff; border-radius:10px; padding:6px; display:none; } .cw .pv svg { display:block; margin:0 auto; max-height:130px; width:100%; }
       .cw .row { display:flex; gap:8px; flex-wrap:wrap; } .cw .hint { color:#aaa; font-size:13px; margin:0; }
     </style><div class="cw"><h2>${card ? "✏️ Karte ändern" : "➕ Neue Karte"}</h2>
-      ${canScan ? `<div class="row"></div>` : ""}
+      <div class="row" id="cdTop"></div>
       <input type="text" id="cdName" maxlength="30" placeholder="Name, z. B. Payback" value="${esc(card?.name || "")}" autocomplete="off">
       ${card ? "" : `<div class="chips" id="cdNames">${NAMES.map((n) => `<button type="button">${esc(n)}</button>`).join("")}</div>`}
       <input type="text" id="cdCode" placeholder="Nummer / Code" value="${esc(card?.code || "")}" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
       <div class="pv" id="cdPv"></div>
-      <select id="cdFmt"><option value="auto">Darstellung: automatisch</option><option value="qr">QR-Code</option><option value="ean13">Strichcode EAN-13</option><option value="ean8">Strichcode EAN-8</option><option value="code128">Strichcode Code 128</option></select>
+      <p class="hint" id="cdPhInfo"></p>
+      ${canPhoto ? `<p class="hint">📷 Ein Foto hilft bei Karten, die sich nicht einscannen lassen. <b>Achtung:</b> Es zeigt immer nur diesen einen Code. Wechselt der Code (bei manchen Apps ein „Rollcode“, der sich ständig ändert), ist das Foto an der Kasse ungültig.</p>`
+        : `<p class="hint">🔒 Datenschutz ist an – Kamera, Fotos und Scanner sind aus. Nummer eintippen geht.</p>`}
       ${card ? `<p class="hint">${card.shared ? "👪 Diese Karte sehen alle in der Familie." : "👤 Diese Karte siehst nur du."}</p>`
         : `<div class="chips" id="cdWho"><button type="button" data-v="1" class="on">👪 Für alle</button><button type="button" data-v="0">👤 Nur für mich</button></div>`}
       <div class="chips" id="cdCol"><button type="button" class="sw ${st.color ? "" : "on"}" data-c="" style="background:#3a3a3a" title="Grau"></button>${COLORS.map((c) => `<button type="button" class="sw ${st.color === c ? "on" : ""}" data-c="${c}" style="background:${c}"></button>`).join("")}</div>
       <div class="row" id="cdBtns"></div></div>`;
-    const $ = (s) => ov.querySelector(s);
-    $("#cdFmt").value = card?.fmt || "auto";
-    let scanFmt = null;
+    const $ = (sel) => ov.querySelector(sel);
     const preview = () => {
       const code = $("#cdCode").value.trim(), pv = $("#cdPv");
-      const r = code ? elCodeSvg(code, $("#cdFmt").value, scanFmt) : null;
+      const r = code ? elCodeSvg(code, st.fmt) : null;
       pv.style.display = r ? "block" : "none";
-      pv.innerHTML = r ? r.svg.replace("<svg ", `<svg style="${r.kind === "qr" ? "width:130px;height:130px" : "height:110px"}" `) : "";
+      pv.innerHTML = r ? r.svg.replace("<svg ", `<svg style="${r.kind === "qr" || r.kind === "aztec" ? "width:130px;height:130px" : "height:110px"}" `) : "";
     };
-    $("#cdCode").addEventListener("input", () => { scanFmt = null; preview(); });
-    $("#cdFmt").addEventListener("change", preview);
+    const photoInfo = () => {
+      const info = $("#cdPhInfo");
+      info.innerHTML = st.hasPhoto ? `📷 ${st.photo ? "Neues Foto – wird beim Speichern abgelegt." : "Foto gespeichert."} <button type="button" data-a="phdel" style="border:0;background:none;color:#ff8a80;font:inherit;cursor:pointer;padding:0 0 0 6px">🗑️ Foto entfernen</button>` : "";
+      info.querySelector('[data-a="phdel"]')?.addEventListener("click", () => { st.photo = ""; st.hasPhoto = false; photoInfo(); });
+    };
+    $("#cdCode").addEventListener("input", () => { st.fmt = "auto"; preview(); });
     ov.querySelectorAll("#cdNames button").forEach((b) => { b.onclick = () => { $("#cdName").value = b.textContent; }; });
     ov.querySelectorAll("#cdWho button").forEach((b) => { b.onclick = () => { st.shared = b.dataset.v === "1"; ov.querySelectorAll("#cdWho button").forEach((x) => x.classList.toggle("on", x === b)); }; });
     ov.querySelectorAll("#cdCol button").forEach((b) => { b.onclick = () => { st.color = b.dataset.c; ov.querySelectorAll("#cdCol button").forEach((x) => x.classList.toggle("on", x === b)); }; });
     if (canScan) {
       const sc = ovButton("📷 Einscannen", true);
       sc.onclick = () => this._appScan({
-        title: "💳 Karte einscannen", description: "Halte den QR-Code oder Strichcode der Karte in den Rahmen.", altLabel: "Abbrechen",
+        title: "💳 Karte einscannen", description: "Halte den QR-Code, Aztec-Code oder Strichcode der Karte in den Rahmen.", altLabel: "Abbrechen",
         onCode: (code, format) => {
           const k = elCodeKind(code, "auto", format);
-          $("#cdCode").value = k.code; $("#cdFmt").value = k.kind; scanFmt = null; preview();
+          $("#cdCode").value = k.code; st.fmt = k.kind; preview();
           this._toast("📷 Karte erkannt – jetzt noch einen Namen geben");
         },
       });
-      $(".row").append(sc);
+      $("#cdTop").append(sc);
+    }
+    if (canPhoto) {
+      const pb = ovButton("📷 Foto der Karte");
+      pb.onclick = async () => {
+        const file = await this._cardImageFile();
+        if (!file) return;
+        try {
+          let q = 0.82, url = await shrinkImage(file, 1280, q);
+          while (url.length > 300000 && q > 0.4) { q -= 0.12; url = await shrinkImage(file, 1280, q); }
+          if (url.length > 300000) url = await shrinkImage(file, 900, 0.6);
+          st.photo = url.split(",")[1]; st.hasPhoto = true; photoInfo();
+          const found = await elReadCodeFromFile(file); // geht nur, wenn der Browser einen Code-Leser hat – sonst bleibt es beim Foto
+          if (found && !$("#cdCode").value.trim()) { $("#cdCode").value = found.code; st.fmt = found.kind; preview(); this._toast("📷 Foto übernommen – Code erkannt"); }
+          else this._toast("📷 Foto übernommen – es wird beim Speichern abgelegt");
+        } catch (_) { this._toast("Das Foto konnte nicht gelesen werden 🙈"); }
+      };
+      $("#cdTop").append(pb);
     }
     const bar = $("#cdBtns");
     const cancel = ovButton("Abbrechen"), save = ovButton("💾 Speichern", true);
@@ -7864,22 +8157,27 @@ class EinkaufslisteCard extends HTMLElement {
       const del = ovButton("🗑️ Löschen");
       del.onclick = async () => {
         if (!elConfirm(`Karte „${card.name}“ wirklich löschen?`)) return;
-        try { await this._ws({ type: "einkaufsliste/card/remove", card_id: card.id }); ov.remove(); done?.(); } catch (_) { /* Meldung kam schon */ }
+        try { await this._ws({ type: "einkaufsliste/card/remove", card_id: card.id }); this._cardPhotoForget(card.id); ov.remove(); done?.(); } catch (_) { /* Meldung kam schon */ }
       };
       bar.append(del);
     }
     save.onclick = async () => {
       const name = $("#cdName").value.trim(), code = $("#cdCode").value.trim();
       if (!name) { $("#cdName").focus(); return this._toast("Gib der Karte einen Namen, z. B. Payback"); }
-      if (!code) { $("#cdCode").focus(); return this._toast("Nummer oder Code fehlt – einscannen oder eintippen"); }
-      const body = { name, code, fmt: $("#cdFmt").value, color: st.color || "" };
+      if (!code && !st.hasPhoto) { $("#cdCode").focus(); return this._toast("Nummer oder Code fehlt – einscannen, eintippen oder fotografieren"); }
+      const body = { name, code, fmt: st.fmt, color: st.color || "" };
+      if (st.photo !== undefined) body.photo = st.photo;
       try {
-        await this._ws(card ? { type: "einkaufsliste/card/update", card_id: card.id, ...body } : { type: "einkaufsliste/card/add", ...body, shared: st.shared });
+        const res = await this._ws(card ? { type: "einkaufsliste/card/update", card_id: card.id, ...body } : { type: "einkaufsliste/card/add", ...body, shared: st.shared });
+        const id = res?.id || card?.id;
+        if (id && st.photo) { try { localStorage.setItem(this._cardPhotoKey(id), st.photo); } catch (_) { /* egal */ } }
+        else if (id && st.photo === "") this._cardPhotoForget(id);
         ov.remove(); done?.();
       } catch (_) { /* Meldung kam schon */ }
     };
     bar.append(cancel, save);
     preview();
+    photoInfo();
   }
 
   // ---------------------------------------------------------------- Barcode (Scanner der HA-App)

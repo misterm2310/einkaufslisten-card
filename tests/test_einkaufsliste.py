@@ -533,6 +533,41 @@ async def test_loyalty_cards(hass, setup, hass_ws_client, hass_admin_user):
     assert [c["name"] for c in m.cards_for(hass_admin_user.id)] == ["Payback"]
 
 
+async def test_loyalty_card_photo(hass, setup, hass_ws_client, hass_admin_user):
+    """💳 Kartenfoto: geht auch ohne Code, bleibt privat, nur echtes JPEG, nicht in der großen Antwort, Aztec als Format."""
+    import base64
+
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    jpeg = base64.b64encode(b"\xff\xd8\xff\xe0" + b"x" * 200).decode()
+    # Foto statt Code geht; Format „aztec“ wird gemerkt
+    await client.send_json({"id": 1, "type": "einkaufsliste/card/add", "name": "Penny", "code": "", "photo": jpeg, "shared": False})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["has_photo"] is True and "photo" not in res["result"]
+    cid = res["result"]["id"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/card/add", "name": "Aztec", "code": "ABC123", "fmt": "aztec", "shared": True})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["fmt"] == "aztec" and res["result"]["has_photo"] is False
+    # weder Code noch Foto: Fehler; kein JPEG: Fehler
+    await client.send_json({"id": 3, "type": "einkaufsliste/card/add", "name": "Leer", "code": "", "shared": True})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 4, "type": "einkaufsliste/card/add", "name": "Kaputt", "code": "1", "photo": base64.b64encode(b"GIF89a....").decode(), "shared": True})
+    assert not (await client.receive_json())["success"]
+    # Foto holen: der Besitzer ja, ein anderer Benutzer nicht; in der großen Antwort steht es nicht
+    await client.send_json({"id": 5, "type": "einkaufsliste/card/photo", "card_id": cid})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["photo"] == jpeg
+    with pytest.raises(ValueError):
+        m.card_photo(cid, "anderer-benutzer")
+    assert jpeg not in str(m.as_dict())
+    # Foto wieder löschen: ohne Code ist die Karte dann ungültig, mit Code geht es
+    await client.send_json({"id": 6, "type": "einkaufsliste/card/update", "card_id": cid, "photo": ""})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 7, "type": "einkaufsliste/card/update", "card_id": cid, "photo": "", "code": "42"})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["has_photo"] is False
+
+
 async def test_persons(hass, setup, hass_ws_client):
     client = await hass_ws_client(hass)
     m = mgr(hass)
