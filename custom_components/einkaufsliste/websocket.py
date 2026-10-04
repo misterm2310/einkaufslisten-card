@@ -10,13 +10,14 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .barcode import async_auto_photo, async_lookup, async_product_info, async_refresh_photo
 from .ai_cook import async_cook
 from .grocy_import import async_fetch, clean_base, import_rows, parse_catalog_text
 from .recipe_import import async_import
-from .const import DOMAIN, SIGNAL_UPDATED
+from .const import DOMAIN, PUSH_DELAY, SIGNAL_UPDATED
 from .mail_import import mail_sources
 from .transfer import async_todo_text, import_recipe_file, import_text, import_text_by_store, todo_lists
 from .manager import AUTO_CATEGORY, EinkaufslisteManager, person_name_for_user, product_key
@@ -72,6 +73,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_mascot,
         ws_labels,
         ws_catalog_wipe,
+        ws_factory_reset,
         ws_items_purge,
         ws_cards_enable,
         ws_grocy_preview,
@@ -186,15 +188,33 @@ def ws_subscribe(hass, connection, msg):
         )
         return
 
+    pending: list[Any] = [None]  # ⏱️ wartender Sendetermin: viele schnelle Änderungen = nur EIN Paket
+
     @callback
-    def forward() -> None:
+    def _send(_now: Any = None) -> None:
+        pending[0] = None
         current = _manager(hass)
         if current is not None:
+            current.stat_pushes += 1
             connection.send_message(websocket_api.event_message(msg["id"], current.as_dict()))
 
-    connection.subscriptions[msg["id"]] = async_dispatcher_connect(hass, SIGNAL_UPDATED, forward)
+    @callback
+    def forward() -> None:
+        if pending[0] is None:
+            pending[0] = async_call_later(hass, PUSH_DELAY, _send)
+
+    unsub = async_dispatcher_connect(hass, SIGNAL_UPDATED, forward)
+
+    @callback
+    def _unsub() -> None:
+        unsub()
+        if pending[0] is not None:
+            pending[0]()
+            pending[0] = None
+
+    connection.subscriptions[msg["id"]] = _unsub
     connection.send_result(msg["id"])
-    forward()
+    _send()  # der erste Stand kommt sofort
 
 
 @websocket_api.websocket_command(
@@ -361,11 +381,12 @@ def ws_group_add(hass, connection, msg):
         vol.Optional("zones"): [str],
         vol.Optional("brands"): OPT_STR,
         vol.Optional("cat_order"): vol.Any(None, [str]),
+        vol.Optional("cats"): vol.Any(None, [str]),
     }
 )
 @callback
 def ws_group_update(hass, connection, msg):
-    fields = _pick(msg, "name", "color", "icon", "zone", "zones", "brands", "cat_order")
+    fields = _pick(msg, "name", "color", "icon", "zone", "zones", "brands", "cat_order", "cats")
     _run(
         hass, connection, msg, lambda m: m.update_group(msg["kind"], msg["group_id"], **fields)
     )
@@ -578,6 +599,14 @@ def ws_items_purge(hass, connection, msg):
 async def ws_catalog_wipe(hass, connection, msg):
     # 🧹 Einkaufsliste + ganzer Katalog mit Fotos, Barcodes usw. löschen (nur Admins; Rezepte, Geschäfte … bleiben)
     await _run_async(hass, connection, msg, lambda m: m.async_delete_all_products())
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/factory_reset"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_factory_reset(hass, connection, msg):
+    # 💣 Werkseinstellungen: alles zurück auf Anfang (nur Admins; nur die PIN bleibt)
+    await _run_async(hass, connection, msg, lambda m: m.async_factory_reset())
 
 
 @websocket_api.websocket_command(

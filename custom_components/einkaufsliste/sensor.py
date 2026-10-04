@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 from datetime import timedelta
 from typing import Any
 
@@ -260,4 +262,12 @@ class GesundheitSensor(_Base):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         c = self._m.health_cache
-        return {"probleme": c.get("probleme"), "fehler_24h": c.get("fehler_24h"), "geprueft": c.get("geprueft")}
+        mins = max((time.monotonic() - self._m.stat_start) / 60, 1 / 60)
+        return {
+            "probleme": c.get("probleme"), "fehler_24h": c.get("fehler_24h"), "geprueft": c.get("geprueft"),
+            # 📊 Diagnose bei hoher Last: wie oft hat sich etwas geändert, wie viele Pakete gingen an Karten/Apps?
+            "aenderungen_gesamt": self._m.stat_changes,
+            "aenderungen_pro_minute": round(self._m.stat_changes / mins, 2),
+            "pakete_an_karten_gesamt": self._m.stat_pushes,
+            "laufzeit_minuten": round(mins),
+        }

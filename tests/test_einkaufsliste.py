@@ -73,8 +73,9 @@ async def test_websocket_flow_with_user_name(hass, setup, hass_ws_client, hass_a
             "for_whom": "Oma",
         }
     )
-    assert (await client.receive_json())["type"] == "event"
     res = await client.receive_json()
+    while res["type"] == "event":  # ⏱️ Pakete an die Karte werden gebündelt und kommen leicht verzögert
+        res = await client.receive_json()
     assert res["success"], res
     item = res["result"]
     assert item["added_by"] == hass_admin_user.name
@@ -86,12 +87,15 @@ async def test_websocket_flow_with_user_name(hass, setup, hass_ws_client, hass_a
     assert state.attributes["artikel"][0]["fuer"] == "Oma"
 
     await client.send_json({"id": 4, "type": "einkaufsliste/item/toggle", "item_id": item["id"]})
-    await client.receive_json()
     res = await client.receive_json()
+    while res["type"] == "event":
+        res = await client.receive_json()
     assert res["result"]["checked"] is True
 
     await client.send_json({"id": 5, "type": "einkaufsliste/item/add", "name": "  "})
     res = await client.receive_json()
+    while res["type"] == "event":
+        res = await client.receive_json()
     assert not res["success"] and res["error"]["code"] == "invalid"
 
 
@@ -3622,6 +3626,41 @@ async def test_katalog_komplett_loeschen(hass, setup):
     assert len(m.stores) == stores and len(m.categories) == cats
 
 
+async def test_eigene_kategorien_pro_geschaeft(hass, setup):
+    """🗂️ Geschäft mit eigenen Kategorien: Auswahl wird geprüft, None = wie überall."""
+    m = mgr(hass)
+    store = m.stores[0]["id"]
+    c1, c2 = m.categories[0]["id"], m.categories[1]["id"]
+    e = m.update_group("stores", store, cats=[c1, "gibtsnicht", c1])
+    assert e["cats"] == [c1]
+    assert m.as_dict()["stores"][0]["cats"] == [c1]
+    e = m.update_group("stores", store, cats=[c2, c1])
+    assert e["cats"] == [c2, c1]
+    e = m.update_group("stores", store, cats=None)
+    assert e["cats"] is None
+
+
+async def test_werkseinstellungen(hass, setup):
+    """💣 Werkseinstellungen: alles weg, Standard-Geschäfte/-Kategorien kommen zurück, nur die PIN bleibt."""
+    m = mgr(hass)
+    m.add_item("Milch")
+    m.add_recipe("Suppe", [{"name": "Zwiebel"}])
+    m.add_store("Hofladen") if hasattr(m, "add_store") else m.stores.append({"id": "x1", "name": "Hofladen", "color": "#000", "icon": "store"})
+    m.grocy = {"url": "http://g", "api_key": "k"}
+    m.spend = True
+    m.pin_hash = "abc"
+    m.photo_dir.mkdir(parents=True, exist_ok=True)
+    (m.photo_dir / "rest.jpg").write_bytes(b"x")
+    res = await m.async_factory_reset()
+    assert res["items"] == 1 and res["recipes"] == 1 and res["files"] == 1
+    assert m.items == [] and m.recipes == [] and m.grocy == {} and m.spend is False and m.history == {}
+    assert not any(s["name"] == "Hofladen" for s in m.stores) and m.stores and m.categories and m.recipe_groups
+    assert m.pin_hash == "abc"
+    assert not list(m.photo_dir.iterdir())
+    m.add_item("Brot")  # läuft danach normal weiter
+    assert [i["name"] for i in m.items] == ["Brot"]
+
+
 async def test_liste_loeschen_pro_geschaeft(hass, setup):
     """🧽 Erledigte / alle Artikel pro Geschäft löschen – der Katalog (Verlauf, Notizen) bleibt."""
     m = mgr(hass)
@@ -3647,3 +3686,27 @@ def test_pdf_leser_dateien_vorhanden():
         assert (www / "pdf" / name).stat().st_size > 1000, name
     card = (www / "einkaufsliste-card.js").read_text(encoding="utf-8")
     assert 'data-sp="pdf"' in card and "elPdfRead" in card and "/pdf/pdf.min.js" in card
+
+
+async def test_pakete_werden_gebuendelt(hass, hass_ws_client, setup):
+    """⏱️ Viele schnelle Änderungen = wenige Pakete an die Karte; die Diagnose-Zähler laufen mit."""
+    import asyncio
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/subscribe"})
+    assert (await client.receive_json())["success"]
+    await client.receive_json()  # erster Stand
+    base_changes, base_pushes = m.stat_changes, m.stat_pushes
+    for i in range(20):
+        m.add_item("Artikel" + "abcdefghijklmnopqrst"[i])
+    await asyncio.sleep(0.8)
+    await hass.async_block_till_done()
+    assert m.stat_changes - base_changes >= 20
+    assert m.stat_pushes - base_pushes == 1
+    last = None
+    while True:
+        try:
+            last = await asyncio.wait_for(client.receive_json(), 0.3)
+        except asyncio.TimeoutError:
+            break
+    assert last and len(last["event"]["items"]) == 20

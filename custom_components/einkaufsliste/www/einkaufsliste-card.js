@@ -2,10 +2,14 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.58.01";
+const EL_VERSION = "2.59.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.58.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.59.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🗂️ <b>Eigene Kategorien pro Geschäft:</b> Auf der Seite eines Geschäfts wählst du „Alle Kategorien wie überall“ oder „Eigene Kategorien“. Bei „Eigene“ hakst du an, welche Kategorien es dort gibt, und kannst eine neue nur für dieses Geschäft anlegen. Die Liste des Reiters und das Kategorie-Ändern zeigen dann nur diese. Zusammen mit der eigenen Kategorien-Folge.",
+   "🗂️ <b>Own categories per store:</b> on a store's page choose “All categories as everywhere” or “Own categories”. With “Own” you tick which categories exist there and can create a new one just for this store. The tab's list and the category picker then show only those. Works together with the own category order."],
+  ["💣 <b>Werkseinstellungen:</b> ⚙️ → Aufräumen hat einen neuen Knopf (nur Admins): setzt <b>alles</b> auf Anfang zurück wie bei einer frischen Installation – Liste, Katalog, Fotos, Geschäfte, Kategorien, Rezepte, Karten, Grocy-Verbindung. Nur die PIN bleibt. Mit Erklärung und zwei Sicherheitsfragen. Nützlich nach einem Grocy-Import, wenn du ganz neu anfangen willst.",
+   "💣 <b>Factory reset:</b> ⚙️ → Tidy up has a new button (admins only): puts <b>everything</b> back to the start like a fresh install – list, catalogue, photos, stores, categories, recipes, cards, Grocy connection. Only the PIN stays. With an explanation and two safety questions. Handy after a Grocy import when you want a completely fresh start."],
   ["📄 <b>PDF im Einkaufs-Protokoll:</b> Digitale Kassenbons als PDF einlesen – die Karte trägt <b>Geschäft, Datum und Summe</b> ein, du prüfst kurz und speicherst. Das PDF bleibt auf deinem Gerät. In der HA-Karte und in der Offline-App.",
    "📄 <b>PDF in the purchase log:</b> read digital receipts as PDF – the card fills in <b>store, date and total</b>, you check briefly and save. The PDF stays on your device. In the HA card and in the offline app."],
   ["🧽 <b>Liste löschen:</b> ⚙️ → Aufräumen (nur Admins): pro Geschäft „Erledigte löschen“ oder „Liste leeren“ – der Katalog bleibt, die Produkte kommen beim Tippen weiter als Vorschlag. · 🧹 <b>Alles löschen:</b> ⚙️ → Aufräumen hat einen neuen Knopf (nur Admins), der die Einkaufsliste und den ganzen Katalog mit Fotos, Barcodes, Spitznamen, Notizen und Favoriten löscht – mit zwei Sicherheitsfragen. Rezepte, Geschäfte, Kategorien und Einstellungen bleiben.",
@@ -3827,7 +3831,7 @@ class EinkaufslisteCard extends HTMLElement {
     return `
       <div class="moverow catrow" data-id="${item.id}">
         <span class="movetxt">Kategorie:</span>
-        ${this._data.categories.map((c) => `<button class="tab ${c.id === item.category_id ? "active" : ""}" style="--c:${esc(c.color || "#888")}" data-act="cat-to" data-cat="${c.id}"><span class="dot"></span>${esc(c.name)}</button>`).join("")}
+        ${(item.store_id && Array.isArray(this._store(item.store_id)?.cats) ? this._data.categories.filter((c) => c.id === item.category_id || this._store(item.store_id).cats.includes(c.id)) : this._data.categories).map((c) => `<button class="tab ${c.id === item.category_id ? "active" : ""}" style="--c:${esc(c.color || "#888")}" data-act="cat-to" data-cat="${c.id}"><span class="dot"></span>${esc(c.name)}</button>`).join("")}
         <button class="iconbtn" data-act="cat-cancel" title="Abbrechen"><ha-icon icon="mdi:close"></ha-icon></button>
       </div>`;
   }
@@ -3908,11 +3912,27 @@ class EinkaufslisteCard extends HTMLElement {
 
   // 🗺️ Kategorien in der Reihenfolge dieses Geschäfts (so wie der Laden aufgebaut ist) – sonst wie alle
   _storeCats(storeId) {
-    const cats = this._data.categories;
+    const own = this._store(storeId)?.cats;  // 🗂️ eigene Kategorien nur für dieses Geschäft
+    const cats = Array.isArray(own) ? this._data.categories.filter((c) => own.includes(c.id)) : this._data.categories;
     const order = this._store(storeId)?.cat_order;
     if (!Array.isArray(order) || !order.length) return cats;
     const pos = new Map(order.map((id, n) => [id, n]));
     return [...cats].sort((a, b) => (pos.has(a.id) ? pos.get(a.id) : 1e4 + cats.indexOf(a)) - (pos.has(b.id) ? pos.get(b.id) : 1e4 + cats.indexOf(b)));
+  }
+
+  // 🗂️ Welche Kategorien gelten in diesem Geschäft? „wie überall“ oder „eigene“ (Häkchen + eigene neue)
+  _catSetHtml(store) {
+    const own = Array.isArray(store.cats);
+    return `<div class="catorder">
+      <div class="srow"><ha-icon class="prev" icon="mdi:shape-outline"></ha-icon>
+        <select class="grow" id="catSetMode" data-store="${esc(store.id)}" title="Welche Kategorien es in diesem Geschäft gibt">
+          <option value="std" ${own ? "" : "selected"}>🗂️ Alle Kategorien wie überall</option>
+          <option value="own" ${own ? "selected" : ""}>🗂️ Eigene Kategorien</option>
+        </select></div>
+      ${own ? `<div class="catordlist">${this._data.categories.map((c) => `<label class="catord"><input type="checkbox" data-catset="${esc(c.id)}" data-store="${esc(store.id)}" ${store.cats.includes(c.id) ? "checked" : ""}><ha-icon icon="${esc(c.icon || "mdi:tag-outline")}"></ha-icon><span class="grow" translate="no">${esc(c.name)}</span></label>`).join("")}</div>
+      <div class="srow"><input class="grow" id="catSetNew" placeholder="Neue Kategorie nur hier …" maxlength="40"><button type="button" class="btn" data-act="catset-new" data-store="${esc(store.id)}"><ha-icon icon="mdi:plus"></ha-icon>Neu</button></div>
+      <p class="hint">🗂️ Nur Häkchen gesetzte Kategorien gibt es in diesem Geschäft: in der Liste dieses Reiters und beim Kategorie-Ändern. Artikel aus einer abgewählten Kategorie stehen hier unter „Ohne Kategorie“ (ihre Kategorie selbst bleibt unverändert). „Neu“ legt eine Kategorie an und hakt sie nur für dieses Geschäft an.</p>` : ""}
+    </div>`;
   }
 
   _catOrderHtml(store) {
@@ -4373,6 +4393,7 @@ class EinkaufslisteCard extends HTMLElement {
           <input class="icon grow" data-field="icon" value="${esc(e.icon && !EL_START_STORE_ICONS.has(e.icon) ? stripMdi(e.icon) : "")}" placeholder="Icon, z. B. baguette" title="Leer lassen = Icon der Zone (wenn sie eins hat), sonst Einkaufswagen">
         </div>
         <div class="picker" hidden></div>
+        ${this._catSetHtml(e)}
         ${this._catOrderHtml(e)}
         ${zones.length ? "" : `<p class="hint">📍 Noch keine Zonen in Home Assistant angelegt (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen).</p>`}
         <p class="hint">🖼️ Icon: Namen tippen (z. B. <b>baguette</b>, <b>pill</b>, <b>hammer</b>) und aus der Vorschau antippen. Leer lassen = Icon der Zone, sonst 🛒.</p>
@@ -4541,7 +4562,10 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="btn danger" data-act="items-purge" data-scope="all"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Liste leeren</button>
         </div>
         <hr><p><b>🧹 Alles löschen</b><br>Löscht die <b>Einkaufsliste</b> und den <b>ganzen Katalog</b> mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. <b>Das geht nicht rückgängig.</b> Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.</p>
-        <div class="btnrow"><button class="btn danger" data-act="catalog-wipe"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Katalog &amp; Liste komplett löschen</button></div>` : `<p class="hint">🧽 Liste löschen und 🧹 „Alles löschen“ gibt es nur für Admins.</p>`}` },
+        <div class="btnrow"><button class="btn danger" data-act="catalog-wipe"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Katalog &amp; Liste komplett löschen</button></div>
+        <hr><p><b>💣 Werkseinstellungen</b><br>Setzt <b>wirklich alles</b> zurück, als hättest du die Einkaufsliste frisch installiert: Einkaufsliste, Katalog, alle Fotos, <b>Geschäfte, Kategorien, Personen, Rezepte</b>, Kundenkarten, Grocy- und To-do-Verbindungen, Einkaufs-Protokoll, Verlauf und alle Schalter. Danach kommen die Standard-Geschäfte und -Kategorien wieder. Nur die <b>PIN</b> bleibt. <b>Das geht nicht rückgängig</b> – vorher eine Sicherung machen.</p>
+        <p class="hint">Gedacht für den kompletten Neuanfang, zum Beispiel nach einem Grocy-Import. Wenn du die Integration nur entfernst und neu installierst, bleiben deine Daten nämlich erhalten (so macht es Home Assistant).</p>
+        <div class="btnrow"><button class="btn danger" data-act="factory-reset"><ha-icon icon="mdi:nuke"></ha-icon>Werkseinstellungen – alles löschen</button></div>` : `<p class="hint">🧽 Liste löschen, 🧹 „Alles löschen“ und 💣 Werkseinstellungen gibt es nur für Admins.</p>`}` },
     ];
     if (this._setSec === "recipe_groups") { this._setSec = "recipes"; this._recTab = "groups"; } // alter Weg zu den Rezept-Gruppen
     const cur = sections.find((x) => x.key === this._setSec && !x.alias);
@@ -7535,7 +7559,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>The <b>search field</b> at the top finds rows by their name or topic, e.g. “photo”, “mail”, “backup” or “sensor”. (This field searches the settings; the search at the very top of this guide searches the guide text.)</li>
         <li>The bar at the top shows the <b>health light</b> 🟢🟡🔴. Tap it to open “All OK?”.</li></ul>`, true)}
       ${sec("📋", "My list", `<ul>
-        <li><b>Stores:</b> one row per store, tapping it opens the store's page: colour, icon, 📍 zone(s) for “Next store” (the list then jumps to that store when you are there), own brands and <b>🗺️ own category order</b> (sort with ↑↓ the way the shop is laid out). Several zones per store work too (e.g. several branches). Create new stores with the “New” form; ↑ ↓ changes the order, 🗑️ deletes.</li>
+        <li><b>Stores:</b> one row per store, tapping it opens the store's page: colour, icon, 📍 zone(s) for “Next store” (the list then jumps to that store when you are there), own brands and <b>🗺️ own category order</b> (sort with ↑↓ the way the shop is laid out). Several zones per store work too (e.g. several branches). Create new stores with the “New” form; ↑ ↓ changes the order, 🗑️ deletes. Also <b>🗂️ own categories</b>: “All as everywhere” or “Own” – with “Own” you tick which ones exist in this store and can create a new one just for it.</li>
         <li><b>Categories:</b> name, colour, icon (search with German or English words), order with ↑ ↓, delete with 🗑️, new ones via the form.</li>
         <li><b>People:</b> the names for the quick buttons at “For whom?”. Without people the 👤 stays hidden in the list.</li>
         <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK; “Save” also counts as checked) and <b>Delete shopping-list items</b>.</li>
@@ -7566,6 +7590,7 @@ class EinkaufslisteCard extends HTMLElement {
           <li><b>Backup:</b> download a .zip or “Restore backup” (replaces everything!) – admins only.</li></ul></li>
         <li><b>History:</b> who did what and when, with filters (person, store, action) and search, “Show more” and a symbol legend. At the top is <b>📈 Often not available</b> – ✖ hides an entry. “Keep for 7/30/90/180/365 days” is set there, “Clear history” deletes it. One button opens the purchase log.</li>
         <li><b>Tidy up:</b> once a week old open items are <b>checked off</b> – nothing is deleted. Day and time: Settings → Devices &amp; services → Shopping list → Configure. The page also has <b>“Tidy up now”</b> (like the automation, just immediately) and <b>“Check off everything”</b> (really checks off everything open).</li>
+        <li><b>💣 Factory reset</b> (admins only, at the very bottom of Tidy up): puts <b>everything</b> back like a fresh install – also stores, categories, recipes, cards and connections. Only the PIN stays. Two safety questions, cannot be undone. Good after a Grocy import for a completely fresh start.</li>
         <li><b>🧽 Delete list</b> (admins only): pick a store (or “All stores”), then <b>“Delete done items”</b> (only what is checked off, open items stay) or <b>“Empty list”</b> (open and done, the list is empty again – good for Sunday). A question with the number comes first. The <b>catalogue stays</b>: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.</li>
         <li><b>🧹 Delete everything</b> (admins only): <b>“Delete catalogue &amp; list completely”</b> deletes the shopping list and the whole catalogue with all photos, barcodes, nicknames, own notes, favourites and learned typos. Two safety questions, <b>cannot be undone</b> – better make a backup first (⚙️ → Import &amp; backup). Stores, categories, people, recipes, loyalty cards and settings stay.</li></ul>`)}
       ${sec("🩺", "Health", `<ul>
@@ -7589,7 +7614,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Das <b>Suchfeld</b> oben findet Zeilen nach Name oder Thema, z. B. „Foto“, „Mail“, „Sicherung“ oder „Sensor“. (Dieses Suchfeld sucht in den Einstellungen; die Suche ganz oben in dieser Anleitung sucht in den Anleitungs-Texten.)</li>
         <li>Der Balken ganz oben zeigt die <b>Gesundheits-Ampel</b> 🟢🟡🔴. Antippen öffnet „Alles ok?“.</li></ul>`, true)}
       ${sec("📋", "Meine Liste", `<ul>
-        <li><b>Geschäfte:</b> pro Geschäft eine Zeile, antippen öffnet die Seite des Geschäfts: Farbe, Icon, 📍 Zone(n) für „Nächstes Geschäft“ (die Liste springt dann auf dieses Geschäft, wenn du dort bist), Eigenmarken und <b>🗺️ eigene Kategorien-Folge</b> (mit ↑↓ so sortieren, wie der Laden aufgebaut ist). Auch mehrere Zonen pro Geschäft gehen (z. B. mehrere Filialen). Neue Geschäfte legst du mit dem „Neu“-Formular an; ↑ ↓ ändert die Reihenfolge, 🗑️ löscht.</li>
+        <li><b>Geschäfte:</b> pro Geschäft eine Zeile, antippen öffnet die Seite des Geschäfts: Farbe, Icon, 📍 Zone(n) für „Nächstes Geschäft“ (die Liste springt dann auf dieses Geschäft, wenn du dort bist), Eigenmarken und <b>🗺️ eigene Kategorien-Folge</b> (mit ↑↓ so sortieren, wie der Laden aufgebaut ist). Auch mehrere Zonen pro Geschäft gehen (z. B. mehrere Filialen). Neue Geschäfte legst du mit dem „Neu“-Formular an; ↑ ↓ ändert die Reihenfolge, 🗑️ löscht. Dazu <b>🗂️ eigene Kategorien</b>: „Alle wie überall“ oder „Eigene“ – bei „Eigene“ setzt du Häkchen, welche es in diesem Geschäft gibt, und kannst eine neue nur dafür anlegen.</li>
         <li><b>Kategorien:</b> Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), Reihenfolge mit ↑ ↓, löschen mit 🗑️, neue über das Formular.</li>
         <li><b>Personen:</b> die Namen für die Schnellknöpfe bei „Für wen?“. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.</li>
         <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt; „Speichern“ zählt auch als geprüft) und <b>Einkaufsliste Produkte löschen</b>.</li>
@@ -7620,6 +7645,7 @@ class EinkaufslisteCard extends HTMLElement {
           <li><b>Sicherung:</b> .zip herunterladen oder „Sicherung einspielen“ (ersetzt alles!) – nur Admins.</li></ul></li>
         <li><b>Verlauf:</b> wer hat wann was gemacht, mit Filtern (Person, Geschäft, Aktion) und Suche, „Mehr anzeigen“ und einer Symbol-Legende. Oben steht <b>📈 Oft nicht bekommen</b> – mit ✖ blendest du einen Eintrag aus. „Aufheben für 7/30/90/180/365 Tage“ stellst du dort ein, „Verlauf leeren“ löscht ihn. Ein Knopf öffnet das Einkaufs-Protokoll.</li>
         <li><b>Aufräumen:</b> einmal pro Woche werden alte offene Sachen <b>abgehakt</b> – gelöscht wird nichts. Tag und Uhrzeit: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es außerdem <b>„Jetzt aufräumen“</b> (wie der Automatismus, nur sofort) und <b>„Alles abhaken“</b> (hakt wirklich alles Offene ab).</li>
+        <li><b>💣 Werkseinstellungen</b> (nur Admins, unter Aufräumen ganz unten): setzt <b>alles</b> zurück wie bei einer frischen Installation – auch Geschäfte, Kategorien, Rezepte, Karten und Verbindungen. Nur die PIN bleibt. Zwei Sicherheitsfragen, nicht rückgängig. Gut nach einem Grocy-Import für den kompletten Neuanfang.</li>
         <li><b>🧽 Liste löschen</b> (nur Admins): Geschäft wählen (oder „Alle Geschäfte“), dann <b>„Erledigte löschen“</b> (nur Abgehaktes, Offenes bleibt) oder <b>„Liste leeren“</b> (offen und erledigt, die Liste ist wieder leer – gut für den Sonntag). Vorher kommt eine Frage mit der Anzahl. Der <b>Katalog bleibt</b>: Die Produkte kommen beim Tippen weiter als Vorschlag, Fotos, Barcodes, Notizen und Favoriten bleiben. Nicht rückgängig zu machen.</li>
         <li><b>🧹 Alles löschen</b> (nur Admins): <b>„Katalog &amp; Liste komplett löschen“</b> löscht die Einkaufsliste und den ganzen Katalog mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. Zwei Sicherheitsfragen, <b>nicht rückgängig</b> – vorher lieber eine Sicherung machen (⚙️ → Import &amp; Sicherung). Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.</li></ul>`)}
       ${sec("🩺", "Gesundheit", `<ul>
@@ -9875,6 +9901,16 @@ class EinkaufslisteCard extends HTMLElement {
         this._logMax = (this._logMax || 150) + 150;
         this._renderLogList();
         break;
+      case "catset-new": {
+        const inp = this.$("catSetNew");
+        const name = (inp?.value || "").trim();
+        const st = this._store(el.dataset.store);
+        if (!name || !st) return;
+        this._ws({ type: "einkaufsliste/group/add", kind: "categories", name })
+          .then((cat) => this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: st.id, cats: [...(st.cats || []), cat.id] }))
+          .then(() => { this._toast("🗂️ Kategorie angelegt"); this._renderSettings(); }).catch(() => this._toast("Das hat nicht geklappt"));
+        break;
+      }
       case "catord-up":
       case "catord-down": {
         const ids = this._storeCats(el.dataset.store).map((c) => c.id);
@@ -9920,6 +9956,13 @@ class EinkaufslisteCard extends HTMLElement {
         if (!elConfirm("Letzte Frage: Wirklich ALLES löschen?")) return;
         this._ws({ type: "einkaufsliste/catalog/wipe" })
           .then((r) => this._toast(`Gelöscht: ${r.items} Artikel, ${r.products} Produkte 🧹`)).catch(() => this._toast("Das hat nicht geklappt"));
+        break;
+      case "factory-reset":
+        if (!this._hass?.user?.is_admin) return;
+        if (!elConfirm("Wirklich ALLES zurücksetzen?\n\nEinkaufsliste, Katalog, Fotos, Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten, Grocy- und To-do-Verbindungen und alle Schalter werden gelöscht. Danach ist die Einkaufsliste wie frisch installiert. Nur die PIN bleibt.\n\nDas geht nicht rückgängig.")) return;
+        if (!elConfirm("Letzte Frage: Wirklich ALLES auf Werkseinstellungen setzen?")) return;
+        this._ws({ type: "einkaufsliste/factory_reset" })
+          .then((r) => this._toast(`Alles zurückgesetzt: ${r.items} Artikel, ${r.recipes} Rezepte, ${r.files} Fotos 💣`)).catch(() => this._toast("Das hat nicht geklappt"));
         break;
       case "cleanup-all":
         if (!elConfirm("Wirklich ALLE offenen Artikel abhaken?")) return;
@@ -10435,6 +10478,22 @@ class EinkaufslisteCard extends HTMLElement {
       this._logF[logKey] = t.value;
       this._logMax = 150;
       this._renderLogList();
+      return;
+    }
+    if (t.id === "catSetMode") { // 🗂️ eigene Kategorien pro Geschäft an/aus
+      const own = t.value === "own";
+      this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: t.dataset.store,
+        cats: own ? this._data.categories.map((c) => c.id) : null })
+        .then(() => { this._toast(own ? "🗂️ Jetzt abhaken, was es in diesem Geschäft gibt" : "🗂️ Wieder alle Kategorien wie überall"); this._renderSettings(); }).catch(() => {});
+      return;
+    }
+    if (t.dataset?.catset) {
+      const st = this._store(t.dataset.store);
+      if (!st || !Array.isArray(st.cats)) return;
+      const set = new Set(st.cats);
+      if (t.checked) set.add(t.dataset.catset); else set.delete(t.dataset.catset);
+      this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: st.id, cats: [...set] })
+        .then(() => this._renderSettings()).catch(() => {});
       return;
     }
     if (t.id === "catOrderMode") { // 🗺️ eigene Kategorien-Reihenfolge an/aus

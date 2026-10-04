@@ -133,6 +133,14 @@ On cleanup day everything that has been open for at least 7 days (adjustable) ge
 
 **🧽 Delete list (admins only):** under ⚙️ → Tidy up pick a store (or “All stores”), then **“Delete done items”** (only what is checked off) or **“Empty list”** (open and done – good on Sunday for the new week). A question with the number comes first. The **catalogue stays**: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.
 
+**⚡ Less load:** many quick changes (e.g. ticking off several items in a row) are now bundled into **one** packet to cards and apps (at most every 0.3 seconds) instead of resending the whole list on every change. For load problems there is a diagnosis: the health sensor shows `aenderungen_gesamt`, `aenderungen_pro_minute`, `pakete_an_karten_gesamt` and `laufzeit_minuten` in its attributes. If `aenderungen_pro_minute` stays high, something keeps changing – please report it as an issue.
+
+**🗂️ Own categories per store:** on a store's page (⚙️ → Stores) choose “All categories as everywhere” or “Own categories”. With “Own” you tick which categories exist in this store and can create a new one just for it. The list of that tab and the category picker then show only those; items from an unticked category show under “No category” there (the item's own category stays unchanged). Works together with the own category order.
+
+**💣 Factory reset (admins only):** At the very bottom of ⚙️ → Tidy up, **“Factory reset – delete everything”** puts really everything back like a fresh install: list, catalogue, photos, stores, categories, people, recipes, loyalty cards, Grocy/to-do connections and all switches. Only the PIN stays. Two safety questions, **cannot be undone**.
+
+**❓ Starting fresh after removing the integration:** Home Assistant does **not delete data** when you remove an integration – that is why everything (also products imported from Grocy) is still there after “remove, restart, reinstall”. Two ways: (1) use the **Factory reset** button before removing, or (2) after removing, delete the file `.storage/einkaufsliste.data` and the folder `einkaufsliste_fotos` in your config folder (stop or restart Home Assistant around it).
+
 **🧹 Delete everything (admins only):** under ⚙️ → Tidy up, **“Delete catalogue & list completely”** deletes the shopping list and the whole catalogue with all photos, barcodes, nicknames, own notes, favourites and learned typos. Two safety questions, **cannot be undone** – make a backup first. Stores, categories, people, recipes, loyalty cards and settings stay.
 
 ### 📍 Nearest store first

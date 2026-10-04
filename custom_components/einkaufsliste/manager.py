@@ -16,6 +16,7 @@ import logging
 from pathlib import Path
 from typing import Any
 import uuid
+from time import monotonic as _monotonic
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -315,6 +316,9 @@ class EinkaufslisteManager:
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
         self.auto_shop: bool = False  # 📍 Laden-Modus geht in der Zone von selbst an – ein Schalter für alle Geräte
         self.spend_auto: bool = False  # 🧾 Protokoll von selbst anbieten, wenn alles abgehakt ist (Option, standardmäßig aus)
+        self.stat_start = _monotonic()  # 📊 Zähler für die Diagnose (Änderungen / gesendete Pakete seit dem Start)
+        self.stat_changes = 0
+        self.stat_pushes = 0
         self.health_cache: dict[str, Any] = {}  # 🩺 letztes Ergebnis für den Gesundheits-Sensor
         self.purchases: list[dict[str, Any]] = []  # 🧾 {"id","t","s","sn","w","wi","a"} – wer, wann, wo, wie viel
         self.todo_syncs: list[dict[str, Any]] = []  # 🔁 je To-do-Liste {"entity_id", "store_id", "count", "mode", "links"} – herüberholen
@@ -354,21 +358,54 @@ class EinkaufslisteManager:
         return int(self._opt(CONF_MIN_AGE_DAYS))
 
     # ------------------------------------------------------------ Laden/Speichern
+    def _apply_defaults(self) -> None:
+        """🌍 Startwerte (Erstes Einrichten / Werkseinstellungen): Geschäfte, Kategorien, Rezept-Gruppen in der Sprache von Home Assistant."""
+        english = not str(getattr(self.hass.config, "language", "de") or "de").lower().startswith("de")
+        self.stores = [
+            {"id": _new_id(), "name": n, "color": c, "icon": i}
+            for n, c, i in (DEFAULT_STORES_EN if english else DEFAULT_STORES)
+        ]
+        self.categories = [
+            {"id": _new_id(), "name": n, "icon": i, "color": CATEGORY_COLORS[k % len(CATEGORY_COLORS)]}
+            for k, (n, i) in enumerate(DEFAULT_CATEGORIES_EN if english else DEFAULT_CATEGORIES)
+        ]
+        self.recipe_groups = _default_recipe_groups(english)
+        self.last_cleanup = _now_iso()
+
+    async def async_factory_reset(self) -> dict[str, Any]:
+        """💣 Werkseinstellungen: ALLES zurück auf Anfang wie bei einer frischen Installation – Liste, Katalog, Fotos
+        (auch Reste im Foto-Ordner), Geschäfte, Kategorien, Personen, Rezepte, Karten, Grocy/To-do-Verbindungen und
+        alle Schalter. Nur die PIN bleibt (damit sich niemand damit aus den Einstellungen aussperrt)."""
+        counts = {"items": len(self.items), "products": len(self.products()), "recipes": len(self.recipes)}
+        for key in list(self.photos):
+            await self.async_remove_photo(key)
+
+        def _sweep() -> int:
+            n = 0
+            if self.photo_dir.is_dir():
+                for f in self.photo_dir.iterdir():
+                    if f.is_file():
+                        try:
+                            f.unlink()
+                            n += 1
+                        except OSError:
+                            pass
+            return n
+
+        counts["files"] = await self.hass.async_add_executor_job(_sweep)
+        keep = {"hass", "entry", "_store", "_unsub_time", "_actor", "pin_hash"}
+        fresh = EinkaufslisteManager(self.hass, self.entry)
+        for k, v in fresh.__dict__.items():
+            if k not in keep:
+                setattr(self, k, v)
+        self._apply_defaults()
+        self._changed()
+        return counts
+
     async def async_load(self) -> None:
         data = await self._store.async_load()
         if data is None:
-            # 🌍 Erstes Einrichten: Startwerte in der Sprache von Home Assistant (Deutsch oder sonst Englisch)
-            english = not str(getattr(self.hass.config, "language", "de") or "de").lower().startswith("de")
-            self.stores = [
-                {"id": _new_id(), "name": n, "color": c, "icon": i}
-                for n, c, i in (DEFAULT_STORES_EN if english else DEFAULT_STORES)
-            ]
-            self.categories = [
-                {"id": _new_id(), "name": n, "icon": i, "color": CATEGORY_COLORS[k % len(CATEGORY_COLORS)]}
-                for k, (n, i) in enumerate(DEFAULT_CATEGORIES_EN if english else DEFAULT_CATEGORIES)
-            ]
-            self.recipe_groups = _default_recipe_groups(english)
-            self.last_cleanup = _now_iso()
+            self._apply_defaults()
             self._schedule_save()
             return
         self.stores = data.get("stores", [])
@@ -525,6 +562,7 @@ class EinkaufslisteManager:
 
     @callback
     def _changed(self) -> None:
+        self.stat_changes += 1
         self._schedule_save()
         async_dispatcher_send(self.hass, SIGNAL_UPDATED)
 
@@ -3527,6 +3565,12 @@ class EinkaufslisteManager:
             else:
                 known = {c["id"] for c in self.categories}
                 entry["cat_order"] = [c for c in dict.fromkeys(fields["cat_order"]) if c in known]
+        if "cats" in fields and kind == "stores":  # 🗂️ eigene Kategorien nur für dieses Geschäft (None = alle wie überall)
+            if fields["cats"] is None:
+                entry["cats"] = None
+            else:
+                known = {c["id"] for c in self.categories}
+                entry["cats"] = [c for c in dict.fromkeys(fields["cats"]) if c in known]
         if "brands" in fields and kind == "stores":  # 🏷️ eigene Eigenmarken („Milsani, Moser Roth“)
             entry["brands"] = [b.strip() for b in re.split(r"[,;]", fields["brands"] or "") if b.strip()][:30]
         self._changed()

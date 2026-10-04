@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.58.01"
+VERSION = "2.59.01"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
 SAVE_DELAY = 1
+PUSH_DELAY = 0.3  # ⏱️ Sekunden: schnelle Änderungen werden zu einem Paket an die Karten gebündelt
 
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
 EVENT_ITEM_ADDED = f"{DOMAIN}_item_added"
