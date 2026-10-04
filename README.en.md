@@ -73,7 +73,7 @@ Copy `custom_components/einkaufsliste` to `/config/custom_components/einkaufslis
 - ✨ = new since you last looked; the red number on a tab shows how much is new there.
 - The **shopping cart** at the top left opens a guide for the whole family – including the app link to copy.
 
-**In the store:** the cart at the top right switches on **shop mode**. No connection? Keep checking off, the dot turns orange ⏳ and everything is sent later.
+**In the store:** the cart at the top right switches on **shop mode**. No connection? Keep checking off, the dot turns orange ⏳ and everything is sent later. The **💡 icon** (between 💳 and the cart) keeps the screen on in shop mode – it switches off by itself when you leave. **In the HA app** this only works with its own setting: *Settings → Companion App → “Keep screen On”*.
 
 **Recipes:** create them in ⚙️ → Recipes (ingredients just like on the list, or paste an ingredient list or a recipe link). The **chef's hat** at the top: **Add to list** → tick what's missing → done. Also 👥 people or 🍕 trays scaling, **🔥 Cook** (step by step), **Share** (e.g. WhatsApp) and **⏲️ cooking times**. Checked recipe ingredients disappear completely.
 
@@ -103,7 +103,7 @@ The **complete card** as its own app on your home screen – with recipes, cook 
 3. Log in with your own Home Assistant user.
 4. Browser menu → **“Add to Home screen”**.
 
-**↩️ Back button:** goes back step by step inside the app (closes windows, one level up in the settings, ends shop mode). Only on the plain list does the app close.
+**↩️ Back button:** goes back step by step inside the app (closes windows, one level up in the settings, ends shop mode). Only on the plain list does the app close. This also applies to the **HA card on the dashboard**: Back closes one window after the other before the page is left.
 
 **📱 Quick menu (Android):** long-press the app icon → ✍️ Add · 🛍️ Shop mode · 📷 Scan – the app opens right at that spot. (iPhones don't offer this for web apps.)
 
