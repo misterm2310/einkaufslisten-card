@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.54.02";
+const EL_VERSION = "2.54.03";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.53.14"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -2242,6 +2242,52 @@ const GAR_DEV = [
 ];
 // Hinweise, die nur zum Herd passen (Pfanne, Wasser …), im Backofen/in der Fritteuse weglassen
 const GAR_STOVE_NOTE = /pfanne|\bpan\b|wasser|water|kochend|boil|brühe|stock|tasse|cup/i;
+
+// 💡 Bildschirm anlassen (Koch-Modus, Kundenkarte). Zwei Wege, damit es für alle klappt:
+// 1) „Wake Lock“ – geht nur über https (und wenn der Browser es erlaubt)
+// 2) sonst ein winziges, stummes Video in Dauerschleife (der „NoSleep“-Trick) – geht auch über http im WLAN
+// Endet von selbst, sobald das Fenster zu ist. Gibt "lock", "video" oder "" (hat nicht geklappt) zurück.
+const EL_NOSLEEP = { mp4: "data:video/mp4;base64,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", webm: "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAALCEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEeTbuMU6uEHFO7a1OsggKs7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjAuMTYuMTAwV0GNTGF2ZjYwLjE2LjEwMESJiECfQAAAAAAAFlSua8GuAQAAAAAAADjXgQFzxYiU74J2vpmbxJyBACK1nIN1bmSIgQCGhVZfVlA4g4EBI+ODhAvrwgDgibCBQLqBQJqBAhJUw2f8c3OgY8CAZ8iaRaOHRU5DT0RFUkSHjUxhdmY2MC4xNi4xMDBzc9ZjwItjxYiU74J2vpmbxGfIoUWjh0VOQ09ERVJEh5RMYXZjNjAuMzEuMTAyIGxpYnZweGfIoUWjiERVUkFUSU9ORIeTMDA6MDA6MDIuMDAwMDAwMDAwAB9DtnVBB+eBAKOqgQAAgPACAJ0BKkAAQAAARwiFhYiFhIgCAgAGcDxCYAqyIPcwAP7/q1CAo5aBAMgA0QEAARAQABgAGFgv9AAIjoAAo5aBAZAA0QEAARAQABgAGFgv9AAIjoAAo5aBAlgA0QEAARAQABgAGFgv9AAIjoAAo5aBAyAA0QEAARAQABgAGFgv9AAIjoAAo5aBA+gA0QEAARAQABgAGFgv9AAIjoAAo5aBBLAA0QEAARAQABgAGFgv9AAIjoAAo5aBBXgA0QEAARAQFGAAYWC/0AAiOgAAo5aBBkAA0QEAARAQABgAGFgv9AAIjoAAo5aBBwgA0QEAARAQABgAGFgv9AAIjoAAHFO7a5G7j7OBALeK94EB8YIBn/CBAw==" };
+async function elKeepAwake(ov) {
+  let lock = null, vid = null, mode = "", over = false;
+  const getLock = async () => {
+    try {
+      const l = await navigator.wakeLock?.request("screen");
+      if (l) { lock = l; l.addEventListener?.("release", () => { if (lock === l) lock = null; }); }
+    } catch (_) { /* dann das Video */ }
+  };
+  const startVideo = async () => {
+    try {
+      vid = document.createElement("video");
+      vid.muted = true; vid.defaultMuted = true; vid.loop = true; vid.playsInline = true;
+      vid.setAttribute("muted", ""); vid.setAttribute("playsinline", ""); vid.setAttribute("loop", ""); vid.setAttribute("aria-hidden", "true");
+      vid.style.cssText = "position:fixed;left:0;bottom:0;width:48px;height:48px;opacity:.02;pointer-events:none;z-index:0";
+      for (const [t, d] of [["video/mp4", EL_NOSLEEP.mp4], ["video/webm", EL_NOSLEEP.webm]]) { const so = document.createElement("source"); so.src = d; so.type = t; vid.append(so); }
+      document.body.append(vid); // nicht ins Fenster: dessen Inhalt wird teils neu aufgebaut
+      await vid.play();
+      return !vid.paused;
+    } catch (_) { return false; }
+  };
+  await getLock();
+  if (lock) mode = "lock";
+  else if (await startVideo()) mode = "video";
+  const onVis = () => { // Handy zwischendurch weggelegt und wieder da: neu anfordern
+    if (over || document.visibilityState !== "visible") return;
+    if (mode === "lock" && !lock) getLock();
+    if (mode === "video" && vid?.paused) vid.play().catch(() => {});
+  };
+  document.addEventListener("visibilitychange", onVis);
+  const stop = () => {
+    if (over) return;
+    over = true;
+    clearInterval(watch);
+    document.removeEventListener("visibilitychange", onVis);
+    try { lock?.release(); } catch (_) { /* egal */ }
+    try { vid?.pause(); vid?.remove(); } catch (_) { /* egal */ }
+  };
+  const watch = setInterval(() => { if (ov && !ov.isConnected) stop(); }, 1000);
+  return { mode, stop };
+}
 
 function showGarTable() {
   const en = EL_LANG !== "de";
@@ -7666,7 +7712,11 @@ class EinkaufslisteCard extends HTMLElement {
     const ing = document.createElement("div");
     Object.assign(ing.style, { ...wrapW, display: "none", font: "17px/1.6 Roboto,sans-serif", color: "#ddd", marginTop: "22px" });
     ing.innerHTML = r.items.map((i) => `• ${esc([i.quantity, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:6px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}`).join("<br>");
+    // 📱 Quer-Format: nichts wird gequetscht (flex-shrink) und „Zurück/Weiter“ bleibt unten am Rand stehen, auch wenn der Text länger ist als der Bildschirm
+    Object.assign(nav.style, { position: "sticky", bottom: "0", zIndex: "2", background: "#111", padding: "10px 0" });
+    ov.style.paddingBottom = "calc(env(safe-area-inset-bottom, 0px) + 12px)"; // sonst rutscht „Weiter“ um dieses Polster nach oben
     ov.append(head, heatBox, pos, text, pic, nav, ing);
+    for (const c of ov.children) c.style.flexShrink = "0";
     const show = () => {
       pos.textContent = `Schritt ${idx + 1} von ${steps.length}`;
       text.textContent = steps[idx];
@@ -7697,7 +7747,10 @@ class EinkaufslisteCard extends HTMLElement {
       bPrev.style.visibility = idx ? "visible" : "hidden";
       bNext.textContent = idx < steps.length - 1 ? "Weiter ›" : "✔ Fertig – guten Appetit!";
     };
-    const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+    let awake = null;
+    const close = () => { awake?.then((a) => a.stop()).catch(() => {}); ov.remove(); document.removeEventListener("keydown", onKey); };
+    awake = elKeepAwake(ov); // 💡 Bildschirm bleibt beim Kochen an
+    awake.then((a) => { if (!window.__elAwakeToast) { window.__elAwakeToast = 1; this._toast(a.mode === "lock" ? "💡 Bildschirm bleibt an" : a.mode === "video" ? "💡 Bildschirm bleibt an (Video-Trick) – geht er trotzdem aus, sag Bescheid" : "💡 Der Bildschirm kann hier nicht angehalten werden – bitte in den Handy-Einstellungen die Bildschirmzeit erhöhen"); } }).catch(() => {});
     const onKey = (e) => {
       if (e.key === "Escape") close();
       if (e.key === "ArrowRight" && idx < steps.length - 1) { idx++; show(); }
@@ -8184,8 +8237,8 @@ class EinkaufslisteCard extends HTMLElement {
     const ov = makeOverlay();
     ov.dataset.elthemed = "1"; // bleibt immer weiß: so liest die Kasse den Code
     Object.assign(ov.style, { background: "#fff", color: "#000", colorScheme: "light", justifyContent: "center", touchAction: "manipulation" });
-    let wake = null;
-    try { navigator.wakeLock?.request("screen").then((w) => { wake = w; }).catch(() => {}); } catch (_) { /* Bildschirm bleibt halt nicht extra an */ }
+    const wake = { release() { /* siehe unten: elKeepAwake beendet sich mit dem Fenster */ } };
+    elKeepAwake(ov).catch(() => {}); // 💡 Karte an der Kasse: Bildschirm bleibt an (Wake Lock oder Video-Trick)
     const kinds = card.code ? ["qr", "aztec", "ean13", "ean8", "code128"].filter((k) => elCodeSvg(card.code, k)?.kind === k) : [];
     const hasCode = kinds.length > 0;
     let cur = hasCode ? (elCodeSvg(card.code, card.fmt)?.kind || "qr") : "";
