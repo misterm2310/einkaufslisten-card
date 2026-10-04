@@ -1737,5 +1737,16 @@
 "Die Karten bleiben für die Offline-App auf dem Gerät gemerkt. Bei 🔒 Datenschutz sind Scanner und Foto aus, Eintippen geht weiter. Ausschalten versteckt nur den Knopf – die Karten bleiben gespeichert.": "The cards are kept on the device for the offline app. With 🔒 privacy on, scanner and photo are off – typing still works. Turning it off only hides the button – the cards stay saved.",
 "💡 Bildschirm bleibt an": "💡 Screen stays on",
 "💡 Bildschirm bleibt an (Video-Trick) – geht er trotzdem aus, sag Bescheid": "💡 Screen stays on (video trick) – if it still turns off, let me know",
-"💡 Der Bildschirm kann hier nicht angehalten werden – bitte in den Handy-Einstellungen die Bildschirmzeit erhöhen": "💡 The screen can't be kept on here – please increase the screen timeout in your phone settings"
+"💡 Der Bildschirm kann hier nicht angehalten werden – bitte in den Handy-Einstellungen die Bildschirmzeit erhöhen": "💡 The screen can't be kept on here – please increase the screen timeout in your phone settings",
+"Bildschirm immer an": "Screen always on",
+"Bildschirm immer an (antippen)": "Screen always on (tap)",
+"Bildschirm immer an – antippen zum Ausschalten": "Screen always on – tap to turn off",
+"💡 Bildschirm wieder normal": "💡 Screen back to normal",
+"💡 Bildschirm bleibt an, bis du den Laden-Modus verlässt": "💡 Screen stays on until you leave shop mode",
+"Foto zu diesem Schritt": "Photo for this step",
+"📸 Foto vom fertigen Gericht – es kommt in die Rezept-Fotos. Guten Appetit! 😋": "📸 Photo of the finished dish – it goes into the recipe photos. Enjoy! 😋",
+"✅ Foto gespeichert – es ist jetzt in den Rezept-Fotos.": "✅ Photo saved – it is now in the recipe photos.",
+"📷 Foto machen": "📷 Take photo",
+"📸 Foto vom fertigen Gericht gespeichert": "📸 Photo of the finished dish saved",
+"🍽️ Foto vom fertigen Gericht": "🍽️ Photo of the finished dish"
 }

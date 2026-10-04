@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.54.03";
+const EL_VERSION = "2.55.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.53.14"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1774,7 +1774,9 @@ input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
 ha-card.shop form.add { display:none; }
 ha-card.shop #btnRecipes, ha-card.shop #btnSettings { display:none; }
 ha-card.shop #btnCards { order:1; } /* im Laden-Modus: 💳 vor dem Laden-Modus-Knopf (Plätze getauscht) */
-ha-card.shop #btnShop { order:2; }
+ha-card.shop #btnAwake { order:2; } /* 💡 Bildschirm immer an: zwischen 💳 und Laden-Modus-Knopf (nur im Laden-Modus) */
+ha-card.shop #btnShop { order:3; }
+#btnAwake.on { color:var(--primary-color,#03a9f4); }
 ha-card.shop .item { padding:11px 5px; font-size:1.2em; }
 ha-card.shop .item .name { font-weight:600; }
 ha-card.shop .item .check { padding:9px; --mdc-icon-size:38px; }
@@ -2727,8 +2729,15 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._hass && !this._unsub && !this._subscribing && Date.now() - (this._subFailAt || 0) > 10000) this._subscribe();
   }
 
+  _awakeStop() { // 💡 „Bildschirm immer an“ beenden
+    this._awakeOn = false;
+    try { this._awakeH?.stop(); } catch (_) { /* egal */ }
+    this._awakeH = null;
+  }
+
   disconnectedCallback() {
     EL_CARD_SET.delete(this);
+    this._awakeStop();
     clearInterval(this._clock);
     if (this._unsub) { this._unsub(); this._unsub = null; }
   }
@@ -2886,6 +2895,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="head">
           <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="guide" title="📖 Anleitung – antippen"></ha-icon><span id="mascot" data-act="guide" title="📖 Anleitung – antippen" hidden></span><span class="live" id="liveDot" title="Verbindung" data-act="home"></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon></button>
+          <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon></button>
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon></button>
           <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon></button>
           <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon></button>
@@ -3216,6 +3226,12 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("title").textContent = ""; // Titel-Text ist weg – der Einkaufswagen reicht
     this.$("titleIcon").hidden = c.show_title === false || !!d?.settings?.mascot;
     this.$("btnFavAll").hidden = !(d?.favorites || []).length; // ⭐ nur da, wenn es Favoriten gibt
+    const btnAwake = this.$("btnAwake"); // 💡 nur im Laden-Modus; geht beim Verlassen von selbst aus
+    btnAwake.hidden = !shop;
+    if (!shop && this._awakeOn) this._awakeStop();
+    btnAwake.classList.toggle("on", !!this._awakeOn);
+    btnAwake.title = this._awakeOn ? "Bildschirm immer an – antippen zum Ausschalten" : "Bildschirm immer an (antippen)";
+    btnAwake.querySelector("ha-icon").setAttribute("icon", this._awakeOn ? "mdi:lightbulb-on" : "mdi:lightbulb-outline");
     this.$("btnCards").hidden = !d?.settings?.cards_on || this._view !== "list"; // 💳 nur wenn in ⚙️ → Extras eingeschaltet (auch im Laden-Modus)
     this.$("btnSpend").hidden = !d?.settings?.spend || this._view !== "list" || !!this._shopMode; // 🧾 nur wenn in ⚙️ eingeschaltet
     this.$("titleIcon").title = `📖 Anleitung – antippen${titleText ? ` · ${titleText}` : ""}`;
@@ -7681,6 +7697,9 @@ class EinkaufslisteCard extends HTMLElement {
     const heat = r.heat || [];
     if (!steps.length && !heat.length) return;
     if (!steps.length) steps.push("Alles bereit? Dann los! 👨‍🍳");
+    // 📸 Letzter Schritt „Foto vom fertigen Gericht“ – nur wenn das Rezept noch kein Foto in den Rezept-Fotos hat
+    const finalStep = !!r.id && !this._privacyOn() && !this._hasPhoto(this._recipePhotoKey(r.id));
+    const total = steps.length + (finalStep ? 1 : 0);
     let idx = 0;
     const ov = makeOverlay();
     Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
@@ -7691,10 +7710,11 @@ class EinkaufslisteCard extends HTMLElement {
     const title = document.createElement("div");
     title.textContent = `👨‍🍳 ${r.name}`;
     Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
-    const bIng = ovButton("🥕 Zutaten"), bGar = ovButton("⏲️"), bClose = ovButton("✕");
+    const bIng = ovButton("🥕"), bGar = ovButton("⏲️"), bClose = ovButton("✕"), bPhoto = ovButton("📷");
+    bIng.title = elT("Zutaten"); bPhoto.title = elT("Foto zu diesem Schritt"); bPhoto.style.display = "none";
     bGar.title = elT("Gar-Zeiten");
     bGar.onclick = () => showGarTable();
-    head.append(title, bIng, bGar, bClose);
+    head.append(title, bPhoto, bIng, bGar, bClose);
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
     heatBox.innerHTML = heat.map((h) => `<div style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 17px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
@@ -7718,12 +7738,30 @@ class EinkaufslisteCard extends HTMLElement {
     ov.append(head, heatBox, pos, text, pic, nav, ing);
     for (const c of ov.children) c.style.flexShrink = "0";
     const show = () => {
-      pos.textContent = `Schritt ${idx + 1} von ${steps.length}`;
-      text.textContent = steps[idx];
+      const rkey = r.id ? this._recipePhotoKey(r.id) : "";
+      const last = finalStep && idx === steps.length; // 📸 letzter Schritt: Foto vom fertigen Gericht
+      pos.textContent = `Schritt ${idx + 1} von ${total}`;
+      text.textContent = last ? "📸 Foto vom fertigen Gericht – es kommt in die Rezept-Fotos. Guten Appetit! 😋" : steps[idx];
       pic.style.display = "none";
       pic.innerHTML = "";
-      const skey = r.id && r.steps ? this._stepPhotoKey(r.id, idx) : "";
-      if (skey && this._hasPhoto(skey)) {
+      bPhoto.style.display = "none";
+      const skey = !last && r.id && r.steps ? this._stepPhotoKey(r.id, idx) : "";
+      if (last) {
+        if (this._hasPhoto(rkey)) { // Foto ist da (gerade gemacht)
+          pic.textContent = "✅ Foto gespeichert – es ist jetzt in den Rezept-Fotos.";
+          Object.assign(pic.style, { display: "block", color: "#9ccc65", font: "600 17px Roboto,sans-serif" });
+        } else {
+          const add = ovButton("📷 Foto machen", true);
+          Object.assign(add.style, { padding: "16px 22px", fontSize: "18px" });
+          add.onclick = () => {
+            this._photoTarget = { name: rkey, keepEdit: true,
+              onDone: () => { this._toast("📸 Foto vom fertigen Gericht gespeichert"); setTimeout(() => { if (idx === steps.length) show(); }, 600); } };
+            this._pickFile("photoFile", "🍽️ Foto vom fertigen Gericht");
+          };
+          pic.append(add);
+          pic.style.display = "block";
+        }
+      } else if (skey && this._hasPhoto(skey)) {
         const at = idx;
         this._photoData(skey, 0).then((src) => {
           if (at !== idx) return; // inzwischen weitergeblättert
@@ -7733,32 +7771,30 @@ class EinkaufslisteCard extends HTMLElement {
           pic.append(img);
           pic.style.display = "block";
         }).catch(() => { /* kein Foto – kein Problem */ });
-      } else if (skey) { // 📷 noch kein Foto: gleich beim Kochen eins dazu machen
+      } else if (skey && !this._privacyOn()) { // 📷 noch kein Foto: Icon oben (nur dann), gleich beim Kochen eins dazu machen
         const at = idx;
-        const add = ovButton("📷 Foto zu diesem Schritt");
-        add.onclick = () => {
+        bPhoto.style.display = "";
+        bPhoto.onclick = () => {
           this._photoTarget = { name: skey, keepEdit: true,
             onDone: () => { this._toast("📸 Foto zum Schritt gespeichert"); setTimeout(() => { if (at === idx) show(); }, 600); } };
           this._pickFile("photoFile", `🍳 Foto zu Schritt ${at + 1}`);
         };
-        pic.append(add);
-        pic.style.display = "block";
       }
       bPrev.style.visibility = idx ? "visible" : "hidden";
-      bNext.textContent = idx < steps.length - 1 ? "Weiter ›" : "✔ Fertig – guten Appetit!";
+      bNext.textContent = idx < total - 1 ? "Weiter ›" : "✔ Fertig – guten Appetit!";
     };
     let awake = null;
     const close = () => { awake?.then((a) => a.stop()).catch(() => {}); ov.remove(); document.removeEventListener("keydown", onKey); };
     awake = elKeepAwake(ov); // 💡 Bildschirm bleibt beim Kochen an
-    awake.then((a) => { if (!window.__elAwakeToast) { window.__elAwakeToast = 1; this._toast(a.mode === "lock" ? "💡 Bildschirm bleibt an" : a.mode === "video" ? "💡 Bildschirm bleibt an (Video-Trick) – geht er trotzdem aus, sag Bescheid" : "💡 Der Bildschirm kann hier nicht angehalten werden – bitte in den Handy-Einstellungen die Bildschirmzeit erhöhen"); } }).catch(() => {});
+    awake.then((a) => { { this._toast(a.mode === "lock" ? "💡 Bildschirm bleibt an" : a.mode === "video" ? "💡 Bildschirm bleibt an (Video-Trick) – geht er trotzdem aus, sag Bescheid" : "💡 Der Bildschirm kann hier nicht angehalten werden – bitte in den Handy-Einstellungen die Bildschirmzeit erhöhen"); } }).catch(() => {});
     const onKey = (e) => {
       if (e.key === "Escape") close();
-      if (e.key === "ArrowRight" && idx < steps.length - 1) { idx++; show(); }
+      if (e.key === "ArrowRight" && idx < total - 1) { idx++; show(); }
       if (e.key === "ArrowLeft" && idx) { idx--; show(); }
     };
     document.addEventListener("keydown", onKey);
     bPrev.onclick = () => { if (idx) { idx--; show(); } };
-    bNext.onclick = () => { if (idx < steps.length - 1) { idx++; show(); } else close(); };
+    bNext.onclick = () => { if (idx < total - 1) { idx++; show(); } else close(); };
     bClose.onclick = close;
     bIng.onclick = () => { ing.style.display = ing.style.display === "none" ? "block" : "none"; };
     show();
@@ -8814,6 +8850,18 @@ class EinkaufslisteCard extends HTMLElement {
         try { navigator.serviceWorker?.getRegistrations?.().then((rs) => rs.forEach((r) => { if (/\/einkaufsliste\/app\//.test(r.scope)) r.update().catch(() => {}); })); } catch (_) { /* egal */ }
         setTimeout(() => location.reload(), 300);
         break;
+      case "awake": { // 💡 Bildschirm immer an – an/aus
+        if (this._awakeOn) { this._awakeStop(); this._toast("💡 Bildschirm wieder normal"); this._renderAll(); break; }
+        this._awakeOn = true;
+        this._renderAll();
+        elKeepAwake(null).then((a) => {
+          if (!this._awakeOn || this._awakeH) { a.stop(); return; }
+          if (!a.mode) { this._awakeOn = false; this._renderAll(); this._toast("💡 Der Bildschirm kann hier nicht angehalten werden – bitte in den Handy-Einstellungen die Bildschirmzeit erhöhen"); a.stop(); return; }
+          this._awakeH = a;
+          this._toast("💡 Bildschirm bleibt an");
+        }).catch(() => { this._awakeOn = false; this._renderAll(); });
+        break;
+      }
       case "shopmode":
         this._shopMode = !this._shopMode;
         this._shopAuto = false; // von Hand geschaltet: die Automatik lässt es in Ruhe
