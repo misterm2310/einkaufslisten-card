@@ -351,7 +351,7 @@ async function makeReader() {
     try {
       const have = await BarcodeDetector.getSupportedFormats();
       const formats = FORMATS.filter((f) => have.includes(f));
-      if (formats.includes("ean_13")) {
+      if (formats.includes("ean_13") && formats.includes("aztec")) { // ohne Aztec lieber ZXing (z. B. Penny-Code)
         const det = new BarcodeDetector({ formats });
         return async (video) => { const r = await det.detect(video); return r[0] ? { rawValue: r[0].rawValue, format: r[0].format } : null; };
       }
@@ -365,14 +365,17 @@ async function makeReader() {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   const names = { [F.EAN_13]: "ean_13", [F.EAN_8]: "ean_8", [F.UPC_A]: "upc_a", [F.UPC_E]: "upc_e", [F.CODE_128]: "code_128", [F.CODE_39]: "code_39", [F.ITF]: "itf", [F.QR_CODE]: "qr_code", [F.AZTEC]: "aztec" };
+  let n = 0;
   return async (video) => {
     const w = video.videoWidth, h = video.videoHeight;
     if (!w || !h) return null;
-    // nur die Mitte (da, wo der Rahmen ist) – geht schneller und stört weniger
-    const cw = Math.round(w * 0.9), ch = Math.round(h * 0.5);
-    const scale = Math.min(1, 900 / cw);
+    // reihum: Mitte-Streifen (Strichcodes), ganzes Bild, großes und kleines Quadrat (QR/Aztec, z. B. auf einem Handy-Bildschirm)
+    const m = Math.min(w, h);
+    const wins = [[w * 0.05, h * 0.25, w * 0.9, h * 0.5], [0, 0, w, h], [(w - m * 0.8) / 2, (h - m * 0.8) / 2, m * 0.8, m * 0.8], [(w - m * 0.5) / 2, (h - m * 0.5) / 2, m * 0.5, m * 0.5]];
+    const [x, y, cw, ch] = wins[n++ % wins.length];
+    const scale = Math.min(2, 900 / Math.max(cw, ch));
     canvas.width = Math.round(cw * scale); canvas.height = Math.round(ch * scale);
-    ctx.drawImage(video, (w - cw) / 2, (h - ch) / 2, cw, ch, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, x, y, cw, ch, 0, 0, canvas.width, canvas.height);
     try {
       const bmp = new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(canvas)));
       const r = reader.decodeWithState(bmp);

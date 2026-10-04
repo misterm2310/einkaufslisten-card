@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.54.01";
+const EL_VERSION = "2.54.02";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.53.14"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1004,8 +1004,9 @@ async function elReadCodeFromFile(file) {
 
 // 🌓 Fenster (Gar-Zeiten, KI-Kochen, Scanner, Foto …) sind im Code dunkel gebaut. Ist die Karte hell, werden ihre Grautöne hier umgedreht:
 // dunkel ↔ hell. Bunte Farben (grüne/blaue Knöpfe, Warnrot) bleiben, Bilder/Video/Codes werden nicht angefasst.
+const EL_CARD_SET = new Set(); // 🗂️ alle offenen Karten – in HA liegen sie tief in Shadow-DOMs, document.querySelectorAll findet sie dort nicht
 function elIsDark() {
-  const c = [...document.querySelectorAll("einkaufsliste-card")].find((x) => x.shadowRoot);
+  const c = [...EL_CARD_SET].find((x) => x.shadowRoot);
   return c ? c.hasAttribute("dark") : true;
 }
 function elLightOverlay(ov) {
@@ -1199,6 +1200,85 @@ function askPhotoSource(camera = true, heading = "Foto – woher?") {
     box.appendChild(cancel);
     ov.appendChild(box);
     ov.onclick = (e) => { if (e.target === ov) done(null); };
+  });
+}
+
+// 📷 Live-Scanner in der Karte: Kamerabild + eigenes Leseprogramm (QR, Aztec, Strichcodes). Der Scanner der HA-App kann Aztec (z. B. Penny) nicht.
+// Das Leseprogramm sucht reihum im ganzen Bild und in Ausschnitten – ein Code auf einem Handy-Bildschirm ist oft quadratisch und groß.
+// Gibt {code, kind} zurück, null = abgebrochen, undefined = geht hier nicht (kein https / keine Kamera / Leser nicht ladbar) -> App-Scanner nehmen
+async function elLiveReader() {
+  if (window.BarcodeDetector) {
+    try {
+      const have = await BarcodeDetector.getSupportedFormats();
+      if (have.includes("aztec") && have.includes("qr_code")) {
+        const det = new BarcodeDetector({ formats: have });
+        return async (video) => { const r = await det.detect(video); return r[0]?.rawValue ? { rawValue: r[0].rawValue, format: r[0].format } : null; };
+      }
+    } catch (_) { /* dann ZXing */ }
+  }
+  const Z = await elLoadZxing();
+  const F = Z.BarcodeFormat;
+  const names = { [F.AZTEC]: "aztec", [F.QR_CODE]: "qr_code", [F.EAN_13]: "ean_13", [F.EAN_8]: "ean_8", [F.UPC_A]: "upc_a", [F.UPC_E]: "upc_e", [F.CODE_128]: "code_128", [F.CODE_39]: "code_39", [F.ITF]: "itf" };
+  const reader = new Z.MultiFormatReader();
+  reader.setHints(new Map([[Z.DecodeHintType.POSSIBLE_FORMATS, Object.keys(names).map(Number)], [Z.DecodeHintType.TRY_HARDER, true]]));
+  const cv = document.createElement("canvas"), ctx = cv.getContext("2d", { willReadFrequently: true });
+  let n = 0;
+  return async (video) => {
+    const W = video.videoWidth, H = video.videoHeight;
+    if (!W || !H) return null;
+    const m = Math.min(W, H);
+    const wins = [[0, 0, W, H], [(W - m * 0.8) / 2, (H - m * 0.8) / 2, m * 0.8, m * 0.8], [(W - m * 0.5) / 2, (H - m * 0.5) / 2, m * 0.5, m * 0.5], [W * 0.05, H * 0.25, W * 0.9, H * 0.5]];
+    const [x, y, w, h] = wins[n++ % wins.length];
+    const scale = Math.min(2, 900 / Math.max(w, h));
+    cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
+    ctx.drawImage(video, x, y, w, h, 0, 0, cv.width, cv.height);
+    try {
+      const r = reader.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv))));
+      return r.getText() ? { rawValue: r.getText(), format: names[r.getBarcodeFormat()] } : null;
+    } catch (_) { return null; } finally { reader.reset(); }
+  };
+}
+async function elScanLive(hint) {
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) return undefined;
+  let stream, read;
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); } catch (_) { return undefined; }
+  try { read = await elLiveReader(); } catch (_) { stream.getTracks().forEach((t) => t.stop()); return undefined; }
+  return new Promise((resolve) => {
+    const ov = makeOverlay();
+    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between" });
+    const video = document.createElement("video");
+    Object.assign(video, { playsInline: true, muted: true, autoplay: true, srcObject: stream });
+    video.setAttribute("playsinline", "");
+    video.style.cssText = "flex:1;width:100%;min-height:0;object-fit:contain;background:#000";
+    const msg = document.createElement("div");
+    msg.textContent = hint || "Halte den Code der Karte ins Bild.";
+    msg.style.cssText = "width:100%;text-align:center;padding:10px 16px;box-sizing:border-box;color:#fff;font-size:15px";
+    const bar = document.createElement("div");
+    bar.style.cssText = "width:100%;display:flex;justify-content:center;padding:12px 16px calc(22px + env(safe-area-inset-bottom));box-sizing:border-box";
+    const cancel = ovButton("✖ Abbrechen");
+    bar.append(cancel);
+    ov.append(msg, video, bar);
+    let over = false, timer = null;
+    const finish = (res) => {
+      if (over) return;
+      over = true;
+      clearTimeout(timer); clearInterval(watch);
+      stream.getTracks().forEach((t) => t.stop());
+      ov.remove();
+      resolve(res);
+    };
+    cancel.onclick = () => finish(null);
+    const watch = setInterval(() => { if (!ov.isConnected) finish(null); }, 400); // Zurück-Taste schließt das Fenster von außen
+    const tick = async () => {
+      if (over) return;
+      let hit = null;
+      try { hit = await read(video); } catch (_) { /* nächstes Bild */ }
+      if (over) return;
+      if (hit?.rawValue) { navigator.vibrate?.(40); const k = elCodeKind(hit.rawValue, "auto", hit.format); finish({ code: k.code, kind: k.kind }); return; }
+      timer = setTimeout(tick, 120);
+    };
+    video.play?.().catch(() => {});
+    tick();
   });
 }
 
@@ -2592,6 +2672,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   connectedCallback() {
+    EL_CARD_SET.add(this);
     clearInterval(this._clock);
     this._clock = setInterval(() => {
       if (this._view === "list" && !this._editing && this._data) this._renderList(); // „vor 5 Min“ aktuell halten
@@ -2601,6 +2682,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    EL_CARD_SET.delete(this);
     clearInterval(this._clock);
     if (this._unsub) { this._unsub(); this._unsub = null; }
   }
@@ -8147,7 +8229,7 @@ class EinkaufslisteCard extends HTMLElement {
     const NAMES = ["Payback", "DeutschlandCard", "Kaufland Card", "Lidl Plus", "REWE Bonus", "Edeka", "dm", "Rossmann", "IKEA Family", "Aldi", "Penny", "Netto", "Müller"];
     // fmt = Darstellung: kommt automatisch vom Scanner (qr, aztec, ean13 …); von Hand getippt = "auto" (die Karte rät)
     const st = { color: card?.color || "", shared: card ? card.shared : true, fmt: card?.fmt || "auto", photo: undefined, hasPhoto: !!card?.has_photo };
-    const canScan = this._hasAppScanner() && !this._privacyOn();
+    const canScan = (this._hasAppScanner() || (window.isSecureContext && !!navigator.mediaDevices?.getUserMedia)) && !this._privacyOn();
     const canPhoto = !this._privacyOn();
     ov.innerHTML = `<style>
       .cw { width:100%; max-width:520px; font:15px/1.4 Roboto,sans-serif; color:#eee; display:flex; flex-direction:column; gap:10px; }
@@ -8188,14 +8270,16 @@ class EinkaufslisteCard extends HTMLElement {
     ov.querySelectorAll("#cdCol button").forEach((b) => { b.onclick = () => { st.color = b.dataset.c; ov.querySelectorAll("#cdCol button").forEach((x) => x.classList.toggle("on", x === b)); }; });
     if (canScan) {
       const sc = ovButton("📷 Einscannen", true);
-      sc.onclick = () => this._appScan({
-        title: "💳 Karte einscannen", description: "Halte den QR-Code, Aztec-Code oder Strichcode der Karte in den Rahmen.", altLabel: "Abbrechen",
-        onCode: (code, format) => {
-          const k = elCodeKind(code, "auto", format);
-          $("#cdCode").value = k.code; st.fmt = k.kind; preview();
-          this._toast("📷 Karte erkannt – jetzt noch einen Namen geben");
-        },
-      });
+      sc.onclick = async () => {
+        const got = (k) => { $("#cdCode").value = k.code; st.fmt = k.kind; preview(); this._toast("📷 Karte erkannt – jetzt noch einen Namen geben"); };
+        const r = await elScanLive("Halte den QR-Code, Aztec-Code oder Strichcode der Karte ins Bild."); // eigener Scanner kann auch Aztec (z. B. Penny)
+        if (r) return got(r);
+        if (r === null) return; // abgebrochen
+        this._appScan({ // keine eigene Kamera möglich: Scanner der HA-App
+          title: "💳 Karte einscannen", description: "Halte den QR-Code, Aztec-Code oder Strichcode der Karte in den Rahmen.", altLabel: "Abbrechen",
+          onCode: (code, format) => got(elCodeKind(code, "auto", format)),
+        });
+      };
       $("#cdTop").append(sc);
     }
     if (canPhoto) {
@@ -10278,7 +10362,7 @@ class EinkaufslisteCardEditor extends HTMLElement {
     b.style.left = `${Math.round(left)}px`;
     return true;
   };
-  const cards = () => [...document.querySelectorAll("einkaufsliste-card")].filter((c) => c.shadowRoot);
+  const cards = () => [...EL_CARD_SET].filter((c) => c.shadowRoot);
   const sync = () => {
     raf = 0;
     const want = new Set();
@@ -10308,6 +10392,33 @@ class EinkaufslisteCardEditor extends HTMLElement {
 
 if (!customElements.get("einkaufsliste-card")) customElements.define("einkaufsliste-card", EinkaufslisteCard);
 if (!customElements.get("einkaufsliste-card-editor")) customElements.define("einkaufsliste-card-editor", EinkaufslisteCardEditor);
+
+// ↩️ Zurück-Taste am Handy in der HA-Karte: Solange ein Fenster oder eine Unterseite offen ist, liegt ein „Merkzettel“ im Verlauf.
+// Zurück nimmt ihn weg und schließt genau einen Schritt (oberstes Fenster, Einstellungen → Liste …) – die Seite bleibt stehen.
+// Die Offline-App (/einkaufsliste/app) hat ihren eigenen Merkzettel, dort bleibt das hier aus.
+(function elBackGuard() {
+  if (/\/einkaufsliste\/app/.test(location.pathname)) return;
+  let timer = null, ignorePop = false;
+  const live = () => [...EL_CARD_SET].filter((c) => c.isConnected && typeof c.einkaufslisteBack === "function");
+  const isOpen = () => document.querySelector("[data-elov]") || live().some((c) => !c.einkaufslisteIsRoot());
+  const sync = () => {
+    timer = null;
+    const open = !!isOpen(), st = history.state;
+    if (open && !st?.elCardGuard) history.pushState({ ...(st || {}), elCardGuard: 1 }, "");
+    else if (!open && st?.elCardGuard) { ignorePop = true; history.back(); }
+  };
+  const schedule = () => { if (!timer) timer = setTimeout(sync, 80); };
+  window.addEventListener("popstate", () => {
+    if (ignorePop) { ignorePop = false; return; }
+    if (history.state?.elCardGuard) return;
+    if (document.querySelector("[data-elov]") || live().some((c) => !c.einkaufslisteIsRoot())) {
+      const c = live().find((x) => !x.einkaufslisteIsRoot()) || live()[0];
+      if (c?.einkaufslisteBack()) setTimeout(sync, 60);
+    }
+  });
+  window.addEventListener("einkaufsliste-nav", schedule);
+  new MutationObserver(schedule).observe(document.body, { childList: true });
+})();
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((c) => c.type === "einkaufsliste-card")) {
