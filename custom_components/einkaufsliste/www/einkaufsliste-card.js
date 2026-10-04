@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.55.01";
+const EL_VERSION = "2.55.02";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.53.14"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -2250,7 +2250,7 @@ const GAR_STOVE_NOTE = /pfanne|\bpan\b|wasser|water|kochend|boil|brühe|stock|ta
 // 2) sonst ein winziges, stummes Video in Dauerschleife (der „NoSleep“-Trick) – geht auch über http im WLAN
 // Endet von selbst, sobald das Fenster zu ist. Gibt "lock", "video" oder "" (hat nicht geklappt) zurück.
 const EL_NOSLEEP = { mp4: "data:video/mp4;base64,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", webm: "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAALCEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEeTbuMU6uEHFO7a1OsggKs7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjAuMTYuMTAwV0GNTGF2ZjYwLjE2LjEwMESJiECfQAAAAAAAFlSua8GuAQAAAAAAADjXgQFzxYiU74J2vpmbxJyBACK1nIN1bmSIgQCGhVZfVlA4g4EBI+ODhAvrwgDgibCBQLqBQJqBAhJUw2f8c3OgY8CAZ8iaRaOHRU5DT0RFUkSHjUxhdmY2MC4xNi4xMDBzc9ZjwItjxYiU74J2vpmbxGfIoUWjh0VOQ09ERVJEh5RMYXZjNjAuMzEuMTAyIGxpYnZweGfIoUWjiERVUkFUSU9ORIeTMDA6MDA6MDIuMDAwMDAwMDAwAB9DtnVBB+eBAKOqgQAAgPACAJ0BKkAAQAAARwiFhYiFhIgCAgAGcDxCYAqyIPcwAP7/q1CAo5aBAMgA0QEAARAQABgAGFgv9AAIjoAAo5aBAZAA0QEAARAQABgAGFgv9AAIjoAAo5aBAlgA0QEAARAQABgAGFgv9AAIjoAAo5aBAyAA0QEAARAQABgAGFgv9AAIjoAAo5aBA+gA0QEAARAQABgAGFgv9AAIjoAAo5aBBLAA0QEAARAQABgAGFgv9AAIjoAAo5aBBXgA0QEAARAQFGAAYWC/0AAiOgAAo5aBBkAA0QEAARAQABgAGFgv9AAIjoAAo5aBBwgA0QEAARAQABgAGFgv9AAIjoAAHFO7a5G7j7OBALeK94EB8YIBn/CBAw==" };
-async function elKeepAwake(ov) {
+async function elKeepAwake(ov, noVideo) { // noVideo: in der HA-App bringt der Video-Trick nichts (dort hilft nur deren Einstellung)
   let lock = null, vid = null, mode = "", over = false;
   const getLock = async () => {
     try {
@@ -2272,7 +2272,7 @@ async function elKeepAwake(ov) {
   };
   await getLock();
   if (lock) mode = "lock";
-  else if (await startVideo()) mode = "video";
+  else if (!noVideo && await startVideo()) mode = "video";
   const onVis = () => { // Handy zwischendurch weggelegt und wieder da: neu anfordern
     if (over || document.visibilityState !== "visible") return;
     if (mode === "lock" && !lock) getLock();
@@ -2727,6 +2727,12 @@ class EinkaufslisteCard extends HTMLElement {
       this._updateLockBtn(); // 🔒 nach 10 Minuten verschwindet der Sperr-Knopf von selbst
     }, 60000);
     if (this._hass && !this._unsub && !this._subscribing && Date.now() - (this._subFailAt || 0) > 10000) this._subscribe();
+  }
+
+  // 📱 In der HA-App (nicht in der Offline-App)? Dort geht der Bildschirm nur mit der Einstellung der App an
+  _inHaApp() { return !!this._hass?.auth?.external && !/\/einkaufsliste\/app/.test(location.pathname); }
+  _awakeHint() {
+    return this._inHaApp() ? "💡 Bildschirm bleibt nur an mit: HA-App → Einstellungen → Companion App → „Keep screen On“ einschalten" : "💡 Der Bildschirm kann hier nicht angehalten werden – bitte in den Handy-Einstellungen die Bildschirmzeit erhöhen";
   }
 
   _awakeStop() { // 💡 „Bildschirm immer an“ beenden
@@ -7785,8 +7791,8 @@ class EinkaufslisteCard extends HTMLElement {
     };
     let awake = null;
     const close = () => { awake?.then((a) => a.stop()).catch(() => {}); ov.remove(); document.removeEventListener("keydown", onKey); };
-    awake = elKeepAwake(ov); // 💡 Bildschirm bleibt beim Kochen an
-    awake.then((a) => { { this._toast(a.mode === "lock" ? "💡 Bildschirm bleibt an" : a.mode === "video" ? "💡 Bildschirm bleibt an (Video-Trick) – geht er trotzdem aus, sag Bescheid" : "💡 Der Bildschirm kann hier nicht angehalten werden – bitte in den Handy-Einstellungen die Bildschirmzeit erhöhen"); } }).catch(() => {});
+    awake = elKeepAwake(ov, this._inHaApp()); // 💡 Bildschirm bleibt beim Kochen an
+    awake.then((a) => { { this._toast(a.mode === "lock" ? "💡 Bildschirm bleibt an" : a.mode === "video" ? "💡 Bildschirm bleibt an (Video-Trick) – geht er trotzdem aus, sag Bescheid" : this._awakeHint()); } }).catch(() => {});
     const onKey = (e) => {
       if (e.key === "Escape") close();
       if (e.key === "ArrowRight" && idx < total - 1) { idx++; show(); }
@@ -8274,7 +8280,7 @@ class EinkaufslisteCard extends HTMLElement {
     ov.dataset.elthemed = "1"; // bleibt immer weiß: so liest die Kasse den Code
     Object.assign(ov.style, { background: "#fff", color: "#000", colorScheme: "light", justifyContent: "center", touchAction: "manipulation" });
     const wake = { release() { /* siehe unten: elKeepAwake beendet sich mit dem Fenster */ } };
-    elKeepAwake(ov).catch(() => {}); // 💡 Karte an der Kasse: Bildschirm bleibt an (Wake Lock oder Video-Trick)
+    elKeepAwake(ov, this._inHaApp()).catch(() => {}); // 💡 Karte an der Kasse: Bildschirm bleibt an (Wake Lock oder Video-Trick)
     const kinds = card.code ? ["qr", "aztec", "ean13", "ean8", "code128"].filter((k) => elCodeSvg(card.code, k)?.kind === k) : [];
     const hasCode = kinds.length > 0;
     let cur = hasCode ? (elCodeSvg(card.code, card.fmt)?.kind || "qr") : "";
@@ -8854,9 +8860,9 @@ class EinkaufslisteCard extends HTMLElement {
         if (this._awakeOn) { this._awakeStop(); this._toast("💡 Bildschirm wieder normal"); this._renderAll(); break; }
         this._awakeOn = true;
         this._renderAll();
-        elKeepAwake(null).then((a) => {
+        elKeepAwake(null, this._inHaApp()).then((a) => {
           if (!this._awakeOn || this._awakeH) { a.stop(); return; }
-          if (!a.mode) { this._awakeOn = false; this._renderAll(); this._toast("💡 Der Bildschirm kann hier nicht angehalten werden – bitte in den Handy-Einstellungen die Bildschirmzeit erhöhen"); a.stop(); return; }
+          if (!a.mode) { this._awakeOn = false; this._renderAll(); this._toast(this._awakeHint()); a.stop(); return; }
           this._awakeH = a;
           this._toast("💡 Bildschirm bleibt an");
         }).catch(() => { this._awakeOn = false; this._renderAll(); });
