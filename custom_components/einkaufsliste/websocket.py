@@ -70,6 +70,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_mail_sources,
         ws_mail_import,
         ws_mascot,
+        ws_labels,
         ws_cards_enable,
         ws_grocy_preview,
         ws_grocy_import,
@@ -661,6 +662,13 @@ def ws_auto_shop_set(hass, connection, msg):
 def ws_privacy_set(hass, connection, msg):
     """🔒 Datenschutz für alle an/aus (an = keine Kamera, keine Fotos, kein Barcode-Scanner)."""
     _run(hass, connection, msg, lambda m: m.set_privacy(msg["on"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/labels/set", vol.Required("on"): bool})
+@callback
+def ws_labels(hass, connection, msg):
+    """🏷️ Text unter den Icons für alle an/aus."""
+    _run(hass, connection, msg, lambda m: m.set_labels(msg["on"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/mascot/set", vol.Required("on"): bool})

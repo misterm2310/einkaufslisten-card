@@ -30,6 +30,7 @@ def load_dictionary(path: Path = _FILE) -> list[dict[str, Any]]:
         if not match or not isinstance(words, dict):
             continue
         out.append({
+            "key": str(cat.get("id") or ""),
             "match": match,
             "de": [str(w).lower() for w in words.get("de") or []],
             "other": [str(w).lower() for lang, ws in words.items() if lang != "de" for w in ws or []],
@@ -49,7 +50,7 @@ def category_hints(categories: list[dict[str, Any]]) -> list[dict[str, Any]]:
             (c for c in categories if any(w in c["name"].lower() for w in entry["match"])), None
         )
         if cat is not None:  # "en" = alle anderen Sprachen (nur ganze Wörter)
-            hints.append({"id": cat["id"], "words": list(entry["de"]), "en": list(entry["other"])})
+            hints.append({"id": cat["id"], "key": entry.get("key", ""), "words": list(entry["de"]), "en": list(entry["other"])})
     return hints
 
 

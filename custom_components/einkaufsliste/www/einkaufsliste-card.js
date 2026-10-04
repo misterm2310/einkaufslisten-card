@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.55.04";
+const EL_VERSION = "2.56.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.55.03"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.56.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["💡 <b>Vorschläge schon bei 1–2 Buchstaben:</b> Eine eingebaute Liste mit rund 1400 gängigen Produkten (mit passender Kategorie) schlägt auch Dinge vor, die du noch nie gekauft hast (nur deutsch). · 🏷️ <b>Beschriftungen:</b> ⚙️ → Extras → Beschriftungen zeigt unter den Icons einen kurzen Text (gilt für alle). · 👆 <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht – auf dem Handy gibt es ja keine Tooltips. Alles in der HA-Karte und der Offline-App.",
+   "💡 <b>Suggestions after 1–2 letters:</b> a built-in list of about 1400 common products (with a matching category) also suggests things you have never bought (German only). · 🏷️ <b>Labels:</b> ⚙️ → Extras → Labels shows a short text under the icons (applies to everyone). · 👆 <b>Press and hold an icon</b> to see what it does – phones have no tooltips. Everything in the HA card and the offline app."],
   ["📷 <b>Eigener Scanner für Karten:</b> „Einscannen“ hat jetzt eine eigene Kamera und liest auch <b>Aztec-Codes</b> (z. B. Penny) – in der HA-Karte und in der Offline-App. · 🍳 <b>Kochen:</b> oben nur noch Icons (📷 Foto zum Schritt, wenn es noch keins gibt, 🥕 Zutaten), als letzter Schritt „📸 Foto vom fertigen Gericht“ (nur wenn das Rezept noch kein Foto hat), im Querformat bleibt „Weiter“ sichtbar, der Bildschirm bleibt an. · 💡 <b>Laden-Modus:</b> neues Icon „Bildschirm immer an“. In der HA-App klappt das nur mit deren Einstellung „Keep screen On“ (Einstellungen → Companion App). · ↩️ Die Zurück-Taste schließt jetzt auch in der HA-Karte ein Fenster nach dem anderen, und die Fenster folgen Hell/Dunkel auch im Dashboard.",
    "📷 <b>Own scanner for cards:</b> “Scan” now has its own camera and also reads <b>Aztec codes</b> (e.g. Penny) – in the HA card and in the offline app. · 🍳 <b>Cooking:</b> only icons at the top (📷 photo for the step if there is none yet, 🥕 ingredients), the last step is “📸 Photo of the finished dish” (only if the recipe has no photo yet), in landscape “Next” stays visible, the screen stays on. · 💡 <b>Shop mode:</b> new “Screen always on” icon. In the HA app this only works with its setting “Keep screen On” (Settings → Companion App). · ↩️ The back button now also closes one window after the other in the HA card, and the windows follow light/dark on the dashboard too."],
   ["💳 <b>Kundenkarten mit Aztec und Foto:</b> Der Scanner liest jetzt auch <b>Aztec-Codes</b> (z. B. der Vorteilscode von Penny), und die Karte zeichnet sie an der Kasse wieder. Die Auswahl „Darstellung“ ist weg – das Format kommt automatisch vom Scanner. · 📷 Neu: <b>Foto der Karte</b> für Karten, die sich nicht einscannen lassen (liegt nur auf deinem Home Assistant, steht im Datenschutz; ein „Rollcode“, der ständig wechselt, geht damit nicht). · ⏲️ Im Rezept-Editor öffnet ein Knopf neben „Backofen & Co.“ die Gar-Zeiten. · 🧽 Der Radiergummi ist überall rot und fest, die Fenster (KI-Kochen, Gar-Zeiten, Scanner …) sind hell oder dunkel wie die Karte, und die Eingabefelder in den Einstellungen sind einheitlich groß.",
@@ -102,6 +104,19 @@ const DAY = 86400000;
 let EL_LANG = "de";
 let EL_DICT = null;       // exakte Texte: deutsch -> englisch
 let EL_PATTERNS = [];     // Texte mit Platzhaltern („{}“)
+// 🛒 Startliste: gängige Produkte (nach Kategorie-Schlüssel), damit schon 1–2 Buchstaben Vorschläge bringen – auch für Neues, das du noch nie gekauft hast
+let EL_START = null, EL_START_PROMISE = null;
+function elLoadStart() {
+  if (!EL_START_PROMISE) {
+    EL_START_PROMISE = fetch(`${EL_BASE}/einkaufsliste-start.json?v=${EL_VERSION}`).then((r) => r.json()).then((raw) => {
+      const list = [];
+      for (const [key, names] of Object.entries(raw || {})) for (const name of names || []) list.push({ name, key, low: String(name).toLowerCase() });
+      EL_START = list;
+      return list;
+    }).catch(() => { EL_START_PROMISE = null; EL_START = []; return []; });
+  }
+  return EL_START_PROMISE;
+}
 let EL_DICT_PROMISE = null;
 const EL_I18N_ROOTS = new Set();
 const EL_SKIP = ".name,.rname,.pname,.inote,.delname,.lname,.stitle,textarea,style,script,[translate=no]";
@@ -1653,6 +1668,12 @@ button { font:inherit; color:inherit; }
 .wizard li span { flex:1; }
 .badge { cursor:pointer; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border-radius:999px; padding:1px 9px; font-size:.75em; font-weight:600; }
 .iconbtn.serase, .iconbtn.rclear, .rclear, #prodClear { color:var(--error-color,#db4437); }
+.lbl { display:none; }
+ha-card.labels .lbl { display:block; font-size:10px; font-weight:500; line-height:1.15; margin-top:3px; white-space:nowrap; }
+ha-card.labels .tool, ha-card.labels .head .iconbtn { flex-direction:column; align-items:center; justify-content:flex-start; border-radius:10px; }
+ha-card.labels .head .iconbtn { padding:4px 5px; }
+ha-card.labels form.add .toolbar { flex-wrap:wrap; gap:2px 2px; }
+ha-card.labels .tool { padding:4px 6px; }
 .iconbtn { background:none; border:0; cursor:pointer; padding:6px; border-radius:50%; display:inline-flex; color:var(--secondary-text-color); line-height:0; }
 .iconbtn:hover { background:var(--secondary-background-color, rgba(127,127,127,.12)); color:var(--primary-text-color); }
 .iconbtn[disabled] { opacity:.3; pointer-events:none; }
@@ -2614,6 +2635,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   set hass(hass) {
+    if (!EL_START_PROMISE && EL_LANG === "de") elLoadStart();
     this._hass = hass;
     if (!this._built) this._build();
     elUseLang(hass, this._config, this.shadowRoot);
@@ -2902,11 +2924,11 @@ class EinkaufslisteCard extends HTMLElement {
       <ha-card>
         <div class="head">
           <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="guide" title="📖 Anleitung – antippen"></ha-icon><span id="mascot" data-act="guide" title="📖 Anleitung – antippen" hidden></span><span class="live" id="liveDot" title="Verbindung" data-act="home"></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
-          <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon></button>
-          <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon></button>
-          <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon></button>
-          <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon></button>
-          <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon></button>
+          <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon><span class="lbl">Laden</span></button>
+          <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon><span class="lbl">Bildschirm</span></button>
+          <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
+          <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon><span class="lbl">Rezepte</span></button>
+          <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Einstellungen</span></button>
         </div>
         <div class="error" id="error" hidden></div>
         <div class="updbar" id="updBar" hidden></div>
@@ -2920,15 +2942,15 @@ class EinkaufslisteCard extends HTMLElement {
             <button class="primary addbtn" type="submit" title="Hinzufügen"><ha-icon icon="mdi:check-bold"></ha-icon></button>
             <div class="sugg" id="sugg" hidden></div>
             <div class="toolbar">
-              <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon></button>
-              <button class="tool" id="tOwn" type="button" data-act="tool" data-field="inOwn" title="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
-              <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon></button>
-              <button class="tool plus" id="btnNewBarcode" type="button" data-act="new-barcode" title="Barcode zum neuen Produkt" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
-              <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon></button>
-              <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat – haben wir immer (z. B. Salz, Öl)" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon></button>
-              <button class="tool" id="btnFavAll" type="button" data-act="fav-all" title="⭐ Alle Favoriten auf die Liste"><ha-icon icon="mdi:star-outline"></ha-icon></button>
-              <button class="tool" id="btnOcrList" type="button" data-act="ocr-list" title="Liste aus Foto einlesen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon></button>
-              <button class="tool tclear" id="tClear" type="button" data-act="clear-form" title="Alles leeren" hidden><ha-icon icon="mdi:eraser"></ha-icon></button>
+              <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon><span class="lbl">Menge</span></button>
+              <button class="tool" id="tOwn" type="button" data-act="tool" data-field="inOwn" title="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben"><ha-icon icon="mdi:pencil-outline"></ha-icon><span class="lbl">Notiz</span></button>
+              <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon><span class="lbl">Für wen</span></button>
+              <button class="tool plus" id="btnNewBarcode" type="button" data-act="new-barcode" title="Barcode zum neuen Produkt" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon><span class="lbl">Barcode</span></button>
+              <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto</span></button>
+              <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat – haben wir immer (z. B. Salz, Öl)" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon><span class="lbl">Vorrat</span></button>
+              <button class="tool" id="btnFavAll" type="button" data-act="fav-all" title="⭐ Alle Favoriten auf die Liste"><ha-icon icon="mdi:star-outline"></ha-icon><span class="lbl">Favoriten</span></button>
+              <button class="tool" id="btnOcrList" type="button" data-act="ocr-list" title="Liste aus Foto einlesen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon><span class="lbl">Aus Foto</span></button>
+              <button class="tool tclear" id="tClear" type="button" data-act="clear-form" title="Alles leeren" hidden><ha-icon icon="mdi:eraser"></ha-icon><span class="lbl">Leeren</span></button>
             </div>
             <div class="extras">
               <div class="chips" id="lastQty" hidden></div>
@@ -2959,6 +2981,20 @@ class EinkaufslisteCard extends HTMLElement {
       </ha-card>`;
 
     const root = this.shadowRoot;
+    // 👆 Lange auf ein Icon drücken = kurze Erklärung (am Handy gibt es keine Tooltips)
+    let lpTimer = null, lpFired = false;
+    const lpSel = "button.tool, button.iconbtn, button.addbtn";
+    root.addEventListener("pointerdown", (e) => {
+      const b = e.target.closest?.(lpSel);
+      const text = b && !b.closest(".item") ? b.getAttribute("title") : "";
+      clearTimeout(lpTimer);
+      lpFired = false;
+      if (!text) return;
+      lpTimer = setTimeout(() => { lpFired = true; navigator.vibrate?.(20); this._toast(text); }, 550);
+    }, true);
+    for (const ev of ["pointerup", "pointercancel", "pointerleave"]) root.addEventListener(ev, () => clearTimeout(lpTimer), true);
+    root.addEventListener("click", (e) => { if (lpFired) { lpFired = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true); // der Druck war nur zum Nachlesen
+    root.addEventListener("contextmenu", (e) => { if (e.target.closest?.(lpSel)) e.preventDefault(); }, true);
     this.$("addForm").addEventListener("submit", (e) => this._onAdd(e));
     this.$("newPhotoFile").addEventListener("change", (e) => this._onNewPhotoFile(e));
     this.$("inCat").addEventListener("change", () => { this._catManual = !!this.$("inCat").value; this._updateTools(); });
@@ -3230,6 +3266,7 @@ class EinkaufslisteCard extends HTMLElement {
     cardEl.classList.toggle("compact", !!c.compact);
     const shop = !!this._shopMode && this._view === "list";
     cardEl.classList.toggle("shop", shop);
+    cardEl.classList.toggle("labels", !!d?.settings?.labels); // 🏷️ Beschriftungen unter den Icons (Schalter in ⚙️ → Extras, gilt für alle)
     const btnShop = this.$("btnShop");
     btnShop.hidden = !d || this._view !== "list";
     btnShop.classList.toggle("on", shop);
@@ -3444,6 +3481,20 @@ class EinkaufslisteCard extends HTMLElement {
         names.add(ri.name.toLowerCase());
         cands.push({ sc: sc + 0.5, name: ri.name, fromRecipe: r.name,
           item: { name: ri.name, note: ri.note || null, store_id: ri.store_id || null, category_id: ri.category_id || null, checked: true } });
+      }
+    }
+    // 🛒 Startliste (nur deutsch): gängige Produkte, die noch nie auf deiner Liste standen – ganz hinten, und nur wenn sonst nichts passt
+    if (EL_LANG === "de" && EL_START?.length && q.length >= 1) {
+      const hints = this._data.category_hints || [];
+      let n = 0;
+      for (const sp of EL_START) {
+        if (names.has(sp.low) || seenVariant.has(`${sp.low}|`)) continue;
+        const sc = score(sp.low);
+        if (sc < 0 || (q.length < 2 && sc > 0)) continue; // bei einem Buchstaben nur Wortanfänge
+        const cat = hints.find((h) => h.key === sp.key)?.id || null;
+        names.add(sp.low);
+        cands.push({ sc: sc + 0.6, name: sp.name, starter: true, item: { name: sp.name, note: null, store_id: null, category_id: cat, checked: true } });
+        if (++n >= 12) break; // reicht (angezeigt werden eh höchstens 2–8)
       }
     }
     // 🧠 Gelernter Tippfehler („Mlich“ wurde schon 2× zu Milch korrigiert) -> gleich als erster Vorschlag
@@ -4408,6 +4459,10 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">Nur für die Offline-App auf diesem Gerät. „Automatisch“ richtet sich nach dem Handy – so wie Home Assistant auch.</p>
         <div class="btnrow themebtns">${[["auto", "🌓 Automatisch"], ["light", "☀️ Hell"], ["dark", "🌙 Dunkel"]].map(([v, l]) =>
           `<button class="btn ${elAppTheme() === v ? "primary" : ""}" data-act="app-theme" data-v="${v}">${l}</button>`).join("")}</div>` }] : []),
+      { key: "labels", icon: "mdi:format-text", title: "Beschriftungen", info: this._data.settings?.labels ? "an – für alle" : "aus", html: () => `
+        <p class="hint">Zeigt unter den kleinen Icons (🔢 Menge, ✏️ Notiz, 📋 Aus Foto …) einen kurzen Text. Handys haben ja keine Tooltips. Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App. Auch ohne den Schalter gilt: <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht.</p>
+        <p><b>${this._data.settings?.labels ? "🏷️ Die Beschriftungen sind an." : "Die Beschriftungen sind aus."}</b></p>
+        <div class="btnrow"><button class="btn primary" data-act="labels-toggle">${this._data.settings?.labels ? "Ausschalten" : "Einschalten"}</button></div>` },
       { key: "pin", icon: this._data.settings?.pin ? "mdi:lock-outline" : "mdi:lock-open-variant-outline", title: "Schutz", info: this._data.settings?.pin ? "PIN ist an" : "PIN fürs Zahnrad", html: () => this._pinHtml() },
       { key: "log", icon: "mdi:history", title: "Verlauf", info: "wer, wann, was, wie", html: () => this._logSectionHtml() },
       { key: "cleanup", icon: "mdi:broom", title: "Aufräumen", info: `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
@@ -4486,7 +4541,7 @@ class EinkaufslisteCard extends HTMLElement {
   _settingsListHtml(sections) {
     const groups = [
       ["📋 Meine Liste", ["stores", "categories", "persons", "products", "recipes"]],
-      ["🎛️ Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"]],
+      ["🎛️ Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot", "labels"]],
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
       ["📱 App & Info", ["app", "theme", "pin", "privacy", "news", "credits"]],
@@ -4498,7 +4553,7 @@ class EinkaufslisteCard extends HTMLElement {
       notetpl: "notiz vorlagen eigene notiz bio laktose chips", aicook: "ki kochen assistent chatgpt openai gemini ollama rezept idee",
       autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
       log: "verlauf wer wann", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel sensor", errors: "fehler protokoll kopieren",
-      stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr kamera foto scanner sperre", news: "neu version", credits: "über danke lizenz github",
+      stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", labels: "beschriftungen text icons beschriften", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr kamera foto scanner sperre", news: "neu version", credits: "über danke lizenz github",
     };
     const q = (this._setQ || "").trim().toLowerCase();
     const byKey = Object.fromEntries(sections.map((x) => [x.key, x]));
@@ -6792,10 +6847,11 @@ class EinkaufslisteCard extends HTMLElement {
       btn.classList.toggle("filled", !!value && tool === "tOwn");
       const label = tool === "tOwn" ? "" : value || "";
       btn.classList.toggle("hasval", !!label);
+      const lblTxt = {tQty: "Menge", tOwn: "Notiz", tFor: "Für wen"}[tool] || "";
       const key = icon + "|" + label;
       if (btn._key !== key) {
         btn._key = key;
-        btn.innerHTML = `<ha-icon icon="${icon}"></ha-icon>${label ? `<span class="tval">${esc(label)}</span>` : ""}`;
+        btn.innerHTML = `<ha-icon icon="${icon}"></ha-icon>${label ? `<span class="tval">${esc(label)}</span>` : ""}<span class="lbl">${lblTxt}</span>`;
       }
     }
   }
@@ -7203,6 +7259,8 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("✍️", "Etwas eintragen", `<ul>
         <li>Oben ins Feld tippen, z. B. <b>Milch</b>, dann den grünen Haken <span class="elg-k">✔</span>.</li>
         <li>Beim Tippen kommen bis zu <b>2 Vorschläge</b>. Antippen übernimmt alles vom letzten Mal (Menge, Notiz, für wen, Geschäft).</li>
+        <li>Auch Produkte, die du noch nie gekauft hast: Schon nach <b>1–2 Buchstaben</b> kommen Vorschläge aus einer eingebauten Liste mit rund 1400 gängigen Lebensmitteln und Haushaltsdingen (mit passender Kategorie). Dein Eigenes steht immer vorn.</li>
+        <li><b>Was macht dieses Icon?</b> Länger darauf drücken zeigt kurz den Namen. Oder ⚙️ → Extras → <b>Beschriftungen</b>: dann steht unter den Icons ein kurzer Text (der Schalter gilt für alle).</li>
         <li>Die Menge geht auch direkt: <b>3 Milch</b> oder <b>500 g Mehl</b>. Die Liste merkt sich die Einheit: <b>2 Backpulver</b> wird zu 2 Pck.</li>
         <li><b>Mehrere auf einmal:</b> <b>Milch, 6 Eier, Brot</b> → ✔ → 3 Sachen auf der Liste.</li>
         <li><b>🤔 Ungewöhnlich große Menge?</b> Bei z. B. 300 Eier oder 40 kg Mehl fragt die Liste kurz nach, ob das wirklich stimmt – so bleiben Zahlendreher nicht unbemerkt.</li>
@@ -7399,8 +7457,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Recipes:</b> a tab for the recipes (button <b>“New recipe”</b>, search field, ✏️ per row) one for the groups (Fish, Meat, Pastry …; the group's icon and colour tint the recipes) and <b>Recipes from a file</b> (.txt, .md, .csv, .json; US measures are converted – admins only).</li>
         <li><b>Recipe editor:</b> name and group (the group is suggested automatically, “✨ suggested”), “The quantities are for N people/trays”, recipe photo, ingredients (entered like in the list, with units and 🧂 “we always have it”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>Oven &amp; co.</b> (degrees, minutes), the instructions (one row per step, movable via ⠿), photos per step (for steps that are already saved), delete, cancel, save. Foreign measures (cup, oz, °F) from recipe links are converted.</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
-        <li>Each row has its <b>own page</b> with an on/off button: 🏷️ offers, 🧾 purchase log, 💳 loyalty cards, 📍 shop mode automatic, 🛒😊 mascot.</li>
-        <li><b>Applies to all devices:</b> loyalty cards (just the switch – whether a card is “for everyone” or “only me” is chosen when creating it), purchase log, auto-ask, shop mode automatic and mascot. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
+        <li>Each row has its <b>own page</b> with an on/off button: 🏷️ offers, 🧾 purchase log, 💳 loyalty cards, 📍 shop mode automatic, 🛒😊 mascot, 🏷️ labels.</li>
+        <li><b>Applies to all devices:</b> loyalty cards (just the switch – whether a card is “for everyone” or “only me” is chosen when creating it), purchase log, auto-ask, shop mode automatic, mascot and labels. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
         <li><b>🏷️ Offers</b> need a postcode (admins only). Also: <b>“Only these stores”</b> (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b> and <b>Switch off</b>. A status line shows the number of offers and the last check (“⚠️ currently unavailable” if Marktguru does not answer). They come unofficially from Marktguru and can stop working at any time. If there is no exact offer for an item, the list automatically looks for <b>similar</b> ones (🔀, at most 4): using the single words of the name, the product type from the database, nicknames and the category. Only the names of open items go to Marktguru for this.</li>
         <li><b>🛒😊 Mascot:</b> a shopping cart with a face instead of the cart symbol. It has moods (happy, busy, full, asleep) and wears a costume for the season. Tapping it opens the guide.</li>
         <li><b>📍 Automatic shop mode</b> needs a 📍 zone at the store (Stores → Location) and your phone set up as a person in Home Assistant. What you switch on or off yourself is left alone by the automation.</li>
@@ -7451,8 +7509,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Rezepte:</b> ein Reiter für die Rezepte (Knopf <b>„Neues Rezept“</b>, Suchfeld, pro Zeile ✏️), einer für die Gruppen (Fisch, Fleisch, Gebäck …; Icon und Farbe der Gruppe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).</li>
         <li><b>Rezept-Editor:</b> Name und Gruppe (die Gruppe wird automatisch vorgeschlagen, „✨ vorgeschlagen“), „Die Mengen sind für N Personen/Bleche“, Rezept-Foto, Zutaten (eintragen wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten), die Zubereitung (eine Zeile pro Schritt, per ⠿ verschiebbar), Fotos pro Schritt (bei schon gespeicherten Schritten), Löschen, Abbrechen, Speichern. Aus Rezept-Links werden fremde Maße (cup, oz, °F) umgerechnet.</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
-        <li>Jede Zeile hat ihre <b>eigene Seite</b> mit einem Ein/Ausschalten-Knopf: 🏷️ Angebote, 🧾 Einkaufs-Protokoll, 💳 Kundenkarten, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen.</li>
-        <li><b>Gilt für alle Geräte:</b> Kundenkarten (nur der Schalter – ob eine Karte „für alle“ oder „nur ich“ ist, wählst du beim Anlegen), Protokoll, automatisch fragen, Laden-Modus automatisch und Maskottchen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
+        <li>Jede Zeile hat ihre <b>eigene Seite</b> mit einem Ein/Ausschalten-Knopf: 🏷️ Angebote, 🧾 Einkaufs-Protokoll, 💳 Kundenkarten, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen, 🏷️ Beschriftungen.</li>
+        <li><b>Gilt für alle Geräte:</b> Kundenkarten (nur der Schalter – ob eine Karte „für alle“ oder „nur ich“ ist, wählst du beim Anlegen), Protokoll, automatisch fragen, Laden-Modus automatisch, Maskottchen und Beschriftungen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
         <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl (nur Admins). Dazu: <b>„Nur diese Geschäfte“</b> (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b> und <b>Ausschalten</b>. Eine Statuszeile zeigt die Zahl der Angebote und die letzte Prüfung („⚠️ gerade nicht verfügbar“, wenn Marktguru nicht antwortet). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren. Gibt es für einen Artikel kein genaues Angebot, sucht die Liste automatisch <b>ähnliche</b> (🔀, höchstens 4): über die einzelnen Wörter des Namens, den Produkttyp aus der Datenbank, Spitznamen und die Kategorie. Dafür gehen nur die Namen offener Artikel an Marktguru.</li>
         <li><b>🛒😊 Maskottchen:</b> ein Einkaufswagen mit Gesicht statt des Wagen-Symbols. Er hat Stimmungen (froh, fleißig, voll, schläft) und trägt je nach Jahreszeit ein Kostüm. Antippen öffnet die Anleitung.</li>
         <li><b>📍 Laden-Modus automatisch</b> braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</li>
@@ -7594,6 +7652,8 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("✍️", "Adding things", `<ul>
         <li>Type into the field at the top, e.g. <b>milk</b>, then tap the green check mark <span class="elg-k">✔</span>.</li>
         <li>While typing you get up to <b>2 suggestions</b>. Tapping one takes over everything from last time (quantity, note, for whom, store).</li>
+        <li>Even products you have never bought: after just <b>1–2 letters</b> you get suggestions from a built-in list of about 1400 common groceries and household items (with a matching category). German list only; your own items always come first.</li>
+        <li><b>What does this icon do?</b> Press and hold it to see its name briefly. Or ⚙️ → Extras → <b>Labels</b>: then a short text appears under the icons (the switch applies to everyone).</li>
         <li>Quantities work directly too: <b>3 milk</b> or <b>500 g flour</b>. The list remembers the unit: <b>2 baking powder</b> becomes 2 packs.</li>
         <li><b>Several at once:</b> <b>milk, 6 eggs, bread</b> → ✔ → 3 things on the list.</li>
         <li><b>🤔 Unusually large amount?</b> For e.g. 300 eggs or 40 kg flour the list asks once whether that is really right – so typos don't slip through.</li>
@@ -8996,6 +9056,10 @@ class EinkaufslisteCard extends HTMLElement {
       case "edit":
         this._editing = id;
         this._renderList();
+        break;
+      case "labels-toggle": // 🏷️ Beschriftungen unter den Icons an/aus – für alle
+        this._ws({ type: "einkaufsliste/labels/set", on: !this._data.settings?.labels })
+          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
         break;
       case "app-theme": { // 🌓 Offline-App: Hell / Dunkel / Automatisch
         try { localStorage.setItem("einkaufsliste_theme", el.dataset.v); } catch (_) { /* egal */ }

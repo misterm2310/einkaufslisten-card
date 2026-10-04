@@ -4,6 +4,7 @@ const FILES = [
   "./", "manifest.json", "icon-192.png", "icon-512.png", "icons.json", "zxing.min.js?v=__EL_VERSION__",
   "/einkaufsliste_files/einkaufsliste-card.js?v=__EL_VERSION__",
   "/einkaufsliste_files/einkaufsliste-en.json?v=__EL_VERSION__",
+  "/einkaufsliste_files/einkaufsliste-start.json?v=__EL_VERSION__",
   "/einkaufsliste_files/mister-m.webp?v=__EL_VERSION__",
 ];
 

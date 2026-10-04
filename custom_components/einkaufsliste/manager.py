@@ -310,6 +310,7 @@ class EinkaufslisteManager:
         self.ai_pantry: list[str] = []  # 🧂 „Immer im Haus“ – geht bei jeder KI-Kochen-Anfrage mit
         self.ai_avoid: list[str] = []  # 🚫 „Das nie vorschlagen“ (Allergien, Abneigungen)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
+        self.labels: bool = False  # 🏷️ Text unter den Icons an/aus – gilt für alle Karten und Handys
         self.privacy: bool = False  # 🔒 Datenschutz an = keine Kamera, keine Fotos, kein Barcode-Scanner (für alle Geräte)
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
         self.auto_shop: bool = False  # 📍 Laden-Modus geht in der Zone von selbst an – ein Schalter für alle Geräte
@@ -416,6 +417,7 @@ class EinkaufslisteManager:
         self.typos = data.get("typos", {})
         self.pin_hash = data.get("pin")
         self.mascot = bool(data.get("mascot", False))
+        self.labels = bool(data.get("labels", False))
         nt = data.get("note_templates")
         self.note_templates = [str(x) for x in nt][:30] if isinstance(nt, list) else None
         ag = data.get("ai_agent")
@@ -491,6 +493,7 @@ class EinkaufslisteManager:
             "typos": self.typos,
             "pin": self.pin_hash,
             "mascot": self.mascot,
+            "labels": self.labels,
             "note_templates": self.note_templates,
             "ai_agent": self.ai_agent,
             "ai_on": self.ai_on,
@@ -579,6 +582,7 @@ class EinkaufslisteManager:
                 "pin": bool(self.pin_hash),
                 "app_url": self._app_url(),
                 "mascot": self.mascot,
+                "labels": self.labels,
                 "note_templates": self.effective_note_templates(),
                 "note_templates_custom": self.note_templates is not None,
                 "ai_agent": self.ai_agent,
@@ -884,6 +888,11 @@ class EinkaufslisteManager:
     def set_mascot(self, on: bool) -> None:
         """🛒😊 Maskottchen für alle an- oder ausschalten."""
         self.mascot = bool(on)
+        self._changed()
+
+    def set_labels(self, on: bool) -> None:
+        """🏷️ Text unter den Icons für alle an- oder ausschalten."""
+        self.labels = bool(on)
         self._changed()
 
     DEFAULT_NOTE_TEMPLATES = ("Bio", "ohne Laktose", "ohne Gluten", "große Packung", "kleine Packung", "Sonderangebot")

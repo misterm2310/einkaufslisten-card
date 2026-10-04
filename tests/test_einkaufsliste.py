@@ -1930,6 +1930,11 @@ async def test_zones_mascot_todo_sync(hass: HomeAssistant, setup, hass_ws_client
     assert not any(i["name"] == "Tee" for i in m.items)
     assert m.as_dict()["settings"]["todo_syncs"] == []
 
+    # 🏷️ Beschriftungen unter den Icons (für alle)
+    assert m.as_dict()["settings"]["labels"] is False
+    await client.send_json({"id": 90, "type": "einkaufsliste/labels/set", "on": True})
+    assert (await client.receive_json())["success"]
+    assert m.as_dict()["settings"]["labels"] is True
 
 async def test_mail_import_and_store_icon(hass: HomeAssistant, setup, hass_ws_client) -> None:
     """📧 Produkte per E-Mail (IMAP-Ereignis) und 🏪 Geschäfts-Icon leer = automatisch."""
@@ -2164,7 +2169,7 @@ async def test_data_files_brands_and_dictionary(hass: HomeAssistant, setup, tmp_
     assert barcode.load_private_labels(tmp_path / "fehlt.json") == {}
     k = tmp_path / "kategorien.json"
     k.write_text(json.dumps({"categories": [{"id": "x", "match": ["kühl"], "words": {"de": ["Milch"], "nl": ["melk"]}}]}), encoding="utf-8")
-    assert load_dictionary(k) == [{"match": ["kühl"], "de": ["milch"], "other": ["melk"]}]
+    assert load_dictionary(k) == [{"key": "x", "match": ["kühl"], "de": ["milch"], "other": ["melk"]}]
     m = mgr(hass)
     aldi = m.find_store("Aldi")
     assert barcode.private_label_store(m, "Milsani")[0] == aldi
@@ -3579,3 +3584,23 @@ async def test_ai_prefs(hass, setup, hass_ws_client, hass_read_only_access_token
     assert not (await ro.receive_json())["success"]
     # übersteht Speichern und Laden
     assert m._to_storage()["ai_pantry"] == ["Salz", "Öl", "Mehl"]
+
+
+def test_startliste_und_kategorie_schluessel():
+    """🛒 Startliste: gültiges JSON, Schlüssel = Wörterbuch-Kategorien, keine Doppelten; hints tragen den Schlüssel."""
+    import json
+    from pathlib import Path
+
+    from custom_components.einkaufsliste.categories import DICTIONARY, category_hints
+
+    base = Path(__file__).parent.parent / "custom_components" / "einkaufsliste"
+    start = json.loads((base / "www" / "einkaufsliste-start.json").read_text(encoding="utf-8"))
+    keys = {e["key"] for e in DICTIONARY}
+    assert set(start) <= keys
+    names = [n for v in start.values() for n in v]
+    assert len(names) >= 1000
+    assert all(isinstance(n, str) and len(n.strip()) >= 3 for n in names)
+    low = [n.lower() for n in names]
+    assert len(low) == len(set(low))
+    hints = category_hints([{"id": "c1", "name": "Obst & Gemüse"}])
+    assert hints and hints[0]["key"] == "obst_gemuese" and hints[0]["id"] == "c1"

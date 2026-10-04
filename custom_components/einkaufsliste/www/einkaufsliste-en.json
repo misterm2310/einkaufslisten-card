@@ -1749,5 +1749,16 @@
 "📷 Foto machen": "📷 Take photo",
 "📸 Foto vom fertigen Gericht gespeichert": "📸 Photo of the finished dish saved",
 "🍽️ Foto vom fertigen Gericht": "🍽️ Photo of the finished dish",
-"💡 Bildschirm bleibt nur an mit: HA-App → Einstellungen → Companion App → „Keep screen On“ einschalten": "💡 The screen only stays on with: HA app → Settings → Companion App → turn on “Keep screen On”"
+"💡 Bildschirm bleibt nur an mit: HA-App → Einstellungen → Companion App → „Keep screen On“ einschalten": "💡 The screen only stays on with: HA app → Settings → Companion App → turn on “Keep screen On”",
+"Für wen": "For whom",
+"Vorrat": "Staples",
+"Favoriten": "Favourites",
+"Aus Foto": "From photo",
+"Laden": "Shop",
+"Bildschirm": "Screen",
+"Karten": "Cards",
+"Beschriftungen": "Labels",
+"Zeigt unter den kleinen Icons (🔢 Menge, ✏️ Notiz, 📋 Aus Foto …) einen kurzen Text. Handys haben ja keine Tooltips. Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App. Auch ohne den Schalter gilt: <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht.": "Shows a short text under the small icons (🔢 Quantity, ✏️ Note, 📋 From photo …). Phones have no tooltips, after all. The switch applies to <b>everyone</b> – on all phones, in the dashboard and in the app. Even without the switch: <b>press and hold an icon</b> to see briefly what it does.",
+"🏷️ Die Beschriftungen sind an.": "🏷️ Labels are on.",
+"Die Beschriftungen sind aus.": "Labels are off."
 }
