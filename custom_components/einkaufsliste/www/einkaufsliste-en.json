@@ -1760,5 +1760,21 @@
 "Beschriftungen": "Labels",
 "Zeigt unter den kleinen Icons (🔢 Menge, ✏️ Notiz, 📋 Aus Foto …) einen kurzen Text. Handys haben ja keine Tooltips. Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App. Auch ohne den Schalter gilt: <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht.": "Shows a short text under the small icons (🔢 Quantity, ✏️ Note, 📋 From photo …). Phones have no tooltips, after all. The switch applies to <b>everyone</b> – on all phones, in the dashboard and in the app. Even without the switch: <b>press and hold an icon</b> to see briefly what it does.",
 "🏷️ Die Beschriftungen sind an.": "🏷️ Labels are on.",
-"Die Beschriftungen sind aus.": "Labels are off."
+"Die Beschriftungen sind aus.": "Labels are off.",
+"🧹 „Alles löschen“ gibt es nur für Admins.": "🧹 “Delete everything” is for admins only.",
+"Katalog &amp; Liste komplett löschen": "Delete catalogue &amp; list completely",
+"Löscht die <b>Einkaufsliste</b> und den <b>ganzen Katalog</b> mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. <b>Das geht nicht rückgängig.</b> Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.": "Deletes the <b>shopping list</b> and the <b>whole catalogue</b> with all photos, barcodes, nicknames, own notes, favourites and learned typos. <b>This cannot be undone.</b> Stores, categories, people, recipes, loyalty cards and settings stay.",
+"🧹 <b>Alles löschen</b>": "🧹 <b>Delete everything</b>",
+"Wirklich die Einkaufsliste UND den ganzen Katalog löschen – mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern?\n\nDas geht nicht rückgängig. Rezepte, Geschäfte, Kategorien und Einstellungen bleiben.": "Really delete the shopping list AND the whole catalogue – with all photos, barcodes, nicknames, own notes, favourites and learned typos?\n\nThis cannot be undone. Recipes, stores, categories and settings stay.",
+"Letzte Frage: Wirklich ALLES löschen?": "Last question: really delete EVERYTHING?",
+"Das hat nicht geklappt": "That did not work",
+"🧽 <b>Liste löschen</b> (nur Admins)<br>Hier räumst du die <b>Einkaufsliste</b> richtig auf, zum Beispiel am Sonntag für die neue Woche. Wähle ein Geschäft oder „Alle Geschäfte“:": "🧽 <b>Delete list</b> (admins only)<br>Here you tidy up the <b>shopping list</b> properly, e.g. on Sunday for the new week. Pick a store or “All stores”:",
+"<b>Erledigte löschen</b> = nur das, was schon abgehakt ist („Erledigt – schon mal gekauft“). Offene Artikel bleiben.": "<b>Delete done items</b> = only what is already checked off (“Done – bought before”). Open items stay.",
+"<b>Liste leeren</b> = offene <b>und</b> erledigte Artikel, die Liste ist danach wieder leer.": "<b>Empty list</b> = open <b>and</b> done items, the list is empty again afterwards.",
+"Der <b>Katalog bleibt</b>: Du findest die Produkte weiter beim Tippen und kannst sie mit einem Tipp wieder auf die Liste setzen. Fotos, Barcodes, Notizen (auch mit Preis) und Favoriten bleiben auch.": "The <b>catalogue stays</b>: you still find the products while typing and can put them back on the list with one tap. Photos, barcodes, notes (also with a price) and favourites stay too.",
+"<b>Nicht rückgängig</b> zu machen – vorher kommt eine Frage mit der Anzahl.": "<b>Cannot be undone</b> – a question with the number comes first.",
+"Erledigte löschen": "Delete done items",
+"Liste leeren": "Empty list",
+"Da ist nichts zu löschen": "Nothing to delete here",
+"🧽 Liste löschen und 🧹 „Alles löschen“ gibt es nur für Admins.": "🧽 Delete list and 🧹 “Delete everything” are for admins only."
 }

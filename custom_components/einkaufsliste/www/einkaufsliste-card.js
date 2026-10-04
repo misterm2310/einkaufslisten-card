@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.56.01";
+const EL_VERSION = "2.57.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.56.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.57.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🧽 <b>Liste löschen:</b> ⚙️ → Aufräumen (nur Admins): pro Geschäft „Erledigte löschen“ oder „Liste leeren“ – der Katalog bleibt, die Produkte kommen beim Tippen weiter als Vorschlag. · 🧹 <b>Alles löschen:</b> ⚙️ → Aufräumen hat einen neuen Knopf (nur Admins), der die Einkaufsliste und den ganzen Katalog mit Fotos, Barcodes, Spitznamen, Notizen und Favoriten löscht – mit zwei Sicherheitsfragen. Rezepte, Geschäfte, Kategorien und Einstellungen bleiben.",
+   "🧽 <b>Delete list:</b> ⚙️ → Tidy up (admins only): per store “Delete done items” or “Empty list” – the catalogue stays, products still show up as suggestions while typing. · 🧹 <b>Delete everything:</b> ⚙️ → Tidy up has a new button (admins only) that deletes the shopping list and the whole catalogue with photos, barcodes, nicknames, notes and favourites – with two safety questions. Recipes, stores, categories and settings stay."],
   ["💡 <b>Vorschläge schon bei 1–2 Buchstaben:</b> Eine eingebaute Liste mit rund 1400 gängigen Produkten (mit passender Kategorie) schlägt auch Dinge vor, die du noch nie gekauft hast (nur deutsch). · 🏷️ <b>Beschriftungen:</b> ⚙️ → Extras → Beschriftungen zeigt unter den Icons einen kurzen Text (gilt für alle). · 👆 <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht – auf dem Handy gibt es ja keine Tooltips. Alles in der HA-Karte und der Offline-App.",
    "💡 <b>Suggestions after 1–2 letters:</b> a built-in list of about 1400 common products (with a matching category) also suggests things you have never bought (German only). · 🏷️ <b>Labels:</b> ⚙️ → Extras → Labels shows a short text under the icons (applies to everyone). · 👆 <b>Press and hold an icon</b> to see what it does – phones have no tooltips. Everything in the HA card and the offline app."],
   ["📷 <b>Eigener Scanner für Karten:</b> „Einscannen“ hat jetzt eine eigene Kamera und liest auch <b>Aztec-Codes</b> (z. B. Penny) – in der HA-Karte und in der Offline-App. · 🍳 <b>Kochen:</b> oben nur noch Icons (📷 Foto zum Schritt, wenn es noch keins gibt, 🥕 Zutaten), als letzter Schritt „📸 Foto vom fertigen Gericht“ (nur wenn das Rezept noch kein Foto hat), im Querformat bleibt „Weiter“ sichtbar, der Bildschirm bleibt an. · 💡 <b>Laden-Modus:</b> neues Icon „Bildschirm immer an“. In der HA-App klappt das nur mit deren Einstellung „Keep screen On“ (Einstellungen → Companion App). · ↩️ Die Zurück-Taste schließt jetzt auch in der HA-Karte ein Fenster nach dem anderen, und die Fenster folgen Hell/Dunkel auch im Dashboard.",
@@ -4471,7 +4473,20 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow">
           <button class="btn" data-act="cleanup-now"><ha-icon icon="mdi:broom"></ha-icon>Jetzt aufräumen</button>
           <button class="btn" data-act="cleanup-all"><ha-icon icon="mdi:checkbox-multiple-marked-circle-outline"></ha-icon>Alles abhaken</button>
-        </div>` },
+        </div>
+        ${this._hass?.user?.is_admin ? `<hr><p><b>🧽 Liste löschen</b> (nur Admins)<br>Hier räumst du die <b>Einkaufsliste</b> richtig auf, zum Beispiel am Sonntag für die neue Woche. Wähle ein Geschäft oder „Alle Geschäfte“:</p>
+        <ul class="hint">
+          <li><b>Erledigte löschen</b> = nur das, was schon abgehakt ist („Erledigt – schon mal gekauft“). Offene Artikel bleiben.</li>
+          <li><b>Liste leeren</b> = offene <b>und</b> erledigte Artikel, die Liste ist danach wieder leer.</li>
+          <li>Der <b>Katalog bleibt</b>: Du findest die Produkte weiter beim Tippen und kannst sie mit einem Tipp wieder auf die Liste setzen. Fotos, Barcodes, Notizen (auch mit Preis) und Favoriten bleiben auch.</li>
+          <li><b>Nicht rückgängig</b> zu machen – vorher kommt eine Frage mit der Anzahl.</li></ul>
+        <div class="srow"><select id="purgeStore" class="grow"><option value="">Alle Geschäfte</option>${d.stores.map((st) => `<option value="${esc(st.id)}">${esc(st.name)}</option>`).join("")}<option value="none">Egal wo</option></select></div>
+        <div class="btnrow">
+          <button class="btn danger" data-act="items-purge" data-scope="done"><ha-icon icon="mdi:check-all"></ha-icon>Erledigte löschen</button>
+          <button class="btn danger" data-act="items-purge" data-scope="all"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Liste leeren</button>
+        </div>
+        <hr><p><b>🧹 Alles löschen</b><br>Löscht die <b>Einkaufsliste</b> und den <b>ganzen Katalog</b> mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. <b>Das geht nicht rückgängig.</b> Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.</p>
+        <div class="btnrow"><button class="btn danger" data-act="catalog-wipe"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Katalog &amp; Liste komplett löschen</button></div>` : `<p class="hint">🧽 Liste löschen und 🧹 „Alles löschen“ gibt es nur für Admins.</p>`}` },
     ];
     if (this._setSec === "recipe_groups") { this._setSec = "recipes"; this._recTab = "groups"; } // alter Weg zu den Rezept-Gruppen
     const cur = sections.find((x) => x.key === this._setSec && !x.alias);
@@ -7472,7 +7487,9 @@ class EinkaufslisteCard extends HTMLElement {
           <li><b>📧 E-mail:</b> IMAP mailbox, allowed senders, store via subject or heading in the mail (“Aldi:”), and what happens to the mail afterwards (leave it · mark as read · delete) – admins only.</li>
           <li><b>Backup:</b> download a .zip or “Restore backup” (replaces everything!) – admins only.</li></ul></li>
         <li><b>History:</b> who did what and when, with filters (person, store, action) and search, “Show more” and a symbol legend. At the top is <b>📈 Often not available</b> – ✖ hides an entry. “Keep for 7/30/90/180/365 days” is set there, “Clear history” deletes it. One button opens the purchase log.</li>
-        <li><b>Tidy up:</b> once a week old open items are <b>checked off</b> – nothing is deleted. Day and time: Settings → Devices &amp; services → Shopping list → Configure. The page also has <b>“Tidy up now”</b> (like the automation, just immediately) and <b>“Check off everything”</b> (really checks off everything open).</li></ul>`)}
+        <li><b>Tidy up:</b> once a week old open items are <b>checked off</b> – nothing is deleted. Day and time: Settings → Devices &amp; services → Shopping list → Configure. The page also has <b>“Tidy up now”</b> (like the automation, just immediately) and <b>“Check off everything”</b> (really checks off everything open).</li>
+        <li><b>🧽 Delete list</b> (admins only): pick a store (or “All stores”), then <b>“Delete done items”</b> (only what is checked off, open items stay) or <b>“Empty list”</b> (open and done, the list is empty again – good for Sunday). A question with the number comes first. The <b>catalogue stays</b>: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.</li>
+        <li><b>🧹 Delete everything</b> (admins only): <b>“Delete catalogue &amp; list completely”</b> deletes the shopping list and the whole catalogue with all photos, barcodes, nicknames, own notes, favourites and learned typos. Two safety questions, <b>cannot be undone</b> – better make a backup first (⚙️ → Import &amp; backup). Stores, categories, people, recipes, loyalty cards and settings stay.</li></ul>`)}
       ${sec("🩺", "Health", `<ul>
         <li><b>All OK?</b> looks for broken entries (photos, barcodes, recipes). For every finding: <b>🔧 Fix</b> (just this one), <b>✏️ Change it myself</b> (jumps to the product, item or recipe) and – where there is more than one way – a choice. Or tick and repair everything at once.</li>
         <li><b>Error log:</b> technical errors with “Copy” and “Clear” buttons – handy if you need help. If there are only error messages from the last 24 hours, the bar at the top opens the error log instead of “All OK?”; if the check could not run, it shows ⚪ “Could not check”.</li>
@@ -7524,7 +7541,9 @@ class EinkaufslisteCard extends HTMLElement {
           <li><b>📧 E-Mail:</b> IMAP-Postfach, erlaubte Absender, Geschäft über Betreff oder Überschrift in der Mail („Aldi:“), und was mit der Mail danach passiert (liegen lassen · als gelesen markieren · löschen) – nur Admins.</li>
           <li><b>Sicherung:</b> .zip herunterladen oder „Sicherung einspielen“ (ersetzt alles!) – nur Admins.</li></ul></li>
         <li><b>Verlauf:</b> wer hat wann was gemacht, mit Filtern (Person, Geschäft, Aktion) und Suche, „Mehr anzeigen“ und einer Symbol-Legende. Oben steht <b>📈 Oft nicht bekommen</b> – mit ✖ blendest du einen Eintrag aus. „Aufheben für 7/30/90/180/365 Tage“ stellst du dort ein, „Verlauf leeren“ löscht ihn. Ein Knopf öffnet das Einkaufs-Protokoll.</li>
-        <li><b>Aufräumen:</b> einmal pro Woche werden alte offene Sachen <b>abgehakt</b> – gelöscht wird nichts. Tag und Uhrzeit: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es außerdem <b>„Jetzt aufräumen“</b> (wie der Automatismus, nur sofort) und <b>„Alles abhaken“</b> (hakt wirklich alles Offene ab).</li></ul>`)}
+        <li><b>Aufräumen:</b> einmal pro Woche werden alte offene Sachen <b>abgehakt</b> – gelöscht wird nichts. Tag und Uhrzeit: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es außerdem <b>„Jetzt aufräumen“</b> (wie der Automatismus, nur sofort) und <b>„Alles abhaken“</b> (hakt wirklich alles Offene ab).</li>
+        <li><b>🧽 Liste löschen</b> (nur Admins): Geschäft wählen (oder „Alle Geschäfte“), dann <b>„Erledigte löschen“</b> (nur Abgehaktes, Offenes bleibt) oder <b>„Liste leeren“</b> (offen und erledigt, die Liste ist wieder leer – gut für den Sonntag). Vorher kommt eine Frage mit der Anzahl. Der <b>Katalog bleibt</b>: Die Produkte kommen beim Tippen weiter als Vorschlag, Fotos, Barcodes, Notizen und Favoriten bleiben. Nicht rückgängig zu machen.</li>
+        <li><b>🧹 Alles löschen</b> (nur Admins): <b>„Katalog &amp; Liste komplett löschen“</b> löscht die Einkaufsliste und den ganzen Katalog mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. Zwei Sicherheitsfragen, <b>nicht rückgängig</b> – vorher lieber eine Sicherung machen (⚙️ → Import &amp; Sicherung). Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.</li></ul>`)}
       ${sec("🩺", "Gesundheit", `<ul>
         <li><b>Alles ok?</b> sucht kaputte Einträge (Fotos, Barcodes, Rezepte). Bei jedem Fund: <b>🔧 Beheben</b> (nur dieser eine), <b>✏️ Selbst ändern</b> (springt zum Produkt, Artikel oder Rezept) und – wo es mehrere Wege gibt – eine Auswahl. Oder anhaken und alles auf einmal reparieren.</li>
         <li><b>Fehler-Protokoll:</b> technische Fehler mit „Kopieren“- und „Leeren“-Knopf – praktisch, wenn du Hilfe brauchst. Gibt es nur Fehlermeldungen der letzten 24 Stunden, öffnet der Balken oben das Fehler-Protokoll statt „Alles ok?“; konnte die Prüfung nicht laufen, zeigt er ⚪ „Konnte nicht prüfen“.</li>
@@ -9798,6 +9817,28 @@ class EinkaufslisteCard extends HTMLElement {
       case "cleanup-now":
         this._ws({ type: "einkaufsliste/cleanup" })
           .then((r) => this._toast(r.checked ? `${r.checked} alte Artikel abgehakt 🧹` : "Nix zu tun – alles noch frisch! ✨")).catch(() => {});
+        break;
+      case "items-purge": { // 🧽 Erledigte / alle Artikel von der Liste löschen (nur Admins, Katalog bleibt)
+        if (!this._hass?.user?.is_admin) return;
+        const scope = el.dataset.scope === "all" ? "all" : "done";
+        const sel = this.$("purgeStore");
+        const store = sel?.value || "";
+        const where = store ? `bei „${sel.options[sel.selectedIndex]?.text || ""}“` : "in allen Geschäften";
+        const n = this._data.items.filter((i) => (scope === "all" || i.checked)
+          && (!store || (store === "none" ? !i.store_id : i.store_id === store))).length;
+        if (!n) { this._toast("Da ist nichts zu löschen"); return; }
+        if (!elConfirm(`${n} Artikel ${scope === "all" ? "(offene und erledigte)" : "(nur erledigte)"} ${where} von der Liste löschen?\n\nDer Katalog bleibt. Das geht nicht rückgängig.`)) return;
+        const msg = { type: "einkaufsliste/items/purge", scope };
+        if (store) msg.store = store;
+        this._ws(msg).then((r) => this._toast(`Gelöscht: ${r.removed} Artikel 🧽`)).catch(() => this._toast("Das hat nicht geklappt"));
+        break;
+      }
+      case "catalog-wipe":
+        if (!this._hass?.user?.is_admin) return;
+        if (!elConfirm("Wirklich die Einkaufsliste UND den ganzen Katalog löschen – mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern?\n\nDas geht nicht rückgängig. Rezepte, Geschäfte, Kategorien und Einstellungen bleiben.")) return;
+        if (!elConfirm("Letzte Frage: Wirklich ALLES löschen?")) return;
+        this._ws({ type: "einkaufsliste/catalog/wipe" })
+          .then((r) => this._toast(`Gelöscht: ${r.items} Artikel, ${r.products} Produkte 🧹`)).catch(() => this._toast("Das hat nicht geklappt"));
         break;
       case "cleanup-all":
         if (!elConfirm("Wirklich ALLE offenen Artikel abhaken?")) return;

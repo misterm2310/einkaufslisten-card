@@ -71,6 +71,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_mail_import,
         ws_mascot,
         ws_labels,
+        ws_catalog_wipe,
+        ws_items_purge,
         ws_cards_enable,
         ws_grocy_preview,
         ws_grocy_import,
@@ -558,6 +560,24 @@ def ws_product_update(hass, connection, msg):
 async def ws_product_remove(hass, connection, msg):
     # 🗑️ ganz löschen: Fotos, Barcodes, Vorschlag und von der Einkaufsliste (Rezepte bleiben)
     await _run_async(hass, connection, msg, lambda m: m.async_delete_product(msg["key"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/items/purge", vol.Required("scope"): vol.In(["done", "all"]), vol.Optional("store"): OPT_STR}
+)
+@websocket_api.require_admin
+@callback
+def ws_items_purge(hass, connection, msg):
+    # 🧽 Erledigte (oder alle) Artikel von der Liste löschen, pro Geschäft oder für alle – der Katalog bleibt (nur Admins)
+    _run(hass, connection, msg, lambda m: m.purge_items(msg["scope"], msg.get("store") or None))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/catalog/wipe"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_catalog_wipe(hass, connection, msg):
+    # 🧹 Einkaufsliste + ganzer Katalog mit Fotos, Barcodes usw. löschen (nur Admins; Rezepte, Geschäfte … bleiben)
+    await _run_async(hass, connection, msg, lambda m: m.async_delete_all_products())
 
 
 @websocket_api.websocket_command(

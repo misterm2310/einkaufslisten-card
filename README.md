@@ -141,6 +141,10 @@ Die Einstellungen sind eine **Liste mit Überschriften** – **📋 Meine Liste 
 ### 🧹 Aufräumen, einfach erklärt
 Am Aufräum-Tag wird alles **abgehakt**, was mindestens 7 Tage (einstellbar) offen ist. Beispiel Sonntag: Am Dienstag eingetragen → am ersten Sonntag erst 5 Tage alt, bleibt → am zweiten Sonntag abgehakt. Unter jedem Artikel steht mit 🧹, wann es so weit ist. Gelöscht wird nichts. Tag und Uhrzeit: **Geräte & Dienste → Einkaufsliste → Konfigurieren**.
 
+**🧽 Liste löschen (nur Admins):** Unter ⚙️ → Aufräumen ein Geschäft (oder „Alle Geschäfte“) wählen, dann **„Erledigte löschen“** (nur Abgehaktes) oder **„Liste leeren“** (offen und erledigt – gut am Sonntag für die neue Woche). Vorher kommt eine Frage mit der Anzahl. Der **Katalog bleibt**: Produkte erscheinen beim Tippen weiter als Vorschlag, Fotos, Barcodes, Notizen und Favoriten bleiben. Nicht rückgängig.
+
+**🧹 Alles löschen (nur Admins):** Unter ⚙️ → Aufräumen löscht **„Katalog & Liste komplett löschen“** die Einkaufsliste und den ganzen Katalog mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. Zwei Sicherheitsfragen, **nicht rückgängig** – vorher eine Sicherung machen. Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.
+
 ### 📍 Nächstes Geschäft zuerst
 Für jedes Geschäft eine **Zone** anlegen (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen) und sie in ⚙️ → Geschäfte → Geschäft antippen → 📍 auswählen. Mehrere Filialen? Einfach mehrere Zonen beim selben Geschäft wählen. Wer seinen Standort über die Companion-App sendet, landet im Laden automatisch im richtigen Reiter.
 

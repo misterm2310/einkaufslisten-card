@@ -3604,3 +3604,36 @@ def test_startliste_und_kategorie_schluessel():
     assert len(low) == len(set(low))
     hints = category_hints([{"id": "c1", "name": "Obst & Gemüse"}])
     assert hints and hints[0]["key"] == "obst_gemuese" and hints[0]["id"] == "c1"
+
+
+async def test_katalog_komplett_loeschen(hass, setup):
+    """🧹 Alles löschen: Liste + Katalog weg, Geschäfte/Kategorien bleiben."""
+    m = mgr(hass)
+    m.add_item("Milch")
+    m.add_item("Brot")
+    m.set_favorite("Milch", None, True)
+    m._set_own_note("Brot", None, "Vollkorn")
+    assert m.items and m.favorites and m.own_notes
+    stores, cats = len(m.stores), len(m.categories)
+    res = await m.async_delete_all_products()
+    assert res["items"] == 2
+    assert m.items == [] and m.history == {} and m.barcodes == {} and m.photos == {}
+    assert m.aliases == {} and m.favorites == {} and m.own_notes == {} and m.catalog_extra == {} and m.typos == {}
+    assert len(m.stores) == stores and len(m.categories) == cats
+
+
+async def test_liste_loeschen_pro_geschaeft(hass, setup):
+    """🧽 Erledigte / alle Artikel pro Geschäft löschen – der Katalog (Verlauf, Notizen) bleibt."""
+    m = mgr(hass)
+    netto, aldi = m.find_store("netto"), m.find_store("aldi")
+    a = m.add_item("Milch", store_id=aldi)
+    m.add_item("Brot", store_id=aldi)
+    m.add_item("Käse", store_id=netto)
+    m.set_checked(a["id"], True, None, None)
+    m._set_own_note("Brot", None, "1,29 €")
+    assert m.purge_items("done", aldi)["removed"] == 1  # nur das Erledigte bei Aldi
+    assert sorted(i["name"] for i in m.items) == ["Brot", "Käse"]
+    assert m.purge_items("all", aldi)["removed"] == 1  # Rest von Aldi
+    assert [i["name"] for i in m.items] == ["Käse"]  # Netto unberührt
+    assert "milch" in m.history and m.own_notes  # Katalog bleibt
+    assert m.purge_items("all")["removed"] == 1 and m.items == []

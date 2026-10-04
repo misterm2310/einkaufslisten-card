@@ -131,6 +131,10 @@ Good to know: it needs an **https** address (e.g. Nabu Casa). If two people chan
 ### 🧹 Cleanup, simply explained
 On cleanup day everything that has been open for at least 7 days (adjustable) gets **checked off**. Example Sunday: added on Tuesday → only 5 days old on the first Sunday, stays → checked off on the second Sunday. Each item shows 🧹 with its date. Nothing is deleted. Day and time: **Devices & services → Einkaufsliste → Configure**.
 
+**🧽 Delete list (admins only):** under ⚙️ → Tidy up pick a store (or “All stores”), then **“Delete done items”** (only what is checked off) or **“Empty list”** (open and done – good on Sunday for the new week). A question with the number comes first. The **catalogue stays**: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.
+
+**🧹 Delete everything (admins only):** under ⚙️ → Tidy up, **“Delete catalogue & list completely”** deletes the shopping list and the whole catalogue with all photos, barcodes, nicknames, own notes, favourites and learned typos. Two safety questions, **cannot be undone** – make a backup first. Stores, categories, people, recipes, loyalty cards and settings stay.
+
 ### 📍 Nearest store first
 Create a **zone** per store (Settings → Areas, labels & zones → Zones) and pick it in ⚙️ → Stores → tap the store → 📍. Several branches? Just pick several zones for the same store. Whoever shares their location via the companion app lands on the right tab in the store.
 

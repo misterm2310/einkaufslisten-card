@@ -1694,6 +1694,54 @@ class EinkaufslisteManager:
         self._changed()
         return {"removed": len(gone), "recipes": in_recipes}
 
+    def purge_items(self, scope: str = "done", store: str | None = None) -> dict[str, Any]:
+        """🧽 Artikel von der Liste löschen – der Katalog (Vorschläge, Fotos, Barcodes, Notizen …) bleibt.
+
+        scope "done" = nur Erledigte, "all" = offene und erledigte.
+        store: Geschäfts-ID, "none" = „Egal wo“, leer/None = alle Geschäfte.
+        """
+        if scope not in ("done", "all"):
+            raise ValueError("scope muss „done“ oder „all“ sein")
+        gone = []
+        for item in list(self.items):
+            if scope == "done" and not item["checked"]:
+                continue
+            if store == "none" and item.get("store_id"):
+                continue
+            if store and store != "none" and item.get("store_id") != store:
+                continue
+            self.items.remove(item)
+            self._log("remove", item)
+            gone.append(item)
+        if gone:
+            self._changed()
+        return {"removed": len(gone)}
+
+    async def async_delete_all_products(self) -> dict[str, Any]:
+        """🧹 ALLES weg: Einkaufsliste (offen + erledigt), ganzer Katalog, alle Fotos, Barcodes, Spitznamen,
+        Eigene Notizen, Favoriten, gelernte Tippfehler und Verlauf. Geschäfte, Kategorien, Personen, Rezepte,
+        Kundenkarten und Einstellungen bleiben."""
+        removed_items = len(self.items)
+        for item in list(self.items):
+            self.items.remove(item)
+            self._log("remove", item)
+        removed_products = len(self.products())
+        for key in list(self.photos):
+            await self.async_remove_photo(key)
+        for key in list(self.photos):  # falls etwas übrig blieb
+            self.photos.pop(key, None)
+        self.barcodes.clear()
+        self.history.clear()
+        self.own_notes.clear()
+        self.catalog_extra.clear()
+        self.aliases.clear()
+        self.favorites.clear()
+        self.typos.clear()
+        self.offers_data.clear()
+        self.missed_hidden.clear()
+        self._changed()
+        return {"items": removed_items, "products": removed_products}
+
     async def async_merge_products(self, from_key: str, into_key: str) -> dict[str, Any]:
         """🧲 Zwei Produkte zu einem machen („Tomaten“ -> „Tomate“): Artikel, Rezept-Zutaten, Barcodes, Fotos,
         Spitznamen und Gedächtnis ziehen um. Der alte Name wird ein Spitzname, damit er künftig beim richtigen landet."""
