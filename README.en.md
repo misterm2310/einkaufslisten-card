@@ -243,6 +243,8 @@ Events: `einkaufsliste_item_added`, `einkaufsliste_cleanup`.
 
 It is and stays **free**. If you like, you can buy me a coffee – completely voluntary: [buymeacoffee.com/misterm_2310](https://buymeacoffee.com/misterm_2310). The link is also under ⚙️ → Credits. Thank you! 🙏
 
+[<img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=misterm_2310&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=FFFFFF" alt="Buy me a coffee" height="48">](https://buymeacoffee.com/misterm_2310)
+
 ---
 
 License: MIT · Product data: [Open Food Facts](https://world.openfoodfacts.org) (ODbL) · Offline app icons: [Material Design Icons](https://pictogrammers.com) (Apache 2.0) · Offline app barcode reader: [ZXing-js](https://github.com/zxing-js/library) (Apache 2.0)

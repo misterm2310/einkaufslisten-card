@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.57.02";
+const EL_VERSION = "2.57.03";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.57.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1966,6 +1966,8 @@ ha-card.compact .group { margin-top:4px; }
 .ellogo { background:#fff; border-radius:14px; padding:10px; display:inline-block; max-width:100%; box-shadow:0 1px 4px rgba(0,0,0,.12); }
 .ellogo img { display:block; max-width:100%; width:280px; height:auto; }
 .elcbtns { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:12px 0; }
+.elcbtn.bmc { display:inline-flex; align-items:center; gap:8px; background:#FFDD00; color:#000; border:2px solid #000; font:600 1.05em/1 Cookie, "Brush Script MT", "Segoe Script", cursive; letter-spacing:.2px; }
+.elcbtn.bmc svg { width:22px; height:22px; flex:none; }
 .elcbtn { color:var(--primary-text-color); background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:12px; padding:10px 14px; text-decoration:none; font-weight:500; }
 .elcsmall { opacity:.7; font-size:.9em; }
 .catordlist { display:flex; flex-direction:column; gap:2px; margin:4px 0 6px; }
@@ -7252,6 +7254,8 @@ class EinkaufslisteCard extends HTMLElement {
       .ellogo { background:#fff; border-radius:14px; padding:10px; display:inline-block; max-width:100%; }
       .ellogo img { display:block; max-width:100%; width:280px; height:auto; }
       .elcbtns { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
+      .elcbtn.bmc { display:inline-flex; align-items:center; gap:8px; background:#FFDD00; color:#000; border:2px solid #000; font:600 1.05em/1 Cookie, "Brush Script MT", "Segoe Script", cursive; letter-spacing:.2px; }
+      .elcbtn.bmc svg { width:22px; height:22px; flex:none; }
       .elcbtn { color:var(--g-strong); background:var(--g-btn); border-radius:12px; padding:10px 14px; text-decoration:none; font-weight:500; }
       .elcsmall { opacity:.7; font-size:.9em; }
       .elg-sec ul, .elg-sec ol { margin:4px 0; padding-left:20px; }
@@ -7635,7 +7639,7 @@ class EinkaufslisteCard extends HTMLElement {
         <a class="elcbtn" href="${repo}" target="_blank" rel="noopener">🐙 GitHub</a>
         <a class="elcbtn" href="${repo}/discussions" target="_blank" rel="noopener">💡 ${t("Idee oder Wunsch", "Idea or request")}</a>
         <a class="elcbtn" href="${repo}/issues" target="_blank" rel="noopener">🐞 ${t("Fehler melden", "Report a bug")}</a>
-        <a class="elcbtn" href="https://buymeacoffee.com/misterm_2310" target="_blank" rel="noopener">☕ ${t("Kaffee spendieren", "Buy me a coffee")}</a>
+        <a class="elcbtn bmc" href="https://buymeacoffee.com/misterm_2310" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h11v6a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5z" fill="#fff" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/><path d="M16 9.5h1.6a2.4 2.4 0 0 1 0 4.8H15.6" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round"/><path d="M8 3.5c-.8 1 .8 1.5 0 2.5M11.5 3.5c-.8 1 .8 1.5 0 2.5" fill="none" stroke="#000" stroke-width="1.4" stroke-linecap="round"/><path d="M4 21h13" stroke="#000" stroke-width="1.6" stroke-linecap="round"/></svg><span>Buy me a coffee</span></a>
       </div>
       <p class="elcsmall">${t("Die Einkaufsliste ist und bleibt kostenlos. Wenn sie dir gefällt, freue ich mich über einen Kaffee – ganz freiwillig. Beim Antippen öffnet sich die Seite von Buy Me a Coffee im Browser; vorher geht nichts ins Internet.", "The shopping list is and stays free. If you like it, I would be happy about a coffee – completely voluntary. Tapping opens the Buy Me a Coffee page in your browser; nothing goes to the internet before that.")}</p>
       <p>🔒 ${t("Alle Daten bleiben in deinem Home Assistant. Ins Internet geht nur, was du selbst anstößt: ein gescannter Barcode (Nachschlagen bei Open Food Facts), ein Rezept-Link oder – wenn du sie einschaltest – die Angebote. Mehr unter ⚙️ → Datenschutz.",
