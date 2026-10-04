@@ -1776,5 +1776,9 @@
 "Erledigte löschen": "Delete done items",
 "Liste leeren": "Empty list",
 "Da ist nichts zu löschen": "Nothing to delete here",
-"🧽 Liste löschen und 🧹 „Alles löschen“ gibt es nur für Admins.": "🧽 Delete list and 🧹 “Delete everything” are for admins only."
+"🧽 Liste löschen und 🧹 „Alles löschen“ gibt es nur für Admins.": "🧽 Delete list and 🧹 “Delete everything” are for admins only.",
+"📄 PDF einlesen": "📄 Read PDF",
+"Tipp: Bon fotografieren oder als PDF einlesen – Betrag, Datum und Geschäft werden vorgeschlagen.": "Tip: photograph the receipt or read it as a PDF – amount, date and store are suggested.",
+"Den Betrag konnte ich nicht lesen – bitte selbst eintragen.": "I could not read the amount – please enter it yourself.",
+"📄 PDF wird gelesen …": "📄 Reading the PDF …"
 }

@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.57.04";
+const EL_VERSION = "2.58.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.57.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.58.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["📄 <b>PDF im Einkaufs-Protokoll:</b> Digitale Kassenbons als PDF einlesen – die Karte trägt <b>Geschäft, Datum und Summe</b> ein, du prüfst kurz und speicherst. Das PDF bleibt auf deinem Gerät. In der HA-Karte und in der Offline-App.",
+   "📄 <b>PDF in the purchase log:</b> read digital receipts as PDF – the card fills in <b>store, date and total</b>, you check briefly and save. The PDF stays on your device. In the HA card and in the offline app."],
   ["🧽 <b>Liste löschen:</b> ⚙️ → Aufräumen (nur Admins): pro Geschäft „Erledigte löschen“ oder „Liste leeren“ – der Katalog bleibt, die Produkte kommen beim Tippen weiter als Vorschlag. · 🧹 <b>Alles löschen:</b> ⚙️ → Aufräumen hat einen neuen Knopf (nur Admins), der die Einkaufsliste und den ganzen Katalog mit Fotos, Barcodes, Spitznamen, Notizen und Favoriten löscht – mit zwei Sicherheitsfragen. Rezepte, Geschäfte, Kategorien und Einstellungen bleiben.",
    "🧽 <b>Delete list:</b> ⚙️ → Tidy up (admins only): per store “Delete done items” or “Empty list” – the catalogue stays, products still show up as suggestions while typing. · 🧹 <b>Delete everything:</b> ⚙️ → Tidy up has a new button (admins only) that deletes the shopping list and the whole catalogue with photos, barcodes, nicknames, notes and favourites – with two safety questions. Recipes, stores, categories and settings stay."],
   ["💡 <b>Vorschläge schon bei 1–2 Buchstaben:</b> Eine eingebaute Liste mit rund 1400 gängigen Produkten (mit passender Kategorie) schlägt auch Dinge vor, die du noch nie gekauft hast (nur deutsch). · 🏷️ <b>Beschriftungen:</b> ⚙️ → Extras → Beschriftungen zeigt unter den Icons einen kurzen Text (gilt für alle). · 👆 <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht – auf dem Handy gibt es ja keine Tooltips. Alles in der HA-Karte und der Offline-App.",
@@ -2190,7 +2192,7 @@ function elReceiptInfo(text, stores = [], today = new Date()) {
     return parseFloat(v);
   }).filter((n) => n > 0 && n < 10000);
   const strong = /(zu zahlen|zahlbetrag|gesamtbetrag|gesamtsumme|endbetrag|summe|total|gesamt|betrag)/i;
-  const skip = /(gegeben|r[üu]e?ckgeld|zur[üu]ck|wechselgeld|mwst|mehrwertsteuer|\bust\b|steuer|netto|brutto|rabatt|ersparnis|gespart|pfand|punkte|payback)/i;
+  const skip = /(gegeben|r[üu]e?ckgeld|zur[üu]ck|wechselgeld|mwst|mehrwertsteuer|\bust\b|steuer|netto|brutto|rabatt|ersparnis|gespart|pfand|punkte|payback|preisvorteil|vorteil|coupon|auszahlung|bargeld)/i;
   const card = /(girocard|\bec\b|karte|visa|master|maestro|kreditkarte|bar\b)/i;
   const pickMax = (rx, notRx) => {
     const all = lines.filter((l) => rx.test(l) && !(notRx && notRx.test(l))).flatMap(money);
@@ -2202,7 +2204,7 @@ function elReceiptInfo(text, stores = [], today = new Date()) {
   addC(lines.filter((l) => strong.test(l) && !skip.test(l)).flatMap(money).sort((a, b) => b - a));
   addC(lines.filter((l) => card.test(l) && !/(gegeben|r[üu]e?ckgeld|wechselgeld)/i.test(l)).flatMap(money).sort((a, b) => b - a));
   addC(lines.filter((l) => !skip.test(l)).flatMap(money).sort((a, b) => b - a).slice(0, 4));
-  let amount = pickMax(strong, skip), sure = true;
+  let amount = pickMax(/(zu zahlen|zahlbetrag|endbetrag)/i, skip) ?? pickMax(strong, skip), sure = true; // „zu zahlen“ ist am eindeutigsten
   if (amount == null) amount = pickMax(card, /(gegeben|r[üu]e?ckgeld|wechselgeld)/i);
   if (amount == null) {
     const all = lines.filter((l) => !skip.test(l)).flatMap(money);
@@ -2224,6 +2226,57 @@ function elReceiptInfo(text, stores = [], today = new Date()) {
     if (n.length >= 3 && flat.includes(n) && (!store || n.length > store.n)) store = { id: st.id, n: n.length };
   }
   return { amount, sure, day, store: store?.id || null, alts: cands.filter((v) => v !== amount && Math.abs(v - (amount ?? -1)) > 0.005).slice(0, 3) };
+}
+
+// 📄 PDF lesen (digitale Kassenbons): pdf.js läuft im Browser, das PDF verlässt das Gerät nicht. Die Dateien (ca. 1,4 MB) werden erst geladen, wenn jemand „PDF einlesen“ benutzt.
+let elPdfPromise = null;
+function elPdfLib() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return (elPdfPromise ||= new Promise((ok, fail) => {
+    const sc = document.createElement("script");
+    sc.src = `${EL_BASE}/pdf/pdf.min.js?v=${EL_VERSION}`;
+    sc.onload = () => {
+      if (!window.pdfjsLib) { elPdfPromise = null; return fail(new Error("PDF-Leser nicht gefunden")); }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = `${EL_BASE}/pdf/pdf.worker.min.js?v=${EL_VERSION}`;
+      ok(window.pdfjsLib);
+    };
+    sc.onerror = () => { elPdfPromise = null; fail(new Error("PDF-Leser konnte nicht geladen werden")); };
+    document.head.append(sc);
+  }));
+}
+// Textteile eines PDFs zu Zeilen zusammensetzen (gleiche Höhe = eine Zeile, von links nach rechts) – damit „Summe … 23,40“ zusammenbleibt
+function elPdfLines(items) {
+  const rows = [];
+  for (const it of items) {
+    if (!it.str || !it.str.trim()) continue;
+    const y = it.transform[5], x = it.transform[4];
+    let row = rows.find((r) => Math.abs(r.y - y) <= 2.5);
+    if (!row) rows.push((row = { y, parts: [] }));
+    row.parts.push({ x, s: it.str });
+  }
+  return rows.sort((p, q) => q.y - p.y).map((r) => r.parts.sort((p, q) => p.x - q.x).map((p) => p.s.trim()).join(" ")).join("\n");
+}
+async function elPdfRead(file, wantImage) {
+  const lib = await elPdfLib();
+  const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+  let text = "", image = null;
+  const pages = Math.min(doc.numPages, 6);
+  for (let n = 1; n <= pages; n++) {
+    const page = await doc.getPage(n);
+    text += elPdfLines((await page.getTextContent()).items) + "\n";
+    if (n === 1 && wantImage) { // 📎 erste Seite als Bild – wird wie ein Bon-Foto mitgespeichert
+      try {
+        const vp0 = page.getViewport({ scale: 1 });
+        const vp = page.getViewport({ scale: Math.min(2, 1000 / vp0.width) });
+        const cv = document.createElement("canvas");
+        cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height);
+        await page.render({ canvasContext: cv.getContext("2d"), viewport: vp, background: "#ffffff" }).promise;
+        image = cv.toDataURL("image/jpeg", 0.75);
+      } catch (_) { image = null; }
+    }
+  }
+  try { doc.destroy(); } catch (_) { /* egal */ }
+  return { text, image };
 }
 
 // 🍳 Rezept-Seite lesen: Name, Zutaten und Schritte trennen (an den Überschriften „Zutaten“ / „Zubereitung“)
@@ -7097,9 +7150,10 @@ class EinkaufslisteCard extends HTMLElement {
           <select id="spStore">${stores.map((st) => opt(st.id, st.name, start)).join("")}</select>
           <label class="sp-l">Betrag in €</label>
           <input id="spAmount" inputmode="decimal" placeholder="z. B. 23,40" autocomplete="off">
-          <div class="sp-row" style="margin-top:8px"><button class="sp-q" data-sp="scan" style="flex:1">📷 Kassenbon lesen</button></div>
+          <div class="sp-row" style="margin-top:8px"><button class="sp-q" data-sp="scan" style="flex:1">📷 Kassenbon lesen</button><button class="sp-q" data-sp="pdf" style="flex:1">📄 PDF einlesen</button></div>
+          <input type="file" id="spPdf" accept="application/pdf,.pdf" hidden>
           <div class="sp-row" id="spAlts" style="margin-top:6px" hidden></div>
-          <div class="sp-hint" id="spBon">${bon ? "📎 Bon-Foto ist dabei – wird mitgespeichert." : "Tipp: Bon fotografieren – Betrag, Datum und Geschäft werden vorgeschlagen."}</div>
+          <div class="sp-hint" id="spBon">${bon ? "📎 Bon-Foto ist dabei – wird mitgespeichert." : "Tipp: Bon fotografieren oder als PDF einlesen – Betrag, Datum und Geschäft werden vorgeschlagen."}</div>
           <label class="sp-l">Datum</label>
           <input id="spDay" type="date" value="${iso(new Date())}" max="${iso(new Date())}">
           <div class="sp-err" id="spErr" hidden></div>
@@ -7163,6 +7217,23 @@ class EinkaufslisteCard extends HTMLElement {
       loaded = true;
       if (ov.isConnected) draw();
     };
+    const applyBon = (text, data) => { // 🧾 Text vom Bon (Foto oder PDF) → Betrag, Geschäft, Datum eintragen
+      const info = elReceiptInfo(text, stores);
+      bon = this._spendBon = data;
+      const q = (id) => ov.querySelector(id);
+      if (info.amount != null && q("#spAmount")) q("#spAmount").value = info.amount.toFixed(2).replace(".", ",");
+      if (info.store && q("#spStore")) q("#spStore").value = info.store;
+      if (info.day && q("#spDay")) q("#spDay").value = info.day;
+      if (q("#spBon")) q("#spBon").textContent = info.amount == null
+        ? (data ? "📎 Bon-Foto ist dabei. Den Betrag konnte ich nicht lesen – bitte selbst eintragen." : "Den Betrag konnte ich nicht lesen – bitte selbst eintragen.")
+        : (data ? "📎 Bon-Foto ist dabei. " : "") + `Erkannt: ${info.amount.toFixed(2).replace(".", ",")} €${info.sure ? "" : " (unsicher)"} – bitte kurz prüfen.`;
+      const alts = q("#spAlts"); // 🎯 war es vielleicht einer von diesen?
+      if (alts) {
+        const fmt = (v) => v.toFixed(2).replace(".", ",");
+        alts.hidden = !info.alts?.length;
+        alts.innerHTML = info.alts?.length ? `<span style="align-self:center;font-size:13px;opacity:.75">${esc(elT("Oder war es:"))}</span>` + info.alts.map((v) => `<button class="sp-q" type="button" data-sp="alt" data-v="${fmt(v)}">${fmt(v)} €</button>`).join("") : "";
+      }
+    };
     ov.addEventListener("click", async (ev) => {
       const b = ev.target.closest("[data-sp]");
       if (!b) return;
@@ -7171,24 +7242,9 @@ class EinkaufslisteCard extends HTMLElement {
       else if (act === "tab") { cur = b.dataset.t; draw(); if (cur === "stats") load(); }
       else if (act === "quick") { f.quick = b.dataset.q; draw(); }
       else if (act === "alt") { const a = ov.querySelector("#spAmount"); if (a) a.value = b.dataset.v; }
+      else if (act === "pdf") ov.querySelector("#spPdf")?.click();
       else if (act === "scan") {
-        this._ocrStart("🔎 Kassenbon wird gelesen", (text, data) => {
-          const info = elReceiptInfo(text, stores);
-          bon = this._spendBon = data;
-          const q = (id) => ov.querySelector(id);
-          if (info.amount != null && q("#spAmount")) q("#spAmount").value = info.amount.toFixed(2).replace(".", ",");
-          if (info.store && q("#spStore")) q("#spStore").value = info.store;
-          if (info.day && q("#spDay")) q("#spDay").value = info.day;
-          if (q("#spBon")) q("#spBon").textContent = info.amount == null
-            ? "📎 Bon-Foto ist dabei. Den Betrag konnte ich nicht lesen – bitte selbst eintragen."
-            : `📎 Bon-Foto ist dabei. Erkannt: ${info.amount.toFixed(2).replace(".", ",")} €${info.sure ? "" : " (unsicher)"} – bitte kurz prüfen.`;
-          const alts = q("#spAlts"); // 🎯 war es vielleicht einer von diesen?
-          if (alts) {
-            const fmt = (v) => v.toFixed(2).replace(".", ",");
-            alts.hidden = !info.alts?.length;
-            alts.innerHTML = info.alts?.length ? `<span style="align-self:center;font-size:13px;opacity:.75">${esc(elT("Oder war es:"))}</span>` + info.alts.map((v) => `<button class="sp-q" type="button" data-sp="alt" data-v="${fmt(v)}">${fmt(v)} €</button>`).join("") : "";
-          }
-        }, "🧾 Kassenbon abfotografieren");
+        this._ocrStart("🔎 Kassenbon wird gelesen", applyBon, "🧾 Kassenbon abfotografieren");
       } else if (act === "bon") {
         const key = "bon#" + b.dataset.id;
         if (this._hasPhoto(key)) this._openPhoto(key, "🧾 Kassenbon");
@@ -7214,8 +7270,25 @@ class EinkaufslisteCard extends HTMLElement {
         draw();
       }
     });
-    ov.addEventListener("change", (ev) => {
+    ov.addEventListener("change", async (ev) => {
       const id = ev.target.id;
+      if (id === "spPdf") { // 📄 digitaler Kassenbon als PDF
+        const file = ev.target.files?.[0];
+        ev.target.value = "";
+        if (!file) return;
+        const hint = ov.querySelector("#spBon");
+        if (hint) hint.textContent = elT("📄 PDF wird gelesen …");
+        try {
+          const { text, image } = await elPdfRead(file, !this._privacyOn());
+          if (!ov.isConnected) return;
+          if (!text.trim()) { if (hint) hint.textContent = elT("📄 In diesem PDF habe ich keinen Text gefunden (vielleicht ist es nur ein Bild). Bitte Betrag selbst eintragen oder den Bon abfotografieren."); return; }
+          applyBon(text, image);
+        } catch (err) {
+          if (hint) hint.textContent = elT("📄 Das PDF konnte ich nicht lesen 🙈 – bitte Betrag selbst eintragen.");
+          this._hass?.callWS?.({ type: "einkaufsliste/errors/report", where: "Karte: PDF einlesen", message: String(err?.message || err).slice(0, 380) }).catch(() => {});
+        }
+        return;
+      }
       if (id === "spWho") f.who = ev.target.value;
       else if (id === "spSt") f.store = ev.target.value;
       else if (id === "spFrom" || id === "spTo") {
@@ -7311,6 +7384,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("📸", "Text aus Foto & neue Helfer", `<ul>
         <li><b>📋 unter dem Eingabefeld:</b> liest <b>nur einen Einkaufszettel</b>: fotografieren, Text prüfen, auf die Liste. Gedruckt klappt gut, Handschrift nur mit Glück – darum kannst du den Text vorher korrigieren. Steht auf dem Zettel eine Zeile wie <b>„Aldi:“</b>, kommen die Artikel darunter zu diesem Geschäft. Unten kannst du außerdem ein Geschäft für alle wählen.</li>
         <li><b>Kassenbon:</b> nicht über das 📋, sondern im Einkaufs-Protokoll mit „📷 Kassenbon lesen“ – Betrag, Geschäft und Tag werden vorgeschlagen.</li>
+        <li><b>Kassenbon als PDF</b> (z. B. digitaler Bon): im Einkaufs-Protokoll auf „📄 PDF einlesen“ tippen und das PDF wählen. Die Karte liest den Text und trägt <b>Geschäft, Datum und Summe</b> ein – bitte kurz prüfen und bei Bedarf ändern, dann „Speichern“. Das PDF bleibt auf deinem Gerät. Ein PDF, das nur ein Bild ist (kein Text), wird so nicht gelesen – dann den Bon abfotografieren.</li>
         <li><b>🧲 Zusammenführen:</b> im Produkt-Editor zwei gleiche Produkte zu einem machen.</li>
         <li><b>🩺 Ampel &amp; 🐞 Fehler-Protokoll:</b> in den Einstellungen – zeigt, ob alles läuft.</li>
         <li><b>🛍️ Laden-Modus automatisch:</b> schaltet sich beim Betreten eines Geschäfts ein (gilt für alle Geräte, optional – der Standort bleibt bei jedem selbst).</li>
@@ -7710,6 +7784,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("📸", "Text from photo & new helpers", `<ul>
         <li><b>📋 below the input field:</b> reads <b>a shopping note only</b>: photograph it, check the text, add it to the list. Printed text works well, handwriting only with luck – so you can correct the text first. If the note has a line like <b>“Aldi:”</b>, the items below it go to that store. At the bottom you can also pick one store for everything.</li>
         <li><b>Receipt:</b> not via the 📋, but in the purchase log with “📷 Read receipt” – amount, store and day are suggested.</li>
+        <li><b>Receipt as PDF</b> (e.g. a digital receipt): in the purchase log tap “📄 Read PDF” and pick the PDF. The card reads the text and fills in <b>store, date and total</b> – please check it briefly and change it if needed, then “Save”. The PDF stays on your device. A PDF that is only an image (no text) cannot be read this way – photograph the receipt instead.</li>
         <li><b>🧲 Merge:</b> in the product editor turn two identical products into one.</li>
         <li><b>🩺 Health light &amp; 🐞 error log:</b> in the settings – shows whether everything runs.</li>
         <li><b>🛍️ Automatic shop mode:</b> switches on when you enter a store (applies to all devices, optional – location stays personal).</li>

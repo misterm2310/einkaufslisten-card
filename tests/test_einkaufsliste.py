@@ -3637,3 +3637,13 @@ async def test_liste_loeschen_pro_geschaeft(hass, setup):
     assert [i["name"] for i in m.items] == ["Käse"]  # Netto unberührt
     assert "milch" in m.history and m.own_notes  # Katalog bleibt
     assert m.purge_items("all")["removed"] == 1 and m.items == []
+
+
+def test_pdf_leser_dateien_vorhanden():
+    """📄 PDF einlesen: pdf.js liegt mit Lizenz im Paket und die Karte kennt den Knopf."""
+    from pathlib import Path
+    www = Path(__file__).parent.parent / "custom_components" / "einkaufsliste" / "www"
+    for name in ("pdf.min.js", "pdf.worker.min.js", "LICENSE-pdf.js.txt"):
+        assert (www / "pdf" / name).stat().st_size > 1000, name
+    card = (www / "einkaufsliste-card.js").read_text(encoding="utf-8")
+    assert 'data-sp="pdf"' in card and "elPdfRead" in card and "/pdf/pdf.min.js" in card
