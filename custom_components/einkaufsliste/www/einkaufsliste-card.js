@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.57.01";
+const EL_VERSION = "2.57.02";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.57.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -7635,7 +7635,9 @@ class EinkaufslisteCard extends HTMLElement {
         <a class="elcbtn" href="${repo}" target="_blank" rel="noopener">🐙 GitHub</a>
         <a class="elcbtn" href="${repo}/discussions" target="_blank" rel="noopener">💡 ${t("Idee oder Wunsch", "Idea or request")}</a>
         <a class="elcbtn" href="${repo}/issues" target="_blank" rel="noopener">🐞 ${t("Fehler melden", "Report a bug")}</a>
+        <a class="elcbtn" href="https://buymeacoffee.com/misterm_2310" target="_blank" rel="noopener">☕ ${t("Kaffee spendieren", "Buy me a coffee")}</a>
       </div>
+      <p class="elcsmall">${t("Die Einkaufsliste ist und bleibt kostenlos. Wenn sie dir gefällt, freue ich mich über einen Kaffee – ganz freiwillig. Beim Antippen öffnet sich die Seite von Buy Me a Coffee im Browser; vorher geht nichts ins Internet.", "The shopping list is and stays free. If you like it, I would be happy about a coffee – completely voluntary. Tapping opens the Buy Me a Coffee page in your browser; nothing goes to the internet before that.")}</p>
       <p>🔒 ${t("Alle Daten bleiben in deinem Home Assistant. Ins Internet geht nur, was du selbst anstößt: ein gescannter Barcode (Nachschlagen bei Open Food Facts), ein Rezept-Link oder – wenn du sie einschaltest – die Angebote. Mehr unter ⚙️ → Datenschutz.",
         "All data stays in your Home Assistant. Only what you trigger yourself goes to the internet: a scanned barcode (looked up at Open Food Facts), a recipe link or – if you switch them on – the offers. More under ⚙️ → Privacy.")}</p>
       <p class="elcsmall">${t("Lizenz", "License")}: MIT</p>

@@ -273,6 +273,10 @@ actions:
 
 ---
 
+## ☕ Gefällt dir die Einkaufsliste?
+
+Sie ist und bleibt **kostenlos**. Wenn du magst, kannst du mir ganz freiwillig einen Kaffee spendieren: [buymeacoffee.com/misterm_2310](https://buymeacoffee.com/misterm_2310). Den Link gibt es auch unter ⚙️ → Credits. Danke! 🙏
+
 ## 💡 Ideen, Wünsche und Fehler
 
 - **Idee oder Wunsch?** Schreib sie bei den [Diskussionen](https://github.com/misterm2310/einkaufslisten-card/discussions) (Kategorie **Ideas**). Dort kann jeder mit 👍 zustimmen und mitreden. Auch **Abstimmungen** laufen dort.

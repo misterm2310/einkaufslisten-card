@@ -239,6 +239,10 @@ Events: `einkaufsliste_item_added`, `einkaufsliste_cleanup`.
 
 **Can I add store brands or category words for my country?** Yes, without programming: both live in their own files under `custom_components/einkaufsliste/data/` – `eigenmarken.json` (country as set in HA → chain → brands; unknown country = all combined) and `kategorien.json` (keywords in the category name + products per language, e.g. `de`, `en`, `nl`). Add yours and send a pull request 🙏
 
+## ☕ Do you like the shopping list?
+
+It is and stays **free**. If you like, you can buy me a coffee – completely voluntary: [buymeacoffee.com/misterm_2310](https://buymeacoffee.com/misterm_2310). The link is also under ⚙️ → Credits. Thank you! 🙏
+
 ---
 
 License: MIT · Product data: [Open Food Facts](https://world.openfoodfacts.org) (ODbL) · Offline app icons: [Material Design Icons](https://pictogrammers.com) (Apache 2.0) · Offline app barcode reader: [ZXing-js](https://github.com/zxing-js/library) (Apache 2.0)
