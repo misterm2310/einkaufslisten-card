@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.57.03"
+VERSION = "2.57.04"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1

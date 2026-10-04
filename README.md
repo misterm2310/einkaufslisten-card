@@ -273,11 +273,11 @@ actions:
 
 ---
 
-## ☕ Gefällt dir die Einkaufsliste?
+## 💙 Gefällt dir die Einkaufsliste?
 
-Sie ist und bleibt **kostenlos**. Wenn du magst, kannst du mir ganz freiwillig einen Kaffee spendieren: [buymeacoffee.com/misterm_2310](https://buymeacoffee.com/misterm_2310). Den Link gibt es auch unter ⚙️ → Credits. Danke! 🙏
+Sie ist und bleibt **kostenlos**. Wenn du magst, kannst du mir ganz freiwillig eine kleine Spende per PayPal schicken: [paypal.me/MarcoStrickmann](https://paypal.me/MarcoStrickmann). Den Link gibt es auch unter ⚙️ → Credits. Danke! 🙏
 
-[<img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=misterm_2310&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=FFFFFF" alt="Buy me a coffee" height="48">](https://buymeacoffee.com/misterm_2310)
+[![PayPal](https://img.shields.io/badge/PayPal-Spenden-0070BA?logo=paypal&logoColor=white)](https://paypal.me/MarcoStrickmann)
 
 ## 💡 Ideen, Wünsche und Fehler
 

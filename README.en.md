@@ -239,11 +239,11 @@ Events: `einkaufsliste_item_added`, `einkaufsliste_cleanup`.
 
 **Can I add store brands or category words for my country?** Yes, without programming: both live in their own files under `custom_components/einkaufsliste/data/` – `eigenmarken.json` (country as set in HA → chain → brands; unknown country = all combined) and `kategorien.json` (keywords in the category name + products per language, e.g. `de`, `en`, `nl`). Add yours and send a pull request 🙏
 
-## ☕ Do you like the shopping list?
+## 💙 Do you like the shopping list?
 
-It is and stays **free**. If you like, you can buy me a coffee – completely voluntary: [buymeacoffee.com/misterm_2310](https://buymeacoffee.com/misterm_2310). The link is also under ⚙️ → Credits. Thank you! 🙏
+It is and stays **free**. If you like, you can send me a small donation via PayPal – completely voluntary: [paypal.me/MarcoStrickmann](https://paypal.me/MarcoStrickmann). The link is also under ⚙️ → Credits. Thank you! 🙏
 
-[<img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=misterm_2310&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=FFFFFF" alt="Buy me a coffee" height="48">](https://buymeacoffee.com/misterm_2310)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-0070BA?logo=paypal&logoColor=white)](https://paypal.me/MarcoStrickmann)
 
 ---
 
