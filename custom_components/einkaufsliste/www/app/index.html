@@ -38,8 +38,6 @@ body { padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset
 #wrap { max-width:720px; margin:0 auto; }
 .bar { display:flex; align-items:center; gap:8px; margin:0 4px 8px; font-size:13px; color:var(--secondary-text-color); }
 .bar .grow { flex:1; }
-.pill { border-radius:999px; padding:2px 10px; background:color-mix(in srgb, var(--success-color) 18%, transparent); color:var(--primary-text-color); }
-.pill.off { background:color-mix(in srgb, var(--error-color) 18%, transparent); }
 .bar button { font:inherit; color:inherit; background:none; border:0; text-decoration:underline; cursor:pointer; }
 .foot[hidden] { display:none; }
 .foot { display:flex; justify-content:center; gap:10px; margin:28px 6px 8px; font-size:13px; color:var(--secondary-text-color); }
@@ -572,7 +570,7 @@ function update() {
     return;
   }
   if (!card) {
-    wrap.innerHTML = `<div class="bar"><span class="pill" id="pill"></span><span class="grow"></span><span>v${VERSION}</span></div>`;
+    wrap.innerHTML = ""; // 🟢 Leiste (verbunden · 👁️ · 🔓 · Version) bringt die Karte selbst mit
     card = document.createElement("einkaufsliste-card");
     card.setConfig({ title: "Einkaufsliste" });
     wrap.append(card);
@@ -591,9 +589,6 @@ function update() {
     });
   }
   runShortcut();
-  const pill = document.getElementById("pill");
-  pill.textContent = ready ? T("🟢 verbunden", "🟢 connected") : T("📴 offline – letzter Stand", "📴 offline – last state");
-  pill.classList.toggle("off", !ready);
   card.hass = makeHass();
 }
 // 📱 Schnellmenü am App-Symbol (lange drücken): ?do=add | shop | scan
