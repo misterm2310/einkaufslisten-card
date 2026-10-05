@@ -1,0 +1,47 @@
+name: Releases aufräumen
+
+# 🧹 Damit es nicht immer mehr Releases werden: Nach jedem neuen Release
+# bleiben nur die wichtigen (Liste unten) und die neuesten 10 stehen.
+# Alles andere wird gelöscht – Release UND Tag. Der Code bleibt in der Git-Historie.
+# Von Hand starten geht auch: Actions → „Releases aufräumen“ → Run workflow.
+on:
+  workflow_run:
+    workflows: ["Release automatisch anlegen"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # 📌 Diese Versionen werden nie gelöscht (mit Leerzeichen getrennt)
+  BEHALTEN: "v1.0.0 v1.6.0 v2.3.0 v2.10.0 v2.21.2"
+  # 🆕 So viele der neuesten Releases bleiben zusätzlich stehen
+  NEUESTE: "10"
+
+jobs:
+  aufraeumen:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Alte Releases löschen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          # alle Releases, das Neueste zuerst
+          gh release list --repo "$REPO" --limit 500 --json tagName,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[].tagName' > alle.txt
+          echo "Releases gefunden: $(wc -l < alle.txt)"
+          head -n "$NEUESTE" alle.txt > neueste.txt
+          geloescht=0
+          while read -r tag; do
+            [ -z "$tag" ] && continue
+            if grep -qxF "$tag" neueste.txt; then continue; fi
+            if printf '%s\n' $BEHALTEN | grep -qxF "$tag"; then echo "📌 bleibt: $tag"; continue; fi
+            echo "🗑️ lösche: $tag"
+            gh release delete "$tag" --repo "$REPO" --yes --cleanup-tag
+            geloescht=$((geloescht + 1))
+          done < alle.txt
+          echo "Fertig – $geloescht Releases gelöscht, $(( $(wc -l < alle.txt) - geloescht )) bleiben."
