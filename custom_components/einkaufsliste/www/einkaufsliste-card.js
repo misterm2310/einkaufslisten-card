@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.60.05";
+const EL_VERSION = "2.60.06";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.60.04"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1727,11 +1727,11 @@ form.add .toolbar { grid-column: 1 / -1; display:flex; gap:4px; margin:-2px 0 0;
 .tool { background:none; border:0; border-radius:10px; padding:6px 10px; cursor:pointer; color:var(--secondary-text-color); display:inline-flex; align-items:center; line-height:0; position:relative; --mdc-icon-size:22px; }
 .tool:hover { background:var(--secondary-background-color, rgba(127,127,127,.1)); }
 .tool.on { color:var(--primary-color,#03a9f4); background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); }
-.tool.filled::after { content:""; position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%; background:var(--primary-color,#03a9f4); }
+.tool.filled::after { content:""; position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%; background:var(--primary-color,#03a9f4); } /* ✏️ 📷 ▥ etwas dran: kleiner blauer Punkt */
 form.add .extras { grid-column: 1 / -1; display:flex; flex-direction:column; gap:6px; }
 form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .tool.busy ha-icon { animation: pulse 1s infinite; }
-.tool.hasval { color:var(--primary-color,#03a9f4); }
+.tool.hasval, .tool.blue { color:var(--primary-color,#03a9f4); }
 #btnOcrList, #btnFavAll:not([hidden]) { margin-left:auto; } /* ⭐ (nur mit Favoriten) und 📋 ganz rechts; kommt das Radiergummi, rutschen sie einen nach links */
 #btnFavAll:not([hidden]) + #btnOcrList { margin-left:0; }
 #btnFavAll ha-icon { color:#f9a825; }
@@ -3127,8 +3127,9 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("addForm").addEventListener("submit", (e) => this._onAdd(e));
     this.$("newPhotoFile").addEventListener("change", (e) => this._onNewPhotoFile(e));
     this.$("inCat").addEventListener("change", () => { this._catManual = !!this.$("inCat").value; this._updateTools(); });
-    this.$("inStore").addEventListener("change", () => { // 🧽 Radiergummi auch nach Geschäft-Wahl
+    this.$("inStore").addEventListener("change", () => { // ➕ „Neues Geschäft …“ aus der Auswahl
       if (this.$("inStore").value === "~new") { this._newStoreFromForm(); return; }
+      this._storeManual = true; // 🧽 selbst ausgewählt (nicht durch den Reiter)
       this._updateTools();
     });
     for (const id of ["inQty", "inNote", "inOwn", "inFor"]) {
@@ -6948,6 +6949,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._newPhoto = null;
     this._pendingBarcode = null;
     this._catManual = false;
+    this._storeManual = false;
     this._qtyUnit = null;
     this._unitMore = false;
     this._updateNewPhotoBtn();
@@ -7064,9 +7066,9 @@ class EinkaufslisteCard extends HTMLElement {
     this._renderNoteChips();
     const clear = this.$("tClear");
     if (clear) {
+      // 🧽 nur, wenn wirklich etwas eingetragen/ausgewählt ist: ein Feld, Foto/Barcode – oder Geschäft/Kategorie SELBST gewählt (ein Reiter-Wechsel zählt nicht)
       const any = ["inName", "inQty", "inNote", "inOwn", "inFor"].some((id) => this.$(id)?.value.trim())
-        || this._newPhoto || this._pendingBarcode || this._catManual
-        || (!this._fixedStore && (this.$("inStore")?.value || "") !== this._defaultStore());
+        || this._newPhoto || this._pendingBarcode || this._catManual || this._storeManual;
       clear.hidden = !any;
     }
     const nb = this.$("btnNewBarcode");
@@ -7086,8 +7088,9 @@ class EinkaufslisteCard extends HTMLElement {
       const box = this.$(boxId);
       if (!btn || !box) continue;
       btn.classList.toggle("on", !box.hidden);
-      btn.classList.toggle("filled", !!value && tool === "tOwn");
-      const label = tool === "tOwn" ? "" : value || "";
+      btn.classList.toggle("filled", !!value && tool === "tOwn"); // ✏️ Notiz: kleiner blauer Punkt (wie Foto und Barcode)
+      const label = "";
+      btn.classList.toggle("blue", !!value && tool !== "tOwn"); // 🔢 Menge, 👤 Für wen: Symbol blau, ohne Text dahinter
       btn.classList.toggle("hasval", !!label);
       const lblTxt = {tQty: "Menge", tOwn: "Notiz", tFor: "Für wen"}[tool] || "";
       const key = icon + "|" + label;
@@ -9183,6 +9186,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat"]) this.$(id).value = "";
       this._catManual = false;
+      this._storeManual = false;
       this._pendingBarcode = null;
       this._qtyUnit = null;
       this._unitMore = false;
@@ -9268,6 +9272,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "tab":
         this._tab = el.dataset.tab;
+        this._storeManual = false; // Geschäft kommt jetzt vom Reiter
         this._seenSnap = { ...(this._mySeen() || {}) };
         this._renderAll();
         break;
