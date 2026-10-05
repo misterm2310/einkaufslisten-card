@@ -1912,7 +1912,7 @@ ha-card.compact .group { margin-top:4px; }
 .tile:hover { border-color:var(--primary-color,#03a9f4); }
 .tile ha-icon { color:var(--primary-color,#03a9f4); margin-bottom:4px; }
 .tile small { color:var(--secondary-text-color); font-size:.78em; }
-.topbar { display:flex; align-items:center; gap:8px; padding:8px 12px 0; font-size:13px; color:var(--secondary-text-color); } /* Maß wie die frühere Leiste der Offline-App */
+.topbar { display:flex; align-items:center; gap:8px; margin:0 4px 8px; font-size:13px; color:var(--secondary-text-color); } /* genau wie die frühere Leiste der Offline-App: über der Karte */
 .topbar .grow { flex:1; }
 .topbar .iconbtn { padding:2px; --mdc-icon-size:20px; color:var(--secondary-text-color); }
 .topbar .ver { opacity:.8; }
@@ -3042,12 +3042,13 @@ class EinkaufslisteCard extends HTMLElement {
     this._built = true;
     this.shadowRoot.innerHTML = `
       <style>${STYLE}</style>
+      <!-- 🟢 Leiste wie früher in der Offline-App: ÜBER der Karte, nicht im weißen Kasten -->
+      <div class="topbar" id="topBar">
+        <span class="pill" id="livePill" data-act="home"></span><span class="grow"></span>
+        <button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button>
+        <span class="ver" translate="no">v${EL_VERSION}</span>
+      </div>
       <ha-card>
-        <div class="topbar" id="topBar">
-          <span class="pill" id="livePill" data-act="home"></span><span class="grow"></span>
-          <button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button>
-          <span class="ver" translate="no">v${EL_VERSION}</span>
-        </div>
         <div class="head">
           <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="home" title="🏠 Zurück zur Einkaufsliste"></ha-icon><span id="mascot" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon><span class="lbl">Laden</span></button>
