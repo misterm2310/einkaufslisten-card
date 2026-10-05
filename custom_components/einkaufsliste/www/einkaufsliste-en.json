@@ -1870,5 +1870,18 @@
 "farbiger Streifen links": "coloured stripe on the left",
 "Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen bringt dich wie der Wagen zurück zur Einkaufsliste.": "Instead of the cart icon at the top left there's a little shopping cart with a face. It beams when the list is empty, sweats when the cart is full, sleeps at night and dresses up on holidays. Otherwise it wears the costume of the season: a flower in spring, sunglasses in summer, a leaf in autumn, a scarf in winter. Tapping it takes you back to the shopping list, just like the cart.",
 "Automatisches Aufräumen ist aus": "Automatic cleanup is off",
-"💡 Tipp: Ganz unten auf „📖 Anleitung“ tippen – dort steht, wie alles geht.": "💡 Tip: tap “📖 Guide” at the very bottom – it explains everything."
+"💡 Tipp: Ganz unten auf „📖 Anleitung“ tippen – dort steht, wie alles geht.": "💡 Tip: tap “📖 Guide” at the very bottom – it explains everything.",
+"🟢 verbunden": "🟢 connected",
+"🔴 keine Verbindung": "🔴 no connection",
+"📴 offline – letzter Stand": "📴 offline – last state",
+"⏳ {} wartet aufs Netz": "⏳ {0} waiting for the network",
+"⏳ {} warten aufs Netz": "⏳ {0} waiting for the network",
+"👁️ Meine Ansicht – was ich beim Artikel sehe": "👁️ My view – what I see on items",
+"Meine Ansicht": "My view",
+"Listenansicht – für alle": "List view – for everyone",
+"– auf allen Geräten, auf denen du angemeldet bist. Was du hier nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht).": "– on all devices where you are logged in. Whatever you don’t change here comes from “For everyone” (⚙️ → List view).",
+"Was alle in der Familie beim Artikel sehen (Standard). Jeder kann es für sich selbst anders einstellen – mit dem 👁️ oben in der Leiste, ganz ohne PIN.": "What everyone in the family sees on an item (default). Each person can set it differently for themselves – with the 👁️ in the bar at the top, no PIN needed.",
+"Ansicht": "View",
+"👁️ Meine Ansicht – was ich beim Artikel sehe (nur für mich, ohne PIN)": "👁️ My view – what I see on items (just for me, no PIN)",
+"Was alle in der Familie beim Artikel sehen (Standard). Jeder kann es für sich selbst anders einstellen – ganz unten unter der Liste mit „👁️ Ansicht“, ganz ohne PIN.": "What everyone in the family sees on an item (default). Each person can set it differently for themselves – at the very bottom below the list with “👁️ View”, no PIN needed."
 }

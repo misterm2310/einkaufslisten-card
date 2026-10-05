@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.60.01";
+const EL_VERSION = "2.60.02";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.60.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.60.02"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🟢 <b>Leiste oben auf jeder Seite</b> – jetzt auch in der Home-Assistant-Karte: links „🟢 verbunden“ (⏳ orange = wartet aufs Netz, 🔴 = keine Verbindung), rechts das <b>🔓 Schloss</b> (nur mit PIN) und die Versionsnummer. · 👁️ <b>Meine Ansicht für jeden:</b> Was du beim Artikel sehen willst, stellst du jetzt ganz unten mit <b>„👁️ Ansicht“</b> (neben „📖 Anleitung“) ein – ganz ohne Zahnrad und PIN. In ⚙️ → Listenansicht steht nur noch der Standard „für alle“.",
+   "🟢 <b>Bar at the top of every page</b> – now in the Home Assistant card too: on the left “🟢 connected” (⏳ orange = waiting for the network, 🔴 = no connection), on the right the <b>🔓 lock</b> (only with a PIN) and the version number. · 👁️ <b>My view for everyone:</b> what you want to see on items is now set at the very bottom with <b>“👁️ View”</b> (next to “📖 Guide”) – no gear or PIN needed. ⚙️ → List view only holds the default “for everyone”."],
   ["👁️ <b>Listenansicht:</b> ⚙️ → Listenansicht – Häkchen weg, und Menge, Notizen, Für wen, wer eingetragen hat, Datum, Foto, Stern & Co. sind beim Artikel ausgeblendet. „Für alle“ oder „Nur für mich“ (jeder für sich). · 🧹 <b>Aufräumen in der Karte:</b> ⚙️ → Aufräumen – jetzt mit <b>An/Aus</b>, Tag, Uhrzeit und Mindestalter direkt hier (nicht mehr in der Integration). · 🛒 <b>Der Einkaufswagen oben links bringt dich immer zurück zur Liste</b>, die Anleitung steckt im Knopf „📖 Anleitung“ ganz unten. · 🏪 <b>Geschäfte wieder als Liste</b>, Reihenfolge mit ⌃⌄ direkt dort. · 🔓 Das Schloss sitzt in ⚙️ oben rechts neben der Version, der grüne Punkt ist weg (nur noch bei Problemen sichtbar). · 📊 Last-Anzeige jetzt unter Ressourcen. · 📜 Neue Produkte im Katalog stehen im Verlauf. · 🔁 Bis zu 50 To-do-Listen – und beim <b>vollen Abgleich</b> bekommt jede Liste nur die Artikel <b>ihres</b> Geschäfts (Tomaten bei Lidl landen nicht mehr auch bei Bring! Aldi). · 🧽 Radiergummi nur noch an Suchfeldern.",
    "👁️ <b>List view:</b> ⚙️ → List view – untick, and quantity, notes, for whom, who added it, date, photo, star & co. are hidden on items. “For everyone” or “Just for me” (each person for themselves). · 🧹 <b>Cleanup in the card:</b> ⚙️ → Cleanup – now with <b>on/off</b>, day, time and minimum age right here (no longer in the integration). · 🛒 <b>The cart at the top left always takes you back to the list</b>, the guide is behind the “📖 Guide” button at the very bottom. · 🏪 <b>Stores as a list again</b>, order with ⌃⌄ right there. · 🔓 The lock sits in ⚙️ at the top right next to the version, the green dot is gone (only shown when something is wrong). · 📊 Load display now under Resources. · 📜 New catalogue products show up in the history. · 🔁 Up to 50 to-do lists – and with <b>full sync</b> each list only gets the items of <b>its</b> store (tomatoes for Lidl no longer end up in Bring! Aldi too). · 🧽 Eraser only on search fields now."],
   ["📊 <b>Last-Anzeige:</b> ⚙️ → Alles ok? zeigt jetzt unten „📊 Last“: wie oft sich etwas ändert (pro Minute), wie viele Pakete an Karten und Apps gingen und wie groß ein Paket ist. Hilft, wenn der Server unter Last steht. Dazu: Schnelle Änderungen werden gebündelt gesendet, und die Häkchen bei „Eigene Kategorien“ sitzen jetzt sauber.",
@@ -1676,12 +1678,7 @@ button { font:inherit; color:inherit; }
 .head { display:flex; align-items:center; gap:4px; margin:0 2px 8px; min-height:36px; }
 .title { display:flex; align-items:center; gap:8px; font-size:1.25em; font-weight:600; flex:1; min-width:0; }
 .title span.t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.live:not(.wait):not(.off) { display:none; }
-.live { cursor:pointer; position:relative; width:9px; height:9px; border-radius:50%; background:var(--success-color,#43a047); flex:0 0 auto; box-shadow:0 0 0 3px color-mix(in srgb, var(--success-color,#43a047) 25%, transparent); }
-.live::after { content:""; position:absolute; inset:-10px; }
-.live.wait { background:var(--warning-color,#ffa600); box-shadow:0 0 0 3px color-mix(in srgb, var(--warning-color,#ffa600) 30%, transparent); animation: pulse 1.6s infinite; }
 .qwait { font-size:.8em; margin-left:4px; }
-.live.off { background:var(--error-color,#db4437); box-shadow:0 0 0 3px color-mix(in srgb, var(--error-color,#db4437) 25%, transparent); animation: pulse 1.2s infinite; }
 .updbar { margin:0 2px 8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 14%, transparent); font-size:.88em; display:flex; align-items:center; gap:8px; }
 .undobar { position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); z-index:50; max-width:calc(100vw - 24px); display:flex; align-items:center; gap:12px; padding:8px 8px 8px 16px; border-radius:24px; background:#323232; color:#fff; box-shadow:0 3px 12px rgba(0,0,0,.35); font-size:.92em; }
 .undobar[hidden] { display:none; }
@@ -1907,9 +1904,20 @@ ha-card.compact .group { margin-top:4px; }
 .tile:hover { border-color:var(--primary-color,#03a9f4); }
 .tile ha-icon { color:var(--primary-color,#03a9f4); margin-bottom:4px; }
 .tile small { color:var(--secondary-text-color); font-size:.78em; }
-.sethead { display:flex; align-items:center; gap:8px; }
-.sethead h3 { flex:1; }
-.sethead .setver { font-size:.8em; opacity:.6; }
+.topbar { display:flex; align-items:center; gap:6px; padding:6px 10px 0; font-size:12px; color:var(--secondary-text-color); }
+.topbar .grow { flex:1; }
+.topbar .iconbtn { padding:2px; --mdc-icon-size:18px; color:var(--secondary-text-color); }
+.topbar .ver { opacity:.8; }
+.pill { cursor:pointer; border-radius:999px; padding:1px 9px; background:color-mix(in srgb, var(--success-color,#43a047) 16%, transparent); color:var(--primary-text-color); white-space:nowrap; }
+.pill.wait { background:color-mix(in srgb, var(--warning-color,#ffa600) 25%, transparent); }
+.pill.off { background:color-mix(in srgb, var(--error-color,#db4437) 20%, transparent); }
+.fbtns { margin-left:auto; display:flex; gap:6px; flex:none; }
+.fbtns .guidebtn { margin-left:0; }
+.guidebtn.on { border-color:var(--primary-color,#03a9f4); color:var(--primary-color,#03a9f4); }
+.myview { margin:6px 10px 2px; padding:8px 10px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); }
+.myview[hidden] { display:none; }
+.myview .mvhead { display:flex; align-items:center; gap:6px; }
+.myview .mvhead b { flex:1; }
 .sechead { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
 .sechead h3 { margin:0; }
 .sechead .back { padding:6px 10px; }
@@ -2760,14 +2768,17 @@ class EinkaufslisteCard extends HTMLElement {
     });
   }
 
-  // 🟢 Live-Anzeige: verbunden und Liste abonniert = unsichtbar (alles gut), wartet = orange, sonst rot
+  // 🟢 Live-Anzeige in der Leiste oben: verbunden = grün, wartet = orange, sonst rot (Offline-App: „offline – letzter Stand“)
   _updateLive() {
-    const dot = this.$("liveDot");
+    const dot = this.$("livePill");
     if (!dot) return;
     const ok = this._hass?.connected !== false && !!this._unsub && !this._error;
     const wait = elQueue.length;
     dot.classList.toggle("off", !ok && !wait);
     dot.classList.toggle("wait", !!wait);
+    const txt = wait ? `⏳ ${wait} ${wait === 1 ? "wartet" : "warten"} aufs Netz`
+      : ok ? "🟢 verbunden" : window.__elOfflineApp ? "📴 offline – letzter Stand" : "🔴 keine Verbindung";
+    if (dot.textContent !== elT(txt)) dot.textContent = txt;
     dot.title = wait ? `⏳ ${wait} ${wait === 1 ? "Sache wartet" : "Sachen warten"} aufs Netz`
       : ok ? "Verbunden – alles ist aktuell · antippen = zurück zur Liste" : "Keine Verbindung – Änderungen kommen gerade nicht an";
     if (ok && wait) this._flushQueue();
@@ -3023,8 +3034,13 @@ class EinkaufslisteCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${STYLE}</style>
       <ha-card>
+        <div class="topbar" id="topBar">
+          <span class="pill" id="livePill" data-act="home"></span><span class="grow"></span>
+          <button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button>
+          <span class="ver" translate="no">v${EL_VERSION}</span>
+        </div>
         <div class="head">
-          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="home" title="🏠 Zurück zur Einkaufsliste"></ha-icon><span id="mascot" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="live" id="liveDot" title="Verbindung" data-act="home"></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
+          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="home" title="🏠 Zurück zur Einkaufsliste"></ha-icon><span id="mascot" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon><span class="lbl">Laden</span></button>
           <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon><span class="lbl">Bildschirm</span></button>
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
@@ -3079,6 +3095,7 @@ class EinkaufslisteCard extends HTMLElement {
         </div>
         <div id="otherView" hidden></div>
         <div class="footer" id="footer" hidden></div>
+        <div class="myview" id="myView" hidden></div>
       </ha-card>`;
 
     const root = this.shadowRoot;
@@ -3428,6 +3445,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     this._renderedView = this._view;
     this._renderFooter();
+    this._renderMyView();
   }
 
   _renderTabs() {
@@ -4332,7 +4350,9 @@ class EinkaufslisteCard extends HTMLElement {
     const next = new Date(s.next_cleanup);
     f.innerHTML = (s.cleanup_on === false ? `<ha-icon icon="mdi:broom"></ha-icon><span>Automatisches Aufräumen ist aus</span>`
       : `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`)
-      + (window.__elOfflineApp ? "" : `<button class="guidebtn" type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte"><ha-icon icon="mdi:book-open-page-variant-outline"></ha-icon>Anleitung</button>`); // 📖 fester Platz unten (in der Offline-App steht er neben „Abmelden“)
+      + `<span class="fbtns"><button class="guidebtn${this._myViewOpen ? " on" : ""}" type="button" data-act="myview" title="👁️ Meine Ansicht – was ich beim Artikel sehe (nur für mich, ohne PIN)"><ha-icon icon="mdi:eye-outline"></ha-icon>Ansicht</button>`
+      + (window.__elOfflineApp ? "" : `<button class="guidebtn" type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte"><ha-icon icon="mdi:book-open-page-variant-outline"></ha-icon>Anleitung</button>`) // 📖 fester Platz unten (in der Offline-App steht er neben „Abmelden“)
+      + `</span>`;
   }
 
   // ---------------------------------------------------------------- Icon-Suche
@@ -4508,7 +4528,7 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
         <p class="hint">${persons.length ? "Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“." : "Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet."}</p>` },
-      { key: "listview", icon: "mdi:eye-outline", title: "Listenansicht", info: this._viewInfo(), html: () => this._viewHtml() },
+      { key: "listview", icon: "mdi:eye-outline", title: "Listenansicht – für alle", info: this._viewInfo(), html: () => this._viewHtml() },
       { key: "products", icon: "mdi:package-variant-closed", title: "Produkte", info: "alle Produkte, Fotos, Barcodes, löschen", html: () => `
         <div class="subtabs">
           <button class="tab ${!this._prodTab || this._prodTab === "catalog" ? "active" : ""}" data-act="prod-tab" data-tab="catalog"><ha-icon icon="mdi:package-variant-closed"></ha-icon>Alle Produkte</button>
@@ -4641,13 +4661,12 @@ class EinkaufslisteCard extends HTMLElement {
     if (!cur) {
       this.$("otherView").innerHTML = `
         <div class="sec">
-          <div class="sethead"><h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3><span class="setver" translate="no">v${EL_VERSION}</span><button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button></div>
+          <h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3>
           <button class="health wait" id="healthBar" data-act="set-sec" data-sec="check"><span>⚪</span><span><b>Prüfe …</b></span></button>
           <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="setSearch" placeholder="In den Einstellungen suchen, z. B. Foto" value="${esc(this._setQ || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="setSearch" ${this._setQ ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
           <div id="setList">${this._settingsListHtml(sections)}</div>
           <div class="btnrow" style="margin-top:14px"><button class="btn" data-act="guide-settings"><ha-icon icon="mdi:book-open-variant"></ha-icon>Anleitung Einstellungen</button></div>
         </div>`;
-      this._updateLockBtn();
       this.$("setSearch").addEventListener("input", (ev) => {
         this._setQ = ev.target.value;
         this.$("setList").innerHTML = this._settingsListHtml(sections);
@@ -4739,31 +4758,39 @@ class EinkaufslisteCard extends HTMLElement {
     return `${off ? `${off} ausgeblendet` : "alles sichtbar"}${me && all[me] ? " · eigene Ansicht" : ""}`;
   }
 
-  _viewHtml() {
+  // mine = true: „Meine Ansicht“ (👁️ unten neben „Anleitung“, für jeden ohne PIN) · false: „Für alle“ (⚙️ → Listenansicht)
+  _viewHtml(mine = false) {
     const all = this._data?.settings?.view_prefs || {};
     const me = this._hass?.user?.id;
-    const mine = this._viewTab === "me";
     const base = { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
     const cur = mine ? { ...base, ...((me && all[me]) || {}) } : base;
+    const scope = mine ? "me" : "all";
     return `
-        <div class="subtabs">
-          <button class="tab ${mine ? "" : "active"}" data-act="view-tab" data-tab="all"><ha-icon icon="mdi:account-group-outline"></ha-icon>Für alle</button>
-          <button class="tab ${mine ? "active" : ""}" data-act="view-tab" data-tab="me"><ha-icon icon="mdi:account-outline"></ha-icon>Nur für mich</button>
-        </div>
         <p class="hint">${mine
-          ? `Gilt nur für <b translate="no">${esc(this._hass?.user?.name || "dich")}</b> – auf allen Geräten, auf denen du angemeldet bist. Was du hier nicht änderst, kommt von „Für alle“.`
-          : "Was alle in der Familie beim Artikel sehen. Jeder kann es unter „Nur für mich“ für sich selbst anders einstellen."}</p>
-        ${VIEW_OPTS.map(([k, label, sub]) => `<button class="lrow viewrow" data-act="view-toggle" data-key="${k}" aria-pressed="${cur[k] !== false}">
+          ? `Gilt nur für <b translate="no">${esc(this._hass?.user?.name || "dich")}</b> – auf allen Geräten, auf denen du angemeldet bist. Was du hier nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht).`
+          : "Was alle in der Familie beim Artikel sehen (Standard). Jeder kann es für sich selbst anders einstellen – ganz unten unter der Liste mit „👁️ Ansicht“, ganz ohne PIN."}</p>
+        ${VIEW_OPTS.map(([k, label, sub]) => `<button class="lrow viewrow" data-act="view-toggle" data-scope="${scope}" data-key="${k}" aria-pressed="${cur[k] !== false}">
           <ha-icon icon="${cur[k] !== false ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>
           <span class="grow"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span></button>`).join("")}
         <div class="btnrow">${mine
-          ? (me && all[me] ? `<button class="btn" data-act="view-reset"><ha-icon icon="mdi:restore"></ha-icon>Wie „Für alle“</button>` : "")
-          : (all._all ? `<button class="btn" data-act="view-reset"><ha-icon icon="mdi:restore"></ha-icon>Alles wieder anzeigen</button>` : "")}</div>
+          ? (me && all[me] ? `<button class="btn" data-act="view-reset" data-scope="me"><ha-icon icon="mdi:restore"></ha-icon>Wie „Für alle“</button>` : "")
+          : (all._all ? `<button class="btn" data-act="view-reset" data-scope="all"><ha-icon icon="mdi:restore"></ha-icon>Alles wieder anzeigen</button>` : "")}</div>
         <p class="hint">Der Laden-Modus zeigt sowieso nur das Wichtigste. Die Optionen der Dashboard-Karte (z. B. „Wer eingetragen hat“ aus) gehen immer vor.</p>`;
   }
 
+  // 👁️ „Meine Ansicht“ – klappt ganz unten unter „Ansicht“ (neben „Anleitung“) auf (für jeden, ohne Zahnrad/PIN)
+  _renderMyView() {
+    const box = this.$("myView");
+    if (!box) return;
+    const was = !box.hidden;
+    box.hidden = !this._myViewOpen || !this._data || this._view !== "list";
+    if (box.hidden) { box.innerHTML = ""; return; }
+    box.innerHTML = `<div class="mvhead"><ha-icon icon="mdi:eye-outline"></ha-icon><b>Meine Ansicht</b><button class="iconbtn" type="button" data-act="myview" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>${this._viewHtml(true)}`;
+    if (!was) box.scrollIntoView?.({ block: "nearest", behavior: "smooth" }); // gerade aufgeklappt: ins Bild holen
+  }
+
   // 🔒 PIN fürs Zahnrad
-  // 🔒 Sofort-Sperren: oben rechts in der Einstellungs-Übersicht neben der Versionsnummer – nur mit PIN und entsperrt
+  // 🔒 Sofort-Sperren: in der Leiste oben neben der Versionsnummer (auf allen Seiten) – nur mit PIN und entsperrt
   _updateLockBtn() {
     const btn = this.$("btnLock");
     if (btn) btn.hidden = !(this._data?.settings?.pin && pinUnlocked());
@@ -7524,7 +7551,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>📍 Automatisch zum Geschäft:</b> Bist du in der Zone eines Geschäfts, springt die Liste auf dessen Reiter (der bekommt ein 📍). Das lässt sich in den Karten-Optionen ausschalten.</li>
         <li><b>🤷 „Egal wo“</b> = kein festes Geschäft: steht in jedem Geschäfts-Reiter mit drin und zählt überall mit. Mit ⇄ in ein Geschäft schieben = zieht einfach um.</li>
         <li><b>🔁 Gibt's auch hier</b> (im Reiter eines Geschäfts): Sachen, die bei einem anderen Geschäft stehen, die es aber auch hier gibt. Antippen holt sie her.</li>
-        <li>Kein Netz im Laden? Einfach weiter abhaken. Der Punkt oben wird <b>orange ⏳</b>, und alles wird nachgeschickt, sobald wieder Netz da ist.</li></ul>`)}
+        <li>Kein Netz im Laden? Einfach weiter abhaken. Oben in der Leiste steht dann <b>⏳ orange</b>, und alles wird nachgeschickt, sobald wieder Netz da ist.</li></ul>`)}
       ${sec("👆", "Ändern & lange drücken", `<ul>
         <li>Artikel <b>lange drücken</b> (am PC: rechte Maustaste) = Menü: Bearbeiten, Verschieben, Menge, Kategorie, Foto, Barcode, Angebote und <b>ℹ️ Infos</b>. Was angeboten wird, hängt vom Artikel ab: „Verschieben“ nur bei mehr als einem Geschäft, „Barcode“ nur mit Scanner, „Angebote“ nur, wenn es welche gibt, „Infos“ nur bei Produkten mit Barcode. Das Menü schließt sich nach 8 Sekunden von selbst.</li>
         <li><b>ℹ️ Infos</b> zeigt aus der Produkt-Datenbank: Nutri-Score, Allergene, mögliche Spuren, Siegel und Zutaten (alles ohne Gewähr).</li>
@@ -7587,8 +7614,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>⏲️ Gar-Zeiten</b> (oben bei den Rezepten und im Koch-Modus): Spickzettel nach Gerät: 🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse.</li></ul>`)}
       ${sec("🛒", "Was bedeuten die Zeichen oben?", `<ul>
         <li>Von links: <b>🛒 Einkaufswagen</b> (oder das Maskottchen, wenn eingeschaltet) = <b>zurück zur Einkaufsliste</b>, egal wo du gerade bist (Rezepte, Einstellungen …) · <b>Zahl</b> · <b>▥ Barcode</b> (nur mit Scanner) · <b>🧾</b> Einkaufs-Protokoll (nur wenn eingeschaltet).</li>
-        <li>Alles gut verbunden? Dann siehst du gar nichts extra. Nur wenn etwas nicht stimmt, erscheint neben dem Wagen ein Punkt: <b>🟠 Orange ⏳</b> = Änderungen warten aufs Netz, <b>🔴 Rot</b> = gerade keine Verbindung.</li>
-        <li>Die <b>Anleitung</b> (diese hier) steckt im Knopf <b>📖 Anleitung</b> ganz unten unter der Liste. Den <b>🔓-Knopf</b> zum Sofort-Sperren (nur mit PIN) findest du in ⚙️ oben rechts neben der Versionsnummer.</li>
+        <li>Die <b>schmale Leiste ganz oben</b> (auf jeder Seite): links <b>🟢 verbunden</b> – oder <b>⏳ orange</b> = Änderungen warten aufs Netz, <b>🔴 keine Verbindung</b>. Antippen bringt dich zurück zur Liste. Rechts: <b>🔓</b> sperrt das ⚙️ sofort (nur mit PIN) und die <b>Versionsnummer</b>.</li>
+        <li>Ganz unten unter der Liste: <b>📖 Anleitung</b> (diese hier) und <b>👁️ Ansicht</b> – dort stellst du ein, was <b>du</b> beim Artikel sehen willst (nur für dich, ohne PIN).</li>
         <li>Die <b>Zahl</b> = so viele Sachen sind noch offen.</li>
         <li>Rechts: <b>Wagen</b> = Laden-Modus · <b>Kochmütze</b> = Rezepte · <b>⚙️</b> = Einstellungen.</li>
         <li>Ein <b>blauer Balken</b> oben = es gibt eine neue Version. Tippe auf <b>„Neu laden“</b> – das kann jeder. Nur wenn dort steht, dass die Karte neuer ist als Home Assistant, muss jemand mit Admin-Zugang Home Assistant neu starten.</li></ul>`)}
@@ -7662,7 +7689,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("📋", "My list", `<ul>
         <li><b>Stores:</b> one row per store. The <b>⌃ ⌄</b> next to it change the order of the tabs right in the list. Tapping a store opens its page: name, colour, icon, 📍 zone(s) for “Next store” (the list then jumps to that store when you are there), own brands and <b>🗺️ own category order</b> (sort with ↑↓ the way the shop is laid out). Several zones per store work too (e.g. several branches). Create new stores with the “New” form, 🗑️ on the store page deletes. Also <b>🗂️ own categories</b>: “All as everywhere” or “Own” – with “Own” you tick which ones exist in this store and can create a new one just for it.</li>
         <li><b>Categories:</b> name, colour, icon (search with German or English words), order with ↑ ↓, delete with 🗑️, new ones via the form.</li>
-        <li><b>👁️ List view:</b> what you see on an item – quantity, notes, for whom, who added it, date, cleanup day, store, recipe, photo, star, barcode, offers and more. Untick = hidden. <b>“For everyone”</b> applies to the whole family, under <b>“Just for me”</b> everyone sets it for themselves (applies on all devices of that user).</li>
+        <li><b>👁️ List view:</b> what you see on an item – quantity, notes, for whom, who added it, date, cleanup day, store, recipe, photo, star, barcode, offers and more. Untick = hidden. This is the default <b>for everyone</b>. Each person sets their own view with <b>👁️ View</b> at the very bottom below the list – no gear or PIN needed (applies on all devices of that user).</li>
         <li><b>People:</b> the names for the quick buttons at “For whom?”. Without people the 👤 stays hidden in the list.</li>
         <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK; “Save” also counts as checked) and <b>Delete shopping-list items</b>.</li>
         <li><b>Search and filters in “All products”:</b> the search field finds name, notes, nicknames, barcode, category and store – even with small typos. Plus filters such as no category, no store, is on the list, with/without photo, with/without barcode, by store or by category. The <b>eraser icon</b> resets search and filter with one tap (it only appears when something is set). On a PC the keyboard works too (↓ into the list, ↑ ↓ to pick, Enter edits, Esc back).</li>
@@ -7704,7 +7731,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Offline app:</b> your own address with “Copy” (it needs an https address, e.g. Nabu Casa). Open it in the phone browser and add it to the home screen. Almost everything works offline; not available are looking up new barcodes, product info, recipe links, uploading new photos and the backup. The first time you scan, the phone asks once for the camera.</li>
         <li><b>Light / dark:</b> the choice (light, dark, automatic) exists only in the offline app. In the dashboard card everything follows the Home Assistant theme. The guides follow the same: light or dark, just like the card.</li>
         <li><b>🔒 Privacy:</b> says in plain words what stays in your Home Assistant and what goes to the internet. An admin also switches <b>“Privacy on”</b> for all devices there: then there is no camera, no photos (not even from gallery or clipboard), no barcode scanner and no AI cooking – the buttons are greyed out, and barcodes can only be typed by hand. Off = as usual.</li>
-        <li><b>Protection (PIN):</b> with a PIN the ⚙️ only opens after entering it (4–8 digits, remembered for 10 minutes on this device). The 🔓 button at the top right of ⚙️ (next to the version number) locks at once. Forgot it? An admin resets it in Settings → Devices &amp; services → Shopping list → Configure. The page also has “Change PIN” and “Switch PIN off”. The list itself (adding, checking off, recipes, shop mode) stays open for everyone. The PIN protects against accidents, it is not a safe.</li>
+        <li><b>Protection (PIN):</b> with a PIN the ⚙️ only opens after entering it (4–8 digits, remembered for 10 minutes on this device). The 🔓 button in the bar at the very top (next to the version number) locks at once. Forgot it? An admin resets it in Settings → Devices &amp; services → Shopping list → Configure. The page also has “Change PIN” and “Switch PIN off”. The list itself (adding, checking off, recipes, shop mode) stays open for everyone. The PIN protects against accidents, it is not a safe.</li>
         <li><b>What's new</b> and <b>Credits</b> are at the end of the list.</li></ul>`)}
     </div>`;
     }
@@ -7718,7 +7745,7 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("📋", "Meine Liste", `<ul>
         <li><b>Geschäfte:</b> pro Geschäft eine Zeile. Mit <b>⌃ ⌄</b> rechts daneben änderst du direkt in der Liste die Reihenfolge der Reiter. Antippen öffnet die Seite des Geschäfts: Name, Farbe, Icon, 📍 Zone(n) für „Nächstes Geschäft“ (die Liste springt dann auf dieses Geschäft, wenn du dort bist), Eigenmarken und <b>🗺️ eigene Kategorien-Folge</b> (mit ↑↓ so sortieren, wie der Laden aufgebaut ist). Auch mehrere Zonen pro Geschäft gehen (z. B. mehrere Filialen). Neue Geschäfte legst du mit dem „Neu“-Formular an, 🗑️ auf der Seite des Geschäfts löscht. Dazu <b>🗂️ eigene Kategorien</b>: „Alle wie überall“ oder „Eigene“ – bei „Eigene“ setzt du Häkchen, welche es in diesem Geschäft gibt, und kannst eine neue nur dafür anlegen.</li>
         <li><b>Kategorien:</b> Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), Reihenfolge mit ↑ ↓, löschen mit 🗑️, neue über das Formular.</li>
-        <li><b>👁️ Listenansicht:</b> was beim Artikel zu sehen ist – Menge, Notizen, Für wen, wer eingetragen hat, Datum, Aufräum-Tag, Geschäft, Rezept, Foto, Stern, Barcode, Angebote und mehr. Häkchen weg = ausgeblendet. <b>„Für alle“</b> gilt für die ganze Familie, unter <b>„Nur für mich“</b> stellt jeder es für sich selbst ein (gilt auf allen Geräten dieses Benutzers).</li>
+        <li><b>👁️ Listenansicht:</b> was beim Artikel zu sehen ist – Menge, Notizen, Für wen, wer eingetragen hat, Datum, Aufräum-Tag, Geschäft, Rezept, Foto, Stern, Barcode, Angebote und mehr. Häkchen weg = ausgeblendet. Das hier ist der Standard <b>für alle</b>. Seine eigene Ansicht stellt jeder ganz unten unter der Liste mit <b>👁️ Ansicht</b> ein – ganz ohne Zahnrad und PIN (gilt auf allen Geräten dieses Benutzers).</li>
         <li><b>Personen:</b> die Namen für die Schnellknöpfe bei „Für wen?“. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.</li>
         <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt; „Speichern“ zählt auch als geprüft) und <b>Einkaufsliste Produkte löschen</b>.</li>
         <li><b>Suche und Filter bei „Alle Produkte“:</b> Das Suchfeld findet Name, Notizen, Spitznamen, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Dazu Filter wie ohne Kategorie, ohne Geschäft, steht auf der Liste, mit/ohne Foto, mit/ohne Barcode, nach Geschäft oder nach Kategorie. Das <b>Radiergummi-Symbol</b> setzt Suchfeld und Filter mit einem Tipp zurück (es erscheint nur, wenn etwas eingestellt ist). Am PC geht auch die Tastatur (↓ in die Liste, ↑ ↓ wählen, Enter bearbeitet, Esc zurück).</li>
@@ -7760,7 +7787,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Offline-App:</b> deine eigene Adresse mit „Kopieren“ (sie braucht eine https-Adresse, z. B. Nabu Casa). Im Handy-Browser öffnen und zum Startbildschirm hinzufügen. Offline geht fast alles; nicht gehen neue Barcodes nachschlagen, Produkt-Infos, Rezept-Links, neue Fotos hochladen und die Sicherung. Beim ersten Scannen fragt das Handy einmal nach der Kamera.</li>
         <li><b>Hell / Dunkel:</b> Die Auswahl (hell, dunkel, automatisch) gibt es nur in der Offline-App. In der Karte im Dashboard richtet sich alles nach dem Home-Assistant-Design. Die Anleitungen folgen dem jeweils: hell oder dunkel, genau wie die Karte.</li>
         <li><b>🔒 Datenschutz:</b> zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht. Dort schaltet ein Admin auch <b>„Datenschutz an“</b> für alle Geräte: Dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage), keinen Barcode-Scanner und kein KI-Kochen – die Knöpfe sind ausgegraut, Barcodes gehen nur noch von Hand. Aus = alles wie gehabt.</li>
-        <li><b>Schutz (PIN):</b> mit PIN geht das ⚙️ erst nach Eingabe auf (4–8 Ziffern, auf diesem Gerät 10 Minuten gemerkt). Der 🔓-Knopf oben rechts in ⚙️ (neben der Versionsnummer) sperrt sofort. Vergessen? Ein Admin setzt sie zurück: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es auch „PIN ändern“ und „PIN ausschalten“. Die Liste selbst (Eintragen, Abhaken, Rezepte, Laden-Modus) bleibt für alle offen. Die PIN schützt vor Versehen, ein Tresor ist sie nicht.</li>
+        <li><b>Schutz (PIN):</b> mit PIN geht das ⚙️ erst nach Eingabe auf (4–8 Ziffern, auf diesem Gerät 10 Minuten gemerkt). Der 🔓-Knopf in der Leiste ganz oben (neben der Versionsnummer) sperrt sofort. Vergessen? Ein Admin setzt sie zurück: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es auch „PIN ändern“ und „PIN ausschalten“. Die Liste selbst (Eintragen, Abhaken, Rezepte, Laden-Modus) bleibt für alle offen. Die PIN schützt vor Versehen, ein Tresor ist sie nicht.</li>
         <li><b>Was ist neu</b> und <b>Credits</b> stehen am Ende der Liste.</li></ul>`)}
     </div>`;
   }
@@ -7929,7 +7956,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>📍 Automatically to the store:</b> If you are in a store's zone, the list jumps to that store's tab (it gets a 📍). You can switch this off in the card options.</li>
         <li><b>🤷 “Anywhere”</b> = no fixed store: it appears in every store's tab and counts everywhere. Move it to a store with ⇄ = it simply moves over.</li>
         <li><b>🔁 Also available here</b> (in a store's tab): things listed at another store that this store has too. Tap to bring them here.</li>
-        <li>No connection in the store? Just keep checking things off. The dot at the top turns <b>orange ⏳</b> and everything is sent once there's a connection again.</li></ul>`)}
+        <li>No connection in the store? Just keep checking things off. The bar at the top then shows <b>⏳ orange</b> and everything is sent once there's a connection again.</li></ul>`)}
       ${sec("👆", "Changing & long-press", `<ul>
         <li><b>Long-press</b> an item (on a PC: right mouse button) = menu: edit, move, quantity, category, photo, barcode, offers and <b>ℹ️ Info</b>. What is offered depends on the item: “Move” only with more than one store, “Barcode” only with a scanner, “Offers” only if there are some, “Info” only for products with a barcode. The menu closes by itself after 8 seconds.</li>
         <li><b>ℹ️ Info</b> shows from the product database: Nutri-Score, allergens, possible traces, labels and ingredients (no guarantee).</li>
@@ -7992,8 +8019,8 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>⏲️ Cooking times</b> (at the top of the recipes and in cook mode): cheat sheet by appliance: 🍲 stove, 🔥 oven, 💨 air fryer.</li></ul>`)}
       ${sec("🛒", "What do the symbols at the top mean?", `<ul>
         <li>From the left: <b>🛒 shopping cart</b> (or the mascot, if switched on) = <b>back to the shopping list</b> from anywhere (recipes, settings …) · <b>number</b> · <b>▥ barcode</b> (only with a scanner) · <b>🧾</b> purchase log (only if switched on).</li>
-        <li>Everything connected? Then you see nothing extra. Only when something is wrong a dot appears next to the cart: <b>🟠 orange ⏳</b> = changes are waiting for the network, <b>🔴 red</b> = no connection right now.</li>
-        <li>The <b>guide</b> (this one) is behind the <b>📖 Guide</b> button at the very bottom, below the list. The <b>🔓 button</b> to lock at once (only with a PIN) is in ⚙️ at the top right next to the version number.</li>
+        <li>The <b>thin bar at the very top</b> (on every page): on the left <b>🟢 connected</b> – or <b>⏳ orange</b> = changes are waiting for the network, <b>🔴 no connection</b>. Tapping it takes you back to the list. On the right: <b>🔓</b> locks the ⚙️ at once (only with a PIN) and the <b>version number</b>.</li>
+        <li>At the very bottom, below the list: <b>📖 Guide</b> (this one) and <b>👁️ View</b> – where you set what <b>you</b> want to see on items (just for you, no PIN).</li>
         <li>The <b>number</b> = this many things are still open.</li>
         <li>Right: <b>cart</b> = shop mode · <b>chef's hat</b> = recipes · <b>⚙️</b> = settings.</li>
         <li>A <b>blue bar</b> at the top = there is a new version. Tap <b>“Reload”</b> – anyone can do that. Only if it says the card is newer than Home Assistant, someone with admin access has to restart Home Assistant.</li></ul>`)}
@@ -9301,24 +9328,25 @@ class EinkaufslisteCard extends HTMLElement {
       case "pin-lock":
         this._lockNow();
         break;
-      case "view-tab":
-        this._viewTab = el.dataset.tab;
-        this._renderSettings();
+      case "myview": // 👁️ Meine Ansicht (unten neben „Anleitung“) auf-/zuklappen
+        this._myViewOpen = !this._myViewOpen;
+        this._renderFooter();
+        this._renderMyView();
         break;
-      case "view-toggle": { // 👁️ ein Häkchen umschalten – „Für alle“ oder „Nur für mich“
-        const mine = this._viewTab === "me";
+      case "view-toggle": { // 👁️ ein Häkchen umschalten – „Für alle“ (⚙️) oder „Meine Ansicht“ (👁️ oben)
+        const mine = el.dataset.scope === "me";
         const all = this._data.settings?.view_prefs || {};
         const me = this._hass?.user?.id;
         const prefs = { ...(mine ? (me && all[me]) || {} : all._all || {}) };
         const shown = mine ? this._viewPrefs() : { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
         prefs[el.dataset.key] = shown[el.dataset.key] === false;
         this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
-          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
+          .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
         break;
       }
       case "view-reset":
-        this._ws({ type: "einkaufsliste/view/set", scope: this._viewTab === "me" ? "me" : "all", prefs: null })
-          .then(() => { this._toast("👁️ Ansicht zurückgesetzt"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+        this._ws({ type: "einkaufsliste/view/set", scope: el.dataset.scope === "me" ? "me" : "all", prefs: null })
+          .then(() => { this._toast("👁️ Ansicht zurückgesetzt"); setTimeout(() => { if (el.dataset.scope === "me") this._renderMyView(); else this._renderSettings(); }, 150); }).catch(() => {});
         break;
       case "cleanup-toggle": { // 🧹 automatisches Aufräumen für alle an/aus
         const on = this._data.settings?.cleanup_on === false;
