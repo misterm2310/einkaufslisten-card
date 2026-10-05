@@ -70,7 +70,7 @@ Den Ordner `custom_components/einkaufsliste` nach `/config/custom_components/ein
 
 ## 👆 So wird's benutzt
 
-**Eintragen:** Name tippen, grüner Haken ✔. Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 📷 Foto (am Handy: 📷 Kamera · 🖼️ Galerie · 📋 Einfügen – die Kamera öffnet sich über https direkt in der Karte; in der HA-App über die lokale http-Adresse geht gleich die Galerie auf. Am PC: Fenster zum Reinziehen, **Strg + V** (z. B. Screenshot aus dem Prospekt) oder Auswählen) · ⭐ alle Favoriten auf die Liste (Produkt beim Bearbeiten mit „⭐ Favorit“ markieren; was schon draufsteht, kommt nicht doppelt) · 🧽 alles leeren. Geschäft und Kategorie sind meist schon richtig ausgewählt. Ein Geschäft fehlt? In der Auswahl **„➕ Neues Geschäft …“** – nur den Namen tippen, den Rest später in ⚙️.
+**Eintragen:** Name tippen, grüner Haken ✔. Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 🏷️ Spitzname · ⭐ als Favorit merken · 📷 Foto (am Handy: 📷 Kamera · 🖼️ Galerie · 📋 Einfügen – die Kamera öffnet sich über https direkt in der Karte; in der HA-App über die lokale http-Adresse geht gleich die Galerie auf. Am PC: Fenster zum Reinziehen, **Strg + V** (z. B. Screenshot aus dem Prospekt) oder Auswählen) · ⭐ alle Favoriten auf die Liste (Produkt beim Bearbeiten mit „⭐ Favorit“ markieren; was schon draufsteht, kommt nicht doppelt) · 🧽 alles leeren. Geschäft und Kategorie sind meist schon richtig ausgewählt. Ein Geschäft fehlt? In der Auswahl **„➕ Neues Geschäft …“** – nur den Namen tippen, den Rest später in ⚙️.
 
 **In der Liste:**
 - ⭕ **Kreis** = abhaken. Unten bei „Erledigt“ nochmal = wieder drauf.

@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.60.03";
+const EL_VERSION = "2.60.04";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.60.02"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.60.04"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["🎛️ <b>Alle Eingabe-Masken gleich:</b> Eintragen, Bearbeiten und Katalog sehen gleich aus (gleiche Höhe, Schrift, Rahmen) und können dasselbe, in derselben Reihenfolge. · ✍️ Beim <b>Eintragen</b> neu: <b>🏷️ Spitzname</b> und <b>⭐ Favorit</b> gleich mit. · ✏️ Beim <b>Bearbeiten</b> neu: <b>Mengen-Knöpfe</b> (2x, 500 g …) und <b>„Für wen“ als Knöpfe</b>. · 📦 Im <b>Katalog</b> neu: <b>📷 Foto</b> direkt im Produkt. Löschen, Zusammenführen & Co. bleiben in ⚙️.",
+   "🎛️ <b>All input forms alike:</b> adding, editing and the catalogue look the same (same height, font, frame) and can do the same, in the same order. · ✍️ New when <b>adding</b>: <b>🏷️ nickname</b> and <b>⭐ favourite</b> right away. · ✏️ New when <b>editing</b>: <b>quantity buttons</b> (2x, 500 g …) and <b>“for whom” as buttons</b>. · 📦 New in the <b>catalogue</b>: <b>📷 photo</b> right in the product. Delete, merge & co. stay in ⚙️."],
   ["🟢 <b>Leiste oben auf jeder Seite</b> – jetzt auch in der Home-Assistant-Karte: links „🟢 verbunden“ (⏳ orange = wartet aufs Netz, 🔴 = keine Verbindung), rechts das <b>🔓 Schloss</b> (nur mit PIN) und die Versionsnummer. · 👁️ <b>Meine Ansicht für jeden:</b> Was du beim Artikel sehen willst, stellst du jetzt ganz unten mit <b>„👁️ Ansicht“</b> (neben „📖 Anleitung“) ein – ganz ohne Zahnrad und PIN. In ⚙️ → Listenansicht steht nur noch der Standard „für alle“.",
    "🟢 <b>Bar at the top of every page</b> – now in the Home Assistant card too: on the left “🟢 connected” (⏳ orange = waiting for the network, 🔴 = no connection), on the right the <b>🔓 lock</b> (only with a PIN) and the version number. · 👁️ <b>My view for everyone:</b> what you want to see on items is now set at the very bottom with <b>“👁️ View”</b> (next to “📖 Guide”) – no gear or PIN needed. ⚙️ → List view only holds the default “for everyone”."],
   ["👁️ <b>Listenansicht:</b> ⚙️ → Listenansicht – Häkchen weg, und Menge, Notizen, Für wen, wer eingetragen hat, Datum, Foto, Stern & Co. sind beim Artikel ausgeblendet. „Für alle“ oder „Nur für mich“ (jeder für sich). · 🧹 <b>Aufräumen in der Karte:</b> ⚙️ → Aufräumen – jetzt mit <b>An/Aus</b>, Tag, Uhrzeit und Mindestalter direkt hier (nicht mehr in der Integration). · 🛒 <b>Der Einkaufswagen oben links bringt dich immer zurück zur Liste</b>, die Anleitung steckt im Knopf „📖 Anleitung“ ganz unten. · 🏪 <b>Geschäfte wieder als Liste</b>, Reihenfolge mit ⌃⌄ direkt dort. · 🔓 Das Schloss sitzt in ⚙️ oben rechts neben der Version, der grüne Punkt ist weg (nur noch bei Problemen sichtbar). · 📊 Last-Anzeige jetzt unter Ressourcen. · 📜 Neue Produkte im Katalog stehen im Verlauf. · 🔁 Bis zu 50 To-do-Listen – und beim <b>vollen Abgleich</b> bekommt jede Liste nur die Artikel <b>ihres</b> Geschäfts (Tomaten bei Lidl landen nicht mehr auch bei Bring! Aldi). · 🧽 Radiergummi nur noch an Suchfeldern.",
@@ -1767,7 +1769,7 @@ input[hidden] + .tplchips { display:none; }
 .lastq small { opacity:.7; font-size:.8em; }
 .unitchips { margin-top:6px; padding-top:6px; border-top:1px dashed var(--divider-color, rgba(127,127,127,.35)); }
 .unitchips .chip2 { padding:4px 10px; min-width:34px; font-size:.85em; }
-.unitchips .ulabel { font-size:.8em; opacity:.7; align-self:center; margin-right:2px; }
+.unitchips .ulabel, .edchips .ulabel { font-size:.8em; opacity:.7; align-self:center; margin-right:2px; }
 @keyframes pulse { 50% { opacity:.3; } }
 
 .photobtn .pcount { font-size:10px; font-weight:700; margin-left:1px; }
@@ -1775,12 +1777,16 @@ input[hidden] + .tplchips { display:none; }
 .photorow { display:flex; flex-wrap:wrap; gap:6px; }
 .photorow .btn { padding:6px 10px; font-size:.85em; }
 form.add .row2 { grid-column: 1 / -1; display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:6px; }
-/* Geschäft + Kategorie nebeneinander: etwas kompakter, damit „Welches Geschäft?“ ganz draufpasst */
-form.add .row2 select { font-size:.88em; padding:9px 4px 9px 7px; letter-spacing:-.1px; }
+/* Geschäft + Kategorie nebeneinander: gleiche Schrift wie alle Felder, nur weniger Rand innen, damit „Welches Geschäft?“ draufpasst */
+form.add .row2 select { padding:0 4px 0 8px; }
 form.add.fixed .sel { grid-template-columns:1fr; }
 input, select, textarea { font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; min-width:0; width:100%; outline:none; }
-textarea { box-sizing:border-box; resize:vertical; line-height:1.35; }
-input:focus, select:focus { border-color:var(--primary-color,#03a9f4); }
+textarea { box-sizing:border-box; resize:vertical; line-height:1.35; padding:10px 12px; min-height:42px; }
+/* 🎛️ Alle Eingabe-Masken gleich: gleiche Höhe, Schrift, Ecken und Innenabstände – in Liste, Bearbeiten, Katalog, Rezepten und Einstellungen */
+input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]):not([type=range]):not([type=hidden]), select { box-sizing:border-box; height:42px; padding:0 12px; line-height:normal; }
+select { padding-right:6px; }
+input::placeholder, textarea::placeholder { color:var(--secondary-text-color); opacity:.75; }
+input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03a9f4); box-shadow:0 0 0 2px color-mix(in srgb, var(--primary-color,#03a9f4) 18%, transparent); }
 .primary { background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border:0; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
 .primary:active { transform:scale(.96); }
 .addbtn { background:var(--success-color, #43a047); color:#fff; }
@@ -1874,8 +1880,10 @@ ha-card.compact .group { margin-top:4px; }
 .empty ha-icon { --mdc-icon-size:42px; opacity:.5; display:block; margin:0 auto 6px; }
 .footer { display:flex; align-items:center; gap:6px; font-size:.75em; color:var(--secondary-text-color); margin:10px 4px 2px; border-top:1px solid var(--divider-color, rgba(127,127,127,.2)); padding-top:8px; }
 .footer ha-icon { --mdc-icon-size:15px; }
-.editrow { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border:1px solid var(--primary-color,#03a9f4); border-radius:12px; margin:4px 0; }
+.editrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; border:1px solid var(--primary-color,#03a9f4); border-radius:12px; margin:6px 0; }
 .editrow .full { grid-column: 1 / span 2; }
+.editrow .tplchips, .prodedit .tplchips { grid-column: 1 / -1; margin:0; }
+.edchips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 .editrow .btns { grid-column: 1 / span 2; display:flex; justify-content:flex-end; gap:6px; }
 .editrow .btns .primary { padding:7px 14px; }
 .error { background: color-mix(in srgb, var(--error-color,#db4437) 15%, transparent); color:var(--primary-text-color); border-radius:10px; padding:10px; margin:4px 2px 8px; font-size:.9em; }
@@ -1929,8 +1937,8 @@ ha-card.compact .group { margin-top:4px; }
 .alsohere { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:2px 0 10px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); font-size:.92em; }
 .pestores { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:.92em; }
 .pestores .stck { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:3px 10px 3px 6px; background:color-mix(in srgb, var(--c) 16%, transparent); cursor:pointer; }
-.prodedit { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:6px 0; }
-.prodedit .btnrow, .prodedit .hint, .prodedit .pestores, .prodedit .bclist { grid-column:1/-1; }
+.prodedit { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; border:1px solid var(--primary-color,#03a9f4); border-radius:12px; margin:6px 0; } /* wie „Artikel bearbeiten“ */
+.prodedit .btnrow, .prodedit .hint, .prodedit .pestores, .prodedit .bclist, .prodedit .full { grid-column:1/-1; }
 .prodrow .btn.primary { white-space:nowrap; flex:0 0 auto; }
 .ppers { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:6px 4px 10px; border-bottom:1px solid var(--divider-color, rgba(127,127,127,.25)); margin-bottom:6px; }
 .ppers > span { font-weight:600; }
@@ -1996,7 +2004,7 @@ ha-card.compact .group { margin-top:4px; }
 .sthandle:focus-visible { outline:2px solid var(--primary-color); border-radius:6px; }
 .stbtns { display:flex; gap:6px; flex:none; margin-left:auto; padding-left:30px; }
 .stnum { flex:none; padding-top:9px; min-width:1.6em; text-align:right; color:var(--secondary-text-color); font-size:.9em; }
-.stin { flex:1 1 150px; min-width:0; box-sizing:border-box; font:inherit; font-size:.92em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:8px 10px; resize:none; overflow:hidden; }
+.stin { flex:1 1 150px; min-width:0; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:10px 12px; resize:none; overflow:hidden; }
 .sprow { display:flex; align-items:center; gap:6px; margin:4px 0; }
 .sprow .sptxt { flex:1; font-size:.9em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pemerge { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; border-radius:10px; border:1px dashed var(--divider-color, rgba(127,127,127,.4)); }
@@ -2044,10 +2052,11 @@ label.btn { cursor:pointer; }
 .logrow .lx small { display:block; color:var(--secondary-text-color); font-size:.8em; }
 .srow { display:flex; align-items:center; gap:6px; margin:5px 0; }
 .srow input.grow { flex:1; min-width:80px; }
-.srow input[type=color] { width:40px; height:38px; padding:2px; flex:0 0 auto; cursor:pointer; }
-.srow input.icon { width:86px; flex:0 0 auto; font-size:.8em; }
+.srow input[type=color] { width:42px; height:42px; padding:2px; flex:0 0 auto; cursor:pointer; box-sizing:border-box; }
+.srow input.icon { width:104px; flex:0 0 auto; }
+.srow input.icon.grow { flex:1; width:auto; } /* Icon-Feld im Geschäft: ganze Zeile */
 .srow .prev { width:24px; flex:0 0 auto; color:var(--secondary-text-color); }
-.srow .primary { width:40px; height:38px; flex:0 0 auto; }
+.srow .primary { width:42px; height:42px; flex:0 0 auto; }
 .srow .iconbtn { padding:4px; }
 .picker { display:grid; grid-template-columns:repeat(auto-fill, minmax(44px, 1fr)); gap:4px; padding:6px; margin:2px 0 8px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; max-height:170px; overflow-y:auto; }
 .picker button { background:none; border:1px solid transparent; border-radius:8px; cursor:pointer; padding:6px 0; display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--primary-text-color); }
@@ -2106,9 +2115,9 @@ label.btn { cursor:pointer; }
 .rpick .pbtns .primary { padding:9px 14px; }
 .rpick .pbtns .primary[disabled] { opacity:.4; cursor:default; }
 .rsub { margin-top:14px !important; flex-wrap:wrap; }
-.rsteps { width:100%; box-sizing:border-box; font:inherit; font-size:.92em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; resize:vertical; }
+.rsteps { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; resize:vertical; }
 .rimportbtn { margin-left:auto; padding:5px 10px; font-size:.8em; font-weight:400; }
-.rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.9em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; resize:vertical; }
+.rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; resize:vertical; }
 .rimport .btnrow { justify-content:flex-end; }
 #rPhotoRow { margin:4px 2px 2px; }
 #rPhotoRow .btn.on { color:var(--primary-color,#03a9f4); }
@@ -3062,6 +3071,8 @@ class EinkaufslisteCard extends HTMLElement {
               <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon><span class="lbl">Menge</span></button>
               <button class="tool" id="tOwn" type="button" data-act="tool" data-field="inOwn" title="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben"><ha-icon icon="mdi:pencil-outline"></ha-icon><span class="lbl">Notiz</span></button>
               <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon><span class="lbl">Für wen</span></button>
+              <button class="tool" id="tAlias" type="button" data-act="tool" data-field="inAliases" title="🏷️ Spitznamen – wer so etwas eintippt, landet bei diesem Produkt"><ha-icon icon="mdi:tag-outline"></ha-icon><span class="lbl">Spitzname</span></button>
+              <button class="tool" id="tFav" type="button" data-act="new-fav" title="⭐ Als Favorit merken"><ha-icon icon="mdi:star-plus-outline"></ha-icon><span class="lbl">Favorit</span></button>
               <button class="tool plus" id="btnNewBarcode" type="button" data-act="new-barcode" title="Barcode zum neuen Produkt" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon><span class="lbl">Barcode</span></button>
               <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto</span></button>
               <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat – haben wir immer (z. B. Salz, Öl)" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon><span class="lbl">Vorrat</span></button>
@@ -3081,6 +3092,7 @@ class EinkaufslisteCard extends HTMLElement {
               <div class="chips tplchips" id="inTpl"></div>
               <div class="chips" id="noteChips" hidden></div>
               <div id="forBox" class="chipbox" hidden><div class="chips" id="forChips"></div></div>
+              <input id="inAliases" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt" hidden>
               <select id="inFor" title="Für wen?" hidden></select>
             </div>
             <div class="row2 sel">
@@ -3952,15 +3964,34 @@ class EinkaufslisteCard extends HTMLElement {
     return this._capAliases((this._data?.aliases || []).filter((a) => `${a.name.toLowerCase()}|${(a.note || "").toLowerCase()}` === k).map((a) => a.alias));
   }
 
+  // 🔢 Mengen-Knöpfe beim Bearbeiten – dieselben wie beim Eintragen (2x, 500 g …), ein Tipp setzt die Menge
+  _edQtyChips(qty) {
+    const val = normQty(qty || "") || "";
+    const unit = unitOf(val) || "x";
+    const quick = (QTY_PRESETS[unit] || [1, 2, 3, 4, 6, 10]).map((n) => qtyFmt(String(n).replace(".", ","), unit));
+    return `<div class="full chips edchips" data-for="edQty">${quick.map((q) => `<button type="button" class="chip2 ${q === val ? "sel" : ""}" data-act="ed-chip" data-v="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
+  }
+
+  // 👤 „Für wen?“ beim Bearbeiten als Knöpfe – wie beim Eintragen (nochmal tippen = keiner)
+  _edForChips(who) {
+    const names = (this._data?.persons || []).map((p) => p.name);
+    if (who && !names.some((n) => n.toLowerCase() === who.toLowerCase())) names.push(who);
+    const hidden = `<input type="hidden" id="edFor" value="${esc(who || "")}">`;
+    if (!names.length) return hidden;
+    const color = (n) => (this._data?.persons || []).find((p) => p.name === n)?.color || "#9e9e9e";
+    return hidden + `<div class="full chips edchips" data-for="edFor"><span class="ulabel">👤 Für wen:</span>${names.map((n) => `<button type="button" class="chip2 pchip ${who && n.toLowerCase() === who.toLowerCase() ? "sel" : ""}" style="--pc:${esc(color(n))}" data-act="ed-chip" data-v="${esc(n)}"><span class="pdot"></span>${esc(n)}</button>`).join("")}</div>`;
+  }
+
   _editHtml(item) {
     const d = this._data;
     return `
       <form class="editrow" data-id="${item.id}">
         <input class="full" id="edName" value="${esc(item.name)}" placeholder="Name, z. B. Milch">
-        <input id="edQty" value="${esc(item.quantity || "")}" placeholder="${esc(`${EL_LANG === "de" ? "Menge" : "Quantity"}, ${this._qtyExample(item.name)}`)}">
-        <select id="edFor">${this._personOptions(item.for_whom)}</select>
+        <input class="full" id="edQty" value="${esc(item.quantity || "")}" placeholder="${esc(`${EL_LANG === "de" ? "Menge" : "Quantity"}, ${this._qtyExample(item.name)}`)}">
+        ${this._edQtyChips(item.quantity)}
         ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz, z. B. große Packung">` : `<input type="hidden" id="edNote" value="${esc(item.note)}">`}` : `<input type="hidden" id="edNote" value="">`}
         ${item.recipe_id ? "" : (item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt">${this._tplChipsHtml(item.own_note || "")}`)}
+        ${this._edForChips(item.for_whom)}
         <input class="full" id="edAliases" value="${esc(this._itemAliases(item).join(", "))}" data-orig="${esc(this._itemAliases(item).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
@@ -5760,13 +5791,13 @@ class EinkaufslisteCard extends HTMLElement {
       </div>`;
       if (this._prodEdit === p.key) {
         return rowHtml + `<div class="prodedit" data-key="${esc(p.key)}">
-          <input id="peName" value="${esc(p.name)}" placeholder="Name, z. B. Milch">
-          ${p.note ? (p.barcodes.length ? `<input type="hidden" id="peNote" value="${esc(p.note)}">` : `<input id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz, z. B. große Packung">`) : `<input type="hidden" id="peNote" value="">`}
-          ${p.note && !p.barcodes.length ? `<input type="hidden" id="peOwn" value="${esc(p.own_note || "")}">` : `<input id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Nur für dich: Die Datenbank überschreibt sie nie">${this._tplChipsHtml(p.own_note || "")}`}
-          <input id="peAliases" value="${esc(this._capAliases(p.aliases).join(", "))}" data-orig="${esc(this._capAliases(p.aliases).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
-          <label class="favrow" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" id="peFav" ${p.favorite ? "checked" : ""} data-orig="${p.favorite ? 1 : 0}"> ⭐ Favorit</label>
-          <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
+          <input class="full" id="peName" value="${esc(p.name)}" placeholder="Name, z. B. Milch">
+          ${p.note ? (p.barcodes.length ? `<input type="hidden" id="peNote" value="${esc(p.note)}">` : `<input class="full" id="peNote" value="${esc(p.note)}" placeholder="✏️ Eigene Notiz, z. B. große Packung">`) : `<input type="hidden" id="peNote" value="">`}
+          ${p.note && !p.barcodes.length ? `<input type="hidden" id="peOwn" value="${esc(p.own_note || "")}">` : `<input class="full" id="peOwn" value="${esc(p.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Nur für dich: Die Datenbank überschreibt sie nie">${this._tplChipsHtml(p.own_note || "")}`}
+          <input class="full" id="peAliases" value="${esc(this._capAliases(p.aliases).join(", "))}" data-orig="${esc(this._capAliases(p.aliases).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
           <select id="peStore">${this._selectOptions(this._data.stores, p.store_id, "🛒 Kein Standard-Geschäft")}</select>
+          <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
+          <label class="favrow full" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" id="peFav" ${p.favorite ? "checked" : ""} data-orig="${p.favorite ? 1 : 0}"> ⭐ Favorit</label>
           ${(() => { const t = Object.entries(this._data.typos || {}).filter(([, r]) => r.toLowerCase() === p.name.toLowerCase()).map(([w]) => w);
             return t.length ? `<div class="bclist" title="Diese Tippfehler korrigiert die Liste von selbst">${t.map((w) => `<span class="bcchip">🧠 ${esc(w)}<button type="button" class="iconbtn" data-act="typo-forget" data-w="${esc(w)}" title="Vergessen"><ha-icon icon="mdi:close"></ha-icon></button></span>`).join("")}</div>` : ""; })()}
           ${p.barcodes.length ? `<div class="bclist">${p.barcodes.map((code) => `<span class="bcchip">▥ ${esc(code)}<button type="button" class="iconbtn" data-act="bc-remove" data-code="${esc(code)}" title="Diesen Barcode löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></span>`).join("")}</div>` : ""}
@@ -5775,6 +5806,7 @@ class EinkaufslisteCard extends HTMLElement {
             <select id="peMerge">${this._products.filter((x) => x.key !== p.key).map((x) => `<option value="${esc(x.key)}">${esc(x.name)}${x.note ? ` · ${esc(x.note)}` : ""}</option>`).join("")}</select>
             <button class="btn primary" data-act="prod-merge-go"><ha-icon icon="mdi:call-merge"></ha-icon>Jetzt zusammenführen</button></div>` : ""}
           <div class="btnrow">
+            <button class="btn" data-act="photo-take" data-name="${esc(this._pk(p.name, p.note))}" ${p.photos >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>Foto</button>
             ${p.photos ? `<button class="btn" data-act="prod-photos"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Fotos</button>` : ""}
             ${p.barcodes.length ? `<button class="btn" data-act="prod-dbdata" title="Name, Notiz und Foto aus der Produkt-Datenbank neu laden – du wählst einzeln. Nutri-Score und Allergene stehen zum Ansehen dabei"><ha-icon icon="mdi:database-refresh-outline"></ha-icon>Daten neu laden</button>` : ""}
             <button class="btn" data-act="prod-bc-add" title="Barcode nachtragen – scannen oder von Hand eingeben"><ha-icon icon="mdi:barcode-scan"></ha-icon>Barcode nachtragen</button>
@@ -6899,12 +6931,12 @@ class EinkaufslisteCard extends HTMLElement {
     const box = this.$(boxId);
     const open = box.hidden;
     // immer nur ein Feld offen – spart Platz
-    for (const id of ["qtyBox", "inOwn", "forBox"]) if (id !== boxId) this.$(id).hidden = true;
+    for (const id of ["qtyBox", "inOwn", "forBox", "inAliases"]) if (id !== boxId) this.$(id).hidden = true;
     box.hidden = !open;
     if (open) {
       if (boxId === "qtyBox") this._renderQtyChips();
       if (boxId === "forBox") this._renderForChips();
-      if (boxId === "inOwn") box.focus();
+      if (boxId === "inOwn" || boxId === "inAliases") box.focus();
     }
     this._updateTools();
   }
@@ -6915,11 +6947,12 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _clearForm() {
-    for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat"]) this.$(id).value = "";
+    for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat", "inAliases"]) this.$(id).value = "";
+    this._newFav = false;
     this._refreshExamples();
     this._setBasic(false);
     this._renderSuggest();
-    for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox"]) this.$(id).hidden = true;
+    for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox", "inAliases"]) this.$(id).hidden = true;
     const tab = this._activeTab;
     this.$("inStore").value = tab === "none" ? "~none" : tab !== "all" ? tab : "";
     this._newPhoto = null;
@@ -7041,11 +7074,21 @@ class EinkaufslisteCard extends HTMLElement {
     this._renderNoteChips();
     const clear = this.$("tClear");
     if (clear) {
-      const any = ["inName", "inQty", "inNote", "inOwn", "inFor"].some((id) => this.$(id)?.value.trim())
-        || this._newPhoto || this._pendingBarcode || this._catManual
+      const any = ["inName", "inQty", "inNote", "inOwn", "inFor", "inAliases"].some((id) => this.$(id)?.value.trim())
+        || this._newFav || this._newPhoto || this._pendingBarcode || this._catManual
         || (!this._fixedStore && (this.$("inStore")?.value || "") !== this._defaultStore());
       clear.hidden = !any;
     }
+    const tf = this.$("tFav");
+    if (tf) {
+      tf.hidden = this._formMode === "recipe"; // Rezept-Zutaten: Favorit/Spitzname gibt's im Katalog
+      tf.classList.toggle("on", !!this._newFav);
+      tf.classList.toggle("filled", !!this._newFav);
+      tf.querySelector("ha-icon")?.setAttribute("icon", this._newFav ? "mdi:star" : "mdi:star-plus-outline");
+      tf.title = this._newFav ? "⭐ Wird als Favorit gemerkt – antippen zum Entfernen" : "⭐ Als Favorit merken";
+    }
+    const ta = this.$("tAlias");
+    if (ta) { ta.hidden = this._formMode === "recipe"; if (ta.hidden) this.$("inAliases").hidden = true; }
     const nb = this.$("btnNewBarcode");
     if (nb) {
       nb.hidden = !this._hasAppScanner();
@@ -7057,16 +7100,17 @@ class EinkaufslisteCard extends HTMLElement {
       ["tQty", "qtyBox", this.$("inQty")?.value.trim(), "mdi:numeric"],
       ["tOwn", "inOwn", this.$("inOwn")?.value.trim() ? "✓" : "", "mdi:pencil-outline"],
       ["tFor", "forBox", this.$("inFor")?.value, "mdi:account-outline"],
+      ["tAlias", "inAliases", this.$("inAliases")?.value.trim() ? "✓" : "", "mdi:tag-outline"],
     ];
     for (const [tool, boxId, value, icon] of tools) {
       const btn = this.$(tool);
       const box = this.$(boxId);
       if (!btn || !box) continue;
       btn.classList.toggle("on", !box.hidden);
-      btn.classList.toggle("filled", !!value && tool === "tOwn");
-      const label = tool === "tOwn" ? "" : value || "";
+      btn.classList.toggle("filled", !!value && (tool === "tOwn" || tool === "tAlias"));
+      const label = tool === "tOwn" || tool === "tAlias" ? "" : value || "";
       btn.classList.toggle("hasval", !!label);
-      const lblTxt = {tQty: "Menge", tOwn: "Notiz", tFor: "Für wen"}[tool] || "";
+      const lblTxt = {tQty: "Menge", tOwn: "Notiz", tFor: "Für wen", tAlias: "Spitzname"}[tool] || "";
       const key = icon + "|" + label;
       if (btn._key !== key) {
         btn._key = key;
@@ -7132,6 +7176,8 @@ class EinkaufslisteCard extends HTMLElement {
         target.button.querySelector("ha-icon")?.setAttribute("icon", "mdi:camera");
       } else if (target.keepEdit) {
         /* Rezept-Editor bleibt offen */
+      } else if (this._view === "settings" && this._setSec === "products") {
+        this._loadProducts(); // 📦 Katalog: Produkt bleibt offen, Foto-Anzahl neu
       } else {
         this._editing = null;
         this._renderList();
@@ -7506,7 +7552,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Mehrere auf einmal:</b> <b>Milch, 6 Eier, Brot</b> → ✔ → 3 Sachen auf der Liste.</li>
         <li><b>🤔 Ungewöhnlich große Menge?</b> Bei z. B. 300 Eier oder 40 kg Mehl fragt die Liste kurz nach, ob das wirklich stimmt – so bleiben Zahlendreher nicht unbemerkt.</li>
         <li><b>Namen werden aufgeräumt:</b> „h-milch“ wird zu „H-Milch“.</li>
-        <li>Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 📷 Foto · ⭐ alle Favoriten auf die Liste · 📋 Liste aus Foto einlesen · 🧽 alles leeren.</li>
+        <li>Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 🏷️ Spitzname · ⭐ als Favorit merken · 📷 Foto · ⭐ alle Favoriten auf die Liste · 📋 Liste aus Foto einlesen · 🧽 alles leeren. Beim <b>Bearbeiten</b> (lange drücken) gibt es dieselben Felder in derselben Reihenfolge, auch die Mengen- und „Für wen“-Knöpfe.</li>
         <li><b>⭐ Favoriten:</b> Beim Bearbeiten eines Artikels (oder eines Produkts im Katalog) „⭐ Favorit“ ankreuzen – dann steht ein ⭐ vor dem Foto-Symbol. Der ⭐-Knopf unter dem Eingabefeld setzt <b>alle</b> Favoriten sofort auf die Liste; was schon offen draufsteht, kommt nicht doppelt.</li>
         <li><b>📝 Notiz-Vorlagen</b> (⚙️ → Extras): Kleine Knöpfe unter dem ✏️ Eigene Notiz-Feld (beim Eintragen, Bearbeiten und im Katalog) – ein Tipp setzt „Bio“, „ohne Laktose“ & Co. ein. Die Texte pflegst du selbst, ein Text pro Zeile.</li>
         <li><b>✏️ Eigene Notiz:</b> Hier schreibst du etwas nur für dich hin, z. B. „nur die große Packung“. Sie steht in der Liste gelb wie die 📝 Notiz (mit ✏️ davor), <b>bleibt beim Produkt</b> und kommt beim nächsten Eintragen von selbst wieder. Die 📝 Notiz dagegen kommt nur aus dem Barcode (Marke/Sorte aus der Datenbank) und ist nicht tippbar. Die ✏️ Notiz macht kein neues Produkt, und die Produkt-Datenbank überschreibt sie nie. Ändern geht beim Bearbeiten des Artikels oder im Katalog; leer lassen löscht sie dort.</li>
@@ -7911,7 +7957,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Several at once:</b> <b>milk, 6 eggs, bread</b> → ✔ → 3 things on the list.</li>
         <li><b>🤔 Unusually large amount?</b> For e.g. 300 eggs or 40 kg flour the list asks once whether that is really right – so typos don't slip through.</li>
         <li><b>Names get tidied:</b> “h-milk” becomes “H-Milk”.</li>
-        <li>The buttons below: 🔢 quantity · ✏️ own note · 👤 for whom · 📷 photo · ⭐ all favourites onto the list · 📋 read a list from a photo · 🧽 clear everything.</li>
+        <li>The buttons below: 🔢 quantity · ✏️ own note · 👤 for whom · 🏷️ nickname · ⭐ remember as favourite · 📷 photo · ⭐ all favourites onto the list · 📋 read a list from a photo · 🧽 clear everything. When <b>editing</b> (long press) you get the same fields in the same order, including the quantity and “for whom” buttons.</li>
         <li><b>⭐ Favourites:</b> when editing an item (or a catalogue product) tick “⭐ Favourite” – a ⭐ then shows before the photo icon. The ⭐ button under the input field puts <b>all</b> favourites on the list at once; whatever is already open on it is not added twice.</li>
         <li><b>📝 Note templates</b> (⚙️ → Extras): small buttons under the ✏️ Own note field (when adding, editing and in the catalogue) – one tap inserts “Organic”, “lactose-free” & co. You maintain the texts yourself, one per line.</li>
         <li><b>✏️ Own note:</b> write something just for yourself here, e.g. “only the big pack”. In the list it is yellow like the 📝 note (with ✏️ in front), <b>stays with the product</b> and comes back by itself next time you add it. The 📝 note, by contrast, comes only from the barcode (brand/variety from the database) and cannot be typed. The ✏️ note does not create a new product, and the product database never overwrites it. You change it when editing the item or in the catalog; leaving it empty there deletes it.</li>
@@ -9156,12 +9202,17 @@ class EinkaufslisteCard extends HTMLElement {
         await this._savePhoto({ name: this._pk(item?.name || name, item ? item.note : msg.note), button: this.$("btnNewPhoto"), quiet: true }, data);
         this._updateNewPhotoBtn();
       }
-      for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat"]) this.$(id).value = "";
+      // ⭐ Favorit und 🏷️ Spitznamen gleich mit – genau wie beim Bearbeiten
+      const aliases = this._capAliases((this.$("inAliases")?.value || "").split(/[,;]/));
+      if (item?.id && aliases.length) await this._ws({ type: "einkaufsliste/item/update", item_id: item.id, aliases }).catch(() => {});
+      if (this._newFav && (item?.name || name)) await this._ws({ type: "einkaufsliste/favorite/set", name: item?.name || name, note: (item ? item.note : msg.note) || null, value: true }).catch(() => {});
+      this._newFav = false;
+      for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat", "inAliases"]) this.$(id).value = "";
       this._catManual = false;
       this._pendingBarcode = null;
       this._qtyUnit = null;
       this._unitMore = false;
-      for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox"]) this.$(id).hidden = true;
+      for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox", "inAliases"]) this.$(id).hidden = true;
       this._updateTools();
       this._renderSuggest();
       this._renderList();
@@ -9451,6 +9502,19 @@ class EinkaufslisteCard extends HTMLElement {
         this.$("inName").focus();
         break;
       }
+      case "ed-chip": { // 🔢/👤 Knopf im Bearbeiten: Wert ins Feld (nochmal tippen = wieder leer)
+        const box = el.closest(".edchips");
+        const inp = box && this.$(box.dataset.for);
+        if (!inp) break;
+        const on = inp.value !== el.dataset.v;
+        inp.value = on ? el.dataset.v : "";
+        for (const b of box.querySelectorAll(".chip2")) b.classList.toggle("sel", on && b === el);
+        break;
+      }
+      case "new-fav": // ⭐ beim Eintragen gleich als Favorit merken
+        this._newFav = !this._newFav;
+        this._updateTools();
+        break;
       case "qty-chip": {
         const q = this.$("inQty");
         q.value = q.value === el.dataset.v ? "" : el.dataset.v;
