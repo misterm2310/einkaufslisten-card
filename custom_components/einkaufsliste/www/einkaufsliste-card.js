@@ -2,12 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.60.04";
+const EL_VERSION = "2.60.05";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.60.04"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
-  ["🎛️ <b>Alle Eingabe-Masken gleich:</b> Eintragen, Bearbeiten und Katalog sehen gleich aus (gleiche Höhe, Schrift, Rahmen) und können dasselbe, in derselben Reihenfolge. · ✍️ Beim <b>Eintragen</b> neu: <b>🏷️ Spitzname</b> und <b>⭐ Favorit</b> gleich mit. · ✏️ Beim <b>Bearbeiten</b> neu: <b>Mengen-Knöpfe</b> (2x, 500 g …) und <b>„Für wen“ als Knöpfe</b>. · 📦 Im <b>Katalog</b> neu: <b>📷 Foto</b> direkt im Produkt. Löschen, Zusammenführen & Co. bleiben in ⚙️.",
-   "🎛️ <b>All input forms alike:</b> adding, editing and the catalogue look the same (same height, font, frame) and can do the same, in the same order. · ✍️ New when <b>adding</b>: <b>🏷️ nickname</b> and <b>⭐ favourite</b> right away. · ✏️ New when <b>editing</b>: <b>quantity buttons</b> (2x, 500 g …) and <b>“for whom” as buttons</b>. · 📦 New in the <b>catalogue</b>: <b>📷 photo</b> right in the product. Delete, merge & co. stay in ⚙️."],
+  ["🎛️ <b>Alle Eingabe-Masken gleich:</b> Eintragen, Bearbeiten und Katalog sehen gleich aus (gleiche Höhe, Schrift, Rahmen) und können dasselbe, in derselben Reihenfolge. · ✏️ Beim <b>Bearbeiten</b> steht „Für wen“ als Auswahl neben der Menge – so wie Geschäft neben Kategorie. · 📦 Im <b>Katalog</b> neu: <b>📷 Foto</b> direkt im Produkt. · 📖 <b>„👁️ Ansicht“ und „📖 Anleitung“</b> stehen als Knöpfe unter der Karte – wie in der Offline-App. Löschen, Zusammenführen & Co. bleiben in ⚙️.",
+   "🎛️ <b>All input forms alike:</b> adding, editing and the catalogue look the same (same height, font, frame) and can do the same, in the same order. · ✏️ When <b>editing</b>, “for whom” is a picker next to the quantity – like store next to category. · 📦 New in the <b>catalogue</b>: <b>📷 photo</b> right in the product. · 📖 <b>“👁️ View” and “📖 Guide”</b> are buttons below the card – like in the offline app. Delete, merge & co. stay in ⚙️."],
   ["🟢 <b>Leiste oben auf jeder Seite</b> – jetzt auch in der Home-Assistant-Karte: links „🟢 verbunden“ (⏳ orange = wartet aufs Netz, 🔴 = keine Verbindung), rechts das <b>🔓 Schloss</b> (nur mit PIN) und die Versionsnummer. · 👁️ <b>Meine Ansicht für jeden:</b> Was du beim Artikel sehen willst, stellst du jetzt ganz unten mit <b>„👁️ Ansicht“</b> (neben „📖 Anleitung“) ein – ganz ohne Zahnrad und PIN. In ⚙️ → Listenansicht steht nur noch der Standard „für alle“.",
    "🟢 <b>Bar at the top of every page</b> – now in the Home Assistant card too: on the left “🟢 connected” (⏳ orange = waiting for the network, 🔴 = no connection), on the right the <b>🔓 lock</b> (only with a PIN) and the version number. · 👁️ <b>My view for everyone:</b> what you want to see on items is now set at the very bottom with <b>“👁️ View”</b> (next to “📖 Guide”) – no gear or PIN needed. ⚙️ → List view only holds the default “for everyone”."],
   ["👁️ <b>Listenansicht:</b> ⚙️ → Listenansicht – Häkchen weg, und Menge, Notizen, Für wen, wer eingetragen hat, Datum, Foto, Stern & Co. sind beim Artikel ausgeblendet. „Für alle“ oder „Nur für mich“ (jeder für sich). · 🧹 <b>Aufräumen in der Karte:</b> ⚙️ → Aufräumen – jetzt mit <b>An/Aus</b>, Tag, Uhrzeit und Mindestalter direkt hier (nicht mehr in der Integration). · 🛒 <b>Der Einkaufswagen oben links bringt dich immer zurück zur Liste</b>, die Anleitung steckt im Knopf „📖 Anleitung“ ganz unten. · 🏪 <b>Geschäfte wieder als Liste</b>, Reihenfolge mit ⌃⌄ direkt dort. · 🔓 Das Schloss sitzt in ⚙️ oben rechts neben der Version, der grüne Punkt ist weg (nur noch bei Problemen sichtbar). · 📊 Last-Anzeige jetzt unter Ressourcen. · 📜 Neue Produkte im Katalog stehen im Verlauf. · 🔁 Bis zu 50 To-do-Listen – und beim <b>vollen Abgleich</b> bekommt jede Liste nur die Artikel <b>ihres</b> Geschäfts (Tomaten bei Lidl landen nicht mehr auch bei Bring! Aldi). · 🧽 Radiergummi nur noch an Suchfeldern.",
@@ -1693,7 +1693,6 @@ button { font:inherit; color:inherit; }
 .syncrow .btn { font-size:.85em; padding:4px 9px; }
 .updbar b { flex:1; }
 .tipbtn { font:inherit; font-size:.95em; border:0; border-radius:10px; padding:6px 10px; cursor:pointer; background:color-mix(in srgb, var(--primary-color,#03a9f4) 25%, transparent); color:var(--primary-text-color); }
-.guidebtn { margin-left:auto; font:inherit; font-size:1em; display:inline-flex; align-items:center; gap:4px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:5px 10px; background:none; color:var(--primary-text-color); cursor:pointer; }
 .wizard { margin:0 2px 10px; padding:12px; border-radius:14px; border:1px solid color-mix(in srgb, var(--primary-color,#03a9f4) 45%, transparent); background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); }
 .wizard h4 { margin:0 0 4px; font-size:1.05em; }
 .wizard ol { list-style:none; margin:8px 0; padding:0; display:grid; gap:6px; counter-reset:wz; }
@@ -1769,7 +1768,7 @@ input[hidden] + .tplchips { display:none; }
 .lastq small { opacity:.7; font-size:.8em; }
 .unitchips { margin-top:6px; padding-top:6px; border-top:1px dashed var(--divider-color, rgba(127,127,127,.35)); }
 .unitchips .chip2 { padding:4px 10px; min-width:34px; font-size:.85em; }
-.unitchips .ulabel, .edchips .ulabel { font-size:.8em; opacity:.7; align-self:center; margin-right:2px; }
+.unitchips .ulabel { font-size:.8em; opacity:.7; align-self:center; margin-right:2px; }
 @keyframes pulse { 50% { opacity:.3; } }
 
 .photobtn .pcount { font-size:10px; font-weight:700; margin-left:1px; }
@@ -1883,7 +1882,6 @@ ha-card.compact .group { margin-top:4px; }
 .editrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; border:1px solid var(--primary-color,#03a9f4); border-radius:12px; margin:6px 0; }
 .editrow .full { grid-column: 1 / span 2; }
 .editrow .tplchips, .prodedit .tplchips { grid-column: 1 / -1; margin:0; }
-.edchips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 .editrow .btns { grid-column: 1 / span 2; display:flex; justify-content:flex-end; gap:6px; }
 .editrow .btns .primary { padding:7px 14px; }
 .error { background: color-mix(in srgb, var(--error-color,#db4437) 15%, transparent); color:var(--primary-text-color); border-radius:10px; padding:10px; margin:4px 2px 8px; font-size:.9em; }
@@ -1919,9 +1917,10 @@ ha-card.compact .group { margin-top:4px; }
 .pill { cursor:pointer; border-radius:999px; padding:2px 10px; background:color-mix(in srgb, var(--success-color,#43a047) 18%, transparent); color:var(--primary-text-color); white-space:nowrap; }
 .pill.wait { background:color-mix(in srgb, var(--warning-color,#ffa600) 25%, transparent); }
 .pill.off { background:color-mix(in srgb, var(--error-color,#db4437) 20%, transparent); }
-.fbtns { margin-left:auto; display:flex; gap:6px; flex:none; }
-.fbtns .guidebtn { margin-left:0; }
-.guidebtn.on { border-color:var(--primary-color,#03a9f4); color:var(--primary-color,#03a9f4); }
+.foot { display:flex; justify-content:center; gap:10px; margin:14px 6px 8px; font-size:13px; color:var(--secondary-text-color); } /* wie die Knopfreihe der Offline-App */
+.foot[hidden] { display:none; }
+.foot button { font:inherit; color:inherit; background:none; text-decoration:underline; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:8px 18px; cursor:pointer; }
+.foot button.on { border-color:var(--primary-color,#03a9f4); color:var(--primary-color,#03a9f4); }
 .myview { margin:6px 10px 2px; padding:8px 10px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); }
 .myview[hidden] { display:none; }
 .myview .mvhead { display:flex; align-items:center; gap:6px; }
@@ -3072,8 +3071,6 @@ class EinkaufslisteCard extends HTMLElement {
               <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon><span class="lbl">Menge</span></button>
               <button class="tool" id="tOwn" type="button" data-act="tool" data-field="inOwn" title="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben"><ha-icon icon="mdi:pencil-outline"></ha-icon><span class="lbl">Notiz</span></button>
               <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon><span class="lbl">Für wen</span></button>
-              <button class="tool" id="tAlias" type="button" data-act="tool" data-field="inAliases" title="🏷️ Spitznamen – wer so etwas eintippt, landet bei diesem Produkt"><ha-icon icon="mdi:tag-outline"></ha-icon><span class="lbl">Spitzname</span></button>
-              <button class="tool" id="tFav" type="button" data-act="new-fav" title="⭐ Als Favorit merken"><ha-icon icon="mdi:star-plus-outline"></ha-icon><span class="lbl">Favorit</span></button>
               <button class="tool plus" id="btnNewBarcode" type="button" data-act="new-barcode" title="Barcode zum neuen Produkt" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon><span class="lbl">Barcode</span></button>
               <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto</span></button>
               <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat – haben wir immer (z. B. Salz, Öl)" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon><span class="lbl">Vorrat</span></button>
@@ -3093,7 +3090,6 @@ class EinkaufslisteCard extends HTMLElement {
               <div class="chips tplchips" id="inTpl"></div>
               <div class="chips" id="noteChips" hidden></div>
               <div id="forBox" class="chipbox" hidden><div class="chips" id="forChips"></div></div>
-              <input id="inAliases" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt" hidden>
               <select id="inFor" title="Für wen?" hidden></select>
             </div>
             <div class="row2 sel">
@@ -3109,7 +3105,9 @@ class EinkaufslisteCard extends HTMLElement {
         <div id="otherView" hidden></div>
         <div class="footer" id="footer" hidden></div>
         <div class="myview" id="myView" hidden></div>
-      </ha-card>`;
+      </ha-card>
+      <!-- 📖 Knöpfe unter der Karte – genau wie in der Offline-App (dort stehen sie neben „Abmelden“) -->
+      <div class="foot" id="footBtns" hidden></div>`;
 
     const root = this.shadowRoot;
     // 👆 Lange auf ein Icon drücken = kurze Erklärung (am Handy gibt es keine Tooltips)
@@ -3965,34 +3963,15 @@ class EinkaufslisteCard extends HTMLElement {
     return this._capAliases((this._data?.aliases || []).filter((a) => `${a.name.toLowerCase()}|${(a.note || "").toLowerCase()}` === k).map((a) => a.alias));
   }
 
-  // 🔢 Mengen-Knöpfe beim Bearbeiten – dieselben wie beim Eintragen (2x, 500 g …), ein Tipp setzt die Menge
-  _edQtyChips(qty) {
-    const val = normQty(qty || "") || "";
-    const unit = unitOf(val) || "x";
-    const quick = (QTY_PRESETS[unit] || [1, 2, 3, 4, 6, 10]).map((n) => qtyFmt(String(n).replace(".", ","), unit));
-    return `<div class="full chips edchips" data-for="edQty">${quick.map((q) => `<button type="button" class="chip2 ${q === val ? "sel" : ""}" data-act="ed-chip" data-v="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
-  }
-
-  // 👤 „Für wen?“ beim Bearbeiten als Knöpfe – wie beim Eintragen (nochmal tippen = keiner)
-  _edForChips(who) {
-    const names = (this._data?.persons || []).map((p) => p.name);
-    if (who && !names.some((n) => n.toLowerCase() === who.toLowerCase())) names.push(who);
-    const hidden = `<input type="hidden" id="edFor" value="${esc(who || "")}">`;
-    if (!names.length) return hidden;
-    const color = (n) => (this._data?.persons || []).find((p) => p.name === n)?.color || "#9e9e9e";
-    return hidden + `<div class="full chips edchips" data-for="edFor"><span class="ulabel">👤 Für wen:</span>${names.map((n) => `<button type="button" class="chip2 pchip ${who && n.toLowerCase() === who.toLowerCase() ? "sel" : ""}" style="--pc:${esc(color(n))}" data-act="ed-chip" data-v="${esc(n)}"><span class="pdot"></span>${esc(n)}</button>`).join("")}</div>`;
-  }
-
   _editHtml(item) {
     const d = this._data;
     return `
       <form class="editrow" data-id="${item.id}">
         <input class="full" id="edName" value="${esc(item.name)}" placeholder="Name, z. B. Milch">
-        <input class="full" id="edQty" value="${esc(item.quantity || "")}" placeholder="${esc(`${EL_LANG === "de" ? "Menge" : "Quantity"}, ${this._qtyExample(item.name)}`)}">
-        ${this._edQtyChips(item.quantity)}
+        <input id="edQty" value="${esc(item.quantity || "")}" placeholder="${esc(`${EL_LANG === "de" ? "Menge" : "Quantity"}, ${this._qtyExample(item.name)}`)}">
+        <select id="edFor" title="Für wen?">${this._personOptions(item.for_whom)}</select>
         ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz, z. B. große Packung">` : `<input type="hidden" id="edNote" value="${esc(item.note)}">`}` : `<input type="hidden" id="edNote" value="">`}
         ${item.recipe_id ? "" : (item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt">${this._tplChipsHtml(item.own_note || "")}`)}
-        ${this._edForChips(item.for_whom)}
         <input class="full" id="edAliases" value="${esc(this._itemAliases(item).join(", "))}" data-orig="${esc(this._itemAliases(item).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
@@ -4377,14 +4356,17 @@ class EinkaufslisteCard extends HTMLElement {
   _renderFooter() {
     const f = this.$("footer");
     const s = this._data?.settings;
-    if (!s || this._view !== "list") { f.hidden = true; return; }
+    if (!s || this._view !== "list") { f.hidden = true; if (this.$("footBtns")) this.$("footBtns").hidden = true; return; }
     f.hidden = false;
     const next = new Date(s.next_cleanup);
     f.innerHTML = (s.cleanup_on === false ? `<ha-icon icon="mdi:broom"></ha-icon><span>Automatisches Aufräumen ist aus</span>`
-      : `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`)
-      + `<span class="fbtns"><button class="guidebtn${this._myViewOpen ? " on" : ""}" type="button" data-act="myview" title="👁️ Meine Ansicht – was ich beim Artikel sehe (nur für mich, ohne PIN)"><ha-icon icon="mdi:eye-outline"></ha-icon>Ansicht</button>`
-      + (window.__elOfflineApp ? "" : `<button class="guidebtn" type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte"><ha-icon icon="mdi:book-open-page-variant-outline"></ha-icon>Anleitung</button>`) // 📖 fester Platz unten (in der Offline-App steht er neben „Abmelden“)
-      + `</span>`;
+      : `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`);
+    // 👁️ Ansicht + 📖 Anleitung unter der Karte (Offline-App: dort in ihrer eigenen Knopfreihe neben „Abmelden“)
+    const fb = this.$("footBtns");
+    if (fb) {
+      fb.hidden = !!window.__elOfflineApp;
+      if (!fb.hidden) fb.innerHTML = `<button type="button" class="${this._myViewOpen ? "on" : ""}" data-act="myview" title="👁️ Meine Ansicht – was ich beim Artikel sehe (nur für mich, ohne PIN)">👁️ Ansicht</button><button type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte">📖 Anleitung</button>`;
+    }
   }
 
   // ---------------------------------------------------------------- Icon-Suche
@@ -4754,11 +4736,11 @@ class EinkaufslisteCard extends HTMLElement {
   // 🗂️ Einstellungen als Liste: Überschriften nach Zweck, eine Ebene tief, mit Suche
   _settingsListHtml(sections) {
     const groups = [
-      ["📋 Meine Liste", ["stores", "categories", "persons", "listview", "products", "recipes"]],
+      ["📋 Meine Liste", ["stores", "categories", "persons", "products", "recipes"]],
       ["🎛️ Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot", "labels"]],
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
-      ["📱 App & Info", ["app", "theme", "pin", "privacy", "news", "credits"]],
+      ["📱 App & Info", ["listview", "app", "theme", "pin", "privacy", "news", "credits"]],
     ];
     const kw = {
       stores: "laden markt zone standort icon eigenmarken", categories: "kategorie farbe reihenfolge", persons: "für wen namen familie",
@@ -4811,6 +4793,14 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 👁️ „Meine Ansicht“ – klappt ganz unten unter „Ansicht“ (neben „Anleitung“) auf (für jeden, ohne Zahnrad/PIN)
+  toggleMyView() { // 👁️ für den „Ansicht“-Knopf der Offline-App (der sitzt außerhalb der Karte)
+    this._myViewOpen = !this._myViewOpen;
+    this._renderFooter();
+    this._renderMyView();
+    this._emitNav(); // Offline-App: Knopf „Ansicht“ unten an/aus
+    return this._myViewOpen;
+  }
+
   _renderMyView() {
     const box = this.$("myView");
     if (!box) return;
@@ -6932,12 +6922,12 @@ class EinkaufslisteCard extends HTMLElement {
     const box = this.$(boxId);
     const open = box.hidden;
     // immer nur ein Feld offen – spart Platz
-    for (const id of ["qtyBox", "inOwn", "forBox", "inAliases"]) if (id !== boxId) this.$(id).hidden = true;
+    for (const id of ["qtyBox", "inOwn", "forBox"]) if (id !== boxId) this.$(id).hidden = true;
     box.hidden = !open;
     if (open) {
       if (boxId === "qtyBox") this._renderQtyChips();
       if (boxId === "forBox") this._renderForChips();
-      if (boxId === "inOwn" || boxId === "inAliases") box.focus();
+      if (boxId === "inOwn") box.focus();
     }
     this._updateTools();
   }
@@ -6948,12 +6938,11 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _clearForm() {
-    for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat", "inAliases"]) this.$(id).value = "";
-    this._newFav = false;
+    for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat"]) this.$(id).value = "";
     this._refreshExamples();
     this._setBasic(false);
     this._renderSuggest();
-    for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox", "inAliases"]) this.$(id).hidden = true;
+    for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox"]) this.$(id).hidden = true;
     const tab = this._activeTab;
     this.$("inStore").value = tab === "none" ? "~none" : tab !== "all" ? tab : "";
     this._newPhoto = null;
@@ -7075,21 +7064,11 @@ class EinkaufslisteCard extends HTMLElement {
     this._renderNoteChips();
     const clear = this.$("tClear");
     if (clear) {
-      const any = ["inName", "inQty", "inNote", "inOwn", "inFor", "inAliases"].some((id) => this.$(id)?.value.trim())
-        || this._newFav || this._newPhoto || this._pendingBarcode || this._catManual
+      const any = ["inName", "inQty", "inNote", "inOwn", "inFor"].some((id) => this.$(id)?.value.trim())
+        || this._newPhoto || this._pendingBarcode || this._catManual
         || (!this._fixedStore && (this.$("inStore")?.value || "") !== this._defaultStore());
       clear.hidden = !any;
     }
-    const tf = this.$("tFav");
-    if (tf) {
-      tf.hidden = this._formMode === "recipe"; // Rezept-Zutaten: Favorit/Spitzname gibt's im Katalog
-      tf.classList.toggle("on", !!this._newFav);
-      tf.classList.toggle("filled", !!this._newFav);
-      tf.querySelector("ha-icon")?.setAttribute("icon", this._newFav ? "mdi:star" : "mdi:star-plus-outline");
-      tf.title = this._newFav ? "⭐ Wird als Favorit gemerkt – antippen zum Entfernen" : "⭐ Als Favorit merken";
-    }
-    const ta = this.$("tAlias");
-    if (ta) { ta.hidden = this._formMode === "recipe"; if (ta.hidden) this.$("inAliases").hidden = true; }
     const nb = this.$("btnNewBarcode");
     if (nb) {
       nb.hidden = !this._hasAppScanner();
@@ -7101,17 +7080,16 @@ class EinkaufslisteCard extends HTMLElement {
       ["tQty", "qtyBox", this.$("inQty")?.value.trim(), "mdi:numeric"],
       ["tOwn", "inOwn", this.$("inOwn")?.value.trim() ? "✓" : "", "mdi:pencil-outline"],
       ["tFor", "forBox", this.$("inFor")?.value, "mdi:account-outline"],
-      ["tAlias", "inAliases", this.$("inAliases")?.value.trim() ? "✓" : "", "mdi:tag-outline"],
     ];
     for (const [tool, boxId, value, icon] of tools) {
       const btn = this.$(tool);
       const box = this.$(boxId);
       if (!btn || !box) continue;
       btn.classList.toggle("on", !box.hidden);
-      btn.classList.toggle("filled", !!value && (tool === "tOwn" || tool === "tAlias"));
-      const label = tool === "tOwn" || tool === "tAlias" ? "" : value || "";
+      btn.classList.toggle("filled", !!value && tool === "tOwn");
+      const label = tool === "tOwn" ? "" : value || "";
       btn.classList.toggle("hasval", !!label);
-      const lblTxt = {tQty: "Menge", tOwn: "Notiz", tFor: "Für wen", tAlias: "Spitzname"}[tool] || "";
+      const lblTxt = {tQty: "Menge", tOwn: "Notiz", tFor: "Für wen"}[tool] || "";
       const key = icon + "|" + label;
       if (btn._key !== key) {
         btn._key = key;
@@ -7553,7 +7531,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Mehrere auf einmal:</b> <b>Milch, 6 Eier, Brot</b> → ✔ → 3 Sachen auf der Liste.</li>
         <li><b>🤔 Ungewöhnlich große Menge?</b> Bei z. B. 300 Eier oder 40 kg Mehl fragt die Liste kurz nach, ob das wirklich stimmt – so bleiben Zahlendreher nicht unbemerkt.</li>
         <li><b>Namen werden aufgeräumt:</b> „h-milch“ wird zu „H-Milch“.</li>
-        <li>Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 🏷️ Spitzname · ⭐ als Favorit merken · 📷 Foto · ⭐ alle Favoriten auf die Liste · 📋 Liste aus Foto einlesen · 🧽 alles leeren. Beim <b>Bearbeiten</b> (lange drücken) gibt es dieselben Felder in derselben Reihenfolge, auch die Mengen- und „Für wen“-Knöpfe.</li>
+        <li>Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 📷 Foto · ⭐ alle Favoriten auf die Liste · 📋 Liste aus Foto einlesen · 🧽 alles leeren. Beim <b>Bearbeiten</b> (lange drücken) gibt es dazu Spitznamen und ⭐ Favorit; „Für wen“ wählst du dort neben der Menge aus.</li>
         <li><b>⭐ Favoriten:</b> Beim Bearbeiten eines Artikels (oder eines Produkts im Katalog) „⭐ Favorit“ ankreuzen – dann steht ein ⭐ vor dem Foto-Symbol. Der ⭐-Knopf unter dem Eingabefeld setzt <b>alle</b> Favoriten sofort auf die Liste; was schon offen draufsteht, kommt nicht doppelt.</li>
         <li><b>📝 Notiz-Vorlagen</b> (⚙️ → Extras): Kleine Knöpfe unter dem ✏️ Eigene Notiz-Feld (beim Eintragen, Bearbeiten und im Katalog) – ein Tipp setzt „Bio“, „ohne Laktose“ & Co. ein. Die Texte pflegst du selbst, ein Text pro Zeile.</li>
         <li><b>✏️ Eigene Notiz:</b> Hier schreibst du etwas nur für dich hin, z. B. „nur die große Packung“. Sie steht in der Liste gelb wie die 📝 Notiz (mit ✏️ davor), <b>bleibt beim Produkt</b> und kommt beim nächsten Eintragen von selbst wieder. Die 📝 Notiz dagegen kommt nur aus dem Barcode (Marke/Sorte aus der Datenbank) und ist nicht tippbar. Die ✏️ Notiz macht kein neues Produkt, und die Produkt-Datenbank überschreibt sie nie. Ändern geht beim Bearbeiten des Artikels oder im Katalog; leer lassen löscht sie dort.</li>
@@ -7734,7 +7712,6 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("📋", "My list", `<ul>
         <li><b>Stores:</b> one row per store. The <b>⌃ ⌄</b> next to it change the order of the tabs right in the list. Tapping a store opens its page: name, colour, icon, 📍 zone(s) for “Next store” (the list then jumps to that store when you are there), own brands and <b>🗺️ own category order</b> (sort with ↑↓ the way the shop is laid out). Several zones per store work too (e.g. several branches). Create new stores with the “New” form, 🗑️ on the store page deletes. Also <b>🗂️ own categories</b>: “All as everywhere” or “Own” – with “Own” you tick which ones exist in this store and can create a new one just for it.</li>
         <li><b>Categories:</b> name, colour, icon (search with German or English words), order with ↑ ↓, delete with 🗑️, new ones via the form.</li>
-        <li><b>👁️ List view:</b> what you see on an item – quantity, notes, for whom, who added it, date, cleanup day, store, recipe, photo, star, barcode, offers and more. Untick = hidden. This is the default <b>for everyone</b>. Each person sets their own view with <b>👁️ View</b> at the very bottom below the list – no gear or PIN needed (applies on all devices of that user).</li>
         <li><b>People:</b> the names for the quick buttons at “For whom?”. Without people the 👤 stays hidden in the list.</li>
         <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK; “Save” also counts as checked) and <b>Delete shopping-list items</b>.</li>
         <li><b>Search and filters in “All products”:</b> the search field finds name, notes, nicknames, barcode, category and store – even with small typos. Plus filters such as no category, no store, is on the list, with/without photo, with/without barcode, by store or by category. The <b>eraser icon</b> resets search and filter with one tap (it only appears when something is set). On a PC the keyboard works too (↓ into the list, ↑ ↓ to pick, Enter edits, Esc back).</li>
@@ -7773,6 +7750,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> shows the health light in Home Assistant (ok / hinweis / problem) – you can use it in automations, e.g. a message to your phone.</li>
         <li><b>Resources:</b> how big the data and photos are.</li></ul>`)}
       ${sec("📱", "App & info", `<ul>
+        <li><b>👁️ List view (for everyone):</b> what you see on an item – quantity, notes, for whom, who added it, date, cleanup day, store, recipe, photo, star, barcode, offers and more. Untick = hidden. This is the default <b>for everyone</b>. Each person sets their own view with <b>👁️ View</b> at the very bottom below the list – no gear or PIN needed (applies on all devices of that user).</li>
         <li><b>Offline app:</b> your own address with “Copy” (it needs an https address, e.g. Nabu Casa). Open it in the phone browser and add it to the home screen. Almost everything works offline; not available are looking up new barcodes, product info, recipe links, uploading new photos and the backup. The first time you scan, the phone asks once for the camera.</li>
         <li><b>Light / dark:</b> the choice (light, dark, automatic) exists only in the offline app. In the dashboard card everything follows the Home Assistant theme. The guides follow the same: light or dark, just like the card.</li>
         <li><b>🔒 Privacy:</b> says in plain words what stays in your Home Assistant and what goes to the internet. An admin also switches <b>“Privacy on”</b> for all devices there: then there is no camera, no photos (not even from gallery or clipboard), no barcode scanner and no AI cooking – the buttons are greyed out, and barcodes can only be typed by hand. Off = as usual.</li>
@@ -7790,7 +7768,6 @@ class EinkaufslisteCard extends HTMLElement {
       ${sec("📋", "Meine Liste", `<ul>
         <li><b>Geschäfte:</b> pro Geschäft eine Zeile. Mit <b>⌃ ⌄</b> rechts daneben änderst du direkt in der Liste die Reihenfolge der Reiter. Antippen öffnet die Seite des Geschäfts: Name, Farbe, Icon, 📍 Zone(n) für „Nächstes Geschäft“ (die Liste springt dann auf dieses Geschäft, wenn du dort bist), Eigenmarken und <b>🗺️ eigene Kategorien-Folge</b> (mit ↑↓ so sortieren, wie der Laden aufgebaut ist). Auch mehrere Zonen pro Geschäft gehen (z. B. mehrere Filialen). Neue Geschäfte legst du mit dem „Neu“-Formular an, 🗑️ auf der Seite des Geschäfts löscht. Dazu <b>🗂️ eigene Kategorien</b>: „Alle wie überall“ oder „Eigene“ – bei „Eigene“ setzt du Häkchen, welche es in diesem Geschäft gibt, und kannst eine neue nur dafür anlegen.</li>
         <li><b>Kategorien:</b> Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), Reihenfolge mit ↑ ↓, löschen mit 🗑️, neue über das Formular.</li>
-        <li><b>👁️ Listenansicht:</b> was beim Artikel zu sehen ist – Menge, Notizen, Für wen, wer eingetragen hat, Datum, Aufräum-Tag, Geschäft, Rezept, Foto, Stern, Barcode, Angebote und mehr. Häkchen weg = ausgeblendet. Das hier ist der Standard <b>für alle</b>. Seine eigene Ansicht stellt jeder ganz unten unter der Liste mit <b>👁️ Ansicht</b> ein – ganz ohne Zahnrad und PIN (gilt auf allen Geräten dieses Benutzers).</li>
         <li><b>Personen:</b> die Namen für die Schnellknöpfe bei „Für wen?“. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.</li>
         <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt; „Speichern“ zählt auch als geprüft) und <b>Einkaufsliste Produkte löschen</b>.</li>
         <li><b>Suche und Filter bei „Alle Produkte“:</b> Das Suchfeld findet Name, Notizen, Spitznamen, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Dazu Filter wie ohne Kategorie, ohne Geschäft, steht auf der Liste, mit/ohne Foto, mit/ohne Barcode, nach Geschäft oder nach Kategorie. Das <b>Radiergummi-Symbol</b> setzt Suchfeld und Filter mit einem Tipp zurück (es erscheint nur, wenn etwas eingestellt ist). Am PC geht auch die Tastatur (↓ in die Liste, ↑ ↓ wählen, Enter bearbeitet, Esc zurück).</li>
@@ -7829,6 +7806,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> zeigt die Ampel in Home Assistant (ok / hinweis / problem) – nutzbar in Automationen, z. B. für eine Meldung aufs Handy.</li>
         <li><b>Ressourcen:</b> wie groß Daten und Fotos sind.</li></ul>`)}
       ${sec("📱", "App & Info", `<ul>
+        <li><b>👁️ Listenansicht (für alle):</b> was beim Artikel zu sehen ist – Menge, Notizen, Für wen, wer eingetragen hat, Datum, Aufräum-Tag, Geschäft, Rezept, Foto, Stern, Barcode, Angebote und mehr. Häkchen weg = ausgeblendet. Das hier ist der Standard <b>für alle</b>. Seine eigene Ansicht stellt jeder ganz unten unter der Liste mit <b>👁️ Ansicht</b> ein – ganz ohne Zahnrad und PIN (gilt auf allen Geräten dieses Benutzers).</li>
         <li><b>Offline-App:</b> deine eigene Adresse mit „Kopieren“ (sie braucht eine https-Adresse, z. B. Nabu Casa). Im Handy-Browser öffnen und zum Startbildschirm hinzufügen. Offline geht fast alles; nicht gehen neue Barcodes nachschlagen, Produkt-Infos, Rezept-Links, neue Fotos hochladen und die Sicherung. Beim ersten Scannen fragt das Handy einmal nach der Kamera.</li>
         <li><b>Hell / Dunkel:</b> Die Auswahl (hell, dunkel, automatisch) gibt es nur in der Offline-App. In der Karte im Dashboard richtet sich alles nach dem Home-Assistant-Design. Die Anleitungen folgen dem jeweils: hell oder dunkel, genau wie die Karte.</li>
         <li><b>🔒 Datenschutz:</b> zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht. Dort schaltet ein Admin auch <b>„Datenschutz an“</b> für alle Geräte: Dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage), keinen Barcode-Scanner und kein KI-Kochen – die Knöpfe sind ausgegraut, Barcodes gehen nur noch von Hand. Aus = alles wie gehabt.</li>
@@ -7958,7 +7936,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Several at once:</b> <b>milk, 6 eggs, bread</b> → ✔ → 3 things on the list.</li>
         <li><b>🤔 Unusually large amount?</b> For e.g. 300 eggs or 40 kg flour the list asks once whether that is really right – so typos don't slip through.</li>
         <li><b>Names get tidied:</b> “h-milk” becomes “H-Milk”.</li>
-        <li>The buttons below: 🔢 quantity · ✏️ own note · 👤 for whom · 🏷️ nickname · ⭐ remember as favourite · 📷 photo · ⭐ all favourites onto the list · 📋 read a list from a photo · 🧽 clear everything. When <b>editing</b> (long press) you get the same fields in the same order, including the quantity and “for whom” buttons.</li>
+        <li>The buttons below: 🔢 quantity · ✏️ own note · 👤 for whom · 📷 photo · ⭐ all favourites onto the list · 📋 read a list from a photo · 🧽 clear everything. When <b>editing</b> (long press) there are also nicknames and ⭐ favourite; “for whom” is picked next to the quantity.</li>
         <li><b>⭐ Favourites:</b> when editing an item (or a catalogue product) tick “⭐ Favourite” – a ⭐ then shows before the photo icon. The ⭐ button under the input field puts <b>all</b> favourites on the list at once; whatever is already open on it is not added twice.</li>
         <li><b>📝 Note templates</b> (⚙️ → Extras): small buttons under the ✏️ Own note field (when adding, editing and in the catalogue) – one tap inserts “Organic”, “lactose-free” & co. You maintain the texts yourself, one per line.</li>
         <li><b>✏️ Own note:</b> write something just for yourself here, e.g. “only the big pack”. In the list it is yellow like the 📝 note (with ✏️ in front), <b>stays with the product</b> and comes back by itself next time you add it. The 📝 note, by contrast, comes only from the barcode (brand/variety from the database) and cannot be typed. The ✏️ note does not create a new product, and the product database never overwrites it. You change it when editing the item or in the catalog; leaving it empty there deletes it.</li>
@@ -9203,17 +9181,12 @@ class EinkaufslisteCard extends HTMLElement {
         await this._savePhoto({ name: this._pk(item?.name || name, item ? item.note : msg.note), button: this.$("btnNewPhoto"), quiet: true }, data);
         this._updateNewPhotoBtn();
       }
-      // ⭐ Favorit und 🏷️ Spitznamen gleich mit – genau wie beim Bearbeiten
-      const aliases = this._capAliases((this.$("inAliases")?.value || "").split(/[,;]/));
-      if (item?.id && aliases.length) await this._ws({ type: "einkaufsliste/item/update", item_id: item.id, aliases }).catch(() => {});
-      if (this._newFav && (item?.name || name)) await this._ws({ type: "einkaufsliste/favorite/set", name: item?.name || name, note: (item ? item.note : msg.note) || null, value: true }).catch(() => {});
-      this._newFav = false;
-      for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat", "inAliases"]) this.$(id).value = "";
+      for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat"]) this.$(id).value = "";
       this._catManual = false;
       this._pendingBarcode = null;
       this._qtyUnit = null;
       this._unitMore = false;
-      for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox", "inAliases"]) this.$(id).hidden = true;
+      for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox"]) this.$(id).hidden = true;
       this._updateTools();
       this._renderSuggest();
       this._renderList();
@@ -9379,9 +9352,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._lockNow();
         break;
       case "myview": // 👁️ Meine Ansicht (unten neben „Anleitung“) auf-/zuklappen
-        this._myViewOpen = !this._myViewOpen;
-        this._renderFooter();
-        this._renderMyView();
+        this.toggleMyView();
         break;
       case "view-toggle": { // 👁️ ein Häkchen umschalten – „Für alle“ (⚙️) oder „Meine Ansicht“ (👁️ oben)
         const mine = el.dataset.scope === "me";
@@ -9503,19 +9474,6 @@ class EinkaufslisteCard extends HTMLElement {
         this.$("inName").focus();
         break;
       }
-      case "ed-chip": { // 🔢/👤 Knopf im Bearbeiten: Wert ins Feld (nochmal tippen = wieder leer)
-        const box = el.closest(".edchips");
-        const inp = box && this.$(box.dataset.for);
-        if (!inp) break;
-        const on = inp.value !== el.dataset.v;
-        inp.value = on ? el.dataset.v : "";
-        for (const b of box.querySelectorAll(".chip2")) b.classList.toggle("sel", on && b === el);
-        break;
-      }
-      case "new-fav": // ⭐ beim Eintragen gleich als Favorit merken
-        this._newFav = !this._newFav;
-        this._updateTools();
-        break;
       case "qty-chip": {
         const q = this.$("inQty");
         q.value = q.value === el.dataset.v ? "" : el.dataset.v;
