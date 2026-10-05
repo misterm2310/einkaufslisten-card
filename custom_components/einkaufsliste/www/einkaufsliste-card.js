@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.60.02";
+const EL_VERSION = "2.60.03";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.60.02"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
@@ -1904,11 +1904,11 @@ ha-card.compact .group { margin-top:4px; }
 .tile:hover { border-color:var(--primary-color,#03a9f4); }
 .tile ha-icon { color:var(--primary-color,#03a9f4); margin-bottom:4px; }
 .tile small { color:var(--secondary-text-color); font-size:.78em; }
-.topbar { display:flex; align-items:center; gap:6px; padding:6px 10px 0; font-size:12px; color:var(--secondary-text-color); }
+.topbar { display:flex; align-items:center; gap:8px; padding:8px 12px 0; font-size:13px; color:var(--secondary-text-color); } /* Maß wie die frühere Leiste der Offline-App */
 .topbar .grow { flex:1; }
-.topbar .iconbtn { padding:2px; --mdc-icon-size:18px; color:var(--secondary-text-color); }
+.topbar .iconbtn { padding:2px; --mdc-icon-size:20px; color:var(--secondary-text-color); }
 .topbar .ver { opacity:.8; }
-.pill { cursor:pointer; border-radius:999px; padding:1px 9px; background:color-mix(in srgb, var(--success-color,#43a047) 16%, transparent); color:var(--primary-text-color); white-space:nowrap; }
+.pill { cursor:pointer; border-radius:999px; padding:2px 10px; background:color-mix(in srgb, var(--success-color,#43a047) 18%, transparent); color:var(--primary-text-color); white-space:nowrap; }
 .pill.wait { background:color-mix(in srgb, var(--warning-color,#ffa600) 25%, transparent); }
 .pill.off { background:color-mix(in srgb, var(--error-color,#db4437) 20%, transparent); }
 .fbtns { margin-left:auto; display:flex; gap:6px; flex:none; }
@@ -5767,8 +5767,6 @@ class EinkaufslisteCard extends HTMLElement {
           <label class="favrow" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" id="peFav" ${p.favorite ? "checked" : ""} data-orig="${p.favorite ? 1 : 0}"> ⭐ Favorit</label>
           <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
           <select id="peStore">${this._selectOptions(this._data.stores, p.store_id, "🛒 Kein Standard-Geschäft")}</select>
-          ${this._data.stores.length > 1 ? `<div class="pestores" title="In welchen Geschäften gibt es das? Lernt sich beim Abhaken auch von selbst.">🏪 Gibt's bei: ${this._data.stores.map((st) =>
-            `<label class="stck" style="--c:${esc(st.color || "#888")}"><input type="checkbox" class="pestore" value="${esc(st.id)}" ${(p.stores || []).includes(st.id) || st.id === p.store_id ? "checked" : ""}>${esc(st.name)}</label>`).join("")}</div>` : ""}
           ${(() => { const t = Object.entries(this._data.typos || {}).filter(([, r]) => r.toLowerCase() === p.name.toLowerCase()).map(([w]) => w);
             return t.length ? `<div class="bclist" title="Diese Tippfehler korrigiert die Liste von selbst">${t.map((w) => `<span class="bcchip">🧠 ${esc(w)}<button type="button" class="iconbtn" data-act="typo-forget" data-w="${esc(w)}" title="Vergessen"><ha-icon icon="mdi:close"></ha-icon></button></span>`).join("")}</div>` : ""; })()}
           ${p.barcodes.length ? `<div class="bclist">${p.barcodes.map((code) => `<span class="bcchip">▥ ${esc(code)}<button type="button" class="iconbtn" data-act="bc-remove" data-code="${esc(code)}" title="Diesen Barcode löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></span>`).join("")}</div>` : ""}
@@ -7693,7 +7691,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>People:</b> the names for the quick buttons at “For whom?”. Without people the 👤 stays hidden in the list.</li>
         <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK; “Save” also counts as checked) and <b>Delete shopping-list items</b>.</li>
         <li><b>Search and filters in “All products”:</b> the search field finds name, notes, nicknames, barcode, category and store – even with small typos. Plus filters such as no category, no store, is on the list, with/without photo, with/without barcode, by store or by category. The <b>eraser icon</b> resets search and filter with one tap (it only appears when something is set). On a PC the keyboard works too (↓ into the list, ↑ ↓ to pick, Enter edits, Esc back).</li>
-        <li><b>Inside a product:</b> name, note (📝 read-only, from the barcode; old notes you typed yourself show as ✏️ and stay editable) and <b>✏️ own note</b> (just for you, never overwritten), <b>🏷️ nicknames</b> (type “Tempos” and the list lands at “tissues”), category and default store, <b>“🏪 Available at”</b> (a tick per store), <b>🧠 learned typos</b> (with “Forget”), delete single barcodes, <b>🗄️ Reload data</b> (for products with a barcode: shows name, note, Nutri-Score and allergens from the database next to your data – you tick separately name, note and/or <b>photo</b> (the database photo is replaced, your own photos stay, nothing is added twice), or “Keep my data”; your ✏️ own note stays), 📷 photos (order, ⭐ main photo, delete) and “Delete completely”. When merging, the old name becomes a nickname.</li>
+        <li><b>Inside a product:</b> name, note (📝 read-only, from the barcode; old notes you typed yourself show as ✏️ and stay editable) and <b>✏️ own note</b> (just for you, never overwritten), <b>🏷️ nicknames</b> (type “Tempos” and the list lands at “tissues”), category and default store, <b>🧠 learned typos</b> (with “Forget”), delete single barcodes, <b>🗄️ Reload data</b> (for products with a barcode: shows name, note, Nutri-Score and allergens from the database next to your data – you tick separately name, note and/or <b>photo</b> (the database photo is replaced, your own photos stay, nothing is added twice), or “Keep my data”; your ✏️ own note stays), 📷 photos (order, ⭐ main photo, delete) and “Delete completely”. When merging, the old name becomes a nickname.</li>
         <li><b>Delete shopping-list items:</b> deletes items from the list for good, also from “Done”. Barcode and suggestion stay; the photo only goes if it is not needed anywhere else.</li>
         <li><b>Filter “🗓️ Not bought for 3 months”:</b> shows products that were last checked off more than 3 months ago (never checked off: counted from when they were added). Products on the list or in a recipe are not shown. Tap one to look at it, or <b>Delete all</b> in one go.</li>
         <li><b>➕ New product / ▥ By barcode</b> (icons only): adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
@@ -7749,7 +7747,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Personen:</b> die Namen für die Schnellknöpfe bei „Für wen?“. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.</li>
         <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt; „Speichern“ zählt auch als geprüft) und <b>Einkaufsliste Produkte löschen</b>.</li>
         <li><b>Suche und Filter bei „Alle Produkte“:</b> Das Suchfeld findet Name, Notizen, Spitznamen, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Dazu Filter wie ohne Kategorie, ohne Geschäft, steht auf der Liste, mit/ohne Foto, mit/ohne Barcode, nach Geschäft oder nach Kategorie. Das <b>Radiergummi-Symbol</b> setzt Suchfeld und Filter mit einem Tipp zurück (es erscheint nur, wenn etwas eingestellt ist). Am PC geht auch die Tastatur (↓ in die Liste, ↑ ↓ wählen, Enter bearbeitet, Esc zurück).</li>
-        <li><b>Im Produkt:</b> Name, Notiz (📝 nur lesbar, aus dem Barcode; alte selbst getippte Notizen zeigt die Liste als ✏️ und sie bleiben änderbar) und <b>✏️ Eigene Notiz</b> (nur für dich, wird nie überschrieben), <b>🏷️ Spitznamen</b> (tippst du „Tempos“, landet die Liste bei „Taschentücher“), Kategorie und Standard-Geschäft, <b>„🏪 Gibt’s bei“</b> (Häkchen pro Geschäft), <b>🧠 gelernte Tippfehler</b> (mit „Vergessen“), einzelne Barcodes löschen, <b>🗄️ Daten neu laden</b> (bei Produkten mit Barcode: zeigt Name, Notiz, Nutri-Score und Allergene aus der Datenbank neben deinen Daten – du hakst einzeln Name, Notiz und/oder <b>Foto</b> an (das Datenbank-Foto wird ersetzt, eigene bleiben, nichts kommt doppelt dazu) oder wählst „Meine Daten behalten“; deine ✏️ Eigene Notiz bleibt), 📷 Fotos (Reihenfolge, ⭐ Hauptfoto, löschen) und „Ganz löschen“. Beim Zusammenführen wird der alte Name zum Spitznamen.</li>
+        <li><b>Im Produkt:</b> Name, Notiz (📝 nur lesbar, aus dem Barcode; alte selbst getippte Notizen zeigt die Liste als ✏️ und sie bleiben änderbar) und <b>✏️ Eigene Notiz</b> (nur für dich, wird nie überschrieben), <b>🏷️ Spitznamen</b> (tippst du „Tempos“, landet die Liste bei „Taschentücher“), Kategorie und Standard-Geschäft, <b>🧠 gelernte Tippfehler</b> (mit „Vergessen“), einzelne Barcodes löschen, <b>🗄️ Daten neu laden</b> (bei Produkten mit Barcode: zeigt Name, Notiz, Nutri-Score und Allergene aus der Datenbank neben deinen Daten – du hakst einzeln Name, Notiz und/oder <b>Foto</b> an (das Datenbank-Foto wird ersetzt, eigene bleiben, nichts kommt doppelt dazu) oder wählst „Meine Daten behalten“; deine ✏️ Eigene Notiz bleibt), 📷 Fotos (Reihenfolge, ⭐ Hauptfoto, löschen) und „Ganz löschen“. Beim Zusammenführen wird der alte Name zum Spitznamen.</li>
         <li><b>Einkaufsliste Produkte löschen:</b> löscht Artikel endgültig von der Liste, auch aus „Erledigt“. Barcode und Vorschlag bleiben; das Foto geht nur mit, wenn es sonst nirgends mehr gebraucht wird.</li>
         <li><b>Filter „🗓️ Seit 3 Monaten nicht gekauft“:</b> zeigt Produkte, die vor mehr als 3 Monaten zuletzt abgehakt wurden (nie abgehakt: gezählt ab dem Eintragen). Produkte, die auf der Liste oder in einem Rezept stehen, fehlen hier. Antippen zum Ansehen, oder <b>Alle löschen</b> auf einmal.</li>
         <li><b>➕ Neues Produkt / ▥ Per Barcode</b> (nur Symbole): legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
@@ -9996,8 +9994,7 @@ class EinkaufslisteCard extends HTMLElement {
           own_note: this.$("peOwn")?.value.trim() || "",
           category_id: this.$("peCat").value || null, store_id: this.$("peStore").value || null,
         };
-        const boxes = [...this.shadowRoot.querySelectorAll(".prodedit input.pestore")];
-        if (boxes.length) msg.stores = boxes.filter((b) => b.checked).map((b) => b.value);
+        // 🏪 „Gibt's bei“ gibt es im Produkt nicht mehr (hat verwirrt) – die Liste lernt es beim Abhaken weiter von selbst
         const pa = this.$("peAliases");
         if (pa) {
           const list = this._capAliases(pa.value.split(/[,;]/));
