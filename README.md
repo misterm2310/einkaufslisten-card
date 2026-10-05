@@ -32,7 +32,8 @@
 | 🛒 **Laden-Modus** | Große Zeilen, nur abhaken – mit einer Hand am Wagen. |
 | 📱 **Offline-App** | Die komplette Karte als App fürs Handy, öffnet auch ohne Netz. Änderungen werden nachgeschickt. |
 | ⏲️ **Gar-Zeiten** | Spickzettel nach Gerät: 🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse. |
-| 🧹 **Aufräumen** | Einmal pro Woche wird Altes **abgehakt**, gelöscht wird nichts. |
+| 🧹 **Aufräumen** | Einmal pro Woche wird Altes **abgehakt**, gelöscht wird nichts. An/Aus, Tag und Uhrzeit direkt in der Karte (⚙️ → Aufräumen). |
+| 👁️ **Listenansicht** | Selbst bestimmen, was beim Artikel steht (Menge, Notizen, wer, wann, Foto, Stern …) – für alle oder **pro Person**. |
 | 🔒 **PIN** | Das Zahnrad (Einstellungen) nur mit PIN – die Liste bleibt für alle offen. |
 | 📌 **Seitenleiste** | Auf Wunsch ein eigener Eintrag links in der Seitenleiste (die Liste auf der ganzen Seite, ohne eigenes Dashboard). Standardmäßig **aus**: Geräte & Dienste → Einkaufsliste → Konfigurieren → „In der Seitenleiste anzeigen“. |
 | 📸 **Text aus Foto** | Einkaufszettel oder Kassenbon fotografieren, die Karte liest den Text direkt auf dem Gerät (Handschrift klappt nur mit Glück – Text vorher korrigierbar). Überschriften wie „Aldi:“ im Zettel ordnen Artikel dem Geschäft zu, beim Bon kannst du bei mehreren Beträgen den richtigen antippen. Dazu: 🩺 Gesundheits-Ampel (auch als Sensor `sensor.einkaufsliste_gesundheit`), 🐞 Fehler-Protokoll, 🧲 Produkte zusammenführen. |
@@ -49,7 +50,7 @@ Leere Eingabefelder zeigen ein Beispiel (bei der Menge passend zum Produkt, z. B
 1. **HACS** öffnen → oben rechts **⋮ → Benutzerdefinierte Repositories**.
 2. `https://github.com/misterm2310/einkaufslisten-card` eintragen, Typ **Integration**, **Hinzufügen**.
 3. Nach **Einkaufsliste** suchen, **Herunterladen**, **Home Assistant neu starten**.
-4. **Einstellungen → Geräte & Dienste → Integration hinzufügen → Einkaufsliste**. Aufräum-Tag und Uhrzeit wählen, fertig. 🎉
+4. **Einstellungen → Geräte & Dienste → Integration hinzufügen → Einkaufsliste** → Absenden, fertig. 🎉 (Aufräum-Tag und Uhrzeit stellst du später in der Karte ein: ⚙️ → Aufräumen.)
 5. Dashboard → **Bearbeiten → Karte hinzufügen → Einkaufsliste**.
 
 ```yaml
@@ -78,7 +79,8 @@ Den Ordner `custom_components/einkaufsliste` nach `/config/custom_components/ein
 - **Lange drücken** = Menü: bearbeiten, verschieben, Menge, Kategorie, Foto, Barcode, Infos.
 - **Auf die Menge tippen** = [−] 2x [＋].
 - ✨ = neu seit deinem letzten Blick, die rote Zahl am Reiter zeigt, wie viel Neues dort steht.
-- Oben links der **Einkaufswagen** öffnet eine Anleitung für die ganze Familie – samt App-Link zum Kopieren.
+- Oben links bringt dich der **Einkaufswagen** von überall (Rezepte, Einstellungen …) zurück auf die Einkaufsliste.
+- Ganz unten unter der Liste öffnet **📖 Anleitung** eine Anleitung für die ganze Familie – samt App-Link zum Kopieren.
 
 **Im Laden:** Der Wagen oben rechts schaltet den **Laden-Modus** ein. Kein Netz? Einfach weiter abhaken, der Punkt oben wird orange ⏳ und alles wird nachgeschickt. Mit dem **💡-Icon** (zwischen 💳 und Wagen) bleibt der Bildschirm im Laden-Modus an – es geht beim Verlassen von selbst aus. **In der HA-App** klappt das nur mit deren Einstellung *Einstellungen → Companion App → „Keep screen On“*.
 
@@ -106,7 +108,7 @@ Die Produktnamen kommen aus **Open Food Facts**, **Open Beauty Facts** und **Ope
 
 Die **komplette Karte** als eigene App auf dem Startbildschirm – mit Rezepten, Koch-Modus, Gar-Zeiten, Einstellungen und Kamera-Scanner. Sie öffnet auch **ohne Netz** mit dem letzten Stand.
 
-1. Die Adresse kopieren: in **⚙️ → App & Info → Offline-App** oder in der **Anleitung** (Einkaufswagen oben links) – so kommen auch alle ohne Zahnrad dran.
+1. Die Adresse kopieren: in **⚙️ → App & Info → Offline-App** oder in der **Anleitung** (Knopf „📖 Anleitung“ ganz unten) – so kommen auch alle ohne Zahnrad dran.
 2. Im Handy-**Browser** einfügen (Chrome oder Safari, nicht die HA-App).
 3. Mit dem eigenen Home-Assistant-Benutzer anmelden.
 4. Browser-Menü → **„Zum Startbildschirm hinzufügen“**.
@@ -129,21 +131,22 @@ Die Einstellungen sind eine **Liste mit Überschriften** – **📋 Meine Liste 
 
 | Zeile | Was drin ist |
 |---|---|
-| 🏪 **Geschäfte** | Jedes Geschäft als eigene Kachel. Antippen = Name, Farbe, Icon, Reihenfolge, 📍 Zonen (mehrere, z. B. für mehrere Filialen), 🏷️ Eigenmarken und 🗺️ **Kategorien-Folge** (Standard: wie überall – oder eigene, so wie du durch den Laden läufst). Ohne eigenes Icon nimmt die Liste das Icon der Zone (falls sie eins hat), sonst 🛒. |
+| 🏪 **Geschäfte** | Eine Liste, ein Geschäft pro Zeile. **⌃ ⌄** direkt in der Liste = Reihenfolge der Reiter. Antippen = Name, Farbe, Icon, 📍 Zonen (mehrere, z. B. für mehrere Filialen), 🏷️ Eigenmarken und 🗺️ **Kategorien-Folge** (Standard: wie überall – oder eigene, so wie du durch den Laden läufst). Ohne eigenes Icon nimmt die Liste das Icon der Zone (falls sie eins hat), sonst 🛒. |
 | 🗂️ **Kategorien** · 👥 **Personen** | Anlegen, umbenennen, Farbe, Icon (einfach „hund“ tippen, ohne „mdi:“), sortieren. |
+| 👁️ **Listenansicht** | Häkchen setzen oder wegnehmen: Menge, Notizen, Für wen, wer eingetragen/abgehakt hat, Datum, 🧹-Tag, Geschäft, Rezept, Foto, ⭐, ▥, Angebote, „war aus“, ⇄-Knopf, ✨ und Kategorie-Farbe. **„Für alle“** = Standard für die Familie, **„Nur für mich“** = nur dein HA-Benutzer (auf allen deinen Geräten). |
 | 👨‍🍳 **Rezepte** | Zwei Reiter: **Rezepte** (neu, bearbeiten, löschen) und **Rezept-Gruppen**. Die Zubereitung hat **eine Zeile pro Schritt** (mit Foto); die Schritte lassen sich am **⠿** ziehen (oder mit ↑ ↓) **verschieben** – die Fotos wandern mit. |
 | 📦 **Produkte** | Alles, was die Liste kennt: umbenennen, Kategorie, Geschäft („Gibt's bei“), Spitznamen, Fotos, Barcodes, gelernte Tippfehler, ganz löschen. Dazu „Neu gescannt“ zum Prüfen, 🔽 Filter (ohne Kategorie, ohne Foto, pro Geschäft …) und **➕** (neues Produkt) und **▥** (per Barcode: scannen, Namen bestätigen). Der Filter **🗓️ Seit 3 Monaten nicht gekauft** (zuletzt abgehakt, sonst zuletzt eingetragen; nichts, was auf der Liste oder in einem Rezept steht) zeigt Produkte zum Aufräumen – einzeln oder **alle auf einmal löschen**. Am PC: Klick markiert, ↑↓ blättert, Doppelklick/Enter bearbeitet – genauso in **Einkaufsliste**, **Rezepten** und **Gelöscht** (Leertaste hakt ab, Esc geht zurück, die ⚙️-PIN bestätigt Enter). · **▥ Barcode nachtragen** (im Produkt: Nummer tippen – Enter bestätigt – oder scannen; danach schaut die Liste in der Datenbank nach) · **🗄️ Daten neu laden** (Produkt mit Barcode: zeigt Name, Notiz, Nutri-Score und Allergene aus der Datenbank neben deinen Daten; du hakst einzeln Name, Notiz und/oder Foto an) · **✏️ Eigene Notiz** (das einzige Notiz-Feld zum Selbertippen, bleibt beim Produkt, wird von der Datenbank nie überschrieben; die 📝 Notiz kommt nur noch aus dem Barcode; alte, selbst getippte Notizen zeigt die Liste automatisch als ✏️; im Katalog steht hinter dem Namen die Barcode-Notiz, sonst die ✏️) · **🔄 Alles neu holen** (Wolken-Symbol bei „Alle Produkte“: du wählst Foto (vorausgewählt), Name und/oder Notiz, dann geht es nacheinander durch alle Produkte mit Barcode; eigene Fotos und ✏️ Eigene Notiz bleiben; kleine Pausen, Wiederholung bei Fehlern, alle Barcodes werden probiert; am Ende ein Bericht pro Produkt: angepasst, schon gleich, Datenbank kennt nichts/nicht erreichbar, kein Foto) · **🔎 Suche** findet nach Name, Notizen, Spitznamen, Barcode-Nummer, Kategorie, Geschäft und gelernten Tippfehlern · **🏷️ Spitznamen** lassen sich auch beim Bearbeiten eines Artikels eintragen (lange drücken → Bearbeiten, mehrere mit Komma) |
-| 💾🩺 **Daten & Gesundheit** | **Alles ok?** (findet kaputte Einträge; bei jedem Fund 🔧 Beheben, ✏️ Selbst ändern und – wo nötig – eine Auswahl, oder anhaken und alles auf einmal reparieren) · **Import & Sicherung** (Listen aus anderen Apps – einmal oder 🔁 automatisch –, Sicherung als .zip; Datei-Import und Sicherung nur Admins) · **Verlauf** (wer hat wann was gemacht, „📈 Oft nicht bekommen“, per ✖ ausblendbar) · **Aufräumen** · **📊 Ressourcen** (wie viel Platz Daten und Fotos brauchen) · **🏷️ Angebote** (siehe unten) |
-| 🎛️📱 **Extras, App & Info** | **Offline-App** (deine Adresse mit „Kopieren“) · **Maskottchen** 🛒😊 (Schalter gilt für alle) · **📍 Laden-Modus automatisch** (Schalter gilt für alle Geräte, auch in der Offline-App; der Standort bleibt bei jedem selbst: er geht nur an, wenn *dein* Handy in die Zone kommt) · **💳 Kundenkarten** (Schalter gilt für alle; Payback & Co. einscannen (QR, **Aztec** oder Strichcode), eintippen oder **fotografieren**, „für alle“ oder „nur ich“, groß anzeigen, auch im Laden-Modus; das Format kommt automatisch vom Scanner; ein Foto liegt nur auf deinem Home Assistant und hilft nicht bei „Rollcodes“, die ständig wechseln) · **🧾 Einkaufs-Protokoll** (Schalter gilt für alle, siehe unten) · **Schutz** (PIN 4–8 Ziffern fürs Zahnrad; vergessen? Geräte & Dienste → Einkaufsliste → Konfigurieren → „PIN zurücksetzen“, nur Admins – ehrlich gesagt: Schutz vor Verstellen, kein Tresor). Solange das Zahnrad offen ist, steht oben ein 🔓 – antippen sperrt sofort · **Hell / Dunkel** (nur in der Offline-App: automatisch, hell oder dunkel) · **🏷️ Beschriftungen** (kurzer Text unter den Icons, Schalter in ⚙️ → Extras, gilt für alle; auch ohne Schalter zeigt **längeres Drücken** auf ein Icon kurz seinen Namen) |
+| 💾🩺 **Daten & Gesundheit** | **Alles ok?** (findet kaputte Einträge; bei jedem Fund 🔧 Beheben, ✏️ Selbst ändern und – wo nötig – eine Auswahl, oder anhaken und alles auf einmal reparieren) · **Import & Sicherung** (Listen aus anderen Apps – einmal oder 🔁 automatisch –, Sicherung als .zip; Datei-Import und Sicherung nur Admins) · **Verlauf** (wer hat wann was gemacht, „📈 Oft nicht bekommen“, per ✖ ausblendbar) · **Aufräumen** (an/aus, Tag, Uhrzeit, Mindestalter) · **📊 Ressourcen** (wie viel Platz Daten und Fotos brauchen, dazu die 📊 Last-Anzeige) · **🏷️ Angebote** (siehe unten) |
+| 🎛️📱 **Extras, App & Info** | **Offline-App** (deine Adresse mit „Kopieren“) · **Maskottchen** 🛒😊 (Schalter gilt für alle) · **📍 Laden-Modus automatisch** (Schalter gilt für alle Geräte, auch in der Offline-App; der Standort bleibt bei jedem selbst: er geht nur an, wenn *dein* Handy in die Zone kommt) · **💳 Kundenkarten** (Schalter gilt für alle; Payback & Co. einscannen (QR, **Aztec** oder Strichcode), eintippen oder **fotografieren**, „für alle“ oder „nur ich“, groß anzeigen, auch im Laden-Modus; das Format kommt automatisch vom Scanner; ein Foto liegt nur auf deinem Home Assistant und hilft nicht bei „Rollcodes“, die ständig wechseln) · **🧾 Einkaufs-Protokoll** (Schalter gilt für alle, siehe unten) · **Schutz** (PIN 4–8 Ziffern fürs Zahnrad; vergessen? Geräte & Dienste → Einkaufsliste → Konfigurieren → „PIN zurücksetzen“, nur Admins – ehrlich gesagt: Schutz vor Verstellen, kein Tresor). Solange das Zahnrad offen ist, steht in ⚙️ oben rechts neben der Versionsnummer ein 🔓 – antippen sperrt sofort · **Hell / Dunkel** (nur in der Offline-App: automatisch, hell oder dunkel) · **🏷️ Beschriftungen** (kurzer Text unter den Icons, Schalter in ⚙️ → Extras, gilt für alle; auch ohne Schalter zeigt **längeres Drücken** auf ein Icon kurz seinen Namen) |
 | 🆕 **Was ist neu** | Was sich in der aktuellen Version geändert hat. Steht auch in der Anleitung. |
 | 🙏 **Credits** | Version, wer's gemacht hat, Links zu GitHub und „Fehler melden“. Steht auch in der Anleitung. |
 
 ### 🧹 Aufräumen, einfach erklärt
-Am Aufräum-Tag wird alles **abgehakt**, was mindestens 7 Tage (einstellbar) offen ist. Beispiel Sonntag: Am Dienstag eingetragen → am ersten Sonntag erst 5 Tage alt, bleibt → am zweiten Sonntag abgehakt. Unter jedem Artikel steht mit 🧹, wann es so weit ist. Gelöscht wird nichts. Tag und Uhrzeit: **Geräte & Dienste → Einkaufsliste → Konfigurieren**.
+Am Aufräum-Tag wird alles **abgehakt**, was mindestens 7 Tage (einstellbar) offen ist. Beispiel Sonntag: Am Dienstag eingetragen → am ersten Sonntag erst 5 Tage alt, bleibt → am zweiten Sonntag abgehakt. Unter jedem Artikel steht mit 🧹, wann es so weit ist. Gelöscht wird nichts. **An/Aus**, Tag, Uhrzeit und Mindestalter: in der Karte unter **⚙️ → Aufräumen** (gilt für alle). Ist es aus, verschwindet auch das 🧹-Datum unter den Artikeln.
 
 **🧽 Liste löschen (nur Admins):** Unter ⚙️ → Aufräumen ein Geschäft (oder „Alle Geschäfte“) wählen, dann **„Erledigte löschen“** (nur Abgehaktes) oder **„Liste leeren“** (offen und erledigt – gut am Sonntag für die neue Woche). Vorher kommt eine Frage mit der Anzahl. Der **Katalog bleibt**: Produkte erscheinen beim Tippen weiter als Vorschlag, Fotos, Barcodes, Notizen und Favoriten bleiben. Nicht rückgängig.
 
-**📊 Last-Anzeige:** ⚙️ → „Alles ok?“ zeigt unten „📊 Last“ mit Änderungen pro Minute, gesendeten Paketen und der Größe eines Pakets (siehe auch die Attribute von `sensor.einkaufsliste_gesundheit`).
+**📊 Last-Anzeige:** ⚙️ → „Ressourcen“ zeigt unten „📊 Last“ mit Änderungen pro Minute, gesendeten Paketen und der Größe eines Pakets (siehe auch die Attribute von `sensor.einkaufsliste_gesundheit`).
 
 **⚡ Weniger Last:** Viele schnelle Änderungen (z. B. mehrere Artikel nacheinander abhaken) werden jetzt zu **einem** Paket an die Karten und Apps gebündelt (max. alle 0,3 Sekunden), statt bei jeder Änderung die komplette Liste neu zu senden. Bei Last-Problemen hilft die Diagnose: Der Gesundheits-Sensor zeigt in den Attributen `aenderungen_gesamt`, `aenderungen_pro_minute`, `pakete_an_karten_gesamt` und `laufzeit_minuten`. Wenn `aenderungen_pro_minute` dauerhaft hoch ist, ändert sich ständig etwas – bitte als Issue melden.
 
@@ -163,12 +166,12 @@ Die Einkaufsliste kann eine andere To-do-Liste aus Home Assistant **automatisch 
 
 1. In Home Assistant die Integration **„Alexa Devices“** einrichten. Dann taucht die Alexa-Einkaufsliste als To-do-Liste in HA auf.
 2. In der Karte **⚙️ → Daten → Import & Sicherung → Aus anderen Apps → 🔁 Automatisch herüberholen**: die Alexa-Liste wählen (und auf Wunsch ein Geschäft), **Einschalten**. 🔒 Einschalten und ändern dürfen nur Admins.
-   Du kannst **mehrere Listen** nehmen (z. B. „Alexa Einkaufsliste“, „Alexa Aldi“, „Alexa DM“): jede bekommt **ihr eigenes Geschäft** (oder „Egal wo“) und **ihre eigene Art** des Abgleichs (siehe unten).
+   Du kannst **mehrere Listen** nehmen (bis zu 50) (z. B. „Alexa Einkaufsliste“, „Alexa Aldi“, „Alexa DM“): jede bekommt **ihr eigenes Geschäft** (oder „Egal wo“) und **ihre eigene Art** des Abgleichs (siehe unten).
 3. Ab jetzt: „Alexa, setz Milch auf die Einkaufsliste“ → Milch steht drauf, mit „🔁 Alexa“ als Eintrager.
 4. **Wie abgeglichen wird**, wählst du dabei aus:
    - 🗑️ **Holen & dort löschen** – Alexa ist nur der Briefkasten.
    - 🔗 **Bei beiden behalten** – steht auf beiden Listen; abgehakt (oder bei Alexa gestrichen) wird auf beiden Seiten.
-   - 🔄 **Voller Abgleich** – wie 🔗, und alles, was du in der Einkaufsliste einträgst, landet auch bei Alexa („Milch (2 L)“ – Geschäft, Notiz und Fotos kennt Alexa nicht). Dann liest dir „Alexa, was steht auf meiner Einkaufsliste?“ alles vor.
+   - 🔄 **Voller Abgleich** – wie 🔗, und alles, was du in der Einkaufsliste einträgst, landet auch bei Alexa („Milch (2 L)“ – Geschäft, Notiz und Fotos kennt Alexa nicht). Dann liest dir „Alexa, was steht auf meiner Einkaufsliste?“ alles vor. **Mehrere Listen mit Geschäft** (z. B. Bring! Lidl, Bring! Aldi): Jede bekommt nur die Artikel **ihres** Geschäfts. Eine Liste ohne Geschäft („Egal wo“) bekommt die „Egal wo“-Artikel und alles aus Geschäften ohne eigene Liste. Verschiebst du einen Artikel in ein anderes Geschäft, wandert er auch dort mit.
 
    Ehrlich gesagt: Benennst du bei Alexa etwas um, kann die Liste das nicht sicher zuordnen – im Zweifel gibt's einen neuen Eintrag.
 

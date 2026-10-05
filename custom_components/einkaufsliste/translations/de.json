@@ -3,17 +3,11 @@
     "step": {
       "user": {
         "title": "Einkaufsliste einrichten",
-        "description": "Wann soll die Liste automatisch aufgeräumt werden?",
+        "description": "Fast fertig! Aufräum-Tag und Uhrzeit stellst du später direkt in der Karte ein: ⚙️ → Aufräumen.",
         "data": {
-          "cleanup_weekday": "Aufräum-Tag",
-          "cleanup_time": "Uhrzeit",
-          "min_age_days": "Mindestens so viele Tage auf der Liste",
           "sidebar": "📌 In der Seitenleiste anzeigen"
         },
         "data_description": {
-          "cleanup_weekday": "An diesem Tag wird aufgeräumt.",
-          "cleanup_time": "Um diese Uhrzeit wird aufgeräumt.",
-          "min_age_days": "Beim Aufräumen werden offene Artikel automatisch abgehakt, wenn sie mindestens so viele Tage auf der Liste stehen (7 = eine Woche). Gelöscht wird nichts.",
           "sidebar": "Legt links in der Seitenleiste einen Eintrag „Einkaufsliste“ an (die Liste auf der ganzen Seite). Standardmäßig aus."
         }
       }
@@ -25,18 +19,13 @@
   "options": {
     "step": {
       "init": {
-        "title": "Aufräumen einstellen",
+        "title": "Einkaufsliste – Optionen",
+        "description": "Das Aufräumen (an/aus, Tag, Uhrzeit) stellst du jetzt direkt in der Karte ein: ⚙️ → Aufräumen.",
         "data": {
-          "cleanup_weekday": "Aufräum-Tag",
-          "cleanup_time": "Uhrzeit",
-          "min_age_days": "Mindestens so viele Tage auf der Liste",
           "reset_pin": "🔒 PIN für die Einstellungen zurücksetzen",
           "sidebar": "📌 In der Seitenleiste anzeigen"
         },
         "data_description": {
-          "cleanup_weekday": "An diesem Tag wird aufgeräumt.",
-          "cleanup_time": "Um diese Uhrzeit wird aufgeräumt.",
-          "min_age_days": "Beim Aufräumen werden offene Artikel automatisch abgehakt, wenn sie mindestens so viele Tage auf der Liste stehen (7 = eine Woche). Gelöscht wird nichts.",
           "reset_pin": "Anhaken, wenn die PIN für das Zahnrad in der Karte vergessen wurde. Danach ist das Zahnrad wieder ohne PIN offen.",
           "sidebar": "Legt links in der Seitenleiste einen Eintrag „Einkaufsliste“ an (die Liste auf der ganzen Seite). Standardmäßig aus."
         }

@@ -282,6 +282,14 @@ def _name_list(value: Any, limit: int = 40, size: int = 60) -> list[str]:
     return out
 
 
+# 👁️ Listenansicht: was beim Artikel zu sehen ist (an/aus) – für alle ("_all") und pro Benutzer (Benutzer-ID)
+VIEW_KEYS = (
+    "qty", "note", "own_note", "for_whom", "added_by", "added_at", "checked_by", "cleanup", "store",
+    "recipe", "barcode", "photo", "fav", "offer", "out", "move", "new", "cat_color",
+)
+TODO_SYNC_MAX = 50  # 🔁 so viele To-do-Listen dürfen herübergeholt werden (früher 10)
+
+
 class EinkaufslisteManager:
     """Verwaltet alle Daten der Einkaufsliste."""
 
@@ -316,6 +324,7 @@ class EinkaufslisteManager:
         self.privacy: bool = False  # 🔒 Datenschutz an = keine Kamera, keine Fotos, kein Barcode-Scanner (für alle Geräte)
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
         self.auto_shop: bool = False  # 📍 Laden-Modus geht in der Zone von selbst an – ein Schalter für alle Geräte
+        self.view_prefs: dict[str, dict[str, bool]] = {}  # 👁️ Listenansicht: "_all" = für alle, sonst Benutzer-ID -> {Schlüssel: an/aus}
         self.spend_auto: bool = False  # 🧾 Protokoll von selbst anbieten, wenn alles abgehakt ist (Option, standardmäßig aus)
         self.stat_start = _monotonic()  # 📊 Zähler für die Diagnose (Änderungen / gesendete Pakete seit dem Start)
         self.stat_changes = 0
@@ -337,10 +346,55 @@ class EinkaufslisteManager:
         self.missed_hidden: dict[str, str] = {}  # 📈 „Oft nicht bekommen“ weggeklickt: "name|geschäft" -> seit wann
         self._actor = {}
         self._unsub_time: Callable[[], None] | None = None
+        # 🧹 Aufräumen: in der Karte einstellbar (⚙️ → Aufräumen). None = noch nie gespeichert → alte Werte aus den Integrations-Optionen
+        self.cleanup_cfg: dict[str, Any] | None = None
 
     # ------------------------------------------------------------------ Optionen
     def _opt(self, key: str) -> Any:
+        if self.cleanup_cfg is not None and key in self.cleanup_cfg:
+            return self.cleanup_cfg[key]
         return self.entry.options.get(key, DEFAULT_OPTIONS[key])
+
+    @property
+    def cleanup_on(self) -> bool:
+        """🧹 Automatisches Aufräumen an/aus (Standard: an)."""
+        return bool((self.cleanup_cfg or {}).get("on", True))
+
+    def set_cleanup(
+        self, on: bool | None = None, weekday: int | None = None, time: str | None = None, min_age_days: int | None = None
+    ) -> dict[str, Any]:
+        """🧹 Aufräumen in der Karte einstellen: an/aus, Wochentag, Uhrzeit, Mindestalter (gilt für alle)."""
+        cfg = {
+            "on": self.cleanup_on,
+            CONF_CLEANUP_WEEKDAY: self.cleanup_weekday,
+            CONF_CLEANUP_TIME: "%02d:%02d:00" % self.cleanup_time,
+            CONF_MIN_AGE_DAYS: self.min_age_days,
+        }
+        if weekday is not None:
+            if not 0 <= int(weekday) <= 6:
+                raise ValueError("Diesen Wochentag gibt es nicht.")
+            cfg[CONF_CLEANUP_WEEKDAY] = int(weekday)
+        if time is not None:
+            parts = str(time).strip().split(":")
+            try:
+                hour, minute = int(parts[0]), int(parts[1]) if len(parts) > 1 else 0
+            except ValueError:
+                raise ValueError("Die Uhrzeit verstehe ich nicht – bitte wie 03:00 schreiben.") from None
+            if not (0 <= hour <= 23 and 0 <= minute <= 59):
+                raise ValueError("Die Uhrzeit verstehe ich nicht – bitte wie 03:00 schreiben.")
+            cfg[CONF_CLEANUP_TIME] = "%02d:%02d:00" % (hour, minute)
+        if min_age_days is not None:
+            if not 0 <= int(min_age_days) <= 60:
+                raise ValueError("Bitte 0 bis 60 Tage.")
+            cfg[CONF_MIN_AGE_DAYS] = int(min_age_days)
+        if on is not None:
+            if on and not cfg["on"]:
+                self.last_cleanup = _now_iso()  # frisch eingeschaltet: nicht sofort Verpasstes nachholen
+            cfg["on"] = bool(on)
+        self.cleanup_cfg = cfg
+        self._schedule_cleanup()
+        self._changed()
+        return {"on": cfg["on"], "next_cleanup": self.next_cleanup().isoformat() if cfg["on"] else None}
 
     @property
     def cleanup_weekday(self) -> int:
@@ -399,6 +453,8 @@ class EinkaufslisteManager:
         for k, v in fresh.__dict__.items():
             if k not in keep:
                 setattr(self, k, v)
+        self.cleanup_cfg = {"on": True, **{k: DEFAULT_OPTIONS[k] for k in (CONF_CLEANUP_WEEKDAY, CONF_CLEANUP_TIME, CONF_MIN_AGE_DAYS)}}
+        self._schedule_cleanup()  # Aufräumen ist danach wieder an – Wecker neu stellen
         self._apply_defaults()
         self._changed()
         return counts
@@ -415,6 +471,8 @@ class EinkaufslisteManager:
         self.recipes = data.get("recipes", [])
         self.history = data.get("history", {})
         self.last_cleanup = data.get("last_cleanup")
+        cc = data.get("cleanup")
+        self.cleanup_cfg = dict(cc) if isinstance(cc, dict) else None
         tidied = False  # 🔢 alte Mengen einheitlich schreiben („1“ -> „1x“, „1/2 tl“ -> „0,5 TL“)
         for item in self.items:  # ältere Daten auffüllen
             item.setdefault("for_whom", None)
@@ -467,6 +525,10 @@ class EinkaufslisteManager:
         self.spend = bool(data.get("spend", False))
         self.spend_auto = bool(data.get("spend_auto", False))
         self.auto_shop = bool(data.get("auto_shop", False))
+        self.view_prefs = {
+            str(u): {k: bool(v) for k, v in p.items() if k in VIEW_KEYS}
+            for u, p in (data.get("view_prefs") or {}).items() if isinstance(p, dict)
+        }
         self.purchases = list(data.get("purchases") or [])
         raw_sync = data.get("todo_syncs")
         if raw_sync is None and data.get("todo_sync"):  # ♻️ früher gab es nur eine Liste
@@ -541,6 +603,8 @@ class EinkaufslisteManager:
             "spend": self.spend,
             "spend_auto": self.spend_auto,
             "auto_shop": self.auto_shop,
+            "cleanup": self.cleanup_cfg,
+            "view_prefs": self.view_prefs,
             "purchases": self.purchases,
             "todo_syncs": self.todo_syncs,
             "mail_import": self.mail_import,
@@ -617,6 +681,8 @@ class EinkaufslisteManager:
                 "cleanup_weekday": self.cleanup_weekday,
                 "cleanup_time": "%02d:%02d" % self.cleanup_time,
                 "min_age_days": self.min_age_days,
+                "cleanup_on": self.cleanup_on,
+                "view_prefs": self.view_prefs,
                 "next_cleanup": self.next_cleanup().isoformat(),
                 "pin": bool(self.pin_hash),
                 "app_url": self._app_url(),
@@ -1142,6 +1208,24 @@ class EinkaufslisteManager:
         self.auto_shop = bool(on)
         self._changed()
 
+    def set_view(self, scope: str, prefs: dict[str, Any] | None) -> dict[str, bool]:
+        """👁️ Listenansicht einstellen: scope "all" = Standard für alle, "me" = nur für den, der gerade tippt.
+        prefs None = zurücksetzen (für mich: wieder wie für alle)."""
+        if scope == "all":
+            key = "_all"
+        elif scope == "me":
+            key = str(self._actor.get("who_id") or "")
+            if not key:
+                raise ValueError("Ohne Benutzer kann ich mir die Ansicht nicht merken.")
+        else:
+            raise ValueError("Unbekannte Auswahl.")
+        if prefs is None:
+            self.view_prefs.pop(key, None)
+        else:
+            self.view_prefs[key] = {k: bool(v) for k, v in prefs.items() if k in VIEW_KEYS}
+        self._changed()
+        return self.view_prefs.get(key, {})
+
     def set_spend_auto(self, on: bool) -> None:
         """🧾 Option: Protokoll von selbst anbieten, sobald alles abgehakt ist (gilt für alle)."""
         self.spend_auto = bool(on)
@@ -1212,8 +1296,8 @@ class EinkaufslisteManager:
                 raise ValueError("Diese To-do-Liste gibt es nicht.")
             store_id = self._check_store(store_id)
             same = next((c for c in self.todo_syncs if c["entity_id"] == entity_id), None)
-            if same is None and len(self.todo_syncs) >= 10:
-                raise ValueError("Mehr als 10 To-do-Listen sind zu viel des Guten 😉")
+            if same is None and len(self.todo_syncs) >= TODO_SYNC_MAX:
+                raise ValueError(f"Mehr als {TODO_SYNC_MAX} To-do-Listen sind zu viel des Guten 😉")
             mode = mode or (same or {}).get("mode") or "move"
             if mode not in ("move", "keep", "sync"):
                 raise ValueError("Unbekannte Art des Abgleichs.")
@@ -1306,7 +1390,7 @@ class EinkaufslisteManager:
     # ------------------------------------------------------------------ Produkt-Katalog
     def add_product(
         self, name: str, category_id: str | None = None, store_id: str | None = None, barcode: str | None = None,
-        note: str | None = None,
+        note: str | None = None, log: bool = True,
     ) -> dict[str, Any]:
         """📦 Neues Produkt direkt im Katalog – ohne es auf die Liste zu setzen (optional gleich mit Barcode)."""
         name = _nice(name or "")
@@ -1341,6 +1425,9 @@ class EinkaufslisteManager:
         if code:
             self.learn_barcode(code, name, store_id if self.store_by_id(store_id) else h["store_id"],
                                category_id if self.category_by_id(category_id) else h["category_id"], note)
+        # 📜 Verlauf: neues Produkt im Katalog (steht noch nicht auf der Liste)
+        if log:
+            self._log("catalog", {"name": name, "store_id": h.get("store_id")}, " · ".join(x for x in (note, f"Barcode {code}" if code else "") if x) or None)
         self._changed()
         return next((p for p in self.products() if p["key"] == pkey), {"key": pkey, "name": name})
 
@@ -3244,20 +3331,30 @@ class EinkaufslisteManager:
     def async_start_scheduler(self) -> None:
         self.expire_offers()
         self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: self.expire_offers(), timedelta(hours=1))
+        self._schedule_cleanup()
+        # Verpasst (z. B. HA war zur Aufräumzeit aus)? Dann jetzt nachholen.
+        last_planned = self.last_scheduled_cleanup()
+        last_done = dt_util.parse_datetime(self.last_cleanup or "")
+        if self.cleanup_on and (last_done is None or last_done < last_planned):
+            self.cleanup(reference=last_planned, scheduled=True)
+
+    @callback
+    def _schedule_cleanup(self) -> None:
+        """🧹 Wecker fürs Aufräumen (neu) stellen – nach jeder Änderung in ⚙️ → Aufräumen."""
+        if self._unsub_time:
+            self._unsub_time()
+            self._unsub_time = None
+        if not self.cleanup_on:
+            return
         hour, minute = self.cleanup_time
         self._unsub_time = async_track_time_change(
             self.hass, self._handle_time, hour=hour, minute=minute, second=0
         )
-        # Verpasst (z. B. HA war zur Aufräumzeit aus)? Dann jetzt nachholen.
-        last_planned = self.last_scheduled_cleanup()
-        last_done = dt_util.parse_datetime(self.last_cleanup or "")
-        if last_done is None or last_done < last_planned:
-            self.cleanup(reference=last_planned, scheduled=True)
 
     @callback
     def _handle_time(self, now: datetime) -> None:
         now = dt_util.as_local(now)
-        if now.weekday() == self.cleanup_weekday:
+        if self.cleanup_on and now.weekday() == self.cleanup_weekday:
             self.cleanup(reference=now, scheduled=True)
 
     @callback
