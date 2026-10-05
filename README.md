@@ -74,6 +74,7 @@ Den Ordner `custom_components/einkaufsliste` nach `/config/custom_components/ein
 
 **In der Liste:**
 - ⭕ **Kreis** = abhaken. Unten bei „Erledigt“ nochmal = wieder drauf.
+- 👆 **Wischen** (am Handy): Zeile **nach links** = abhaken ✔, erledigte Zeile **nach rechts** = wieder auf die Liste ↩.
 - ↩️ **Versehentlich abgehakt?** Unten steht 3 Sekunden „Rückgängig“ (nur bei dem, der selbst abgehakt hat). Nach „Mehrere scannen“ / „Scannen & abhaken“ steht 5 Sekunden „Rückgängig“ für den zuletzt gescannten Artikel.
 - ⇄ = war aus (bleibt offen mit „war aus“ oder wandert in ein anderes Geschäft).
 - 🤷 **„Egal wo“** = Artikel ohne festes Geschäft. Die stehen in **jedem** Geschäfts-Reiter mit drin (mit Schildchen „🤷 Egal wo“) – egal, wo du gerade bist. Abhaken = überall weg. Mit ⇄ in ein Geschäft verschieben = zieht einfach um, ohne Rest bei „Erledigt“. Andersrum geht's auch: ⇄ → **🤷 Egal wo**. Wird so ein Artikel im Reiter eines Geschäfts abgehakt, gehört er ab dann dorthin (dort unter „Erledigt“, bei den anderen weg) – und kommt beim nächsten Mal wieder dort auf die Liste.
@@ -83,7 +84,7 @@ Den Ordner `custom_components/einkaufsliste` nach `/config/custom_components/ein
 - Oben links bringt dich der **Einkaufswagen** von überall (Rezepte, Einstellungen …) zurück auf die Einkaufsliste.
 - Ganz unten unter der Liste öffnet **📖 Anleitung** eine Anleitung für die ganze Familie – samt App-Link zum Kopieren.
 
-**Im Laden:** Der Wagen oben rechts schaltet den **Laden-Modus** ein. Kein Netz? Einfach weiter abhaken, oben in der Leiste steht dann ⏳ orange und alles wird nachgeschickt. Mit dem **💡-Icon** (zwischen 💳 und Wagen) bleibt der Bildschirm im Laden-Modus an – es geht beim Verlassen von selbst aus. **In der HA-App** klappt das nur mit deren Einstellung *Einstellungen → Companion App → „Keep screen On“*.
+**Im Laden:** Das **🏪 Geschäft** oben rechts schaltet den **Laden-Modus** ein. Kein Netz? Einfach weiter abhaken, oben in der Leiste steht dann ⏳ orange und alles wird nachgeschickt. Mit dem **💡-Icon** (zwischen 💳 und 🏪) bleibt der Bildschirm im Laden-Modus an – es geht beim Verlassen von selbst aus. **In der HA-App** klappt das nur mit deren Einstellung *Einstellungen → Companion App → „Keep screen On“*.
 
 **Rezepte:** Anlegen in ⚙️ → Rezepte (Zutaten genau wie auf der Liste eintragen, oder eine Zutaten-Liste bzw. einen Rezept-Link einfügen). Die **Kochmütze** oben: **Auf die Liste** → anhaken, was fehlt → fertig. Dazu 👥 Personen oder 🍕 Bleche umrechnen, **🔥 Kochen** (Schritt für Schritt), **Teilen** (z. B. WhatsApp) und **⏲️ Gar-Zeiten**. Abgehakte Rezept-Zutaten verschwinden ganz.
 
@@ -128,7 +129,7 @@ Gut zu wissen: Es braucht eine **https**-Adresse (z. B. Nabu Casa). Ändern zwei
 
 ## ⚙️ Die Einstellungen (Zahnrad)
 
-Die Einstellungen sind eine **Liste mit Überschriften** – **📋 Meine Liste · 🎛️ Extras · 💾 Daten · 🩺 Gesundheit · 📱 App & Info** – und nur **eine Ebene tief**. Ein **Suchfeld** ganz oben findet Zeilen nach Name oder Thema („Foto“, „Mail“, „Sicherung“, „Sensor“). Die Überschriften sind erst **zugeklappt**: antippen öffnet sie, die vorherige geht dabei zu (die Suche klappt passende von selbst auf). Jede Zeile unter **🎛️ Extras** hat ihre eigene Seite mit Ein/Aus-Knopf. Unten gibt es den Knopf **📖 Anleitung Einstellungen**; die Anleitung fürs Einkaufen und die Rezepte steht davon getrennt vorne (Einkaufswagen oder Knopf „Anleitung“).
+Die Einstellungen sind eine **Liste mit Gruppen** – **📋 Meine Liste · 🎛️ Extras · 💾 Daten · 🩺 Gesundheit · 📱 App & Info** – und nur **eine Ebene tief**. Ein **Suchfeld** ganz oben findet Zeilen nach Name oder Thema („Foto“, „Mail“, „Sicherung“, „Sensor“). Jede Gruppe ist ein **Kasten** mit kurzer Vorschau, was drin ist, und jede Zeile hat ein **buntes Icon** – so wie das Einstellungs-Menü am Handy. Die Gruppen sind erst **zugeklappt**: antippen öffnet sie, die vorherige geht dabei zu (die Suche klappt passende von selbst auf). Einfache An/Aus-Sachen (🛒😊 Maskottchen, 💳 Kundenkarten, 🧾 Einkaufs-Protokoll, 📍 Laden-Modus automatisch, 🏷️ Beschriftungen) haben einen **Schalter direkt in der Zeile**; die Zeile selbst öffnet die Erklärung mit demselben Schalter oben. Zurück geht es mit dem runden **←** oben. Unten gibt es den Knopf **📖 Anleitung Einstellungen**; die Anleitung fürs Einkaufen und die Rezepte steht davon getrennt vorne (Einkaufswagen oder Knopf „Anleitung“).
 
 | Zeile | Was drin ist |
 |---|---|

@@ -2,77 +2,25 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.60.06";
+const EL_VERSION = "2.70.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.60.04"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.70.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_MAX = 15;
+const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
+  stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
+  offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
+  transfer: "#1e88e5", log: "#757575", cleanup: "#8d6e63", check: "#43a047", errors: "#e53935", stats: "#00897b",
+  listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
+}; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["⚙️ <b>Einstellungen im neuen Look:</b> Jede Gruppe ist ein Kasten mit Vorschau, was drin ist – zum Einklappen wie bisher (eine auf, die andere zu). Jede Zeile hat ein buntes Icon. · 🎚️ <b>Schalter direkt in der Zeile</b> für Maskottchen, Kundenkarten, Einkaufs-Protokoll, Laden-Modus automatisch und Beschriftungen – kein Umweg über „Einschalten“ mehr. · ← Zurück geht mit dem runden Pfeil oben. · ✍️ <b>Eingabefelder überall hell</b> mit feinem Rahmen statt grau – beim Eintragen, Bearbeiten, im Katalog und in den Einstellungen. · ✔️ <b>Abhaken mit Animation:</b> Haken wird grün, der Name durchgestrichen. · 🎨 Kategorie-Überschriften mit Farbkreis, Geschäfte-Reiter blenden am Rand aus, wenn es weitergeht. · ⭐ Favorit ist ein Schalter, alle Knöpfe sehen gleich aus. · 🏪 Der <b>Laden-Modus</b> hat oben rechts ein eigenes Bild (Geschäft statt zweitem Einkaufswagen). · 👆 <b>Wischen:</b> Zeile nach links = abhaken, erledigte Zeile nach rechts = wieder auf die Liste. · 🔵 Mengen blau, „Erledigt“ als eigener Kasten mit vollen Häkchen, aktiver Reiter gut lesbar (dunkle Schrift auf Gelb), Seiten blenden weich über.",
+   "⚙️ <b>Settings with a new look:</b> each group is a box with a preview of what is inside – collapsible as before (one opens, the other closes). Every row has a coloured icon. · 🎚️ <b>Switches right in the row</b> for mascot, loyalty cards, purchase log, shop mode automatic and labels – no more detour via “Switch on”. · ← Go back with the round arrow at the top. · ✍️ <b>Input fields are light everywhere</b> with a thin frame instead of grey – when adding, editing, in the catalogue and in the settings. · ✔️ <b>Ticking off with animation:</b> the tick turns green, the name is struck through. · 🎨 Category headings with a colour circle, store tabs fade out at the edge when there are more. · ⭐ Favourite is a switch, all buttons look alike. · 🏪 <b>Shop mode</b> has its own picture at the top right (a store instead of a second cart). · 👆 <b>Swipe:</b> a row to the left = tick off, a done row to the right = back on the list. · 🔵 Quantities in blue, “Done” as its own box with full ticks, active tab easy to read (dark text on yellow), pages fade softly."],
   ["🎛️ <b>Alle Eingabe-Masken gleich:</b> Eintragen, Bearbeiten und Katalog sehen gleich aus (gleiche Höhe, Schrift, Rahmen) und können dasselbe, in derselben Reihenfolge. · ✏️ Beim <b>Bearbeiten</b> steht „Für wen“ als Auswahl neben der Menge – so wie Geschäft neben Kategorie. · 📦 Im <b>Katalog</b> neu: <b>📷 Foto</b> direkt im Produkt. · 📖 <b>„👁️ Ansicht“ und „📖 Anleitung“</b> stehen als Knöpfe unter der Karte – wie in der Offline-App. Löschen, Zusammenführen & Co. bleiben in ⚙️.",
    "🎛️ <b>All input forms alike:</b> adding, editing and the catalogue look the same (same height, font, frame) and can do the same, in the same order. · ✏️ When <b>editing</b>, “for whom” is a picker next to the quantity – like store next to category. · 📦 New in the <b>catalogue</b>: <b>📷 photo</b> right in the product. · 📖 <b>“👁️ View” and “📖 Guide”</b> are buttons below the card – like in the offline app. Delete, merge & co. stay in ⚙️."],
   ["🟢 <b>Leiste oben auf jeder Seite</b> – jetzt auch in der Home-Assistant-Karte: links „🟢 verbunden“ (⏳ orange = wartet aufs Netz, 🔴 = keine Verbindung), rechts das <b>🔓 Schloss</b> (nur mit PIN) und die Versionsnummer. · 👁️ <b>Meine Ansicht für jeden:</b> Was du beim Artikel sehen willst, stellst du jetzt ganz unten mit <b>„👁️ Ansicht“</b> (neben „📖 Anleitung“) ein – ganz ohne Zahnrad und PIN. In ⚙️ → Listenansicht steht nur noch der Standard „für alle“.",
    "🟢 <b>Bar at the top of every page</b> – now in the Home Assistant card too: on the left “🟢 connected” (⏳ orange = waiting for the network, 🔴 = no connection), on the right the <b>🔓 lock</b> (only with a PIN) and the version number. · 👁️ <b>My view for everyone:</b> what you want to see on items is now set at the very bottom with <b>“👁️ View”</b> (next to “📖 Guide”) – no gear or PIN needed. ⚙️ → List view only holds the default “for everyone”."],
   ["👁️ <b>Listenansicht:</b> ⚙️ → Listenansicht – Häkchen weg, und Menge, Notizen, Für wen, wer eingetragen hat, Datum, Foto, Stern & Co. sind beim Artikel ausgeblendet. „Für alle“ oder „Nur für mich“ (jeder für sich). · 🧹 <b>Aufräumen in der Karte:</b> ⚙️ → Aufräumen – jetzt mit <b>An/Aus</b>, Tag, Uhrzeit und Mindestalter direkt hier (nicht mehr in der Integration). · 🛒 <b>Der Einkaufswagen oben links bringt dich immer zurück zur Liste</b>, die Anleitung steckt im Knopf „📖 Anleitung“ ganz unten. · 🏪 <b>Geschäfte wieder als Liste</b>, Reihenfolge mit ⌃⌄ direkt dort. · 🔓 Das Schloss sitzt in ⚙️ oben rechts neben der Version, der grüne Punkt ist weg (nur noch bei Problemen sichtbar). · 📊 Last-Anzeige jetzt unter Ressourcen. · 📜 Neue Produkte im Katalog stehen im Verlauf. · 🔁 Bis zu 50 To-do-Listen – und beim <b>vollen Abgleich</b> bekommt jede Liste nur die Artikel <b>ihres</b> Geschäfts (Tomaten bei Lidl landen nicht mehr auch bei Bring! Aldi). · 🧽 Radiergummi nur noch an Suchfeldern.",
-   "👁️ <b>List view:</b> ⚙️ → List view – untick, and quantity, notes, for whom, who added it, date, photo, star & co. are hidden on items. “For everyone” or “Just for me” (each person for themselves). · 🧹 <b>Cleanup in the card:</b> ⚙️ → Cleanup – now with <b>on/off</b>, day, time and minimum age right here (no longer in the integration). · 🛒 <b>The cart at the top left always takes you back to the list</b>, the guide is behind the “📖 Guide” button at the very bottom. · 🏪 <b>Stores as a list again</b>, order with ⌃⌄ right there. · 🔓 The lock sits in ⚙️ at the top right next to the version, the green dot is gone (only shown when something is wrong). · 📊 Load display now under Resources. · 📜 New catalogue products show up in the history. · 🔁 Up to 50 to-do lists – and with <b>full sync</b> each list only gets the items of <b>its</b> store (tomatoes for Lidl no longer end up in Bring! Aldi too). · 🧽 Eraser only on search fields now."],
-  ["📊 <b>Last-Anzeige:</b> ⚙️ → Alles ok? zeigt jetzt unten „📊 Last“: wie oft sich etwas ändert (pro Minute), wie viele Pakete an Karten und Apps gingen und wie groß ein Paket ist. Hilft, wenn der Server unter Last steht. Dazu: Schnelle Änderungen werden gebündelt gesendet, und die Häkchen bei „Eigene Kategorien“ sitzen jetzt sauber.",
-   "📊 <b>Load display:</b> ⚙️ → All OK? now shows “📊 Load” at the bottom: how often something changes (per minute), how many packets went to cards and apps and how big a packet is. Helps when the server is under load. Also: quick changes are sent bundled, and the ticks under “Own categories” now look right."],
-  ["🗂️ <b>Eigene Kategorien pro Geschäft:</b> Auf der Seite eines Geschäfts wählst du „Alle Kategorien wie überall“ oder „Eigene Kategorien“. Bei „Eigene“ hakst du an, welche Kategorien es dort gibt, und kannst eine neue nur für dieses Geschäft anlegen. Die Liste des Reiters und das Kategorie-Ändern zeigen dann nur diese. Zusammen mit der eigenen Kategorien-Folge.",
-   "🗂️ <b>Own categories per store:</b> on a store's page choose “All categories as everywhere” or “Own categories”. With “Own” you tick which categories exist there and can create a new one just for this store. The tab's list and the category picker then show only those. Works together with the own category order."],
-  ["💣 <b>Werkseinstellungen:</b> ⚙️ → Aufräumen hat einen neuen Knopf (nur Admins): setzt <b>alles</b> auf Anfang zurück wie bei einer frischen Installation – Liste, Katalog, Fotos, Geschäfte, Kategorien, Rezepte, Karten, Grocy-Verbindung. Nur die PIN bleibt. Mit Erklärung und zwei Sicherheitsfragen. Nützlich nach einem Grocy-Import, wenn du ganz neu anfangen willst.",
-   "💣 <b>Factory reset:</b> ⚙️ → Tidy up has a new button (admins only): puts <b>everything</b> back to the start like a fresh install – list, catalogue, photos, stores, categories, recipes, cards, Grocy connection. Only the PIN stays. With an explanation and two safety questions. Handy after a Grocy import when you want a completely fresh start."],
-  ["📄 <b>PDF im Einkaufs-Protokoll:</b> Digitale Kassenbons als PDF einlesen – die Karte trägt <b>Geschäft, Datum und Summe</b> ein, du prüfst kurz und speicherst. Das PDF bleibt auf deinem Gerät. In der HA-Karte und in der Offline-App.",
-   "📄 <b>PDF in the purchase log:</b> read digital receipts as PDF – the card fills in <b>store, date and total</b>, you check briefly and save. The PDF stays on your device. In the HA card and in the offline app."],
-  ["🧽 <b>Liste löschen:</b> ⚙️ → Aufräumen (nur Admins): pro Geschäft „Erledigte löschen“ oder „Liste leeren“ – der Katalog bleibt, die Produkte kommen beim Tippen weiter als Vorschlag. · 🧹 <b>Alles löschen:</b> ⚙️ → Aufräumen hat einen neuen Knopf (nur Admins), der die Einkaufsliste und den ganzen Katalog mit Fotos, Barcodes, Spitznamen, Notizen und Favoriten löscht – mit zwei Sicherheitsfragen. Rezepte, Geschäfte, Kategorien und Einstellungen bleiben.",
-   "🧽 <b>Delete list:</b> ⚙️ → Tidy up (admins only): per store “Delete done items” or “Empty list” – the catalogue stays, products still show up as suggestions while typing. · 🧹 <b>Delete everything:</b> ⚙️ → Tidy up has a new button (admins only) that deletes the shopping list and the whole catalogue with photos, barcodes, nicknames, notes and favourites – with two safety questions. Recipes, stores, categories and settings stay."],
-  ["💡 <b>Vorschläge schon bei 1–2 Buchstaben:</b> Eine eingebaute Liste mit rund 1400 gängigen Produkten (mit passender Kategorie) schlägt auch Dinge vor, die du noch nie gekauft hast (nur deutsch). · 🏷️ <b>Beschriftungen:</b> ⚙️ → Extras → Beschriftungen zeigt unter den Icons einen kurzen Text (gilt für alle). · 👆 <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht – auf dem Handy gibt es ja keine Tooltips. Alles in der HA-Karte und der Offline-App.",
-   "💡 <b>Suggestions after 1–2 letters:</b> a built-in list of about 1400 common products (with a matching category) also suggests things you have never bought (German only). · 🏷️ <b>Labels:</b> ⚙️ → Extras → Labels shows a short text under the icons (applies to everyone). · 👆 <b>Press and hold an icon</b> to see what it does – phones have no tooltips. Everything in the HA card and the offline app."],
-  ["📷 <b>Eigener Scanner für Karten:</b> „Einscannen“ hat jetzt eine eigene Kamera und liest auch <b>Aztec-Codes</b> (z. B. Penny) – in der HA-Karte und in der Offline-App. · 🍳 <b>Kochen:</b> oben nur noch Icons (📷 Foto zum Schritt, wenn es noch keins gibt, 🥕 Zutaten), als letzter Schritt „📸 Foto vom fertigen Gericht“ (nur wenn das Rezept noch kein Foto hat), im Querformat bleibt „Weiter“ sichtbar, der Bildschirm bleibt an. · 💡 <b>Laden-Modus:</b> neues Icon „Bildschirm immer an“. In der HA-App klappt das nur mit deren Einstellung „Keep screen On“ (Einstellungen → Companion App). · ↩️ Die Zurück-Taste schließt jetzt auch in der HA-Karte ein Fenster nach dem anderen, und die Fenster folgen Hell/Dunkel auch im Dashboard.",
-   "📷 <b>Own scanner for cards:</b> “Scan” now has its own camera and also reads <b>Aztec codes</b> (e.g. Penny) – in the HA card and in the offline app. · 🍳 <b>Cooking:</b> only icons at the top (📷 photo for the step if there is none yet, 🥕 ingredients), the last step is “📸 Photo of the finished dish” (only if the recipe has no photo yet), in landscape “Next” stays visible, the screen stays on. · 💡 <b>Shop mode:</b> new “Screen always on” icon. In the HA app this only works with its setting “Keep screen On” (Settings → Companion App). · ↩️ The back button now also closes one window after the other in the HA card, and the windows follow light/dark on the dashboard too."],
-  ["💳 <b>Kundenkarten mit Aztec und Foto:</b> Der Scanner liest jetzt auch <b>Aztec-Codes</b> (z. B. der Vorteilscode von Penny), und die Karte zeichnet sie an der Kasse wieder. Die Auswahl „Darstellung“ ist weg – das Format kommt automatisch vom Scanner. · 📷 Neu: <b>Foto der Karte</b> für Karten, die sich nicht einscannen lassen (liegt nur auf deinem Home Assistant, steht im Datenschutz; ein „Rollcode“, der ständig wechselt, geht damit nicht). · ⏲️ Im Rezept-Editor öffnet ein Knopf neben „Backofen & Co.“ die Gar-Zeiten. · 🧽 Der Radiergummi ist überall rot und fest, die Fenster (KI-Kochen, Gar-Zeiten, Scanner …) sind hell oder dunkel wie die Karte, und die Eingabefelder in den Einstellungen sind einheitlich groß.",
-   "💳 <b>Loyalty cards with Aztec and photo:</b> the scanner now also reads <b>Aztec codes</b> (e.g. Penny’s benefit code), and the card draws them again at the checkout. The “Display” choice is gone – the format comes automatically from the scanner. · 📷 New: <b>photo of the card</b> for cards that cannot be scanned (stored only on your Home Assistant, covered in the privacy section; a “rolling code” that keeps changing does not work with it). · ⏲️ In the recipe editor a button next to “Oven & Co.” opens the cooking times. · 🧽 The eraser is red and fixed everywhere, the windows (AI cooking, cooking times, scanner …) are light or dark like the card, and the input fields in the settings are the same size."],
-  ["🤖 <b>KI-Kochen wird alltagstauglicher:</b> Beim Tippen im Zutaten-Feld kommen Vorschläge aus dem Katalog (höchstens 2). · 👥 Eine Personenzahl mit − und + sagt der KI, für wie viele sie rechnen soll. · ✅🛒 In jedem Vorschlag verschiebt ein Tipp auf eine Zutat sie zwischen „Hast du“ und „Fehlt“. · 🧂🚫 In ⚙️ → Extras → KI-Kochen (Admin) gibt es „Immer im Haus“ und „Das nie vorschlagen“ (Allergien, Abneigungen), die bei jeder Anfrage mitgehen.",
-   "🤖 <b>AI cooking gets more practical:</b> typing in the ingredients field now shows catalogue suggestions (at most 2). · 👥 A number of people with − and + tells the AI how many to cook for. · ✅🛒 In every suggestion a tap on an ingredient moves it between “You have” and “Missing”. · 🧂🚫 ⚙️ → Extras → AI cooking (admin) has “Always at home” and “Never suggest” (allergies, dislikes), which go along with every request."],
-  ["🧽 <b>Radiergummi überall:</b> Neben den Suchfeldern steht ein 🧽, sobald etwas drinsteht – und in jedem Textfeld erscheint beim Tippen ein 🧽 am rechten Rand, der nur dieses Feld leert. · 📝 <b>Notiz-Vorlagen mit Filter:</b> Unter „✏️ Eigene Notiz“ erscheinen die Vorlagen erst ab dem ersten Buchstaben und nur die passenden. · 🤖 <b>KI-Kochen:</b> „Offene Artikel mitnehmen“ ist jetzt standardmäßig aus.",
-   "🧽 <b>Eraser everywhere:</b> search fields get a 🧽 as soon as they contain text – and every text field shows a 🧽 at its right edge while you type, clearing only that field. · 📝 <b>Note templates with filter:</b> under “✏️ Own note” the templates only appear from the first letter and only the matching ones. · 🤖 <b>AI cooking:</b> “Include open items” is now off by default."],
-  ["📷 <b>Fotos beim Kochen:</b> Im Koch-Modus gibt es bei jedem Schritt ohne Foto den Knopf „📷 Foto zu diesem Schritt“ – das Foto wird sofort gespeichert. · 🤖 <b>KI-Rezepte erkennbar:</b> Rezepte, die über „Was kann ich kochen?“ gespeichert wurden, zeigen ein 🤖 links neben dem 📷 (bleibt dran, auch nach dem Bearbeiten). · 🧽 <b>Radiergummi bei jeder Suche:</b> Neben den Suchfeldern (⚙️, Verlauf, Katalog, Protokoll, Rezepte, Anleitungen, Gar-Zeiten) löscht ein Tipp den Suchtext. · 🔒 Unter ⚙️ → Datenschutz steht jetzt auch, was bei KI-Kochen verschickt wird.",
-   "📷 <b>Photos while cooking:</b> in cooking mode every step without a photo has the button “📷 Photo for this step” – the photo is saved right away. · 🤖 <b>AI recipes are recognisable:</b> recipes saved through “What can I cook?” show a 🤖 to the left of the 📷 (it stays, even after editing). · 🧽 <b>Eraser at every search:</b> next to the search fields (⚙️, history, catalogue, log, recipes, guides, cooking times) one tap clears the search text. · 🔒 ⚙️ → Privacy now also says what is sent with AI cooking."],
-  ["🤖 <b>KI-Kochen:</b> ⚙️ → Extras → KI-Kochen: einen KI-Assistenten aus Home Assistant wählen, dann steht bei den Rezepten „Was kann ich kochen?“ (links neben den Gar-Zeiten). Zutaten eintippen – auch Dinge, die nicht im Katalog stehen –, Fehlendes mit einem Tipp auf die Liste oder das Gericht als Rezept speichern. · 📝 <b>Notiz-Vorlagen:</b> Knöpfe unter der ✏️ Eigenen Notiz („Bio“, „ohne Laktose“ …), selbst pflegbar. · 📄 <b>Katalog aus CSV</b> (⚙️ → Import &amp; Sicherung). · ▥ <b>Barcode-Duplikate</b> (nur Nullen anders) meldet „Alles ok?“. · 📷 <b>Fotos zur Zubereitung</b> gibt es jetzt auch bei neuen Schritten. · 🗣️ Anleitung für <b>Siri-Kurzbefehle</b>.",
-   "🤖 <b>AI cooking:</b> ⚙️ → Extras → AI cooking: choose an AI assistant from Home Assistant, then Recipes shows “What can I cook?” (left of the cooking times). Type ingredients – also things that are not in the catalogue –, put what is missing on the list with one tap or save the dish as a recipe. · 📝 <b>Note templates:</b> buttons under the ✏️ Own note (“Organic”, “lactose-free” …), maintainable. · 📄 <b>Catalogue from CSV</b> (⚙️ → Import &amp; backup). · ▥ <b>Duplicate barcodes</b> (only zeros differ) are reported by “All OK?”. · 📷 <b>Photos for preparation</b> now also for new steps. · 🗣️ Guide for <b>Siri shortcuts</b>."],
-  ["🔄 <b>Grocy-Dauerabgleich:</b> ⚙️ → Import &amp; Sicherung → Grocy. Zwei Teile, jeder einzeln an/aus: 🛒 die <b>Einkaufsliste</b> abgleichen (Grocy-Zeilen holen &amp; dort löschen, bei beiden behalten oder voller Abgleich) · 📦 <b>neue Produkte</b> automatisch in den Katalog. Der API-Schlüssel bleibt auf dem Server (nie auf Handys, nie in Sicherungen). · 📥 <b>„Rezepte aus Datei“</b> steht jetzt in ⚙️ → Rezepte neben den Rezept-Gruppen. · 💳 Im Laden-Modus sind 💳 und Laden-Modus-Knopf getauscht.",
-   "🔄 <b>Grocy continuous sync:</b> ⚙️ → Import &amp; backup → Grocy. Two parts, each on/off by itself: 🛒 sync the <b>shopping list</b> (fetch Grocy rows &amp; delete them there, keep on both, or full sync) · 📦 <b>new products</b> automatically into the catalogue. The API key stays on the server (never on phones, never in backups). · 📥 <b>“Recipes from file”</b> is now in ⚙️ → Recipes next to the recipe groups. · 💳 In shop mode the 💳 and shop-mode buttons swapped places."],
-  ["⭐ <b>Favoriten:</b> Produkte beim Bearbeiten (Liste oder Katalog) mit „⭐ Favorit“ markieren – der ⭐-Knopf unter dem Eingabefeld setzt dann alle auf einmal auf die Liste, nichts doppelt. · 💳 <b>Kundenkarten:</b> Payback &amp; Co. einscannen oder eintippen und an der Kasse groß zeigen (QR oder Strichcode). Einschalten: ⚙️ → Extras → Kundenkarten, dann steht oben ein 💳-Knopf (auch im Laden-Modus). · 🔢 <b>Menge vor dem Produkt:</b> überall „2 L Milch“. · 🥫 <b>Grocy-Import:</b> ⚙️ → Import &amp; Sicherung → Grocy holt Produkte (Name, Barcodes, Produktgruppe) aus Grocy in den Katalog.",
-   "⭐ <b>Favourites:</b> mark products with “⭐ Favourite” when editing (list or catalogue) – the ⭐ button under the input field then puts them all on the list at once, nothing twice. · 💳 <b>Loyalty cards:</b> scan or type Payback &amp; co. and show them big at the checkout (QR or barcode). Switch on: ⚙️ → Extras → Loyalty cards, then a 💳 button appears at the top (also in shop mode). · 🔢 <b>Quantity before the product:</b> “2 L milk” everywhere. · 🥫 <b>Grocy import:</b> ⚙️ → Import &amp; backup → Grocy fetches products (name, barcodes, product group) from Grocy into the catalogue."],
-  ["📌 <b>Seitenleiste (Option):</b> Unter Geräte &amp; Dienste → Einkaufsliste → Konfigurieren gibt es „In der Seitenleiste anzeigen“ – dann steht die Liste links als eigener Eintrag auf der ganzen Seite. Standardmäßig aus. · ↕️ <b>Rezept-Schritte:</b> Im Rezept-Editor hat jeder Schritt der Zubereitung eine eigene Zeile mit Foto; am ⠿ ziehen (oder ↑ ↓) verschiebt sie, die Fotos wandern mit. ➕ Schritt, ✖ löschen.",
-   "📌 <b>Sidebar (option):</b> under Devices &amp; services → Einkaufsliste → Configure there is “Show in sidebar” – the list then gets its own full-page entry on the left. Off by default. · ↕️ <b>Recipe steps:</b> in the recipe editor every step of the instructions has its own row with a photo; drag the ⠿ (or ↑ ↓) to move it, the photos move along. ➕ Step, ✖ delete."],
-  ["💡 <b>Ideen und Fehler melden:</b> In den Credits gibt es jetzt zwei Knöpfe: „💡 Idee oder Wunsch“ (GitHub-Diskussionen, dort läuft auch die Abstimmung) und „🐞 Fehler melden“.",
-   "💡 <b>Report ideas and bugs:</b> the credits now have two buttons: “💡 Idea or request” (GitHub Discussions, where polls run too) and “🐞 Report a bug”."],
-  ["🏷️ <b>Spitznamen beim Bearbeiten:</b> Artikel lange drücken → Bearbeiten hat jetzt ein Feld für Spitznamen (mehrere mit Komma). · 💡 <b>Beispiele in leeren Feldern:</b> Alle leeren Eingabefelder zeigen ein grau hinterlegtes Beispiel, z. B. „z. B. Milch“. Beim Mengen-Feld passt es zum Produkt („z. B. 2 L“, „z. B. 10x“, „z. B. 500 g“).",
-   "🏷️ <b>Nicknames when editing:</b> long-press an item → Edit now has a field for nicknames (several separated by commas). · 💡 <b>Examples in empty fields:</b> every empty input field shows a grey example, e.g. “e.g. milk”. For the quantity field it fits the product (“e.g. 2 L”, “e.g. 10x”, “e.g. 500 g”)."],
-  ["🌓 <b>Anleitungen in Hell und Dunkel:</b> Die Anleitungen (🛒 und ⚙️) sind nicht mehr immer dunkel, sondern folgen der Karte – in der Offline-App deiner Auswahl, sonst dem Home-Assistant-Design.",
-   "🌓 <b>Guides in light and dark:</b> the guides (🛒 and ⚙️) are no longer always dark but follow the card – in the offline app your choice, otherwise the Home Assistant theme."],
-  ["🔒 <b>Datenschutz-Schalter:</b> Unter ⚙️ → Datenschutz kann ein Admin für alle Geräte „Datenschutz an“ einschalten – dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage) und keinen Barcode-Scanner. Die Knöpfe sind ausgegraut. Aus = alles wie gehabt.",
-   "🔒 <b>Privacy switch:</b> under ⚙️ → Privacy an admin can switch “Privacy on” for all devices – then there is no camera, no photos (not even from gallery or clipboard) and no barcode scanner. The buttons are greyed out. Off = as usual."],
-  ["🧽 <b>Radiergummi im Katalog:</b> Ein Tipp setzt Suchfeld und Filter bei „Alle Produkte“ zurück. · 🤔 <b>Mengen-Nachfrage:</b> Bei ungewöhnlich großen Mengen (z. B. 300 Eier, 40 kg Mehl) fragt die Liste kurz nach. · 🔒 <b>Datenschutz</b> unter ⚙️ → App &amp; Info: was in Home Assistant bleibt und was ins Internet geht. · „h-milch“ wird zu „H-Milch“. · 🔀 Bei ähnlichen Angeboten fragt „Hier kaufen“, ob dein Produkt ersetzt wird oder zusätzlich offen bleibt.",
-   "🧽 <b>Eraser in the catalog:</b> one tap resets the search and filter under “All products”. · 🤔 <b>Quantity check:</b> for unusually large amounts (e.g. 300 eggs, 40 kg flour) the list asks once more. · 🔒 <b>Privacy</b> under ⚙️ → App &amp; Info: what stays in Home Assistant and what goes to the internet. · “h-milch” becomes “H-Milch”. · 🔀 For similar offers, “Buy here” asks whether your product is replaced or stays open as well."],
-  ["🔀 <b>Ähnliche Angebote:</b> Gibt es für einen Artikel (z. B. „H-Milch“ oder „Eat Me! Erdbeer Max Balance“) kein Angebot für genau diesen Namen, zerlegt die Liste den Namen in seine Wörter, sucht einzeln („Milch“) und bewertet die Treffer – auch mit Produkttyp aus der Datenbank, Spitznamen und deiner Kategorie. Höchstens 4, mit 🔀 „Ähnlich“ gekennzeichnet; der Besen bei Artikeln wird rot, wenn sie am nächsten Werktag automatisch abgehakt werden. Gibt es für genau den Artikel eins, kommt nur das.",
-   "🔀 <b>Similar offers:</b> if an item (e.g. “UHT milk” or “Eat Me! Strawberry Max Balance”) has no offer for its exact name, the list splits the name into words, searches them one by one (“milk”) and ranks the hits – also using the product type from the database, nicknames and your category. At most 4, marked 🔀 “Similar”. The broom next to an item turns red when it will be ticked off automatically on the next working day. If there is an offer for the exact item, only that is shown."],  ["📦 <b>Gleicher Name, andere Notiz:</b> Im Katalog kannst du mit ➕ (oder per Barcode) ein Produkt anlegen, das es dem Namen nach schon gibt, z. B. „Batterien“ – die Liste fragt dann nach einer <b>✏️ Eigenen Notiz</b> zum Unterscheiden („AA“, „AAA“ …). Alte, selbst getippte Notizen sind überall nur noch die ✏️ Eigene Notiz. Auch beim Eintragen auf der Liste zählt die ✏️ Eigene Notiz als Unterscheidung (bei Produkten ohne Barcode).",
-   "📦 <b>Same name, different note:</b> in the catalog you can add a product with ➕ (or by barcode) even if the name already exists, e.g. “Batteries” – the list then asks for an <b>✏️ own note</b> to tell them apart (“AA”, “AAA” …). Old notes you typed yourself are now simply the ✏️ own note everywhere. When adding on the list, the ✏️ own note also tells products apart (for products without a barcode)."],
-  ["🔎 <b>Rezept-Suche mit Spitznamen:</b> Tippst du einen Spitznamen einer Zutat (z. B. „Paradeiser“ für Tomate), findet die Rezept-Suche alle Rezepte mit diesem Produkt. · ✏️ Im Katalog bleibt die Produktzeile beim Bearbeiten stehen, das Bearbeiten öffnet darunter.",
-   "🔎 <b>Recipe search with nicknames:</b> type a nickname of an ingredient (e.g. “Paradeiser” for tomato) and the recipe search finds every recipe with that product. · ✏️ In the catalog the product row stays visible while you edit; the editor opens below it."],
-  ["🟢 <b>Grüner Punkt = nach Hause:</b> Ein Tipp auf den grünen Punkt oben bringt dich von überall (Rezepte, Einstellungen …) zurück auf die Einkaufsliste. · 🏷️ <b>Ein Spitzname für mehrere Produkte:</b> „Batterien“ kann zu „AA“ und „AAA“ gehören – beim Tippen zeigt die Liste dann beide zur Auswahl an. · ✏️ Alte, selbst getippte Notizen haben im Bearbeiten nur noch <b>ein</b> Feld (✏️), damit „Batterien – AA“ und „– AAA“ getrennte Produkte bleiben.",
-   "🟢 <b>Green dot = home:</b> tapping the green dot at the top takes you back to the shopping list from anywhere (recipes, settings …). · 🏷️ <b>One nickname for several products:</b> “Batteries” can belong to “AA” and “AAA” – when you type it, the list shows both to choose from. · ✏️ Old notes you typed yourself now have only <b>one</b> field (✏️) when editing, so “Batteries – AA” and “– AAA” stay separate products."],
-  ["▥ <b>Barcode nachtragen:</b> Im Katalog hat jedes Produkt jetzt den Knopf <b>„Barcode nachtragen“</b> – Nummer eintippen (Enter bestätigt) oder scannen. Danach schaut die Liste in der Datenbank nach und fragt, ob Name, Notiz und Foto übernommen werden sollen.",
-   "▥ <b>Add a barcode afterwards:</b> in the catalog every product now has an <b>“Add barcode”</b> button – type the number (Enter confirms) or scan it. The list then checks the database and asks whether name, note and photo should be taken over."],
-  ["⌨️ <b>Tastatur &amp; Maus überall:</b> Was im Katalog schon ging, geht jetzt auch in der <b>Einkaufsliste</b>, bei den <b>Rezepten</b> und in der <b>Gelöscht</b>-Liste: ↑↓ blättern (aus dem Suchfeld mit ↓ hinein), <b>Enter</b> oder Doppelklick öffnet bzw. bearbeitet, <b>Leertaste</b> hakt ab, <b>Esc</b> geht zurück; am PC markiert ein Klick die Zeile. Die <b>PIN</b> fürs ⚙️ bestätigst du jetzt auch mit <b>Enter</b>.",
-   "⌨️ <b>Keyboard &amp; mouse everywhere:</b> what already worked in the catalog now works in the <b>shopping list</b>, the <b>recipes</b> and the <b>Deleted</b> list: ↑↓ browse (↓ from the search field jumps in), <b>Enter</b> or double-click opens/edits, <b>Space</b> ticks an item off, <b>Esc</b> goes back; on a PC a click selects the row. You can now confirm the ⚙️ <b>PIN</b> with <b>Enter</b> too."],
-  ["🔄 <b>Daten neu laden – mit Auswahl:</b> Im Produkt heißt der Knopf jetzt <b>„Daten neu laden“</b>: Du wählst einzeln, ob <b>Name</b>, <b>Notiz</b> und/oder <b>Foto</b> neu aus der Datenbank kommen (Nutri-Score und Allergene stehen zum Ansehen dabei). Das Wolken-Symbol bei „Alle Produkte“ macht dasselbe für <b>alle Produkte mit Barcode</b> auf einmal (vorausgewählt: nur Foto). Dazu: Die Katalog-Suche findet jetzt auch über <b>Spitznamen, Barcode-Nummer, Kategorie, Geschäft</b> und gelernte Tippfehler, Spitznamen beginnen immer mit einem Großbuchstaben, und die gesperrte Barcode-Notiz steht beim Bearbeiten nicht mehr im Weg.",
-   "🔄 <b>Reload data – with a choice:</b> inside a product the button is now called <b>“Reload data”</b>: you choose separately whether <b>name</b>, <b>note</b> and/or <b>photo</b> come fresh from the database (Nutri-Score and allergens are shown for reference). The cloud icon under “All products” does the same for <b>all products with a barcode</b> at once (only the photo is pre-selected). Also: catalog search now finds by <b>nicknames, barcode number, category, store</b> and learned typos, nicknames always start with a capital letter, and the locked barcode note no longer gets in the way when editing."],
-  ["✏️ <b>Eigene Notiz:</b> Das einzige Feld, in das du selbst schreibst (Stift-Symbol unter dem Eingabefeld, beim Bearbeiten und im Katalog). Die 📝 Notiz kommt jetzt <b>nur noch aus dem Barcode</b> und lässt sich nicht mehr tippen; alte, selbst getippte Notizen erscheinen automatisch als ✏️ (nichts geht verloren, nichts wird zusammengeführt). Im Katalog steht hinter dem Namen die Barcode-Notiz, sonst deine ✏️. Die ✏️ Notiz bleibt beim Produkt, wird beim nächsten Eintragen wieder vorgeschlagen und von der Produkt-Datenbank <b>nie überschrieben</b>. In der Liste steht sie in derselben gelben Farbe wie die Notiz.",
-   "✏️ <b>Own note:</b> the only field you type into yourself (pencil symbol below the input field, when editing and in the catalog). The 📝 note now comes <b>only from the barcode</b> and can no longer be typed; old notes you typed yourself now appear as ✏️ automatically (nothing is lost, nothing is merged). In the catalog the barcode note follows the name, otherwise your ✏️. The ✏️ note stays with the product, is suggested again next time and is <b>never overwritten</b> by the product database. In the list it has the same yellow colour as the note."],
-  ["🗄️ <b>Daten aus der Datenbank nachladen:</b> In ⚙️ → Produkte → „Alle Produkte“ zeigt bei jedem Produkt mit Barcode der Knopf <b>„Daten aus Datenbank“</b> (inzwischen „Daten neu laden“), wie die Produkt-Datenbank es kennt (Name, Notiz, Nutri-Score, Allergene) – und du wählst einzeln, ob <b>Name</b> und/oder <b>Notiz</b> übernommen werden oder deine Daten bleiben.",
-   "🗄️ <b>Reload data from the database:</b> in ⚙️ → Products → “All products” the button <b>“Data from database”</b> (now “Reload data”) shows for every product with a barcode how the product database knows it (name, note, Nutri-Score, allergens) – and you choose separately whether the <b>name</b> and/or the <b>note</b> are applied or your data stays."],
-  ["▥ <b>Barcode zu einem bestehenden Produkt:</b> Ordnest du einem Artikel in der Liste einen Barcode zu (lange drücken → Barcode), schaut die Liste in der Datenbank nach. Heißt das Produkt dort anders, fragt sie, ob Name und Notiz <b>überschrieben</b> werden sollen.",
-   "▥ <b>Barcode for an existing product:</b> when you assign a barcode to an item in the list (long-press → Barcode), the list checks the database. If the product has a different name there, it asks whether name and note should be <b>overwritten</b>."],
-  ["📖 <b>Anleitungen mit Suche:</b> Beide Anleitungen (🛒 für alle und ⚙️ für die Einstellungen) haben oben eine <b>Suchleiste</b> und sind überarbeitet: verständlicher, vollständiger – mit neuem Barcode-Abschnitt („Was passiert beim Scannen?“).",
-   "📖 <b>Guides with search:</b> both guides (🛒 for everyone and ⚙️ for the settings) have a <b>search bar</b> at the top and were reworked: clearer, more complete – with a new barcode section (“What happens when you scan?”)."],
+   "👁️ <b>List view:</b> ⚙️ → List view – untick, and quantity, notes, for whom, who added it, date, photo, star & co. are hidden on items. “For everyone” or “Just for me” (each person for themselves). · 🧹 <b>Cleanup in the card:</b> ⚙️ → Cleanup – now with <b>on/off</b>, day, time and minimum age right here (no longer in the integration). · 🛒 <b>The cart at the top left always takes you back to the list</b>, the guide is behind the “📖 Guide” button at the very bottom. · 🏪 <b>Stores as a list again</b>, order with ⌃⌄ right there. · 🔓 The lock sits in ⚙️ at the top right next to the version, the green dot is gone (only shown when something is wrong). · 📊 Load display now under Resources. · 📜 New catalogue products show up in the history. · 🔁 Up to 50 to-do lists – and with <b>full sync</b> each list only gets the items of <b>its</b> store (tomatoes for Lidl no longer end up in Bring! Aldi too). · 🧽 Eraser only on search fields now."]
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 // 👁️ Listenansicht: was beim Artikel zu sehen ist. Standard = alles an; einstellbar für alle und pro Benutzer (⚙️ → Listenansicht)
@@ -96,6 +44,13 @@ const VIEW_OPTS = [
   ["new", "✨ Neu-Zeichen", "neu seit deinem letzten Blick"],
   ["cat_color", "🎨 Farbe der Kategorie", "farbiger Streifen links"],
 ];
+// 🎨 Schrift auf einer Farbe: dunkel auf hellen Farben (Gelb, Hellgrün), sonst weiß
+function elTextOn(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+  if (!m) return "#fff";
+  const n = parseInt(m[1], 16), ch = [n >> 16, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2] > 0.45 ? "#212121" : "#fff";
+}
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
@@ -1688,9 +1643,9 @@ button { font:inherit; color:inherit; }
 .undobar .ub { border:0; border-radius:16px; padding:7px 12px; background:#fff; color:#222; font-weight:600; cursor:pointer; font:inherit; font-weight:600; white-space:nowrap; }
 .chkitem { margin-bottom:4px; }
 .chkitem .cbtns { display:flex; flex-wrap:wrap; gap:6px; padding:6px 0 4px 28px; }
-.chkitem .cbtns .btn { font-size:.85em; padding:5px 10px; }
+.chkitem .cbtns .btn { font-size:.85em; padding:5px 10px; min-height:32px; }
 .syncrow { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:6px 0; border-top:1px solid var(--divider-color,#eee); }
-.syncrow .btn { font-size:.85em; padding:4px 9px; }
+.syncrow .btn { font-size:.85em; padding:4px 9px; min-height:32px; }
 .updbar b { flex:1; }
 .tipbtn { font:inherit; font-size:.95em; border:0; border-radius:10px; padding:6px 10px; cursor:pointer; background:color-mix(in srgb, var(--primary-color,#03a9f4) 25%, transparent); color:var(--primary-text-color); }
 .wizard { margin:0 2px 10px; padding:12px; border-radius:14px; border:1px solid color-mix(in srgb, var(--primary-color,#03a9f4) 45%, transparent); background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); }
@@ -1713,6 +1668,9 @@ ha-card.labels .tool { padding:4px 6px; }
 .iconbtn.on { color:var(--primary-color,#03a9f4); }
 .tabs { display:flex; gap:6px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:thin; cursor:grab; user-select:none; -webkit-overflow-scrolling:touch; }
 .tabs.dragging { cursor:grabbing; }
+.tabs.more-r { -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); } /* ➡️ da kommen noch Reiter */
+.tabs.more-l { -webkit-mask-image:linear-gradient(to left, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to left, #000 calc(100% - 36px), transparent); }
+.tabs.more-l.more-r { -webkit-mask-image:linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
 .tabs.dragging .tab { pointer-events:none; }
 .tabs::-webkit-scrollbar { height:4px; }
 .tabs::-webkit-scrollbar-thumb { background:var(--divider-color, rgba(127,127,127,.35)); border-radius:4px; }
@@ -1720,8 +1678,8 @@ ha-card.labels .tool { padding:4px 6px; }
 .tab { --c: var(--primary-color,#03a9f4); flex:0 0 auto; border:1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background:transparent; border-radius:999px; padding:5px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.9em; }
 .tab .dot { width:9px; height:9px; border-radius:50%; background:var(--c); }
 .tab .n { opacity:.7; font-size:.85em; }
-.tab.active { background:var(--c); border-color:var(--c); color:#fff; }
-.tab.active .dot { background:#fff; }
+.tab.active { background:var(--c); border-color:var(--c); color:var(--tc, #fff); }
+.tab.active .dot { background:var(--tc, #fff); }
 form.add { display:grid; grid-template-columns: 1fr 48px; gap:6px; margin:2px 2px 6px; }
 form.add .toolbar { grid-column: 1 / -1; display:flex; gap:4px; margin:-2px 0 0; }
 .tool { background:none; border:0; border-radius:10px; padding:6px 10px; cursor:pointer; color:var(--secondary-text-color); display:inline-flex; align-items:center; line-height:0; position:relative; --mdc-icon-size:22px; }
@@ -1738,6 +1696,13 @@ form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .favstar { align-self:center; font-size:13px; line-height:1; margin-left:2px; }
 .favrow { display:flex; align-items:center; gap:8px; cursor:pointer; padding:4px 2px; }
 .favrow input { width:auto; flex:none; }
+/* 🎚️ ⭐ Favorit als Schalter (Bearbeiten + Katalog) – wie in den Einstellungen */
+.favrow:has(.swchk) { justify-content:space-between; box-sizing:border-box; min-height:42px; padding:0 12px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; background:var(--card-background-color, var(--ha-card-background, #fff)); }
+input.swchk { -webkit-appearance:none; appearance:none; order:2; width:40px; height:22px; margin:0; border:0; border-radius:11px; background:#bdbdbd; position:relative; cursor:pointer; transition:background .15s; padding:0; box-shadow:none; }
+input.swchk::after { content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.3); transition:left .15s; }
+input.swchk:checked { background:var(--primary-color,#03a9f4); }
+input.swchk:checked::after { left:20px; }
+input.swchk:focus-visible { outline:2px solid var(--primary-color,#03a9f4); outline-offset:2px; }
 .newrec { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 12px; padding:13px 16px; border:0; border-radius:14px; cursor:pointer; font:inherit; font-size:16px; font-weight:600; color:#fff; background:linear-gradient(135deg,#43a047,#2e7d32); box-shadow:0 2px 8px rgba(46,125,50,.35); --mdc-icon-size:24px; transition:transform .1s, box-shadow .1s; }
 .newrec:hover { box-shadow:0 3px 12px rgba(46,125,50,.5); }
 .newrec:active { transform:scale(.98); }
@@ -1779,14 +1744,14 @@ form.add .row2 { grid-column: 1 / -1; display:grid; grid-auto-flow:column; grid-
 /* Geschäft + Kategorie nebeneinander: gleiche Schrift wie alle Felder, nur weniger Rand innen, damit „Welches Geschäft?“ draufpasst */
 form.add .row2 select { padding:0 4px 0 8px; }
 form.add.fixed .sel { grid-template-columns:1fr; }
-input, select, textarea { font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; min-width:0; width:100%; outline:none; }
+input, select, textarea { font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; min-width:0; width:100%; outline:none; }
 textarea { box-sizing:border-box; resize:vertical; line-height:1.35; padding:10px 12px; min-height:42px; }
 /* 🎛️ Alle Eingabe-Masken gleich: gleiche Höhe, Schrift, Ecken und Innenabstände – in Liste, Bearbeiten, Katalog, Rezepten und Einstellungen */
 input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]):not([type=range]):not([type=hidden]), select { box-sizing:border-box; height:42px; padding:0 12px; line-height:normal; }
 select { padding-right:6px; }
 input::placeholder, textarea::placeholder { color:var(--secondary-text-color); opacity:.75; }
 input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03a9f4); box-shadow:0 0 0 2px color-mix(in srgb, var(--primary-color,#03a9f4) 18%, transparent); }
-.primary { background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border:0; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.primary { background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border:0; border-radius:12px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
 .primary:active { transform:scale(.96); }
 .addbtn { background:var(--success-color, #43a047); color:#fff; }
 .shake { animation: shake .35s; }
@@ -1794,6 +1759,8 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .group { margin-top:8px; }
 .ghead { display:flex; align-items:center; gap:6px; font-size:.8em; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--secondary-text-color); padding:6px 4px 2px; }
 .ghead ha-icon { --mdc-icon-size:16px; }
+.ghead .gdot { width:22px; height:22px; flex:none; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--gc) 18%, transparent); color:var(--gc); } /* 🎨 Kategorie-Farbe */
+.ghead .gdot ha-icon { --mdc-icon-size:14px; }
 .ghead .n { margin-left:auto; font-weight:500; }
 .subhead { font-size:.72em; padding-left:10px; opacity:.85; }
 .item { display:flex; align-items:center; gap:4px; padding:4px 2px; border-radius:10px; transition: opacity .25s, background .2s; }
@@ -1809,7 +1776,10 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .pchip .pdot { width:10px; height:10px; border-radius:50%; background:var(--pc); }
 .pchip.sel { background:var(--pc) !important; border-color:var(--pc) !important; color:#fff; }
 .pchip.sel .pdot { background:#fff; }
-.item .meta { font-size:.75em; color:var(--secondary-text-color); display:flex; flex-wrap:wrap; gap:2px 8px; margin-top:1px; }
+.item .meta { font-size:.75em; color:var(--secondary-text-color); display:flex; flex-wrap:wrap; gap:3px 6px; margin-top:2px; }
+/* 🩶 Wer, wann, Aufräum-Tag: leicht grau hinterlegt – gleiche Form wie die Geschäfts-Schildchen, aber ruhig */
+.item .meta > span:not([class]) { background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); border-radius:6px; padding:0 6px; }
+.item.done .meta > span:not([class]) { background:color-mix(in srgb, var(--primary-text-color, #000) 4%, transparent); }
 .chip { --c:#888; display:inline-flex; align-items:center; gap:4px; }
 .chip::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--c); }
 /* 🏪 Unter dem Artikel: Geschäft-Name mit zartem Hintergrund in der Geschäft-Farbe (wie die Notiz),
@@ -1822,6 +1792,9 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .item[style*="--rc"] { box-shadow: inset -4px 0 0 var(--rc); }
 .item .txt { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 .item .qty { border:0; font:inherit; font-size:.85em; cursor:pointer; color:inherit; }
+/* 🔵 Menge blau – passt zum ①-Icon, sieht man beim Einkaufen sofort */
+.item .qty { background:color-mix(in srgb, var(--primary-color,#03a9f4) 14%, transparent); color:var(--primary-color,#03a9f4); font-weight:600; }
+.item.done .qty { background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); color:var(--secondary-text-color); font-weight:400; }
 .item.new { background:color-mix(in srgb, var(--primary-color,#03a9f4) 7%, transparent); }
 .newbadge { font-size:.9em; cursor:pointer; padding:0 2px; }
 .bubble { background:var(--error-color,#e53935); color:#fff; border-radius:999px; font-size:.72em; font-weight:700; padding:1px 6px; margin-left:2px; }
@@ -1869,10 +1842,33 @@ ha-card.compact .group { margin-top:4px; }
 .item.done .name { opacity:.6; }
 .item.done .check { color:var(--secondary-text-color); }
 .item.pending { opacity:.45; }
+/* ✨ Seitenwechsel: kurz weich einblenden */
+.vin { animation:viewin .18s ease-out; }
+@keyframes viewin { from { opacity:0; transform:translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .vin, .item.checking, .item.checking .check { animation:none !important; } }
+/* 👆 Wischen: nach links = abhaken (grün), nach rechts = wieder auf die Liste (blau) */
+.item { position:relative; touch-action:pan-y; }
+.item.swiping { transition:none; z-index:1; }
+.item.swipe-l { background:color-mix(in srgb, var(--success-color, #43a047) calc(var(--sw, 0) * 22%), transparent); }
+.item.swipe-r { background:color-mix(in srgb, var(--primary-color, #03a9f4) calc(var(--sw, 0) * 22%), transparent); }
+.item.snap { transition:transform .18s ease-out, background .18s; }
+.item.swipe-l::after, .item.swipe-r::before { position:absolute; top:0; bottom:0; width:72px; display:flex; align-items:center; font-size:22px; font-weight:700; opacity:var(--sw, 0); }
+.item.swipe-l::after { content:"✔"; left:100%; justify-content:center; color:var(--success-color, #43a047); } /* zeigt, was gleich passiert */
+.item.swipe-r::before { content:"↩"; right:100%; justify-content:center; color:var(--primary-color, #03a9f4); }
+/* ✔️ Abhak-Animation */
+.item .name { background:linear-gradient(currentColor, currentColor) no-repeat 0 55% / 0 1.5px; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+.item.checking .name { background-size:100% 1.5px; transition:background-size .22s ease-out; }
+.item.checking .check { color:var(--success-color, #43a047); animation:checkpop .25s ease-out; }
+.item.checking { animation:checkaway .2s ease-in .22s forwards; }
+@keyframes checkpop { 50% { transform:scale(1.3); } }
+@keyframes checkaway { to { opacity:.25; transform:translateX(14px); } }
 .donehead { cursor:pointer; user-select:none; }
 .donehead ha-icon.chev { transition: transform .2s; }
 .donehead.closed ha-icon.chev { transform: rotate(-90deg); }
 .donehint { font-size:.75em; color:var(--secondary-text-color); padding:0 4px 4px; }
+/* ✔ „Erledigt – schon mal gekauft“: eigener, blasser Kasten – das ist das Archiv, nicht „noch kaufen“ */
+.donebox { margin-top:12px; padding:4px 6px 6px; border-radius:12px; background:color-mix(in srgb, var(--primary-text-color, #000) 3%, transparent); }
+.donebox .item.done .check { color:color-mix(in srgb, var(--success-color, #43a047) 55%, var(--secondary-text-color)); }
 .textbtn { background:none; border:0; cursor:pointer; color:var(--primary-color,#03a9f4); font-size:.85em; padding:6px 4px; }
 .textbtn.danger { color:var(--error-color,#db4437); }
 .empty { text-align:center; padding:22px 8px; color:var(--secondary-text-color); }
@@ -1883,22 +1879,42 @@ ha-card.compact .group { margin-top:4px; }
 .editrow .full { grid-column: 1 / span 2; }
 .editrow .tplchips, .prodedit .tplchips { grid-column: 1 / -1; margin:0; }
 .editrow .btns { grid-column: 1 / span 2; display:flex; justify-content:flex-end; gap:6px; }
-.editrow .btns .primary { padding:7px 14px; }
+.editrow .btns { margin-top:4px; }
 .error { background: color-mix(in srgb, var(--error-color,#db4437) 15%, transparent); color:var(--primary-text-color); border-radius:10px; padding:10px; margin:4px 2px 8px; font-size:.9em; }
 .sec { margin:4px 2px 16px; }
 .sec h3 { display:flex; align-items:center; gap:6px; font-size:1em; margin:6px 0 8px; }
-.lgroup { display:flex; align-items:center; width:100%; margin:6px 0 2px; padding:10px 8px; box-sizing:border-box; font:inherit; font-size:1em; color:var(--primary-text-color); font-weight:600; background:var(--secondary-background-color, rgba(127,127,127,.12)); border:0; border-radius:10px; cursor:pointer; text-align:left; }
+.lgbox { margin:10px 0 0; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:12px; overflow:hidden; } /* 🗂️ eine Gruppe = ein Kasten */
+.lgroup { display:flex; align-items:center; gap:12px; width:100%; margin:0; padding:10px 12px; box-sizing:border-box; font:inherit; font-size:1em; color:var(--primary-text-color); background:color-mix(in srgb, var(--primary-text-color, #000) 3%, transparent); border:0; cursor:pointer; text-align:left; }
+.lgroup[aria-expanded="true"] { border-bottom:1px solid var(--divider-color, rgba(127,127,127,.25)); }
+.lgroup b { display:block; font-weight:600; }
+.lgroup small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
+.lgroup .gem { width:36px; height:36px; flex:none; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:19px; background:color-mix(in srgb, var(--primary-text-color, #000) 7%, transparent); }
+.lgroup .grow { flex:1 1 auto; min-width:0; }
 .lgroup .chev { flex:none; color:var(--secondary-text-color); }
-.lrow { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; margin:3px 0; border-radius:12px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
+.lrow { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; text-align:left; padding:10px 12px; margin:3px 0; border-radius:12px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
 .lrow:hover { border-color:var(--primary-color,#03a9f4); }
 .lrow > ha-icon:first-child { color:var(--primary-color,#03a9f4); }
-.lrow small, .swrow small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
-.lrow .grow, .swrow .grow { flex:1 1 auto; min-width:0; }
+.lrow small, .swrow small, .swline small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
+.lrow .grow, .swrow .grow, .swline .grow { flex:1 1 auto; min-width:0; }
 .lrow .chev { opacity:.5; flex:none; }
+.lgbox .lrow { margin:0; border:0; border-radius:0; border-top:1px solid var(--divider-color, rgba(127,127,127,.25)); background:none; }
+.lgbox .lgroup + .lrow { border-top:0; }
+.lgbox .lrow:hover { background:color-mix(in srgb, var(--primary-color,#03a9f4) 6%, transparent); }
+.lgbox div.lrow { padding:0 12px 0 0; cursor:default; }
+.lmain { display:flex; align-items:center; gap:12px; flex:1 1 auto; min-width:0; padding:10px 0 10px 12px; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.ic { --ic:#607d8b; width:36px; height:36px; flex:none; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--ic); color:#fff; }
+.ic ha-icon { --mdc-icon-size:20px; color:#fff; }
+.tgl { flex:none; width:40px; height:22px; padding:0; border:0; border-radius:11px; background:#bdbdbd; position:relative; cursor:pointer; transition:background .15s; }
+.tgl > span { position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.3); transition:left .15s; }
+.tgl[aria-pressed="true"], [aria-pressed="true"] > .tgl { background:var(--primary-color,#03a9f4); }
+.tgl[aria-pressed="true"] > span, [aria-pressed="true"] > .tgl > span { left:20px; }
+.swline { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; margin:6px 0 10px; padding:12px 14px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:12px; background:none; color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
+.swline b { display:block; font-weight:500; }
+.setsearch input { border-radius:21px; }
 .viewrow { padding:7px 12px; }
 .viewrow[aria-pressed=false] > ha-icon:first-child { color:var(--secondary-text-color); }
 .viewrow[aria-pressed=false] b { opacity:.6; }
-.lrow b, .swrow b { display:block; }
+.lrow b, .swrow b { display:block; font-weight:500; }
 .swrow { display:flex; align-items:center; gap:10px; padding:10px 12px; margin:4px 0; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); }
 .swrow > ha-icon { color:var(--primary-color,#03a9f4); }
 .sw { position:relative; flex:none; width:48px; height:28px; border-radius:14px; border:0; cursor:pointer; background:rgba(127,127,127,.45); transition:background .15s; padding:0; }
@@ -1927,7 +1943,8 @@ ha-card.compact .group { margin-top:4px; }
 .myview .mvhead b { flex:1; }
 .sechead { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
 .sechead h3 { margin:0; }
-.sechead .back { padding:6px 10px; }
+.sechead .back { width:36px; height:36px; border-radius:50%; flex:none; align-items:center; justify-content:center; color:var(--primary-text-color); }
+.sechead { gap:12px; margin-bottom:10px; }
 .prodrow { cursor:pointer; }
 .prodrow .pmeta { display:flex; flex-wrap:wrap; gap:2px 8px; }
 .misshint { margin:2px 0 10px; padding:10px 12px; border-radius:12px; background:color-mix(in srgb, var(--warning-color,#ffa600) 16%, transparent); }
@@ -2003,7 +2020,7 @@ ha-card.compact .group { margin-top:4px; }
 .sthandle:focus-visible { outline:2px solid var(--primary-color); border-radius:6px; }
 .stbtns { display:flex; gap:6px; flex:none; margin-left:auto; padding-left:30px; }
 .stnum { flex:none; padding-top:9px; min-width:1.6em; text-align:right; color:var(--secondary-text-color); font-size:.9em; }
-.stin { flex:1 1 150px; min-width:0; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:10px 12px; resize:none; overflow:hidden; }
+.stin { flex:1 1 150px; min-width:0; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:10px 12px; resize:none; overflow:hidden; }
 .sprow { display:flex; align-items:center; gap:6px; margin:4px 0; }
 .sprow .sptxt { flex:1; font-size:.9em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pemerge { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; border-radius:10px; border:1px dashed var(--divider-color, rgba(127,127,127,.4)); }
@@ -2071,9 +2088,15 @@ label.btn { cursor:pointer; }
 .refrep > .hint { margin:0; white-space:pre-line; overflow-wrap:anywhere; max-height:45vh; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; }
 .refrep.done { padding-right:42px; } /* Platz für das ✖ – so liegt es weder über dem Text noch über dem Scrollbalken */
 .btnrow { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-.btn { border:1px solid var(--divider-color, rgba(127,127,127,.35)); background:transparent; border-radius:10px; padding:8px 12px; cursor:pointer; font-size:.9em; display:inline-flex; align-items:center; gap:6px; }
+/* 🔘 Knöpfe überall gleich: Hauptsache = blau gefüllt · Nebensache = umrandet · Gefahr = rot umrandet – Ecken und Höhe wie die Eingabefelder */
+.btn { box-sizing:border-box; min-height:40px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:transparent; color:var(--primary-text-color); border-radius:12px; padding:8px 14px; cursor:pointer; font:inherit; font-size:.9em; font-weight:500; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:background .15s, border-color .15s; }
+.btn:hover:not([disabled]) { border-color:var(--primary-color,#03a9f4); background:color-mix(in srgb, var(--primary-color,#03a9f4) 6%, transparent); }
+.btn:active:not([disabled]) { transform:scale(.97); }
+.btn[disabled] { opacity:.45; cursor:default; }
 .btn.danger { color:var(--error-color,#db4437); border-color:color-mix(in srgb, var(--error-color,#db4437) 50%, transparent); }
-.btn.primary { border:0; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
+.btn.danger:hover:not([disabled]) { border-color:var(--error-color,#db4437); background:color-mix(in srgb, var(--error-color,#db4437) 7%, transparent); }
+.btn.primary { border:1px solid transparent; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
+.btn.primary:hover:not([disabled]) { background:color-mix(in srgb, var(--primary-color,#03a9f4) 88%, #000); border-color:transparent; }
 .recipe { display:flex; align-items:center; gap:8px; padding:8px 6px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); margin:6px 2px; }
 .recipe .rname { flex:1; min-width:0; }
 .recipe mark { background:none; color:var(--primary-color,#03a9f4); font-weight:700; }
@@ -2083,7 +2106,7 @@ label.btn { cursor:pointer; }
 .recipe .rname small { color:var(--secondary-text-color); font-size:.78em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
 .rtools { display:flex; gap:6px; justify-content:flex-end; margin:-2px 4px 8px; }
-.rtools .btn { padding:5px 10px; font-size:.8em; }
+.rtools .btn { padding:5px 10px; font-size:.8em; min-height:32px; }
 .rtools .rheat { flex:1; align-self:center; font-size:.78em; color:var(--secondary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .heatrow { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border-radius:12px; background:color-mix(in srgb, #ff7043 10%, transparent); border:1px solid color-mix(in srgb, #ff7043 35%, transparent); margin:6px 0; }
 .heatrow .hnums { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
@@ -2098,7 +2121,7 @@ label.btn { cursor:pointer; }
 .pickrow.basic .pname { font-size:.85em; }
 .pickrow .pbasic { font-size:.72em; color:var(--secondary-text-color); white-space:nowrap; }
 .recipe .rbtns { display:flex; flex-direction:column; gap:4px; align-items:stretch; }
-.recipe .rbtns .btn { padding:6px 10px; font-size:.8em; justify-content:center; }
+.recipe .rbtns .btn { padding:6px 10px; font-size:.8em; justify-content:center; min-height:32px; }
 .rpick { margin:-2px 2px 10px; padding:8px; border-radius:0 0 12px 12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-top:0; background:var(--secondary-background-color, rgba(127,127,127,.06)); }
 .rpick .phead { display:flex; justify-content:space-between; align-items:center; font-weight:600; font-size:.9em; padding:2px 4px 6px; }
 .rpick .phead span { font-weight:400; }
@@ -2114,9 +2137,9 @@ label.btn { cursor:pointer; }
 .rpick .pbtns .primary { padding:9px 14px; }
 .rpick .pbtns .primary[disabled] { opacity:.4; cursor:default; }
 .rsub { margin-top:14px !important; flex-wrap:wrap; }
-.rsteps { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; resize:vertical; }
+.rsteps { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; resize:vertical; }
 .rimportbtn { margin-left:auto; padding:5px 10px; font-size:.8em; font-weight:400; }
-.rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--input-fill-color, var(--secondary-background-color, rgba(127,127,127,.08))); border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:9px 10px; resize:vertical; }
+.rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; resize:vertical; }
 .rimport .btnrow { justify-content:flex-end; }
 #rPhotoRow { margin:4px 2px 2px; }
 #rPhotoRow .btn.on { color:var(--primary-color,#03a9f4); }
@@ -3050,7 +3073,7 @@ class EinkaufslisteCard extends HTMLElement {
       <ha-card>
         <div class="head">
           <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="home" title="🏠 Zurück zur Einkaufsliste"></ha-icon><span id="mascot" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
-          <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon><span class="lbl">Laden</span></button>
+          <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:storefront-outline"></ha-icon><span class="lbl">Laden</span></button>
           <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon><span class="lbl">Bildschirm</span></button>
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
           <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon><span class="lbl">Rezepte</span></button>
@@ -3068,7 +3091,7 @@ class EinkaufslisteCard extends HTMLElement {
             <button class="primary addbtn" type="submit" title="Hinzufügen"><ha-icon icon="mdi:check-bold"></ha-icon></button>
             <div class="sugg" id="sugg" hidden></div>
             <div class="toolbar">
-              <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon><span class="lbl">Menge</span></button>
+              <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric-1-circle-outline"></ha-icon><span class="lbl">Menge</span></button>
               <button class="tool" id="tOwn" type="button" data-act="tool" data-field="inOwn" title="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben"><ha-icon icon="mdi:pencil-outline"></ha-icon><span class="lbl">Notiz</span></button>
               <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon><span class="lbl">Für wen</span></button>
               <button class="tool plus" id="btnNewBarcode" type="button" data-act="new-barcode" title="Barcode zum neuen Produkt" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon><span class="lbl">Barcode</span></button>
@@ -3165,6 +3188,7 @@ class EinkaufslisteCard extends HTMLElement {
     });
     this._setupTabScroll(this.$("tabs"));
     this._setupLongPress(this.$("list"));
+    this._setupSwipe(this.$("list"));
     root.addEventListener("change", (e) => this._onChange(e));
     root.addEventListener("input", (e) => this._onInput(e));
     root.addEventListener("submit", (e) => {
@@ -3217,6 +3241,56 @@ class EinkaufslisteCard extends HTMLElement {
       clearTimeout(timer);
       if (!this._longPressed) open(itemEl);
     });
+  }
+
+  // 👆 Wischen am Handy: Zeile nach links = abhaken, nach rechts = (erledigt) wieder auf die Liste
+  _setupSwipe(list) {
+    const MIN = 80; // so weit muss man wischen (px), damit es zählt
+    let st = null;
+    const reset = (row) => {
+      if (!row) return;
+      row.classList.remove("swiping", "swipe-l", "swipe-r");
+      row.classList.add("snap");
+      row.style.transform = ""; row.style.removeProperty("--sw");
+      setTimeout(() => row.classList.remove("snap"), 200);
+    };
+    list.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" || this._editing || this._moving) return; // nur Finger/Stift
+      const row = e.target.closest(".item[data-id]");
+      if (!row || e.target.closest("input,select,textarea")) return;
+      st = { row, x: e.clientX, y: e.clientY, on: false };
+    });
+    list.addEventListener("pointermove", (e) => {
+      if (!st) return;
+      const dx = e.clientX - st.x, dy = e.clientY - st.y;
+      if (!st.on) {
+        if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { st = null; return; } // senkrecht = normal scrollen
+        if (Math.abs(dx) < 12) return;
+        st.on = true; st.row.classList.add("swiping");
+      }
+      const done = st.row.classList.contains("done");
+      const ok = done ? dx > 0 : dx < 0; // offen: nur nach links · erledigt: nur nach rechts
+      const d = ok ? dx : dx / 6; // falsche Richtung: nur ein kleines „Gummiband“
+      st.row.style.transform = `translateX(${Math.round(d)}px)`;
+      st.row.classList.toggle("swipe-l", ok && !done);
+      st.row.classList.toggle("swipe-r", ok && done);
+      st.row.style.setProperty("--sw", Math.min(1, Math.abs(d) / MIN).toFixed(2));
+    });
+    const end = (e) => {
+      if (!st) return;
+      const { row, on } = st; const dx = (e.clientX ?? st.x) - st.x;
+      st = null;
+      if (!on) return;
+      this._swiped = Date.now(); // der Klick danach zählt nicht
+      const id = row.dataset.id;
+      const item = this._data?.items.find((i) => i.id === id);
+      reset(row);
+      if (!item || e.type === "pointercancel") return;
+      if (!item.checked && dx <= -MIN) this._toggle(id);
+      else if (item.checked && dx >= MIN) this._readd(item);
+    };
+    list.addEventListener("pointerup", end);
+    list.addEventListener("pointercancel", end);
   }
 
   // Geschäfte-Leiste am PC: Mausrad und Ziehen mit der Maus scrollen waagerecht
@@ -3401,7 +3475,7 @@ class EinkaufslisteCard extends HTMLElement {
     btnShop.hidden = !d || this._view !== "list";
     btnShop.classList.toggle("on", shop);
     btnShop.title = shop ? "Laden-Modus beenden" : "Laden-Modus (große Zeilen, nur Abhaken)";
-    btnShop.querySelector("ha-icon").setAttribute("icon", shop ? "mdi:cart-off" : "mdi:cart-outline");
+    btnShop.querySelector("ha-icon").setAttribute("icon", shop ? "mdi:storefront-remove-outline" : "mdi:storefront-outline"); // 🏪 eigenes Bild – der Wagen links heißt „zur Liste“
     this.$("title").textContent = ""; // Titel-Text ist weg – der Einkaufswagen reicht
     this.$("titleIcon").hidden = c.show_title === false || !!d?.settings?.mascot;
     this.$("btnFavAll").hidden = !(d?.favorites || []).length; // ⭐ nur da, wenn es Favoriten gibt
@@ -3442,6 +3516,12 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._view !== "recipe") this._parkForm();
     this.$("listView").hidden = !isList;
     this.$("otherView").hidden = isList;
+    const page = `${this._view}|${this._view === "settings" ? this._setSec || "" : ""}`;
+    if (this._lastPage !== undefined && this._lastPage !== page) { // ✨ andere Seite: kurz weich einblenden statt hart springen
+      const box = this.$(isList ? "listView" : "otherView");
+      box.classList.remove("vin"); void box.offsetWidth; box.classList.add("vin");
+    }
+    this._lastPage = page;
     if (isList) {
       this._renderTabs();
       this._renderSelects();
@@ -3474,7 +3554,7 @@ class EinkaufslisteCard extends HTMLElement {
     const noneFn = (i) => !i.store_id;
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
     for (const s of d.stores) {
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""}" style="--c:${esc(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || !i.store_id)}</span>${bubble((i) => i.store_id === s.id || !i.store_id, active === s.id)}</button>`);
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""}" style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || !i.store_id)}</span>${bubble((i) => i.store_id === s.id || !i.store_id, active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
@@ -3484,6 +3564,16 @@ class EinkaufslisteCard extends HTMLElement {
     tabs.innerHTML = parts.join("");
     this._markSeen();
     tabs.scrollLeft = left;
+    this._tabFade();
+  }
+
+  // ➡️ Reiter-Leiste: am Rand sanft ausblenden, solange man noch weiter wischen kann
+  _tabFade() {
+    const t = this.$("tabs");
+    if (!t) return;
+    if (!t._fadeOn) { t._fadeOn = true; t.addEventListener("scroll", () => this._tabFade(), { passive: true }); }
+    t.classList.toggle("more-l", t.scrollLeft > 2);
+    t.classList.toggle("more-r", t.scrollLeft + t.clientWidth < t.scrollWidth - 2);
   }
 
   _renderSelects() {
@@ -3795,7 +3885,7 @@ class EinkaufslisteCard extends HTMLElement {
     // hinter dem Namen: für wen es ist (wer es eingetragen hat, steht klein darunter)
     const who = item.for_whom && v.for_whom ? this._forWhomHtml(item.for_whom) : "";
     const qty = item.quantity && v.qty ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(item.quantity)}</button>` : "";
-    const icon = item.checked ? "mdi:checkbox-marked-circle-outline" : "mdi:checkbox-blank-circle-outline";
+    const icon = item.checked ? "mdi:check-circle" : "mdi:checkbox-blank-circle-outline"; // ✔ erledigt = voller Haken (wie am Ende der Abhak-Animation)
     const cat = this._cat(item.category_id);
     const isNew = v.new && this._isNew(item);
     return `
@@ -3817,7 +3907,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="menurow" data-id="${item.id}">
         ${b("menu-edit", "mdi:pencil-outline", "Bearbeiten")}
         ${!item.checked && this._data.stores.length > 1 ? b("menu-move", "mdi:swap-horizontal", "Verschieben") : ""}
-        ${b("menu-qty", "mdi:numeric", "Menge", item.quantity ? "#1e88e5" : "")}
+        ${b("menu-qty", "mdi:numeric-1-circle-outline", "Menge", item.quantity ? "#1e88e5" : "")}
         ${b("menu-cat", "mdi:shape-outline", "Kategorie", cat ? (cat.color || "#43a047") : "")}
         ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(pk) ? "Fotos" : "Foto", this._hasPhoto(pk) ? "#00897b" : "")}
         ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", codes ? "Barcode ✓" : "Barcode", codes ? "#8e24aa" : "") : ""}
@@ -3976,15 +4066,15 @@ class EinkaufslisteCard extends HTMLElement {
         <input class="full" id="edAliases" value="${esc(this._itemAliases(item).join(", "))}" data-orig="${esc(this._itemAliases(item).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
-        <label class="full favrow" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" id="edFav" ${this._isFav(this._pk(item.name, item.note)) ? "checked" : ""} data-orig="${this._isFav(this._pk(item.name, item.note)) ? 1 : 0}"> ⭐ Favorit</label>
+        <label class="full favrow" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" class="swchk" id="edFav" ${this._isFav(this._pk(item.name, item.note)) ? "checked" : ""} data-orig="${this._isFav(this._pk(item.name, item.note)) ? 1 : 0}"> ⭐ Favorit</label>
         <div class="full photorow">
           <button type="button" class="btn" data-act="photo-take" data-name="${esc(this._pk(item.name, item.note))}" ${this._photoCount(this._pk(item.name, item.note)) >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${this._photoCount(this._pk(item.name, item.note)) >= 6 ? "Fotos voll (6/6)" : this._hasPhoto(this._pk(item.name, item.note)) ? "Foto dazu" : "Foto"}</button>
           ${this._hasAppScanner() ? `<button type="button" class="btn" data-act="barcode-assign" data-id="${item.id}"><ha-icon icon="mdi:barcode-scan"></ha-icon>Barcode zuordnen</button>` : ""}
           ${this._hasPhoto(this._pk(item.name, item.note)) ? `<button type="button" class="btn" data-act="photo-view" data-name="${esc(this._pk(item.name, item.note))}"><ha-icon icon="mdi:image-outline"></ha-icon>Ansehen</button>` : ""}
         </div>
         <div class="btns">
-          <button type="button" class="textbtn" data-act="edit-cancel">Abbrechen</button>
-          <button type="submit" class="primary">Speichern</button>
+          <button type="button" class="btn" data-act="edit-cancel">Abbrechen</button>
+          <button type="submit" class="btn primary"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
         </div>
       </form>`;
   }
@@ -4046,7 +4136,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (!arr.length) continue;
       arr.sort(sortFn);
       const cat = this._cat(cid);
-      const label = `<ha-icon icon="${esc(cat?.icon || "mdi:tag-outline")}"></ha-icon>${esc(cat?.name || "Ohne Kategorie")}<span class="n">${arr.length}</span>`;
+      const label = `<span class="gdot" style="--gc:${esc(cat?.color || "#9e9e9e")}"><ha-icon icon="${esc(cat?.icon || "mdi:tag-outline")}"></ha-icon></span>${esc(cat?.name || "Ohne Kategorie")}<span class="n">${arr.length}</span>`;
       if (!collapsible) {
         html.push(`<div class="group"><div class="ghead subhead">${label}</div>${arr.map(row).join("")}</div>`);
         continue;
@@ -4120,7 +4210,7 @@ class EinkaufslisteCard extends HTMLElement {
 
     if (this._config.show_checked && (done.length || filter)) {
       const total = allView ? this._groupStores(items.filter((i) => i.checked)).length : items.filter((i) => i.checked).length;
-      html.push(`<div class="group">
+      html.push(`<div class="group donebox">
         <div class="ghead donehead ${this._doneOpen || filter ? "" : "closed"}" role="button" tabindex="0" aria-expanded="${this._doneOpen || filter ? "true" : "false"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
         ${this._doneOpen || filter ? `<div class="donehint">Tipp auf den Kreis, um es wieder auf die Liste zu nehmen.</div>${
           done.length ? this._groupedHtml(done, row, byName, true, !!filter) : `<div class="donehint">Nichts gefunden zu „${esc(filter)}“.</div>`}` : ""}
@@ -4288,7 +4378,11 @@ class EinkaufslisteCard extends HTMLElement {
     // ↩️ Versehentlich abgehakt? 3 Sekunden lang kann man es zurücknehmen (nur bei dem, der selbst abgehakt hat)
     if (it && !it.checked) this._undoShow(`„${it.name}“ abgehakt`, () => this._undoCheck(id)); else this._undoHide();
     this._pending.add(id);
-    this.shadowRoot.querySelector(`.item[data-id="${id}"]`)?.classList.add("pending");
+    const rowEl = this.shadowRoot.querySelector(`.item[data-id="${id}"]`);
+    // ✔️ Abhaken mit kleiner Animation: Haken wird grün, Name durchgestrichen, Zeile rutscht weg – erst danach geht es an HA
+    const anim = !!(it && !it.checked && !undo && rowEl && !matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+    rowEl?.classList.add(anim ? "checking" : "pending");
+    if (anim) rowEl.querySelector(".check ha-icon")?.setAttribute("icon", "mdi:check-circle");
     // 🧾 Merken, wo ich abgehakt habe – für den automatischen Protokoll-Vorschlag
     if (it && !it.checked) {
       const t = this._myChecks ||= {};
@@ -4299,9 +4393,10 @@ class EinkaufslisteCard extends HTMLElement {
     // 🤷 „Egal wo“ im Reiter eines Geschäfts abgehakt -> gehört ab jetzt zu diesem Geschäft
     const here = this._fixedStore || (this._activeTab !== "all" && this._activeTab !== "none" ? this._activeTab : null);
     const atStore = it && !it.checked && !it.store_id && here && this._store(here) ? here : null;
-    this._ws({ type: "einkaufsliste/item/toggle", item_id: id, ...(atStore ? { store_id: atStore } : {}), ...(undo ? { undo: true } : {}) })
+    const send = () => this._ws({ type: "einkaufsliste/item/toggle", item_id: id, ...(atStore ? { store_id: atStore } : {}), ...(undo ? { undo: true } : {}) })
       .catch(() => {})
       .finally(() => { this._pending.delete(id); this._renderAll(); });
+    if (anim) setTimeout(send, 420); else send();
   }
 
   _renderMascot(open) {
@@ -4605,44 +4700,44 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow"><button class="btn primary" data-act="tpl-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>${this._data.settings?.note_templates_custom ? `<button class="btn" data-act="tpl-reset"><ha-icon icon="mdi:restore"></ha-icon>Standard</button>` : ""}</div>` },
       { key: "aicook", icon: "mdi:robot-happy-outline", title: "KI-Kochen", info: this._data.settings?.ai_on ? "an" : "aus", html: () => this._aiSettingsHtml() },
       { key: "mascot", icon: "mdi:emoticon-happy-outline", title: "Maskottchen", info: this._data.settings?.mascot ? "an – für alle" : "aus", html: () => `
+        ${this._swHtml("mascot-toggle", !!this._data.settings?.mascot, "Maskottchen anzeigen")}
         <p class="hint">Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen bringt dich wie der Wagen zurück zur Einkaufsliste.</p>
         <div class="mascotprev">${mascotSvg("happy", null)}${mascotSvg("busy", null)}${mascotSvg("full", null)}${mascotSvg("sleep", null)}</div>
         <div class="mascotprev">${["spring", "summer", "autumn", "winter"].map((x) => mascotSvg("happy", x)).join("")}</div>
-        <p><b>${this._data.settings?.mascot ? "🛒😊 Das Maskottchen ist an." : "Das Maskottchen ist aus."}</b> Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App.</p>
-        <div class="btnrow"><button class="btn primary" data-act="mascot-toggle"><ha-icon icon="${this._data.settings?.mascot ? "mdi:emoticon-neutral-outline" : "mdi:emoticon-happy-outline"}"></ha-icon>${this._data.settings?.mascot ? "Ausschalten" : "Einschalten"}</button></div>` },
+        <p class="hint">Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App.</p>` },
       { key: "cards", icon: "mdi:credit-card-outline", title: "Kundenkarten", info: this._data.settings?.cards_on ? "an – für alle" : "aus", html: () => `
+        ${this._swHtml("cards-toggle", !!this._data.settings?.cards_on, "Kundenkarten anzeigen")}
         <p class="hint">Payback, Lidl Plus & Co. immer dabei: Karte einscannen (QR-Code, Aztec-Code oder Strichcode), Nummer eintippen oder die Karte fotografieren – und an der Kasse groß anzeigen, auf weißem Grund. Ein Foto hilft nur bei Karten mit festem Code (ein „Rollcode“, der ständig wechselt, geht nicht). Du entscheidest beim Anlegen, ob die Karte <b>für alle</b> oder <b>nur für dich</b> ist.</p>
-        <p><b>${this._data.settings?.cards_on ? "💳 Kundenkarten sind an." : "Kundenkarten sind aus."}</b> Der Schalter gilt für <b>alle</b> Geräte. Ist er an, steht oben in der Karte der 💳-Knopf (auch im Laden-Modus) – dort legst du Karten an und zeigst sie.</p>
+        <p>Der Schalter gilt für <b>alle</b> Geräte. Ist er an, steht oben in der Karte der 💳-Knopf (auch im Laden-Modus) – dort legst du Karten an und zeigst sie.</p>
         <p class="hint">Die Karten bleiben für die Offline-App auf dem Gerät gemerkt. Bei 🔒 Datenschutz sind Scanner und Foto aus, Eintippen geht weiter. Ausschalten versteckt nur den Knopf – die Karten bleiben gespeichert.</p>
-        <div class="btnrow"><button class="btn primary" data-act="cards-toggle"><ha-icon icon="mdi:credit-card-outline"></ha-icon>${this._data.settings?.cards_on ? "Ausschalten" : "Einschalten"}</button></div>` },
+` },
       { key: "autoshop", icon: "mdi:map-marker-radius-outline", title: "Laden-Modus automatisch", info: this._data.settings?.auto_shop ? "an – für alle" : "aus", html: () => `
+        ${this._swHtml("autoshop-toggle", !!this._data.settings?.auto_shop, "Automatisch an und aus")}
         <p class="hint">Kommst du in die 📍 Zone eines Geschäfts, geht der Laden-Modus von selbst an – und wieder aus, sobald du den Laden verlässt. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</p>
-        <p><b>${this._data.settings?.auto_shop ? "📍 Automatisch ist an." : "Automatisch ist aus."}</b> Der Schalter gilt für <b>alle</b> Geräte. Der Standort bleibt dabei bei jedem selbst: Der Laden-Modus geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</p>
+        <p>Der Schalter gilt für <b>alle</b> Geräte. Der Standort bleibt dabei bei jedem selbst: Der Laden-Modus geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</p>
         <p class="hint">Es braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant.</p>
-        <div class="btnrow"><button class="btn primary" data-act="autoshop-toggle"><ha-icon icon="mdi:map-marker-radius-outline"></ha-icon>${this._data.settings?.auto_shop ? "Ausschalten" : "Einschalten"}</button></div>` },
+` },
       { key: "spend", icon: "mdi:receipt-text-outline", title: "Einkaufs-Protokoll", info: this._data.settings?.spend ? "an – für alle" : "aus", html: () => `
+        ${this._swHtml("spend-toggle", !!this._data.settings?.spend, "Einkaufs-Protokoll")}
         <p class="hint">Merkt sich nach jedem Einkauf, wer wann wo für wie viel eingekauft hat. Die Auswertung zeigt Summen pro Geschäft und pro Monat, mit Filtern nach Person, Geschäft und Datum. Unabhängig von den Listen – der Betrag wird von Hand eingetragen.</p>
-        <p><b>${this._data.settings?.spend ? "🧾 Das Einkaufs-Protokoll ist an." : "Das Einkaufs-Protokoll ist aus."}</b></p>
         <p class="hint">Der Schalter gilt für alle. Ist es an, sehen und pflegen es alle in der Familie – den 🧾-Knopf oben in der Karte und hier im Verlauf.</p>
-        <div class="btnrow"><button class="btn primary" data-act="spend-toggle"><ha-icon icon="mdi:receipt-text-outline"></ha-icon>${this._data.settings?.spend ? "Ausschalten" : "Einschalten"}</button>${this._data.settings?.spend ? `<button class="btn" data-act="spend"><ha-icon icon="mdi:open-in-new"></ha-icon>Öffnen</button>` : ""}</div>
-        ${this._data.settings?.spend ? `<p><b>${this._data.settings?.spend_auto ? "🎉 Automatisch fragen: an" : "Automatisch fragen: aus"}</b></p>
-        <p class="hint">Wenn alles auf der Liste abgehakt ist, geht der Einkauf-eintragen-Dialog von selbst auf – mit dem Geschäft schon ausgewählt. Gilt für alle.</p>
-        <div class="btnrow"><button class="btn" data-act="spend-auto-toggle"><ha-icon icon="mdi:party-popper"></ha-icon>${this._data.settings?.spend_auto ? "Ausschalten" : "Einschalten"}</button></div>` : ""}
+        ${this._data.settings?.spend ? `<div class="btnrow"><button class="btn" data-act="spend"><ha-icon icon="mdi:open-in-new"></ha-icon>Öffnen</button></div>
+        ${this._swHtml("spend-auto-toggle", !!this._data.settings?.spend_auto, "Automatisch fragen", "wenn alles abgehakt ist")}
+        <p class="hint">Wenn alles auf der Liste abgehakt ist, geht der Einkauf-eintragen-Dialog von selbst auf – mit dem Geschäft schon ausgewählt. Gilt für alle.</p>` : ""}
         <p class="hint">Ausschalten versteckt nur die Anzeige – die bisherigen Einträge bleiben gespeichert.</p>` },
       ...(window.__elOfflineApp ? [{ key: "theme", icon: "mdi:theme-light-dark", title: "Hell / Dunkel", info: { light: "☀️ Hell", dark: "🌙 Dunkel" }[elAppTheme()] || "🌓 Automatisch", html: () => `
         <p class="hint">Nur für die Offline-App auf diesem Gerät. „Automatisch“ richtet sich nach dem Handy – so wie Home Assistant auch.</p>
         <div class="btnrow themebtns">${[["auto", "🌓 Automatisch"], ["light", "☀️ Hell"], ["dark", "🌙 Dunkel"]].map(([v, l]) =>
           `<button class="btn ${elAppTheme() === v ? "primary" : ""}" data-act="app-theme" data-v="${v}">${l}</button>`).join("")}</div>` }] : []),
       { key: "labels", icon: "mdi:format-text", title: "Beschriftungen", info: this._data.settings?.labels ? "an – für alle" : "aus", html: () => `
-        <p class="hint">Zeigt unter den kleinen Icons (🔢 Menge, ✏️ Notiz, 📋 Aus Foto …) einen kurzen Text. Handys haben ja keine Tooltips. Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App. Auch ohne den Schalter gilt: <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht.</p>
-        <p><b>${this._data.settings?.labels ? "🏷️ Die Beschriftungen sind an." : "Die Beschriftungen sind aus."}</b></p>
-        <div class="btnrow"><button class="btn primary" data-act="labels-toggle">${this._data.settings?.labels ? "Ausschalten" : "Einschalten"}</button></div>` },
+        ${this._swHtml("labels-toggle", !!this._data.settings?.labels, "Beschriftungen anzeigen")}
+        <p class="hint">Zeigt unter den kleinen Icons (① Menge, ✏️ Notiz, 📋 Aus Foto …) einen kurzen Text. Handys haben ja keine Tooltips. Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App. Auch ohne den Schalter gilt: <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht.</p>
+` },
       { key: "pin", icon: this._data.settings?.pin ? "mdi:lock-outline" : "mdi:lock-open-variant-outline", title: "Schutz", info: this._data.settings?.pin ? "PIN ist an" : "PIN fürs Zahnrad", html: () => this._pinHtml() },
       { key: "log", icon: "mdi:history", title: "Verlauf", info: "wer, wann, was, wie", html: () => this._logSectionHtml() },
       { key: "cleanup", icon: "mdi:broom", title: "Aufräumen", info: s.cleanup_on === false ? "automatisch: aus" : `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
         <p class="hint">Einmal pro Woche hakt die Liste von selbst alte Artikel ab. Gelöscht wird nichts – du kannst sie später mit einem Tipp wieder auf die Liste nehmen. Gilt für alle.</p>
-        <p><b>${s.cleanup_on === false ? "Automatisches Aufräumen ist aus." : "🧹 Automatisches Aufräumen ist an."}</b></p>
-        <div class="btnrow"><button class="btn primary" data-act="cleanup-toggle"><ha-icon icon="mdi:broom"></ha-icon>${s.cleanup_on === false ? "Einschalten" : "Ausschalten"}</button></div>
+        ${this._swHtml("cleanup-toggle", s.cleanup_on !== false, "Automatisch aufräumen")}
         ${s.cleanup_on === false ? "" : `
         <div class="srow"><ha-icon class="prev" icon="mdi:calendar-week"></ha-icon><select class="grow" id="clDay" title="Aufräum-Tag">${WD_LONG.map((w, i) => `<option value="${i}" ${i === s.cleanup_weekday ? "selected" : ""}>${w}</option>`).join("")}</select></div>
         <div class="srow"><ha-icon class="prev" icon="mdi:clock-outline"></ha-icon><input class="grow" id="clTime" type="time" value="${esc(s.cleanup_time)}" title="Uhrzeit"></div>
@@ -4678,7 +4773,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="sec">
           <h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3>
           <button class="health wait" id="healthBar" data-act="set-sec" data-sec="check"><span>⚪</span><span><b>Prüfe …</b></span></button>
-          <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="setSearch" placeholder="In den Einstellungen suchen, z. B. Foto" value="${esc(this._setQ || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="setSearch" ${this._setQ ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
+          <div class="srow setsearch"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="setSearch" placeholder="In den Einstellungen suchen, z. B. Foto" value="${esc(this._setQ || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="setSearch" ${this._setQ ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
           <div id="setList">${this._settingsListHtml(sections)}</div>
           <div class="btnrow" style="margin-top:14px"><button class="btn" data-act="guide-settings"><ha-icon icon="mdi:book-open-variant"></ha-icon>Anleitung Einstellungen</button></div>
         </div>`;
@@ -4691,13 +4786,13 @@ class EinkaufslisteCard extends HTMLElement {
     }
     const storeOpen = cur.key === "stores" && d.stores.some((x) => x.id === this._storeSel);
     const back = storeOpen
-      ? `<button class="btn back" data-act="store-sel" data-id=""><ha-icon icon="mdi:arrow-left"></ha-icon>Alle Geschäfte</button>`
-      : `<button class="btn back" data-act="set-sec" data-sec=""><ha-icon icon="mdi:arrow-left"></ha-icon>Übersicht</button>`;
+      ? `<button class="iconbtn back" data-act="store-sel" data-id="" title="Alle Geschäfte" aria-label="Alle Geschäfte"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
+      : `<button class="iconbtn back" data-act="set-sec" data-sec="" title="Übersicht" aria-label="Übersicht"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`;
     this.$("otherView").innerHTML = `
       <div class="sec">
         <div class="sechead">
           ${back}
-          <h3><ha-icon icon="${cur.icon}"></ha-icon>${cur.title}</h3>
+          <span class="ic" style="--ic:${SET_COLORS[cur.key] || "#607d8b"}"><ha-icon icon="${cur.icon}"></ha-icon></span><h3>${cur.title}</h3>
         </div>
         ${cur.html()}
       </div>`;
@@ -4734,6 +4829,11 @@ class EinkaufslisteCard extends HTMLElement {
     if (box.dataset.h !== html) { box.dataset.h = html; box.innerHTML = html; }
   }
 
+  // 🎚️ Ein großer Schalter oben auf der Unterseite (statt „Einschalten“-Knopf)
+  _swHtml(act, on, title, sub = "gilt für alle Geräte") {
+    return `<button class="swline" data-act="${act}" aria-pressed="${on}"><span class="grow"><b>${title}</b><small>${sub}</small></span><span class="tgl"><span></span></span></button>`;
+  }
+
   // 🗂️ Einstellungen als Liste: Überschriften nach Zweck, eine Ebene tief, mit Suche
   _settingsListHtml(sections) {
     const groups = [
@@ -4754,13 +4854,26 @@ class EinkaufslisteCard extends HTMLElement {
     };
     const q = (this._setQ || "").trim().toLowerCase();
     const byKey = Object.fromEntries(sections.map((x) => [x.key, x]));
+    const st = this._data?.settings || {};
+    // 🎚️ Einfache An/Aus-Sachen: Schalter gleich in der Zeile (Antippen der Zeile öffnet trotzdem die Erklärung)
+    const sw = { mascot: ["mascot-toggle", !!st.mascot], cards: ["cards-toggle", !!st.cards_on], autoshop: ["autoshop-toggle", !!st.auto_shop], spend: ["spend-toggle", !!st.spend], labels: ["labels-toggle", !!st.labels] };
+    const isOn = { offers: !!st.offers?.enabled, aicook: !!st.ai_on, ...Object.fromEntries(Object.entries(sw).map(([k, v]) => [k, v[1]])) };
     const out = groups.map(([title, keys]) => {
-      const rows = keys.map((k) => byKey[k]).filter(Boolean)
+      const all = keys.map((k) => byKey[k]).filter(Boolean);
+      const rows = all
         .filter((x) => !q || `${x.title} ${x.info} ${kw[x.key] || ""}`.toLowerCase().includes(q))
-        .map((x) => `<button class="lrow" data-act="set-sec" data-sec="${x.key}"><ha-icon icon="${x.icon}"></ha-icon><span class="grow"><b>${x.title}</b><small>${esc(x.info)}</small></span><ha-icon class="chev" icon="mdi:chevron-right"></ha-icon></button>`).join("");
+        .map((x) => {
+          const main = `<span class="ic" style="--ic:${SET_COLORS[x.key] || "#607d8b"}"><ha-icon icon="${x.icon}"></ha-icon></span><span class="grow"><b>${x.title}</b><small>${esc(x.info)}</small></span>`;
+          return sw[x.key]
+            ? `<div class="lrow"><button class="lmain" data-act="set-sec" data-sec="${x.key}">${main}</button><button class="tgl" data-act="${sw[x.key][0]}" aria-pressed="${sw[x.key][1]}" title="An / aus – gilt für alle" aria-label="${x.title} an / aus"><span></span></button></div>`
+            : `<button class="lrow" data-act="set-sec" data-sec="${x.key}">${main}<ha-icon class="chev" icon="mdi:chevron-right"></ha-icon></button>`;
+        }).join("");
       if (!rows) return "";
       const open = !!q || this._setOpen === title; // 🗂️ zugeklappt; bei der Suche klappen passende Überschriften von selbst auf
-      return `<button class="lgroup" data-act="set-grp" data-grp="${esc(title)}" aria-expanded="${open}"><span class="grow">${title}</span><ha-icon class="chev" icon="mdi:chevron-${open ? "up" : "down"}"></ha-icon></button>${open ? rows : ""}`;
+      const [emo, ...name] = title.split(" ");
+      const ons = all.filter((x) => x.key in isOn);
+      const sum = ons.length ? `${all.length} Einstellungen · ${ons.filter((x) => isOn[x.key]).length} an` : all.map((x) => `<span>${x.title}</span>`).join(", "); // einzeln, damit jedes Wort übersetzt wird
+      return `<div class="lgbox"><button class="lgroup" data-act="set-grp" data-grp="${esc(title)}" aria-expanded="${open}"><span class="gem">${emo}</span><span class="grow"><b>${name.join(" ")}</b><small>${sum}</small></span><ha-icon class="chev" icon="mdi:chevron-${open ? "up" : "down"}"></ha-icon></button>${open ? rows : ""}</div>`;
     }).join("");
     return out || `<p class="hint">Nichts gefunden zu „${esc(q)}“.</p>`;
   }
@@ -5789,7 +5902,7 @@ class EinkaufslisteCard extends HTMLElement {
           <input class="full" id="peAliases" value="${esc(this._capAliases(p.aliases).join(", "))}" data-orig="${esc(this._capAliases(p.aliases).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
           <select id="peStore">${this._selectOptions(this._data.stores, p.store_id, "🛒 Kein Standard-Geschäft")}</select>
           <select id="peCat">${this._selectOptions(this._data.categories, p.category_id, "📦 Ohne Kategorie")}</select>
-          <label class="favrow full" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" id="peFav" ${p.favorite ? "checked" : ""} data-orig="${p.favorite ? 1 : 0}"> ⭐ Favorit</label>
+          <label class="favrow full" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" class="swchk" id="peFav" ${p.favorite ? "checked" : ""} data-orig="${p.favorite ? 1 : 0}"> ⭐ Favorit</label>
           ${(() => { const t = Object.entries(this._data.typos || {}).filter(([, r]) => r.toLowerCase() === p.name.toLowerCase()).map(([w]) => w);
             return t.length ? `<div class="bclist" title="Diese Tippfehler korrigiert die Liste von selbst">${t.map((w) => `<span class="bcchip">🧠 ${esc(w)}<button type="button" class="iconbtn" data-act="typo-forget" data-w="${esc(w)}" title="Vergessen"><ha-icon icon="mdi:close"></ha-icon></button></span>`).join("")}</div>` : ""; })()}
           ${p.barcodes.length ? `<div class="bclist">${p.barcodes.map((code) => `<span class="bcchip">▥ ${esc(code)}<button type="button" class="iconbtn" data-act="bc-remove" data-code="${esc(code)}" title="Diesen Barcode löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></span>`).join("")}</div>` : ""}
@@ -7079,7 +7192,7 @@ class EinkaufslisteCard extends HTMLElement {
       nb.title = this._pendingBarcode ? "Barcode ist dabei – antippen zum Entfernen" : "Barcode zum neuen Produkt";
     }
     const tools = [
-      ["tQty", "qtyBox", this.$("inQty")?.value.trim(), "mdi:numeric"],
+      ["tQty", "qtyBox", this.$("inQty")?.value.trim(), "mdi:numeric-1-circle-outline"],
       ["tOwn", "inOwn", this.$("inOwn")?.value.trim() ? "✓" : "", "mdi:pencil-outline"],
       ["tFor", "forBox", this.$("inFor")?.value, "mdi:account-outline"],
     ];
@@ -7549,7 +7662,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Doppelt auf der Liste?</b> Stehen z. B. „Tomate“ und „Tomaten“ beide drauf, fragt die Liste „Zusammenlegen?“. Passt es so, tippst du „Passt so“.</li></ul>`, true)}
       ${appSec}
       ${sec("✅", "Abhaken & wieder draufsetzen", `<ul>
-        <li><b>Kreis antippen</b> = gekauft. Das Handy vibriert kurz.</li>
+        <li><b>Kreis antippen</b> = gekauft. Das Handy vibriert kurz. Am Handy geht es auch mit <b>Wischen</b>: Zeile <b>nach links</b> = abhaken ✔, eine erledigte Zeile <b>nach rechts</b> = wieder auf die Liste ↩.</li>
         <li>Gekauftes rutscht nach unten zu <b>„Erledigt – schon mal gekauft“</b>.</li>
         <li>Dort den Kreis antippen = <b>wieder auf der Liste</b>. So musst du nichts neu tippen.</li>
         <li><b>↩️ Versehentlich abgehakt?</b> Unten steht 3 Sekunden „Rückgängig“ – antippen, und der Artikel ist wieder offen.</li>
@@ -7589,9 +7702,9 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>⌛ Angebot vorbei</b> = das Angebot ist abgelaufen. Der Artikel bleibt auf der Liste, nur der Angebotspreis ist weg; der Hinweis steht 1 Tag. Ein Artikel, der erst durch das Angebot entstanden ist, wird dann gelöscht und dein ursprüngliches Produkt kommt wieder auf die Liste.</li>
         <li>Ehrlich gesagt: Die Angebote kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren.</li></ul>`)}
       ${sec("🛍️", "Im Laden", `<ul>
-        <li>Der <b>Wagen oben rechts</b> schaltet den <b>Laden-Modus</b> ein: große Zeilen, nur Abhaken, nur das Wichtigste. Eingabefeld, Rezepte-Knopf, ⚙️ und 🧾 sind dann weg; wer die Liste eingetragen hat, bleibt sichtbar.</li>
+        <li>Das <b>🏪 Geschäft oben rechts</b> schaltet den <b>Laden-Modus</b> ein: große Zeilen, nur Abhaken, nur das Wichtigste. Eingabefeld, Rezepte-Knopf, ⚙️ und 🧾 sind dann weg; wer die Liste eingetragen hat, bleibt sichtbar.</li>
         <li>Nochmal antippen (oder <b>Beenden</b>) = wieder normal. Der Laden-Modus bleibt auf diesem Gerät gespeichert.</li>
-        <li><b>💡 Bildschirm immer an:</b> Im Laden-Modus sitzt zwischen 💳 und dem Wagen ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an, nochmal antippen = wieder normal. Beim Verlassen des Laden-Modus geht es von selbst aus. <b>In der HA-App</b> klappt das nur mit der App-Einstellung: Einstellungen → Companion App → „Keep screen On“.</li>
+        <li><b>💡 Bildschirm immer an:</b> Im Laden-Modus sitzt zwischen 💳 und dem 🏪 Geschäft ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an, nochmal antippen = wieder normal. Beim Verlassen des Laden-Modus geht es von selbst aus. <b>In der HA-App</b> klappt das nur mit der App-Einstellung: Einstellungen → Companion App → „Keep screen On“.</li>
         <li><b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</li>
         <li>Bist du laut Standort im Geschäft, <b>hakt ▥ (Scannen &amp; abhaken)</b> das gescannte Produkt ab – siehe „Barcodes“.</li></ul>`)}
       ${sec("🧾", "Einkaufs-Protokoll", `<ul>
@@ -7709,7 +7822,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="elg-top"><h2>⚙️ How the settings work</h2></div>
       <p class="elg-sub">Tap a heading to open it. This guide is only for people who can open the settings. The guide for shopping and recipes is behind the <b>📖 Guide</b> button at the very bottom, below the list.</p>
       ${sec("🔍", "Finding things", `<ul>
-        <li>The settings are a <b>list with headings</b>: tap a heading (it opens, the previous one closes), tap a row, change something, tap <b>Overview</b> to go back. Only the stores have one more page (back with “All stores”), and the recipe editor is its own view.</li>
+        <li>The settings are a <b>list of groups</b> (each group is a box with a coloured icon per row): tap a group (it opens, the previous one closes), tap a row, change something, tap the round <b>←</b> arrow at the top to go back. Below each group name you can see what is inside. Only the stores have one more page (← goes back to all stores), and the recipe editor is its own view.</li>
         <li>The <b>search field</b> at the top finds rows by their name or topic, e.g. “photo”, “mail”, “backup” or “sensor”. (This field searches the settings; the search at the very top of this guide searches the guide text.)</li>
         <li>The bar at the top shows the <b>health light</b> 🟢🟡🔴. Tap it to open “All OK?”.</li></ul>`, true)}
       ${sec("📋", "My list", `<ul>
@@ -7728,7 +7841,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Recipes:</b> a tab for the recipes (button <b>“New recipe”</b>, search field, ✏️ per row) one for the groups (Fish, Meat, Pastry …; the group's icon and colour tint the recipes) and <b>Recipes from a file</b> (.txt, .md, .csv, .json; US measures are converted – admins only).</li>
         <li><b>Recipe editor:</b> name and group (the group is suggested automatically, “✨ suggested”), “The quantities are for N people/trays”, recipe photo, ingredients (entered like in the list, with units and 🧂 “we always have it”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>Oven &amp; co.</b> (degrees, minutes), the instructions (one row per step, movable via ⠿), photos per step (for steps that are already saved), delete, cancel, save. Foreign measures (cup, oz, °F) from recipe links are converted.</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
-        <li>Each row has its <b>own page</b> with an on/off button: 🏷️ offers, 🧾 purchase log, 💳 loyalty cards, 📍 shop mode automatic, 🛒😊 mascot, 🏷️ labels.</li>
+        <li>Simple on/off things have a <b>switch right in the row</b>: 🧾 purchase log, 💳 loyalty cards, 📍 shop mode automatic, 🛒😊 mascot, 🏷️ labels. Tapping the row itself opens the explanation – with the same switch at the top. 🏷️ Offers and 🤖 AI cooking need a few settings first, so they open a page (›).</li>
         <li><b>Applies to all devices:</b> loyalty cards (just the switch – whether a card is “for everyone” or “only me” is chosen when creating it), purchase log, auto-ask, shop mode automatic, mascot and labels. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
         <li><b>🏷️ Offers</b> need a postcode (admins only). Also: <b>“Only these stores”</b> (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b> and <b>Switch off</b>. A status line shows the number of offers and the last check (“⚠️ currently unavailable” if Marktguru does not answer). They come unofficially from Marktguru and can stop working at any time. If there is no exact offer for an item, the list automatically looks for <b>similar</b> ones (🔀, at most 4): using the single words of the name, the product type from the database, nicknames and the category. Only the names of open items go to Marktguru for this.</li>
         <li><b>🛒😊 Mascot:</b> a shopping cart with a face instead of the cart symbol. It has moods (happy, busy, full, asleep) and wears a costume for the season. Tapping it takes you back to the shopping list.</li>
@@ -7765,7 +7878,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="elg-top"><h2>⚙️ So funktionieren die Einstellungen</h2></div>
       <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung ist nur für alle, die ins Zahnrad kommen. Die Anleitung fürs Einkaufen und die Rezepte steht hinter dem Knopf <b>📖 Anleitung</b> ganz unten unter der Liste.</p>
       ${sec("🔍", "Wie finde ich etwas?", `<ul>
-        <li>Die Einstellungen sind eine <b>Liste mit Überschriften</b>: Überschrift antippen (sie klappt auf, die vorherige zu), Zeile antippen, etwas ändern, mit <b>Übersicht</b> wieder zurück. Nur bei den Geschäften gibt es eine Seite mehr (zurück mit „Alle Geschäfte“), und der Rezept-Editor ist eine eigene Ansicht.</li>
+        <li>Die Einstellungen sind eine <b>Liste mit Gruppen</b> (jede Gruppe ein Kasten, jede Zeile mit buntem Icon): Gruppe antippen (sie klappt auf, die vorherige zu), Zeile antippen, etwas ändern, mit dem runden <b>←</b> oben wieder zurück. Unter dem Gruppennamen steht, was drin ist. Nur bei den Geschäften gibt es eine Seite mehr (← geht zurück zu allen Geschäften), und der Rezept-Editor ist eine eigene Ansicht.</li>
         <li>Das <b>Suchfeld</b> oben findet Zeilen nach Name oder Thema, z. B. „Foto“, „Mail“, „Sicherung“ oder „Sensor“. (Dieses Suchfeld sucht in den Einstellungen; die Suche ganz oben in dieser Anleitung sucht in den Anleitungs-Texten.)</li>
         <li>Der Balken ganz oben zeigt die <b>Gesundheits-Ampel</b> 🟢🟡🔴. Antippen öffnet „Alles ok?“.</li></ul>`, true)}
       ${sec("📋", "Meine Liste", `<ul>
@@ -7784,7 +7897,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Rezepte:</b> ein Reiter für die Rezepte (Knopf <b>„Neues Rezept“</b>, Suchfeld, pro Zeile ✏️), einer für die Gruppen (Fisch, Fleisch, Gebäck …; Icon und Farbe der Gruppe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).</li>
         <li><b>Rezept-Editor:</b> Name und Gruppe (die Gruppe wird automatisch vorgeschlagen, „✨ vorgeschlagen“), „Die Mengen sind für N Personen/Bleche“, Rezept-Foto, Zutaten (eintragen wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten), die Zubereitung (eine Zeile pro Schritt, per ⠿ verschiebbar), Fotos pro Schritt (bei schon gespeicherten Schritten), Löschen, Abbrechen, Speichern. Aus Rezept-Links werden fremde Maße (cup, oz, °F) umgerechnet.</li></ul>`)}
       ${sec("🎛️", "Extras", `<ul>
-        <li>Jede Zeile hat ihre <b>eigene Seite</b> mit einem Ein/Ausschalten-Knopf: 🏷️ Angebote, 🧾 Einkaufs-Protokoll, 💳 Kundenkarten, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen, 🏷️ Beschriftungen.</li>
+        <li>Einfache An/Aus-Sachen haben einen <b>Schalter direkt in der Zeile</b>: 🧾 Einkaufs-Protokoll, 💳 Kundenkarten, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen, 🏷️ Beschriftungen. Die Zeile selbst antippen öffnet die Erklärung – mit demselben Schalter oben. 🏷️ Angebote und 🤖 KI-Kochen brauchen erst ein paar Angaben und öffnen deshalb eine Seite (›).</li>
         <li><b>Gilt für alle Geräte:</b> Kundenkarten (nur der Schalter – ob eine Karte „für alle“ oder „nur ich“ ist, wählst du beim Anlegen), Protokoll, automatisch fragen, Laden-Modus automatisch, Maskottchen und Beschriftungen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
         <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl (nur Admins). Dazu: <b>„Nur diese Geschäfte“</b> (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b> und <b>Ausschalten</b>. Eine Statuszeile zeigt die Zahl der Angebote und die letzte Prüfung („⚠️ gerade nicht verfügbar“, wenn Marktguru nicht antwortet). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren. Gibt es für einen Artikel kein genaues Angebot, sucht die Liste automatisch <b>ähnliche</b> (🔀, höchstens 4): über die einzelnen Wörter des Namens, den Produkttyp aus der Datenbank, Spitznamen und die Kategorie. Dafür gehen nur die Namen offener Artikel an Marktguru.</li>
         <li><b>🛒😊 Maskottchen:</b> ein Einkaufswagen mit Gesicht statt des Wagen-Symbols. Er hat Stimmungen (froh, fleißig, voll, schläft) und trägt je nach Jahreszeit ein Kostüm. Antippen bringt dich zurück zur Einkaufsliste.</li>
@@ -7841,7 +7954,9 @@ class EinkaufslisteCard extends HTMLElement {
 
   // 🙏 Credits – in ⚙️ und in der Anleitung (dort dunkel)
   _newsHtml(en = EL_LANG !== "de") {
-    return `<div ${en ? 'translate="no"' : ""}><p class="hint">${en ? "New features up to version" : "Neuerungen bis Version"} <b>${EL_NEWS_VERSION}</b> – ${en ? "the newest is at the top" : "das Neueste steht oben"}</p><ul>${EL_NEWS.map((n) => (en ? n[1] : n[0]).split(" · ").map((x) => `<li>${x}</li>`).join("")).join("")}</ul></div>`;
+    // 🆕 höchstens 15 Neuerungen – das Neueste oben, Älteres fällt hinten raus
+    const items = EL_NEWS.flatMap((n) => (en ? n[1] : n[0]).split(" · ")).slice(0, EL_NEWS_MAX);
+    return `<div ${en ? 'translate="no"' : ""}><p class="hint">${en ? "The latest new features up to version" : "Die letzten Neuerungen bis Version"} <b>${EL_NEWS_VERSION}</b> – ${en ? "the newest is at the top" : "das Neueste steht oben"}</p><ul>${items.map((x) => `<li>${x}</li>`).join("")}</ul></div>`;
   }
 
   // 🔒 Datenschutz: ehrlich, was in Home Assistant bleibt und was ins Internet geht
@@ -7954,7 +8069,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Twice on the list?</b> If e.g. “Tomato” and “Tomatoes” are both on it, the list asks “Merge”. If it is fine as it is, tap “It's fine”.</li></ul>`, true)}
       ${appSec}
       ${sec("✅", "Checking off & adding again", `<ul>
-        <li><b>Tap the circle</b> = bought. The phone vibrates briefly.</li>
+        <li><b>Tap the circle</b> = bought. The phone vibrates briefly. On a phone you can also <b>swipe</b>: a row <b>to the left</b> = tick off ✔, a done row <b>to the right</b> = back on the list ↩.</li>
         <li>Bought things slide down to <b>“Done – bought before”</b>.</li>
         <li>Tap the circle there = <b>back on the list</b>. No need to type anything again.</li>
         <li><b>↩️ Checked off by accident?</b> “Undo” shows at the bottom for 3 seconds – tap it and the item is open again.</li>
@@ -7994,9 +8109,9 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>⌛ Offer over</b> = the offer has expired. The item stays on the list, only the offer price is gone; the note shows for 1 day. An item that was created by the offer is then deleted and your original product goes back on the list.</li>
         <li>Honestly: the offers come unofficially from Marktguru and may stop working at any time.</li></ul>`)}
       ${sec("🛍️", "In the store", `<ul>
-        <li>The <b>cart at the top right</b> switches on <b>shop mode</b>: big rows, checking off only, just the essentials. The input field, recipe button, ⚙️ and 🧾 are hidden then; who added an item stays visible.</li>
+        <li>The <b>🏪 store at the top right</b> switches on <b>shop mode</b>: big rows, checking off only, just the essentials. The input field, recipe button, ⚙️ and 🧾 are hidden then; who added an item stays visible.</li>
         <li>Tap again (or <b>Finish</b>) = back to normal. Shop mode is remembered on this device.</li>
-        <li><b>💡 Screen always on:</b> In shop mode a light-bulb icon sits between 💳 and the cart. Tap = the screen stays on, tap again = back to normal. It switches off by itself when you leave shop mode. <b>In the HA app</b> this only works with the app setting: Settings → Companion App → “Keep screen On”.</li>
+        <li><b>💡 Screen always on:</b> In shop mode a light-bulb icon sits between 💳 and the 🏪 store. Tap = the screen stays on, tap again = back to normal. It switches off by itself when you leave shop mode. <b>In the HA app</b> this only works with the app setting: Settings → Companion App → “Keep screen On”.</li>
         <li><b>Automatic (option):</b> If “Automatic shop mode” is on in ⚙️, it switches on by itself as soon as your phone enters a store's zone and off again when you leave. What you switch on or off yourself is left alone by the automation.</li>
         <li>If your location says you are in the store, <b>▥ checks things off (scan &amp; check off)</b> – see “Barcodes”.</li></ul>`)}
       ${sec("🧾", "Purchase log", `<ul>
@@ -9200,12 +9315,14 @@ class EinkaufslisteCard extends HTMLElement {
 
   _onClick(e) {
     if (this._dragged) { e.stopPropagation(); e.preventDefault(); return; } // war nur Ziehen
+    if (this._swiped && Date.now() - this._swiped < 400 && e.target.closest?.("#list")) { e.stopPropagation(); e.preventDefault(); return; } // 👆 gerade gewischt: der Klick danach zählt nicht
     const el = e.target.closest("[data-act]");
     if (!el) return;
     const act = el.dataset.act;
     const itemEl = el.closest(".item");
     const id = itemEl?.dataset.id;
     const srow = el.closest(".srow");
+    if (el.matches(".tgl, .swline")) el.setAttribute("aria-pressed", el.getAttribute("aria-pressed") !== "true"); // 🎚️ Schalter springt sofort um
 
     switch (act) {
       case "reload":
