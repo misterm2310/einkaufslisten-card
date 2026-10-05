@@ -28,7 +28,8 @@
 | 🛒 **Shop mode** | Big rows, checking off only – one hand on the cart. |
 | 📱 **Offline app** | The complete card as a phone app that opens without a connection. Changes are sent later. |
 | ⏲️ **Cooking times** | Cheat sheet by appliance: 🍲 stove, 🔥 oven, 💨 air fryer. |
-| 🧹 **Cleanup** | Once a week old items get **checked off**, nothing is deleted. |
+| 🧹 **Cleanup** | Once a week old items get **checked off**, nothing is deleted. On/off, day and time right in the card (⚙️ → Cleanup). |
+| 👁️ **List view** | Decide what an item shows (quantity, notes, who, when, photo, star …) – for everyone or **per person**. |
 | 🔒 **PIN** | Settings (the gear) only with a PIN – the list stays open for everyone. |
 | 📸 **Text from photo** | Photograph a shopping note or receipt; the card reads the text right on the device (handwriting only with luck – text can be corrected first). Also: 🩺 health light, 🐞 error log, 🧲 merge products. |
 
@@ -43,7 +44,7 @@ Plus lots of small things: photos per product, nicknames (“Kleenex” = tissue
 1. Open **HACS** → top right **⋮ → Custom repositories**.
 2. Add `https://github.com/misterm2310/einkaufslisten-card`, type **Integration**.
 3. Search for **Einkaufsliste**, **Download**, **restart Home Assistant**.
-4. **Settings → Devices & services → Add integration → Einkaufsliste**, pick the cleanup day and time, done. 🎉
+4. **Settings → Devices & services → Add integration → Einkaufsliste** → Submit, done. 🎉 (Cleanup day and time are set later in the card: ⚙️ → Cleanup.)
 5. Dashboard → **Edit → Add card → Einkaufsliste**.
 
 ```yaml
@@ -71,7 +72,8 @@ Copy `custom_components/einkaufsliste` to `/config/custom_components/einkaufslis
 - **Long-press** = menu: edit, move, quantity, category, photo, barcode, info.
 - **Tap the quantity** = [−] 2x [＋].
 - ✨ = new since you last looked; the red number on a tab shows how much is new there.
-- The **shopping cart** at the top left opens a guide for the whole family – including the app link to copy.
+- The **shopping cart** at the top left takes you back to the shopping list from anywhere (recipes, settings …).
+- At the very bottom, below the list, **📖 Guide** opens a guide for the whole family – including the app link to copy.
 
 **In the store:** the cart at the top right switches on **shop mode**. No connection? Keep checking off, the dot turns orange ⏳ and everything is sent later. The **💡 icon** (between 💳 and the cart) keeps the screen on in shop mode – it switches off by itself when you leave. **In the HA app** this only works with its own setting: *Settings → Companion App → “Keep screen On”*.
 
@@ -98,7 +100,7 @@ Product names come from **Open Food Facts**, **Open Beauty Facts** and **Open Pr
 
 The **complete card** as its own app on your home screen – with recipes, cook mode, cooking times, settings and camera scanner. It opens **without a connection** with the last state.
 
-1. Copy the address: in **⚙️ → App & look → Offline app** or in the **guide** (shopping cart at the top left) – so everyone without the gear can get it too.
+1. Copy the address: in **⚙️ → App & look → Offline app** or in the **guide** (“📖 Guide” button at the very bottom) – so everyone without the gear can get it too.
 2. Paste it into the phone's **browser** (Chrome or Safari, not the HA app).
 3. Log in with your own Home Assistant user.
 4. Browser menu → **“Add to Home screen”**.
@@ -119,21 +121,22 @@ Good to know: it needs an **https** address (e.g. Nabu Casa). If two people chan
 
 | Tile | What's inside |
 |---|---|
-| 🏪 **Stores** | Every store as its own tile. Tap = name, color, icon, order, 📍 zones (several, e.g. for several branches), 🏷️ store brands and 🗺️ **category order** (default: same everywhere – or its own, the way you walk through the store). Without an icon of its own the list uses the zone's icon (if it has one), otherwise 🛒. |
+| 🏪 **Stores** | A list, one store per row. **⌃ ⌄** right in the list = order of the tabs. Tap = name, color, icon, 📍 zones (several, e.g. for several branches), 🏷️ store brands and 🗺️ **category order** (default: same everywhere – or its own, the way you walk through the store). Without an icon of its own the list uses the zone's icon (if it has one), otherwise 🛒. |
 | 🗂️ **Categories** · 👥 **People** | Add, rename, color, icon (just type “dog”, no “mdi:”), sort. |
+| 👁️ **List view** | Tick or untick: quantity, notes, for whom, who added/checked it, date, 🧹 day, store, recipe, photo, ⭐, ▥, offers, “was out”, ⇄ button, ✨ and category colour. **“For everyone”** = default for the family, **“Just for me”** = only your HA user (on all your devices). |
 | 👨‍🍳 **Recipes** | Two tabs: **Recipes** (new, edit, delete) and **Recipe groups**. |
 | 📦 **Products** | Everything the list knows: rename, category, store (“Available at”), nicknames, photos, barcodes, learned typos, delete completely. Plus “Newly scanned” to check, 🔽 filters (no category, no photo, per store …) and **➕ New product**. On a PC: click selects, ↑↓ browses, double-click/Enter edits. |
-| 🧰 **Tools** | **All good?** (finds broken entries, fixes only what you tick) · **Import & backup** (lists from other apps – once or 🔁 automatically –, backup as .zip; file import and backup for admins) · **History** (who did what and when, “📈 Often not available”, hide with ✖) · **Cleanup** · **📊 Resources** (how much space data and photos take) · **🏷️ Offers** (see below) |
-| 📱 **App & look** | **Offline app** (your address with a copy button) · **Mascot** 🛒😊 (the switch applies to everyone) · **💳 Loyalty cards** (the switch applies to everyone; scan (QR, **Aztec** or barcode), type or **photograph** Payback & co., “for everyone” or “only me”, shown big, also in shop mode; the format comes automatically from the scanner; a photo is stored only on your Home Assistant and does not help with “rolling codes” that keep changing) · **🧾 Purchase log** (the switch applies to everyone, see below) · **Protection** (4–8 digit PIN for the gear; forgot it? Devices & services → Einkaufsliste → Configure → “Reset PIN”, admins – honestly: protection against accidental changes, not a safe). While the gear is unlocked, a 🔓 shows at the top – tap it to lock right away · **Light / dark** (offline app only: automatic, light or dark) · **🏷️ Labels** (short text under the icons, switch in ⚙️ → Extras, applies to everyone; even without the switch, **pressing and holding** an icon briefly shows its name) |
+| 🧰 **Tools** | **All good?** (finds broken entries, fixes only what you tick) · **Import & backup** (lists from other apps – once or 🔁 automatically –, backup as .zip; file import and backup for admins) · **History** (who did what and when, “📈 Often not available”, hide with ✖) · **Cleanup** (on/off, day, time, minimum age) · **📊 Resources** (how much space data and photos take, plus the 📊 load display) · **🏷️ Offers** (see below) |
+| 📱 **App & look** | **Offline app** (your address with a copy button) · **Mascot** 🛒😊 (the switch applies to everyone) · **💳 Loyalty cards** (the switch applies to everyone; scan (QR, **Aztec** or barcode), type or **photograph** Payback & co., “for everyone” or “only me”, shown big, also in shop mode; the format comes automatically from the scanner; a photo is stored only on your Home Assistant and does not help with “rolling codes” that keep changing) · **🧾 Purchase log** (the switch applies to everyone, see below) · **Protection** (4–8 digit PIN for the gear; forgot it? Devices & services → Einkaufsliste → Configure → “Reset PIN”, admins – honestly: protection against accidental changes, not a safe). While the gear is unlocked, a 🔓 shows in ⚙️ at the top right next to the version number – tap it to lock right away · **Light / dark** (offline app only: automatic, light or dark) · **🏷️ Labels** (short text under the icons, switch in ⚙️ → Extras, applies to everyone; even without the switch, **pressing and holding** an icon briefly shows its name) |
 | 🆕 **What's new** | What changed in the current version. Also in the guide. |
 | 🙏 **Credits** | Version, who made it, links to GitHub and “Report a bug”. Also in the guide. |
 
 ### 🧹 Cleanup, simply explained
-On cleanup day everything that has been open for at least 7 days (adjustable) gets **checked off**. Example Sunday: added on Tuesday → only 5 days old on the first Sunday, stays → checked off on the second Sunday. Each item shows 🧹 with its date. Nothing is deleted. Day and time: **Devices & services → Einkaufsliste → Configure**.
+On cleanup day everything that has been open for at least 7 days (adjustable) gets **checked off**. Example Sunday: added on Tuesday → only 5 days old on the first Sunday, stays → checked off on the second Sunday. Each item shows 🧹 with its date. Nothing is deleted. **On/off**, day, time and minimum age: in the card under **⚙️ → Cleanup** (applies to everyone). When it is off, the 🧹 date below the items disappears too.
 
 **🧽 Delete list (admins only):** under ⚙️ → Tidy up pick a store (or “All stores”), then **“Delete done items”** (only what is checked off) or **“Empty list”** (open and done – good on Sunday for the new week). A question with the number comes first. The **catalogue stays**: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.
 
-**📊 Load display:** ⚙️ → “All OK?” shows “📊 Load” at the bottom with changes per minute, packets sent and the size of one packet (also in the attributes of `sensor.einkaufsliste_gesundheit`).
+**📊 Load display:** ⚙️ → “Resources” shows “📊 Load” at the bottom with changes per minute, packets sent and the size of one packet (also in the attributes of `sensor.einkaufsliste_gesundheit`).
 
 **⚡ Less load:** many quick changes (e.g. ticking off several items in a row) are now bundled into **one** packet to cards and apps (at most every 0.3 seconds) instead of resending the whole list on every change. For load problems there is a diagnosis: the health sensor shows `aenderungen_gesamt`, `aenderungen_pro_minute`, `pakete_an_karten_gesamt` and `laufzeit_minuten` in its attributes. If `aenderungen_pro_minute` stays high, something keeps changing – please report it as an issue.
 
@@ -157,7 +160,7 @@ The shopping list can **empty another Home Assistant to-do list automatically**:
 4. **Pick how lists are matched:**
    - 🗑️ **Fetch & delete there** – Alexa is just the mailbox.
    - 🔗 **Keep on both** – on both lists; checking off (or removing in Alexa) happens on both sides.
-   - 🔄 **Full sync** – like 🔗, and everything you add in the shopping list also goes to Alexa (“Milk (2 L)” – Alexa doesn't know stores, notes or photos). Then “Alexa, what's on my shopping list?” reads it all out.
+   - 🔄 **Full sync** – like 🔗, and everything you add in the shopping list also goes to Alexa (“Milk (2 L)” – Alexa doesn't know stores, notes or photos). Then “Alexa, what's on my shopping list?” reads it all out. **Several lists with a store** (e.g. Bring! Lidl, Bring! Aldi): each one only gets the items of **its** store. A list without a store (“Anywhere”) gets the “Anywhere” items and everything from stores without their own list. Move an item to another store and it moves over there too.
 
    Honestly: if you rename something in Alexa, the list can't match it reliably – it may become a new entry.
 

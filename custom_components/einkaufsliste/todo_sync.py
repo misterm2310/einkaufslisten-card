@@ -216,6 +216,16 @@ class TodoSync:
         qty = item.get("quantity")
         return f"{item['name']} ({qty})" if qty and qty != "1x" else item["name"]
 
+    def _belongs(self, cfg: dict[str, Any], item: dict[str, Any]) -> bool:
+        """🏪 Gehört der Artikel auf diese Liste? Liste mit Geschäft = nur Artikel dieses Geschäfts.
+        Liste ohne Geschäft = „Egal wo“-Artikel und alles aus Geschäften, die keine eigene Liste im vollen Abgleich haben."""
+        m = self.manager
+        store = cfg.get("store_id") if m.store_by_id(cfg.get("store_id")) else None
+        if store:
+            return item.get("store_id") == store
+        own = {c.get("store_id") for c in m.todo_syncs if c.get("mode") == "sync" and m.store_by_id(c.get("store_id"))}
+        return not item.get("store_id") or item.get("store_id") not in own
+
     async def _reconcile(self, cfg: dict[str, Any]) -> int:
         entity_id = cfg["entity_id"]
         state = self.hass.states.get(entity_id)
@@ -241,6 +251,13 @@ class TodoSync:
                     continue
                 if item is None:  # bei uns gelöscht (z. B. abgehakte Rezept-Zutat) -> dort auch weg
                     await self._call("remove_item", {"entity_id": entity_id, "item": [uid]})
+                    del links[uid]
+                    changed += 1
+                    continue
+                if cfg.get("mode") == "sync" and not item["checked"] and not self._belongs(cfg, item):
+                    # 🏪 gehört in ein anderes Geschäft (verschoben oder früher fälschlich überall hingeschickt) -> dort weg, bei uns bleibt es
+                    if t is not None:
+                        await self._call("remove_item", {"entity_id": entity_id, "item": [uid]})
                     del links[uid]
                     changed += 1
                     continue
@@ -272,7 +289,7 @@ class TodoSync:
                 if not text or len(text) > 80:
                     continue
                 twin = next((i for i in m.items if not i["checked"] and i["id"] not in linked_items
-                             and self.label(i).lower() == text.lower()), None)
+                             and self.label(i).lower() == text.lower() and self._belongs(cfg, i)), None)
                 if twin is None:
                     try:
                         twin = m.add_item(text, store_id=store_id, added_by=who, notify=True)
@@ -287,8 +304,8 @@ class TodoSync:
             if cfg.get("mode") == "sync":
                 pushed: dict[str, str] = {}
                 for item in m.items:
-                    if item["checked"] or item["id"] in linked_items:
-                        continue
+                    if item["checked"] or item["id"] in linked_items or not self._belongs(cfg, item):
+                        continue  # 🏪 nur Artikel, die zu dieser Liste gehören (Geschäft)
                     lab = self.label(item)
                     if await self._call("add_item", {"entity_id": entity_id, "item": lab}):
                         pushed[lab.lower()] = item["id"]

@@ -165,7 +165,7 @@ def import_rows(manager: EinkaufslisteManager, rows: list[dict[str, Any]], make_
                 cats_made += 1
             cat_id = cat["id"] if cat else None
         try:
-            prod = manager.add_product(name, category_id=cat_id, note=row.get("note") or None)
+            prod = manager.add_product(name, category_id=cat_id, note=row.get("note") or None, log=False)  # Import: nicht hunderte Verlaufs-Zeilen
         except ValueError:
             exists += 1
             continue

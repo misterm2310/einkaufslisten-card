@@ -223,7 +223,7 @@ class OffeneArtikelSensor(SensorEntity):
             "pro_geschaeft": per_store,
             "abgehakt": sum(1 for i in self._m.items if i["checked"]),
             "artikel": artikel,
-            "naechstes_aufraeumen": self._m.next_cleanup().isoformat(),
+            "naechstes_aufraeumen": self._m.next_cleanup().isoformat() if self._m.cleanup_on else None,
         }
 
 

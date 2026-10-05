@@ -368,12 +368,9 @@ async def test_config_flow(hass):
     with patch("custom_components.einkaufsliste.async_setup", return_value=True), patch(
         "custom_components.einkaufsliste.async_setup_entry", return_value=True
     ):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {"cleanup_weekday": "5", "cleanup_time": "04:30:00", "min_age_days": 14},
-        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] == "create_entry"
-    assert result["options"] == {"cleanup_weekday": 5, "cleanup_time": "04:30:00", "min_age_days": 14, "sidebar": False}
+    assert result["options"] == {"sidebar": False}  # 🧹 Aufräumen stellt man jetzt in der Karte ein
 
 
 async def test_card_is_registered_as_resource(hass, hass_storage):
@@ -3718,3 +3715,156 @@ async def test_last_anzeige(hass, setup):
     m.add_item("Milch")
     info = m.load_info()
     assert info["changes"] >= 1 and info["items"] == 1 and info["packet_kb"] >= 1 and info["per_minute"] > 0
+
+
+async def test_cleanup_settings_in_card(hass: HomeAssistant, setup, freezer) -> None:
+    """🧹 Aufräumen in der Karte: Tag/Uhrzeit/Mindestalter ändern, ganz ausschalten – Wecker wird neu gestellt."""
+    m = mgr(hass)
+    freezer.move_to(datetime(2026, 9, 22, 18, 0, tzinfo=tz()))  # Dienstag
+    m.async_stop()
+    m.async_start_scheduler()
+    # Startwerte kommen noch aus den alten Integrations-Optionen (So 3 Uhr, 7 Tage)
+    st = m.as_dict()["settings"]
+    assert (st["cleanup_weekday"], st["cleanup_time"], st["min_age_days"], st["cleanup_on"]) == (6, "03:00", 7, True)
+    res = m.set_cleanup(weekday=2, time="04:30", min_age_days=0)  # Mittwoch 4:30, alles Offene
+    assert res["on"] and res["next_cleanup"].startswith("2026-09-23T04:30")
+    st = m.as_dict()["settings"]
+    assert (st["cleanup_weekday"], st["cleanup_time"], st["min_age_days"]) == (2, "04:30", 0)
+    item = m.add_item("Nudeln")
+    events = []
+    hass.bus.async_listen("einkaufsliste_cleanup", lambda e: events.append(e))
+    target = datetime(2026, 9, 23, 4, 30, tzinfo=tz())
+    freezer.move_to(target)
+    async_fire_time_changed(hass, target)
+    await hass.async_block_till_done()
+    assert events and item["checked"]  # neuer Wecker hat geklingelt
+    # Ausschalten: am nächsten Mittwoch passiert nichts mehr
+    m.set_cleanup(on=False)
+    assert m.as_dict()["settings"]["cleanup_on"] is False
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.einkaufsliste_offene_artikel").attributes.get("naechstes_aufraeumen") is None
+    item2 = m.add_item("Reis")
+    events.clear()
+    target = datetime(2026, 9, 30, 4, 30, tzinfo=tz())
+    freezer.move_to(target)
+    async_fire_time_changed(hass, target)
+    await hass.async_block_till_done()
+    assert not events and not item2["checked"]
+    # Bleibt nach dem Speichern erhalten
+    assert m._to_storage()["cleanup"]["on"] is False
+    # Von Hand geht weiterhin
+    assert m.cleanup(force=True)
+    with pytest.raises(ValueError):
+        m.set_cleanup(time="25:00")
+    with pytest.raises(ValueError):
+        m.set_cleanup(weekday=7)
+
+
+async def test_cleanup_settings_ws(hass, setup, hass_ws_client) -> None:
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/cleanup/settings", "on": False})
+    res = await client.receive_json()
+    assert res["success"], res
+    assert res["result"] == {"on": False, "next_cleanup": None}
+    await client.send_json({"id": 2, "type": "einkaufsliste/cleanup/settings", "on": True, "weekday": 5, "time": "06:15", "min_age_days": 3})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["on"]
+    st = mgr(hass).as_dict()["settings"]
+    assert (st["cleanup_weekday"], st["cleanup_time"], st["min_age_days"], st["cleanup_on"]) == (5, "06:15", 3, True)
+
+
+async def test_view_prefs_all_and_per_user(hass, setup, hass_ws_client, hass_admin_user) -> None:
+    """👁️ Listenansicht: Standard für alle + eigene Einstellung pro Benutzer."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/view/set", "scope": "all", "prefs": {"photo": False, "quatsch": True}})
+    res = await client.receive_json()
+    assert res["success"] and res["result"] == {"photo": False}  # Unbekanntes fliegt raus
+    await client.send_json({"id": 2, "type": "einkaufsliste/view/set", "scope": "me", "prefs": {"photo": True, "qty": False}})
+    res = await client.receive_json()
+    assert res["success"], res
+    prefs = m.as_dict()["settings"]["view_prefs"]
+    assert prefs["_all"] == {"photo": False}
+    assert prefs[hass_admin_user.id] == {"photo": True, "qty": False}
+    assert m._to_storage()["view_prefs"] == prefs
+    await client.send_json({"id": 3, "type": "einkaufsliste/view/set", "scope": "me", "prefs": None})
+    res = await client.receive_json()
+    assert res["success"]
+    assert hass_admin_user.id not in m.as_dict()["settings"]["view_prefs"]
+
+
+async def test_catalog_add_is_logged(hass, setup) -> None:
+    """📜 Neues Produkt im Katalog steht im Verlauf (Grocy-Import nicht – sonst hunderte Zeilen)."""
+    m = mgr(hass)
+    m.add_product("Kichererbsen", note="Dose", barcode="4001234567890")
+    e = m.get_log()["entries"][0]
+    assert e["a"] == "catalog" and e["n"] == "Kichererbsen" and "Dose" in e["d"] and "4001234567890" in e["d"]
+    n = len(m.log)
+    m.add_product("Linsen", log=False)
+    assert len(m.log) == n
+
+
+async def test_more_than_ten_todo_lists(hass, setup) -> None:
+    """🔁 Mehr als 10 To-do-Listen gehen jetzt."""
+    m = mgr(hass)
+    for i in range(12):
+        hass.states.async_set(f"todo.liste_{i}", "0", {"friendly_name": f"Liste {i}"})
+        m.set_todo_sync(f"todo.liste_{i}", None, "keep")
+    assert len(m.todo_syncs) == 12
+
+
+async def test_full_sync_only_sends_items_of_the_lists_store(hass, setup) -> None:
+    """🏪 Voller Abgleich mit mehreren Bring!-Listen: Lidl-Artikel nur auf die Lidl-Liste, nicht auf alle."""
+    from custom_components.einkaufsliste.todo_sync import TodoSync
+
+    m = mgr(hass)
+    lidl, aldi = m.find_store("lidl"), m.find_store("aldi")
+    lists: dict[str, list[dict]] = {"todo.bring_lidl": [], "todo.bring_aldi": [], "todo.bring_alles": []}
+    for ent in lists:
+        hass.states.async_set(ent, "0", {"friendly_name": ent})
+    m.todo_syncs = [
+        {"entity_id": "todo.bring_lidl", "store_id": lidl, "mode": "sync", "count": 0},
+        {"entity_id": "todo.bring_aldi", "store_id": aldi, "mode": "sync", "count": 0},
+        {"entity_id": "todo.bring_alles", "store_id": None, "mode": "sync", "count": 0},
+    ]
+    sync = TodoSync(hass, m)
+    n = 0
+
+    async def items(ent):
+        return [dict(t) for t in lists[ent]]
+
+    async def call(service, data):
+        nonlocal n
+        ent = data["entity_id"]
+        if service == "add_item":
+            n += 1
+            lists[ent].append({"uid": f"u{n}", "summary": data["item"], "status": "needs_action"})
+        elif service == "remove_item":
+            lists[ent] = [t for t in lists[ent] if t["uid"] not in data["item"]]
+        return True
+
+    sync._items, sync._call = items, call
+    m.add_item("Tomaten", store_id=lidl)
+    m.add_item("Milch", store_id=aldi)
+    m.add_item("Brot")  # Egal wo
+    m.add_item("Shampoo", store_id=m.find_store("dm"))  # DM hat keine eigene Liste
+    for cfg in m.todo_syncs:
+        await sync._reconcile(cfg)
+    names = lambda ent: sorted(t["summary"] for t in lists[ent])  # noqa: E731
+    assert names("todo.bring_lidl") == ["Tomaten"]
+    assert names("todo.bring_aldi") == ["Milch"]
+    assert names("todo.bring_alles") == ["Brot", "Shampoo"]  # Egal wo + Geschäfte ohne eigene Liste
+    # Verschieben: Tomaten zu Aldi -> von der Lidl-Liste weg, auf die Aldi-Liste
+    tom = next(i for i in m.items if i["name"] == "Tomaten")
+    tom["store_id"] = aldi
+    for cfg in m.todo_syncs:
+        await sync._reconcile(cfg)
+    assert names("todo.bring_lidl") == []
+    assert names("todo.bring_aldi") == ["Milch", "Tomaten"]
+    assert not tom["checked"]  # bei uns bleibt es offen
+    # Früher fälschlich überall gelandet? Wird beim nächsten Abgleich aufgeräumt
+    lists["todo.bring_lidl"].append({"uid": "alt1", "summary": "Milch", "status": "needs_action"})
+    m.todo_syncs[0].setdefault("links", {})["alt1"] = {"item": next(i for i in m.items if i["name"] == "Milch")["id"], "done": False}
+    await sync._reconcile(m.todo_syncs[0])
+    assert names("todo.bring_lidl") == []
+    assert not next(i for i in m.items if i["name"] == "Milch")["checked"]

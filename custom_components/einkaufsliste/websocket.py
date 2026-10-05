@@ -98,6 +98,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_spend_set,
         ws_auto_shop_set,
         ws_spend_auto_set,
+        ws_cleanup_settings,
+        ws_view_set,
         ws_purchases_get,
         ws_purchases_add,
         ws_purchases_remove,
@@ -333,6 +335,21 @@ def ws_item_move(hass, connection, msg):
 @callback
 def ws_item_remove(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.remove_item(msg["item_id"]))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/cleanup/settings",
+        vol.Optional("on"): bool,
+        vol.Optional("weekday"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
+        vol.Optional("time"): str,
+        vol.Optional("min_age_days"): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
+    }
+)
+@callback
+def ws_cleanup_settings(hass, connection, msg):
+    """🧹 Aufräumen in der Karte einstellen: an/aus, Tag, Uhrzeit, Mindestalter (gilt für alle)."""
+    _run(hass, connection, msg, lambda m: m.set_cleanup(msg.get("on"), msg.get("weekday"), msg.get("time"), msg.get("min_age_days")))
 
 
 @websocket_api.websocket_command(
@@ -726,6 +743,19 @@ def ws_privacy_set(hass, connection, msg):
 def ws_labels(hass, connection, msg):
     """🏷️ Text unter den Icons für alle an/aus."""
     _run(hass, connection, msg, lambda m: m.set_labels(msg["on"]))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/view/set",
+        vol.Required("scope"): vol.In(["all", "me"]),
+        vol.Required("prefs"): vol.Any(None, {str: bool}),
+    }
+)
+@callback
+def ws_view_set(hass, connection, msg):
+    """👁️ Listenansicht: was beim Artikel zu sehen ist – für alle oder nur für mich."""
+    _run(hass, connection, msg, lambda m: m.set_view(msg["scope"], msg["prefs"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/mascot/set", vol.Required("on"): bool})

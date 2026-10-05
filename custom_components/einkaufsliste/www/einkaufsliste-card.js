@@ -2,10 +2,12 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.59.02";
+const EL_VERSION = "2.60.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.59.02"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.60.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 const EL_NEWS = [
+  ["👁️ <b>Listenansicht:</b> ⚙️ → Listenansicht – Häkchen weg, und Menge, Notizen, Für wen, wer eingetragen hat, Datum, Foto, Stern & Co. sind beim Artikel ausgeblendet. „Für alle“ oder „Nur für mich“ (jeder für sich). · 🧹 <b>Aufräumen in der Karte:</b> ⚙️ → Aufräumen – jetzt mit <b>An/Aus</b>, Tag, Uhrzeit und Mindestalter direkt hier (nicht mehr in der Integration). · 🛒 <b>Der Einkaufswagen oben links bringt dich immer zurück zur Liste</b>, die Anleitung steckt im Knopf „📖 Anleitung“ ganz unten. · 🏪 <b>Geschäfte wieder als Liste</b>, Reihenfolge mit ⌃⌄ direkt dort. · 🔓 Das Schloss sitzt in ⚙️ oben rechts neben der Version, der grüne Punkt ist weg (nur noch bei Problemen sichtbar). · 📊 Last-Anzeige jetzt unter Ressourcen. · 📜 Neue Produkte im Katalog stehen im Verlauf. · 🔁 Bis zu 50 To-do-Listen – und beim <b>vollen Abgleich</b> bekommt jede Liste nur die Artikel <b>ihres</b> Geschäfts (Tomaten bei Lidl landen nicht mehr auch bei Bring! Aldi). · 🧽 Radiergummi nur noch an Suchfeldern.",
+   "👁️ <b>List view:</b> ⚙️ → List view – untick, and quantity, notes, for whom, who added it, date, photo, star & co. are hidden on items. “For everyone” or “Just for me” (each person for themselves). · 🧹 <b>Cleanup in the card:</b> ⚙️ → Cleanup – now with <b>on/off</b>, day, time and minimum age right here (no longer in the integration). · 🛒 <b>The cart at the top left always takes you back to the list</b>, the guide is behind the “📖 Guide” button at the very bottom. · 🏪 <b>Stores as a list again</b>, order with ⌃⌄ right there. · 🔓 The lock sits in ⚙️ at the top right next to the version, the green dot is gone (only shown when something is wrong). · 📊 Load display now under Resources. · 📜 New catalogue products show up in the history. · 🔁 Up to 50 to-do lists – and with <b>full sync</b> each list only gets the items of <b>its</b> store (tomatoes for Lidl no longer end up in Bring! Aldi too). · 🧽 Eraser only on search fields now."],
   ["📊 <b>Last-Anzeige:</b> ⚙️ → Alles ok? zeigt jetzt unten „📊 Last“: wie oft sich etwas ändert (pro Minute), wie viele Pakete an Karten und Apps gingen und wie groß ein Paket ist. Hilft, wenn der Server unter Last steht. Dazu: Schnelle Änderungen werden gebündelt gesendet, und die Häkchen bei „Eigene Kategorien“ sitzen jetzt sauber.",
    "📊 <b>Load display:</b> ⚙️ → All OK? now shows “📊 Load” at the bottom: how often something changes (per minute), how many packets went to cards and apps and how big a packet is. Helps when the server is under load. Also: quick changes are sent bundled, and the ticks under “Own categories” now look right."],
   ["🗂️ <b>Eigene Kategorien pro Geschäft:</b> Auf der Seite eines Geschäfts wählst du „Alle Kategorien wie überall“ oder „Eigene Kategorien“. Bei „Eigene“ hakst du an, welche Kategorien es dort gibt, und kannst eine neue nur für dieses Geschäft anlegen. Die Liste des Reiters und das Kategorie-Ändern zeigen dann nur diese. Zusammen mit der eigenen Kategorien-Folge.",
@@ -69,6 +71,27 @@ const EL_NEWS = [
    "📖 <b>Guides with search:</b> both guides (🛒 for everyone and ⚙️ for the settings) have a <b>search bar</b> at the top and were reworked: clearer, more complete – with a new barcode section (“What happens when you scan?”)."],
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
+// 👁️ Listenansicht: was beim Artikel zu sehen ist. Standard = alles an; einstellbar für alle und pro Benutzer (⚙️ → Listenansicht)
+const VIEW_OPTS = [
+  ["qty", "🔢 Menge", "z. B. 2x, 500 g"],
+  ["note", "📝 Notiz", "aus dem Barcode, z. B. die Marke"],
+  ["own_note", "✏️ Eigene Notiz", "z. B. große Packung"],
+  ["for_whom", "👤 Für wen", "hinter dem Namen"],
+  ["added_by", "✍️ Wer eingetragen hat", "klein unter dem Artikel"],
+  ["added_at", "🕒 Wann eingetragen", "z. B. vor 5 Min, Mo."],
+  ["checked_by", "✓ Wer abgehakt hat", "bei „Erledigt“"],
+  ["cleanup", "🧹 Aufräum-Tag", "wann es automatisch abgehakt wird"],
+  ["store", "🏪 Geschäft", "Schildchen, z. B. im Reiter „Alle“ oder „🤷 Egal wo“"],
+  ["recipe", "🍽️ Rezept", "zu welchem Rezept es gehört"],
+  ["photo", "📷 Foto-Knopf", ""],
+  ["fav", "⭐ Favoriten-Stern", ""],
+  ["barcode", "▥ Barcode-Zeichen", ""],
+  ["offer", "🏷️ Angebote", "Preis und Schild"],
+  ["out", "⇄ „war aus“-Hinweis", ""],
+  ["move", "⇄ Verschieben-Knopf", "rechts am Artikel"],
+  ["new", "✨ Neu-Zeichen", "neu seit deinem letzten Blick"],
+  ["cat_color", "🎨 Farbe der Kategorie", "farbiger Streifen links"],
+];
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
@@ -102,6 +125,7 @@ const LOG_ACT = {
   out: { label: "⇄ war aus", verb: "hat % als „war aus“ markiert" },
   remove: { label: "🗑️ gelöscht", verb: "hat % gelöscht" },
   buy: { label: "🧾 bezahlt", verb: "hat % bezahlt" },
+  catalog: { label: "📦 im Katalog angelegt", verb: "hat % im Katalog angelegt" },
 };
 const LOG_VIA = { card: "✍️", scan: "▥", recipe: "🍳", merge: "🔗", cleanup: "🧹", service: "🤖", sync: "🔁", mail: "📧" };
 const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
@@ -1652,6 +1676,7 @@ button { font:inherit; color:inherit; }
 .head { display:flex; align-items:center; gap:4px; margin:0 2px 8px; min-height:36px; }
 .title { display:flex; align-items:center; gap:8px; font-size:1.25em; font-weight:600; flex:1; min-width:0; }
 .title span.t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.live:not(.wait):not(.off) { display:none; }
 .live { cursor:pointer; position:relative; width:9px; height:9px; border-radius:50%; background:var(--success-color,#43a047); flex:0 0 auto; box-shadow:0 0 0 3px color-mix(in srgb, var(--success-color,#43a047) 25%, transparent); }
 .live::after { content:""; position:absolute; inset:-10px; }
 .live.wait { background:var(--warning-color,#ffa600); box-shadow:0 0 0 3px color-mix(in srgb, var(--warning-color,#ffa600) 30%, transparent); animation: pulse 1.6s infinite; }
@@ -1867,6 +1892,9 @@ ha-card.compact .group { margin-top:4px; }
 .lrow small, .swrow small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
 .lrow .grow, .swrow .grow { flex:1 1 auto; min-width:0; }
 .lrow .chev { opacity:.5; flex:none; }
+.viewrow { padding:7px 12px; }
+.viewrow[aria-pressed=false] > ha-icon:first-child { color:var(--secondary-text-color); }
+.viewrow[aria-pressed=false] b { opacity:.6; }
 .lrow b, .swrow b { display:block; }
 .swrow { display:flex; align-items:center; gap:10px; padding:10px 12px; margin:4px 0; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); }
 .swrow > ha-icon { color:var(--primary-color,#03a9f4); }
@@ -1879,6 +1907,9 @@ ha-card.compact .group { margin-top:4px; }
 .tile:hover { border-color:var(--primary-color,#03a9f4); }
 .tile ha-icon { color:var(--primary-color,#03a9f4); margin-bottom:4px; }
 .tile small { color:var(--secondary-text-color); font-size:.78em; }
+.sethead { display:flex; align-items:center; gap:8px; }
+.sethead h3 { flex:1; }
+.sethead .setver { font-size:.8em; opacity:.6; }
 .sechead { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
 .sechead h3 { margin:0; }
 .sechead .back { padding:6px 10px; }
@@ -2076,8 +2107,13 @@ label.btn { cursor:pointer; }
 .redithint { font-size:.85em; padding:6px 10px; border-radius:10px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); margin:4px 2px; }
 .rrow .iconbtn { align-self:center; }
 .rrow.editing { outline:2px solid var(--primary-color,#03a9f4); }
-.storetile { border-left:6px solid var(--sc); }
-.storetile ha-icon { color:var(--sc); }
+.storelist { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
+.storerow { border-left:6px solid var(--sc); border-radius:10px; background:var(--secondary-background-color, rgba(127,127,127,.06)); padding:2px 4px 2px 0; margin:0; }
+.storepick { flex:1; display:flex; align-items:center; gap:10px; min-width:0; padding:8px 10px; border:0; background:none; color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
+.storepick ha-icon { color:var(--sc); flex:0 0 auto; }
+.storepick span { display:flex; flex-direction:column; min-width:0; }
+.storepick b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.storepick small { color:var(--secondary-text-color); font-size:.78em; }
 .storehead { display:flex; align-items:center; gap:8px; font-size:1.1em; margin:4px 2px 8px; }
 .storehead ha-icon { color:var(--sc); }
 .zonechips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
@@ -2724,7 +2760,7 @@ class EinkaufslisteCard extends HTMLElement {
     });
   }
 
-  // 🟢 Live-Anzeige: verbunden und Liste abonniert = grün, sonst rot
+  // 🟢 Live-Anzeige: verbunden und Liste abonniert = unsichtbar (alles gut), wartet = orange, sonst rot
   _updateLive() {
     const dot = this.$("liveDot");
     if (!dot) return;
@@ -2988,7 +3024,7 @@ class EinkaufslisteCard extends HTMLElement {
       <style>${STYLE}</style>
       <ha-card>
         <div class="head">
-          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="guide" title="📖 Anleitung – antippen"></ha-icon><span id="mascot" data-act="guide" title="📖 Anleitung – antippen" hidden></span><span class="live" id="liveDot" title="Verbindung" data-act="home"></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
+          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="home" title="🏠 Zurück zur Einkaufsliste"></ha-icon><span id="mascot" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="live" id="liveDot" title="Verbindung" data-act="home"></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:cart-outline"></ha-icon><span class="lbl">Laden</span></button>
           <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon><span class="lbl">Bildschirm</span></button>
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
@@ -3210,7 +3246,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
   _autoCheckDate(item) {
     const s = this._data?.settings;
-    if (!s || item.checked) return null;
+    if (!s || item.checked || s.cleanup_on === false) return null; // 🧹 automatisches Aufräumen aus: kein Datum
     let d = new Date(s.next_cleanup);
     const added = new Date(Math.max(new Date(item.added_at || 0), new Date(item.out_at || 0))); // „war aus“ startet die Frist neu
     for (let i = 0; i < 60 && dayDiff(d, added) < s.min_age_days; i++) d = new Date(d.getTime() + 7 * DAY);
@@ -3348,7 +3384,7 @@ class EinkaufslisteCard extends HTMLElement {
     btnAwake.querySelector("ha-icon").setAttribute("icon", this._awakeOn ? "mdi:lightbulb-on" : "mdi:lightbulb-outline");
     this.$("btnCards").hidden = !d?.settings?.cards_on || this._view !== "list"; // 💳 nur wenn in ⚙️ → Extras eingeschaltet (auch im Laden-Modus)
     this.$("btnSpend").hidden = !d?.settings?.spend || this._view !== "list" || !!this._shopMode; // 🧾 nur wenn in ⚙️ eingeschaltet
-    this.$("titleIcon").title = `📖 Anleitung – antippen${titleText ? ` · ${titleText}` : ""}`;
+    this.$("titleIcon").title = `🏠 Zurück zur Einkaufsliste${titleText ? ` · ${titleText}` : ""}`;
     this._renderUpdateBar();
     this._renderTip();
     this._updateLive();
@@ -3673,37 +3709,50 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("hist").innerHTML = d.history.map((h) => `<option value="${esc(h.name)}"></option>`).join("");
   }
 
+  // 👁️ Was soll beim Artikel zu sehen sein? Standard (alles an) ← „für alle“ ← „nur für mich“
+  _viewPrefs() {
+    const all = this._data?.settings?.view_prefs || {};
+    const me = this._hass?.user?.id;
+    const key = JSON.stringify([all._all, me && all[me]]);
+    if (this._viewKey !== key) {
+      this._viewKey = key;
+      this._viewCache = { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}), ...((me && all[me]) || {}) };
+    }
+    return this._viewCache;
+  }
+
   _itemHtml(item) {
     const c = this._config;
+    const v = this._viewPrefs();
     const store = this._store(item.store_id);
     const recipe = this._recipe(item.recipe_id);
     const meta = [];
     const grp = this._grpMap?.get(item.id);
-    if (grp && grp.length > 1) {
+    if (!v.store) { /* 🏪 Geschäft ausgeblendet */ } else if (grp && grp.length > 1) {
       for (const g of grp) { const st = this._store(g.store_id); meta.push(st ? `<span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>` : EGAL_CHIP); }
     } else if (this._activeTab === "all" && store) meta.push(`<span class="chip" style="--c:${esc(store.color)}">${esc(store.name)}</span>`);
     else if (!item.store_id && this._activeTab !== "none") meta.push(EGAL_CHIP); // 🤷 überall zu haben
     // Reihenfolge unter dem Namen: Geschäft · Notiz · Barcode · wer eingetragen · wer abgehakt · (Rezept, Zeit)
-    if (item.note) meta.push(this._noteChip(item.name, item.note));
-    if (item.own_note) meta.push(`<span class="inote iown" title="Eigene Notiz – bleibt beim Produkt">✏️ ${esc(item.own_note)}</span>`);
+    if (item.note && v.note) meta.push(this._noteChip(item.name, item.note));
+    if (item.own_note && v.own_note) meta.push(`<span class="inote iown" title="Eigene Notiz – bleibt beim Produkt">✏️ ${esc(item.own_note)}</span>`);
     if (!item.checked && item.from_offer && item.orig?.name) meta.push(`<span class="iinstead" title="Dein ursprüngliches Produkt ist abgehakt – es kommt zurück, wenn das Angebot ohne Kauf endet">↩️ <span>statt</span> <span translate="no">${esc(item.orig.name)}</span></span>`); // „statt Kaffee“
-    if (!item.checked && item.out_at && Date.now() - new Date(item.out_at) < 3 * DAY)
+    if (v.out && !item.checked && item.out_at && Date.now() - new Date(item.out_at) < 3 * DAY)
       meta.push(`<span class="iout" title="Beim letzten Einkauf nicht bekommen">⇄ war aus (${WD_SHORT[pyWd(new Date(item.out_at))]})</span>`);
     const pk = this._pk(item.name, item.note);
     const codes = this._barcodesOf(pk);
-    if (codes.length && !this._shopMode) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥</span>`);
+    if (v.barcode && codes.length && !this._shopMode) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥</span>`);
     const off = item.offer;
-    if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
+    if (!v.offer) { /* 🏷️ Angebote ausgeblendet */ } else if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
     else if (!item.checked && this._offersFor(item).length) meta.unshift(`<span class="offtag" data-act="offers-show" data-id="${item.id}" title="${this._offersFor(item).every((o) => o.alt) ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}">${this._offersFor(item).every((o) => o.alt) ? "🔀" : "🏷️"}</span>`); // 🏷️ ganz vorn, vor dem Geschäft
     else if (!item.checked && off?.expired && Date.now() - new Date(off.expired) < DAY) meta.unshift(`<span class="offgone" title="Das Angebot ist abgelaufen">⌛ Angebot vorbei</span>`);
     // ✍️ Wer & wann: „✍️ Anna, Mo.“ (heute: „vor 5 Min“)
-    const when = c.show_dates && !item.checked && !this._shopMode && item.added_at ? fmtWhen(item.added_at) : "";
-    if (c.show_added_by && item.added_by) meta.push(`<span title="Eingetragen von"><span translate="no">✍️ ${esc(this._who(item.added_by))}</span>${when ? `, <span>${when}</span>` : ""}</span>`);
+    const when = c.show_dates && v.added_at && !item.checked && !this._shopMode && item.added_at ? fmtWhen(item.added_at) : "";
+    if (c.show_added_by && v.added_by && item.added_by) meta.push(`<span title="Eingetragen von"><span translate="no">✍️ ${esc(this._who(item.added_by))}</span>${when ? `, <span>${when}</span>` : ""}</span>`);
     else if (when) meta.push(`<span>${when}</span>`);
-    if (c.show_dates && item.checked) meta.push(`<span title="Abgehakt von">✓ ${item.checked_by ? esc(this._who(item.checked_by)) : "automatisch"}</span>`);
+    if (c.show_dates && v.checked_by && item.checked) meta.push(`<span title="Abgehakt von">✓ ${item.checked_by ? esc(this._who(item.checked_by)) : "automatisch"}</span>`);
     const rgrp = recipe && this._rgroup(recipe.group);
-    if (recipe) meta.push(rgrp?.color ? `<span class="chip" style="--c:${esc(rgrp.color)}">🍽️ ${esc(recipe.name)}</span>` : `<span>🍽️ ${esc(recipe.name)}</span>`);
-    if (c.show_dates && !this._shopMode) { // 🛒 im Laden-Modus nur das Wichtigste
+    if (recipe && v.recipe) meta.push(rgrp?.color ? `<span class="chip" style="--c:${esc(rgrp.color)}">🍽️ ${esc(recipe.name)}</span>` : `<span>🍽️ ${esc(recipe.name)}</span>`);
+    if (c.show_dates && v.cleanup && !this._shopMode) { // 🛒 im Laden-Modus nur das Wichtigste
       if (item.checked) {
         // (wer abgehakt hat, steht schon oben)
       } else {
@@ -3714,19 +3763,19 @@ class EinkaufslisteCard extends HTMLElement {
       }
     }
     // hinter dem Namen: für wen es ist (wer es eingetragen hat, steht klein darunter)
-    const who = item.for_whom ? this._forWhomHtml(item.for_whom) : "";
-    const qty = item.quantity ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(item.quantity)}</button>` : "";
+    const who = item.for_whom && v.for_whom ? this._forWhomHtml(item.for_whom) : "";
+    const qty = item.quantity && v.qty ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(item.quantity)}</button>` : "";
     const icon = item.checked ? "mdi:checkbox-marked-circle-outline" : "mdi:checkbox-blank-circle-outline";
     const cat = this._cat(item.category_id);
-    const isNew = this._isNew(item);
+    const isNew = v.new && this._isNew(item);
     return `
-      <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""} ${this._knMarked === item.id ? "marked" : ""}" tabindex="0" data-id="${item.id}" style="--cc:${esc(cat?.color || "transparent")}${recipe && this._rgroup(recipe.group)?.color ? `;--rc:${esc(this._rgroup(recipe.group).color)}` : ""}">
+      <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""} ${this._knMarked === item.id ? "marked" : ""}" tabindex="0" data-id="${item.id}" style="--cc:${esc((v.cat_color && cat?.color) || "transparent")}${recipe && this._rgroup(recipe.group)?.color ? `;--rc:${esc(this._rgroup(recipe.group).color)}` : ""}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
-          <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}${qty}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${who}${this._favStar(pk)}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
+          <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}${qty}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${who}${v.fav ? this._favStar(pk) : ""}${v.photo && this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
-        ${!item.checked && this._data.stores.length > 1 ? `<div class="acts"><button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button></div>` : ""}
+        ${v.move && !item.checked && this._data.stores.length > 1 ? `<div class="acts"><button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button></div>` : ""}
       </div>`;
   }
 
@@ -4271,7 +4320,7 @@ class EinkaufslisteCard extends HTMLElement {
     const showTip = list && !fresh && !this._flag("einkaufsliste_tip_guide");
     tip.hidden = !showTip;
     if (showTip) {
-      tip.innerHTML = `<b>💡 Tipp: Oben links auf den Wagen 🛒 tippen – dort steht die Anleitung.</b><button class="tipbtn" data-act="tip-guide">📖 Zeig mir</button><button class="tipbtn" data-act="tip-ok">Okay</button>`;
+      tip.innerHTML = `<b>💡 Tipp: Ganz unten auf „📖 Anleitung“ tippen – dort steht, wie alles geht.</b><button class="tipbtn" data-act="tip-guide">📖 Zeig mir</button><button class="tipbtn" data-act="tip-ok">Okay</button>`;
     }
   }
 
@@ -4281,7 +4330,8 @@ class EinkaufslisteCard extends HTMLElement {
     if (!s || this._view !== "list") { f.hidden = true; return; }
     f.hidden = false;
     const next = new Date(s.next_cleanup);
-    f.innerHTML = `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`
+    f.innerHTML = (s.cleanup_on === false ? `<ha-icon icon="mdi:broom"></ha-icon><span>Automatisches Aufräumen ist aus</span>`
+      : `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`)
       + (window.__elOfflineApp ? "" : `<button class="guidebtn" type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte"><ha-icon icon="mdi:book-open-page-variant-outline"></ha-icon>Anleitung</button>`); // 📖 fester Platz unten (in der Offline-App steht er neben „Abmelden“)
   }
 
@@ -4353,8 +4403,8 @@ class EinkaufslisteCard extends HTMLElement {
             : `<ha-icon class="prev" icon="${esc(kind === "persons" ? "mdi:account-outline" : e.icon || "mdi:tag-outline")}"></ha-icon>`}
         <input class="grow" value="${esc(e.name)}" data-field="name" placeholder="${{ stores: "Name, z. B. Aldi", categories: "Name, z. B. Getränke", persons: "Name, z. B. Oma", recipe_groups: "Name, z. B. Grillen" }[kind] || "Name"}">
         ${kind === "categories" || kind === "recipe_groups" ? this._iconField(e.icon, 'data-field="icon"') : ""}
-        <button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
-        <button class="iconbtn" data-act="down" ${i === len - 1 ? "disabled" : ""} title="Nach unten"><ha-icon icon="mdi:chevron-down"></ha-icon></button>
+        ${kind === "stores" ? "" : `<button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
+        <button class="iconbtn" data-act="down" ${i === len - 1 ? "disabled" : ""} title="Nach unten"><ha-icon icon="mdi:chevron-down"></ha-icon></button>`}
         <button class="iconbtn" data-act="group-remove" title="Löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
       </div>
       ${kind === "categories" || kind === "recipe_groups" ? `<div class="picker" hidden></div>` : ""}
@@ -4404,18 +4454,21 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">📍 Zonen: Bist du in einer davon, springt die Liste auf dieses Geschäft – mehrere gehen, z. B. für mehrere Filialen. 🏷️ Eigenmarken: Beim Scannen landen diese Marken gleich hier.</p>`;
         }
         return `
-        <div class="tiles storetiles">${d.stores.map((e) => {
+        <div class="storelist">${d.stores.map((e, i) => {
           const nz = storeZones(e).length, nb = (e.brands || []).length;
           const info = [nz ? `📍 ${nz} ${nz === 1 ? "Zone" : "Zonen"}` : "", nb ? `🏷️ ${nb} ${nb === 1 ? "Marke" : "Marken"}` : "", Array.isArray(e.cat_order) ? "🗺️ eigene Reihenfolge" : ""].filter(Boolean).join(" · ") || "antippen zum Einstellen";
-          return `<button class="tile storetile" data-act="store-sel" data-id="${e.id}" style="--sc:${esc(e.color || "#607d8b")}">
-            <ha-icon icon="${esc(this._storeIcon(e))}"></ha-icon><b translate="no">${esc(e.name)}</b><small>${esc(info)}</small></button>`;
+          return `<div class="srow storerow" data-kind="stores" data-id="${e.id}" style="--sc:${esc(e.color || "#607d8b")}">
+            <button class="storepick grow" type="button" data-act="store-sel" data-id="${e.id}"><ha-icon icon="${esc(this._storeIcon(e))}"></ha-icon><span><b translate="no">${esc(e.name)}</b><small>${esc(info)}</small></span></button>
+            <button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
+            <button class="iconbtn" data-act="down" ${i === d.stores.length - 1 ? "disabled" : ""} title="Nach unten"><ha-icon icon="mdi:chevron-down"></ha-icon></button>
+          </div>`;
         }).join("")}</div>
         <form class="srow" data-addkind="stores">
           <input type="color" value="#607d8b" name="color" title="Farbe">
           <input class="grow" name="name" placeholder="Neues Geschäft, z. B. Kaufland">
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
-        <p class="hint">Geschäft antippen = Name, Farbe, Reihenfolge, 📍 Zonen, 🏷️ Eigenmarken und 🗺️ Reihenfolge der Kategorien einstellen.</p>`;
+        <p class="hint">⌃⌄ = Reihenfolge der Reiter oben. Geschäft antippen = Name, Farbe, Icon, 📍 Zonen, 🏷️ Eigenmarken und 🗺️ Reihenfolge der Kategorien einstellen.</p>`;
       } },
       { key: "categories", icon: "mdi:shape-outline", title: "Kategorien", info: d.categories.length === 1 ? "1 Kategorie" : `${d.categories.length} Kategorien`, html: () => `
         ${d.categories.map((e, i) => row("categories", e, i, d.categories.length)).join("")}
@@ -4455,6 +4508,7 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
         <p class="hint">${persons.length ? "Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“." : "Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet."}</p>` },
+      { key: "listview", icon: "mdi:eye-outline", title: "Listenansicht", info: this._viewInfo(), html: () => this._viewHtml() },
       { key: "products", icon: "mdi:package-variant-closed", title: "Produkte", info: "alle Produkte, Fotos, Barcodes, löschen", html: () => `
         <div class="subtabs">
           <button class="tab ${!this._prodTab || this._prodTab === "catalog" ? "active" : ""}" data-act="prod-tab" data-tab="catalog"><ha-icon icon="mdi:package-variant-closed"></ha-icon>Alle Produkte</button>
@@ -4484,16 +4538,16 @@ class EinkaufslisteCard extends HTMLElement {
       { key: "privacy", icon: "mdi:shield-lock-outline", title: "Datenschutz", info: this._privacyOn() ? "an – keine Kamera/Fotos" : "aus", html: () => this._privacyHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
       { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
-      { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher & Umfang", html: () => `
+      { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher, Umfang & Last", html: () => `
         <p class="hint">So viel Platz braucht die Einkaufsliste in deinem Home Assistant.</p>
-        <div id="statsBox"><p class="hint">Lade …</p></div>` },
-      { key: "check", icon: "mdi:check-decagram-outline", title: "Alles ok?", info: "prüfen & reparieren", html: () => `
-        <p class="hint">Sucht nach kaputten oder unvollständigen Einträgen: Produkte ohne Kategorie, Artikel ohne Geschäft, fehlende oder übrige Fotos, Barcodes ohne Produkt und Verweise auf Gelöschtes. Jeder Fund steht einzeln da – mit Haken und wie repariert wird. Repariert wird nur, was du anhakst.</p>
-        <div class="btnrow"><button class="btn primary" data-act="check-run"><ha-icon icon="mdi:magnify"></ha-icon>Jetzt prüfen</button></div>
-        <div id="checkRes"></div>
+        <div id="statsBox"><p class="hint">Lade …</p></div>
         <hr><p><b>📊 Last</b><br>Wie stark arbeitet die Einkaufsliste gerade? Bei hoher Auslastung des Servers hilft das, die Ursache zu finden.</p>
         <div id="loadRes" class="hint">Tippe auf „Last anzeigen“.</div>
         <div class="btnrow"><button class="btn" data-act="load-run"><ha-icon icon="mdi:speedometer"></ha-icon>Last anzeigen</button></div>` },
+      { key: "check", icon: "mdi:check-decagram-outline", title: "Alles ok?", info: "prüfen & reparieren", html: () => `
+        <p class="hint">Sucht nach kaputten oder unvollständigen Einträgen: Produkte ohne Kategorie, Artikel ohne Geschäft, fehlende oder übrige Fotos, Barcodes ohne Produkt und Verweise auf Gelöschtes. Jeder Fund steht einzeln da – mit Haken und wie repariert wird. Repariert wird nur, was du anhakst.</p>
+        <div class="btnrow"><button class="btn primary" data-act="check-run"><ha-icon icon="mdi:magnify"></ha-icon>Jetzt prüfen</button></div>
+        <div id="checkRes"></div>` },
       { key: "errors", icon: "mdi:bug-outline", title: "Fehler-Protokoll", info: (this._data.settings?.errors || 0) ? `${this._data.settings.errors} Meldungen` : "keine Fehler 🎉", html: () => this._errorsHtml() },
       { key: "transfer", icon: "mdi:database-import-outline", title: "Import & Sicherung", info: "andere Apps, Grocy, Backup", html: () => this._xferHtml() },
       { key: "app", icon: "mdi:cellphone-arrow-down", title: "Offline-App", info: "Liste auch ohne Netz", html: () => `
@@ -4516,7 +4570,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow"><button class="btn primary" data-act="tpl-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>${this._data.settings?.note_templates_custom ? `<button class="btn" data-act="tpl-reset"><ha-icon icon="mdi:restore"></ha-icon>Standard</button>` : ""}</div>` },
       { key: "aicook", icon: "mdi:robot-happy-outline", title: "KI-Kochen", info: this._data.settings?.ai_on ? "an" : "aus", html: () => this._aiSettingsHtml() },
       { key: "mascot", icon: "mdi:emoticon-happy-outline", title: "Maskottchen", info: this._data.settings?.mascot ? "an – für alle" : "aus", html: () => `
-        <p class="hint">Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen öffnet wie gewohnt die Anleitung.</p>
+        <p class="hint">Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen bringt dich wie der Wagen zurück zur Einkaufsliste.</p>
         <div class="mascotprev">${mascotSvg("happy", null)}${mascotSvg("busy", null)}${mascotSvg("full", null)}${mascotSvg("sleep", null)}</div>
         <div class="mascotprev">${["spring", "summer", "autumn", "winter"].map((x) => mascotSvg("happy", x)).join("")}</div>
         <p><b>${this._data.settings?.mascot ? "🛒😊 Das Maskottchen ist an." : "Das Maskottchen ist aus."}</b> Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App.</p>
@@ -4550,9 +4604,17 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow"><button class="btn primary" data-act="labels-toggle">${this._data.settings?.labels ? "Ausschalten" : "Einschalten"}</button></div>` },
       { key: "pin", icon: this._data.settings?.pin ? "mdi:lock-outline" : "mdi:lock-open-variant-outline", title: "Schutz", info: this._data.settings?.pin ? "PIN ist an" : "PIN fürs Zahnrad", html: () => this._pinHtml() },
       { key: "log", icon: "mdi:history", title: "Verlauf", info: "wer, wann, was, wie", html: () => this._logSectionHtml() },
-      { key: "cleanup", icon: "mdi:broom", title: "Aufräumen", info: `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
-        <p>Jeden <b>${WD_LONG[s.cleanup_weekday]}</b> um <b>${s.cleanup_time} Uhr</b> werden alle offenen Artikel <b>abgehakt</b>, die mindestens <b>${s.min_age_days} Tage</b> auf der Liste stehen. Gelöscht wird nichts – so kannst du sie später mit einem Tipp wieder auf die Liste nehmen.</p>
-        <p class="hint">Tag & Uhrzeit ändern: Einstellungen → Geräte & Dienste → Einkaufsliste → Konfigurieren</p>
+      { key: "cleanup", icon: "mdi:broom", title: "Aufräumen", info: s.cleanup_on === false ? "automatisch: aus" : `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
+        <p class="hint">Einmal pro Woche hakt die Liste von selbst alte Artikel ab. Gelöscht wird nichts – du kannst sie später mit einem Tipp wieder auf die Liste nehmen. Gilt für alle.</p>
+        <p><b>${s.cleanup_on === false ? "Automatisches Aufräumen ist aus." : "🧹 Automatisches Aufräumen ist an."}</b></p>
+        <div class="btnrow"><button class="btn primary" data-act="cleanup-toggle"><ha-icon icon="mdi:broom"></ha-icon>${s.cleanup_on === false ? "Einschalten" : "Ausschalten"}</button></div>
+        ${s.cleanup_on === false ? "" : `
+        <div class="srow"><ha-icon class="prev" icon="mdi:calendar-week"></ha-icon><select class="grow" id="clDay" title="Aufräum-Tag">${WD_LONG.map((w, i) => `<option value="${i}" ${i === s.cleanup_weekday ? "selected" : ""}>${w}</option>`).join("")}</select></div>
+        <div class="srow"><ha-icon class="prev" icon="mdi:clock-outline"></ha-icon><input class="grow" id="clTime" type="time" value="${esc(s.cleanup_time)}" title="Uhrzeit"></div>
+        <div class="srow"><ha-icon class="prev" icon="mdi:calendar-clock"></ha-icon><input class="grow" id="clAge" type="number" min="0" max="60" step="1" inputmode="numeric" value="${esc(s.min_age_days)}" title="Mindestens so viele Tage auf der Liste"><span class="hint">Tage alt</span></div>
+        <div class="btnrow"><button class="btn primary" data-act="cleanup-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button></div>
+        <p class="hint">Jeden ${WD_LONG[s.cleanup_weekday]} um ${s.cleanup_time} Uhr werden alle offenen Artikel abgehakt, die mindestens ${s.min_age_days} Tage auf der Liste stehen (7 = eine Woche).</p>`}
+        <hr><p><b>Von Hand</b></p>
         <div class="btnrow">
           <button class="btn" data-act="cleanup-now"><ha-icon icon="mdi:broom"></ha-icon>Jetzt aufräumen</button>
           <button class="btn" data-act="cleanup-all"><ha-icon icon="mdi:checkbox-multiple-marked-circle-outline"></ha-icon>Alles abhaken</button>
@@ -4579,13 +4641,13 @@ class EinkaufslisteCard extends HTMLElement {
     if (!cur) {
       this.$("otherView").innerHTML = `
         <div class="sec">
-          <h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3>
+          <div class="sethead"><h3><ha-icon icon="mdi:cog-outline"></ha-icon>Einstellungen</h3><span class="setver" translate="no">v${EL_VERSION}</span><button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button></div>
           <button class="health wait" id="healthBar" data-act="set-sec" data-sec="check"><span>⚪</span><span><b>Prüfe …</b></span></button>
           <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="setSearch" placeholder="In den Einstellungen suchen, z. B. Foto" value="${esc(this._setQ || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="setSearch" ${this._setQ ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
           <div id="setList">${this._settingsListHtml(sections)}</div>
           <div class="btnrow" style="margin-top:14px"><button class="btn" data-act="guide-settings"><ha-icon icon="mdi:book-open-variant"></ha-icon>Anleitung Einstellungen</button></div>
-        </div>
-        <p class="hint" style="text-align:right">Einkaufsliste v${EL_VERSION}</p>`;
+        </div>`;
+      this._updateLockBtn();
       this.$("setSearch").addEventListener("input", (ev) => {
         this._setQ = ev.target.value;
         this.$("setList").innerHTML = this._settingsListHtml(sections);
@@ -4641,7 +4703,7 @@ class EinkaufslisteCard extends HTMLElement {
   // 🗂️ Einstellungen als Liste: Überschriften nach Zweck, eine Ebene tief, mit Suche
   _settingsListHtml(sections) {
     const groups = [
-      ["📋 Meine Liste", ["stores", "categories", "persons", "products", "recipes"]],
+      ["📋 Meine Liste", ["stores", "categories", "persons", "listview", "products", "recipes"]],
       ["🎛️ Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot", "labels"]],
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
@@ -4653,8 +4715,8 @@ class EinkaufslisteCard extends HTMLElement {
       offers: "angebote marktguru preise plz", spend: "protokoll bon kasse kosten einkauf",
       notetpl: "notiz vorlagen eigene notiz bio laktose chips", aicook: "ki kochen assistent chatgpt openai gemini ollama rezept idee",
       autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
-      log: "verlauf wer wann", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel sensor", errors: "fehler protokoll kopieren",
-      stats: "ressourcen speicher verbrauch", app: "offline app startbildschirm", theme: "hell dunkel", labels: "beschriftungen text icons beschriften", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr kamera foto scanner sperre", news: "neu version", credits: "über danke lizenz github",
+      log: "verlauf wer wann", listview: "ansicht anzeigen ausblenden einblenden menge notiz foto stern datum wer liste", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel sensor", errors: "fehler protokoll kopieren",
+      stats: "ressourcen speicher verbrauch last auslastung", app: "offline app startbildschirm", theme: "hell dunkel", labels: "beschriftungen text icons beschriften", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr kamera foto scanner sperre", news: "neu version", credits: "über danke lizenz github",
     };
     const q = (this._setQ || "").trim().toLowerCase();
     const byKey = Object.fromEntries(sections.map((x) => [x.key, x]));
@@ -4669,8 +4731,39 @@ class EinkaufslisteCard extends HTMLElement {
     return out || `<p class="hint">Nichts gefunden zu „${esc(q)}“.</p>`;
   }
 
+  // 👁️ Listenansicht: was beim Artikel zu sehen ist – „Für alle“ (Standard) oder „Nur für mich“ (dieser HA-Benutzer, auf allen Geräten)
+  _viewInfo() {
+    const all = this._data?.settings?.view_prefs || {};
+    const me = this._hass?.user?.id;
+    const off = VIEW_OPTS.filter(([k]) => this._viewPrefs()[k] === false).length;
+    return `${off ? `${off} ausgeblendet` : "alles sichtbar"}${me && all[me] ? " · eigene Ansicht" : ""}`;
+  }
+
+  _viewHtml() {
+    const all = this._data?.settings?.view_prefs || {};
+    const me = this._hass?.user?.id;
+    const mine = this._viewTab === "me";
+    const base = { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
+    const cur = mine ? { ...base, ...((me && all[me]) || {}) } : base;
+    return `
+        <div class="subtabs">
+          <button class="tab ${mine ? "" : "active"}" data-act="view-tab" data-tab="all"><ha-icon icon="mdi:account-group-outline"></ha-icon>Für alle</button>
+          <button class="tab ${mine ? "active" : ""}" data-act="view-tab" data-tab="me"><ha-icon icon="mdi:account-outline"></ha-icon>Nur für mich</button>
+        </div>
+        <p class="hint">${mine
+          ? `Gilt nur für <b translate="no">${esc(this._hass?.user?.name || "dich")}</b> – auf allen Geräten, auf denen du angemeldet bist. Was du hier nicht änderst, kommt von „Für alle“.`
+          : "Was alle in der Familie beim Artikel sehen. Jeder kann es unter „Nur für mich“ für sich selbst anders einstellen."}</p>
+        ${VIEW_OPTS.map(([k, label, sub]) => `<button class="lrow viewrow" data-act="view-toggle" data-key="${k}" aria-pressed="${cur[k] !== false}">
+          <ha-icon icon="${cur[k] !== false ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>
+          <span class="grow"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span></button>`).join("")}
+        <div class="btnrow">${mine
+          ? (me && all[me] ? `<button class="btn" data-act="view-reset"><ha-icon icon="mdi:restore"></ha-icon>Wie „Für alle“</button>` : "")
+          : (all._all ? `<button class="btn" data-act="view-reset"><ha-icon icon="mdi:restore"></ha-icon>Alles wieder anzeigen</button>` : "")}</div>
+        <p class="hint">Der Laden-Modus zeigt sowieso nur das Wichtigste. Die Optionen der Dashboard-Karte (z. B. „Wer eingetragen hat“ aus) gehen immer vor.</p>`;
+  }
+
   // 🔒 PIN fürs Zahnrad
-  // 🔒 Sofort-Sperren: nur da, wenn eine PIN vergeben ist und das Zahnrad gerade offen ist
+  // 🔒 Sofort-Sperren: oben rechts in der Einstellungs-Übersicht neben der Versionsnummer – nur mit PIN und entsperrt
   _updateLockBtn() {
     const btn = this.$("btnLock");
     if (btn) btn.hidden = !(this._data?.settings?.pin && pinUnlocked());
@@ -7139,7 +7232,7 @@ class EinkaufslisteCard extends HTMLElement {
     show();
   }
 
-  // 📖 Anleitung – öffnet sich über den Einkaufswagen oben links (ohne Namen, für alle in der Familie)
+  // 📖 Anleitung – öffnet sich über den Knopf „📖 Anleitung“ ganz unten (ohne Namen, für alle in der Familie)
   // 🧾 Einkaufs-Protokoll: wer hat wann wo wie viel bezahlt – nur da, wenn es in ⚙️ eingeschaltet ist
   async _showSpend(tab = "add") {
     if (!this._data?.settings?.spend) return;
@@ -7377,7 +7470,7 @@ class EinkaufslisteCard extends HTMLElement {
     </style>
     ${kind === "settings" ? this._guideSettings(sec) : EL_LANG !== "de" ? this._guideEn(sec, appSec) : `<div class="elg">
       <div class="elg-top"><h2>🛒 So funktioniert die Einkaufsliste</h2></div>
-      <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung findest du immer über den <b>Einkaufswagen ganz oben links</b>.</p>
+      <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung findest du immer über den Knopf <b>📖 Anleitung ganz unten</b> unter der Liste.</p>
       ${sec("🆕", "Was ist neu", this._newsHtml(false))}
       ${sec("✍️", "Etwas eintragen", `<ul>
         <li>Oben ins Feld tippen, z. B. <b>Milch</b>, dann den grünen Haken <span class="elg-k">✔</span>.</li>
@@ -7407,7 +7500,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Gekauftes rutscht nach unten zu <b>„Erledigt – schon mal gekauft“</b>.</li>
         <li>Dort den Kreis antippen = <b>wieder auf der Liste</b>. So musst du nichts neu tippen.</li>
         <li><b>↩️ Versehentlich abgehakt?</b> Unten steht 3 Sekunden „Rückgängig“ – antippen, und der Artikel ist wieder offen.</li>
-        <li>Einmal pro Woche wird automatisch aufgeräumt: Alte Sachen werden abgehakt, <b>gelöscht wird nichts</b>. Ganz unten steht, wann das nächste Mal ist („Nächstes Aufräumen: …“).</li>
+        <li>Einmal pro Woche wird automatisch aufgeräumt: Alte Sachen werden abgehakt, <b>gelöscht wird nichts</b>. Ganz unten steht, wann das nächste Mal ist („Nächstes Aufräumen: …“) – oder „Automatisches Aufräumen ist aus“.</li>
         <li><b>Im Reiter „Alle“</b> steht ein Produkt, das bei mehreren Geschäften offen ist, nur <b>einmal</b>. Beim Abhaken fragt die Liste „Wo gekauft?“.</li>
         <li><b>„Egal wo“-Artikel</b> im Reiter eines Geschäfts abhaken: Er gehört danach zu diesem Geschäft und ist überall weg.</li>
         <li>Die Liste ist nach <b>Kategorien</b> sortiert (mit Zahl pro Kategorie). Jedes Geschäft kann seine eigene Reihenfolge haben, passend zum Laden. Unter „Erledigt“ lässt sich jede Kategorie einzeln einklappen.</li>
@@ -7467,7 +7560,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Verwalten &amp; löschen:</b> Nur in ⚙️ → <b>Produkte</b> (Reihenfolge, Hauptfoto, einzeln löschen) und im Rezept-Editor – nicht in der Einkaufsliste selbst.</li>
         <li><b>Foto einlesen (Text):</b> Das ist etwas anderes als ein Foto ablegen. Dazu siehe „Text aus Foto &amp; neue Helfer“.</li></ul>`)}
       ${sec("▥", "Barcodes", `<ul>
-        <li><b>Wo scannt man?</b> Auf das <b>▥</b> oben neben dem grünen Punkt tippen (nur in der HA-App und in der Offline-App). Die HA-App öffnet ihren eigenen Scanner, die Offline-App die Handykamera. Packung in den Rahmen halten.</li>
+        <li><b>Wo scannt man?</b> Auf das <b>▥</b> oben links neben dem Einkaufswagen tippen (nur in der HA-App und in der Offline-App). Die HA-App öffnet ihren eigenen Scanner, die Offline-App die Handykamera. Packung in den Rahmen halten.</li>
         <li><b>Was passiert beim Scannen? – Zu Hause:</b> Die Liste schaut in der Produkt-Datenbank nach und <b>füllt das Eingabefeld</b> für dich aus: Name, Marke als Notiz, Kategorie und – bei Eigenmarken eines Ladens – das passende Geschäft. Es steht dann dort „Name passt? Dann ✅ tippen“. <b>Erst mit dem grünen Haken kommt es auf die Liste.</b> Kennt die Liste den Barcode schon, steht dort „Kenn ich“.</li>
         <li><b>Barcode noch unbekannt?</b> Dann bleibt das Feld leer. Tipp den Namen ein und tippe ✅ – die Liste merkt sich den Barcode, beim nächsten Mal ist das Produkt sofort da.</li>
         <li><b>📦 Mehrere scannen:</b> Im Scanner gibt es den Knopf „Mehrere scannen“ (z. B. am Kühlschrank). Der Scanner bleibt offen: <b>jede Packung kommt sofort auf die Liste</b>, ohne ✅. Dieselbe Packung wird nicht doppelt gezählt, wenn sie kurz im Bild bleibt. Mit „✔ Fertig“ beendest du. Ein Barcode, den es nicht gibt, kommt als <b>„❓ Unbekannt 1234“</b> drauf – bitte später umbenennen (⚙️ → Produkte → <b>Neu gescannt</b>, Name prüfen, dann „✔ Passt“). Im Rezept-Editor werden gescannte Packungen zu Zutaten.</li>
@@ -7492,9 +7585,10 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Abgehakte Rezept-Zutaten verschwinden ganz (nicht bei „Erledigt“).</li>
         <li><b>🤖 KI-Kochen</b> (⚙️ → Extras, nur Admin): Du wählst einen KI-Assistenten aus Home Assistant (z. B. OpenAI, Google, Anthropic oder lokal Ollama). Dann steht bei den <b>Rezepten</b> oben links neben den Gar-Zeiten „Was kann ich kochen?“: Zutaten eintippen (auch Dinge, die nicht im Katalog stehen), optional die offenen Artikel der Liste mitnehmen und Wünsche dazuschreiben. Zu jedem Vorschlag: „Fehlendes auf die Liste“ oder „Als Rezept speichern“. Die Namen der Zutaten gehen an den gewählten Assistenten; bei eingeschaltetem Datenschutz geht nichts raus. Antworten einer KI können falsch sein.</li>
         <li><b>⏲️ Gar-Zeiten</b> (oben bei den Rezepten und im Koch-Modus): Spickzettel nach Gerät: 🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse.</li></ul>`)}
-      ${sec("🟢", "Was bedeuten die Zeichen oben?", `<ul>
-        <li>Von links: <b>🛒 Einkaufswagen</b> (oder das Maskottchen, wenn eingeschaltet) = diese Anleitung · <b>🟢 Punkt</b> · <b>Zahl</b> · <b>▥ Barcode</b> (nur mit Scanner) · <b>🧾</b> Einkaufs-Protokoll (nur wenn eingeschaltet) · <b>🔓</b> sperrt das ⚙️ sofort (nur mit PIN).</li>
-        <li><b>🟢 Grüner Punkt</b> = verbunden, alles ist live auf allen Handys. <b>🔴 Rot</b> = gerade keine Verbindung. Tippst du auf den Punkt, kommst du von überall zurück auf die Einkaufsliste.</li>
+      ${sec("🛒", "Was bedeuten die Zeichen oben?", `<ul>
+        <li>Von links: <b>🛒 Einkaufswagen</b> (oder das Maskottchen, wenn eingeschaltet) = <b>zurück zur Einkaufsliste</b>, egal wo du gerade bist (Rezepte, Einstellungen …) · <b>Zahl</b> · <b>▥ Barcode</b> (nur mit Scanner) · <b>🧾</b> Einkaufs-Protokoll (nur wenn eingeschaltet).</li>
+        <li>Alles gut verbunden? Dann siehst du gar nichts extra. Nur wenn etwas nicht stimmt, erscheint neben dem Wagen ein Punkt: <b>🟠 Orange ⏳</b> = Änderungen warten aufs Netz, <b>🔴 Rot</b> = gerade keine Verbindung.</li>
+        <li>Die <b>Anleitung</b> (diese hier) steckt im Knopf <b>📖 Anleitung</b> ganz unten unter der Liste. Den <b>🔓-Knopf</b> zum Sofort-Sperren (nur mit PIN) findest du in ⚙️ oben rechts neben der Versionsnummer.</li>
         <li>Die <b>Zahl</b> = so viele Sachen sind noch offen.</li>
         <li>Rechts: <b>Wagen</b> = Laden-Modus · <b>Kochmütze</b> = Rezepte · <b>⚙️</b> = Einstellungen.</li>
         <li>Ein <b>blauer Balken</b> oben = es gibt eine neue Version. Tippe auf <b>„Neu laden“</b> – das kann jeder. Nur wenn dort steht, dass die Karte neuer ist als Home Assistant, muss jemand mit Admin-Zugang Home Assistant neu starten.</li></ul>`)}
@@ -7560,14 +7654,15 @@ class EinkaufslisteCard extends HTMLElement {
     if (en) {
       return `<div class="elg" translate="no">
       <div class="elg-top"><h2>⚙️ How the settings work</h2></div>
-      <p class="elg-sub">Tap a heading to open it. This guide is only for people who can open the settings. The guide for shopping and recipes is behind the <b>shopping cart at the top left</b>.</p>
+      <p class="elg-sub">Tap a heading to open it. This guide is only for people who can open the settings. The guide for shopping and recipes is behind the <b>📖 Guide</b> button at the very bottom, below the list.</p>
       ${sec("🔍", "Finding things", `<ul>
         <li>The settings are a <b>list with headings</b>: tap a heading (it opens, the previous one closes), tap a row, change something, tap <b>Overview</b> to go back. Only the stores have one more page (back with “All stores”), and the recipe editor is its own view.</li>
         <li>The <b>search field</b> at the top finds rows by their name or topic, e.g. “photo”, “mail”, “backup” or “sensor”. (This field searches the settings; the search at the very top of this guide searches the guide text.)</li>
         <li>The bar at the top shows the <b>health light</b> 🟢🟡🔴. Tap it to open “All OK?”.</li></ul>`, true)}
       ${sec("📋", "My list", `<ul>
-        <li><b>Stores:</b> one row per store, tapping it opens the store's page: colour, icon, 📍 zone(s) for “Next store” (the list then jumps to that store when you are there), own brands and <b>🗺️ own category order</b> (sort with ↑↓ the way the shop is laid out). Several zones per store work too (e.g. several branches). Create new stores with the “New” form; ↑ ↓ changes the order, 🗑️ deletes. Also <b>🗂️ own categories</b>: “All as everywhere” or “Own” – with “Own” you tick which ones exist in this store and can create a new one just for it.</li>
+        <li><b>Stores:</b> one row per store. The <b>⌃ ⌄</b> next to it change the order of the tabs right in the list. Tapping a store opens its page: name, colour, icon, 📍 zone(s) for “Next store” (the list then jumps to that store when you are there), own brands and <b>🗺️ own category order</b> (sort with ↑↓ the way the shop is laid out). Several zones per store work too (e.g. several branches). Create new stores with the “New” form, 🗑️ on the store page deletes. Also <b>🗂️ own categories</b>: “All as everywhere” or “Own” – with “Own” you tick which ones exist in this store and can create a new one just for it.</li>
         <li><b>Categories:</b> name, colour, icon (search with German or English words), order with ↑ ↓, delete with 🗑️, new ones via the form.</li>
+        <li><b>👁️ List view:</b> what you see on an item – quantity, notes, for whom, who added it, date, cleanup day, store, recipe, photo, star, barcode, offers and more. Untick = hidden. <b>“For everyone”</b> applies to the whole family, under <b>“Just for me”</b> everyone sets it for themselves (applies on all devices of that user).</li>
         <li><b>People:</b> the names for the quick buttons at “For whom?”. Without people the 👤 stays hidden in the list.</li>
         <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK; “Save” also counts as checked) and <b>Delete shopping-list items</b>.</li>
         <li><b>Search and filters in “All products”:</b> the search field finds name, notes, nicknames, barcode, category and store – even with small typos. Plus filters such as no category, no store, is on the list, with/without photo, with/without barcode, by store or by category. The <b>eraser icon</b> resets search and filter with one tap (it only appears when something is set). On a PC the keyboard works too (↓ into the list, ↑ ↓ to pick, Enter edits, Esc back).</li>
@@ -7584,19 +7679,19 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Each row has its <b>own page</b> with an on/off button: 🏷️ offers, 🧾 purchase log, 💳 loyalty cards, 📍 shop mode automatic, 🛒😊 mascot, 🏷️ labels.</li>
         <li><b>Applies to all devices:</b> loyalty cards (just the switch – whether a card is “for everyone” or “only me” is chosen when creating it), purchase log, auto-ask, shop mode automatic, mascot and labels. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
         <li><b>🏷️ Offers</b> need a postcode (admins only). Also: <b>“Only these stores”</b> (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b> and <b>Switch off</b>. A status line shows the number of offers and the last check (“⚠️ currently unavailable” if Marktguru does not answer). They come unofficially from Marktguru and can stop working at any time. If there is no exact offer for an item, the list automatically looks for <b>similar</b> ones (🔀, at most 4): using the single words of the name, the product type from the database, nicknames and the category. Only the names of open items go to Marktguru for this.</li>
-        <li><b>🛒😊 Mascot:</b> a shopping cart with a face instead of the cart symbol. It has moods (happy, busy, full, asleep) and wears a costume for the season. Tapping it opens the guide.</li>
+        <li><b>🛒😊 Mascot:</b> a shopping cart with a face instead of the cart symbol. It has moods (happy, busy, full, asleep) and wears a costume for the season. Tapping it takes you back to the shopping list.</li>
         <li><b>📍 Automatic shop mode</b> needs a 📍 zone at the store (Stores → Location) and your phone set up as a person in Home Assistant. What you switch on or off yourself is left alone by the automation.</li>
         <li><b>🧾 Purchase log:</b> its own switch plus <b>“🎉 Ask automatically”</b> (only appears once the log is on) and an “Open” button. Switching it off only hides the display – the entries stay saved.</li></ul>`)}
       ${sec("💾", "Data", `<ul>
         <li><b>Import &amp; backup</b> has four tabs:
-          <ul><li><b>From other apps:</b> several Alexa/to-do lists, each with its own store, either 🔁 <b>fetch automatically</b> (Fetch &amp; delete there · Keep in both · Full sync) – admins only – or <b>fetch once</b>. Plus <b>“Paste text”</b> (e.g. copy a list from Bring! or Google Keep and paste it) – anyone may do that.</li>
+          <ul><li><b>From other apps:</b> several Alexa/to-do lists (up to 50), each with its own store (with full sync each only gets the items of its store; a list without a store gets the “Anywhere” items), either 🔁 <b>fetch automatically</b> (Fetch &amp; delete there · Keep in both · Full sync) – admins only – or <b>fetch once</b>. Plus <b>“Paste text”</b> (e.g. copy a list from Bring! or Google Keep and paste it) – anyone may do that.</li>
           <li><b>🥫 Grocy:</b> fetch products from Grocy into the catalogue – type the address and API key (the key is not stored for the one-time fetch), preview with tick boxes, then name, barcodes and the product group (as a category) come over. Whatever already exists is not overwritten. Below it the <b>🔄 continuous sync</b> with two separate switches: 🛒 <b>shopping list</b> (every 3 minutes; “Fetch &amp; delete there”, “Keep on both” or “Full sync”) and 📦 <b>new products</b> (every 1–24 hours, nothing is overwritten or deleted). Here Home Assistant keeps the key on the server – never on phones, never in backups. “Remove connection” deletes it again – admins only.</li>
           <li><b>📄 Catalogue from CSV:</b> (tab “From other apps”) a CSV or text file – or pasted lines – as products in the catalogue (not on the shopping list). Columns: Name; Category; Barcode; Note, with or without a header row. Whatever already exists is not overwritten – admins only.</li>
           <li><b>🗣️ Siri / Shortcuts (iPhone):</b> in the Shortcuts app create a new shortcut, choose the Home Assistant app’s “Call service” action, service <code>einkaufsliste.add_item</code>, data <code>name: Milk</code> (leave the name on “Ask each time”). Call it e.g. “Shopping” – then “Hey Siri, Shopping” is enough. To tick off use <code>einkaufsliste.check_item</code> the same way. Action names can differ slightly depending on the app version; it has not been tested on an iPhone.</li>
           <li><b>📧 E-mail:</b> IMAP mailbox, allowed senders, store via subject or heading in the mail (“Aldi:”), and what happens to the mail afterwards (leave it · mark as read · delete) – admins only.</li>
           <li><b>Backup:</b> download a .zip or “Restore backup” (replaces everything!) – admins only.</li></ul></li>
         <li><b>History:</b> who did what and when, with filters (person, store, action) and search, “Show more” and a symbol legend. At the top is <b>📈 Often not available</b> – ✖ hides an entry. “Keep for 7/30/90/180/365 days” is set there, “Clear history” deletes it. One button opens the purchase log.</li>
-        <li><b>Tidy up:</b> once a week old open items are <b>checked off</b> – nothing is deleted. Day and time: Settings → Devices &amp; services → Shopping list → Configure. The page also has <b>“Tidy up now”</b> (like the automation, just immediately) and <b>“Check off everything”</b> (really checks off everything open).</li>
+        <li><b>Tidy up:</b> once a week old open items are <b>checked off</b> – nothing is deleted. <b>On/off</b>, day, time and how old an item must be are set right here (applies to everyone). When it is off, cleanup only happens by hand. The page also has <b>“Tidy up now”</b> (like the automation, just immediately) and <b>“Check off everything”</b> (really checks off everything open).</li>
         <li><b>💣 Factory reset</b> (admins only, at the very bottom of Tidy up): puts <b>everything</b> back like a fresh install – also stores, categories, recipes, cards and connections. Only the PIN stays. Two safety questions, cannot be undone. Good after a Grocy import for a completely fresh start.</li>
         <li><b>🧽 Delete list</b> (admins only): pick a store (or “All stores”), then <b>“Delete done items”</b> (only what is checked off, open items stay) or <b>“Empty list”</b> (open and done, the list is empty again – good for Sunday). A question with the number comes first. The <b>catalogue stays</b>: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.</li>
         <li><b>🧹 Delete everything</b> (admins only): <b>“Delete catalogue &amp; list completely”</b> deletes the shopping list and the whole catalogue with all photos, barcodes, nicknames, own notes, favourites and learned typos. Two safety questions, <b>cannot be undone</b> – better make a backup first (⚙️ → Import &amp; backup). Stores, categories, people, recipes, loyalty cards and settings stay.</li></ul>`)}
@@ -7609,20 +7704,21 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Offline app:</b> your own address with “Copy” (it needs an https address, e.g. Nabu Casa). Open it in the phone browser and add it to the home screen. Almost everything works offline; not available are looking up new barcodes, product info, recipe links, uploading new photos and the backup. The first time you scan, the phone asks once for the camera.</li>
         <li><b>Light / dark:</b> the choice (light, dark, automatic) exists only in the offline app. In the dashboard card everything follows the Home Assistant theme. The guides follow the same: light or dark, just like the card.</li>
         <li><b>🔒 Privacy:</b> says in plain words what stays in your Home Assistant and what goes to the internet. An admin also switches <b>“Privacy on”</b> for all devices there: then there is no camera, no photos (not even from gallery or clipboard), no barcode scanner and no AI cooking – the buttons are greyed out, and barcodes can only be typed by hand. Off = as usual.</li>
-        <li><b>Protection (PIN):</b> with a PIN the ⚙️ only opens after entering it (4–8 digits, remembered for 10 minutes on this device). The 🔓 button locks at once. Forgot it? An admin resets it in Settings → Devices &amp; services → Shopping list → Configure. The page also has “Change PIN” and “Switch PIN off”. The list itself (adding, checking off, recipes, shop mode) stays open for everyone. The PIN protects against accidents, it is not a safe.</li>
+        <li><b>Protection (PIN):</b> with a PIN the ⚙️ only opens after entering it (4–8 digits, remembered for 10 minutes on this device). The 🔓 button at the top right of ⚙️ (next to the version number) locks at once. Forgot it? An admin resets it in Settings → Devices &amp; services → Shopping list → Configure. The page also has “Change PIN” and “Switch PIN off”. The list itself (adding, checking off, recipes, shop mode) stays open for everyone. The PIN protects against accidents, it is not a safe.</li>
         <li><b>What's new</b> and <b>Credits</b> are at the end of the list.</li></ul>`)}
     </div>`;
     }
     return `<div class="elg">
       <div class="elg-top"><h2>⚙️ So funktionieren die Einstellungen</h2></div>
-      <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung ist nur für alle, die ins Zahnrad kommen. Die Anleitung fürs Einkaufen und die Rezepte steht hinter dem <b>Einkaufswagen oben links</b>.</p>
+      <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung ist nur für alle, die ins Zahnrad kommen. Die Anleitung fürs Einkaufen und die Rezepte steht hinter dem Knopf <b>📖 Anleitung</b> ganz unten unter der Liste.</p>
       ${sec("🔍", "Wie finde ich etwas?", `<ul>
         <li>Die Einstellungen sind eine <b>Liste mit Überschriften</b>: Überschrift antippen (sie klappt auf, die vorherige zu), Zeile antippen, etwas ändern, mit <b>Übersicht</b> wieder zurück. Nur bei den Geschäften gibt es eine Seite mehr (zurück mit „Alle Geschäfte“), und der Rezept-Editor ist eine eigene Ansicht.</li>
         <li>Das <b>Suchfeld</b> oben findet Zeilen nach Name oder Thema, z. B. „Foto“, „Mail“, „Sicherung“ oder „Sensor“. (Dieses Suchfeld sucht in den Einstellungen; die Suche ganz oben in dieser Anleitung sucht in den Anleitungs-Texten.)</li>
         <li>Der Balken ganz oben zeigt die <b>Gesundheits-Ampel</b> 🟢🟡🔴. Antippen öffnet „Alles ok?“.</li></ul>`, true)}
       ${sec("📋", "Meine Liste", `<ul>
-        <li><b>Geschäfte:</b> pro Geschäft eine Zeile, antippen öffnet die Seite des Geschäfts: Farbe, Icon, 📍 Zone(n) für „Nächstes Geschäft“ (die Liste springt dann auf dieses Geschäft, wenn du dort bist), Eigenmarken und <b>🗺️ eigene Kategorien-Folge</b> (mit ↑↓ so sortieren, wie der Laden aufgebaut ist). Auch mehrere Zonen pro Geschäft gehen (z. B. mehrere Filialen). Neue Geschäfte legst du mit dem „Neu“-Formular an; ↑ ↓ ändert die Reihenfolge, 🗑️ löscht. Dazu <b>🗂️ eigene Kategorien</b>: „Alle wie überall“ oder „Eigene“ – bei „Eigene“ setzt du Häkchen, welche es in diesem Geschäft gibt, und kannst eine neue nur dafür anlegen.</li>
+        <li><b>Geschäfte:</b> pro Geschäft eine Zeile. Mit <b>⌃ ⌄</b> rechts daneben änderst du direkt in der Liste die Reihenfolge der Reiter. Antippen öffnet die Seite des Geschäfts: Name, Farbe, Icon, 📍 Zone(n) für „Nächstes Geschäft“ (die Liste springt dann auf dieses Geschäft, wenn du dort bist), Eigenmarken und <b>🗺️ eigene Kategorien-Folge</b> (mit ↑↓ so sortieren, wie der Laden aufgebaut ist). Auch mehrere Zonen pro Geschäft gehen (z. B. mehrere Filialen). Neue Geschäfte legst du mit dem „Neu“-Formular an, 🗑️ auf der Seite des Geschäfts löscht. Dazu <b>🗂️ eigene Kategorien</b>: „Alle wie überall“ oder „Eigene“ – bei „Eigene“ setzt du Häkchen, welche es in diesem Geschäft gibt, und kannst eine neue nur dafür anlegen.</li>
         <li><b>Kategorien:</b> Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), Reihenfolge mit ↑ ↓, löschen mit 🗑️, neue über das Formular.</li>
+        <li><b>👁️ Listenansicht:</b> was beim Artikel zu sehen ist – Menge, Notizen, Für wen, wer eingetragen hat, Datum, Aufräum-Tag, Geschäft, Rezept, Foto, Stern, Barcode, Angebote und mehr. Häkchen weg = ausgeblendet. <b>„Für alle“</b> gilt für die ganze Familie, unter <b>„Nur für mich“</b> stellt jeder es für sich selbst ein (gilt auf allen Geräten dieses Benutzers).</li>
         <li><b>Personen:</b> die Namen für die Schnellknöpfe bei „Für wen?“. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.</li>
         <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt; „Speichern“ zählt auch als geprüft) und <b>Einkaufsliste Produkte löschen</b>.</li>
         <li><b>Suche und Filter bei „Alle Produkte“:</b> Das Suchfeld findet Name, Notizen, Spitznamen, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Dazu Filter wie ohne Kategorie, ohne Geschäft, steht auf der Liste, mit/ohne Foto, mit/ohne Barcode, nach Geschäft oder nach Kategorie. Das <b>Radiergummi-Symbol</b> setzt Suchfeld und Filter mit einem Tipp zurück (es erscheint nur, wenn etwas eingestellt ist). Am PC geht auch die Tastatur (↓ in die Liste, ↑ ↓ wählen, Enter bearbeitet, Esc zurück).</li>
@@ -7639,19 +7735,19 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Jede Zeile hat ihre <b>eigene Seite</b> mit einem Ein/Ausschalten-Knopf: 🏷️ Angebote, 🧾 Einkaufs-Protokoll, 💳 Kundenkarten, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen, 🏷️ Beschriftungen.</li>
         <li><b>Gilt für alle Geräte:</b> Kundenkarten (nur der Schalter – ob eine Karte „für alle“ oder „nur ich“ ist, wählst du beim Anlegen), Protokoll, automatisch fragen, Laden-Modus automatisch, Maskottchen und Beschriftungen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
         <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl (nur Admins). Dazu: <b>„Nur diese Geschäfte“</b> (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b> und <b>Ausschalten</b>. Eine Statuszeile zeigt die Zahl der Angebote und die letzte Prüfung („⚠️ gerade nicht verfügbar“, wenn Marktguru nicht antwortet). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren. Gibt es für einen Artikel kein genaues Angebot, sucht die Liste automatisch <b>ähnliche</b> (🔀, höchstens 4): über die einzelnen Wörter des Namens, den Produkttyp aus der Datenbank, Spitznamen und die Kategorie. Dafür gehen nur die Namen offener Artikel an Marktguru.</li>
-        <li><b>🛒😊 Maskottchen:</b> ein Einkaufswagen mit Gesicht statt des Wagen-Symbols. Er hat Stimmungen (froh, fleißig, voll, schläft) und trägt je nach Jahreszeit ein Kostüm. Antippen öffnet die Anleitung.</li>
+        <li><b>🛒😊 Maskottchen:</b> ein Einkaufswagen mit Gesicht statt des Wagen-Symbols. Er hat Stimmungen (froh, fleißig, voll, schläft) und trägt je nach Jahreszeit ein Kostüm. Antippen bringt dich zurück zur Einkaufsliste.</li>
         <li><b>📍 Laden-Modus automatisch</b> braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</li>
         <li><b>🧾 Einkaufs-Protokoll:</b> eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist) und ein „Öffnen“-Knopf. Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert.</li></ul>`)}
       ${sec("💾", "Daten", `<ul>
         <li><b>Import &amp; Sicherung</b> hat vier Reiter:
-          <ul><li><b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen, jede mit eigenem Geschäft, entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich) – nur Admins – oder <b>einmal herüberholen</b>. Dazu <b>„Text einfügen“</b> (z. B. eine Liste aus Bring! oder Google Keep kopieren und einfügen) – das darf jeder.</li>
+          <ul><li><b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen (bis zu 50), jede mit eigenem Geschäft (beim vollen Abgleich bekommt jede nur die Artikel ihres Geschäfts; eine Liste ohne Geschäft die „Egal wo“-Artikel), entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich) – nur Admins – oder <b>einmal herüberholen</b>. Dazu <b>„Text einfügen“</b> (z. B. eine Liste aus Bring! oder Google Keep kopieren und einfügen) – das darf jeder.</li>
           <li><b>🥫 Grocy:</b> Produkte aus Grocy in den Katalog holen – Adresse und API-Schlüssel eintippen (der Schlüssel wird bei der einmaligen Abfrage nicht gespeichert), Vorschau mit Häkchen, dann kommen Name, Barcodes und die Produktgruppe (als Kategorie) rüber. Was es schon gibt, wird nicht überschrieben. Darunter der <b>🔄 Dauerabgleich</b> mit zwei getrennten Schaltern: 🛒 <b>Einkaufsliste</b> (alle 3 Minuten; „Holen &amp; dort löschen“, „Bei beiden behalten“ oder „Voller Abgleich“) und 📦 <b>neue Produkte</b> (alle 1–24 Stunden, nichts wird überschrieben oder gelöscht). Hier legt Home Assistant den Schlüssel auf dem Server ab – nie auf Handys, nie in Sicherungen. „Verbindung entfernen“ löscht ihn wieder – nur Admins.</li>
           <li><b>📄 Katalog aus CSV:</b> (Tab „Aus anderen Apps“) Eine CSV- oder Textdatei – oder eingefügte Zeilen – als Produkte in den Katalog (nicht auf die Einkaufsliste). Spalten: Name; Kategorie; Barcode; Notiz, mit oder ohne Kopfzeile. Was es schon gibt, wird nicht überschrieben – nur Admins.</li>
           <li><b>🗣️ Siri / Kurzbefehle (iPhone):</b> In der Kurzbefehle-App einen neuen Kurzbefehl anlegen, Aktion „Dienst aufrufen“ der Home-Assistant-App wählen, Dienst <code>einkaufsliste.add_item</code>, Daten <code>name: Milch</code> (den Namen mit „Nach Eingabe fragen“ offen lassen). Nenn ihn z. B. „Einkauf“ – dann reicht „Hey Siri, Einkauf“. Zum Abhaken genauso <code>einkaufsliste.check_item</code>. Die Namen der Aktionen können je nach App-Version leicht anders heißen; auf einem iPhone getestet ist es nicht.</li>
           <li><b>📧 E-Mail:</b> IMAP-Postfach, erlaubte Absender, Geschäft über Betreff oder Überschrift in der Mail („Aldi:“), und was mit der Mail danach passiert (liegen lassen · als gelesen markieren · löschen) – nur Admins.</li>
           <li><b>Sicherung:</b> .zip herunterladen oder „Sicherung einspielen“ (ersetzt alles!) – nur Admins.</li></ul></li>
         <li><b>Verlauf:</b> wer hat wann was gemacht, mit Filtern (Person, Geschäft, Aktion) und Suche, „Mehr anzeigen“ und einer Symbol-Legende. Oben steht <b>📈 Oft nicht bekommen</b> – mit ✖ blendest du einen Eintrag aus. „Aufheben für 7/30/90/180/365 Tage“ stellst du dort ein, „Verlauf leeren“ löscht ihn. Ein Knopf öffnet das Einkaufs-Protokoll.</li>
-        <li><b>Aufräumen:</b> einmal pro Woche werden alte offene Sachen <b>abgehakt</b> – gelöscht wird nichts. Tag und Uhrzeit: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es außerdem <b>„Jetzt aufräumen“</b> (wie der Automatismus, nur sofort) und <b>„Alles abhaken“</b> (hakt wirklich alles Offene ab).</li>
+        <li><b>Aufräumen:</b> einmal pro Woche werden alte offene Sachen <b>abgehakt</b> – gelöscht wird nichts. <b>An/Aus</b>, Tag, Uhrzeit und wie alt ein Artikel sein muss stellst du direkt hier ein (gilt für alle). Ist es aus, wird nur noch von Hand aufgeräumt. Auf der Seite gibt es außerdem <b>„Jetzt aufräumen“</b> (wie der Automatismus, nur sofort) und <b>„Alles abhaken“</b> (hakt wirklich alles Offene ab).</li>
         <li><b>💣 Werkseinstellungen</b> (nur Admins, unter Aufräumen ganz unten): setzt <b>alles</b> zurück wie bei einer frischen Installation – auch Geschäfte, Kategorien, Rezepte, Karten und Verbindungen. Nur die PIN bleibt. Zwei Sicherheitsfragen, nicht rückgängig. Gut nach einem Grocy-Import für den kompletten Neuanfang.</li>
         <li><b>🧽 Liste löschen</b> (nur Admins): Geschäft wählen (oder „Alle Geschäfte“), dann <b>„Erledigte löschen“</b> (nur Abgehaktes, Offenes bleibt) oder <b>„Liste leeren“</b> (offen und erledigt, die Liste ist wieder leer – gut für den Sonntag). Vorher kommt eine Frage mit der Anzahl. Der <b>Katalog bleibt</b>: Die Produkte kommen beim Tippen weiter als Vorschlag, Fotos, Barcodes, Notizen und Favoriten bleiben. Nicht rückgängig zu machen.</li>
         <li><b>🧹 Alles löschen</b> (nur Admins): <b>„Katalog &amp; Liste komplett löschen“</b> löscht die Einkaufsliste und den ganzen Katalog mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. Zwei Sicherheitsfragen, <b>nicht rückgängig</b> – vorher lieber eine Sicherung machen (⚙️ → Import &amp; Sicherung). Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.</li></ul>`)}
@@ -7664,7 +7760,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Offline-App:</b> deine eigene Adresse mit „Kopieren“ (sie braucht eine https-Adresse, z. B. Nabu Casa). Im Handy-Browser öffnen und zum Startbildschirm hinzufügen. Offline geht fast alles; nicht gehen neue Barcodes nachschlagen, Produkt-Infos, Rezept-Links, neue Fotos hochladen und die Sicherung. Beim ersten Scannen fragt das Handy einmal nach der Kamera.</li>
         <li><b>Hell / Dunkel:</b> Die Auswahl (hell, dunkel, automatisch) gibt es nur in der Offline-App. In der Karte im Dashboard richtet sich alles nach dem Home-Assistant-Design. Die Anleitungen folgen dem jeweils: hell oder dunkel, genau wie die Karte.</li>
         <li><b>🔒 Datenschutz:</b> zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht. Dort schaltet ein Admin auch <b>„Datenschutz an“</b> für alle Geräte: Dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage), keinen Barcode-Scanner und kein KI-Kochen – die Knöpfe sind ausgegraut, Barcodes gehen nur noch von Hand. Aus = alles wie gehabt.</li>
-        <li><b>Schutz (PIN):</b> mit PIN geht das ⚙️ erst nach Eingabe auf (4–8 Ziffern, auf diesem Gerät 10 Minuten gemerkt). Der 🔓-Knopf sperrt sofort. Vergessen? Ein Admin setzt sie zurück: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es auch „PIN ändern“ und „PIN ausschalten“. Die Liste selbst (Eintragen, Abhaken, Rezepte, Laden-Modus) bleibt für alle offen. Die PIN schützt vor Versehen, ein Tresor ist sie nicht.</li>
+        <li><b>Schutz (PIN):</b> mit PIN geht das ⚙️ erst nach Eingabe auf (4–8 Ziffern, auf diesem Gerät 10 Minuten gemerkt). Der 🔓-Knopf oben rechts in ⚙️ (neben der Versionsnummer) sperrt sofort. Vergessen? Ein Admin setzt sie zurück: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es auch „PIN ändern“ und „PIN ausschalten“. Die Liste selbst (Eintragen, Abhaken, Rezepte, Laden-Modus) bleibt für alle offen. Die PIN schützt vor Versehen, ein Tresor ist sie nicht.</li>
         <li><b>Was ist neu</b> und <b>Credits</b> stehen am Ende der Liste.</li></ul>`)}
     </div>`;
   }
@@ -7779,7 +7875,7 @@ class EinkaufslisteCard extends HTMLElement {
   _guideEn(sec, appSec = "") {
     return `<div class="elg" translate="no">
       <div class="elg-top"><h2>🛒 How the shopping list works</h2></div>
-      <p class="elg-sub">Tap a heading to open it. You can always find this guide via the <b>shopping cart at the top left</b>.</p>
+      <p class="elg-sub">Tap a heading to open it. You can always find this guide via the <b>📖 Guide button at the very bottom</b>, below the list.</p>
       ${sec("🆕", "What's new", this._newsHtml(true))}
       ${sec("✍️", "Adding things", `<ul>
         <li>Type into the field at the top, e.g. <b>milk</b>, then tap the green check mark <span class="elg-k">✔</span>.</li>
@@ -7809,7 +7905,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Bought things slide down to <b>“Done – bought before”</b>.</li>
         <li>Tap the circle there = <b>back on the list</b>. No need to type anything again.</li>
         <li><b>↩️ Checked off by accident?</b> “Undo” shows at the bottom for 3 seconds – tap it and the item is open again.</li>
-        <li>Once a week the list tidies itself up: old things get checked off, <b>nothing gets deleted</b>. At the very bottom it says when the next time is (“Next tidy-up: …”).</li>
+        <li>Once a week the list tidies itself up: old things get checked off, <b>nothing gets deleted</b>. At the very bottom it says when the next time is (“Next tidy-up: …”) – or that automatic cleanup is off.</li>
         <li><b>In the “All” tab</b> a product that is open at several stores shows only <b>once</b>. When you check it off, the list asks “Where bought?”.</li>
         <li><b>“Anywhere” items</b> checked off in a store's tab: they now belong to that store and are gone everywhere.</li>
         <li>The list is sorted by <b>category</b> (with a number per category). Every store can have its own order, matching the shop. Under “Done” each category can be collapsed on its own.</li>
@@ -7869,7 +7965,7 @@ class EinkaufslisteCard extends HTMLElement {
         <li><b>Manage &amp; delete:</b> Only in ⚙️ → <b>Products</b> (order, main photo, delete one) and in the recipe editor – not in the shopping list itself.</li>
         <li><b>Reading text from a photo:</b> That is something different from storing a photo. See “Text from photo &amp; new helpers”.</li></ul>`)}
       ${sec("▥", "Barcodes", `<ul>
-        <li><b>Where do you scan?</b> Tap the <b>▥</b> at the top next to the green dot (only in the HA app and the offline app). The HA app opens its own scanner, the offline app uses the phone camera. Hold the package in the frame.</li>
+        <li><b>Where do you scan?</b> Tap the <b>▥</b> at the top left next to the shopping cart (only in the HA app and the offline app). The HA app opens its own scanner, the offline app uses the phone camera. Hold the package in the frame.</li>
         <li><b>What happens when you scan? – At home:</b> The list looks the product up in the product database and <b>fills in the input field</b> for you: name, brand as a note, category and – for store brands – the matching store. It says “Name okay? Then tap ✅”. <b>Only the green check mark puts it on the list.</b> If the list already knows the barcode, it says “I know this one”.</li>
         <li><b>Barcode not known yet?</b> The field stays empty. Type the name and tap ✅ – the list remembers the barcode, so next time the product is there instantly.</li>
         <li><b>📦 Scan several:</b> The scanner has a “Scan several” button (e.g. at the fridge). The scanner stays open: <b>every package goes straight onto the list</b>, no ✅ needed. The same package is not counted twice if it stays in the picture briefly. “✔ Done” ends it. A barcode that does not exist comes on as <b>“❓ Unknown 1234”</b> – please rename it later (⚙️ → Products → <b>Newly scanned</b>, check the name, then “✔ OK”). In the recipe editor scanned packages become ingredients.</li>
@@ -7894,9 +7990,10 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Checked recipe ingredients disappear completely (not under “Done”).</li>
         <li><b>🤖 AI cooking</b> (⚙️ → Extras, admin only): you choose an AI assistant from Home Assistant (e.g. OpenAI, Google, Anthropic or local Ollama). Then <b>Recipes</b> shows “What can I cook?” at the top left, next to the cooking times: type ingredients (also things that are not in the catalogue), optionally include the open items of the list and add wishes. For every suggestion: “Missing items to the list” or “Save as recipe”. The ingredient names go to the chosen assistant; with Privacy switched on nothing is sent. AI answers can be wrong.</li>
         <li><b>⏲️ Cooking times</b> (at the top of the recipes and in cook mode): cheat sheet by appliance: 🍲 stove, 🔥 oven, 💨 air fryer.</li></ul>`)}
-      ${sec("🟢", "What do the symbols at the top mean?", `<ul>
-        <li>From the left: <b>🛒 shopping cart</b> (or the mascot, if switched on) = this guide · <b>🟢 dot</b> · <b>number</b> · <b>▥ barcode</b> (only with a scanner) · <b>🧾</b> purchase log (only if switched on) · <b>🔓</b> locks the ⚙️ at once (only with a PIN).</li>
-        <li><b>🟢 Green dot</b> = connected, everything is live on all phones. <b>🔴 Red</b> = no connection right now. Tapping the dot takes you back to the shopping list from anywhere.</li>
+      ${sec("🛒", "What do the symbols at the top mean?", `<ul>
+        <li>From the left: <b>🛒 shopping cart</b> (or the mascot, if switched on) = <b>back to the shopping list</b> from anywhere (recipes, settings …) · <b>number</b> · <b>▥ barcode</b> (only with a scanner) · <b>🧾</b> purchase log (only if switched on).</li>
+        <li>Everything connected? Then you see nothing extra. Only when something is wrong a dot appears next to the cart: <b>🟠 orange ⏳</b> = changes are waiting for the network, <b>🔴 red</b> = no connection right now.</li>
+        <li>The <b>guide</b> (this one) is behind the <b>📖 Guide</b> button at the very bottom, below the list. The <b>🔓 button</b> to lock at once (only with a PIN) is in ⚙️ at the top right next to the version number.</li>
         <li>The <b>number</b> = this many things are still open.</li>
         <li>Right: <b>cart</b> = shop mode · <b>chef's hat</b> = recipes · <b>⚙️</b> = settings.</li>
         <li>A <b>blue bar</b> at the top = there is a new version. Tap <b>“Reload”</b> – anyone can do that. Only if it says the card is newer than Home Assistant, someone with admin access has to restart Home Assistant.</li></ul>`)}
@@ -9112,7 +9209,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._ackNew(el.dataset.id);
         this._renderList();
         break;
-      case "home": // 🟢 Grüner Punkt: von überall zurück auf die Einkaufsliste
+      case "home": // 🛒 Einkaufswagen (oder Maskottchen) oben links: von überall zurück auf die Einkaufsliste
         if (this._view !== "list") {
           this._view = "list";
           this._setSec = null;
@@ -9204,6 +9301,42 @@ class EinkaufslisteCard extends HTMLElement {
       case "pin-lock":
         this._lockNow();
         break;
+      case "view-tab":
+        this._viewTab = el.dataset.tab;
+        this._renderSettings();
+        break;
+      case "view-toggle": { // 👁️ ein Häkchen umschalten – „Für alle“ oder „Nur für mich“
+        const mine = this._viewTab === "me";
+        const all = this._data.settings?.view_prefs || {};
+        const me = this._hass?.user?.id;
+        const prefs = { ...(mine ? (me && all[me]) || {} : all._all || {}) };
+        const shown = mine ? this._viewPrefs() : { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
+        prefs[el.dataset.key] = shown[el.dataset.key] === false;
+        this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
+          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
+        break;
+      }
+      case "view-reset":
+        this._ws({ type: "einkaufsliste/view/set", scope: this._viewTab === "me" ? "me" : "all", prefs: null })
+          .then(() => { this._toast("👁️ Ansicht zurückgesetzt"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+        break;
+      case "cleanup-toggle": { // 🧹 automatisches Aufräumen für alle an/aus
+        const on = this._data.settings?.cleanup_on === false;
+        this._ws({ type: "einkaufsliste/cleanup/settings", on })
+          .then(() => { this._toast(on ? "🧹 Automatisches Aufräumen ist an" : "🧹 Automatisches Aufräumen ist aus – aufgeräumt wird nur noch von Hand"); setTimeout(() => this._renderSettings(), 150); })
+          .catch(() => {});
+        break;
+      }
+      case "cleanup-save": { // 🧹 Tag, Uhrzeit, Mindestalter
+        const time = this.$("clTime")?.value || "";
+        const age = Number(this.$("clAge")?.value);
+        if (!/^\d{1,2}:\d{2}/.test(time)) { this._toast("⏰ Bitte eine Uhrzeit wählen, z. B. 03:00"); break; }
+        if (!Number.isInteger(age) || age < 0 || age > 60) { this._toast("Bitte 0 bis 60 Tage"); break; }
+        this._ws({ type: "einkaufsliste/cleanup/settings", weekday: Number(this.$("clDay")?.value), time, min_age_days: age })
+          .then(() => { this._toast("🧹 Aufräumen gespeichert"); setTimeout(() => this._renderSettings(), 150); })
+          .catch(() => {});
+        break;
+      }
       case "scan":
         this._scanButton();
         break;
@@ -10667,113 +10800,7 @@ class EinkaufslisteCardEditor extends HTMLElement {
 }
 
 
-// 🧽 Fester roter Radiergummi an JEDEM Textfeld (wie „Alles leeren“ in der Einkaufsliste): erscheint rechts im Feld, solange etwas drinsteht – leeres Feld = kein Radiergummi.
-// Technik: eine unsichtbare Ebene über der Seite, pro gefülltem Feld ein Knopf, der dem Feld folgt (am Aufbau der Felder ändert sich nichts).
-// Ausgenommen: PIN/Passwort/API-Schlüssel, Nur-Lesen-Felder, Suchfelder und das Eintragen-Formular, die schon ihren eigenen Radiergummi haben.
-(function elInitErasers() {
-  if (window.__elErasers) return;
-  window.__elErasers = true;
-  const OWN = new Set(["delSearch", "prodSearch", "setSearch", "logSearch", "recipeSearch", "recipeSearchS"]);
-  const SECRET = /pin|pass|schl[uü]ssel|api|token|secret/i;
-  const TYPES = ["text", "search", "email", "url", "tel", ""];
-  const SIZE = 28;
-  const btns = new Map(); // Feld → Knopf
-  let layer = null, raf = 0, timer = 0;
-  const eligible = (el) => {
-    if (el.tagName === "INPUT" && !TYPES.includes((el.getAttribute("type") || "").toLowerCase())) return false;
-    if (el.readOnly || el.disabled || el.hidden || el.dataset.noerase !== undefined) return false;
-    if (OWN.has(el.id) || el.classList.contains("elg-q") || el.closest(".gsearch") || el.closest("#addForm")) return false;
-    if (SECRET.test(`${el.id} ${el.name || ""} ${el.getAttribute("placeholder") || ""} ${el.getAttribute("autocomplete") || ""}`)) return false;
-    return true;
-  };
-  const ensureLayer = () => {
-    if (layer && layer.isConnected) return layer;
-    layer = document.createElement("div");
-    layer.setAttribute("aria-hidden", "false");
-    layer.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;z-index:2147483000;pointer-events:none";
-    document.body.appendChild(layer);
-    return layer;
-  };
-  const makeBtn = (el) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.title = "Feld leeren";
-    b.setAttribute("aria-label", "Feld leeren");
-    b.style.cssText = `position:fixed;display:flex;align-items:center;justify-content:center;width:${SIZE}px;height:${SIZE}px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer;pointer-events:auto;color:var(--error-color,#db4437);--mdc-icon-size:20px;touch-action:manipulation`;
-    const ic = document.createElement("ha-icon");
-    ic.setAttribute("icon", "mdi:eraser");
-    b.appendChild(ic);
-    b.addEventListener("pointerdown", (e) => e.preventDefault()); // Fokus bleibt im Feld
-    b.addEventListener("mousedown", (e) => e.preventDefault());
-    b.addEventListener("click", () => {
-      el.value = "";
-      el.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
-      schedule();
-      try { el.focus(); } catch (_) { /* egal */ }
-    });
-    ensureLayer().appendChild(b);
-    return b;
-  };
-  const drop = (el) => {
-    const b = btns.get(el);
-    if (b) b.remove();
-    btns.delete(el);
-    if (el.dataset.erPad !== undefined) { el.style.paddingRight = el.dataset.erPad; delete el.dataset.erPad; }
-  };
-  // Sichtbarer Ausschnitt des Feldes: Bildschirm und alle scrollenden Eltern (auch über Shadow-DOM hinweg)
-  const clip = (el, r) => {
-    let l = 0, t = 0, rr = innerWidth, bb = innerHeight;
-    for (let n = el.parentNode; n; n = n.parentNode || n.host) {
-      if (n.nodeType === 1) {
-        const o = getComputedStyle(n).overflow + getComputedStyle(n).overflowY;
-        if (/auto|scroll|hidden|clip/.test(o) && n !== document.documentElement && n !== document.body) {
-          const c = n.getBoundingClientRect();
-          l = Math.max(l, c.left); t = Math.max(t, c.top); rr = Math.min(rr, c.right); bb = Math.min(bb, c.bottom);
-        }
-      }
-      if (n.nodeType === 11 && !n.host) break;
-    }
-    return { l, t, r: rr, b: bb };
-  };
-  const place = (el, b) => {
-    const r = el.getBoundingClientRect();
-    if (r.width < 90 || r.height < 20) return false;
-    const c = clip(el, r);
-    const top = el.tagName === "TEXTAREA" ? r.top + 6 : r.top + (r.height - SIZE) / 2;
-    const left = r.right - SIZE - 6;
-    if (top < c.t || top + SIZE > c.b || left < c.l || left + SIZE > c.r) return false;
-    b.style.top = `${Math.round(top)}px`;
-    b.style.left = `${Math.round(left)}px`;
-    return true;
-  };
-  const cards = () => [...EL_CARD_SET].filter((c) => c.shadowRoot);
-  const sync = () => {
-    raf = 0;
-    const want = new Set();
-    const roots = cards().map((c) => c.shadowRoot);
-    document.querySelectorAll("[data-elov]").forEach((o) => roots.push(o)); // Fenster außerhalb der Karte (z. B. KI-Kochen)
-    for (const root of roots) {
-      for (const el of root.querySelectorAll("input,textarea")) {
-        if (el.value && eligible(el) && el.getClientRects().length) want.add(el);
-      }
-    }
-    for (const el of [...btns.keys()]) if (!want.has(el) || !el.isConnected) drop(el);
-    for (const el of want) {
-      let b = btns.get(el);
-      if (!b) { b = makeBtn(el); btns.set(el, b); }
-      if (el.dataset.erPad === undefined) { el.dataset.erPad = el.style.paddingRight || ""; el.style.paddingRight = "40px"; }
-      b.hidden = !place(el, b);
-    }
-  };
-  const schedule = () => { if (!raf) raf = requestAnimationFrame(sync); };
-  document.addEventListener("input", schedule, true);
-  document.addEventListener("change", schedule, true);
-  document.addEventListener("focusin", schedule, true);
-  document.addEventListener("scroll", schedule, true);
-  addEventListener("resize", schedule);
-  timer = setInterval(() => { if (!document.hidden && (btns.size || cards().length || document.querySelector("[data-elov]"))) sync(); }, 400); // Felder, die per Code gefüllt oder ein-/ausgeblendet werden
-})();
+// 🧽 Radiergummi gibt es nur noch an den Suchfeldern und als „Alles leeren“ beim Eintragen – nicht mehr an jedem Textfeld (waren zu viele).
 
 if (!customElements.get("einkaufsliste-card")) customElements.define("einkaufsliste-card", EinkaufslisteCard);
 if (!customElements.get("einkaufsliste-card-editor")) customElements.define("einkaufsliste-card-editor", EinkaufslisteCardEditor);
