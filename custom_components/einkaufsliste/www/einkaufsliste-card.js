@@ -2,9 +2,355 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.70.01";
+const EL_VERSION = "2.71.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.70.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.71.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+// 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
+// Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
+const EL_GUIDE = [
+  { id: "add", icon: "✍️", c: "#43a047", t: ["Eintragen", "Adding things"], s: ["Name tippen, Haken, fertig", "Type a name, tick, done"], open: true,
+    de: [
+      "Oben ins Feld tippen, z. B. <b>Milch</b>, dann den grünen Haken <span class=\"elg-k\">✔</span>. <b>Eine Eingabe ist immer ein Produkt</b> – auch wenn ein Komma im Namen steht („Sandwichscheiben, Weizen“).",
+      "Beim Tippen kommen <b>Vorschläge</b>. Antippen übernimmt alles vom letzten Mal (Menge, Notiz, für wen, Geschäft). Schon nach 1–2 Buchstaben schlägt die Liste auch gängige Produkte vor, die du noch nie gekauft hast (rund 1400, mit passender Kategorie). Dein Eigenes steht immer vorn.",
+      "<b>Menge:</b> direkt mitschreiben (<b>3 Milch</b>, <b>500 g Mehl</b>) oder auf 🔢 tippen. Ohne Angabe ist es <b>1x</b>. Die Liste merkt sich die Einheit (<b>2 Backpulver</b> wird zu 2 Pck.). Bei sehr großen Mengen fragt sie kurz nach (Zahlendreher).",
+      "<b>Geschäft und Kategorie</b> stehen darunter. Meist stimmen sie schon (wie zuletzt bzw. aus dem Wörterbuch). „➕ Neues Geschäft …“ legt eins an, alles Weitere stellst du in ⚙️ ein.",
+      "Die kleinen Knöpfe unter dem Feld: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen (nur, wenn in ⚙️ Personen angelegt sind) · 📷 Foto · ⭐ alle Favoriten auf die Liste · 📋 Einkaufszettel aus Foto · 🧽 alles leeren. <b>Länger auf ein Icon drücken</b> zeigt kurz, was es macht.",
+      "<b>Vertippt?</b> Die Liste fragt „Meintest du …?“ und lernt, was du bestätigst. „Tomate“ und „Tomaten“ doppelt auf der Liste? Dann fragt sie „Zusammenlegen?“.",
+      "Steht der Artikel schon bei einem <b>anderen Geschäft</b> offen, fragt die Liste: <b>Abbrechen</b>, <b>Zusätzlich</b> oder <b>Verschieben</b>.",
+    ],
+    en: [
+      "Type into the field at the top, e.g. <b>milk</b>, then the green tick <span class=\"elg-k\">✔</span>. <b>One entry is always one product</b> – even with a comma in the name (“sandwich slices, wheat”).",
+      "While typing you get <b>suggestions</b>. Tapping one takes over everything from last time (quantity, note, for whom, store). After just 1–2 letters the list also suggests common products you never bought (about 1400, with a matching category, German only). Your own come first.",
+      "<b>Quantity:</b> write it right away (<b>3 milk</b>, <b>500 g flour</b>) or tap 🔢. Without one it is <b>1x</b>. The list remembers the unit (<b>2 baking powder</b> becomes 2 pcs). With a very large quantity it asks once (typos).",
+      "<b>Store and category</b> are below. Usually they are already right (as last time or from the dictionary). “➕ New store …” creates one, everything else you set in ⚙️.",
+      "The small buttons under the field: 🔢 quantity · ✏️ own note · 👤 for whom (only if people exist in ⚙️) · 📷 photo · ⭐ all favourites onto the list · 📋 shopping note from a photo · 🧽 clear everything. <b>Press and hold an icon</b> to see briefly what it does.",
+      "<b>Typo?</b> The list asks “Did you mean …?” and learns what you confirm. “Tomato” and “tomatoes” both on the list? It asks “Merge?”.",
+      "Already open at <b>another store</b>? The list asks: <b>Cancel</b>, <b>Additionally</b> or <b>Move</b>.",
+    ] },
+  { id: "check", icon: "✅", c: "#00897b", t: ["Abhaken & Erledigt", "Checking off & Done"], s: ["Kreis antippen oder wischen", "Tap the circle or swipe"],
+    de: [
+      "<b>Kreis antippen</b> = gekauft (das Handy vibriert kurz). Am Handy geht auch <b>Wischen</b>: Zeile <b>nach links</b> = abhaken ✔, eine erledigte Zeile <b>nach rechts</b> = wieder auf die Liste ↩.",
+      "Gekauftes rutscht nach unten zu <b>„Erledigt – schon mal gekauft“</b>. Dort wieder wischen oder antippen = zurück auf die Liste, du musst nichts neu tippen.",
+      "<b>↩️ Versehentlich?</b> Unten steht 3 Sekunden „Rückgängig“.",
+      "Die Liste ist nach <b>Kategorien</b> sortiert (mit Zahl). Jedes Geschäft kann seine eigene Reihenfolge und eigene Kategorien haben. Bei „Erledigt“ klappst du jede Kategorie einzeln ein. Tippst du ins Eingabefeld, filtert das auch „Erledigt“.",
+      "Einmal pro Woche wird <b>automatisch aufgeräumt</b>: Alte Sachen werden abgehakt, <b>gelöscht wird nichts</b>. Ganz unten steht, wann das nächste Mal ist.",
+      "Im Reiter <b>„Alle“</b> steht ein Produkt, das bei mehreren Geschäften offen ist, nur einmal; beim Abhaken fragt die Liste „Wo gekauft?“. Einen <b>„Egal wo“</b>-Artikel im Reiter eines Geschäfts abhaken: Er gehört danach zu diesem Geschäft.",
+    ],
+    en: [
+      "<b>Tap the circle</b> = bought (the phone vibrates briefly). On a phone you can also <b>swipe</b>: a row <b>to the left</b> = check off ✔, a done row <b>to the right</b> = back on the list ↩.",
+      "Bought things slide down to <b>“Done – bought before”</b>. Swipe or tap again there = back on the list, nothing to retype.",
+      "<b>↩️ By mistake?</b> “Undo” shows for 3 seconds at the bottom.",
+      "The list is sorted by <b>category</b> (with a count). Every store can have its own order and its own categories. Under “Done” you collapse each category separately. Typing in the input field also filters “Done”.",
+      "Once a week the list <b>tidies up by itself</b>: old things are checked off, <b>nothing is deleted</b>. The bottom says when the next time is.",
+      "In the <b>“All”</b> tab a product open at several stores appears only once; when checking off the list asks “Where bought?”. Checking off an <b>“Anywhere”</b> item in a store's tab: it then belongs to that store.",
+    ] },
+  { id: "stores", icon: "🏪", c: "#fb8c00", t: ["Geschäfte & Reiter", "Stores & tabs"], s: ["Reiter, ⇄ war aus, 📍", "Tabs, ⇄ was out, 📍"],
+    de: [
+      "Oben die Reiter: <b>Alle</b>, Aldi, Netto … Die Zahl zeigt, wie viel dort offen ist. Die <b>rote Blase</b> heißt: Da ist etwas Neues dazugekommen, seit du zuletzt geschaut hast. <b>✨</b> am Artikel = neu von jemand anderem (bis du abhakst oder es antippst, höchstens 24 Stunden).",
+      "<b>⇄ war aus:</b> <b>„Nächstes Mal wieder hier“</b> (bleibt offen, alle sehen 3 Tage lang „⇄ war aus“) oder gleich in ein anderes Geschäft schieben. Den Knopf gibt es nur mit mehr als einem Geschäft. War ein Produkt schon 3-mal aus, warnt die Liste beim Eintragen („lieber woanders?“).",
+      "<b>📍 Automatisch zum Geschäft:</b> Bist du in der Zone eines Geschäfts, springt die Liste auf dessen Reiter. Das lässt sich in den Karten-Optionen ausschalten.",
+      "<b>🤷 „Egal wo“</b> = kein festes Geschäft: steht in jedem Reiter mit drin. Mit ⇄ in ein Geschäft schieben = zieht einfach um.",
+      "Kein Netz im Laden? Einfach weiter abhaken. Oben in der Leiste steht dann <b>⏳ orange</b>, alles wird nachgeschickt, sobald wieder Netz da ist.",
+    ],
+    en: [
+      "Tabs at the top: <b>All</b>, Aldi, Netto … The number shows what is open there. The <b>red bubble</b> means something new arrived since you last looked. <b>✨</b> on an item = new from someone else (until you check it off or tap it, 24 hours at most).",
+      "<b>⇄ was out:</b> <b>“Here again next time”</b> (stays open, everyone sees “⇄ was out” for 3 days) or move it straight to another store. The button only exists with more than one store. If a product was already out 3 times, the list warns you when adding (“better elsewhere?”).",
+      "<b>📍 Automatically to the store:</b> When you are in a store's zone, the list jumps to its tab. You can switch this off in the card options.",
+      "<b>🤷 “Anywhere”</b> = no fixed store: appears in every tab. Moving it with ⇄ into a store simply moves it.",
+      "No signal in the store? Keep checking off. The bar at the top shows <b>⏳ orange</b>, and everything is sent as soon as the network is back.",
+    ] },
+  { id: "edit", icon: "👆", c: "#5e35b1", t: ["Ändern & lange drücken", "Editing & long-press"], s: ["Menü, Notizen, Spitznamen, ⭐", "Menu, notes, nicknames, ⭐"],
+    de: [
+      "Artikel <b>lange drücken</b> (am PC: rechte Maustaste) = Menü: Bearbeiten, Verschieben, Menge, Kategorie, Foto, Barcode, Angebote und <b>ℹ️ Infos</b> (Nutri-Score, Allergene, Zutaten aus der Produkt-Datenbank, ohne Gewähr). Was angeboten wird, hängt vom Artikel ab.",
+      "Menge direkt ändern: auf die Menge tippen, dann <span class=\"elg-k\">−</span> und <span class=\"elg-k\">＋</span>.",
+      "<b>📝 Notiz</b> kommt nur aus dem Barcode (Marke, Sorte). <b>✏️ Eigene Notiz</b> schreibst du selbst („nur die große Packung“): Sie bleibt beim Produkt und kommt beim nächsten Eintragen von selbst wieder. Kleine Knöpfe mit „Bio“, „ohne Laktose“ & Co. gibt es unter dem Feld (Vorlagen pflegst du in ⚙️ → Extras).",
+      "<b>🏷️ Spitznamen:</b> „Tempos“ meint dasselbe wie „Taschentücher“. Anlegen beim Bearbeiten (Feld 🏷️ Spitznamen, mehrere mit Komma).",
+      "<b>⭐ Favorit:</b> Beim Bearbeiten ankreuzen. Der ⭐-Knopf unter dem Eingabefeld setzt <b>alle</b> Favoriten auf die Liste; was schon offen ist, kommt nicht doppelt.",
+      "<b>🏷️ Angebote</b> (wenn in ⚙️ eingeschaltet): Ein Artikel mit 🏷️ ist gerade im Angebot. Antippen zeigt Geschäft, Preis und Dauer, <b>🛒 Hier kaufen</b> legt ihn in diesem Geschäft an. Angebote suchen: Produkt tippen, unter den Vorschlägen steht „🏷️ Angebote für …“. Die Daten kommen inoffiziell von Marktguru und können jederzeit ausfallen.",
+      "<b>⌨️ Am PC:</b> mit <b>↓</b> aus dem Suchfeld in die Liste, <b>↑ ↓</b> eine Zeile wählen, <b>Enter</b> öffnet, <b>Leertaste</b> hakt ab, <b>Esc</b> schließt.",
+    ],
+    en: [
+      "<b>Press and hold</b> an item (on a PC: right mouse button) = menu: Edit, Move, Quantity, Category, Photo, Barcode, Offers and <b>ℹ️ Info</b> (Nutri-Score, allergens, ingredients from the product database, without guarantee). What is offered depends on the item.",
+      "Change the quantity directly: tap the quantity, then <span class=\"elg-k\">−</span> and <span class=\"elg-k\">＋</span>.",
+      "<b>📝 Note</b> only comes from the barcode (brand, variety). <b>✏️ Own note</b> you write yourself (“only the large pack”): it stays with the product and comes back by itself next time. Small buttons with “organic”, “lactose-free” & co. are under the field (you maintain the templates in ⚙️ → Extras).",
+      "<b>🏷️ Nicknames:</b> “Tempos” means the same as “tissues”. Create them when editing (field 🏷️ Nicknames, several with commas).",
+      "<b>⭐ Favourite:</b> tick it when editing. The ⭐ button under the input field puts <b>all</b> favourites on the list; what is already open is not added twice.",
+      "<b>🏷️ Offers</b> (if switched on in ⚙️): an item with 🏷️ is on offer right now. Tap it for store, price and duration, <b>🛒 Buy here</b> creates it at that store. To search offers: type a product, below the suggestions it says “🏷️ Offers for …”. The data comes unofficially from Marktguru and can stop working at any time.",
+      "<b>⌨️ On a PC:</b> <b>↓</b> from the search field into the list, <b>↑ ↓</b> choose a row, <b>Enter</b> opens, <b>Space</b> checks off, <b>Esc</b> closes.",
+    ] },
+  { id: "shop", icon: "🛍️", c: "#7cb342", t: ["Im Laden", "In the store"], s: ["Laden-Modus, Scannen & abhaken", "Store mode, scan & check off"],
+    de: [
+      "Das <b>🏪 Geschäft ganz rechts</b> schaltet den <b>Laden-Modus</b> ein: große Zeilen, nur Abhaken, nur das Wichtigste. Nochmal antippen = wieder normal. Er bleibt auf diesem Gerät gespeichert.",
+      "<b>💡 Bildschirm immer an:</b> Im Laden-Modus erscheint ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an. In der HA-App klappt das nur mit der App-Einstellung „Bildschirm anlassen“.",
+      "<b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.",
+      "Bist du laut Standort im Geschäft, <b>hakt ▥ das gescannte Produkt ab</b> (siehe „Barcodes“).",
+    ],
+    en: [
+      "The <b>🏪 store icon at the far right</b> switches on <b>store mode</b>: big rows, only checking off, only the essentials. Tap again = back to normal. It is remembered on this device.",
+      "<b>💡 Screen always on:</b> in store mode a light-bulb icon appears. Tap = the screen stays on. In the HA app this needs the app setting “Keep screen on”.",
+      "<b>Automatic (option):</b> If “Store mode automatic” is on in ⚙️, it switches on by itself when your phone enters a store's zone, and off when you leave. Whatever you switch yourself, the automation leaves alone.",
+      "If your location says you are in a store, <b>▥ checks off the scanned product</b> (see “Barcodes”).",
+    ] },
+  { id: "photo", icon: "📷", c: "#00acc1", t: ["Fotos", "Photos"], s: ["Produkt-Fotos, drehen, mehrere", "Product photos, rotate, several"],
+    de: [
+      "<b>Produkt-Foto:</b> Beim Eintragen auf das <b>📷</b> unter dem Feld tippen – oder später den Artikel <b>lange drücken → Foto</b>. Das Foto gehört zum Produkt und ist beim nächsten Mal wieder da. Am Artikel zeigt das kleine 📷 es groß, wischen = blättern. Bis zu <b>6 Fotos</b> pro Produkt.",
+      "<b>Woher?</b> Am Handy: <b>📷 Kamera</b> · <b>🖼️ Galerie</b> · <b>📋 Einfügen</b>. Am PC: Bild <b>reinziehen</b>, <b>Strg + V</b> oder klicken. Vor dem Speichern kannst du <b>drehen und zuschneiden</b>.",
+      "<b>Ohne Netz:</b> Fotos aus der Offline-App werden vorgemerkt und hochgeladen, sobald wieder Netz da ist (sehr große Fotos, über ca. 3 MB, gehen nur mit Netz).",
+      "<b>Verwalten:</b> Reihenfolge, Hauptfoto und einzeln löschen geht in ⚙️ → Produkte.",
+      "Ist <b>🔒 Datenschutz</b> an (⚙️ → Datenschutz), gibt es keine Kamera und keine Fotos.",
+    ],
+    en: [
+      "<b>Product photo:</b> when adding, tap the <b>📷</b> under the field – or later <b>press and hold the item → Photo</b>. The photo belongs to the product and is there again next time. On the item the small 📷 shows it large, swipe = browse. Up to <b>6 photos</b> per product.",
+      "<b>Where from?</b> On a phone: <b>📷 Camera</b> · <b>🖼️ Gallery</b> · <b>📋 Paste</b>. On a PC: <b>drag in</b> an image, <b>Ctrl + V</b> or click. Before saving you can <b>rotate and crop</b>.",
+      "<b>Offline:</b> photos taken in the offline app are queued and uploaded when the network is back (very large photos, over about 3 MB, need a connection).",
+      "<b>Managing:</b> order, main photo and deleting single ones is in ⚙️ → Products.",
+      "If <b>🔒 Privacy</b> is on (⚙️ → Privacy), there is no camera and no photos.",
+    ] },
+  { id: "barcode", icon: "▥", c: "#546e7a", t: ["Barcodes", "Barcodes"], s: ["Scannen, mehrere scannen", "Scan, scan several"],
+    de: [
+      "<b>Wo scannt man?</b> Auf das <b>▥</b> oben links tippen (nur in der HA-App und in der Offline-App). Packung in den Rahmen halten.",
+      "<b>Zu Hause:</b> Die Liste schaut in der Produkt-Datenbank nach und <b>füllt das Eingabefeld</b> aus: Name, Marke als Notiz, Kategorie und bei Eigenmarken das Geschäft. Mit dem grünen Haken kommt es auf die Liste. Das Foto aus der Datenbank wird automatisch geholt, wenn du noch keins hast.",
+      "<b>Noch unbekannt?</b> Das Feld bleibt leer: Namen tippen, ✅ – die Liste merkt sich den Barcode. Ein neues Produkt mit eigenem Namen legst du mit dem <b>▥ mit Plus</b> an.",
+      "<b>📦 Mehrere scannen:</b> Der Scanner bleibt offen, <b>jede Packung kommt sofort auf die Liste</b>. Mit „✔ Fertig“ beendest du; „↩️ Rückgängig“ gilt kurz für die zuletzt gescannte Packung.",
+      "<b>✅ Im Laden:</b> Zeigt dein Standort ein Geschäft, hakt ▥ ab: Packung scannen, steht sie offen auf der Liste, ist sie abgehakt.",
+      "<b>Nachträglich zuordnen:</b> Artikel lange drücken → <b>Barcode</b>. Heißt das Produkt in der Datenbank anders, wählst du einzeln, ob Name und/oder Notiz übernommen werden.",
+      "<b>Datenschutz:</b> Beim Scannen geht nur die Nummer an Open Food Facts. Ohne Netz kennt die Liste nur schon gespeicherte Barcodes. Ist 🔒 Datenschutz an, gibt es keinen Scanner (Nummer nur von Hand).",
+    ],
+    en: [
+      "<b>Where to scan?</b> Tap the <b>▥</b> at the top left (only in the HA app and the offline app). Hold the pack in the frame.",
+      "<b>At home:</b> the list looks it up in the product database and <b>fills the input field</b>: name, brand as note, category and, for store brands, the store. The green tick puts it on the list. The database photo is fetched automatically if you have none yet.",
+      "<b>Still unknown?</b> The field stays empty: type the name, ✅ – the list remembers the barcode. A new product with your own name you create with the <b>▥ with plus</b>.",
+      "<b>📦 Scan several:</b> the scanner stays open, <b>every pack goes onto the list at once</b>. “✔ Done” ends it; “↩️ Undo” applies briefly to the last pack.",
+      "<b>✅ In the store:</b> if your location shows a store, ▥ checks off: scan the pack, if it is open on the list it is checked off.",
+      "<b>Assign later:</b> press and hold an item → <b>Barcode</b>. If the product has another name in the database, you choose separately whether name and/or note are taken over.",
+      "<b>Privacy:</b> when scanning only the number goes to Open Food Facts. Offline the list only knows barcodes it has stored. If 🔒 Privacy is on there is no scanner (type the number by hand).",
+    ] },
+  { id: "bon", icon: "🧾", c: "#3949ab", t: ["Einkaufszettel & Kassenbon", "Shopping note & receipt"], s: ["📋 Zettel lesen, 🧾 Protokoll", "📋 read a note, 🧾 log"],
+    de: [
+      "<b>📋 Einkaufszettel aus Foto:</b> fotografieren, Text prüfen, auf die Liste. Gedruckt klappt gut, Handschrift nur mit Glück – darum kannst du den Text vorher korrigieren. Eine Zeile wie <b>„Aldi:“</b> ordnet die Artikel darunter diesem Geschäft zu.",
+      "<b>🧾 Einkaufs-Protokoll</b> (nur wenn in ⚙️ → Extras eingeschaltet, gilt für alle): Der 🧾-Knopf oben öffnet es. <b>➕ Eintragen</b>: Geschäft, Betrag, Datum – wer und wann setzt die Liste selbst. <b>📊 Auswertung</b>: pro Geschäft und pro Monat, mit Filtern. Falsch eingetragen? Beim Einkauf auf <b>✖</b>.",
+      "<b>Kassenbon lesen:</b> im Protokoll „📷 Kassenbon lesen“ (Foto) oder „📄 PDF einlesen“ (digitaler Bon). Geschäft, Datum und Summe werden vorgeschlagen – bitte kurz prüfen, dann „Speichern“. Das Foto bzw. PDF bleibt auf deinem Gerät.",
+      "<b>🎉 Automatisch fragen</b> (Option in ⚙️): Ist alles abgehakt, geht „Einkauf eintragen“ von selbst auf – höchstens alle 10 Minuten.",
+    ],
+    en: [
+      "<b>📋 Shopping note from a photo:</b> take a photo, check the text, put it on the list. Printed works well, handwriting only with luck – so you can correct the text first. A line like <b>“Aldi:”</b> assigns the items below it to that store.",
+      "<b>🧾 Purchase log</b> (only if switched on in ⚙️ → Extras, applies to everyone): the 🧾 button at the top opens it. <b>➕ Add</b>: store, amount, date – who and when the list sets itself. <b>📊 Statistics</b>: per store and per month, with filters. Wrong entry? Tap <b>✖</b> on the purchase.",
+      "<b>Read a receipt:</b> in the log “📷 Read receipt” (photo) or “📄 Read PDF” (digital receipt). Store, date and total are suggested – please check briefly, then “Save”. The photo or PDF stays on your device.",
+      "<b>🎉 Ask automatically</b> (option in ⚙️): when everything is checked off, “Add purchase” opens by itself – at most every 10 minutes.",
+    ] },
+  { id: "recipes", icon: "👨‍🍳", c: "#e53935", t: ["Rezepte", "Recipes"], s: ["Auf die Liste, Kochen, Gar-Zeiten", "To the list, cook, cooking times"],
+    de: [
+      "Die <b>Kochmütze</b> öffnet die Rezepte. Das Suchfeld findet auch Zutaten (und über Spitznamen: „Paradeiser“ findet Tomate). Neue Rezepte anlegen und ändern geht nur in ⚙️ → Rezepte.",
+      "<b>Auf die Liste:</b> anhaken, was du brauchst („Alle“ / „Keine“ geht schneller). Was schon draufsteht oder „haben wir immer“ ist (🧂), ist nicht angehakt. <b>Von der Liste</b> nimmt die Zutaten wieder runter. Steht „Noch nie gekauft – wo kaufen?“, wähle das Geschäft.",
+      "<b>👥 Für wie viele?</b> bzw. <b>🍕🍰 Wie viele Bleche?</b> Mit − / ＋ rechnen sich die Mengen mit.",
+      "<b>🔥 Kochen</b> = Schritt für Schritt in großer Schrift, mit Zutaten, ⏲️ Gar-Zeiten, Backofen-Angaben und dem Foto zum Schritt. 📷 öffnet die Rezept-Fotos.",
+      "<b>⏲️ Gar-Zeiten:</b> Spickzettel nach Gerät (🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse).",
+      "<b>🤖 KI-Kochen</b> (wenn ein Admin es in ⚙️ → Extras eingeschaltet hat): „Was kann ich kochen?“ – Zutaten eintippen, der KI-Assistent schlägt Rezepte vor, die du übernehmen kannst.",
+    ],
+    en: [
+      "The <b>chef's hat</b> opens the recipes. The search field also finds ingredients (and via nicknames: “Paradeiser” finds tomato). Creating and changing recipes is only in ⚙️ → Recipes.",
+      "<b>To the list:</b> tick what you need (“All” / “None” is quicker). What is already on the list or is “always at home” (🧂) is not ticked. <b>From the list</b> takes the ingredients off again. If it says “Never bought – where to buy?”, pick the store.",
+      "<b>👥 For how many?</b> or <b>🍕🍰 How many trays?</b> With − / ＋ the quantities are recalculated.",
+      "<b>🔥 Cook</b> = step by step in large type, with ingredients, ⏲️ cooking times, oven settings and the photo for the step. 📷 opens the recipe photos.",
+      "<b>⏲️ Cooking times:</b> cheat sheet by appliance (🍲 hob, 🔥 oven, 💨 air fryer).",
+      "<b>🤖 AI cooking</b> (if an admin switched it on in ⚙️ → Extras): “What can I cook?” – type ingredients, the AI assistant suggests recipes you can take over.",
+    ] },
+  { id: "cards", icon: "💳", c: "#00acc1", t: ["Kundenkarten", "Loyalty cards"], s: ["Karte scannen, an der Kasse zeigen", "Scan a card, show it at the till"],
+    de: [
+      "Nur wenn in ⚙️ → Extras eingeschaltet: Der 💳-Knopf oben (auch im Laden-Modus) zeigt deine Karten. <b>➕ Karte</b>: einscannen oder Nummer eintippen, Namen geben, „für alle“ oder „nur für mich“ wählen. Antippen zeigt den Code groß auf weißem Grund für die Kasse.",
+      "<b>📷 Einscannen</b> liest QR-Codes, Aztec-Codes (z. B. der Penny-Vorteilscode) und Strichcodes von selbst. <b>📷 Foto der Karte</b> legt zusätzlich ein Foto ab (liegt nur auf deinem Home Assistant).",
+    ],
+    en: [
+      "Only if switched on in ⚙️ → Extras: the 💳 button at the top (also in store mode) shows your cards. <b>➕ Card</b>: scan or type the number, give it a name, choose “for everyone” or “only me”. Tapping shows the code large on a white background for the till.",
+      "<b>📷 Scan</b> reads QR codes, Aztec codes (e.g. the Penny benefit code) and barcodes by itself. <b>📷 Photo of the card</b> additionally stores a photo (only on your Home Assistant).",
+    ] },
+  { id: "view", icon: "👁️", c: "#1e88e5", t: ["Ansicht anpassen", "Adjust the view"], s: ["Schriftgröße, ausblenden – nur für dich", "Font size, hide – just for you"],
+    de: [
+      "Ganz unten unter der Liste: <b>👁️ Ansicht</b>. Dort stellst du ein, was <b>du</b> sehen willst – ohne Zahnrad und PIN, nur für dich, auf allen deinen Geräten.",
+      "<b>🔠 Schriftgröße:</b> Kleiner · Standard · Größer.",
+      "<b>Beim Artikel</b> blendest du Menge, Notizen, Für wen, Datum, Foto, Stern und mehr aus. <b>Oben &amp; beim Eintragen</b> auch die Geschäfte-Leiste, das Eingabefeld, die Geschäft- und Kategorie-Auswahl und die Icon-Leiste.",
+      "Was du nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht, nur mit Zugang zum Zahnrad).",
+    ],
+    en: [
+      "At the very bottom under the list: <b>👁️ View</b>. There you choose what <b>you</b> want to see – without the gear and PIN, only for you, on all your devices.",
+      "<b>🔠 Font size:</b> Smaller · Standard · Larger.",
+      "<b>On the item</b> you hide quantity, notes, for whom, date, photo, star and more. <b>Top &amp; adding</b> also the store bar, the input field, the store and category choice and the icon bar.",
+      "Whatever you do not change comes from “For everyone” (⚙️ → List view, only with access to the gear).",
+    ] },
+  { id: "signs", icon: "🛒", c: "#8e24aa", t: ["Die Zeichen oben", "The symbols at the top"], s: ["Leiste, Wagen, Zahnrad, neue Version", "Bar, cart, gear, new version"],
+    de: [
+      "<b>🛒 Einkaufswagen</b> (oder das Maskottchen) links = <b>zurück zur Einkaufsliste</b>, egal wo du bist. Daneben die <b>Zahl</b> (so viel ist offen), <b>▥ Barcode</b> (nur mit Scanner) und <b>🧾</b> (nur wenn das Protokoll an ist). Rechts: <b>Kochmütze</b> = Rezepte, <b>Geschäft</b> = Laden-Modus.",
+      "Die <b>schmale Leiste ganz oben</b> auf jeder Seite: links <b>🟢 verbunden</b> (<b>⏳ orange</b> = Änderungen warten aufs Netz, <b>🔴</b> = keine Verbindung; antippen bringt dich zur Liste). Rechts: <b>🔓</b> sperrt das ⚙️ sofort (nur mit PIN), das <b>⚙️ Zahnrad</b> öffnet die Einstellungen und die Versionsnummer.",
+      "Ganz unten: <b>📖 Anleitung</b> (diese hier) und <b>👁️ Ansicht</b>.",
+      "Ein <b>blauer Balken</b> oben = es gibt eine neue Version. Tippe auf <b>„Neu laden“</b>. Nur wenn dort steht, dass die Karte neuer ist als Home Assistant, muss ein Admin Home Assistant neu starten.",
+    ],
+    en: [
+      "<b>🛒 Shopping cart</b> (or the mascot) at the left = <b>back to the shopping list</b>, wherever you are. Next to it the <b>number</b> (how many are open), <b>▥ barcode</b> (only with a scanner) and <b>🧾</b> (only if the log is on). At the right: <b>chef's hat</b> = recipes, <b>store</b> = store mode.",
+      "The <b>slim bar at the very top</b> on every page: at the left <b>🟢 connected</b> (<b>⏳ orange</b> = changes are waiting for the network, <b>🔴</b> = no connection; tap to go to the list). At the right: <b>🔓</b> locks the ⚙️ at once (only with a PIN), the <b>⚙️ gear</b> opens the settings and the version number.",
+      "At the very bottom: <b>📖 Guide</b> (this one) and <b>👁️ View</b>.",
+      "A <b>blue bar</b> at the top = a new version exists. Tap <b>“Reload”</b>. Only if it says the card is newer than Home Assistant, an admin has to restart Home Assistant.",
+    ] },
+];
+
+// 💡 Hilfe unter den Einstellungen (⚙️): steht in jeder Zeile UNTER den Schaltern/Auswahlflächen und ist zugleich das Kapitel in der Einstellungs-Anleitung.
+// Jeder Eintrag: [Gruppe, Titel de, Titel en, [Punkte de], [Punkte en]]
+const EL_HELP = {
+  stores: ["list", [
+    "Pro Geschäft eine Zeile. Mit <b>⌃ ⌄</b> änderst du die Reihenfolge der Reiter. Antippen öffnet die Seite des Geschäfts.",
+    "Dort: Name, Farbe, Icon, <b>📍 Zone(n)</b> für „Nächstes Geschäft“ (die Liste springt dann auf dieses Geschäft, wenn du dort bist; mehrere Zonen = mehrere Filialen), <b>Eigenmarken</b>, <b>🗂️ eigene Kategorien</b> (Häkchen, was es dort gibt, und eine neue nur dafür) und <b>🗺️ eigene Kategorien-Folge</b> (mit ↑↓ so sortieren, wie der Laden aufgebaut ist).",
+    "Neue Geschäfte legst du mit dem „Neu“-Formular an, 🗑️ löscht.",
+  ], [
+    "One row per store. <b>⌃ ⌄</b> changes the order of the tabs. Tapping opens the store's page.",
+    "There: name, colour, icon, <b>📍 zone(s)</b> for “Next store” (the list then jumps to this store when you are there; several zones = several branches), <b>own brands</b>, <b>🗂️ own categories</b> (tick what exists there, plus a new one just for it) and <b>🗺️ own category order</b> (sort with ↑↓ the way the shop is laid out).",
+    "Create new stores with the “New” form, 🗑️ deletes.",
+  ]],
+  categories: ["list", [
+    "Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), Reihenfolge mit ↑ ↓, löschen mit 🗑️, neue über das Formular.",
+  ], [
+    "Name, colour, icon (search with German or English words), order with ↑ ↓, delete with 🗑️, new ones via the form.",
+  ]],
+  persons: ["list", [
+    "Die Namen für die Schnellknöpfe bei „Für wen?“. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.",
+  ], [
+    "The names for the quick buttons at “For whom?”. Without people the 👤 stays hidden in the list.",
+  ]],
+  products: ["list", [
+    "<b>Alle Produkte:</b> antippen = ändern oder ganz löschen (Umbenennen zieht Fotos, Barcodes und Rezepte mit). Die Suche findet Name, Notiz, Spitzname, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Filter (ohne Kategorie, ohne Foto, nach Geschäft …) und das <b>Radiergummi</b> setzen alles zurück.",
+    "<b>Im Produkt:</b> Name, Notiz (📝 nur lesbar, aus dem Barcode), <b>✏️ Eigene Notiz</b>, <b>🏷️ Spitznamen</b> (für alle Produkte möglich), Kategorie, Standard-Geschäft, <b>🧠 gelernte Tippfehler</b> (mit „Vergessen“), Barcodes, 📷 Fotos (Reihenfolge, ⭐ Hauptfoto), <b>🧲 Zusammenführen</b> (aus zwei Namen einen) und „Ganz löschen“.",
+    "<b>Neu gescannt:</b> Name prüfen, dann ✔ Passt. <b>➕ Neues Produkt / ▥ Per Barcode</b> legt ein Produkt im Katalog an. <b>🔄 Alles neu holen</b> (Wolke) holt Foto, Name und/oder Notiz aus der Datenbank; eigene Fotos und deine Eigene Notiz bleiben.",
+    "<b>Einkaufsliste Produkte löschen</b> löscht Artikel endgültig von der Liste (Barcode und Vorschlag bleiben). <b>🗓️ Seit 3 Monaten nicht gekauft</b> zeigt alte Produkte, auf Wunsch „Alle löschen“.",
+  ], [
+    "<b>All products:</b> tap = change or delete completely (renaming takes photos, barcodes and recipes along). The search finds name, note, nickname, barcode, category and store – even with small typos. Filters (no category, no photo, by store …) and the <b>eraser</b> reset everything.",
+    "<b>In a product:</b> name, note (📝 read-only, from the barcode), <b>✏️ own note</b>, <b>🏷️ nicknames</b> (possible for every product), category, default store, <b>🧠 learned typos</b> (with “Forget”), barcodes, 📷 photos (order, ⭐ main photo), <b>🧲 merge</b> (two names into one) and “Delete completely”.",
+    "<b>Newly scanned:</b> check the name, then ✔ OK. <b>➕ New product / ▥ By barcode</b> creates a product in the catalogue. <b>🔄 Fetch all again</b> (cloud) gets photo, name and/or note from the database; your own photos and your own note stay.",
+    "<b>Delete shopping list products</b> removes items from the list for good (barcode and suggestion stay). <b>🗓️ Not bought for 3 months</b> shows old products, with “Delete all” if you like.",
+  ]],
+  recipes: ["list", [
+    "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
+    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
+  ], [
+    "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
+    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
+  ]],
+  listview: ["app", [
+    "Was beim Artikel zu sehen ist, die Leiste und die Eingabefelder oben sowie die <b>Schriftgröße</b> – das hier ist der Standard <b>für alle</b>. Jeder kann es für sich selbst anders einstellen: ganz unten unter der Liste mit <b>👁️ Ansicht</b>, ohne PIN.",
+  ], [
+    "What you see on an item, the bar and input fields at the top, and the <b>font size</b> – this is the default <b>for everyone</b>. Everybody can set it differently for themselves: at the very bottom under the list with <b>👁️ View</b>, without a PIN.",
+  ]],
+  offers: ["extras", [
+    "Braucht eine <b>Postleitzahl</b> (nur Admins). Dazu: „Nur diese Geschäfte“ (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b>, <b>Ausschalten</b>. Die Statuszeile zeigt Zahl und letzte Prüfung. Die Angebote kommen inoffiziell von Marktguru und können jederzeit ausfallen.",
+  ], [
+    "Needs a <b>postcode</b> (admins only). Also: “Only these stores” (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b>, <b>Switch off</b>. The status line shows the count and the last check. The offers come unofficially from Marktguru and can stop at any time.",
+  ]],
+  spend: ["extras", [
+    "Eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist). Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert. Gilt für alle Geräte.",
+  ], [
+    "Its own switch plus <b>“🎉 Ask automatically”</b> (appears only when the log is on). Switching off only hides the display – the entries stay stored. Applies to all devices.",
+  ]],
+  cards: ["extras", [
+    "Der Schalter gilt für alle. Ob eine Karte „für alle“ oder „nur ich“ ist, wählst du beim Anlegen der Karte.",
+  ], [
+    "The switch applies to everyone. Whether a card is “for everyone” or “only me” you choose when creating the card.",
+  ]],
+  notetpl: ["extras", [
+    "Kleine Knöpfe unter dem ✏️ Eigene-Notiz-Feld (beim Eintragen, Bearbeiten und im Katalog). Ein Text pro Zeile, gilt für alle Geräte.",
+  ], [
+    "Small buttons under the ✏️ own-note field (when adding, editing and in the catalogue). One text per line, applies to all devices.",
+  ]],
+  aicook: ["extras", [
+    "Du wählst einen KI-Assistenten aus Home Assistant (z. B. OpenAI, Google, Anthropic oder lokal Ollama). Dann gibt es bei den Rezepten „Was kann ich kochen?“. Dazu <b>🧂 Immer im Haus</b> (geht bei jeder Anfrage mit) und <b>🚫 Das nie vorschlagen</b>. Nur Admins.",
+  ], [
+    "You choose an AI assistant from Home Assistant (e.g. OpenAI, Google, Anthropic or local Ollama). Then the recipes get “What can I cook?”. Plus <b>🧂 Always at home</b> (goes into every request) and <b>🚫 Never suggest</b>. Admins only.",
+  ]],
+  autoshop: ["extras", [
+    "Braucht eine <b>📍 Zone</b> beim Geschäft und dein Handy als Person in Home Assistant. Der Schalter gilt für alle, der Standort bleibt bei jedem selbst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.",
+  ], [
+    "Needs a <b>📍 zone</b> at the store and your phone as a person in Home Assistant. The switch applies to everyone, the location stays with each person. Whatever you switch yourself, the automation leaves alone.",
+  ]],
+  mascot: ["extras", [
+    "Ein Einkaufswagen mit Gesicht statt des Wagen-Symbols. Er hat Stimmungen (froh, fleißig, voll, schläft) und trägt je nach Jahreszeit ein Kostüm. Antippen = zurück zur Einkaufsliste. Gilt für alle.",
+  ], [
+    "A shopping cart with a face instead of the cart symbol. It has moods (happy, busy, full, asleep) and wears a costume by season. Tap = back to the shopping list. Applies to everyone.",
+  ]],
+  labels: ["extras", [
+    "Zeigt unter den kleinen Icons einen kurzen Text. Gilt für alle Geräte. Auch ohne den Schalter: <b>länger auf ein Icon drücken</b> zeigt, was es macht.",
+  ], [
+    "Shows a short text under the small icons. Applies to all devices. Even without the switch: <b>press and hold an icon</b> to see what it does.",
+  ]],
+  transfer: ["data", [
+    "<b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen (bis zu 50), jede mit eigenem Geschäft – entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich; nur Admins) oder <b>einmal herüberholen</b>. Dazu Text einfügen und einen Katalog aus CSV (Name; Kategorie; Barcode; Notiz).",
+    "<b>🥫 Grocy:</b> Produkte in den Katalog holen (Adresse und API-Schlüssel, Vorschau mit Häkchen) und der <b>🔄 Dauerabgleich</b> mit getrennten Schaltern für Einkaufsliste und Katalog.",
+    "<b>🗣️ Siri / Kurzbefehle:</b> Aktion „Dienst aufrufen“ der Home-Assistant-App, Dienst <code>einkaufsliste.add_item</code>, Daten <code>name: Milch</code>. <b>📧 E-Mail:</b> IMAP-Postfach, erlaubte Absender, Geschäft über Betreff oder „Aldi:“ in der Mail. <b>Sicherung:</b> .zip herunterladen oder einspielen (ersetzt alles!) – nur Admins.",
+  ], [
+    "<b>From other apps:</b> several Alexa/to-do lists (up to 50), each with its own store – either 🔁 <b>fetch automatically</b> (fetch &amp; delete there · keep in both · full sync; admins only) or <b>fetch once</b>. Plus pasting text and a catalogue from CSV (name; category; barcode; note).",
+    "<b>🥫 Grocy:</b> fetch products into the catalogue (address and API key, preview with ticks) and the <b>🔄 continuous sync</b> with separate switches for shopping list and catalogue.",
+    "<b>🗣️ Siri / Shortcuts:</b> action “Call service” of the Home Assistant app, service <code>einkaufsliste.add_item</code>, data <code>name: milk</code>. <b>📧 Email:</b> IMAP mailbox, allowed senders, store via subject or “Aldi:” in the mail. <b>Backup:</b> download .zip or restore (replaces everything!) – admins only.",
+  ]],
+  log: ["data", [
+    "Wer hat wann was gemacht, mit Filtern (Person, Geschäft, Aktion), Suche und Symbol-Legende. Oben <b>📈 Oft nicht bekommen</b> (✖ blendet einen Eintrag aus). Wie lange der Verlauf bleibt (7/30/90/180/365 Tage), stellst du dort ein; „Verlauf leeren“ löscht ihn.",
+  ], [
+    "Who did what and when, with filters (person, store, action), search and a symbol legend. At the top <b>📈 Often not available</b> (✖ hides an entry). How long the history is kept (7/30/90/180/365 days) you set there; “Clear history” deletes it.",
+  ]],
+  cleanup: ["data", [
+    "Einmal pro Woche werden alte offene Sachen <b>abgehakt</b>, gelöscht wird nichts. An/Aus, Tag, Uhrzeit und Mindestalter stellst du hier ein (gilt für alle). „Jetzt aufräumen“ und „Alles abhaken“ gehen sofort.",
+    "<b>🧽 Liste löschen</b> (nur Admins): Geschäft wählen, dann „Erledigte löschen“ oder „Liste leeren“. Der Katalog bleibt. <b>🧹 Alles löschen</b>: Liste und ganzer Katalog mit Fotos, Barcodes, Notizen und Favoriten – nicht rückgängig. <b>💣 Werkseinstellungen</b>: wirklich alles zurück auf Anfang (auch Geschäfte, Kategorien, Rezepte, Karten, Verbindungen; nur die PIN bleibt). Alle drei mit Sicherheitsfragen – vorher lieber eine Sicherung machen.",
+  ], [
+    "Once a week old open things are <b>checked off</b>, nothing is deleted. On/off, day, time and minimum age you set here (applies to everyone). “Tidy up now” and “Check off all” work at once.",
+    "<b>🧽 Delete list</b> (admins only): choose a store, then “Delete done” or “Empty list”. The catalogue stays. <b>🧹 Delete everything</b>: list and the whole catalogue with photos, barcodes, notes and favourites – cannot be undone. <b>💣 Factory reset</b>: really everything back to the start (also stores, categories, recipes, cards, connections; only the PIN stays). All three ask safety questions – better make a backup first.",
+  ]],
+  check: ["health", [
+    "Sucht kaputte oder unvollständige Einträge. Bei jedem Fund: <b>🔧 Beheben</b>, <b>✏️ Selbst ändern</b> oder eine Auswahl. Oder anhaken und alles auf einmal reparieren. Unten zeigt <b>📊 Last</b>, wie oft sich etwas ändert, wie viele Pakete an Karten und Apps gingen und wie groß ein Paket ist – hilft bei hoher Server-Last.",
+    "Auch als Sensor: <code>sensor.einkaufsliste_gesundheit</code> (ok / hinweis / problem) für Automationen.",
+  ], [
+    "Looks for broken or incomplete entries. For every finding: <b>🔧 Fix</b>, <b>✏️ Change myself</b> or a choice. Or tick and repair everything at once. At the bottom <b>📊 Load</b> shows how often something changes, how many packets went to cards and apps and how big a packet is – helps with high server load.",
+    "Also as a sensor: <code>sensor.einkaufsliste_gesundheit</code> (ok / hinweis / problem) for automations.",
+  ]],
+  errors: ["health", [
+    "Technische Fehler mit „Kopieren“ und „Leeren“ – praktisch, wenn du Hilfe brauchst. Gibt es Fehler der letzten 24 Stunden, öffnet der Balken oben dieses Protokoll statt „Alles ok?“.",
+  ], [
+    "Technical errors with “Copy” and “Clear” – handy when you need help. If there are errors from the last 24 hours, the bar at the top opens this log instead of “All OK?”.",
+  ]],
+  stats: ["health", [
+    "Wie groß Daten und Fotos sind und wie viel drinsteht (Artikel, Produkte, Rezepte, Barcodes, Verlauf).",
+  ], [
+    "How big data and photos are and how much is in there (items, products, recipes, barcodes, history).",
+  ]],
+  app: ["app", [
+    "Deine eigene Adresse mit „Kopieren“ (braucht eine https-Adresse, z. B. Nabu Casa). Im Handy-Browser öffnen und zum Startbildschirm hinzufügen. Offline geht fast alles; nicht gehen neue Barcodes nachschlagen, Produkt-Infos, Rezept-Links, neue Fotos und die Sicherung.",
+  ], [
+    "Your own address with “Copy” (needs an https address, e.g. Nabu Casa). Open it in the phone browser and add it to the home screen. Almost everything works offline; not available are looking up new barcodes, product info, recipe links, new photos and the backup.",
+  ]],
+  theme: ["app", [
+    "Hell, dunkel oder automatisch – nur in der Offline-App. In der Dashboard-Karte folgt alles dem Home-Assistant-Design.",
+  ], [
+    "Light, dark or automatic – only in the offline app. In the dashboard card everything follows the Home Assistant theme.",
+  ]],
+  pin: ["app", [
+    "Mit PIN geht das ⚙️ erst nach Eingabe auf (4–8 Ziffern, auf diesem Gerät 10 Minuten gemerkt). Das 🔓 in der Leiste oben sperrt sofort. Vergessen? Ein Admin setzt sie zurück: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Die Liste selbst bleibt für alle offen.",
+  ], [
+    "With a PIN the ⚙️ only opens after entering it (4–8 digits, remembered for 10 minutes on this device). The 🔓 in the bar at the top locks at once. Forgot it? An admin resets it: Settings → Devices &amp; services → Shopping list → Configure. The list itself stays open for everyone.",
+  ]],
+  privacy: ["app", [
+    "Zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht. Dort schaltet ein Admin auch <b>„Datenschutz an“</b> für alle Geräte: keine Kamera, keine Fotos, kein Barcode-Scanner, kein KI-Kochen.",
+  ], [
+    "Shows in plain words what stays in your Home Assistant and what goes to the internet. There an admin also switches <b>“Privacy on”</b> for all devices: no camera, no photos, no barcode scanner, no AI cooking.",
+  ]],
+};
+const EL_HELP_GROUPS = [ // Kapitel der Einstellungs-Anleitung: [Schlüssel, Icon, Titel de, Titel en, [Zeilen], Farbe]
+  ["list", "📋", "Meine Liste", "My list", ["stores", "categories", "persons", "products", "recipes"], "#43a047"],
+  ["extras", "🎛️", "Extras", "Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot", "labels"], "#f9a825"],
+  ["data", "💾", "Daten", "Data", ["transfer", "log", "cleanup"], "#1e88e5"],
+  ["health", "🩺", "Gesundheit", "Health", ["check", "errors", "stats"], "#00897b"],
+  ["app", "📱", "App & Info", "App & info", ["listview", "app", "theme", "pin", "privacy"], "#3949ab"],
+];
+
+const EL_HELP_TITLES = { // [Titel de, Titel en, Icon]
+  stores: ["Geschäfte", "Stores", "🏪"], categories: ["Kategorien", "Categories", "🗂️"], persons: ["Personen", "People", "👤"], products: ["Produkte", "Products", "📦"], recipes: ["Rezepte", "Recipes", "👨‍🍳"],
+  offers: ["Angebote", "Offers", "🏷️"], spend: ["Einkaufs-Protokoll", "Purchase log", "🧾"], cards: ["Kundenkarten", "Loyalty cards", "💳"], notetpl: ["Notiz-Vorlagen", "Note templates", "📝"], aicook: ["KI-Kochen", "AI cooking", "🤖"], autoshop: ["Laden-Modus automatisch", "Store mode automatic", "📍"], mascot: ["Maskottchen", "Mascot", "🛒"], labels: ["Beschriftungen", "Labels", "🏷️"],
+  transfer: ["Import & Sicherung", "Import & backup", "📥"], log: ["Verlauf", "History", "🕘"], cleanup: ["Aufräumen", "Tidy up", "🧹"],
+  check: ["Alles ok?", "All OK?", "✅"], errors: ["Fehler-Protokoll", "Error log", "🐞"], stats: ["Ressourcen", "Resources", "📊"],
+  listview: ["Listenansicht – für alle", "List view – for everyone", "👁️"], app: ["Offline-App", "Offline app", "📱"], theme: ["Hell / Dunkel", "Light / dark", "🌓"], pin: ["Schutz (PIN)", "Protection (PIN)", "🔒"], privacy: ["Datenschutz", "Privacy", "🛡️"],
+};
 const EL_NEWS_MAX = 15;
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -13,6 +359,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["📖 <b>Anleitungen neu:</b> übersichtlich nach Themen, in der neuen Optik mit bunten Symbolen – und nur noch das, was dorthin gehört. In ⚙️ steht unter den Schaltern jeder Zeile ein Kasten <b>💡 So geht's</b>. · 👁️ <b>Ansicht:</b> Schriftgröße (Kleiner · Standard · Größer) und ausblendbar: Geschäfte-Leiste, Eingabefeld, Geschäft- und Kategorie-Auswahl, Icon-Leiste. · ⚙️ Zahnrad jetzt oben neben dem 🔓, der Laden-Modus ganz rechts. · ✍️ <b>Eine Eingabe = ein Produkt</b> (Komma gehört zum Namen) · 🔢 Ohne Menge ist es <b>1x</b> · Rezepte in der neuen Optik · 📊 Last auch unter Ressourcen. · Der Hinweis „Gibt's auch hier“ ist weg.",
+   "📖 <b>New guides:</b> clearly organised by topic, in the new look with coloured symbols – and only what belongs there. In ⚙️ every row has a <b>💡 How it works</b> box under its switches. · 👁️ <b>View:</b> font size (Smaller · Standard · Larger) and hideable: store bar, input field, store and category choice, icon bar. · ⚙️ gear now at the top next to the 🔓, store mode at the far right. · ✍️ <b>One entry = one product</b> (a comma belongs to the name) · 🔢 Without a quantity it is <b>1x</b> · recipes in the new look · 📊 load also under Resources. · The “Also available here” hint is gone."],
   ["⚙️ <b>Einstellungen im neuen Look:</b> Jede Gruppe ist ein Kasten mit Vorschau, was drin ist – zum Einklappen wie bisher (eine auf, die andere zu). Jede Zeile hat ein buntes Icon. · 🎚️ <b>Schalter direkt in der Zeile</b> für Maskottchen, Kundenkarten, Einkaufs-Protokoll, Laden-Modus automatisch und Beschriftungen – kein Umweg über „Einschalten“ mehr. · ← Zurück geht mit dem runden Pfeil oben. · ✍️ <b>Eingabefelder überall hell</b> mit feinem Rahmen statt grau – beim Eintragen, Bearbeiten, im Katalog und in den Einstellungen. · ✔️ <b>Abhaken mit Animation:</b> Haken wird grün, der Name durchgestrichen. · 🎨 Kategorie-Überschriften mit Farbkreis, Geschäfte-Reiter blenden am Rand aus, wenn es weitergeht. · ⭐ Favorit ist ein Schalter, alle Knöpfe sehen gleich aus. · 🏪 Der <b>Laden-Modus</b> hat oben rechts ein eigenes Bild (Geschäft statt zweitem Einkaufswagen). · 👆 <b>Wischen:</b> Zeile nach links = abhaken, erledigte Zeile nach rechts = wieder auf die Liste. · 🔵 Mengen blau, „Erledigt“ als eigener Kasten mit vollen Häkchen, aktiver Reiter gut lesbar (dunkle Schrift auf Gelb), Seiten blenden weich über.",
    "⚙️ <b>Settings with a new look:</b> each group is a box with a preview of what is inside – collapsible as before (one opens, the other closes). Every row has a coloured icon. · 🎚️ <b>Switches right in the row</b> for mascot, loyalty cards, purchase log, shop mode automatic and labels – no more detour via “Switch on”. · ← Go back with the round arrow at the top. · ✍️ <b>Input fields are light everywhere</b> with a thin frame instead of grey – when adding, editing, in the catalogue and in the settings. · ✔️ <b>Ticking off with animation:</b> the tick turns green, the name is struck through. · 🎨 Category headings with a colour circle, store tabs fade out at the edge when there are more. · ⭐ Favourite is a switch, all buttons look alike. · 🏪 <b>Shop mode</b> has its own picture at the top right (a store instead of a second cart). · 👆 <b>Swipe:</b> a row to the left = tick off, a done row to the right = back on the list. · 🔵 Quantities in blue, “Done” as its own box with full ticks, active tab easy to read (dark text on yellow), pages fade softly."],
   ["🎛️ <b>Alle Eingabe-Masken gleich:</b> Eintragen, Bearbeiten und Katalog sehen gleich aus (gleiche Höhe, Schrift, Rahmen) und können dasselbe, in derselben Reihenfolge. · ✏️ Beim <b>Bearbeiten</b> steht „Für wen“ als Auswahl neben der Menge – so wie Geschäft neben Kategorie. · 📦 Im <b>Katalog</b> neu: <b>📷 Foto</b> direkt im Produkt. · 📖 <b>„👁️ Ansicht“ und „📖 Anleitung“</b> stehen als Knöpfe unter der Karte – wie in der Offline-App. Löschen, Zusammenführen & Co. bleiben in ⚙️.",
@@ -24,6 +372,7 @@ const EL_NEWS = [
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 // 👁️ Listenansicht: was beim Artikel zu sehen ist. Standard = alles an; einstellbar für alle und pro Benutzer (⚙️ → Listenansicht)
+const VIEW_ITEM_N = 18; // die ersten 18 Einträge gehören zum Artikel, der Rest zu „Oben & beim Eintragen“
 const VIEW_OPTS = [
   ["qty", "🔢 Menge", "z. B. 2x, 500 g"],
   ["note", "📝 Notiz", "aus dem Barcode, z. B. die Marke"],
@@ -43,6 +392,11 @@ const VIEW_OPTS = [
   ["move", "⇄ Verschieben-Knopf", "rechts am Artikel"],
   ["new", "✨ Neu-Zeichen", "neu seit deinem letzten Blick"],
   ["cat_color", "🎨 Farbe der Kategorie", "farbiger Streifen links"],
+  ["tabs", "🏪 Geschäfte-Leiste oben", "die Reiter Alle · Netto · Aldi …"],
+  ["in_name", "✍️ Eingabefeld „Was brauchen wir?“", "mit Häkchen zum Eintragen"],
+  ["in_store", "🏪 Geschäft-Auswahl beim Eintragen", ""],
+  ["in_cat", "🗂️ Kategorie-Auswahl beim Eintragen", ""],
+  ["in_icons", "🧰 Icon-Leiste unter dem Eingabefeld", "Menge, Notiz, Foto, Favoriten …"],
 ];
 // 🎨 Schrift auf einer Farbe: dunkel auf hellen Farben (Gelb, Hellgrün), sonst weiß
 function elTextOn(hex) {
@@ -307,8 +661,6 @@ function splitQty(text) {
   }
   return { name: t, qty: null };
 }
-// 📋 „milch, 6 eier; brot“ -> ["milch", "6 eier", "brot"] – das Komma in „1,5 l“ trennt nicht
-const splitMany = (text) => String(text || "").split(/;|\n|(?<!\d),|,(?!\d)/).map((t) => t.trim()).filter(Boolean);
 // 📏 Einheit einer Menge („2 Dosen“ -> „Dose“, „3x“ -> „x“), null wenn unbekannt
 function unitOf(q) {
   const m = String(q ?? "").trim().replace(/\s+/g, " ").match(QTY_RX);
@@ -1630,6 +1982,13 @@ const STYLE = `
 :host([dark]) { color-scheme:dark; }
 :host([dark]) option, :host([dark]) optgroup { background-color:var(--card-background-color, #1c1c1c); color:var(--primary-text-color, #e1e1e1); }
 ha-card { display:block; padding:12px 12px 8px; overflow:hidden; }
+/* 🔠 Schriftgröße (👁️ Ansicht) und ausgeblendete Bereiche */
+ha-card.f-s { zoom:.88; } ha-card.f-l { zoom:1.16; }
+ha-card.no-tabs #tabs { display:none; }
+ha-card.no-name form.add #inName, ha-card.no-name form.add .addbtn, ha-card.no-name form.add .sugg { display:none; }
+ha-card.no-store #inStore, ha-card.no-cat #inCat { display:none; }
+ha-card.no-store.no-cat .row2.sel { display:none; }
+ha-card.no-icons form.add .toolbar { display:none; }
 * { box-sizing:border-box; }
 button { font:inherit; color:inherit; }
 .head { display:flex; align-items:center; gap:4px; margin:0 2px 8px; min-height:36px; }
@@ -1805,7 +2164,7 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .qbtn[disabled] { opacity:.3; }
 .qval { min-width:44px; text-align:center; font-weight:600; font-size:1.1em; }
 ha-card.shop form.add { display:none; }
-ha-card.shop #btnRecipes, ha-card.shop #btnSettings { display:none; }
+ha-card.shop #btnRecipes { display:none; }
 ha-card.shop #btnCards { order:1; } /* im Laden-Modus: 💳 vor dem Laden-Modus-Knopf (Plätze getauscht) */
 ha-card.shop #btnAwake { order:2; } /* 💡 Bildschirm immer an: zwischen 💳 und Laden-Modus-Knopf (nur im Laden-Modus) */
 ha-card.shop #btnShop { order:3; }
@@ -1911,6 +2270,9 @@ ha-card.compact .group { margin-top:4px; }
 .swline { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; margin:6px 0 10px; padding:12px 14px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:12px; background:none; color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
 .swline b { display:block; font-weight:500; }
 .setsearch input { border-radius:21px; }
+.sechelp { margin:14px 0 4px; padding:10px 12px; border-radius:12px; background:color-mix(in srgb, var(--primary-color, #03a9f4) 9%, transparent); font-size:13.5px; line-height:1.45; }
+.sechelp ul { margin:6px 0 0; padding-left:18px; } .sechelp li { margin:4px 0; }
+.fontrow { display:flex; gap:6px; margin:4px 0 6px; } .fontrow .btn { flex:1; justify-content:center; }
 .viewrow { padding:7px 12px; }
 .viewrow[aria-pressed=false] > ha-icon:first-child { color:var(--secondary-text-color); }
 .viewrow[aria-pressed=false] b { opacity:.6; }
@@ -1930,6 +2292,7 @@ ha-card.compact .group { margin-top:4px; }
 .topbar .grow { flex:1; }
 .topbar .iconbtn { padding:2px; --mdc-icon-size:20px; color:var(--secondary-text-color); }
 .topbar .ver { opacity:.8; }
+.topbar .lbl { display:none; } .topbar.shop #btnSettings { display:none; }
 .pill { cursor:pointer; border-radius:999px; padding:2px 10px; background:color-mix(in srgb, var(--success-color,#43a047) 18%, transparent); color:var(--primary-text-color); white-space:nowrap; }
 .pill.wait { background:color-mix(in srgb, var(--warning-color,#ffa600) 25%, transparent); }
 .pill.off { background:color-mix(in srgb, var(--error-color,#db4437) 20%, transparent); }
@@ -1950,7 +2313,6 @@ ha-card.compact .group { margin-top:4px; }
 .misshint { margin:2px 0 10px; padding:10px 12px; border-radius:12px; background:color-mix(in srgb, var(--warning-color,#ffa600) 16%, transparent); }
 .misshint .dbtns { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 .movewarn { flex-basis:100%; font-size:.9em; color:var(--warning-color,#ffa600); font-weight:600; }
-.alsohere { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:2px 0 10px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); font-size:.92em; }
 .pestores { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:.92em; }
 .pestores .stck { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:3px 10px 3px 6px; background:color-mix(in srgb, var(--c) 16%, transparent); cursor:pointer; }
 .prodedit { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; border:1px solid var(--primary-color,#03a9f4); border-radius:12px; margin:6px 0; } /* wie „Artikel bearbeiten“ */
@@ -2097,7 +2459,10 @@ label.btn { cursor:pointer; }
 .btn.danger:hover:not([disabled]) { border-color:var(--error-color,#db4437); background:color-mix(in srgb, var(--error-color,#db4437) 7%, transparent); }
 .btn.primary { border:1px solid transparent; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
 .btn.primary:hover:not([disabled]) { background:color-mix(in srgb, var(--primary-color,#03a9f4) 88%, #000); border-color:transparent; }
-.recipe { display:flex; align-items:center; gap:8px; padding:8px 6px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); margin:6px 2px; }
+.recipe { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:14px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); margin:8px 2px 4px; }
+.recipe > ha-icon:first-child { flex:none; width:42px; height:42px; padding:9px; box-sizing:border-box; border-radius:12px; background:color-mix(in srgb, var(--rc, #e53935) 17%, transparent); color:var(--rc, #e53935); --mdc-icon-size:24px; }
+.viewhead { gap:12px; font-size:1.15em; }
+.viewhead > ha-icon:first-child { flex:none; width:40px; height:40px; padding:8px; box-sizing:border-box; border-radius:12px; background:color-mix(in srgb, var(--ic, #607d8b) 18%, transparent); color:var(--ic, #607d8b); --mdc-icon-size:24px; }
 .recipe .rname { flex:1; min-width:0; }
 .recipe mark { background:none; color:var(--primary-color,#03a9f4); font-weight:700; }
 .rsearch { margin:4px 2px 8px; }
@@ -2105,8 +2470,8 @@ label.btn { cursor:pointer; }
 .recipe .rname b { display:block; word-break:normal; overflow-wrap:break-word; hyphens:auto; -webkit-hyphens:auto; }
 .recipe .rname small { color:var(--secondary-text-color); font-size:.78em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
-.rtools { display:flex; gap:6px; justify-content:flex-end; margin:-2px 4px 8px; }
-.rtools .btn { padding:5px 10px; font-size:.8em; min-height:32px; }
+.rtools { display:flex; gap:6px; justify-content:flex-end; margin:0 4px 10px; }
+.rtools .btn { padding:5px 12px; font-size:.8em; min-height:32px; border-radius:16px; }
 .rtools .rheat { flex:1; align-self:center; font-size:.78em; color:var(--secondary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .heatrow { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border-radius:12px; background:color-mix(in srgb, #ff7043 10%, transparent); border:1px solid color-mix(in srgb, #ff7043 35%, transparent); margin:6px 0; }
 .heatrow .hnums { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
@@ -3068,16 +3433,16 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="topbar" id="topBar">
         <span class="pill" id="livePill" data-act="home"></span><span class="grow"></span>
         <button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button>
+        <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Einstellungen</span></button>
         <span class="ver" translate="no">v${EL_VERSION}</span>
       </div>
       <ha-card>
         <div class="head">
           <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="home" title="🏠 Zurück zur Einkaufsliste"></ha-icon><span id="mascot" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
-          <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:storefront-outline"></ha-icon><span class="lbl">Laden</span></button>
           <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon><span class="lbl">Bildschirm</span></button>
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
           <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon><span class="lbl">Rezepte</span></button>
-          <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Einstellungen</span></button>
+          <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:storefront-outline"></ha-icon><span class="lbl">Laden</span></button>
         </div>
         <div class="error" id="error" hidden></div>
         <div class="updbar" id="updBar" hidden></div>
@@ -3470,6 +3835,11 @@ class EinkaufslisteCard extends HTMLElement {
     cardEl.classList.toggle("compact", !!c.compact);
     const shop = !!this._shopMode && this._view === "list";
     cardEl.classList.toggle("shop", shop);
+    this.$("topBar")?.classList.toggle("shop", shop); // ⚙️ sitzt jetzt in der Leiste oben: im Laden-Modus weg
+    const vp = this._viewPrefs(); // 👁️ Ansicht: Leiste/Eingabefelder ausblenden, Schriftgröße
+    for (const [k, cls] of [["tabs", "no-tabs"], ["in_name", "no-name"], ["in_store", "no-store"], ["in_cat", "no-cat"], ["in_icons", "no-icons"]]) cardEl.classList.toggle(cls, vp[k] === false);
+    cardEl.classList.toggle("f-s", vp.font === "s");
+    cardEl.classList.toggle("f-l", vp.font === "l");
     cardEl.classList.toggle("labels", !!d?.settings?.labels); // 🏷️ Beschriftungen unter den Icons (Schalter in ⚙️ → Extras, gilt für alle)
     const btnShop = this.$("btnShop");
     btnShop.hidden = !d || this._view !== "list";
@@ -3782,7 +4152,7 @@ class EinkaufslisteCard extends HTMLElement {
     const list = this._suggestList(q);
     this._suggMap = new Map(list.map((c, n) => [String(n), c]));
     // 🏷️ Angebote beim Tippen: „Angebote für „Kaffee“ anzeigen“ (nur wenn in ⚙️ eingeschaltet)
-    const typed = (splitQty(splitMany(this.$("inName").value).pop() || "").name || "").trim();
+    const typed = (splitQty(this.$("inName").value || "").name || "").trim();
     const offChip = this._data?.settings?.offers?.enabled && this._formMode !== "recipe" && typed.length >= 3
       ? `<button type="button" class="chip2 offsearch" data-act="offers-search" data-q="${esc(typed)}">🏷️ <span>Angebote für</span> „<span translate="no">${esc(typed)}</span>“ <span>anzeigen</span></button>` : "";
     if (!list.length && !offChip) { box.hidden = true; box.innerHTML = ""; return; }
@@ -4160,7 +4530,7 @@ class EinkaufslisteCard extends HTMLElement {
     const open = allView ? this._groupStores(rawOpen) : rawOpen;
     // 🔎 Was oben getippt wird, sucht unten in „Erledigt“ – nach Name, Notiz oder Person („max“).
     // Im Laden-Modus zählt das nicht (da soll immer die ganze Liste stehen).
-    const typed = this._shopMode ? "" : splitMany(this.$("inName").value).pop() || "";
+    const typed = this._shopMode ? "" : (this.$("inName").value || "").trim();
     const filter = (splitQty(typed).name || typed).trim().toLowerCase();
     const hit = (i) => i.name.toLowerCase().includes(filter) || (i.note || "").toLowerCase().includes(filter)
       || String(i.own_note || this._ownNote(i.name, i.note) || "").toLowerCase().includes(filter)
@@ -4189,18 +4559,6 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="dbtns"><button class="btn" data-act="dup-ignore">Passt so</button><button class="primary addbtn" data-act="dup-merge"><ha-icon icon="mdi:call-merge"></ha-icon>Zusammenlegen</button></div></div>`);
     }
 
-    // 🏪 Gibt's auch hier: Artikel, die bei einem anderen Geschäft offen stehen, die es aber auch hier gibt
-    const here = !allView ? (this._fixedStore || this._activeTab) : null;
-    if (here && here !== "none" && !filter && this._store(here)) {
-      const openHere = new Set(rawOpen.map((i) => i.name.toLowerCase())); // steht schon hier (z. B. 🤷 „Egal wo“)
-      const also = d.items.filter((i) => !i.checked && i.store_id && i.store_id !== here && !i.recipe_id && !openHere.has(i.name.toLowerCase()) && this._prodStores(i.name).includes(here));
-      if (also.length) {
-        html.push(`<div class="alsohere"><b>🔁 Gibt's auch hier:</b> ${also.slice(0, 8).map((i) => {
-          const st = this._store(i.store_id);
-          return `<button class="tab" style="--c:${esc(st?.color || "#888")}" data-act="also-here" data-id="${esc(i.id)}" data-store="${esc(here)}" title="Hierher holen">${esc(i.name)}<span class="n">${esc(st?.name || "")}</span></button>`;
-        }).join("")}</div>`);
-      }
-    }
     if (!open.length) {
       html.push(`<div class="empty"><ha-icon icon="mdi:cart-check"></ha-icon>${
         items.length ? "Alles im Korb – nix mehr offen! 🎉" : "Noch nichts auf der Liste. Tipp oben rein, was fehlt! ✍️"}</div>`);
@@ -4212,7 +4570,7 @@ class EinkaufslisteCard extends HTMLElement {
       const total = allView ? this._groupStores(items.filter((i) => i.checked)).length : items.filter((i) => i.checked).length;
       html.push(`<div class="group donebox">
         <div class="ghead donehead ${this._doneOpen || filter ? "" : "closed"}" role="button" tabindex="0" aria-expanded="${this._doneOpen || filter ? "true" : "false"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
-        ${this._doneOpen || filter ? `<div class="donehint">Tipp auf den Kreis, um es wieder auf die Liste zu nehmen.</div>${
+        ${this._doneOpen || filter ? `<div class="donehint">Nach rechts wischen ↩ (oder auf den Kreis tippen), um es wieder auf die Liste zu nehmen.</div>${
           done.length ? this._groupedHtml(done, row, byName, true, !!filter) : `<div class="donehint">Nichts gefunden zu „${esc(filter)}“.</div>`}` : ""}
       </div>`);
     }
@@ -4795,6 +5153,7 @@ class EinkaufslisteCard extends HTMLElement {
           <span class="ic" style="--ic:${SET_COLORS[cur.key] || "#607d8b"}"><ha-icon icon="${cur.icon}"></ha-icon></span><h3>${cur.title}</h3>
         </div>
         ${cur.html()}
+        ${this._secHelp(cur.key)}
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
     if (cur.key === "stats") this._loadStats();
@@ -4883,7 +5242,8 @@ class EinkaufslisteCard extends HTMLElement {
     const all = this._data?.settings?.view_prefs || {};
     const me = this._hass?.user?.id;
     const off = VIEW_OPTS.filter(([k]) => this._viewPrefs()[k] === false).length;
-    return `${off ? `${off} ausgeblendet` : "alles sichtbar"}${me && all[me] ? " · eigene Ansicht" : ""}`;
+    const f = this._viewPrefs().font;
+    return `${off ? `${off} ausgeblendet` : "alles sichtbar"}${f === "s" ? " · Schrift kleiner" : f === "l" ? " · Schrift größer" : ""}${me && all[me] ? " · eigene Ansicht" : ""}`;
   }
 
   // mine = true: „Meine Ansicht“ (👁️ unten neben „Anleitung“, für jeden ohne PIN) · false: „Für alle“ (⚙️ → Listenansicht)
@@ -4893,13 +5253,19 @@ class EinkaufslisteCard extends HTMLElement {
     const base = { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
     const cur = mine ? { ...base, ...((me && all[me]) || {}) } : base;
     const scope = mine ? "me" : "all";
+    const row = ([k, label, sub]) => `<button class="lrow viewrow" data-act="view-toggle" data-scope="${scope}" data-key="${k}" aria-pressed="${cur[k] !== false}">
+          <ha-icon icon="${cur[k] !== false ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>
+          <span class="grow"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span></button>`;
     return `
         <p class="hint">${mine
           ? `Gilt nur für <b translate="no">${esc(this._hass?.user?.name || "dich")}</b> – auf allen Geräten, auf denen du angemeldet bist. Was du hier nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht).`
           : "Was alle in der Familie beim Artikel sehen (Standard). Jeder kann es für sich selbst anders einstellen – ganz unten unter der Liste mit „👁️ Ansicht“, ganz ohne PIN."}</p>
-        ${VIEW_OPTS.map(([k, label, sub]) => `<button class="lrow viewrow" data-act="view-toggle" data-scope="${scope}" data-key="${k}" aria-pressed="${cur[k] !== false}">
-          <ha-icon icon="${cur[k] !== false ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>
-          <span class="grow"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span></button>`).join("")}
+        <p class="hint"><b>🔠 Schriftgröße</b></p>
+        <div class="fontrow">${[["s", "Kleiner"], ["m", "Standard"], ["l", "Größer"]].map(([f, t]) => `<button class="btn ${(cur.font || "m") === f ? "primary" : ""}" data-act="view-font" data-scope="${scope}" data-font="${f}" aria-pressed="${(cur.font || "m") === f}">${t}</button>`).join("")}</div>
+        <p class="hint" style="margin-top:12px"><b>👁️ Beim Artikel</b></p>
+        ${VIEW_OPTS.slice(0, VIEW_ITEM_N).map(row).join("")}
+        <p class="hint" style="margin-top:12px"><b>🧩 Oben &amp; beim Eintragen</b> – was du nicht brauchst, blendest du aus</p>
+        ${VIEW_OPTS.slice(VIEW_ITEM_N).map(row).join("")}
         <div class="btnrow">${mine
           ? (me && all[me] ? `<button class="btn" data-act="view-reset" data-scope="me"><ha-icon icon="mdi:restore"></ha-icon>Wie „Für alle“</button>` : "")
           : (all._all ? `<button class="btn" data-act="view-reset" data-scope="all"><ha-icon icon="mdi:restore"></ha-icon>Alles wieder anzeigen</button>` : "")}</div>
@@ -6006,7 +6372,7 @@ class EinkaufslisteCard extends HTMLElement {
     // Suchfeld nur einmal bauen – sonst springt beim Tippen der Cursor raus
     const aiOn = !!this._data.settings?.ai_on && !this._privacyOn();
     if (!ov.querySelector("#recipeList") || !!ov.querySelector("#recipeSearch") !== count > 0 || !!ov.querySelector('[data-act="ai-cook"]') !== aiOn) {
-      ov.innerHTML = `<div class="sec"><h3><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon>Was kann ich kochen?</button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:timer-outline"></ha-icon>Gar-Zeiten</button></h3>${
+      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon>Was kann ich kochen?</button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:timer-outline"></ha-icon>Gar-Zeiten</button></h3>${
         count ? this._recipeSearchHtml("recipeSearch") : ""}<div id="recipeList"></div></div>`;
     }
     this._renderRecipeList();
@@ -6029,7 +6395,7 @@ class EinkaufslisteCard extends HTMLElement {
         : via ? `🥕 enthält ${this._markHit(via, q)}`
         : ""; // nur bei der Suche: warum gefunden
       html.push(`
-        <div class="recipe ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}">
+        <div class="recipe ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
           <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
           <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)}</b>${sub ? `<small>${sub}</small>` : ""}</div>
           <div class="rbtns">
@@ -6055,7 +6421,7 @@ class EinkaufslisteCard extends HTMLElement {
     this.shadowRoot.querySelectorAll(".rclear").forEach((b) => { b.hidden = !q; });
     const found = this._recipeMatches(q);
     box.innerHTML = (q && !found.length ? `<p class="hint">Nix gefunden für „${esc(q)}“ 🕵️</p>` : "") + found.map(({ r, via, fuzzy }) => `
-      <div class="recipe ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}">
+      <div class="recipe ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
         <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
         <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${this._recipePhotoBtn(r)}</b><small>${
           fuzzy ? "🤓 Meintest du das? · " : via ? `🥕 enthält ${this._markHit(via, q)} · ` : ""}${this._rgroup(r.group) ? esc(this._rgroup(r.group).name) + " · " : "ohne Gruppe · "}${r.items.length} Zutaten${r.steps ? " · 📖 Anleitung" : " · ohne Anleitung"}${(r.heat || []).length ? " · 🔥 Backofen & Co." : ""}</small></div>
@@ -7599,7 +7965,7 @@ class EinkaufslisteCard extends HTMLElement {
     ov.style.colorScheme = dk ? "dark" : "light";
     Object.assign(ov.style, { background: dk ? "#111" : "#f2f2f2", color: dk ? "#eee" : "#222", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
       paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
-    const sec = (icon, title, body, open = false) => `<details class="elg-sec" ${open ? "open" : ""}><summary>${icon} ${title}</summary><div>${body}</div></details>`;
+    const sec = (icon, title, body, open = false, c = "#607d8b", sub = "") => `<details class="elg-sec" style="--gc:${c}" ${open ? "open" : ""}><summary><span class="elg-ic">${icon}</span><span class="elg-tt"><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span></summary><div>${body}</div></details>`;
     const appSec = kind === "settings" ? "" : this._guideAppSec(sec);
     ov.innerHTML = `<style>
       .elg { --g-text:${dk ? "#eee" : "#222"}; --g-strong:${dk ? "#fff" : "#000"}; --g-mute:${dk ? "#aaa" : "#666"}; --g-card:${dk ? "#1e1e1e" : "#fff"}; --g-line:${dk ? "#333" : "#d6d6d6"}; --g-key:${dk ? "#333" : "#e4e4e4"}; --g-field:${dk ? "#111" : "#fff"}; --g-fline:${dk ? "#444" : "#bbb"}; --g-btn:${dk ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)"};
@@ -7608,9 +7974,13 @@ class EinkaufslisteCard extends HTMLElement {
       .elg .elg-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
       .elg .elg-sub { color:var(--g-mute); margin:0 0 12px; font-size:14px; }
       .elg-sec { background:var(--g-card); border:1px solid var(--g-line); border-radius:12px; margin:8px 0; overflow:hidden; }
-      .elg-sec summary { cursor:pointer; padding:12px 14px; font-weight:600; font-size:16px; list-style:none; }
+      .elg-sec { border-left:4px solid var(--gc, #607d8b); }
+      .elg-sec summary { cursor:pointer; padding:10px 14px; font-weight:600; font-size:16px; list-style:none; display:flex; align-items:center; gap:12px; }
+      .elg-ic { flex:none; width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:20px; background:color-mix(in srgb, var(--gc, #607d8b) 18%, transparent); }
+      .elg-tt { flex:1; min-width:0; } .elg-tt b { display:block; } .elg-tt small { display:block; font-weight:400; font-size:12.5px; color:var(--g-mute); }
+      .elg-row { margin:12px 0 2px; }
       .elg-sec summary::-webkit-details-marker { display:none; }
-      .elg-sec summary::after { content:"＋"; float:right; opacity:.6; }
+      .elg-sec summary::after { content:"＋"; margin-left:auto; opacity:.6; }
       .elg-sec[open] summary::after { content:"－"; }
       .elg-sec > div { padding:0 14px 12px; }
       .elcredits { text-align:center; } .elcredits p { margin:8px 0; }
@@ -7634,132 +8004,7 @@ class EinkaufslisteCard extends HTMLElement {
       .elg-sec[hidden] { display:none; }
       .elg .elg-copy { font:inherit; font-weight:600; color:#fff; background:#03a9f4; border:0; border-radius:10px; padding:9px 16px; cursor:pointer; }
     </style>
-    ${kind === "settings" ? this._guideSettings(sec) : EL_LANG !== "de" ? this._guideEn(sec, appSec) : `<div class="elg">
-      <div class="elg-top"><h2>🛒 So funktioniert die Einkaufsliste</h2></div>
-      <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung findest du immer über den Knopf <b>📖 Anleitung ganz unten</b> unter der Liste.</p>
-      ${sec("🆕", "Was ist neu", this._newsHtml(false))}
-      ${sec("✍️", "Etwas eintragen", `<ul>
-        <li>Oben ins Feld tippen, z. B. <b>Milch</b>, dann den grünen Haken <span class="elg-k">✔</span>.</li>
-        <li>Beim Tippen kommen bis zu <b>2 Vorschläge</b>. Antippen übernimmt alles vom letzten Mal (Menge, Notiz, für wen, Geschäft).</li>
-        <li>Auch Produkte, die du noch nie gekauft hast: Schon nach <b>1–2 Buchstaben</b> kommen Vorschläge aus einer eingebauten Liste mit rund 1400 gängigen Lebensmitteln und Haushaltsdingen (mit passender Kategorie). Dein Eigenes steht immer vorn.</li>
-        <li><b>Was macht dieses Icon?</b> Länger darauf drücken zeigt kurz den Namen. Oder ⚙️ → Extras → <b>Beschriftungen</b>: dann steht unter den Icons ein kurzer Text (der Schalter gilt für alle).</li>
-        <li>Die Menge geht auch direkt: <b>3 Milch</b> oder <b>500 g Mehl</b>. Die Liste merkt sich die Einheit: <b>2 Backpulver</b> wird zu 2 Pck.</li>
-        <li><b>Mehrere auf einmal:</b> <b>Milch, 6 Eier, Brot</b> → ✔ → 3 Sachen auf der Liste.</li>
-        <li><b>🤔 Ungewöhnlich große Menge?</b> Bei z. B. 300 Eier oder 40 kg Mehl fragt die Liste kurz nach, ob das wirklich stimmt – so bleiben Zahlendreher nicht unbemerkt.</li>
-        <li><b>Namen werden aufgeräumt:</b> „h-milch“ wird zu „H-Milch“.</li>
-        <li>Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 📷 Foto · ⭐ alle Favoriten auf die Liste · 📋 Liste aus Foto einlesen · 🧽 alles leeren. Beim <b>Bearbeiten</b> (lange drücken) gibt es dazu Spitznamen und ⭐ Favorit; „Für wen“ wählst du dort neben der Menge aus.</li>
-        <li><b>⭐ Favoriten:</b> Beim Bearbeiten eines Artikels (oder eines Produkts im Katalog) „⭐ Favorit“ ankreuzen – dann steht ein ⭐ vor dem Foto-Symbol. Der ⭐-Knopf unter dem Eingabefeld setzt <b>alle</b> Favoriten sofort auf die Liste; was schon offen draufsteht, kommt nicht doppelt.</li>
-        <li><b>📝 Notiz-Vorlagen</b> (⚙️ → Extras): Kleine Knöpfe unter dem ✏️ Eigene Notiz-Feld (beim Eintragen, Bearbeiten und im Katalog) – ein Tipp setzt „Bio“, „ohne Laktose“ & Co. ein. Die Texte pflegst du selbst, ein Text pro Zeile.</li>
-        <li><b>✏️ Eigene Notiz:</b> Hier schreibst du etwas nur für dich hin, z. B. „nur die große Packung“. Sie steht in der Liste gelb wie die 📝 Notiz (mit ✏️ davor), <b>bleibt beim Produkt</b> und kommt beim nächsten Eintragen von selbst wieder. Die 📝 Notiz dagegen kommt nur aus dem Barcode (Marke/Sorte aus der Datenbank) und ist nicht tippbar. Die ✏️ Notiz macht kein neues Produkt, und die Produkt-Datenbank überschreibt sie nie. Ändern geht beim Bearbeiten des Artikels oder im Katalog; leer lassen löscht sie dort.</li>
-        <li>Darunter <b>„Welches Geschäft?“</b> – oder „Egal wo“. Meist ist es schon richtig ausgewählt (so wie zuletzt).</li>
-        <li>Daneben die <b>Kategorie</b> – die sucht sich die Liste meist selbst aus. Passt sie nicht, einfach ändern.</li>
-        <li>Fängst du den <b>Namen einer Person</b> an zu tippen (z. B. von dir, mindestens 2 Buchstaben), steht als Vorschlag zuerst, was für diese Person schon auf der Liste steht.</li>
-        <li><b>🏷️ Spitznamen:</b> „Tempos“ meint dasselbe Produkt wie „Taschentücher“. Tippst du den Spitznamen, schlägt die Liste das richtige Produkt vor. Spitznamen legst du an, wenn du den Artikel <b>lange drückst → Bearbeiten</b> (Feld 🏷️ Spitznamen, mehrere mit Komma), oder im Produkt unter ⚙️.</li>
-        <li>Vertippt? Die Liste fragt „Meintest du …?“ 😉 Was du dabei bestätigst, lernt sie und bietet es beim nächsten Mal als ersten Vorschlag an.</li>
-        <li>Tippst du auf 🔢, erscheinen <b>Schnellwahl-Knöpfe</b> (gängige Mengen, „✏️ andere Menge“). Der 👤-Knopf ist nur da, wenn in ⚙️ Personen angelegt sind.</li>
-        <li>Im Geschäfts-Feld gibt es <b>„➕ Neues Geschäft …“</b>: Namen eintippen, fertig. Alles Weitere stellst du später in ⚙️ ein.</li>
-        <li><b>Steht der Artikel schon bei einem anderen Geschäft offen?</b> Dann fragt die Liste: <b>Abbrechen</b>, <b>Zusätzlich</b> bei diesem Geschäft oder <b>Verschieben</b>.</li>
-        <li><b>Doppelt auf der Liste?</b> Stehen z. B. „Tomate“ und „Tomaten“ beide drauf, fragt die Liste „Zusammenlegen?“. Passt es so, tippst du „Passt so“.</li></ul>`, true)}
-      ${appSec}
-      ${sec("✅", "Abhaken & wieder draufsetzen", `<ul>
-        <li><b>Kreis antippen</b> = gekauft. Das Handy vibriert kurz. Am Handy geht es auch mit <b>Wischen</b>: Zeile <b>nach links</b> = abhaken ✔, eine erledigte Zeile <b>nach rechts</b> = wieder auf die Liste ↩.</li>
-        <li>Gekauftes rutscht nach unten zu <b>„Erledigt – schon mal gekauft“</b>.</li>
-        <li>Dort den Kreis antippen = <b>wieder auf der Liste</b>. So musst du nichts neu tippen.</li>
-        <li><b>↩️ Versehentlich abgehakt?</b> Unten steht 3 Sekunden „Rückgängig“ – antippen, und der Artikel ist wieder offen.</li>
-        <li>Einmal pro Woche wird automatisch aufgeräumt: Alte Sachen werden abgehakt, <b>gelöscht wird nichts</b>. Ganz unten steht, wann das nächste Mal ist („Nächstes Aufräumen: …“) – oder „Automatisches Aufräumen ist aus“.</li>
-        <li><b>Im Reiter „Alle“</b> steht ein Produkt, das bei mehreren Geschäften offen ist, nur <b>einmal</b>. Beim Abhaken fragt die Liste „Wo gekauft?“.</li>
-        <li><b>„Egal wo“-Artikel</b> im Reiter eines Geschäfts abhaken: Er gehört danach zu diesem Geschäft und ist überall weg.</li>
-        <li>Die Liste ist nach <b>Kategorien</b> sortiert (mit Zahl pro Kategorie). Jedes Geschäft kann seine eigene Reihenfolge haben, passend zum Laden. Unter „Erledigt“ lässt sich jede Kategorie einzeln einklappen.</li>
-        <li>Tippst du ins Eingabefeld, filtert das auch die Liste „Erledigt“ nach Name, Notiz oder Person.</li></ul>`)}
-      ${sec("📸", "Text aus Foto & neue Helfer", `<ul>
-        <li><b>📋 unter dem Eingabefeld:</b> liest <b>nur einen Einkaufszettel</b>: fotografieren, Text prüfen, auf die Liste. Gedruckt klappt gut, Handschrift nur mit Glück – darum kannst du den Text vorher korrigieren. Steht auf dem Zettel eine Zeile wie <b>„Aldi:“</b>, kommen die Artikel darunter zu diesem Geschäft. Unten kannst du außerdem ein Geschäft für alle wählen.</li>
-        <li><b>Kassenbon:</b> nicht über das 📋, sondern im Einkaufs-Protokoll mit „📷 Kassenbon lesen“ – Betrag, Geschäft und Tag werden vorgeschlagen.</li>
-        <li><b>Kassenbon als PDF</b> (z. B. digitaler Bon): im Einkaufs-Protokoll auf „📄 PDF einlesen“ tippen und das PDF wählen. Die Karte liest den Text und trägt <b>Geschäft, Datum und Summe</b> ein – bitte kurz prüfen und bei Bedarf ändern, dann „Speichern“. Das PDF bleibt auf deinem Gerät. Ein PDF, das nur ein Bild ist (kein Text), wird so nicht gelesen – dann den Bon abfotografieren.</li>
-        <li><b>🧲 Zusammenführen:</b> im Produkt-Editor zwei gleiche Produkte zu einem machen.</li>
-        <li><b>🩺 Ampel &amp; 🐞 Fehler-Protokoll:</b> in den Einstellungen – zeigt, ob alles läuft.</li>
-        <li><b>🛍️ Laden-Modus automatisch:</b> schaltet sich beim Betreten eines Geschäfts ein (gilt für alle Geräte, optional – der Standort bleibt bei jedem selbst).</li>
-        <li><b>Rezepte:</b> Fotos pro Schritt im Kochmodus. Ein Rezept von einer Kochbuch-Seite liest du <b>im Rezept-Editor</b> mit „📷 Aus Foto“ ein – nicht über das 📋.</li>
-        <li><b>Offline:</b> Fotos, die du ohne Netz machst, werden später nachgeschickt.</li>
-      </ul>`)}
-      ${sec("🏪", "Geschäfte & Reiter", `<ul>
-        <li>Oben die Reiter: <b>Alle</b>, Aldi, Netto … Die Zahl zeigt, wie viel dort offen ist.</li>
-        <li>Die <b>rote Blase</b> heißt: Da ist was Neues dazugekommen, seit du zuletzt geschaut hast.</li>
-        <li><b>✨</b> am Artikel = neu von jemand anderem. Es bleibt, bis du den Artikel <b>abhakst</b> oder das <b>✨ antippst</b> – höchstens 24 Stunden.</li>
-        <li><b>⇄</b> am Artikel = war aus: <b>„Nächstes Mal wieder hier“</b> (bleibt offen, alle sehen 3 Tage lang „⇄ war aus“) oder gleich in ein anderes Geschäft schieben. Geschäfte mit ✓ führen das Produkt auch. Den Knopf gibt es nur, wenn du mehr als ein Geschäft hast.</li>
-        <li><b>⚠️ Oft nicht bekommen:</b> War ein Produkt schon 3-mal bei einem Geschäft aus, warnt dich die Liste beim Eintragen und beim ⇄: „lieber woanders?“ – mit Knöpfen für die anderen Geschäfte.</li>
-        <li><b>📍 Automatisch zum Geschäft:</b> Bist du in der Zone eines Geschäfts, springt die Liste auf dessen Reiter (der bekommt ein 📍). Das lässt sich in den Karten-Optionen ausschalten.</li>
-        <li><b>🤷 „Egal wo“</b> = kein festes Geschäft: steht in jedem Geschäfts-Reiter mit drin und zählt überall mit. Mit ⇄ in ein Geschäft schieben = zieht einfach um.</li>
-        <li><b>🔁 Gibt's auch hier</b> (im Reiter eines Geschäfts): Sachen, die bei einem anderen Geschäft stehen, die es aber auch hier gibt. Antippen holt sie her.</li>
-        <li>Kein Netz im Laden? Einfach weiter abhaken. Oben in der Leiste steht dann <b>⏳ orange</b>, und alles wird nachgeschickt, sobald wieder Netz da ist.</li></ul>`)}
-      ${sec("👆", "Ändern & lange drücken", `<ul>
-        <li>Artikel <b>lange drücken</b> (am PC: rechte Maustaste) = Menü: Bearbeiten, Verschieben, Menge, Kategorie, Foto, Barcode, Angebote und <b>ℹ️ Infos</b>. Was angeboten wird, hängt vom Artikel ab: „Verschieben“ nur bei mehr als einem Geschäft, „Barcode“ nur mit Scanner, „Angebote“ nur, wenn es welche gibt, „Infos“ nur bei Produkten mit Barcode. Das Menü schließt sich nach 8 Sekunden von selbst.</li>
-        <li><b>ℹ️ Infos</b> zeigt aus der Produkt-Datenbank: Nutri-Score, Allergene, mögliche Spuren, Siegel und Zutaten (alles ohne Gewähr).</li>
-        <li>Menge direkt ändern: auf die Menge tippen, dann <span class="elg-k">−</span> und <span class="elg-k">＋</span>.</li>
-        <li><b>⌨️ Am PC</b> geht die Tastatur: mit <b>↓</b> aus dem Suchfeld in die Liste, mit <b>↑ ↓</b> eine Zeile wählen, <b>Enter</b> öffnet, <b>Leertaste</b> hakt ab, <b>Entf</b> löscht (in der Lösch-Liste), <b>Esc</b> schließt.</li>
-        <li>Unter dem Artikel steht klein: das <b>Geschäft in seiner Farbe</b> (nur im Reiter „Alle“), die <b>📝 Notiz</b> (gelb hinterlegt), ▥ (Barcode da), wer eingetragen hat (wenn die Karten-Option an ist) und wer abgehakt hat. Dazu je nach Fall: <b>🍽️ Rezeptname</b> (kam aus einem Rezept), <b>🧹 Tag</b> (wird an diesem Tag automatisch abgehakt; <b>rot</b> ab einem Werktag vorher = bald ist es so weit), <b>↩️ statt Kaffee</b> (Angebots-Artikel – das Original ist abgehakt), <b>⏳</b> (wartet auf Netz).</li>
-        <li><b>🏷️</b> vorn am Artikel = gerade im Angebot (nur wenn in den Einstellungen eingeschaltet). Antippen oder lange drücken → <b>Angebote</b>: Geschäft, Preis, wie lange. <b>🛒 Hier kaufen</b> legt den Angebots-Artikel in diesem Geschäft an (mit Name und „🏷️ Preis bis Tag“ in einem eigenen Feld) und hakt das ursprüngliche Produkt ab. Heißt das Angebot genauso wie dein Produkt, bleibt dein Produkt: Es wandert ins Geschäft des Angebots und bekommt den Preis, abgehakt wird nichts. Passt das Geschäft des Angebots zu keinem deiner Geschäfte, fragt die Liste, ob sie es anlegen soll oder „Egal wo“. Artikel, die erst durch ein Angebot entstanden sind, sind beim Abhaken ganz weg. Steht vorn stattdessen <b>🔀</b> (blau), gibt es für genau dieses Produkt nichts, aber <b>ähnliche Angebote</b> (z. B. „Milch“ für „H-Milch“) – höchstens 4, mit „Ähnlich“ im Fenster. Auch sie nimmst du mit <b>🛒 Hier kaufen</b> – weil es ein anderes Produkt ist, fragt die Liste: <b>Ersetzen</b> (dein Produkt wird abgehakt – es kommt zurück, falls du das Angebot nicht kaufst; kaufst du es, ist das Angebot beim Abhaken ganz weg) oder <b>Zusätzlich</b> (dein Produkt bleibt offen).</li>
-        <li><b>Angebote suchen:</b> Einfach das Produkt oben eintippen (z. B. „Kaffee“) – unter den Vorschlägen steht <b>🏷️ Angebote für „Kaffee“ anzeigen</b>. Dort mit <b>➕ Auf die Liste</b> gleich beim richtigen Geschäft eintragen.</li>
-        <li><b>⌛ Angebot vorbei</b> = das Angebot ist abgelaufen. Der Artikel bleibt auf der Liste, nur der Angebotspreis ist weg; der Hinweis steht 1 Tag. Ein Artikel, der erst durch das Angebot entstanden ist, wird dann gelöscht und dein ursprüngliches Produkt kommt wieder auf die Liste.</li>
-        <li>Ehrlich gesagt: Die Angebote kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren.</li></ul>`)}
-      ${sec("🛍️", "Im Laden", `<ul>
-        <li>Das <b>🏪 Geschäft oben rechts</b> schaltet den <b>Laden-Modus</b> ein: große Zeilen, nur Abhaken, nur das Wichtigste. Eingabefeld, Rezepte-Knopf, ⚙️ und 🧾 sind dann weg; wer die Liste eingetragen hat, bleibt sichtbar.</li>
-        <li>Nochmal antippen (oder <b>Beenden</b>) = wieder normal. Der Laden-Modus bleibt auf diesem Gerät gespeichert.</li>
-        <li><b>💡 Bildschirm immer an:</b> Im Laden-Modus sitzt zwischen 💳 und dem 🏪 Geschäft ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an, nochmal antippen = wieder normal. Beim Verlassen des Laden-Modus geht es von selbst aus. <b>In der HA-App</b> klappt das nur mit der App-Einstellung: Einstellungen → Companion App → „Keep screen On“.</li>
-        <li><b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</li>
-        <li>Bist du laut Standort im Geschäft, <b>hakt ▥ (Scannen &amp; abhaken)</b> das gescannte Produkt ab – siehe „Barcodes“.</li></ul>`)}
-      ${sec("🧾", "Einkaufs-Protokoll", `<ul>
-        <li>Nur da, wenn es in ⚙️ → <b>Extras</b> → <b>Einkaufs-Protokoll</b> eingeschaltet ist (gilt für alle).</li>
-        <li>Der <b>🧾-Knopf</b> oben in der Karte (und im Verlauf) öffnet es. <b>➕ Eintragen</b>: Geschäft, Betrag, Datum – wer und wann setzt die Liste selbst.</li>
-        <li><b>📊 Auswertung</b>: zusammengerechnet, pro Geschäft und pro Monat. Filter für Person, Geschäft und Datum, Schnellwahl <b>Dieser Monat / Letzter Monat / Alles</b>.</li>
-        <li>Falsch eingetragen? Beim Einkauf auf <b>✖</b> tippen.</li></ul>`)}
-      ${sec("📷", "Fotos", `<ul>
-        <li><b>🔒 Datenschutz an?</b> Dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage) und kein KI-Kochen, die Knöpfe sind ausgegraut. Der Schalter liegt in ⚙️ → App &amp; Info → Datenschutz (nur Admins).</li>
-        <li><b>Produkt-Foto:</b> Beim Eintragen auf das <b>📷</b> unter dem Eingabefeld tippen – oder später den Artikel <b>lange drücken → Foto</b>. Das Foto gehört zum Produkt und ist beim nächsten Mal wieder da. Am Artikel zeigt das kleine <b>📷</b> es groß; wischen = blättern. Bis zu <b>6 Fotos</b> pro Produkt, ein neues ersetzt nie ein altes.</li>
-        <li><b>Woher kommt das Foto?</b> Am Handy fragt die Karte: <b>📷 Kamera</b> · <b>🖼️ Galerie</b> · <b>📋 Einfügen</b> (ein kopiertes Bild). Am PC öffnet sich ein Fenster: Bild <b>reinziehen</b>, <b>Strg + V</b> drücken oder klicken. <b>Strg + V</b> geht am PC auch direkt in der Liste: Das kopierte Bild wird gleich zum Foto fürs Eintragen (im Rezept-Editor zum Rezept-Foto). In der HA-App im WLAN (lokale http-Adresse) gibt es die Kamera nicht – dort kommt statt der Kamera die Galerie (und „Einfügen“, wenn es geht).</li>
-        <li><b>Drehen &amp; zuschneiden:</b> Vor dem Speichern kannst du das Foto drehen und den Ausschnitt wählen.</li>
-        <li><b>Rezept-Fotos:</b> Im Rezept-Editor (⚙️ → Rezepte) Fotos zum Rezept hinzufügen. In der Rezept-Ansicht öffnet das <b>📷</b> in der Zeile unter dem Namen die Fotos.</li>
-        <li><b>Foto zu einem Koch-Schritt:</b> Im Rezept-Editor hat jeder Schritt der Zubereitung eine eigene Zeile. Bei jedem Schritt <b>„Foto“</b> bzw. <b>„Dazu“</b> tippen (geht bei Schritten, die schon gespeichert sind). Im <b>Koch-Modus</b> erscheint das Foto bei genau diesem Schritt.</li>
-        <li><b>Schritte verschieben:</b> Am <b>⠿</b> vor der Zeile ziehen – oder ⠿ antippen und mit <b>↑ ↓</b> verschieben. Die Fotos wandern mit (nach dem Speichern). <b>➕ Schritt</b> fügt eine Zeile hinzu, <b>✖</b> löscht sie (mit Foto: vorher Nachfrage). Mehrere Zeilen auf einmal einfügen? Jede wird ein eigener Schritt.</li>
-        <li><b>Kassenbon-Foto:</b> Im Einkaufs-Protokoll hängt beim Eintragen „📷 Kassenbon lesen“ das Bon-Foto automatisch an. Bei einem Eintrag ohne Foto gibt es das Symbol <b>➕📷</b>, mit Foto öffnet das <b>📷</b> es.</li>
-        <li><b>🎉 Automatisch fragen (Option):</b> In den Einstellungen beim Einkaufs-Protokoll einschaltbar (gilt für alle). Ist alles auf der Liste abgehakt, geht „Einkauf eintragen“ von selbst auf – mit dem Geschäft schon ausgewählt. Höchstens alle 10 Minuten.</li>
-        <li><b>Ohne Netz:</b> Fotos, die du in der Offline-App ohne Netz machst, werden vorgemerkt („📴 Foto vorgemerkt“) und hochgeladen, sobald wieder Netz da ist. Sehr große Fotos (über ca. 3 MB) gehen nur mit Netz.</li>
-        <li><b>Verwalten &amp; löschen:</b> Nur in ⚙️ → <b>Produkte</b> (Reihenfolge, Hauptfoto, einzeln löschen) und im Rezept-Editor – nicht in der Einkaufsliste selbst.</li>
-        <li><b>Foto einlesen (Text):</b> Das ist etwas anderes als ein Foto ablegen. Dazu siehe „Text aus Foto &amp; neue Helfer“.</li></ul>`)}
-      ${sec("▥", "Barcodes", `<ul>
-        <li><b>Wo scannt man?</b> Auf das <b>▥</b> oben links neben dem Einkaufswagen tippen (nur in der HA-App und in der Offline-App). Die HA-App öffnet ihren eigenen Scanner, die Offline-App die Handykamera. Packung in den Rahmen halten.</li>
-        <li><b>Was passiert beim Scannen? – Zu Hause:</b> Die Liste schaut in der Produkt-Datenbank nach und <b>füllt das Eingabefeld</b> für dich aus: Name, Marke als Notiz, Kategorie und – bei Eigenmarken eines Ladens – das passende Geschäft. Es steht dann dort „Name passt? Dann ✅ tippen“. <b>Erst mit dem grünen Haken kommt es auf die Liste.</b> Kennt die Liste den Barcode schon, steht dort „Kenn ich“.</li>
-        <li><b>Barcode noch unbekannt?</b> Dann bleibt das Feld leer. Tipp den Namen ein und tippe ✅ – die Liste merkt sich den Barcode, beim nächsten Mal ist das Produkt sofort da.</li>
-        <li><b>📦 Mehrere scannen:</b> Im Scanner gibt es den Knopf „Mehrere scannen“ (z. B. am Kühlschrank). Der Scanner bleibt offen: <b>jede Packung kommt sofort auf die Liste</b>, ohne ✅. Dieselbe Packung wird nicht doppelt gezählt, wenn sie kurz im Bild bleibt. Mit „✔ Fertig“ beendest du. Ein Barcode, den es nicht gibt, kommt als <b>„❓ Unbekannt 1234“</b> drauf – bitte später umbenennen (⚙️ → Produkte → <b>Neu gescannt</b>, Name prüfen, dann „✔ Passt“). Im Rezept-Editor werden gescannte Packungen zu Zutaten.</li>
-        <li><b>↩️ Verscannt?</b> Nach dem Mehrfach-Scan steht kurz (5 Sekunden) „Rückgängig“ für die zuletzt gescannte Packung.</li>
-        <li><b>✅ Im Laden: Scannen &amp; abhaken.</b> Zeigt dein Standort, dass du in einem Geschäft bist (📍 Zone), hakt ▥ stattdessen ab: Packung scannen, bevor sie in den Wagen kommt – steht sie offen auf der Liste, ist sie abgehakt („✅ … abgehakt“). Steht sie nicht drauf, sagt die Liste „steht nicht auf der Liste“. Auch hier bleibt der Scanner offen, mit „↩️ Wieder offen“ nimmst du das zuletzt Abgehakte zurück.</li>
-        <li><b>Foto &amp; Marke automatisch:</b> Hat das Produkt noch kein eigenes Foto, holt die Liste beim Scannen das Produktfoto aus der Datenbank. Die Marke wird zur Notiz (aus „Wagner Pizza Salami“ wird „Pizza Salami“ mit Notiz „Wagner“).</li>
-        <li><b>Barcode nachträglich zuordnen:</b> Artikel lange drücken → <b>Barcode</b>. Dabei schaut die Liste in der Produkt-Datenbank nach. Heißt das Produkt dort anders als bei dir, öffnet sich ein Fenster: Du <b>wählst einzeln</b>, ob der <b>Name</b> und/oder die <b>Notiz</b> übernommen werden – mit „Meine Daten behalten“ bleibt alles, wie es ist. Deine ✏️ Eigene Notiz bleibt immer. Ein ▥ unter dem Artikel zeigt, dass einer hinterlegt ist. Mit Barcode kannst du auch <b>ℹ️ Infos</b> (Nutri-Score, Allergene) ansehen.</li>
-        <li><b>Neues Produkt mit eigenem Namen?</b> Beim Eintragen das <b>▥ mit Plus</b> (neben dem Foto-Symbol) antippen, scannen, Namen tippen, ✔ – der Barcode gehört dann gleich dazu.</li>
-        <li><b>Ohne Netz:</b> Nachschlagen in der Datenbank geht nur mit Netz. Ohne Netz kennt die Liste nur Barcodes, die sie schon gespeichert hat.</li>
-        <li>Zur Datenschutz-Frage: Beim Scannen geht nur die Barcode-Nummer an die offene Datenbank Open Food Facts. Deine Liste und deine Fotos bleiben in Home Assistant. Ist <b>🔒 Datenschutz an</b> (⚙️ → App &amp; Info), gibt es keinen Scanner; einen Barcode kannst du dann nur von Hand eintippen.</li></ul>`)}
-      ${sec("💳", "Kundenkarten", `<ul>
-        <li><b>💳 Kundenkarten</b> (nur wenn in ⚙️ → Extras eingeschaltet): Der 💳-Knopf oben (auch im Laden-Modus) zeigt deine Karten. „➕ Karte“: einscannen oder Nummer eintippen, Namen geben, „für alle“ oder „nur für mich“ wählen. Antippen zeigt den Code groß auf weißem Grund für die Kasse; „🔄 Anderes Format“ wechselt zwischen QR und Strichcode.</li>
-        <li><b>📷 Einscannen</b> hat eine <b>eigene Kamera in der Karte</b> und liest QR-Codes, Aztec-Codes (z. B. der Penny-Vorteilscode) und Strichcodes von selbst – das Format musst du nicht wählen. <b>📷 Foto der Karte</b> legt zusätzlich ein Foto ab (liegt nur auf deinem Home Assistant). Ein „Rollcode“, der ständig wechselt, geht damit nicht.</li>
-      </ul>`)}
-      ${sec("👨‍🍳", "Rezepte", `<ul>
-        <li>Die <b>Kochmütze</b> oben öffnet die Rezepte. Das Suchfeld findet auch Zutaten (z. B. „Zucchini“) – und über Spitznamen („Paradeiser“ findet die Rezepte mit Tomate). Neue Rezepte anlegen und ändern geht nur über das <b>⚙️-Zahnrad</b> (⚙️ → Rezepte).</li>
-        <li><b>Auf die Liste</b>: Anhaken, was du brauchst – mit „Alle“ oder „Keine“ geht es schneller. Was schon draufsteht („steht schon drauf“, nur bei gleichem Namen und gleicher Notiz) oder „haben wir immer“ ist (🧂), ist nicht angehakt. Rezept-Zutaten auf der Liste tragen den Rezeptnamen, eingefärbt wie die Rezept-Gruppe.</li>
-        <li><b>👥 Für wie viele?</b> bzw. <b>🍕🍰 Wie viele Bleche?</b> Mit − / ＋ rechnen sich die Mengen mit.</li>
-        <li>Steht <b>„Noch nie gekauft – wo kaufen?“</b>, einfach das Geschäft wählen.</li>
-        <li><b>Von der Liste (3)</b> nimmt die Zutaten dieses Rezepts wieder runter.</li>
-        <li>📷 = Rezept-Fotos · <b>🔥 Kochen</b> = Schritt für Schritt in großer Schrift („Schritt 2 von 6“, oben die Icons <b>📷</b> Foto zum Schritt (nur wenn es noch keins gibt), <b>🥕</b> Zutaten und ⏲️ Gar-Zeiten, darunter orange die Backofen-Einstellungen, danach das Foto zum Schritt; ist noch kein Rezept-Foto da, kommt als letzter Schritt „📸 Foto vom fertigen Gericht“; der Bildschirm bleibt an; im Querformat bleibt „Weiter“ immer sichtbar) · <b>Teilen</b> = z. B. per WhatsApp.</li>
-        <li>Abgehakte Rezept-Zutaten verschwinden ganz (nicht bei „Erledigt“).</li>
-        <li><b>🤖 KI-Kochen</b> (⚙️ → Extras, nur Admin): Du wählst einen KI-Assistenten aus Home Assistant (z. B. OpenAI, Google, Anthropic oder lokal Ollama). Dann steht bei den <b>Rezepten</b> oben links neben den Gar-Zeiten „Was kann ich kochen?“: Zutaten eintippen (auch Dinge, die nicht im Katalog stehen), optional die offenen Artikel der Liste mitnehmen und Wünsche dazuschreiben. Zu jedem Vorschlag: „Fehlendes auf die Liste“ oder „Als Rezept speichern“. Die Namen der Zutaten gehen an den gewählten Assistenten; bei eingeschaltetem Datenschutz geht nichts raus. Antworten einer KI können falsch sein.</li>
-        <li><b>⏲️ Gar-Zeiten</b> (oben bei den Rezepten und im Koch-Modus): Spickzettel nach Gerät: 🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse.</li></ul>`)}
-      ${sec("🛒", "Was bedeuten die Zeichen oben?", `<ul>
-        <li>Von links: <b>🛒 Einkaufswagen</b> (oder das Maskottchen, wenn eingeschaltet) = <b>zurück zur Einkaufsliste</b>, egal wo du gerade bist (Rezepte, Einstellungen …) · <b>Zahl</b> · <b>▥ Barcode</b> (nur mit Scanner) · <b>🧾</b> Einkaufs-Protokoll (nur wenn eingeschaltet).</li>
-        <li>Die <b>schmale Leiste ganz oben</b> (auf jeder Seite): links <b>🟢 verbunden</b> – oder <b>⏳ orange</b> = Änderungen warten aufs Netz, <b>🔴 keine Verbindung</b>. Antippen bringt dich zurück zur Liste. Rechts: <b>🔓</b> sperrt das ⚙️ sofort (nur mit PIN) und die <b>Versionsnummer</b>.</li>
-        <li>Ganz unten unter der Liste: <b>📖 Anleitung</b> (diese hier) und <b>👁️ Ansicht</b> – dort stellst du ein, was <b>du</b> beim Artikel sehen willst (nur für dich, ohne PIN).</li>
-        <li>Die <b>Zahl</b> = so viele Sachen sind noch offen.</li>
-        <li>Rechts: <b>Wagen</b> = Laden-Modus · <b>Kochmütze</b> = Rezepte · <b>⚙️</b> = Einstellungen.</li>
-        <li>Ein <b>blauer Balken</b> oben = es gibt eine neue Version. Tippe auf <b>„Neu laden“</b> – das kann jeder. Nur wenn dort steht, dass die Karte neuer ist als Home Assistant, muss jemand mit Admin-Zugang Home Assistant neu starten.</li></ul>`)}
-      ${sec("🙏", "Credits", this._creditsHtml(false))}
-    </div>`}`;
+    ${kind === "settings" ? this._guideSettings(sec) : this._guideUser(sec, appSec)}`;
     // 📖 Alle Kapitel zu – geht eins auf, klappt das vorige zu (bei der Suche bleiben alle Treffer offen)
     let searching = false;
     ov.querySelectorAll("details.elg-sec").forEach((d) => {
@@ -7814,127 +8059,61 @@ class EinkaufslisteCard extends HTMLElement {
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
   }
 
-  // 📖 Anleitung für die Einstellungen (⚙️) – nur für alle, die ins Zahnrad kommen
+  // 📖 Die Anleitung für alle (Deutsch oder Englisch aus EL_GUIDE)
+  _guideUser(sec, appSec = "") {
+    const en = EL_LANG !== "de";
+    const ul = (a) => `<ul>${a.map((x) => `<li>${x}</li>`).join("")}</ul>`;
+    const part = (g) => sec(g.icon, g.t[en ? 1 : 0], ul(en ? g.en : g.de), !!g.open, g.c, g.s[en ? 1 : 0]);
+    return `<div class="elg" ${en ? 'translate="no"' : ""}>
+      <div class="elg-top"><h2>🛒 ${en ? "How the shopping list works" : "So funktioniert die Einkaufsliste"}</h2></div>
+      <p class="elg-sub">${en ? "Tap a heading to open it. You can always find this guide via the <b>📖 Guide</b> button at the very bottom, below the list." : "Tipp auf eine Überschrift klappt sie auf. Diese Anleitung findest du immer über den Knopf <b>📖 Anleitung</b> ganz unten unter der Liste."}</p>
+      ${sec("🆕", en ? "What's new" : "Was ist neu", this._newsHtml(en), false, "#fb8c00", en ? "the latest changes" : "die letzten Neuerungen")}
+      ${EL_GUIDE.map((g) => part(g) + (g.id === "add" ? appSec : "")).join("")}
+      ${sec("🙏", "Credits", this._creditsHtml(en), false, "#ec407a", en ? "who made this" : "wer das gemacht hat")}
+    </div>`;
+  }
+
+  // ⚙️ Hilfe-Kasten UNTER den Schaltern und Auswahlflächen einer Einstellungs-Seite (aus EL_HELP)
+  _secHelp(key) {
+    const h = EL_HELP[key];
+    if (!h) return "";
+    const en = EL_LANG !== "de";
+    return `<div class="sechelp" translate="no"><b>💡 ${en ? "How it works" : "So geht's"}</b><ul>${(en ? h[2] : h[1]).map((x) => `<li>${x}</li>`).join("")}</ul></div>`;
+  }
+
+  // 📖 Anleitung für die Einstellungen (⚙️) – nur für alle, die ins Zahnrad kommen. Dieselben Texte stehen auch unter den Schaltern.
   _guideSettings(sec) {
     const en = EL_LANG !== "de";
-    if (en) {
-      return `<div class="elg" translate="no">
-      <div class="elg-top"><h2>⚙️ How the settings work</h2></div>
-      <p class="elg-sub">Tap a heading to open it. This guide is only for people who can open the settings. The guide for shopping and recipes is behind the <b>📖 Guide</b> button at the very bottom, below the list.</p>
-      ${sec("🔍", "Finding things", `<ul>
-        <li>The settings are a <b>list of groups</b> (each group is a box with a coloured icon per row): tap a group (it opens, the previous one closes), tap a row, change something, tap the round <b>←</b> arrow at the top to go back. Below each group name you can see what is inside. Only the stores have one more page (← goes back to all stores), and the recipe editor is its own view.</li>
-        <li>The <b>search field</b> at the top finds rows by their name or topic, e.g. “photo”, “mail”, “backup” or “sensor”. (This field searches the settings; the search at the very top of this guide searches the guide text.)</li>
-        <li>The bar at the top shows the <b>health light</b> 🟢🟡🔴. Tap it to open “All OK?”.</li></ul>`, true)}
-      ${sec("📋", "My list", `<ul>
-        <li><b>Stores:</b> one row per store. The <b>⌃ ⌄</b> next to it change the order of the tabs right in the list. Tapping a store opens its page: name, colour, icon, 📍 zone(s) for “Next store” (the list then jumps to that store when you are there), own brands and <b>🗺️ own category order</b> (sort with ↑↓ the way the shop is laid out). Several zones per store work too (e.g. several branches). Create new stores with the “New” form, 🗑️ on the store page deletes. Also <b>🗂️ own categories</b>: “All as everywhere” or “Own” – with “Own” you tick which ones exist in this store and can create a new one just for it.</li>
-        <li><b>Categories:</b> name, colour, icon (search with German or English words), order with ↑ ↓, delete with 🗑️, new ones via the form.</li>
-        <li><b>People:</b> the names for the quick buttons at “For whom?”. Without people the 👤 stays hidden in the list.</li>
-        <li><b>Products:</b> <b>All products</b> (tap = change or delete completely, rename moves photos, barcodes and recipes along), <b>Newly scanned</b> (check the name, then ✔ OK; “Save” also counts as checked) and <b>Delete shopping-list items</b>.</li>
-        <li><b>Search and filters in “All products”:</b> the search field finds name, notes, nicknames, barcode, category and store – even with small typos. Plus filters such as no category, no store, is on the list, with/without photo, with/without barcode, by store or by category. The <b>eraser icon</b> resets search and filter with one tap (it only appears when something is set). On a PC the keyboard works too (↓ into the list, ↑ ↓ to pick, Enter edits, Esc back).</li>
-        <li><b>Inside a product:</b> name, note (📝 read-only, from the barcode; old notes you typed yourself show as ✏️ and stay editable) and <b>✏️ own note</b> (just for you, never overwritten), <b>🏷️ nicknames</b> (type “Tempos” and the list lands at “tissues”), category and default store, <b>🧠 learned typos</b> (with “Forget”), delete single barcodes, <b>🗄️ Reload data</b> (for products with a barcode: shows name, note, Nutri-Score and allergens from the database next to your data – you tick separately name, note and/or <b>photo</b> (the database photo is replaced, your own photos stay, nothing is added twice), or “Keep my data”; your ✏️ own note stays), 📷 photos (order, ⭐ main photo, delete) and “Delete completely”. When merging, the old name becomes a nickname.</li>
-        <li><b>Delete shopping-list items:</b> deletes items from the list for good, also from “Done”. Barcode and suggestion stay; the photo only goes if it is not needed anywhere else.</li>
-        <li><b>Filter “🗓️ Not bought for 3 months”:</b> shows products that were last checked off more than 3 months ago (never checked off: counted from when they were added). Products on the list or in a recipe are not shown. Tap one to look at it, or <b>Delete all</b> in one go.</li>
-        <li><b>➕ New product / ▥ By barcode</b> (icons only): adds a product to the catalog. By barcode: scan, confirm the name, done – the barcode belongs to it right away.</li>
-        <li><b>Adding a barcode later</b> (inside a product): scan first; below it there is “Enter by hand” for typing. With “Privacy on” only typing is offered.</li>
-        <li><b>🔄 Fetch everything again</b> (cloud icon under “All products”): first you choose what – <b>photo</b> (pre-selected), <b>name</b> and/or <b>note</b> – then it goes through every product with a barcode, one after the other. Newer database photos replace old database photos; your own photos and your ✏️ own note stay. An empty database note never deletes anything. It pauses briefly between products and retries on errors and with several barcodes. At the end you get a <b>report</b>: what was changed, what was already the same, which products the database does not know or could not be reached for – and where it has no photo.</li>
-        <li><b>🧲 Merge:</b> inside a product, turns two names into one (photos, barcodes, items and recipes move along).</li>
-        <li><b>Recipes:</b> a tab for the recipes (button <b>“New recipe”</b>, search field, ✏️ per row) one for the groups (Fish, Meat, Pastry …; the group's icon and colour tint the recipes) and <b>Recipes from a file</b> (.txt, .md, .csv, .json; US measures are converted – admins only).</li>
-        <li><b>Recipe editor:</b> name and group (the group is suggested automatically, “✨ suggested”), “The quantities are for N people/trays”, recipe photo, ingredients (entered like in the list, with units and 🧂 “we always have it”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>Oven &amp; co.</b> (degrees, minutes), the instructions (one row per step, movable via ⠿), photos per step (for steps that are already saved), delete, cancel, save. Foreign measures (cup, oz, °F) from recipe links are converted.</li></ul>`)}
-      ${sec("🎛️", "Extras", `<ul>
-        <li>Simple on/off things have a <b>switch right in the row</b>: 🧾 purchase log, 💳 loyalty cards, 📍 shop mode automatic, 🛒😊 mascot, 🏷️ labels. Tapping the row itself opens the explanation – with the same switch at the top. 🏷️ Offers and 🤖 AI cooking need a few settings first, so they open a page (›).</li>
-        <li><b>Applies to all devices:</b> loyalty cards (just the switch – whether a card is “for everyone” or “only me” is chosen when creating it), purchase log, auto-ask, shop mode automatic, mascot and labels. For shop mode the location stays personal – it only turns on when <b>your</b> phone enters the zone.</li>
-        <li><b>🏷️ Offers</b> need a postcode (admins only). Also: <b>“Only these stores”</b> (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b> and <b>Switch off</b>. A status line shows the number of offers and the last check (“⚠️ currently unavailable” if Marktguru does not answer). They come unofficially from Marktguru and can stop working at any time. If there is no exact offer for an item, the list automatically looks for <b>similar</b> ones (🔀, at most 4): using the single words of the name, the product type from the database, nicknames and the category. Only the names of open items go to Marktguru for this.</li>
-        <li><b>🛒😊 Mascot:</b> a shopping cart with a face instead of the cart symbol. It has moods (happy, busy, full, asleep) and wears a costume for the season. Tapping it takes you back to the shopping list.</li>
-        <li><b>📍 Automatic shop mode</b> needs a 📍 zone at the store (Stores → Location) and your phone set up as a person in Home Assistant. What you switch on or off yourself is left alone by the automation.</li>
-        <li><b>🧾 Purchase log:</b> its own switch plus <b>“🎉 Ask automatically”</b> (only appears once the log is on) and an “Open” button. Switching it off only hides the display – the entries stay saved.</li></ul>`)}
-      ${sec("💾", "Data", `<ul>
-        <li><b>Import &amp; backup</b> has four tabs:
-          <ul><li><b>From other apps:</b> several Alexa/to-do lists (up to 50), each with its own store (with full sync each only gets the items of its store; a list without a store gets the “Anywhere” items), either 🔁 <b>fetch automatically</b> (Fetch &amp; delete there · Keep in both · Full sync) – admins only – or <b>fetch once</b>. Plus <b>“Paste text”</b> (e.g. copy a list from Bring! or Google Keep and paste it) – anyone may do that.</li>
-          <li><b>🥫 Grocy:</b> fetch products from Grocy into the catalogue – type the address and API key (the key is not stored for the one-time fetch), preview with tick boxes, then name, barcodes and the product group (as a category) come over. Whatever already exists is not overwritten. Below it the <b>🔄 continuous sync</b> with two separate switches: 🛒 <b>shopping list</b> (every 3 minutes; “Fetch &amp; delete there”, “Keep on both” or “Full sync”) and 📦 <b>new products</b> (every 1–24 hours, nothing is overwritten or deleted). Here Home Assistant keeps the key on the server – never on phones, never in backups. “Remove connection” deletes it again – admins only.</li>
-          <li><b>📄 Catalogue from CSV:</b> (tab “From other apps”) a CSV or text file – or pasted lines – as products in the catalogue (not on the shopping list). Columns: Name; Category; Barcode; Note, with or without a header row. Whatever already exists is not overwritten – admins only.</li>
-          <li><b>🗣️ Siri / Shortcuts (iPhone):</b> in the Shortcuts app create a new shortcut, choose the Home Assistant app’s “Call service” action, service <code>einkaufsliste.add_item</code>, data <code>name: Milk</code> (leave the name on “Ask each time”). Call it e.g. “Shopping” – then “Hey Siri, Shopping” is enough. To tick off use <code>einkaufsliste.check_item</code> the same way. Action names can differ slightly depending on the app version; it has not been tested on an iPhone.</li>
-          <li><b>📧 E-mail:</b> IMAP mailbox, allowed senders, store via subject or heading in the mail (“Aldi:”), and what happens to the mail afterwards (leave it · mark as read · delete) – admins only.</li>
-          <li><b>Backup:</b> download a .zip or “Restore backup” (replaces everything!) – admins only.</li></ul></li>
-        <li><b>History:</b> who did what and when, with filters (person, store, action) and search, “Show more” and a symbol legend. At the top is <b>📈 Often not available</b> – ✖ hides an entry. “Keep for 7/30/90/180/365 days” is set there, “Clear history” deletes it. One button opens the purchase log.</li>
-        <li><b>Tidy up:</b> once a week old open items are <b>checked off</b> – nothing is deleted. <b>On/off</b>, day, time and how old an item must be are set right here (applies to everyone). When it is off, cleanup only happens by hand. The page also has <b>“Tidy up now”</b> (like the automation, just immediately) and <b>“Check off everything”</b> (really checks off everything open).</li>
-        <li><b>💣 Factory reset</b> (admins only, at the very bottom of Tidy up): puts <b>everything</b> back like a fresh install – also stores, categories, recipes, cards and connections. Only the PIN stays. Two safety questions, cannot be undone. Good after a Grocy import for a completely fresh start.</li>
-        <li><b>🧽 Delete list</b> (admins only): pick a store (or “All stores”), then <b>“Delete done items”</b> (only what is checked off, open items stay) or <b>“Empty list”</b> (open and done, the list is empty again – good for Sunday). A question with the number comes first. The <b>catalogue stays</b>: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.</li>
-        <li><b>🧹 Delete everything</b> (admins only): <b>“Delete catalogue &amp; list completely”</b> deletes the shopping list and the whole catalogue with all photos, barcodes, nicknames, own notes, favourites and learned typos. Two safety questions, <b>cannot be undone</b> – better make a backup first (⚙️ → Import &amp; backup). Stores, categories, people, recipes, loyalty cards and settings stay.</li></ul>`)}
-      ${sec("🩺", "Health", `<ul>
-        <li><b>All OK?</b> looks for broken entries (photos, barcodes, recipes). For every finding: <b>🔧 Fix</b> (just this one), <b>✏️ Change it myself</b> (jumps to the product, item or recipe) and – where there is more than one way – a choice. Or tick and repair everything at once. At the bottom there is <b>📊 Load</b>: changes per minute, packets sent and packet size – helps with high server load.</li>
-        <li><b>Error log:</b> technical errors with “Copy” and “Clear” buttons – handy if you need help. If there are only error messages from the last 24 hours, the bar at the top opens the error log instead of “All OK?”; if the check could not run, it shows ⚪ “Could not check”.</li>
-        <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> shows the health light in Home Assistant (ok / hinweis / problem) – you can use it in automations, e.g. a message to your phone.</li>
-        <li><b>Resources:</b> how big the data and photos are.</li></ul>`)}
-      ${sec("📱", "App & info", `<ul>
-        <li><b>👁️ List view (for everyone):</b> what you see on an item – quantity, notes, for whom, who added it, date, cleanup day, store, recipe, photo, star, barcode, offers and more. Untick = hidden. This is the default <b>for everyone</b>. Each person sets their own view with <b>👁️ View</b> at the very bottom below the list – no gear or PIN needed (applies on all devices of that user).</li>
-        <li><b>Offline app:</b> your own address with “Copy” (it needs an https address, e.g. Nabu Casa). Open it in the phone browser and add it to the home screen. Almost everything works offline; not available are looking up new barcodes, product info, recipe links, uploading new photos and the backup. The first time you scan, the phone asks once for the camera.</li>
-        <li><b>Light / dark:</b> the choice (light, dark, automatic) exists only in the offline app. In the dashboard card everything follows the Home Assistant theme. The guides follow the same: light or dark, just like the card.</li>
-        <li><b>🔒 Privacy:</b> says in plain words what stays in your Home Assistant and what goes to the internet. An admin also switches <b>“Privacy on”</b> for all devices there: then there is no camera, no photos (not even from gallery or clipboard), no barcode scanner and no AI cooking – the buttons are greyed out, and barcodes can only be typed by hand. Off = as usual.</li>
-        <li><b>Protection (PIN):</b> with a PIN the ⚙️ only opens after entering it (4–8 digits, remembered for 10 minutes on this device). The 🔓 button in the bar at the very top (next to the version number) locks at once. Forgot it? An admin resets it in Settings → Devices &amp; services → Shopping list → Configure. The page also has “Change PIN” and “Switch PIN off”. The list itself (adding, checking off, recipes, shop mode) stays open for everyone. The PIN protects against accidents, it is not a safe.</li>
-        <li><b>What's new</b> and <b>Credits</b> are at the end of the list.</li></ul>`)}
-    </div>`;
-    }
-    return `<div class="elg">
-      <div class="elg-top"><h2>⚙️ So funktionieren die Einstellungen</h2></div>
-      <p class="elg-sub">Tipp auf eine Überschrift klappt sie auf. Diese Anleitung ist nur für alle, die ins Zahnrad kommen. Die Anleitung fürs Einkaufen und die Rezepte steht hinter dem Knopf <b>📖 Anleitung</b> ganz unten unter der Liste.</p>
-      ${sec("🔍", "Wie finde ich etwas?", `<ul>
-        <li>Die Einstellungen sind eine <b>Liste mit Gruppen</b> (jede Gruppe ein Kasten, jede Zeile mit buntem Icon): Gruppe antippen (sie klappt auf, die vorherige zu), Zeile antippen, etwas ändern, mit dem runden <b>←</b> oben wieder zurück. Unter dem Gruppennamen steht, was drin ist. Nur bei den Geschäften gibt es eine Seite mehr (← geht zurück zu allen Geschäften), und der Rezept-Editor ist eine eigene Ansicht.</li>
-        <li>Das <b>Suchfeld</b> oben findet Zeilen nach Name oder Thema, z. B. „Foto“, „Mail“, „Sicherung“ oder „Sensor“. (Dieses Suchfeld sucht in den Einstellungen; die Suche ganz oben in dieser Anleitung sucht in den Anleitungs-Texten.)</li>
-        <li>Der Balken ganz oben zeigt die <b>Gesundheits-Ampel</b> 🟢🟡🔴. Antippen öffnet „Alles ok?“.</li></ul>`, true)}
-      ${sec("📋", "Meine Liste", `<ul>
-        <li><b>Geschäfte:</b> pro Geschäft eine Zeile. Mit <b>⌃ ⌄</b> rechts daneben änderst du direkt in der Liste die Reihenfolge der Reiter. Antippen öffnet die Seite des Geschäfts: Name, Farbe, Icon, 📍 Zone(n) für „Nächstes Geschäft“ (die Liste springt dann auf dieses Geschäft, wenn du dort bist), Eigenmarken und <b>🗺️ eigene Kategorien-Folge</b> (mit ↑↓ so sortieren, wie der Laden aufgebaut ist). Auch mehrere Zonen pro Geschäft gehen (z. B. mehrere Filialen). Neue Geschäfte legst du mit dem „Neu“-Formular an, 🗑️ auf der Seite des Geschäfts löscht. Dazu <b>🗂️ eigene Kategorien</b>: „Alle wie überall“ oder „Eigene“ – bei „Eigene“ setzt du Häkchen, welche es in diesem Geschäft gibt, und kannst eine neue nur dafür anlegen.</li>
-        <li><b>Kategorien:</b> Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), Reihenfolge mit ↑ ↓, löschen mit 🗑️, neue über das Formular.</li>
-        <li><b>Personen:</b> die Namen für die Schnellknöpfe bei „Für wen?“. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.</li>
-        <li><b>Produkte:</b> <b>Alle Produkte</b> (antippen = ändern oder ganz löschen, Umbenennen zieht Fotos, Barcodes und Rezepte mit), <b>Neu gescannt</b> (Name prüfen, dann ✔ Passt; „Speichern“ zählt auch als geprüft) und <b>Einkaufsliste Produkte löschen</b>.</li>
-        <li><b>Suche und Filter bei „Alle Produkte“:</b> Das Suchfeld findet Name, Notizen, Spitznamen, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Dazu Filter wie ohne Kategorie, ohne Geschäft, steht auf der Liste, mit/ohne Foto, mit/ohne Barcode, nach Geschäft oder nach Kategorie. Das <b>Radiergummi-Symbol</b> setzt Suchfeld und Filter mit einem Tipp zurück (es erscheint nur, wenn etwas eingestellt ist). Am PC geht auch die Tastatur (↓ in die Liste, ↑ ↓ wählen, Enter bearbeitet, Esc zurück).</li>
-        <li><b>Im Produkt:</b> Name, Notiz (📝 nur lesbar, aus dem Barcode; alte selbst getippte Notizen zeigt die Liste als ✏️ und sie bleiben änderbar) und <b>✏️ Eigene Notiz</b> (nur für dich, wird nie überschrieben), <b>🏷️ Spitznamen</b> (tippst du „Tempos“, landet die Liste bei „Taschentücher“), Kategorie und Standard-Geschäft, <b>🧠 gelernte Tippfehler</b> (mit „Vergessen“), einzelne Barcodes löschen, <b>🗄️ Daten neu laden</b> (bei Produkten mit Barcode: zeigt Name, Notiz, Nutri-Score und Allergene aus der Datenbank neben deinen Daten – du hakst einzeln Name, Notiz und/oder <b>Foto</b> an (das Datenbank-Foto wird ersetzt, eigene bleiben, nichts kommt doppelt dazu) oder wählst „Meine Daten behalten“; deine ✏️ Eigene Notiz bleibt), 📷 Fotos (Reihenfolge, ⭐ Hauptfoto, löschen) und „Ganz löschen“. Beim Zusammenführen wird der alte Name zum Spitznamen.</li>
-        <li><b>Einkaufsliste Produkte löschen:</b> löscht Artikel endgültig von der Liste, auch aus „Erledigt“. Barcode und Vorschlag bleiben; das Foto geht nur mit, wenn es sonst nirgends mehr gebraucht wird.</li>
-        <li><b>Filter „🗓️ Seit 3 Monaten nicht gekauft“:</b> zeigt Produkte, die vor mehr als 3 Monaten zuletzt abgehakt wurden (nie abgehakt: gezählt ab dem Eintragen). Produkte, die auf der Liste oder in einem Rezept stehen, fehlen hier. Antippen zum Ansehen, oder <b>Alle löschen</b> auf einmal.</li>
-        <li><b>➕ Neues Produkt / ▥ Per Barcode</b> (nur Symbole): legt ein Produkt im Katalog an. Per Barcode: scannen, Namen bestätigen, fertig – der Barcode gehört gleich dazu.</li>
-        <li><b>Barcode nachtragen</b> (im Produkt): erst scannen; darunter steht „Von Hand eingeben“ zum Eintippen. Bei „Datenschutz an“ gibt es nur das Eintippen.</li>
-        <li><b>🔄 Alles neu holen</b> (Wolken-Symbol bei „Alle Produkte“): Du wählst erst, was – <b>Foto</b> (vorausgewählt), <b>Name</b> und/oder <b>Notiz</b> – dann geht es nacheinander durch alle Produkte mit Barcode. Neuere Datenbank-Fotos ersetzen alte Datenbank-Fotos; eigene Fotos und deine ✏️ Eigene Notiz bleiben. Eine leere Datenbank-Notiz löscht nie etwas. Zwischen den Produkten macht sie kleine Pausen und probiert bei Fehlern und bei mehreren Barcodes nach. Am Ende steht ein <b>Bericht</b>: was angepasst wurde, was schon gleich war, bei welchen Produkten die Datenbank nichts kennt oder nicht erreichbar war – und wo sie kein Foto hat.</li>
-        <li><b>🧲 Zusammenführen:</b> im Produkt macht aus zwei Namen einen (Fotos, Barcodes, Artikel und Rezepte ziehen mit).</li>
-        <li><b>Rezepte:</b> ein Reiter für die Rezepte (Knopf <b>„Neues Rezept“</b>, Suchfeld, pro Zeile ✏️), einer für die Gruppen (Fisch, Fleisch, Gebäck …; Icon und Farbe der Gruppe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).</li>
-        <li><b>Rezept-Editor:</b> Name und Gruppe (die Gruppe wird automatisch vorgeschlagen, „✨ vorgeschlagen“), „Die Mengen sind für N Personen/Bleche“, Rezept-Foto, Zutaten (eintragen wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten), die Zubereitung (eine Zeile pro Schritt, per ⠿ verschiebbar), Fotos pro Schritt (bei schon gespeicherten Schritten), Löschen, Abbrechen, Speichern. Aus Rezept-Links werden fremde Maße (cup, oz, °F) umgerechnet.</li></ul>`)}
-      ${sec("🎛️", "Extras", `<ul>
-        <li>Einfache An/Aus-Sachen haben einen <b>Schalter direkt in der Zeile</b>: 🧾 Einkaufs-Protokoll, 💳 Kundenkarten, 📍 Laden-Modus automatisch, 🛒😊 Maskottchen, 🏷️ Beschriftungen. Die Zeile selbst antippen öffnet die Erklärung – mit demselben Schalter oben. 🏷️ Angebote und 🤖 KI-Kochen brauchen erst ein paar Angaben und öffnen deshalb eine Seite (›).</li>
-        <li><b>Gilt für alle Geräte:</b> Kundenkarten (nur der Schalter – ob eine Karte „für alle“ oder „nur ich“ ist, wählst du beim Anlegen), Protokoll, automatisch fragen, Laden-Modus automatisch, Maskottchen und Beschriftungen. Beim Laden-Modus bleibt der Standort bei jedem selbst – er geht nur an, wenn <b>dein</b> Handy in die Zone kommt.</li>
-        <li><b>🏷️ Angebote</b> brauchen eine Postleitzahl (nur Admins). Dazu: <b>„Nur diese Geschäfte“</b> (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b> und <b>Ausschalten</b>. Eine Statuszeile zeigt die Zahl der Angebote und die letzte Prüfung („⚠️ gerade nicht verfügbar“, wenn Marktguru nicht antwortet). Sie kommen inoffiziell von Marktguru und können jederzeit aufhören zu funktionieren. Gibt es für einen Artikel kein genaues Angebot, sucht die Liste automatisch <b>ähnliche</b> (🔀, höchstens 4): über die einzelnen Wörter des Namens, den Produkttyp aus der Datenbank, Spitznamen und die Kategorie. Dafür gehen nur die Namen offener Artikel an Marktguru.</li>
-        <li><b>🛒😊 Maskottchen:</b> ein Einkaufswagen mit Gesicht statt des Wagen-Symbols. Er hat Stimmungen (froh, fleißig, voll, schläft) und trägt je nach Jahreszeit ein Kostüm. Antippen bringt dich zurück zur Einkaufsliste.</li>
-        <li><b>📍 Laden-Modus automatisch</b> braucht eine 📍 Zone beim Geschäft (Geschäfte → Standort) und dein Handy als Person in Home Assistant. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.</li>
-        <li><b>🧾 Einkaufs-Protokoll:</b> eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist) und ein „Öffnen“-Knopf. Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert.</li></ul>`)}
-      ${sec("💾", "Daten", `<ul>
-        <li><b>Import &amp; Sicherung</b> hat vier Reiter:
-          <ul><li><b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen (bis zu 50), jede mit eigenem Geschäft (beim vollen Abgleich bekommt jede nur die Artikel ihres Geschäfts; eine Liste ohne Geschäft die „Egal wo“-Artikel), entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich) – nur Admins – oder <b>einmal herüberholen</b>. Dazu <b>„Text einfügen“</b> (z. B. eine Liste aus Bring! oder Google Keep kopieren und einfügen) – das darf jeder.</li>
-          <li><b>🥫 Grocy:</b> Produkte aus Grocy in den Katalog holen – Adresse und API-Schlüssel eintippen (der Schlüssel wird bei der einmaligen Abfrage nicht gespeichert), Vorschau mit Häkchen, dann kommen Name, Barcodes und die Produktgruppe (als Kategorie) rüber. Was es schon gibt, wird nicht überschrieben. Darunter der <b>🔄 Dauerabgleich</b> mit zwei getrennten Schaltern: 🛒 <b>Einkaufsliste</b> (alle 3 Minuten; „Holen &amp; dort löschen“, „Bei beiden behalten“ oder „Voller Abgleich“) und 📦 <b>neue Produkte</b> (alle 1–24 Stunden, nichts wird überschrieben oder gelöscht). Hier legt Home Assistant den Schlüssel auf dem Server ab – nie auf Handys, nie in Sicherungen. „Verbindung entfernen“ löscht ihn wieder – nur Admins.</li>
-          <li><b>📄 Katalog aus CSV:</b> (Tab „Aus anderen Apps“) Eine CSV- oder Textdatei – oder eingefügte Zeilen – als Produkte in den Katalog (nicht auf die Einkaufsliste). Spalten: Name; Kategorie; Barcode; Notiz, mit oder ohne Kopfzeile. Was es schon gibt, wird nicht überschrieben – nur Admins.</li>
-          <li><b>🗣️ Siri / Kurzbefehle (iPhone):</b> In der Kurzbefehle-App einen neuen Kurzbefehl anlegen, Aktion „Dienst aufrufen“ der Home-Assistant-App wählen, Dienst <code>einkaufsliste.add_item</code>, Daten <code>name: Milch</code> (den Namen mit „Nach Eingabe fragen“ offen lassen). Nenn ihn z. B. „Einkauf“ – dann reicht „Hey Siri, Einkauf“. Zum Abhaken genauso <code>einkaufsliste.check_item</code>. Die Namen der Aktionen können je nach App-Version leicht anders heißen; auf einem iPhone getestet ist es nicht.</li>
-          <li><b>📧 E-Mail:</b> IMAP-Postfach, erlaubte Absender, Geschäft über Betreff oder Überschrift in der Mail („Aldi:“), und was mit der Mail danach passiert (liegen lassen · als gelesen markieren · löschen) – nur Admins.</li>
-          <li><b>Sicherung:</b> .zip herunterladen oder „Sicherung einspielen“ (ersetzt alles!) – nur Admins.</li></ul></li>
-        <li><b>Verlauf:</b> wer hat wann was gemacht, mit Filtern (Person, Geschäft, Aktion) und Suche, „Mehr anzeigen“ und einer Symbol-Legende. Oben steht <b>📈 Oft nicht bekommen</b> – mit ✖ blendest du einen Eintrag aus. „Aufheben für 7/30/90/180/365 Tage“ stellst du dort ein, „Verlauf leeren“ löscht ihn. Ein Knopf öffnet das Einkaufs-Protokoll.</li>
-        <li><b>Aufräumen:</b> einmal pro Woche werden alte offene Sachen <b>abgehakt</b> – gelöscht wird nichts. <b>An/Aus</b>, Tag, Uhrzeit und wie alt ein Artikel sein muss stellst du direkt hier ein (gilt für alle). Ist es aus, wird nur noch von Hand aufgeräumt. Auf der Seite gibt es außerdem <b>„Jetzt aufräumen“</b> (wie der Automatismus, nur sofort) und <b>„Alles abhaken“</b> (hakt wirklich alles Offene ab).</li>
-        <li><b>💣 Werkseinstellungen</b> (nur Admins, unter Aufräumen ganz unten): setzt <b>alles</b> zurück wie bei einer frischen Installation – auch Geschäfte, Kategorien, Rezepte, Karten und Verbindungen. Nur die PIN bleibt. Zwei Sicherheitsfragen, nicht rückgängig. Gut nach einem Grocy-Import für den kompletten Neuanfang.</li>
-        <li><b>🧽 Liste löschen</b> (nur Admins): Geschäft wählen (oder „Alle Geschäfte“), dann <b>„Erledigte löschen“</b> (nur Abgehaktes, Offenes bleibt) oder <b>„Liste leeren“</b> (offen und erledigt, die Liste ist wieder leer – gut für den Sonntag). Vorher kommt eine Frage mit der Anzahl. Der <b>Katalog bleibt</b>: Die Produkte kommen beim Tippen weiter als Vorschlag, Fotos, Barcodes, Notizen und Favoriten bleiben. Nicht rückgängig zu machen.</li>
-        <li><b>🧹 Alles löschen</b> (nur Admins): <b>„Katalog &amp; Liste komplett löschen“</b> löscht die Einkaufsliste und den ganzen Katalog mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. Zwei Sicherheitsfragen, <b>nicht rückgängig</b> – vorher lieber eine Sicherung machen (⚙️ → Import &amp; Sicherung). Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.</li></ul>`)}
-      ${sec("🩺", "Gesundheit", `<ul>
-        <li><b>Alles ok?</b> sucht kaputte Einträge (Fotos, Barcodes, Rezepte). Bei jedem Fund: <b>🔧 Beheben</b> (nur dieser eine), <b>✏️ Selbst ändern</b> (springt zum Produkt, Artikel oder Rezept) und – wo es mehrere Wege gibt – eine Auswahl. Oder anhaken und alles auf einmal reparieren. Unten gibt es <b>📊 Last</b>: Änderungen pro Minute, gesendete Pakete und Paketgröße – hilft bei hoher Serverlast.</li>
-        <li><b>Fehler-Protokoll:</b> technische Fehler mit „Kopieren“- und „Leeren“-Knopf – praktisch, wenn du Hilfe brauchst. Gibt es nur Fehlermeldungen der letzten 24 Stunden, öffnet der Balken oben das Fehler-Protokoll statt „Alles ok?“; konnte die Prüfung nicht laufen, zeigt er ⚪ „Konnte nicht prüfen“.</li>
-        <li><b>Sensor:</b> <code>sensor.einkaufsliste_gesundheit</code> zeigt die Ampel in Home Assistant (ok / hinweis / problem) – nutzbar in Automationen, z. B. für eine Meldung aufs Handy.</li>
-        <li><b>Ressourcen:</b> wie groß Daten und Fotos sind.</li></ul>`)}
-      ${sec("📱", "App & Info", `<ul>
-        <li><b>👁️ Listenansicht (für alle):</b> was beim Artikel zu sehen ist – Menge, Notizen, Für wen, wer eingetragen hat, Datum, Aufräum-Tag, Geschäft, Rezept, Foto, Stern, Barcode, Angebote und mehr. Häkchen weg = ausgeblendet. Das hier ist der Standard <b>für alle</b>. Seine eigene Ansicht stellt jeder ganz unten unter der Liste mit <b>👁️ Ansicht</b> ein – ganz ohne Zahnrad und PIN (gilt auf allen Geräten dieses Benutzers).</li>
-        <li><b>Offline-App:</b> deine eigene Adresse mit „Kopieren“ (sie braucht eine https-Adresse, z. B. Nabu Casa). Im Handy-Browser öffnen und zum Startbildschirm hinzufügen. Offline geht fast alles; nicht gehen neue Barcodes nachschlagen, Produkt-Infos, Rezept-Links, neue Fotos hochladen und die Sicherung. Beim ersten Scannen fragt das Handy einmal nach der Kamera.</li>
-        <li><b>Hell / Dunkel:</b> Die Auswahl (hell, dunkel, automatisch) gibt es nur in der Offline-App. In der Karte im Dashboard richtet sich alles nach dem Home-Assistant-Design. Die Anleitungen folgen dem jeweils: hell oder dunkel, genau wie die Karte.</li>
-        <li><b>🔒 Datenschutz:</b> zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht. Dort schaltet ein Admin auch <b>„Datenschutz an“</b> für alle Geräte: Dann gibt es keine Kamera, keine Fotos (auch nicht aus Galerie oder Zwischenablage), keinen Barcode-Scanner und kein KI-Kochen – die Knöpfe sind ausgegraut, Barcodes gehen nur noch von Hand. Aus = alles wie gehabt.</li>
-        <li><b>Schutz (PIN):</b> mit PIN geht das ⚙️ erst nach Eingabe auf (4–8 Ziffern, auf diesem Gerät 10 Minuten gemerkt). Der 🔓-Knopf in der Leiste ganz oben (neben der Versionsnummer) sperrt sofort. Vergessen? Ein Admin setzt sie zurück: Einstellungen → Geräte &amp; Dienste → Einkaufsliste → Konfigurieren. Auf der Seite gibt es auch „PIN ändern“ und „PIN ausschalten“. Die Liste selbst (Eintragen, Abhaken, Rezepte, Laden-Modus) bleibt für alle offen. Die PIN schützt vor Versehen, ein Tresor ist sie nicht.</li>
-        <li><b>Was ist neu</b> und <b>Credits</b> stehen am Ende der Liste.</li></ul>`)}
+    const ul = (a) => `<ul>${a.map((x) => `<li>${x}</li>`).join("")}</ul>`;
+    const first = en ? [
+      "The settings are a <b>list of groups</b> (each group is a box, each row has a coloured icon): tap a group (it opens, the previous one closes), tap a row, change something, tap the round <b>←</b> at the top to go back.",
+      "The <b>search field</b> at the top finds rows by name or topic, e.g. “photo”, “mail”, “backup” or “sensor”.",
+      "<b>Under the switches of every row</b> there is a <b>💡 How it works</b> box – the same texts as here.",
+      "The bar at the very top shows the <b>health light</b> 🟢🟡🔴. Tap it to open “All OK?”.",
+    ] : [
+      "Die Einstellungen sind eine <b>Liste mit Gruppen</b> (jede Gruppe ein Kasten, jede Zeile mit buntem Icon): Gruppe antippen (sie klappt auf, die vorherige zu), Zeile antippen, etwas ändern, mit dem runden <b>←</b> oben wieder zurück.",
+      "Das <b>Suchfeld</b> oben findet Zeilen nach Name oder Thema, z. B. „Foto“, „Mail“, „Sicherung“ oder „Sensor“.",
+      "<b>Unter den Schaltern jeder Zeile</b> steht ein Kasten <b>💡 So geht's</b> – dieselben Texte wie hier.",
+      "Der Balken ganz oben zeigt die <b>Gesundheits-Ampel</b> 🟢🟡🔴. Antippen öffnet „Alles ok?“.",
+    ];
+    const rows = (g) => g[4].map((k) => {
+      const t = EL_HELP_TITLES[k];
+      return `<p class="elg-row"><b>${t[2]} ${t[en ? 1 : 0]}</b></p>${ul((en ? EL_HELP[k][2] : EL_HELP[k][1]))}`;
+    }).join("");
+    return `<div class="elg" ${en ? 'translate="no"' : ""}>
+      <div class="elg-top"><h2>⚙️ ${en ? "How the settings work" : "So funktionieren die Einstellungen"}</h2></div>
+      <p class="elg-sub">${en ? "Tap a heading to open it. This guide is only for people who can open the settings. The guide for shopping and recipes is behind the <b>📖 Guide</b> button at the very bottom under the list." : "Tipp auf eine Überschrift klappt sie auf. Diese Anleitung ist nur für alle, die ins Zahnrad kommen. Die Anleitung fürs Einkaufen und die Rezepte steht hinter dem Knopf <b>📖 Anleitung</b> ganz unten unter der Liste."}</p>
+      ${sec("🔍", en ? "Finding things" : "Wie finde ich etwas?", ul(first), true, "#1e88e5", en ? "groups, search, health light" : "Gruppen, Suche, Ampel")}
+      ${EL_HELP_GROUPS.map((g) => sec(g[1], g[en ? 3 : 2], rows(g), false, g[5], g[4].map((k) => EL_HELP_TITLES[k][en ? 1 : 0]).join(" · "))).join("")}
     </div>`;
   }
 
   // 📊 Ressourcen: Dateigrößen und wie viel drinsteht
   async _loadStats() {
     let st;
+    let ld = null;
     try { st = await this._ws({ type: "einkaufsliste/stats" }); } catch (_) { return; }
+    try { ld = await this._ws({ type: "einkaufsliste/load" }); } catch (_) { /* Last-Zahlen sind nur ein Extra */ }
     const box = this.$("statsBox");
     if (!box || !st) return;
     const mb = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(1).replace(".", ",")} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
@@ -7948,8 +8127,10 @@ class EinkaufslisteCard extends HTMLElement {
       ${row("mdi:chef-hat", "Rezepte", st.recipes)}
       ${row("mdi:barcode", "Barcodes", st.barcodes)}
       ${row("mdi:history", `Verlauf (${st.log_days} Tage)`, st.log)}
+      ${ld ? row("mdi:swap-vertical", `Änderungen pro Minute (seit ${ld.minutes} Min.)`, ld.per_minute) : ""}
+      ${ld ? row("mdi:package-up", "Pakete an Karten &amp; Apps (je ca. " + (ld.packet_kb ?? "?") + " KB)", ld.pushes) : ""}
     </div>
-    <p class="hint">Rechenleistung braucht die Einkaufsliste nur kurz, wenn jemand etwas ändert – sonst schläft sie. Viel Platz belegen fast nur die Fotos; der Verlauf räumt sich nach ${st.log_days} Tagen selbst auf.</p>`;
+    <p class="hint">Rechenleistung braucht die Einkaufsliste nur kurz, wenn jemand etwas ändert – sonst schläft sie. Bleiben die „Änderungen pro Minute“ auch bei Ruhe hoch, ändert sich ständig etwas – bitte melden. Viel Platz belegen fast nur die Fotos; der Verlauf räumt sich nach ${st.log_days} Tagen selbst auf.</p>`;
   }
 
   // 🙏 Credits – in ⚙️ und in der Anleitung (dort dunkel)
@@ -8037,136 +8218,6 @@ class EinkaufslisteCard extends HTMLElement {
         <li>Die Einkaufsliste gibt's auch als <b>eigene App</b> auf dem Startbildschirm. Die öffnet sogar <b>ohne Netz</b>.</li></ul>
         <ol><li>Adresse kopieren</li><li>Im Handy-<b>Browser</b> einfügen (Chrome/Safari, nicht die HA-App)</li>
         <li>Mit deinem Home-Assistant-Benutzer anmelden</li><li>Browser-Menü → <b>„Zum Startbildschirm hinzufügen“</b></li></ol>${box}`);
-  }
-
-  // 📖 Die Anleitung auf Englisch (für alle, deren Home Assistant nicht auf Deutsch läuft)
-  _guideEn(sec, appSec = "") {
-    return `<div class="elg" translate="no">
-      <div class="elg-top"><h2>🛒 How the shopping list works</h2></div>
-      <p class="elg-sub">Tap a heading to open it. You can always find this guide via the <b>📖 Guide button at the very bottom</b>, below the list.</p>
-      ${sec("🆕", "What's new", this._newsHtml(true))}
-      ${sec("✍️", "Adding things", `<ul>
-        <li>Type into the field at the top, e.g. <b>milk</b>, then tap the green check mark <span class="elg-k">✔</span>.</li>
-        <li>While typing you get up to <b>2 suggestions</b>. Tapping one takes over everything from last time (quantity, note, for whom, store).</li>
-        <li>Even products you have never bought: after just <b>1–2 letters</b> you get suggestions from a built-in list of about 1400 common groceries and household items (with a matching category). German list only; your own items always come first.</li>
-        <li><b>What does this icon do?</b> Press and hold it to see its name briefly. Or ⚙️ → Extras → <b>Labels</b>: then a short text appears under the icons (the switch applies to everyone).</li>
-        <li>Quantities work directly too: <b>3 milk</b> or <b>500 g flour</b>. The list remembers the unit: <b>2 baking powder</b> becomes 2 packs.</li>
-        <li><b>Several at once:</b> <b>milk, 6 eggs, bread</b> → ✔ → 3 things on the list.</li>
-        <li><b>🤔 Unusually large amount?</b> For e.g. 300 eggs or 40 kg flour the list asks once whether that is really right – so typos don't slip through.</li>
-        <li><b>Names get tidied:</b> “h-milk” becomes “H-Milk”.</li>
-        <li>The buttons below: 🔢 quantity · ✏️ own note · 👤 for whom · 📷 photo · ⭐ all favourites onto the list · 📋 read a list from a photo · 🧽 clear everything. When <b>editing</b> (long press) there are also nicknames and ⭐ favourite; “for whom” is picked next to the quantity.</li>
-        <li><b>⭐ Favourites:</b> when editing an item (or a catalogue product) tick “⭐ Favourite” – a ⭐ then shows before the photo icon. The ⭐ button under the input field puts <b>all</b> favourites on the list at once; whatever is already open on it is not added twice.</li>
-        <li><b>📝 Note templates</b> (⚙️ → Extras): small buttons under the ✏️ Own note field (when adding, editing and in the catalogue) – one tap inserts “Organic”, “lactose-free” & co. You maintain the texts yourself, one per line.</li>
-        <li><b>✏️ Own note:</b> write something just for yourself here, e.g. “only the big pack”. In the list it is yellow like the 📝 note (with ✏️ in front), <b>stays with the product</b> and comes back by itself next time you add it. The 📝 note, by contrast, comes only from the barcode (brand/variety from the database) and cannot be typed. The ✏️ note does not create a new product, and the product database never overwrites it. You change it when editing the item or in the catalog; leaving it empty there deletes it.</li>
-        <li>Below that <b>“Which store?”</b> – or “Anywhere”. Usually it's already picked correctly (like last time).</li>
-        <li>Next to it the <b>category</b> – the list usually picks it itself. If it's wrong, just change it.</li>
-        <li>If you start typing the <b>name of a person</b> (e.g. yours, at least 2 letters), the first suggestion shows what is already on the list for that person.</li>
-        <li><b>🏷️ Nicknames:</b> “Tempos” means the same product as “tissues”. Type the nickname and the list suggests the right product. You create nicknames when you <b>long-press the item → Edit</b> (field 🏷️ Nicknames, several separated by commas), or in the product under ⚙️.</li>
-        <li>Typo? The list asks “Did you mean …?” 😉 What you confirm is learned and offered as the first suggestion next time.</li>
-        <li>Tap 🔢 and <b>quick buttons</b> appear (usual quantities, “✏️ other quantity”). The 👤 button is only there if people have been added in ⚙️.</li>
-        <li>In the store field there is <b>“➕ New store …”</b>: type a name, done. You set up the rest later in ⚙️.</li>
-        <li><b>Already open at another store?</b> Then the list asks: <b>Cancel</b>, <b>Additionally</b> at this store or <b>Move</b>.</li>
-        <li><b>Twice on the list?</b> If e.g. “Tomato” and “Tomatoes” are both on it, the list asks “Merge”. If it is fine as it is, tap “It's fine”.</li></ul>`, true)}
-      ${appSec}
-      ${sec("✅", "Checking off & adding again", `<ul>
-        <li><b>Tap the circle</b> = bought. The phone vibrates briefly. On a phone you can also <b>swipe</b>: a row <b>to the left</b> = tick off ✔, a done row <b>to the right</b> = back on the list ↩.</li>
-        <li>Bought things slide down to <b>“Done – bought before”</b>.</li>
-        <li>Tap the circle there = <b>back on the list</b>. No need to type anything again.</li>
-        <li><b>↩️ Checked off by accident?</b> “Undo” shows at the bottom for 3 seconds – tap it and the item is open again.</li>
-        <li>Once a week the list tidies itself up: old things get checked off, <b>nothing gets deleted</b>. At the very bottom it says when the next time is (“Next tidy-up: …”) – or that automatic cleanup is off.</li>
-        <li><b>In the “All” tab</b> a product that is open at several stores shows only <b>once</b>. When you check it off, the list asks “Where bought?”.</li>
-        <li><b>“Anywhere” items</b> checked off in a store's tab: they now belong to that store and are gone everywhere.</li>
-        <li>The list is sorted by <b>category</b> (with a number per category). Every store can have its own order, matching the shop. Under “Done” each category can be collapsed on its own.</li>
-        <li>Typing in the input field also filters the “Done” list by name, note or person.</li></ul>`)}
-      ${sec("📸", "Text from photo & new helpers", `<ul>
-        <li><b>📋 below the input field:</b> reads <b>a shopping note only</b>: photograph it, check the text, add it to the list. Printed text works well, handwriting only with luck – so you can correct the text first. If the note has a line like <b>“Aldi:”</b>, the items below it go to that store. At the bottom you can also pick one store for everything.</li>
-        <li><b>Receipt:</b> not via the 📋, but in the purchase log with “📷 Read receipt” – amount, store and day are suggested.</li>
-        <li><b>Receipt as PDF</b> (e.g. a digital receipt): in the purchase log tap “📄 Read PDF” and pick the PDF. The card reads the text and fills in <b>store, date and total</b> – please check it briefly and change it if needed, then “Save”. The PDF stays on your device. A PDF that is only an image (no text) cannot be read this way – photograph the receipt instead.</li>
-        <li><b>🧲 Merge:</b> in the product editor turn two identical products into one.</li>
-        <li><b>🩺 Health light &amp; 🐞 error log:</b> in the settings – shows whether everything runs.</li>
-        <li><b>🛍️ Automatic shop mode:</b> switches on when you enter a store (applies to all devices, optional – location stays personal).</li>
-        <li><b>Recipes:</b> a photo per step in cooking mode. To read a recipe from a cookbook page use “📷 From photo” <b>in the recipe editor</b> – not the 📋.</li>
-        <li><b>Offline:</b> photos taken without network are sent later.</li>
-      </ul>`)}
-      ${sec("🏪", "Stores & tabs", `<ul>
-        <li>At the top the tabs: <b>All</b> and your stores. The number shows how much is still open there.</li>
-        <li>The <b>red bubble</b> means: something new was added since you last looked.</li>
-        <li><b>✨</b> on the item = new from someone else. It stays until you <b>check the item off</b> or <b>tap the ✨</b> – 24 hours at most.</li>
-        <li><b>⇄</b> on the item = was out: <b>“Here again next time”</b> (stays open, everyone sees “⇄ was out” for 3 days) or move it straight to another store. Stores with ✓ carry the product too. The button only exists if you have more than one store.</li>
-        <li><b>⚠️ Often not available:</b> If a product was already out 3 times at a store, the list warns you when adding it and at ⇄: “better somewhere else?” – with buttons for the other stores.</li>
-        <li><b>📍 Automatically to the store:</b> If you are in a store's zone, the list jumps to that store's tab (it gets a 📍). You can switch this off in the card options.</li>
-        <li><b>🤷 “Anywhere”</b> = no fixed store: it appears in every store's tab and counts everywhere. Move it to a store with ⇄ = it simply moves over.</li>
-        <li><b>🔁 Also available here</b> (in a store's tab): things listed at another store that this store has too. Tap to bring them here.</li>
-        <li>No connection in the store? Just keep checking things off. The bar at the top then shows <b>⏳ orange</b> and everything is sent once there's a connection again.</li></ul>`)}
-      ${sec("👆", "Changing & long-press", `<ul>
-        <li><b>Long-press</b> an item (on a PC: right mouse button) = menu: edit, move, quantity, category, photo, barcode, offers and <b>ℹ️ Info</b>. What is offered depends on the item: “Move” only with more than one store, “Barcode” only with a scanner, “Offers” only if there are some, “Info” only for products with a barcode. The menu closes by itself after 8 seconds.</li>
-        <li><b>ℹ️ Info</b> shows from the product database: Nutri-Score, allergens, possible traces, labels and ingredients (no guarantee).</li>
-        <li>Change the quantity directly: tap the quantity, then <span class="elg-k">−</span> and <span class="elg-k">＋</span>.</li>
-        <li><b>⌨️ On a PC</b> the keyboard works: <b>↓</b> from the search field into the list, <b>↑ ↓</b> to pick a row, <b>Enter</b> opens, <b>Space</b> checks off, <b>Del</b> deletes (in the delete list), <b>Esc</b> closes.</li>
-        <li>Below the item in small print: the <b>store in its color</b> (only in the “All” tab), the <b>📝 note</b> (yellow background), ▥ (has a barcode), who added it (if the card option is on) and who checked it off. Plus, depending on the case: <b>🍽️ recipe name</b> (came from a recipe), <b>🧹 day</b> (is checked off automatically on that day; <b>red</b> from one working day before = it is about to happen), <b>↩️ instead of coffee</b> (offer item – the original is checked off), <b>⏳</b> (waiting for network).</li>
-        <li><b>🏷️</b> at the front of an item = on offer right now (only if turned on in the settings). Tap or long-press → <b>Offers</b>: store, price, how long. <b>🛒 Buy here</b> creates the offer item at that store (with its name and “🏷️ price until day” in its own field) and checks off the original product. If the offer has the same name as your product, your product stays: it moves to the offer's store and gets the price, nothing is checked off. If the offer's store matches none of your stores, the list asks whether to create it or use “Anywhere”. Items that only exist because of an offer are gone completely when you check them off. If you see <b>🔀</b> (blue) instead, there is nothing for exactly this product, but there are <b>similar offers</b> (e.g. “milk” for “UHT milk”) – at most 4, marked “Similar” in the window. You take them with <b>🛒 Buy here</b> too – since it is a different product, the list asks: <b>Replace</b> (your product is checked off – it comes back if you do not buy the offer; if you buy it, the offer is gone entirely when you check it off) or <b>Also</b> (your product stays open).</li>
-        <li><b>Searching offers:</b> just type the product at the top (e.g. “coffee”) – below the suggestions there's <b>🏷️ Show offers for “coffee”</b>. Use <b>➕ Add to list</b> to put it on the list at the right store.</li>
-        <li><b>⌛ Offer over</b> = the offer has expired. The item stays on the list, only the offer price is gone; the note shows for 1 day. An item that was created by the offer is then deleted and your original product goes back on the list.</li>
-        <li>Honestly: the offers come unofficially from Marktguru and may stop working at any time.</li></ul>`)}
-      ${sec("🛍️", "In the store", `<ul>
-        <li>The <b>🏪 store at the top right</b> switches on <b>shop mode</b>: big rows, checking off only, just the essentials. The input field, recipe button, ⚙️ and 🧾 are hidden then; who added an item stays visible.</li>
-        <li>Tap again (or <b>Finish</b>) = back to normal. Shop mode is remembered on this device.</li>
-        <li><b>💡 Screen always on:</b> In shop mode a light-bulb icon sits between 💳 and the 🏪 store. Tap = the screen stays on, tap again = back to normal. It switches off by itself when you leave shop mode. <b>In the HA app</b> this only works with the app setting: Settings → Companion App → “Keep screen On”.</li>
-        <li><b>Automatic (option):</b> If “Automatic shop mode” is on in ⚙️, it switches on by itself as soon as your phone enters a store's zone and off again when you leave. What you switch on or off yourself is left alone by the automation.</li>
-        <li>If your location says you are in the store, <b>▥ checks things off (scan &amp; check off)</b> – see “Barcodes”.</li></ul>`)}
-      ${sec("🧾", "Purchase log", `<ul>
-        <li>Only there if it is switched on in ⚙️ → Extras → <b>Purchase log</b> (applies to everyone).</li>
-        <li>The <b>🧾 button</b> at the top of the card (and in the history) opens it. <b>➕ Add</b>: store, amount, date – the list fills in who and when.</li>
-        <li><b>📊 Overview</b>: in total, per store and per month. Filters for person, store and date, quick buttons <b>This month / Last month / All</b>.</li>
-        <li>Entered something wrong? Tap <b>✖</b> on the purchase.</li></ul>`)}
-      ${sec("📷", "Photos", `<ul>
-        <li><b>Product photo:</b> When adding, tap the <b>📷</b> below the input field – or later <b>long-press the item → Photo</b>. The photo belongs to the product and is there again next time. On the item the small <b>📷</b> shows it large; swipe = browse. Up to <b>6 photos</b> per product, a new one never replaces an old one.</li>
-        <li><b>🔒 Privacy on?</b> Then there is no camera, no photos (not even from gallery or clipboard) and no AI cooking; the buttons are greyed out. The switch is in ⚙️ → App &amp; info → Privacy (admins only).</li>
-        <li><b>Where does the photo come from?</b> On a phone the card asks: <b>📷 Camera</b> · <b>🖼️ Gallery</b> · <b>📋 Paste</b> (a copied image). On a PC a window opens: <b>drag in</b> an image, press <b>Ctrl + V</b> or click. <b>Ctrl + V</b> also works directly in the list on a PC: the copied image immediately becomes the photo for the item you are adding (in the recipe editor the recipe photo). In the HA app on Wi-Fi (local http address) there is no camera – you get the gallery (and “Paste”, if possible) instead.</li>
-        <li><b>Rotate &amp; crop:</b> Before saving you can rotate the photo and choose the crop.</li>
-        <li><b>Recipe photos:</b> Add photos to a recipe in the recipe editor (⚙️ → Recipes). In the recipe view the <b>📷</b> in the row below the name opens them.</li>
-        <li><b>Photo for a cooking step:</b> In the recipe editor every step of the instructions has its own row. Tap <b>“Photo”</b> or <b>“Add”</b> at a step (works for steps that are already saved). In <b>cooking mode</b> the photo shows up at exactly that step.</li>
-        <li><b>Moving steps:</b> Drag the <b>⠿</b> in front of the row – or tap ⠿ and use <b>↑ ↓</b>. The photos move along (after saving). <b>➕ Step</b> adds a row, <b>✖</b> deletes it (with a photo you are asked first). Paste several lines at once? Each becomes its own step.</li>
-        <li><b>Receipt photo:</b> In the purchase log “📷 Read receipt” attaches the receipt photo automatically. An entry without a photo has a <b>➕📷</b> symbol; with a photo the <b>📷</b> opens it.</li>
-        <li><b>🎉 Ask automatically (option):</b> can be switched on in the settings under the purchase log (applies to everyone). Once everything on the list is checked off, “log purchase” opens by itself – with the store already chosen. At most every 10 minutes.</li>
-        <li><b>Without network:</b> Photos you take in the offline app without network are queued (“📴 Photo queued”) and uploaded as soon as the network is back. Very large photos (over about 3 MB) need a connection.</li>
-        <li><b>Manage &amp; delete:</b> Only in ⚙️ → <b>Products</b> (order, main photo, delete one) and in the recipe editor – not in the shopping list itself.</li>
-        <li><b>Reading text from a photo:</b> That is something different from storing a photo. See “Text from photo &amp; new helpers”.</li></ul>`)}
-      ${sec("▥", "Barcodes", `<ul>
-        <li><b>Where do you scan?</b> Tap the <b>▥</b> at the top left next to the shopping cart (only in the HA app and the offline app). The HA app opens its own scanner, the offline app uses the phone camera. Hold the package in the frame.</li>
-        <li><b>What happens when you scan? – At home:</b> The list looks the product up in the product database and <b>fills in the input field</b> for you: name, brand as a note, category and – for store brands – the matching store. It says “Name okay? Then tap ✅”. <b>Only the green check mark puts it on the list.</b> If the list already knows the barcode, it says “I know this one”.</li>
-        <li><b>Barcode not known yet?</b> The field stays empty. Type the name and tap ✅ – the list remembers the barcode, so next time the product is there instantly.</li>
-        <li><b>📦 Scan several:</b> The scanner has a “Scan several” button (e.g. at the fridge). The scanner stays open: <b>every package goes straight onto the list</b>, no ✅ needed. The same package is not counted twice if it stays in the picture briefly. “✔ Done” ends it. A barcode that does not exist comes on as <b>“❓ Unknown 1234”</b> – please rename it later (⚙️ → Products → <b>Newly scanned</b>, check the name, then “✔ OK”). In the recipe editor scanned packages become ingredients.</li>
-        <li><b>↩️ Scanned by mistake?</b> After scanning several there is “Undo” for 5 seconds for the last scanned package.</li>
-        <li><b>✅ In the store: scan &amp; check off.</b> If your location shows you are in a store (📍 zone), ▥ checks off instead: scan the package before it goes into the cart – if it is open on the list, it is checked off (“✅ … checked off”). If it is not on the list, the list says so. The scanner stays open here too; “↩️ Open again” takes back the last item you checked off.</li>
-        <li><b>Photo &amp; brand automatically:</b> If the product has no photo of its own yet, the list fetches the product photo from the database while scanning. The brand becomes the note (“Wagner Pizza Salami” becomes “Pizza Salami” with note “Wagner”).</li>
-        <li><b>Assign a barcode later:</b> long-press the item → <b>Barcode</b>. The list then checks the product database. If the product has a different name there than yours, a window opens: you <b>choose separately</b> whether the <b>name</b> and/or the <b>note</b> are applied – “Keep my data” leaves everything as it is. Your ✏️ own note always stays. A ▥ under the item shows that one is stored. With a barcode you can also look at <b>ℹ️ Info</b> (Nutri-Score, allergens).</li>
-        <li><b>New product with your own name?</b> When adding, tap the <b>▥ with a plus</b> (next to the photo icon), scan, type the name, ✔ – the barcode belongs to it right away.</li>
-        <li><b>Without network:</b> Looking things up in the database only works with a connection. Without it the list only knows barcodes it has already saved.</li>
-        <li>On privacy: when scanning, only the barcode number goes to the open database Open Food Facts. Your list and your photos stay in Home Assistant. If <b>🔒 Privacy is on</b> (⚙️ → App &amp; info) there is no scanner; you can only type a barcode by hand.</li></ul>`)}
-      ${sec("💳", "Loyalty cards", `<ul>
-        <li><b>💳 Loyalty cards</b> (only if switched on in ⚙️ → Extras): the 💳 button at the top (also in shop mode) shows your cards. “➕ Card”: scan it or type the number, give it a name, choose “for everyone” or “only me”. Tapping shows the code big on white for the checkout; “🔄 Other format” switches between QR and barcode.</li>
-        <li><b>📷 Scan</b> has its <b>own camera in the card</b> and reads QR codes, Aztec codes (e.g. Penny’s benefit code) and barcodes by itself – you don’t have to choose the format. <b>📷 Photo of the card</b> also stores a photo (only on your Home Assistant). A “rolling code” that keeps changing does not work with it.</li>
-      </ul>`)}
-      ${sec("👨‍🍳", "Recipes", `<ul>
-        <li>The <b>chef's hat</b> at the top opens the recipes. The search also finds ingredients (e.g. “zucchini”) – and nicknames (“Paradeiser” finds the recipes with tomato). Creating and changing recipes only works via the <b>⚙️ gear</b> (⚙️ → Recipes).</li>
-        <li><b>Add to list</b>: tick what you need – “All” or “None” is faster. Whatever is already on the list (“already on it”, only with the same name and note) or “we always have it” (🧂) is not ticked. Recipe ingredients on the list carry the recipe name, coloured like the recipe group.</li>
-        <li><b>👥 For how many?</b> or <b>🍕🍰 How many trays?</b> With − / ＋ the quantities are recalculated.</li>
-        <li>If it says <b>“Never bought – where to buy?”</b>, just pick the store.</li>
-        <li><b>Off the list (3)</b> takes this recipe's ingredients off again.</li>
-        <li>📷 = recipe photos · <b>🔥 Cook</b> = step by step in large print (“Step 2 of 6”, icons at the top: <b>📷</b> photo for the step (only if there is none yet), <b>🥕</b> ingredients and ⏲️ cooking times; below them the orange oven settings, then the photo for the step; if the recipe has no photo yet, the last step is “📸 Photo of the finished dish”; the screen stays on; in landscape “Next” always stays visible) · <b>Share</b> = e.g. via WhatsApp.</li>
-        <li>Checked recipe ingredients disappear completely (not under “Done”).</li>
-        <li><b>🤖 AI cooking</b> (⚙️ → Extras, admin only): you choose an AI assistant from Home Assistant (e.g. OpenAI, Google, Anthropic or local Ollama). Then <b>Recipes</b> shows “What can I cook?” at the top left, next to the cooking times: type ingredients (also things that are not in the catalogue), optionally include the open items of the list and add wishes. For every suggestion: “Missing items to the list” or “Save as recipe”. The ingredient names go to the chosen assistant; with Privacy switched on nothing is sent. AI answers can be wrong.</li>
-        <li><b>⏲️ Cooking times</b> (at the top of the recipes and in cook mode): cheat sheet by appliance: 🍲 stove, 🔥 oven, 💨 air fryer.</li></ul>`)}
-      ${sec("🛒", "What do the symbols at the top mean?", `<ul>
-        <li>From the left: <b>🛒 shopping cart</b> (or the mascot, if switched on) = <b>back to the shopping list</b> from anywhere (recipes, settings …) · <b>number</b> · <b>▥ barcode</b> (only with a scanner) · <b>🧾</b> purchase log (only if switched on).</li>
-        <li>The <b>thin bar at the very top</b> (on every page): on the left <b>🟢 connected</b> – or <b>⏳ orange</b> = changes are waiting for the network, <b>🔴 no connection</b>. Tapping it takes you back to the list. On the right: <b>🔓</b> locks the ⚙️ at once (only with a PIN) and the <b>version number</b>.</li>
-        <li>At the very bottom, below the list: <b>📖 Guide</b> (this one) and <b>👁️ View</b> – where you set what <b>you</b> want to see on items (just for you, no PIN).</li>
-        <li>The <b>number</b> = this many things are still open.</li>
-        <li>Right: <b>cart</b> = shop mode · <b>chef's hat</b> = recipes · <b>⚙️</b> = settings.</li>
-        <li>A <b>blue bar</b> at the top = there is a new version. Tap <b>“Reload”</b> – anyone can do that. Only if it says the card is newer than Home Assistant, someone with admin access has to restart Home Assistant.</li></ul>`)}
-      ${sec("🙏", "Credits", this._creditsHtml(true))}
-    </div>`;
   }
 
   // 👨‍🍳 Koch-Modus: Schritt für Schritt, groß, Bildschirm bleibt an
@@ -9214,9 +9265,7 @@ class EinkaufslisteCard extends HTMLElement {
       return;
     }
     if (this._formMode === "recipe") { this._addRecipeIngredient(); return; }
-    // 📋 Mehrere auf einmal: „milch, 6 eier, brot“ -> 3 Artikel (Komma in „1,5 l“ trennt nicht)
-    const parts = splitMany(name);
-    if (parts.length > 1) { await this._addMany(parts); return; }
+    // Eine Eingabe = genau ein Produkt (Kommas gehören zum Namen, z. B. „Sandwichscheiben, Weizen“)
     const msg = {
       type: "einkaufsliste/item/add",
       name,
@@ -9244,44 +9293,6 @@ class EinkaufslisteCard extends HTMLElement {
       return;
     }
     await this._doAdd(msg);
-  }
-
-  // Jeder Artikel bekommt sein eigenes Geschäft (Reiter > Gedächtnis > Auswahl), seine Kategorie und Menge
-  // 🔒 Doppeltipp darf nicht alles zweimal eintragen
-  async _addMany(parts) {
-    if (this._addingMany) return;
-    this._addingMany = true;
-    try { await this._addManyInner(parts); } finally { this._addingMany = false; }
-  }
-
-  async _addManyInner(parts) {
-    if (this._newPhoto) { this._toast("📷 Mit Foto bitte einzeln eintragen – das Foto gehört ja zu einem Produkt."); return; }
-    if (this._pendingBarcode) { this._toast("▥ Mit Barcode bitte einzeln eintragen – der Barcode gehört ja zu einem Produkt."); return; }
-    const tab = this._activeTab;
-    const tabStore = this._fixedStore || (tab !== "all" && tab !== "none" && this._store(tab) ? tab : null);
-    const chosen = this._inStore();
-    const forWhom = this.$("inFor").value || null;
-    let added = 0;
-    for (const raw of parts) {
-      const sp = splitQty(raw);
-      const name = (sp.qty ? sp.name : raw).trim();
-      if (!name) continue;
-      const low = name.toLowerCase();
-      const h = (this._data.history || []).find((x) => x.name.toLowerCase() === low);
-      const cat = (h?.category_id && this._cat(h.category_id) ? h.category_id : null) || guessCategory(low, this._data.category_hints);
-      const msg = {
-        type: "einkaufsliste/item/add", name,
-        store_id: tabStore || (h?.usual && this._store(h.usual) ? h.usual : null) || (h?.store_id && this._store(h.store_id) ? h.store_id : null) || chosen,
-        category_id: cat && this._cat(cat) ? cat : null,
-      };
-      if (sp.qty) msg.quantity = sp.bare ? sp.num : sp.qty; // nur Zahl -> Home Assistant nimmt die gemerkte Einheit
-      if (msg.quantity && qtyOdd(name, msg.quantity) && !elConfirm(`Wirklich ${msg.quantity} „${name}“?`)) continue; // 🤔 ungewöhnlich viel
-      if (forWhom) msg.for_whom = forWhom;
-      try { await this._ws(msg); added++; } catch (_) { /* Meldung kam schon */ }
-    }
-    if (added) this._toast(`✅ ${added} Artikel eingetragen`);
-    this._clearForm();
-    this.$("inName").focus();
   }
 
   async _doAdd(msg) {
@@ -9483,6 +9494,16 @@ class EinkaufslisteCard extends HTMLElement {
         const prefs = { ...(mine ? (me && all[me]) || {} : all._all || {}) };
         const shown = mine ? this._viewPrefs() : { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
         prefs[el.dataset.key] = shown[el.dataset.key] === false;
+        this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
+          .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
+        break;
+      }
+      case "view-font": { // 🔠 Schriftgröße: kleiner / Standard / größer
+        const mine = el.dataset.scope === "me";
+        const all = this._data.settings?.view_prefs || {};
+        const me = this._hass?.user?.id;
+        const prefs = { ...(mine ? (me && all[me]) || {} : all._all || {}) };
+        prefs.font = el.dataset.font;
         this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
           .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
         break;
@@ -9848,15 +9869,6 @@ class EinkaufslisteCard extends HTMLElement {
         if (!h || !target) { this._renderList(); break; }
         this._ws({ type: "einkaufsliste/item/move", item_id: h.id, store_id: target.id })
           .then(() => this._toast(`🔁 ${h.name}: jetzt bei ${target.name}`)).catch(() => this._renderList());
-        break;
-      }
-      case "also-here": {
-        const item = this._data.items.find((i) => i.id === el.dataset.id);
-        const target = this._store(el.dataset.store);
-        if (!item || !target) break;
-        const from = this._store(item.store_id);
-        this._ws({ type: "einkaufsliste/item/move", item_id: item.id, store_id: target.id })
-          .then(() => this._toast(`🔁 ${item.name}: ${from ? `bei ${from.name} abgehakt, ` : ""}jetzt bei ${target.name} offen`)).catch(() => {});
         break;
       }
       case "move-to": {

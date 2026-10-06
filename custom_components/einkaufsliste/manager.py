@@ -286,7 +286,16 @@ def _name_list(value: Any, limit: int = 40, size: int = 60) -> list[str]:
 VIEW_KEYS = (
     "qty", "note", "own_note", "for_whom", "added_by", "added_at", "checked_by", "cleanup", "store",
     "recipe", "barcode", "photo", "fav", "offer", "out", "move", "new", "cat_color",
+    "tabs", "in_name", "in_store", "in_cat", "in_icons",  # 🧩 Leiste/Eingabe-Felder oben (an/aus)
 )
+VIEW_FONTS = ("s", "m", "l")  # 🔠 Schriftgröße: kleiner / Standard / größer
+
+
+def _clean_view(prefs: Any) -> dict[str, Any]:
+    out: dict[str, Any] = {k: bool(v) for k, v in prefs.items() if k in VIEW_KEYS}
+    if prefs.get("font") in VIEW_FONTS and prefs["font"] != "m":
+        out["font"] = prefs["font"]
+    return out
 TODO_SYNC_MAX = 50  # 🔁 so viele To-do-Listen dürfen herübergeholt werden (früher 10)
 
 
@@ -526,7 +535,7 @@ class EinkaufslisteManager:
         self.spend_auto = bool(data.get("spend_auto", False))
         self.auto_shop = bool(data.get("auto_shop", False))
         self.view_prefs = {
-            str(u): {k: bool(v) for k, v in p.items() if k in VIEW_KEYS}
+            str(u): _clean_view(p)
             for u, p in (data.get("view_prefs") or {}).items() if isinstance(p, dict)
         }
         self.purchases = list(data.get("purchases") or [])
@@ -1208,7 +1217,7 @@ class EinkaufslisteManager:
         self.auto_shop = bool(on)
         self._changed()
 
-    def set_view(self, scope: str, prefs: dict[str, Any] | None) -> dict[str, bool]:
+    def set_view(self, scope: str, prefs: dict[str, Any] | None) -> dict[str, Any]:
         """👁️ Listenansicht einstellen: scope "all" = Standard für alle, "me" = nur für den, der gerade tippt.
         prefs None = zurücksetzen (für mich: wieder wie für alle)."""
         if scope == "all":
@@ -1222,7 +1231,7 @@ class EinkaufslisteManager:
         if prefs is None:
             self.view_prefs.pop(key, None)
         else:
-            self.view_prefs[key] = {k: bool(v) for k, v in prefs.items() if k in VIEW_KEYS}
+            self.view_prefs[key] = _clean_view(prefs)
         self._changed()
         return self.view_prefs.get(key, {})
 
@@ -2288,6 +2297,10 @@ class EinkaufslisteManager:
             unit = (self.history_for(name) or {}).get("unit")
             if unit:
                 quantity = apply_unit(quantity, unit)
+        bare_default = not quantity and recipe_id is None
+        if not quantity and recipe_id is None:  # 🔢 keine Menge angegeben? Dann immer 1x (oder 1 mit der gemerkten Einheit)
+            unit = (self.history_for(name) or {}).get("unit")
+            quantity = apply_unit("1", unit) if unit else "1x"
         existing = self._find_same(name, note, for_whom, store_id, recipe_id)
         if existing is not None:
             if not from_offer and recipe_id is None and existing.get("from_offer"):
@@ -2314,7 +2327,7 @@ class EinkaufslisteManager:
             elif own and recipe_id is None and not existing.get("own_note"):
                 existing["own_note"] = own
             old_qty = existing.get("quantity")
-            if quantity:
+            if quantity and not (old_qty and bare_default):
                 existing["quantity"] = quantity
             if readded:
                 self._log("readd", existing, who=added_by)

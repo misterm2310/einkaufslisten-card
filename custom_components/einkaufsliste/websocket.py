@@ -749,7 +749,7 @@ def ws_labels(hass, connection, msg):
     {
         vol.Required("type"): "einkaufsliste/view/set",
         vol.Required("scope"): vol.In(["all", "me"]),
-        vol.Required("prefs"): vol.Any(None, {str: bool}),
+        vol.Required("prefs"): vol.Any(None, {str: vol.Any(bool, str)}),
     }
 )
 @callback

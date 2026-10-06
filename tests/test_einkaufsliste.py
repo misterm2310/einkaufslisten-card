@@ -918,7 +918,7 @@ async def test_log(hass, setup, hass_ws_client, hass_admin_user, freezer):
         ("check", "Mehl", "cleanup"),
     ]
     entries = list(reversed(res["entries"]))
-    assert entries[1]["d"] == "Menge – → 2x" and entries[2]["d"] == "Aldi → Netto"
+    assert entries[1]["d"] == "Menge 1x → 2x" and entries[2]["d"] == "Aldi → Netto"
     assert entries[0]["w"] and entries[0]["s"] == aldi
 
     # Aufbewahrung: alte Einträge fliegen raus
@@ -1123,7 +1123,7 @@ async def test_quantity_in_name_and_units(hass, setup):
     c = m.add_item("Cola", quantity="1,5 liter")
     assert c["quantity"] == "1,5 L"
     d = m.add_item("Xbox 360")
-    assert d["name"] == "Xbox 360" and d["quantity"] is None
+    assert d["name"] == "Xbox 360" and d["quantity"] == "1x"
     m.update_item(a["id"], quantity="2 stk")
     assert a["quantity"] == "2x"
     r = m.add_recipe("Kuchen", items=[{"name": "250g Butter"}, {"name": "Salz", "basic": True}], steps="Teig rühren\n\n Backen  ")
@@ -1702,7 +1702,7 @@ async def test_import_from_other_apps(hass, setup, hass_ws_client):
     res = await client.receive_json()
     assert res["success"], res
     assert res["result"] == {"added": 3, "skipped": 2}
-    assert {(i["name"], i["quantity"], i["store_id"]) for i in m.items} == {("Milch", None, aldi), ("Äpfel", "2x", aldi), ("Butter", None, aldi)}
+    assert {(i["name"], i["quantity"], i["store_id"]) for i in m.items} == {("Milch", "1x", aldi), ("Äpfel", "2x", aldi), ("Butter", "1x", aldi)}
 
     # HA-To-do-Liste (hier die eingebaute HA-Einkaufsliste)
     import os
@@ -1797,7 +1797,7 @@ async def test_pin_typos_and_brackets(hass: HomeAssistant, setup, hass_ws_client
     it = m.add_item("Joghurt (4)", store_id=m.stores[0]["id"])
     assert (it["name"], it["quantity"]) == ("Joghurt", "4x")
     it = m.add_item("Kinder (Oma)")
-    assert it["name"] == "Kinder (Oma)" and not it.get("quantity")
+    assert it["name"] == "Kinder (Oma)" and it.get("quantity") == "1x"
 
 
 async def test_offline_app_pages(hass: HomeAssistant, setup, hass_client_no_auth) -> None:
@@ -3793,6 +3793,21 @@ async def test_view_prefs_all_and_per_user(hass, setup, hass_ws_client, hass_adm
     assert hass_admin_user.id not in m.as_dict()["settings"]["view_prefs"]
 
 
+async def test_view_prefs_ausblenden_und_schrift(hass, setup, hass_ws_client) -> None:
+    """👁️ Ansicht: Eingabefelder ausblenden + Schriftgröße (nur s/l gültig)."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/view/set", "scope": "all",
+                            "prefs": {"in_name": False, "tabs": False, "font": "l", "in_icons": False}})
+    res = await client.receive_json()
+    assert res["success"], res
+    assert res["result"] == {"in_name": False, "tabs": False, "font": "l", "in_icons": False}
+    await client.send_json({"id": 2, "type": "einkaufsliste/view/set", "scope": "all", "prefs": {"font": "xxl"}})
+    res = await client.receive_json()
+    assert res["success"] and "font" not in res["result"]
+    assert m._to_storage()["view_prefs"]["_all"] == {}
+
+
 async def test_catalog_add_is_logged(hass, setup) -> None:
     """📜 Neues Produkt im Katalog steht im Verlauf (Grocy-Import nicht – sonst hunderte Zeilen)."""
     m = mgr(hass)
@@ -3868,3 +3883,20 @@ async def test_full_sync_only_sends_items_of_the_lists_store(hass, setup) -> Non
     await sync._reconcile(m.todo_syncs[0])
     assert names("todo.bring_lidl") == []
     assert not next(i for i in m.items if i["name"] == "Milch")["checked"]
+
+
+async def test_menge_standard_ist_1x(hass, setup):
+    """🔢 Ohne Menge wird es 1x; eine vorhandene Menge bleibt beim nochmaligen Eintragen ohne Menge."""
+    m = mgr(hass)
+    a = m.add_item("Milch")
+    assert a["quantity"] == "1x"
+    m.update_item(a["id"], quantity="6x")
+    b = m.add_item("Milch")
+    assert b["id"] == a["id"] and b["quantity"] == "6x"
+
+
+async def test_komma_im_namen_bleibt_ein_produkt(hass, setup):
+    """Ein Name mit Komma ist genau ein Produkt (das Aufteilen gibt es nicht mehr)."""
+    m = mgr(hass)
+    it = m.add_item("Sandwichscheiben, Weizen")
+    assert len(m.items) == 1 and "Weizen" in it["name"]
