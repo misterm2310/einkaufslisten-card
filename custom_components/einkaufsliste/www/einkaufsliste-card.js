@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.71.01";
+const EL_VERSION = "2.71.02";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.71.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -359,8 +359,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
-  ["📖 <b>Anleitungen neu:</b> übersichtlich nach Themen, in der neuen Optik mit bunten Symbolen – und nur noch das, was dorthin gehört. In ⚙️ steht unter den Schaltern jeder Zeile ein Kasten <b>💡 So geht's</b>. · 👁️ <b>Ansicht:</b> Schriftgröße (Kleiner · Standard · Größer) und ausblendbar: Geschäfte-Leiste, Eingabefeld, Geschäft- und Kategorie-Auswahl, Icon-Leiste. · ⚙️ Zahnrad jetzt oben neben dem 🔓, der Laden-Modus ganz rechts. · ✍️ <b>Eine Eingabe = ein Produkt</b> (Komma gehört zum Namen) · 🔢 Ohne Menge ist es <b>1x</b> · Rezepte in der neuen Optik · 📊 Last auch unter Ressourcen. · Der Hinweis „Gibt's auch hier“ ist weg.",
-   "📖 <b>New guides:</b> clearly organised by topic, in the new look with coloured symbols – and only what belongs there. In ⚙️ every row has a <b>💡 How it works</b> box under its switches. · 👁️ <b>View:</b> font size (Smaller · Standard · Larger) and hideable: store bar, input field, store and category choice, icon bar. · ⚙️ gear now at the top next to the 🔓, store mode at the far right. · ✍️ <b>One entry = one product</b> (a comma belongs to the name) · 🔢 Without a quantity it is <b>1x</b> · recipes in the new look · 📊 load also under Resources. · The “Also available here” hint is gone."],
+  ["📖 <b>Anleitungen neu:</b> nach Themen sortiert, mit bunten Symbolen. In ⚙️ stehen die Erklärtexte <b>unter</b> den Schaltern jeder Zeile. · 👁️ <b>Ansicht:</b> Schriftgröße (Kleiner / Standard / Größer) einstellbar. · 🙈 <b>Ausblendbar:</b> Geschäfte-Leiste, Eingabefeld, Geschäft- und Kategorie-Auswahl und Icon-Leiste. · ⚙️ <b>Zahnrad</b> jetzt oben neben dem 🔓, der Laden-Modus ganz rechts. · ✍️ <b>Eine Eingabe = ein Produkt</b> (ein Komma gehört zum Namen). · 🔢 Ohne Menge ist es <b>1x</b>. · 🍽️ <b>Rezepte</b> und <b>Geschäfte</b> in der neuen Optik, mit Rahmen wie das Eingabefeld. · 📊 <b>Last</b> auch unter Ressourcen. · 🧹 Der Hinweis „Gibt's auch hier“ ist weg.",
+   "📖 <b>New guides:</b> sorted by topic, with coloured symbols. In ⚙️ the explanations sit <b>under</b> the switches of every row. · 👁️ <b>View:</b> font size (Smaller / Standard / Larger). · 🙈 <b>Hideable:</b> store bar, input field, store and category choice and icon bar. · ⚙️ <b>Gear</b> now at the top next to the 🔓, store mode at the far right. · ✍️ <b>One entry = one product</b> (a comma belongs to the name). · 🔢 Without a quantity it is <b>1x</b>. · 🍽️ <b>Recipes</b> and <b>stores</b> in the new look, framed like the input field. · 📊 <b>Load</b> also under Resources. · 🧹 The “Also available here” hint is gone."],
   ["⚙️ <b>Einstellungen im neuen Look:</b> Jede Gruppe ist ein Kasten mit Vorschau, was drin ist – zum Einklappen wie bisher (eine auf, die andere zu). Jede Zeile hat ein buntes Icon. · 🎚️ <b>Schalter direkt in der Zeile</b> für Maskottchen, Kundenkarten, Einkaufs-Protokoll, Laden-Modus automatisch und Beschriftungen – kein Umweg über „Einschalten“ mehr. · ← Zurück geht mit dem runden Pfeil oben. · ✍️ <b>Eingabefelder überall hell</b> mit feinem Rahmen statt grau – beim Eintragen, Bearbeiten, im Katalog und in den Einstellungen. · ✔️ <b>Abhaken mit Animation:</b> Haken wird grün, der Name durchgestrichen. · 🎨 Kategorie-Überschriften mit Farbkreis, Geschäfte-Reiter blenden am Rand aus, wenn es weitergeht. · ⭐ Favorit ist ein Schalter, alle Knöpfe sehen gleich aus. · 🏪 Der <b>Laden-Modus</b> hat oben rechts ein eigenes Bild (Geschäft statt zweitem Einkaufswagen). · 👆 <b>Wischen:</b> Zeile nach links = abhaken, erledigte Zeile nach rechts = wieder auf die Liste. · 🔵 Mengen blau, „Erledigt“ als eigener Kasten mit vollen Häkchen, aktiver Reiter gut lesbar (dunkle Schrift auf Gelb), Seiten blenden weich über.",
    "⚙️ <b>Settings with a new look:</b> each group is a box with a preview of what is inside – collapsible as before (one opens, the other closes). Every row has a coloured icon. · 🎚️ <b>Switches right in the row</b> for mascot, loyalty cards, purchase log, shop mode automatic and labels – no more detour via “Switch on”. · ← Go back with the round arrow at the top. · ✍️ <b>Input fields are light everywhere</b> with a thin frame instead of grey – when adding, editing, in the catalogue and in the settings. · ✔️ <b>Ticking off with animation:</b> the tick turns green, the name is struck through. · 🎨 Category headings with a colour circle, store tabs fade out at the edge when there are more. · ⭐ Favourite is a switch, all buttons look alike. · 🏪 <b>Shop mode</b> has its own picture at the top right (a store instead of a second cart). · 👆 <b>Swipe:</b> a row to the left = tick off, a done row to the right = back on the list. · 🔵 Quantities in blue, “Done” as its own box with full ticks, active tab easy to read (dark text on yellow), pages fade softly."],
   ["🎛️ <b>Alle Eingabe-Masken gleich:</b> Eintragen, Bearbeiten und Katalog sehen gleich aus (gleiche Höhe, Schrift, Rahmen) und können dasselbe, in derselben Reihenfolge. · ✏️ Beim <b>Bearbeiten</b> steht „Für wen“ als Auswahl neben der Menge – so wie Geschäft neben Kategorie. · 📦 Im <b>Katalog</b> neu: <b>📷 Foto</b> direkt im Produkt. · 📖 <b>„👁️ Ansicht“ und „📖 Anleitung“</b> stehen als Knöpfe unter der Karte – wie in der Offline-App. Löschen, Zusammenführen & Co. bleiben in ⚙️.",
@@ -2459,7 +2459,7 @@ label.btn { cursor:pointer; }
 .btn.danger:hover:not([disabled]) { border-color:var(--error-color,#db4437); background:color-mix(in srgb, var(--error-color,#db4437) 7%, transparent); }
 .btn.primary { border:1px solid transparent; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
 .btn.primary:hover:not([disabled]) { background:color-mix(in srgb, var(--primary-color,#03a9f4) 88%, #000); border-color:transparent; }
-.recipe { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:14px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); margin:8px 2px 4px; }
+.recipe { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:12px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:var(--card-background-color, var(--ha-card-background, #fff)); margin:8px 2px 4px; }
 .recipe > ha-icon:first-child { flex:none; width:42px; height:42px; padding:9px; box-sizing:border-box; border-radius:12px; background:color-mix(in srgb, var(--rc, #e53935) 17%, transparent); color:var(--rc, #e53935); --mdc-icon-size:24px; }
 .viewhead { gap:12px; font-size:1.15em; }
 .viewhead > ha-icon:first-child { flex:none; width:40px; height:40px; padding:8px; box-sizing:border-box; border-radius:12px; background:color-mix(in srgb, var(--ic, #607d8b) 18%, transparent); color:var(--ic, #607d8b); --mdc-icon-size:24px; }
@@ -2487,7 +2487,7 @@ label.btn { cursor:pointer; }
 .pickrow .pbasic { font-size:.72em; color:var(--secondary-text-color); white-space:nowrap; }
 .recipe .rbtns { display:flex; flex-direction:column; gap:4px; align-items:stretch; }
 .recipe .rbtns .btn { padding:6px 10px; font-size:.8em; justify-content:center; min-height:32px; }
-.rpick { margin:-2px 2px 10px; padding:8px; border-radius:0 0 12px 12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-top:0; background:var(--secondary-background-color, rgba(127,127,127,.06)); }
+.rpick { margin:-2px 2px 10px; padding:8px; border-radius:0 0 12px 12px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:var(--card-background-color, var(--ha-card-background, #fff)); border-top:0; }
 .rpick .phead { display:flex; justify-content:space-between; align-items:center; font-weight:600; font-size:.9em; padding:2px 4px 6px; }
 .rpick .phead span { font-weight:400; }
 .linkbtn { background:none; border:0; color:var(--primary-color,#03a9f4); cursor:pointer; font:inherit; padding:2px; }
@@ -2512,7 +2512,7 @@ label.btn { cursor:pointer; }
 .rrow .iconbtn { align-self:center; }
 .rrow.editing { outline:2px solid var(--primary-color,#03a9f4); }
 .storelist { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
-.storerow { border-left:6px solid var(--sc); border-radius:10px; background:var(--secondary-background-color, rgba(127,127,127,.06)); padding:2px 4px 2px 0; margin:0; }
+.storerow { border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-left:6px solid var(--sc); border-radius:12px; background:var(--card-background-color, var(--ha-card-background, #fff)); padding:2px 4px 2px 0; margin:0; }
 .storepick { flex:1; display:flex; align-items:center; gap:10px; min-width:0; padding:8px 10px; border:0; background:none; color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
 .storepick ha-icon { color:var(--sc); flex:0 0 auto; }
 .storepick span { display:flex; flex-direction:column; min-width:0; }
@@ -5152,10 +5152,23 @@ class EinkaufslisteCard extends HTMLElement {
           ${back}
           <span class="ic" style="--ic:${SET_COLORS[cur.key] || "#607d8b"}"><ha-icon icon="${cur.icon}"></ha-icon></span><h3>${cur.title}</h3>
         </div>
-        ${cur.html()}
-        ${this._secHelp(cur.key)}
+        ${this._hintsBottom(cur.html())}
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
+    // ⏱️ Kategorien: ohne Änderung/Berührung geht die Seite nach 4 Sekunden von selbst zurück zur Übersicht
+    clearTimeout(this._catTimer);
+    if (cur.key === "categories") {
+      const ov = this.$("otherView");
+      const arm = () => {
+        clearTimeout(this._catTimer);
+        this._catTimer = setTimeout(() => {
+          if (this._view === "settings" && this._setSec === "categories") { this._setSec = ""; this._renderSettings(); }
+        }, 4000);
+      };
+      this._catArm = arm;
+      if (!ov._catArmed) { ov._catArmed = true; for (const ev of ["pointerdown", "keydown", "input", "change", "scroll"]) ov.addEventListener(ev, () => { if (this._setSec === "categories") this._catArm?.(); }, true); }
+      arm();
+    }
     if (cur.key === "stats") this._loadStats();
     if (cur.key === "errors") this._loadErrors();
     if (cur.key === "products" && this._prodTab !== "delete") { this._renderProducts(); this._loadProducts(); }
@@ -5262,10 +5275,10 @@ class EinkaufslisteCard extends HTMLElement {
           : "Was alle in der Familie beim Artikel sehen (Standard). Jeder kann es für sich selbst anders einstellen – ganz unten unter der Liste mit „👁️ Ansicht“, ganz ohne PIN."}</p>
         <p class="hint"><b>🔠 Schriftgröße</b></p>
         <div class="fontrow">${[["s", "Kleiner"], ["m", "Standard"], ["l", "Größer"]].map(([f, t]) => `<button class="btn ${(cur.font || "m") === f ? "primary" : ""}" data-act="view-font" data-scope="${scope}" data-font="${f}" aria-pressed="${(cur.font || "m") === f}">${t}</button>`).join("")}</div>
-        <p class="hint" style="margin-top:12px"><b>👁️ Beim Artikel</b></p>
-        ${VIEW_OPTS.slice(0, VIEW_ITEM_N).map(row).join("")}
         <p class="hint" style="margin-top:12px"><b>🧩 Oben &amp; beim Eintragen</b> – was du nicht brauchst, blendest du aus</p>
         ${VIEW_OPTS.slice(VIEW_ITEM_N).map(row).join("")}
+        <p class="hint" style="margin-top:12px"><b>👁️ Beim Artikel</b></p>
+        ${VIEW_OPTS.slice(0, VIEW_ITEM_N).map(row).join("")}
         <div class="btnrow">${mine
           ? (me && all[me] ? `<button class="btn" data-act="view-reset" data-scope="me"><ha-icon icon="mdi:restore"></ha-icon>Wie „Für alle“</button>` : "")
           : (all._all ? `<button class="btn" data-act="view-reset" data-scope="all"><ha-icon icon="mdi:restore"></ha-icon>Alles wieder anzeigen</button>` : "")}</div>
@@ -5286,7 +5299,13 @@ class EinkaufslisteCard extends HTMLElement {
     if (!box) return;
     const was = !box.hidden;
     box.hidden = !this._myViewOpen || !this._data || this._view !== "list";
+    clearTimeout(this._mvTimer);
     if (box.hidden) { box.innerHTML = ""; return; }
+    // ⏱️ Ohne Änderung klappt „Meine Ansicht“ nach 4 Sekunden von selbst wieder zu (jede Änderung/Berührung startet die 4 Sekunden neu)
+    const arm = () => { clearTimeout(this._mvTimer); this._mvTimer = setTimeout(() => { if (this._myViewOpen) this.toggleMyView(); }, 4000); };
+    if (!box._mvArmed) { box._mvArmed = true; box.addEventListener("pointerdown", () => { if (!box.hidden) this._mvArm?.(); }); }
+    this._mvArm = arm;
+    arm();
     box.innerHTML = `<div class="mvhead"><ha-icon icon="mdi:eye-outline"></ha-icon><b>Meine Ansicht</b><button class="iconbtn" type="button" data-act="myview" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>${this._viewHtml(true)}`;
     if (!was) box.scrollIntoView?.({ block: "nearest", behavior: "smooth" }); // gerade aufgeklappt: ins Bild holen
   }
@@ -8074,11 +8093,12 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // ⚙️ Hilfe-Kasten UNTER den Schaltern und Auswahlflächen einer Einstellungs-Seite (aus EL_HELP)
-  _secHelp(key) {
-    const h = EL_HELP[key];
-    if (!h) return "";
-    const en = EL_LANG !== "de";
-    return `<div class="sechelp" translate="no"><b>💡 ${en ? "How it works" : "So geht's"}</b><ul>${(en ? h[2] : h[1]).map((x) => `<li>${x}</li>`).join("")}</ul></div>`;
+  // 📝 Erklärtexte (die grauen Hinweise ganz oben in einer Karte) stehen UNTER den Schaltern, nicht darüber
+  _hintsBottom(html) {
+    const re = /^\s*<p class="hint"(?![^>]*>\s*<b>[^<]*<\/b>\s*(?:<\/p>|–))[^>]*>[\s\S]*?<\/p>\s*/; // nur Erklärtexte, keine Zwischenüberschriften (<b>…)
+    let rest = String(html), moved = "", m;
+    while ((m = rest.match(re))) { moved += m[0]; rest = rest.slice(m[0].length); }
+    return moved && rest.trim() ? `${rest}${moved}` : html;
   }
 
   // 📖 Anleitung für die Einstellungen (⚙️) – nur für alle, die ins Zahnrad kommen. Dieselben Texte stehen auch unter den Schaltern.
@@ -8088,12 +8108,12 @@ class EinkaufslisteCard extends HTMLElement {
     const first = en ? [
       "The settings are a <b>list of groups</b> (each group is a box, each row has a coloured icon): tap a group (it opens, the previous one closes), tap a row, change something, tap the round <b>←</b> at the top to go back.",
       "The <b>search field</b> at the top finds rows by name or topic, e.g. “photo”, “mail”, “backup” or “sensor”.",
-      "<b>Under the switches of every row</b> there is a <b>💡 How it works</b> box – the same texts as here.",
+      "<b>Under the switches of every row</b> you find the explanations – the same texts as here.",
       "The bar at the very top shows the <b>health light</b> 🟢🟡🔴. Tap it to open “All OK?”.",
     ] : [
       "Die Einstellungen sind eine <b>Liste mit Gruppen</b> (jede Gruppe ein Kasten, jede Zeile mit buntem Icon): Gruppe antippen (sie klappt auf, die vorherige zu), Zeile antippen, etwas ändern, mit dem runden <b>←</b> oben wieder zurück.",
       "Das <b>Suchfeld</b> oben findet Zeilen nach Name oder Thema, z. B. „Foto“, „Mail“, „Sicherung“ oder „Sensor“.",
-      "<b>Unter den Schaltern jeder Zeile</b> steht ein Kasten <b>💡 So geht's</b> – dieselben Texte wie hier.",
+      "<b>Unter den Schaltern jeder Zeile</b> stehen die Erklärtexte – dieselben wie hier.",
       "Der Balken ganz oben zeigt die <b>Gesundheits-Ampel</b> 🟢🟡🔴. Antippen öffnet „Alles ok?“.",
     ];
     const rows = (g) => g[4].map((k) => {
