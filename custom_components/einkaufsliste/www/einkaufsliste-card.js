@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.73.01";
+const EL_VERSION = "2.73.02";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.73.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -167,12 +167,14 @@ const EL_GUIDE = [
   { id: "view", icon: "👁️", c: "#1e88e5", t: ["Ansicht anpassen", "Adjust the view"], s: ["Schriftgröße, ausblenden – nur für dich", "Font size, hide – just for you"],
     de: [
       "Ganz unten unter der Liste: <b>👁️ Ansicht</b>. Dort stellst du ein, was <b>du</b> sehen willst – ohne Zahnrad und PIN, nur für dich, auf allen deinen Geräten.",
+      "<b>🏷️ Beschriftungen:</b> Text unter den Icons – nur für dich an oder aus. Ohne eigene Wahl gilt ⚙️ → Extras → Beschriftungen.",
       "<b>🔠 Schriftgröße:</b> Kleiner · Standard · Größer.",
       "<b>Beim Artikel</b> blendest du Menge, Notizen, Für wen, Datum, Foto, Stern und mehr aus. <b>Oben &amp; beim Eintragen</b> auch die Geschäfte-Leiste, das Eingabefeld, die Geschäft- und Kategorie-Auswahl und die Icon-Leiste.",
       "Was du nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht, nur mit Zugang zum Zahnrad).",
     ],
     en: [
       "At the very bottom under the list: <b>👁️ View</b>. There you choose what <b>you</b> want to see – without the gear and PIN, only for you, on all your devices.",
+      "<b>🏷️ Labels:</b> text under the icons – on or off just for you. Without your own choice ⚙️ → Extras → Labels applies.",
       "<b>🔠 Font size:</b> Smaller · Standard · Larger.",
       "<b>On the item</b> you hide quantity, notes, for whom, date, photo, star and more. <b>Top &amp; adding</b> also the store bar, the input field, the store and category choice and the icon bar.",
       "Whatever you do not change comes from “For everyone” (⚙️ → List view, only with access to the gear).",
@@ -3862,7 +3864,7 @@ class EinkaufslisteCard extends HTMLElement {
     for (const [k, cls] of [["tabs", "no-tabs"], ["in_name", "no-name"], ["in_store", "no-store"], ["in_cat", "no-cat"], ["in_icons", "no-icons"]]) cardEl.classList.toggle(cls, vp[k] === false);
     cardEl.classList.toggle("f-s", vp.font === "s");
     cardEl.classList.toggle("f-l", vp.font === "l");
-    cardEl.classList.toggle("labels", !!d?.settings?.labels); // 🏷️ Beschriftungen unter den Icons (Schalter in ⚙️ → Extras, gilt für alle)
+    cardEl.classList.toggle("labels", vp.labels !== undefined ? !!vp.labels : !!d?.settings?.labels); // 🏷️ Beschriftungen unter den Icons: „Meine Ansicht“ gewinnt, sonst der Schalter in ⚙️ → Extras (gilt für alle)
     const btnShop = this.$("btnShop");
     btnShop.hidden = !d || this._view !== "list";
     btnShop.classList.toggle("on", shop);
@@ -5332,6 +5334,8 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">${mine
           ? `Gilt nur für <b translate="no">${esc(this._hass?.user?.name || "dich")}</b> – auf allen Geräten, auf denen du angemeldet bist. Was du hier nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht).`
           : "Was alle in der Familie beim Artikel sehen (Standard). Jeder kann es für sich selbst anders einstellen – ganz unten unter der Liste mit „👁️ Ansicht“, ganz ohne PIN."}</p>
+        ${mine ? (() => { const on = cur.labels !== undefined ? !!cur.labels : !!this._data?.settings?.labels; return `<p class="hint"><b>🏷️ Beschriftungen</b> – Text unter den Icons</p>
+        <button class="lrow viewrow" data-act="view-labels" aria-pressed="${on}"><ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon><span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Extras → Beschriftungen.</small></span></button>`; })() : ""}
         <p class="hint"><b>🔠 Schriftgröße</b></p>
         <div class="fontrow">${[["s", "Kleiner"], ["m", "Standard"], ["l", "Größer"]].map(([f, t]) => `<button class="btn ${(cur.font || "m") === f ? "primary" : ""}" data-act="view-font" data-scope="${scope}" data-font="${f}" aria-pressed="${(cur.font || "m") === f}">${t}</button>`).join("")}</div>
         <p class="hint" style="margin-top:12px"><b>🧩 Oben &amp; beim Eintragen</b> – was du nicht brauchst, blendest du aus</p>
@@ -9574,6 +9578,16 @@ class EinkaufslisteCard extends HTMLElement {
         prefs[el.dataset.key] = shown[el.dataset.key] === false;
         this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
           .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
+        break;
+      }
+      case "view-labels": { // 🏷️ Beschriftungen nur für mich an/aus (überstimmt ⚙️ → Extras)
+        const all = this._data.settings?.view_prefs || {};
+        const me = this._hass?.user?.id;
+        const prefs = { ...((me && all[me]) || {}) };
+        const cur = this._viewPrefs().labels !== undefined ? !!this._viewPrefs().labels : !!this._data.settings?.labels;
+        prefs.labels = !cur;
+        this._ws({ type: "einkaufsliste/view/set", scope: "me", prefs })
+          .then(() => setTimeout(() => { this._renderAll?.(); this._renderMyView(); }, 150)).catch(() => {});
         break;
       }
       case "view-font": { // 🔠 Schriftgröße: kleiner / Standard / größer

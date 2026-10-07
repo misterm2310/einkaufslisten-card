@@ -3808,6 +3808,16 @@ async def test_view_prefs_ausblenden_und_schrift(hass, setup, hass_ws_client) ->
     assert m._to_storage()["view_prefs"]["_all"] == {}
 
 
+async def test_view_prefs_labels_pro_benutzer(hass, setup, hass_ws_client) -> None:
+    """🏷️ Beschriftungen: eigene Wahl (an UND aus) wird gespeichert."""
+    client = await hass_ws_client(hass)
+    for i, val in enumerate((True, False), start=1):
+        await client.send_json({"id": i, "type": "einkaufsliste/view/set", "scope": "me", "prefs": {"labels": val}})
+        res = await client.receive_json()
+        assert res["success"], res
+        assert res["result"] == {"labels": val}
+
+
 async def test_catalog_add_is_logged(hass, setup) -> None:
     """📜 Neues Produkt im Katalog steht im Verlauf (Grocy-Import nicht – sonst hunderte Zeilen)."""
     m = mgr(hass)
