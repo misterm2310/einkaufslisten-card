@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.71.02";
+const EL_VERSION = "2.72.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.71.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.72.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -205,14 +205,14 @@ const EL_HELP = {
     "Create new stores with the “New” form, 🗑️ deletes.",
   ]],
   categories: ["list", [
-    "Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), Reihenfolge mit ↑ ↓, löschen mit 🗑️, neue über das Formular.",
+    "Erst die Liste (Reihenfolge mit ⌃⌄, neue über das Formular), dann die Kategorie antippen: Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), löschen mit 🗑️.",
   ], [
-    "Name, colour, icon (search with German or English words), order with ↑ ↓, delete with 🗑️, new ones via the form.",
+    "First the list (order with ⌃⌄, new ones via the form), then tap a category: name, colour, icon (search with German or English words), delete with 🗑️.",
   ]],
   persons: ["list", [
-    "Die Namen für die Schnellknöpfe bei „Für wen?“. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.",
+    "Die Namen für die Schnellknöpfe bei „Für wen?“. Person antippen = Name und Farbe ändern. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.",
   ], [
-    "The names for the quick buttons at “For whom?”. Without people the 👤 stays hidden in the list.",
+    "The names for the quick buttons at “For whom?”. Tap a person = change name and colour. Without people the 👤 stays hidden in the list.",
   ]],
   products: ["list", [
     "<b>Alle Produkte:</b> antippen = ändern oder ganz löschen (Umbenennen zieht Fotos, Barcodes und Rezepte mit). Die Suche findet Name, Notiz, Spitzname, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Filter (ohne Kategorie, ohne Foto, nach Geschäft …) und das <b>Radiergummi</b> setzen alles zurück.",
@@ -359,6 +359,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🗂️ <b>Kategorien</b> und 👥 <b>Personen</b> in den Einstellungen wie die Geschäfte: erst die Liste, antippen = nur diesen Eintrag ändern. · 📴 Ohne Netz sagt das ⚙️ Zahnrad gleich „Die Einstellungen gehen nur mit Netz“ (statt einer falschen PIN-Meldung).",
+   "🗂️ <b>Categories</b> and 👥 <b>people</b> in the settings work like the stores: first the list, tap = change just that entry. · 📴 Without a connection the ⚙️ gear says “Settings only work with a connection” (instead of a wrong-PIN message)."],
   ["📖 <b>Anleitungen neu:</b> nach Themen sortiert, mit bunten Symbolen. In ⚙️ stehen die Erklärtexte <b>unter</b> den Schaltern jeder Zeile. · 👁️ <b>Ansicht:</b> Schriftgröße (Kleiner / Standard / Größer) einstellbar. · 🙈 <b>Ausblendbar:</b> Geschäfte-Leiste, Eingabefeld, Geschäft- und Kategorie-Auswahl und Icon-Leiste. · ⚙️ <b>Zahnrad</b> jetzt oben neben dem 🔓, der Laden-Modus ganz rechts. · ✍️ <b>Eine Eingabe = ein Produkt</b> (ein Komma gehört zum Namen). · 🔢 Ohne Menge ist es <b>1x</b>. · 🍽️ <b>Rezepte</b> und <b>Geschäfte</b> in der neuen Optik, mit Rahmen wie das Eingabefeld. · 📊 <b>Last</b> auch unter Ressourcen. · 🧹 Der Hinweis „Gibt's auch hier“ ist weg.",
    "📖 <b>New guides:</b> sorted by topic, with coloured symbols. In ⚙️ the explanations sit <b>under</b> the switches of every row. · 👁️ <b>View:</b> font size (Smaller / Standard / Larger). · 🙈 <b>Hideable:</b> store bar, input field, store and category choice and icon bar. · ⚙️ <b>Gear</b> now at the top next to the 🔓, store mode at the far right. · ✍️ <b>One entry = one product</b> (a comma belongs to the name). · 🔢 Without a quantity it is <b>1x</b>. · 🍽️ <b>Recipes</b> and <b>stores</b> in the new look, framed like the input field. · 📊 <b>Load</b> also under Resources. · 🧹 The “Also available here” hint is gone."],
   ["⚙️ <b>Einstellungen im neuen Look:</b> Jede Gruppe ist ein Kasten mit Vorschau, was drin ist – zum Einklappen wie bisher (eine auf, die andere zu). Jede Zeile hat ein buntes Icon. · 🎚️ <b>Schalter direkt in der Zeile</b> für Maskottchen, Kundenkarten, Einkaufs-Protokoll, Laden-Modus automatisch und Beschriftungen – kein Umweg über „Einschalten“ mehr. · ← Zurück geht mit dem runden Pfeil oben. · ✍️ <b>Eingabefelder überall hell</b> mit feinem Rahmen statt grau – beim Eintragen, Bearbeiten, im Katalog und in den Einstellungen. · ✔️ <b>Abhaken mit Animation:</b> Haken wird grün, der Name durchgestrichen. · 🎨 Kategorie-Überschriften mit Farbkreis, Geschäfte-Reiter blenden am Rand aus, wenn es weitergeht. · ⭐ Favorit ist ein Schalter, alle Knöpfe sehen gleich aus. · 🏪 Der <b>Laden-Modus</b> hat oben rechts ein eigenes Bild (Geschäft statt zweitem Einkaufswagen). · 👆 <b>Wischen:</b> Zeile nach links = abhaken, erledigte Zeile nach rechts = wieder auf die Liste. · 🔵 Mengen blau, „Erledigt“ als eigener Kasten mit vollen Häkchen, aktiver Reiter gut lesbar (dunkle Schrift auf Gelb), Seiten blenden weich über.",
@@ -3790,6 +3792,8 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._view === "recipe") { this._draft = null; this._view = "settings"; this._renderAll(); return true; }
     if (this._view === "settings") {
       if (this._storeSel) this._storeSel = null;
+      else if (this._catSel) this._catSel = null;
+      else if (this._perSel) this._perSel = null;
       else if (this._setSec) {
         this._setSec = null; // Einstellungen sind nur eine Ebene tief: zurück = Übersicht
       } else this._view = "list";
@@ -4958,8 +4962,23 @@ class EinkaufslisteCard extends HTMLElement {
         </form>
         <p class="hint">⌃⌄ = Reihenfolge der Reiter oben. Geschäft antippen = Name, Farbe, Icon, 📍 Zonen, 🏷️ Eigenmarken und 🗺️ Reihenfolge der Kategorien einstellen.</p>`;
       } },
-      { key: "categories", icon: "mdi:shape-outline", title: "Kategorien", info: d.categories.length === 1 ? "1 Kategorie" : `${d.categories.length} Kategorien`, html: () => `
-        ${d.categories.map((e, i) => row("categories", e, i, d.categories.length)).join("")}
+      { key: "categories", icon: "mdi:shape-outline", title: "Kategorien", info: d.categories.length === 1 ? "1 Kategorie" : `${d.categories.length} Kategorien`, html: () => {
+        // 🗂️ wie bei den Geschäften: erst die Liste, antippen = nur diese Kategorie einstellen
+        const catIcon = (e) => { const ic = e.icon || "mdi:tag-outline"; return ic.includes(":") ? ic : "mdi:" + ic; };
+        const k = d.categories.findIndex((x) => x.id === this._catSel);
+        if (k >= 0) {
+          const e = d.categories[k];
+          return `
+        <div class="storehead" style="--sc:${esc(e.color || "#9e9e9e")}"><ha-icon icon="${esc(catIcon(e))}"></ha-icon><b translate="no">${esc(e.name)}</b></div>
+        ${row("categories", e, k, d.categories.length)}
+        <p class="hint">Name, Farbe und Icon ändern, mit ⌃⌄ die Reihenfolge, 🗑️ löscht die Kategorie. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>`;
+        }
+        return `
+        <div class="storelist">${d.categories.map((e, i) => `<div class="srow storerow" data-kind="categories" data-id="${e.id}" style="--sc:${esc(e.color || "#9e9e9e")}">
+            <button class="storepick grow" type="button" data-act="cat-sel" data-id="${e.id}"><ha-icon icon="${esc(catIcon(e))}"></ha-icon><span><b translate="no">${esc(e.name)}</b><small>antippen zum Einstellen</small></span></button>
+            <button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
+            <button class="iconbtn" data-act="down" ${i === d.categories.length - 1 ? "disabled" : ""} title="Nach unten"><ha-icon icon="mdi:chevron-down"></ha-icon></button>
+          </div>`).join("")}</div>
         <form class="srow" data-addkind="categories">
           <ha-icon class="prev" icon="mdi:tag-plus-outline"></ha-icon>
           <input class="grow" name="name" placeholder="Neue Kategorie, z. B. Getränke">
@@ -4967,7 +4986,8 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
         <div class="picker" hidden></div>
-        <p class="hint">Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>` },
+        <p class="hint">⌃⌄ = Reihenfolge der Kategorien. Kategorie antippen = Name, Farbe und Icon ändern. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>`;
+      } },
       { key: "recipes", icon: "mdi:chef-hat", title: "Rezepte", info: `${recipes.length ? (recipes.length === 1 ? "1 Rezept" : `${recipes.length} Rezepte`) : "noch keine"} · ${(d.recipe_groups || []).length} Gruppen`, html: () => `
         ${this._recTab === "groups" || this._recTab === "file" ? "" : `<button class="newrec" type="button" data-act="recipe-new"><ha-icon icon="mdi:chef-hat"></ha-icon><span>Neues Rezept</span><ha-icon icon="mdi:plus-circle-outline"></ha-icon></button>`}
         <div class="subtabs">
@@ -4988,14 +5008,28 @@ class EinkaufslisteCard extends HTMLElement {
         ${recipes.length ? this._recipeSearchHtml("recipeSearchS") : ""}
         <div id="setRecipeList"></div>`}` },
       { key: "recipe_groups", parent: "recipes", alias: true },
-      { key: "persons", icon: "mdi:account-group-outline", title: "Personen", info: persons.length ? `${persons.length} für „Für wen?“` : "noch keine", html: () => `
-        ${persons.map((e, i) => row("persons", e, i, persons.length)).join("")}
+      { key: "persons", icon: "mdi:account-group-outline", title: "Personen", info: persons.length ? `${persons.length} für „Für wen?“` : "noch keine", html: () => {
+        const k = persons.findIndex((x) => x.id === this._perSel);
+        if (k >= 0) {
+          const e = persons[k];
+          return `
+        <div class="storehead" style="--sc:${esc(e.color || "#9e9e9e")}"><ha-icon icon="mdi:account-outline"></ha-icon><b translate="no">${esc(e.name)}</b></div>
+        ${row("persons", e, k, persons.length)}
+        <p class="hint">Name und Farbe ändern, mit ⌃⌄ die Reihenfolge, 🗑️ löscht die Person.</p>`;
+        }
+        return `
+        <div class="storelist">${persons.map((e, i) => `<div class="srow storerow" data-kind="persons" data-id="${e.id}" style="--sc:${esc(e.color || "#9e9e9e")}">
+            <button class="storepick grow" type="button" data-act="per-sel" data-id="${e.id}"><ha-icon icon="mdi:account-outline"></ha-icon><span><b translate="no">${esc(e.name)}</b><small>antippen zum Einstellen</small></span></button>
+            <button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
+            <button class="iconbtn" data-act="down" ${i === persons.length - 1 ? "disabled" : ""} title="Nach unten"><ha-icon icon="mdi:chevron-down"></ha-icon></button>
+          </div>`).join("")}</div>
         <form class="srow" data-addkind="persons">
           <ha-icon class="prev" icon="mdi:account-plus-outline"></ha-icon>
           <input class="grow" name="name" placeholder="Neue Person, z. B. Oma">
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
-        <p class="hint">${persons.length ? "Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“." : "Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet."}</p>` },
+        <p class="hint">${persons.length ? "Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“. Person antippen = Name und Farbe ändern." : "Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet."}</p>`;
+      } },
       { key: "listview", icon: "mdi:eye-outline", title: "Listenansicht – für alle", info: this._viewInfo(), html: () => this._viewHtml() },
       { key: "products", icon: "mdi:package-variant-closed", title: "Produkte", info: "alle Produkte, Fotos, Barcodes, löschen", html: () => `
         <div class="subtabs">
@@ -5143,8 +5177,14 @@ class EinkaufslisteCard extends HTMLElement {
       return;
     }
     const storeOpen = cur.key === "stores" && d.stores.some((x) => x.id === this._storeSel);
+    const catOpen = cur.key === "categories" && d.categories.some((x) => x.id === this._catSel);
+    const perOpen = cur.key === "persons" && (d.persons || []).some((x) => x.id === this._perSel);
     const back = storeOpen
       ? `<button class="iconbtn back" data-act="store-sel" data-id="" title="Alle Geschäfte" aria-label="Alle Geschäfte"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
+      : catOpen
+      ? `<button class="iconbtn back" data-act="cat-sel" data-id="" title="Alle Kategorien" aria-label="Alle Kategorien"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
+      : perOpen
+      ? `<button class="iconbtn back" data-act="per-sel" data-id="" title="Alle Personen" aria-label="Alle Personen"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
       : `<button class="iconbtn back" data-act="set-sec" data-sec="" title="Übersicht" aria-label="Übersicht"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`;
     this.$("otherView").innerHTML = `
       <div class="sec">
@@ -5162,7 +5202,7 @@ class EinkaufslisteCard extends HTMLElement {
       const arm = () => {
         clearTimeout(this._catTimer);
         this._catTimer = setTimeout(() => {
-          if (this._view === "settings" && this._setSec === "categories") { this._setSec = ""; this._renderSettings(); }
+          if (this._view === "settings" && this._setSec === "categories") { this._setSec = ""; this._catSel = null; this._renderSettings(); }
         }, 4000);
       };
       this._catArm = arm;
@@ -5325,8 +5365,10 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   async _unlockSettings() {
+    if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); return; }
     const pin = await askPin();
     if (pin == null) return;
+    if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); return; }
     const res = await this._ws({ type: "einkaufsliste/pin/check", pin }).catch(() => null);
     if (!res?.ok) { this._toast("🔒 Falsche PIN"); return; }
     pinRemember();
@@ -9397,6 +9439,7 @@ class EinkaufslisteCard extends HTMLElement {
       case "view": {
         const v = el.dataset.view;
         const current = this._view === "recipe" ? "settings" : this._view;
+        if (v === "settings" && current !== "settings" && this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); break; } // 📴 sie liegen auf dem Server – ohne Netz wäre nichts änderbar (und die PIN nicht prüfbar)
         if (v === "settings" && current !== "settings" && this._data?.settings?.pin && !pinUnlocked()) {
           this._unlockSettings(); // 🔒 erst die PIN, dann das Zahnrad
           break;
@@ -9965,6 +10008,16 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderSettings();
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
         break;
+      case "cat-sel":
+        this._catSel = el.dataset.id || null;
+        this._renderSettings();
+        this.$("otherView").scrollIntoView?.({ block: "nearest" });
+        break;
+      case "per-sel":
+        this._perSel = el.dataset.id || null;
+        this._renderSettings();
+        this.$("otherView").scrollIntoView?.({ block: "nearest" });
+        break;
       case "rec-tab":
         this._recTab = el.dataset.tab;
         this._renderSettings();
@@ -9975,6 +10028,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "set-sec":
         if (el.dataset.sec !== "stores") this._storeSel = null;
+        this._catSel = null; this._perSel = null;
         this._setSec = el.dataset.sec || null;
         this._renderSettings();
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
@@ -10378,6 +10432,7 @@ class EinkaufslisteCard extends HTMLElement {
         if (el.dataset.to === "guide") { this._flag("einkaufsliste_tip_guide", true); this._showGuide(); }
         else if (el.dataset.to === "add") { this.$("inName")?.focus(); this.$("inName")?.scrollIntoView({ block: "center" }); }
         else {
+          if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); break; }
           if (this._data?.settings?.pin && !pinUnlocked()) { this._unlockSettings(); break; } // 🔒 erst die PIN
           this._view = "settings"; this._setSec = "stores"; this._renderAll();
         }

@@ -123,7 +123,7 @@ Good to know: it needs an **https** address (e.g. Nabu Casa). If two people chan
 | Tile | What's inside |
 |---|---|
 | 🏪 **Stores** | A list, one store per row. **⌃ ⌄** right in the list = order of the tabs. Tap = name, color, icon, 📍 zones (several, e.g. for several branches), 🏷️ store brands and 🗺️ **category order** (default: same everywhere – or its own, the way you walk through the store). Without an icon of its own the list uses the zone's icon (if it has one), otherwise 🛒. |
-| 🗂️ **Categories** · 👥 **People** | Add, rename, color, icon (just type “dog”, no “mdi:”), sort. |
+| 🗂️ **Categories** · 👥 **People** | Like stores: first the list (sort with ⌃⌄, add new ones below), then tap one = rename, colour, icon (just type “dog”, no “mdi:”), delete. |
 | 👁️ **List view** (under 📱 App & info) | Tick or untick: quantity, notes, for whom, who added/checked it, date, 🧹 day, store, recipe, photo, ⭐, ▥, offers, “was out”, ⇄ button, ✨ and category colour. In ⚙️ the **default for everyone**. New: **font size** (Standard / Larger / Smaller) and **hiding** the input fields (What do I need, stores, categories, icon bar) and the store bar on top – for a calm list on a tablet. Everyone sets their **own view** at the very bottom with **“👁️ View”** (next to “📖 Guide”) – no gear or PIN (applies to your HA user on all devices). |
 | 👨‍🍳 **Recipes** | Two tabs: **Recipes** (new, edit, delete) and **Recipe groups**. |
 | 📦 **Products** | Everything the list knows: rename, category, default store, nicknames, photos, barcodes, learned typos, delete completely. Plus “Newly scanned” to check, 🔽 filters (no category, no photo, per store …) and **➕ New product**. On a PC: click selects, ↑↓ browses, double-click/Enter edits. |

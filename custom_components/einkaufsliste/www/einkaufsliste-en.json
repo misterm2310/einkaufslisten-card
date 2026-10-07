@@ -860,6 +860,7 @@
 "🔍 Kenn ich: „{}{}“ – tippe ✅ zum Hinzufügen": "🔍 I know this: “{0}{1}” – tap ✅ to add",
 "🔒 Aktuelle PIN": "🔒 Current PIN",
 "🔒 Falsche PIN": "🔒 Wrong PIN",
+"📴 Die Einstellungen gehen nur mit Netz": "📴 Settings only work with a connection",
 "🔒 PIN eingeben": "🔒 Enter PIN",
 "🔒 PIN gespeichert": "🔒 PIN saved",
 "🔒 PIN ist an.": "🔒 PIN is on.",
@@ -1947,5 +1948,11 @@
 "Alles löschen": "Delete everything",
 "Werkseinstellungen": "Factory reset",
 "Länger auf ein Icon drücken": "Pressing an icon longer",
-"zeigt kurz, was es macht.": "briefly shows what it does."
+"zeigt kurz, was es macht.": "briefly shows what it does.",
+"Name, Farbe und Icon ändern, mit ⌃⌄ die Reihenfolge, 🗑️ löscht die Kategorie. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.": "Change name, colour and icon, ⌃⌄ sets the order, 🗑️ deletes the category. Icon: just type the name (e.g. <b>hund</b>, <b>dog</b> or <b>fish</b>) and tap it in the preview.",
+"⌃⌄ = Reihenfolge der Kategorien. Kategorie antippen = Name, Farbe und Icon ändern. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.": "⌃⌄ = order of the categories. Tap a category = change name, colour and icon. Icon: just type the name (e.g. <b>hund</b>, <b>dog</b> or <b>fish</b>) and tap it in the preview.",
+"Name und Farbe ändern, mit ⌃⌄ die Reihenfolge, 🗑️ löscht die Person.": "Change name and colour, ⌃⌄ sets the order, 🗑️ deletes the person.",
+"Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“. Person antippen = Name und Farbe ändern.": "These names appear as quick buttons at 👤 “For whom?”. Tap a person = change name and colour.",
+"Alle Kategorien": "All categories",
+"Alle Personen": "All people"
 }
