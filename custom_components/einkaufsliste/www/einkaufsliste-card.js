@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.72.01";
+const EL_VERSION = "2.73.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.72.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.73.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -205,9 +205,9 @@ const EL_HELP = {
     "Create new stores with the “New” form, 🗑️ deletes.",
   ]],
   categories: ["list", [
-    "Erst die Liste (Reihenfolge mit ⌃⌄, neue über das Formular), dann die Kategorie antippen: Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), löschen mit 🗑️.",
+    "Erst die Liste (Reihenfolge mit ⌃⌄, neue über das Formular darunter), dann die Kategorie antippen: Name, Farbe, Icon (Suche mit deutschen oder englischen Begriffen), Löschen-Knopf unten.",
   ], [
-    "First the list (order with ⌃⌄, new ones via the form), then tap a category: name, colour, icon (search with German or English words), delete with 🗑️.",
+    "First the list (order with ⌃⌄, new ones via the form below), then tap a category: name, colour, icon (search with German or English words), delete button at the bottom.",
   ]],
   persons: ["list", [
     "Die Namen für die Schnellknöpfe bei „Für wen?“. Person antippen = Name und Farbe ändern. Ohne Personen bleibt das 👤 in der Liste ausgeblendet.",
@@ -359,6 +359,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🍳 <b>Rezepte aufgeräumt:</b> Die Knöpfe unter jedem Rezept sind jetzt vier gleich große Icons (Liste, Fotos, Kochen, Teilen) – der Name wird nicht mehr abgeschnitten. · 🔤 Den Text zeigt ⚙️ Extras → Beschriftungen oder langes Drücken (auch bei „Was kann ich kochen?“ und Gar-Zeiten). · ✏️ Der Rezept-Editor ist ordentlicher sortiert. · 🗂️ Kategorien und Personen: Farbe, Name und Löschen in einer Zeile, bei Kategorien das Icon darunter.",
+   "🍳 <b>Recipes tidied up:</b> the buttons under each recipe are now four equal icons (list, photos, cook, share) – the name is no longer cut off. · 🔤 The text shows with ⚙️ Extras → Labels or a long press (also for “What can I cook?” and cooking times). · ✏️ The recipe editor is sorted more neatly. · 🗂️ Categories and people: colour, name and delete in one row, for categories the icon below."],
   ["🗂️ <b>Kategorien</b> und 👥 <b>Personen</b> in den Einstellungen wie die Geschäfte: erst die Liste, antippen = nur diesen Eintrag ändern. · 📴 Ohne Netz sagt das ⚙️ Zahnrad gleich „Die Einstellungen gehen nur mit Netz“ (statt einer falschen PIN-Meldung).",
    "🗂️ <b>Categories</b> and 👥 <b>people</b> in the settings work like the stores: first the list, tap = change just that entry. · 📴 Without a connection the ⚙️ gear says “Settings only work with a connection” (instead of a wrong-PIN message)."],
   ["📖 <b>Anleitungen neu:</b> nach Themen sortiert, mit bunten Symbolen. In ⚙️ stehen die Erklärtexte <b>unter</b> den Schaltern jeder Zeile. · 👁️ <b>Ansicht:</b> Schriftgröße (Kleiner / Standard / Größer) einstellbar. · 🙈 <b>Ausblendbar:</b> Geschäfte-Leiste, Eingabefeld, Geschäft- und Kategorie-Auswahl und Icon-Leiste. · ⚙️ <b>Zahnrad</b> jetzt oben neben dem 🔓, der Laden-Modus ganz rechts. · ✍️ <b>Eine Eingabe = ein Produkt</b> (ein Komma gehört zum Namen). · 🔢 Ohne Menge ist es <b>1x</b>. · 🍽️ <b>Rezepte</b> und <b>Geschäfte</b> in der neuen Optik, mit Rahmen wie das Eingabefeld. · 📊 <b>Last</b> auch unter Ressourcen. · 🧹 Der Hinweis „Gibt's auch hier“ ist weg.",
@@ -2329,8 +2331,9 @@ ha-card.compact .group { margin-top:4px; }
 .pstore select { width:auto; min-width:140px; }
 .pstore.need span { color:var(--warning-color,#ff9800); font-weight:600; }
 .pmiss { color:var(--warning-color,#ff9800); }
-.rserv input { width:70px; text-align:center; }
-.rserv select { width:auto; }
+.rserv input { width:70px; flex:none; text-align:center; }
+.rserv select { width:auto; flex:none; }
+.rserv .grow { white-space:nowrap; min-width:0; }
 .servtag { font-weight:400; opacity:.75; }
 .rgrouprow select { width:auto; min-width:150px; }
 #titleIcon { cursor:pointer; }
@@ -2377,13 +2380,15 @@ ha-card.compact .group { margin-top:4px; }
 .errrow { padding:6px 8px; border-radius:10px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:4px 0; font-size:.9em; word-break:break-word; }
 .errrow small { color:var(--secondary-text-color); display:block; }
 .strows { display:flex; flex-direction:column; gap:6px; margin:6px 0; }
-.strow { display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px; }
+.strow { display:flex; flex-wrap:nowrap; align-items:center; gap:6px; padding:4px 6px; border-radius:12px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:var(--card-background-color, var(--ha-card-background, #fff)); }
+.strow .stin { flex:1 1 0; border:0; background:none; box-shadow:none; }
 .strow.dropbefore { box-shadow:0 -3px 0 0 var(--primary-color); } .strow.dropafter { box-shadow:0 3px 0 0 var(--primary-color); }
 .strow.dragging { position:relative; z-index:2; opacity:.7; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:10px; }
 .sthandle { flex:none; border:none; background:none; color:var(--secondary-text-color); font-size:1.3em; line-height:1; padding:8px 4px; cursor:grab; touch-action:none; user-select:none; }
 .sthandle:focus-visible { outline:2px solid var(--primary-color); border-radius:6px; }
-.stbtns { display:flex; gap:6px; flex:none; margin-left:auto; padding-left:30px; }
-.stnum { flex:none; padding-top:9px; min-width:1.6em; text-align:right; color:var(--secondary-text-color); font-size:.9em; }
+.stbtns { display:flex; gap:4px; flex:none; margin-left:auto; }
+.stbtns .btn { padding:6px 8px; min-height:0; font-size:.8em; }
+.stnum { flex:none; padding-top:0; min-width:1.6em; text-align:right; color:var(--secondary-text-color); font-size:.9em; }
 .stin { flex:1 1 150px; min-width:0; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:10px 12px; resize:none; overflow:hidden; }
 .sprow { display:flex; align-items:center; gap:6px; margin:4px 0; }
 .sprow .sptxt { flex:1; font-size:.9em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -2472,8 +2477,12 @@ label.btn { cursor:pointer; }
 .recipe .rname b { display:block; word-break:normal; overflow-wrap:break-word; hyphens:auto; -webkit-hyphens:auto; }
 .recipe .rname small { color:var(--secondary-text-color); font-size:.78em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
-.rtools { display:flex; gap:6px; justify-content:flex-end; margin:0 4px 10px; }
-.rtools .btn { padding:5px 12px; font-size:.8em; min-height:32px; border-radius:16px; }
+.rtools { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; margin:0 2px 10px; padding:6px 10px 10px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-top:0; border-radius:0 0 12px 12px; background:var(--card-background-color, var(--ha-card-background, #fff)); }
+.rtools .btn { min-width:0; justify-content:center; padding:6px 4px; min-height:40px; border-radius:12px; }
+.recipe.rv { border-bottom:0; border-radius:12px 12px 0 0; margin-bottom:0; padding-bottom:4px; }
+ha-card.labels .rtools .btn { flex-direction:column; gap:0; padding:4px 2px; }
+ha-card.labels .rtools .lbl { overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+ha-card.labels .viewhead button.btn { flex-direction:column; gap:0; padding:4px 8px; } ha-card.labels .viewhead .lbl { margin-top:0; }
 .rtools .rheat { flex:1; align-self:center; font-size:.78em; color:var(--secondary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .heatrow { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border-radius:12px; background:color-mix(in srgb, #ff7043 10%, transparent); border:1px solid color-mix(in srgb, #ff7043 35%, transparent); margin:6px 0; }
 .heatrow .hnums { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
@@ -2504,6 +2513,12 @@ label.btn { cursor:pointer; }
 .rpick .pbtns .primary { padding:9px 14px; }
 .rpick .pbtns .primary[disabled] { opacity:.4; cursor:default; }
 .rsub { margin-top:14px !important; flex-wrap:wrap; }
+#rItems .rrow { border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; background:var(--card-background-color, var(--ha-card-background, #fff)); padding:6px 8px; margin:6px 0; }
+.rhint { font-size:.78em; opacity:.7; }
+.rfoot { display:flex; gap:8px; align-items:stretch; margin-top:10px; }
+.rfoot .btn { flex:1; justify-content:center; }
+.rfoot .primary { flex:2; }
+.rfoot .btn.danger { flex:none; padding:8px 12px; }
 .rsteps { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; resize:vertical; }
 .rimportbtn { margin-left:auto; padding:5px 10px; font-size:.8em; font-weight:400; }
 .rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; resize:vertical; }
@@ -2520,6 +2535,9 @@ label.btn { cursor:pointer; }
 .storepick span { display:flex; flex-direction:column; min-width:0; }
 .storepick b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .storepick small { color:var(--secondary-text-color); font-size:.78em; }
+.srow.stack { flex-direction:column; align-items:stretch; }
+.srow.stack input, .srow.stack button { width:100%; box-sizing:border-box; justify-content:center; }
+.srow.stack .grow { flex:none; }
 .storehead { display:flex; align-items:center; gap:8px; font-size:1.1em; margin:4px 2px 8px; }
 .storehead ha-icon { color:var(--sc); }
 .zonechips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
@@ -3502,7 +3520,7 @@ class EinkaufslisteCard extends HTMLElement {
     const root = this.shadowRoot;
     // 👆 Lange auf ein Icon drücken = kurze Erklärung (am Handy gibt es keine Tooltips)
     let lpTimer = null, lpFired = false;
-    const lpSel = "button.tool, button.iconbtn, button.addbtn";
+    const lpSel = "button.tool, button.iconbtn, button.addbtn, .rtools button.btn, .viewhead button.btn";
     root.addEventListener("pointerdown", (e) => {
       const b = e.target.closest?.(lpSel);
       const text = b && !b.closest(".item") ? b.getAttribute("title") : "";
@@ -4970,8 +4988,10 @@ class EinkaufslisteCard extends HTMLElement {
           const e = d.categories[k];
           return `
         <div class="storehead" style="--sc:${esc(e.color || "#9e9e9e")}"><ha-icon icon="${esc(catIcon(e))}"></ha-icon><b translate="no">${esc(e.name)}</b></div>
-        ${row("categories", e, k, d.categories.length)}
-        <p class="hint">Name, Farbe und Icon ändern, mit ⌃⌄ die Reihenfolge, 🗑️ löscht die Kategorie. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>`;
+        <div class="srow" data-kind="categories" data-id="${e.id}"><input type="color" value="${esc(e.color || "#9e9e9e")}" data-field="color" title="Farbe"><input class="grow" value="${esc(e.name)}" data-field="name" placeholder="Name, z. B. Getränke" title="Name"><button class="iconbtn" data-act="group-remove" title="Löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button></div>
+        <div class="srow stack" data-kind="categories" data-id="${e.id}">${this._iconField(e.icon, 'data-field="icon"')}</div>
+        <div class="picker" hidden></div>
+        <p class="hint">Name, Farbe und Icon ändern, 🗑️ löscht die Kategorie. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>`;
         }
         return `
         <div class="storelist">${d.categories.map((e, i) => `<div class="srow storerow" data-kind="categories" data-id="${e.id}" style="--sc:${esc(e.color || "#9e9e9e")}">
@@ -4979,11 +4999,10 @@ class EinkaufslisteCard extends HTMLElement {
             <button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
             <button class="iconbtn" data-act="down" ${i === d.categories.length - 1 ? "disabled" : ""} title="Nach unten"><ha-icon icon="mdi:chevron-down"></ha-icon></button>
           </div>`).join("")}</div>
-        <form class="srow" data-addkind="categories">
-          <ha-icon class="prev" icon="mdi:tag-plus-outline"></ha-icon>
+        <form class="srow stack" data-addkind="categories">
           <input class="grow" name="name" placeholder="Neue Kategorie, z. B. Getränke">
           ${this._iconField("", 'name="icon" data-newicon="1"')}
-          <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
+          <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon>Hinzufügen</button>
         </form>
         <div class="picker" hidden></div>
         <p class="hint">⌃⌄ = Reihenfolge der Kategorien. Kategorie antippen = Name, Farbe und Icon ändern. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>`;
@@ -5014,8 +5033,8 @@ class EinkaufslisteCard extends HTMLElement {
           const e = persons[k];
           return `
         <div class="storehead" style="--sc:${esc(e.color || "#9e9e9e")}"><ha-icon icon="mdi:account-outline"></ha-icon><b translate="no">${esc(e.name)}</b></div>
-        ${row("persons", e, k, persons.length)}
-        <p class="hint">Name und Farbe ändern, mit ⌃⌄ die Reihenfolge, 🗑️ löscht die Person.</p>`;
+        <div class="srow" data-kind="persons" data-id="${e.id}"><input type="color" value="${esc(e.color || "#9e9e9e")}" data-field="color" title="Farbe"><input class="grow" value="${esc(e.name)}" data-field="name" placeholder="Name, z. B. Oma" title="Name"><button class="iconbtn" data-act="group-remove" title="Löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button></div>
+        <p class="hint">Name und Farbe ändern, 🗑️ löscht die Person.</p>`;
         }
         return `
         <div class="storelist">${persons.map((e, i) => `<div class="srow storerow" data-kind="persons" data-id="${e.id}" style="--sc:${esc(e.color || "#9e9e9e")}">
@@ -6433,7 +6452,7 @@ class EinkaufslisteCard extends HTMLElement {
     // Suchfeld nur einmal bauen – sonst springt beim Tippen der Cursor raus
     const aiOn = !!this._data.settings?.ai_on && !this._privacyOn();
     if (!ov.querySelector("#recipeList") || !!ov.querySelector("#recipeSearch") !== count > 0 || !!ov.querySelector('[data-act="ai-cook"]') !== aiOn) {
-      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon>Was kann ich kochen?</button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:timer-outline"></ha-icon>Gar-Zeiten</button></h3>${
+      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon><span class="lbl">Was kann ich kochen?</span></button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:timer-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button></h3>${
         count ? this._recipeSearchHtml("recipeSearch") : ""}<div id="recipeList"></div></div>`;
     }
     this._renderRecipeList();
@@ -6456,18 +6475,16 @@ class EinkaufslisteCard extends HTMLElement {
         : via ? `🥕 enthält ${this._markHit(via, q)}`
         : ""; // nur bei der Suche: warum gefunden
       html.push(`
-        <div class="recipe ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
+        <div class="recipe rv ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
           <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
-          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)}</b>${sub ? `<small>${sub}</small>` : ""}</div>
-          <div class="rbtns">
-            <button class="primary" data-act="recipe-apply" title="Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button>
-            ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Alle offenen Zutaten dieses Rezepts von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon>Von der Liste (${onList(r)})</button>` : ""}
-          </div>
+          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}</b>${sub ? `<small>${sub}</small>` : ""}</div>
         </div>
         <div class="rtools" data-id="${r.id}">
-          ${this._recipeAiMark(r)}${this._recipePhotoToolBtn(r)}
-          ${(r.steps || "").trim() ? `<button class="btn" data-act="recipe-cook"><ha-icon icon="mdi:fire"></ha-icon>Kochen</button>` : ""}
-          <button class="btn" data-act="recipe-share"><ha-icon icon="mdi:share-variant-outline"></ha-icon>Teilen</button>
+          <button class="btn" data-act="recipe-apply" title="Auf die Liste – Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon><span class="lbl">Auf die Liste</span></button>
+          ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Von der Liste – alle offenen Zutaten dieses Rezepts (${onList(r)}) von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon><span class="lbl">Von Liste (${onList(r)})</span></button>` : ""}
+          ${this._recipePhotoToolBtn(r)}
+          ${(r.steps || "").trim() ? `<button class="btn" data-act="recipe-cook" title="Kochen"><ha-icon icon="mdi:fire"></ha-icon><span class="lbl">Kochen</span></button>` : ""}
+          <button class="btn" data-act="recipe-share" title="Teilen"><ha-icon icon="mdi:share-variant-outline"></ha-icon><span class="lbl">Teilen</span></button>
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`);
     }
     box.innerHTML = html.join("");
@@ -6590,7 +6607,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="picker" hidden></div>
         <div class="srow rserv">
           <ha-icon class="prev" icon="${dr.servings_unit === "trays" ? "mdi:tray" : "mdi:account-group-outline"}"></ha-icon>
-          <span class="grow">Die Mengen sind für</span>
+          <span class="grow">Mengen für</span>
           <input id="rServings" type="number" inputmode="numeric" min="1" max="99" value="${dr.servings || ""}" placeholder="z. B. 4">
           <select id="rServUnit">
             <option value="persons" ${dr.servings_unit !== "trays" ? "selected" : ""}>👥 Personen</option>
@@ -6615,13 +6632,11 @@ class EinkaufslisteCard extends HTMLElement {
         <div id="rStepRows" class="strows"></div>
         <div class="btnrow"><button type="button" class="btn" data-act="step-add"><ha-icon icon="mdi:plus"></ha-icon>Schritt</button></div>
         <div id="rStepPhotos"></div>
-        <p class="hint">Eintragen geht genau wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode (auch „📦 Mehrere scannen“) – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie, die bei diesem Produkt zuletzt benutzt wurden.</p>
-        <div class="btnrow" style="justify-content:space-between">
-          ${dr.id ? `<button class="btn danger" data-act="recipe-delete"><ha-icon icon="mdi:trash-can-outline"></ha-icon>Löschen</button>` : "<span></span>"}
-          <span style="display:flex;gap:6px">
-            <button class="btn" data-act="recipe-cancel">Abbrechen</button>
-            <button class="btn primary" data-act="recipe-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
-          </span>
+        <p class="hint rhint">Eintragen geht wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode – dann ✔. „Wie zuletzt“ = Geschäft &amp; Kategorie vom letzten Mal.</p>
+        <div class="rfoot">
+          ${dr.id ? `<button class="btn danger" data-act="recipe-delete" title="Rezept löschen" aria-label="Rezept löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>` : ""}
+          <button class="btn" data-act="recipe-cancel">Abbrechen</button>
+          <button class="btn primary" data-act="recipe-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
         </div>
       </div>`;
     this._enterRecipeForm();
@@ -6802,7 +6817,7 @@ class EinkaufslisteCard extends HTMLElement {
     const key = this._recipePhotoKey(r.id);
     if (!this._hasPhoto(key)) return "";
     const n = this._data.photo_counts?.[key] || 1;
-    return `<button class="btn" data-act="photo-view" data-name="${esc(key)}" data-title="${esc(r.name)}" title="Rezept-Fotos ansehen"><ha-icon icon="mdi:camera"></ha-icon>${n > 1 ? n : ""}</button>`;
+    return `<button class="btn" data-act="photo-view" data-name="${esc(key)}" data-title="${esc(r.name)}" title="Rezept-Fotos ansehen"><ha-icon icon="mdi:camera"></ha-icon><span class="lbl">Fotos${n > 1 ? " (" + n + ")" : ""}</span></button>`;
   }
 
   _renderRecipePhoto() {
@@ -10671,7 +10686,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       }
       case "recipe-apply": {
-        const r = this._recipe(el.closest(".recipe").dataset.id);
+        const r = this._recipe(el.closest(".rtools, .recipe").dataset.id);
         if (!r) { this._toast("Das Rezept gibt es nicht mehr."); break; }
         if (this._pickRecipe === r.id) { this._pickRecipe = null; this._renderRecipes(); break; }
         const open = this._pickOpenSet();
@@ -10683,7 +10698,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       }
       case "recipe-unapply": {
-        const r = this._recipe(el.closest(".recipe").dataset.id);
+        const r = this._recipe(el.closest(".rtools, .recipe").dataset.id);
         if (!r || !elConfirm(`Alle offenen Zutaten von „${r.name}“ von der Liste nehmen?`)) break;
         this._ws({ type: "einkaufsliste/recipe/unapply", recipe_id: r.id })
           .then((res) => this._toast(`🧺 ${res.removed} Zutaten von „${r.name}“ von der Liste genommen`))

@@ -78,7 +78,7 @@ Copy `custom_components/einkaufsliste` to `/config/custom_components/einkaufslis
 
 **In the store:** the cart at the top right switches on **shop mode**. No connection? Keep checking off, the bar at the top shows ⏳ orange ⏳ and everything is sent later. The **💡 icon** (between 💳 and the cart) keeps the screen on in shop mode – it switches off by itself when you leave. **In the HA app** this only works with its own setting: *Settings → Companion App → “Keep screen On”*.
 
-**Recipes:** create them in ⚙️ → Recipes (ingredients just like on the list, or paste an ingredient list or a recipe link). The **chef's hat** at the top: **Add to list** → tick what's missing → done. Also 👥 people or 🍕 trays scaling, **🔥 Cook** (step by step), **Share** (e.g. WhatsApp) and **⏲️ cooking times**. Checked recipe ingredients disappear completely.
+**Recipes:** create them in ⚙️ → Recipes (ingredients just like on the list, or paste an ingredient list or a recipe link). The **chef's hat** at the top: **Add to list** → tick what's missing → done. Also 👥 people or 🍕 trays scaling, **🔥 Cook** (step by step), **Share** (e.g. WhatsApp) and **⏲️ cooking times**. Checked recipe ingredients disappear completely. The buttons are icons only; ⚙️ → Extras → **Labels** or a long press shows the text.
 
 ---
 
@@ -123,7 +123,7 @@ Good to know: it needs an **https** address (e.g. Nabu Casa). If two people chan
 | Tile | What's inside |
 |---|---|
 | 🏪 **Stores** | A list, one store per row. **⌃ ⌄** right in the list = order of the tabs. Tap = name, color, icon, 📍 zones (several, e.g. for several branches), 🏷️ store brands and 🗺️ **category order** (default: same everywhere – or its own, the way you walk through the store). Without an icon of its own the list uses the zone's icon (if it has one), otherwise 🛒. |
-| 🗂️ **Categories** · 👥 **People** | Like stores: first the list (sort with ⌃⌄, add new ones below), then tap one = rename, colour, icon (just type “dog”, no “mdi:”), delete. |
+| 🗂️ **Categories** · 👥 **People** | Like stores: first the list (sort with ⌃⌄, add new ones below), then tap one = rename, colour, icon (just type “dog”, no “mdi:”), delete. The fields sit one below the other. |
 | 👁️ **List view** (under 📱 App & info) | Tick or untick: quantity, notes, for whom, who added/checked it, date, 🧹 day, store, recipe, photo, ⭐, ▥, offers, “was out”, ⇄ button, ✨ and category colour. In ⚙️ the **default for everyone**. New: **font size** (Standard / Larger / Smaller) and **hiding** the input fields (What do I need, stores, categories, icon bar) and the store bar on top – for a calm list on a tablet. Everyone sets their **own view** at the very bottom with **“👁️ View”** (next to “📖 Guide”) – no gear or PIN (applies to your HA user on all devices). |
 | 👨‍🍳 **Recipes** | Two tabs: **Recipes** (new, edit, delete) and **Recipe groups**. |
 | 📦 **Products** | Everything the list knows: rename, category, default store, nicknames, photos, barcodes, learned typos, delete completely. Plus “Newly scanned” to check, 🔽 filters (no category, no photo, per store …) and **➕ New product**. On a PC: click selects, ↑↓ browses, double-click/Enter edits. |

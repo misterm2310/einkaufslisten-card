@@ -1954,5 +1954,18 @@
 "Name und Farbe ändern, mit ⌃⌄ die Reihenfolge, 🗑️ löscht die Person.": "Change name and colour, ⌃⌄ sets the order, 🗑️ deletes the person.",
 "Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“. Person antippen = Name und Farbe ändern.": "These names appear as quick buttons at 👤 “For whom?”. Tap a person = change name and colour.",
 "Alle Kategorien": "All categories",
-"Alle Personen": "All people"
+"Alle Personen": "All people",
+"Name, Farbe und Icon ändern. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.": "Change name, colour and icon. Icon: just type the name (e.g. <b>hund</b>, <b>dog</b> or <b>fish</b>) and tap it in the preview.",
+"Kategorie antippen = Name, Farbe und Icon ändern. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.": "Tap a category = change name, colour and icon. Icon: just type the name (e.g. <b>hund</b>, <b>dog</b> or <b>fish</b>) and tap it in the preview.",
+"Name und Farbe ändern.": "Change name and colour.",
+"Kategorie löschen": "Delete category",
+"Person löschen": "Delete person",
+"Name, Farbe und Icon ändern, 🗑️ löscht die Kategorie. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.": "Change name, colour and icon, 🗑️ deletes the category. Icon: just type the name (e.g. <b>hund</b>, <b>dog</b> or <b>fish</b>) and tap it in the preview.",
+"Name und Farbe ändern, 🗑️ löscht die Person.": "Change name and colour, 🗑️ deletes the person.",
+"Mengen für": "Quantities for",
+"Rezept löschen": "Delete recipe",
+"Eintragen geht wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie vom letzten Mal.": "Adding works like on the list: type the name (with suggestions), 🔢 quantity, ✏️ own note, 👤 for whom, 📷 photo, ▥ barcode – then ✔. “As last time” = store & category from last time.",
+"Auf die Liste – Zutaten auswählen": "To the list – choose ingredients",
+"Von der Liste – alle offenen Zutaten dieses Rezepts": "Off the list – all open ingredients of this recipe",
+"Von Liste": "Off list"
 }
