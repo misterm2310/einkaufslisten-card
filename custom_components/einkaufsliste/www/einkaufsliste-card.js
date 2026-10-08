@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.73.02";
+const EL_VERSION = "2.73.03";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.73.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.73.03"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -361,6 +361,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🏷️ <b>Beschriftungen für dich allein:</b> In 👁️ Ansicht (ganz oben, über der Schriftgröße) schaltest du den Text unter den Icons nur für dich an oder aus. Ohne eigene Wahl gilt der Standard aus ⚙️ Extras.",
+   "🏷️ <b>Labels just for you:</b> in 👁️ View (right at the top, above the font size) you switch the text under the icons on or off only for yourself. Without your own choice the default from ⚙️ Extras applies."],
   ["🍳 <b>Rezepte aufgeräumt:</b> Die Knöpfe unter jedem Rezept sind jetzt vier gleich große Icons (Liste, Fotos, Kochen, Teilen) – der Name wird nicht mehr abgeschnitten. · 🔤 Den Text zeigt ⚙️ Extras → Beschriftungen oder langes Drücken (auch bei „Was kann ich kochen?“ und Gar-Zeiten). · ✏️ Der Rezept-Editor ist ordentlicher sortiert. · 🗂️ Kategorien und Personen: Farbe, Name und Löschen in einer Zeile, bei Kategorien das Icon darunter.",
    "🍳 <b>Recipes tidied up:</b> the buttons under each recipe are now four equal icons (list, photos, cook, share) – the name is no longer cut off. · 🔤 The text shows with ⚙️ Extras → Labels or a long press (also for “What can I cook?” and cooking times). · ✏️ The recipe editor is sorted more neatly. · 🗂️ Categories and people: colour, name and delete in one row, for categories the icon below."],
   ["🗂️ <b>Kategorien</b> und 👥 <b>Personen</b> in den Einstellungen wie die Geschäfte: erst die Liste, antippen = nur diesen Eintrag ändern. · 📴 Ohne Netz sagt das ⚙️ Zahnrad gleich „Die Einstellungen gehen nur mit Netz“ (statt einer falschen PIN-Meldung).",
@@ -5216,14 +5218,15 @@ class EinkaufslisteCard extends HTMLElement {
         ${this._hintsBottom(cur.html())}
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
-    // ⏱️ Kategorien: ohne Änderung/Berührung geht die Seite nach 4 Sekunden von selbst zurück zur Übersicht
+    // ⏱️ Kategorien: ohne Änderung/Berührung geht die LISTE nach 4 Sekunden von selbst zurück zur Übersicht –
+    // aber nie, solange ein Eintrag zum Bearbeiten offen ist (Farbwähler, Icon, Name brauchen Zeit)
     clearTimeout(this._catTimer);
-    if (cur.key === "categories") {
+    if (cur.key === "categories" && !catOpen) {
       const ov = this.$("otherView");
       const arm = () => {
         clearTimeout(this._catTimer);
         this._catTimer = setTimeout(() => {
-          if (this._view === "settings" && this._setSec === "categories") { this._setSec = ""; this._catSel = null; this._renderSettings(); }
+          if (this._view === "settings" && this._setSec === "categories" && !this._catSel) { this._setSec = ""; this._catSel = null; this._renderSettings(); }
         }, 4000);
       };
       this._catArm = arm;
