@@ -63,6 +63,8 @@ TYPO_LEARN_AFTER = 2  # so oft „Meintest du …?“ angenommen, dann wird von 
 
 _ACTOR: ContextVar[dict] = ContextVar("einkaufsliste_actor", default={})
 _LOGGER = logging.getLogger(__name__)
+PIN_MAX_FAILS = 5  # 🛡️ so viele falsche PIN-Eingaben …
+PIN_LOCK_SECONDS = 60  # … dann so lange Sperre
 
 
 def _new_id() -> str:
@@ -323,6 +325,8 @@ class EinkaufslisteManager:
         self.cards: list[dict[str, Any]] = []  # 💳 Kundenkarten {"id","name","code","fmt","owner","owner_name","color"} (owner = Benutzer-ID, None = für alle)
         self.cards_on: bool = False  # 💳 Kundenkarten-Funktion an/aus (standardmäßig aus) – gilt für alle
         self.typos: dict[str, dict[str, Any]] = {}  # 🧠 Tippfehler (klein) -> {"right": Name, "n": wie oft korrigiert}
+        self._pin_fails = 0  # 🛡️ falsche PIN-Eingaben in Folge (nur im Speicher)
+        self._pin_locked_until = 0.0
         self.pin_hash: str | None = None  # 🔒 PIN für die Einstellungen (nur als Prüfsumme gespeichert)
         self.note_templates: list[str] | None = None  # 📝 Vorlagen für die Eigene Notiz (None = Standard-Vorschläge)
         self.ai_agent: str | None = None  # 🤖 KI-Kochen: gewählter Home-Assistant-Assistent (bleibt gemerkt, auch wenn aus)
@@ -458,7 +462,7 @@ class EinkaufslisteManager:
             return n
 
         counts["files"] = await self.hass.async_add_executor_job(_sweep)
-        keep = {"hass", "entry", "_store", "_unsub_time", "_actor", "pin_hash"}
+        keep = {"hass", "entry", "_store", "_unsub_time", "_actor", "pin_hash", "_pin_fails", "_pin_locked_until"}
         fresh = EinkaufslisteManager(self.hass, self.entry)
         for k, v in fresh.__dict__.items():
             if k not in keep:
@@ -939,9 +943,14 @@ class EinkaufslisteManager:
             "b_on": bool(b_on), "b_hours": b_hours if b_hours in (1, 3, 6, 12, 24) else 6, "b_cats": bool(b_cats),
         }
         same = old.get("url") == base
-        for k in ("links", "last_b", "count_a", "count_b"):
+        for k in ("last_b", "count_a", "count_b"):
             if same and k in old:
                 cfg[k] = old[k]
+        # 🔗 Verknüpfungen nur behalten, wenn Server, Liste UND Abgleich-Art gleich blieben – sonst würden
+        # bestehende Zeilen als „in Grocy gelöscht“ gelten und bei uns abgehakt.
+        if same and "links" in old and str(old.get("list_id") or 1) == str(list_id) and old.get("a_mode") == a_mode:
+            cfg["links"] = old["links"]
+        cfg["links_for"] = f"{list_id}|{a_mode}"
         self.grocy = cfg
         self._changed()
         gs = getattr(self, "grocy_sync", None)
@@ -1705,15 +1714,33 @@ class EinkaufslisteManager:
     def _pin_hash(pin: str, salt: str) -> str:
         return salt + "$" + hashlib.sha256((salt + str(pin)).encode()).hexdigest()
 
+    def _pin_guard(self) -> None:
+        """🛡️ Gegen Durchprobieren: nach PIN_MAX_FAILS Fehlversuchen PIN_LOCK_SECONDS Sperre (nur im Speicher)."""
+        left = self._pin_locked_until - _monotonic()
+        if left > 0:
+            raise ValueError(f"Zu viele falsche PIN-Eingaben. Bitte in {int(left) + 1} Sekunden noch einmal versuchen.")
+
+    def _pin_fail(self) -> None:
+        self._pin_fails += 1
+        if self._pin_fails >= PIN_MAX_FAILS:
+            self._pin_fails = 0
+            self._pin_locked_until = _monotonic() + PIN_LOCK_SECONDS
+
     def check_pin(self, pin: str | None) -> bool:
         if not self.pin_hash:
             return True
+        self._pin_guard()
         salt = self.pin_hash.split("$", 1)[0]
-        return hmac.compare_digest(self._pin_hash(str(pin or ""), salt), self.pin_hash)
+        ok = hmac.compare_digest(self._pin_hash(str(pin or ""), salt), self.pin_hash)
+        if ok:
+            self._pin_fails = 0
+        else:
+            self._pin_fail()
+        return ok
 
     def set_pin(self, pin: str | None, old: str | None = None) -> None:
         """Neue PIN (4–8 Ziffern) setzen; leer = PIN aus. Gibt es schon eine, muss die alte stimmen."""
-        if self.pin_hash and not self.check_pin(old):
+        if self.pin_hash and not self.check_pin(old):  # (wirft bei Sperre selbst einen Fehler)
             raise ValueError("Die alte PIN stimmt nicht.")
         pin = (pin or "").strip()
         if pin and not re.fullmatch(r"\d{4,8}", pin):

@@ -7,8 +7,22 @@ class EinkaufslistePanel extends HTMLElement {
     this._narrow = false;
   }
 
+  // 🌍 Texte folgen der Home-Assistant-Sprache (Deutsch / sonst Englisch)
+  _de() {
+    const l = String(this._hass?.locale?.language || this._hass?.language || "de").toLowerCase();
+    return l.startsWith("de");
+  }
+
+  _applyLang() {
+    if (!this._menu) return;
+    const t = this._de() ? "Menü" : "Menu";
+    this._menu.title = t;
+    this._menu.setAttribute("aria-label", t);
+  }
+
   set hass(hass) {
     this._hass = hass;
+    this._applyLang();
     if (this._card) this._card.hass = hass;
   }
 
@@ -35,8 +49,8 @@ class EinkaufslistePanel extends HTMLElement {
     bar.style.cssText = "display:flex;align-items:center;gap:8px;padding:8px 12px 0;";
     const menu = document.createElement("button");
     menu.textContent = "☰";
-    menu.title = "Menü";
-    menu.setAttribute("aria-label", "Menü");
+    menu.title = this._de() ? "Menü" : "Menu";
+    menu.setAttribute("aria-label", menu.title);
     menu.style.cssText = "font-size:24px;background:none;border:none;color:var(--primary-text-color);cursor:pointer;padding:4px 8px;";
     menu.style.display = this._narrow ? "" : "none";
     menu.addEventListener("click", () => this.dispatchEvent(new Event("hass-toggle-menu", { bubbles: true, composed: true })));
@@ -58,12 +72,12 @@ class EinkaufslistePanel extends HTMLElement {
         await customElements.whenDefined("einkaufsliste-card");
       }
       const card = document.createElement("einkaufsliste-card");
-      card.setConfig({ title: "Einkaufsliste" });
+      card.setConfig({ title: this._de() ? "Einkaufsliste" : "Shopping list" });
       this._card = card;
       this._wrap.appendChild(card);
       if (this._hass) card.hass = this._hass;
     } catch (err) {
-      this._wrap.textContent = "Die Einkaufsliste konnte nicht geladen werden: " + (err && err.message ? err.message : err);
+      this._wrap.textContent = (this._de() ? "Die Einkaufsliste konnte nicht geladen werden: " : "The shopping list could not be loaded: ") + (err && err.message ? err.message : err);
     } finally {
       this._loading = false;
     }

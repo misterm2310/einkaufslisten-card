@@ -2,7 +2,26 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
+from typing import Any
+
+
+def track_task(hass: Any, tasks: set, coro: Any) -> asyncio.Task:
+    """Hintergrund-Aufgabe starten und merken, damit sie beim Beenden abgebrochen werden kann."""
+    task = hass.async_create_task(coro)
+    tasks.add(task)
+    task.add_done_callback(tasks.discard)
+    return task
+
+
+def cancel_tasks(tasks: set) -> None:
+    """Alle gemerkten Aufgaben abbrechen (außer der, die gerade selbst läuft)."""
+    me = asyncio.current_task()
+    for task in list(tasks):
+        if task is not me and not task.done():
+            task.cancel()
+    tasks.intersection_update({me} if me in tasks else set())
 
 
 async def read_limited(stream, limit: int) -> bytes | None:

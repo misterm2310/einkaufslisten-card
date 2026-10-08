@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.73.03";
+const EL_VERSION = "2.74.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.73.03"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.73.02"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -375,8 +375,8 @@ const EL_NEWS = [
    "🎛️ <b>All input forms alike:</b> adding, editing and the catalogue look the same (same height, font, frame) and can do the same, in the same order. · ✏️ When <b>editing</b>, “for whom” is a picker next to the quantity – like store next to category. · 📦 New in the <b>catalogue</b>: <b>📷 photo</b> right in the product. · 📖 <b>“👁️ View” and “📖 Guide”</b> are buttons below the card – like in the offline app. Delete, merge & co. stay in ⚙️."],
   ["🟢 <b>Leiste oben auf jeder Seite</b> – jetzt auch in der Home-Assistant-Karte: links „🟢 verbunden“ (⏳ orange = wartet aufs Netz, 🔴 = keine Verbindung), rechts das <b>🔓 Schloss</b> (nur mit PIN) und die Versionsnummer. · 👁️ <b>Meine Ansicht für jeden:</b> Was du beim Artikel sehen willst, stellst du jetzt ganz unten mit <b>„👁️ Ansicht“</b> (neben „📖 Anleitung“) ein – ganz ohne Zahnrad und PIN. In ⚙️ → Listenansicht steht nur noch der Standard „für alle“.",
    "🟢 <b>Bar at the top of every page</b> – now in the Home Assistant card too: on the left “🟢 connected” (⏳ orange = waiting for the network, 🔴 = no connection), on the right the <b>🔓 lock</b> (only with a PIN) and the version number. · 👁️ <b>My view for everyone:</b> what you want to see on items is now set at the very bottom with <b>“👁️ View”</b> (next to “📖 Guide”) – no gear or PIN needed. ⚙️ → List view only holds the default “for everyone”."],
-  ["👁️ <b>Listenansicht:</b> ⚙️ → Listenansicht – Häkchen weg, und Menge, Notizen, Für wen, wer eingetragen hat, Datum, Foto, Stern & Co. sind beim Artikel ausgeblendet. „Für alle“ oder „Nur für mich“ (jeder für sich). · 🧹 <b>Aufräumen in der Karte:</b> ⚙️ → Aufräumen – jetzt mit <b>An/Aus</b>, Tag, Uhrzeit und Mindestalter direkt hier (nicht mehr in der Integration). · 🛒 <b>Der Einkaufswagen oben links bringt dich immer zurück zur Liste</b>, die Anleitung steckt im Knopf „📖 Anleitung“ ganz unten. · 🏪 <b>Geschäfte wieder als Liste</b>, Reihenfolge mit ⌃⌄ direkt dort. · 🔓 Das Schloss sitzt in ⚙️ oben rechts neben der Version, der grüne Punkt ist weg (nur noch bei Problemen sichtbar). · 📊 Last-Anzeige jetzt unter Ressourcen. · 📜 Neue Produkte im Katalog stehen im Verlauf. · 🔁 Bis zu 50 To-do-Listen – und beim <b>vollen Abgleich</b> bekommt jede Liste nur die Artikel <b>ihres</b> Geschäfts (Tomaten bei Lidl landen nicht mehr auch bei Bring! Aldi). · 🧽 Radiergummi nur noch an Suchfeldern.",
-   "👁️ <b>List view:</b> ⚙️ → List view – untick, and quantity, notes, for whom, who added it, date, photo, star & co. are hidden on items. “For everyone” or “Just for me” (each person for themselves). · 🧹 <b>Cleanup in the card:</b> ⚙️ → Cleanup – now with <b>on/off</b>, day, time and minimum age right here (no longer in the integration). · 🛒 <b>The cart at the top left always takes you back to the list</b>, the guide is behind the “📖 Guide” button at the very bottom. · 🏪 <b>Stores as a list again</b>, order with ⌃⌄ right there. · 🔓 The lock sits in ⚙️ at the top right next to the version, the green dot is gone (only shown when something is wrong). · 📊 Load display now under Resources. · 📜 New catalogue products show up in the history. · 🔁 Up to 50 to-do lists – and with <b>full sync</b> each list only gets the items of <b>its</b> store (tomatoes for Lidl no longer end up in Bring! Aldi too). · 🧽 Eraser only on search fields now."]
+  ["👁️ <b>Listenansicht:</b> ⚙️ → Listenansicht – Häkchen weg, und Menge, Notizen, Für wen, wer eingetragen hat, Datum, Foto, Stern & Co. sind beim Artikel ausgeblendet. „Für alle“ oder „Nur für mich“ (jeder für sich). · 🧹 <b>Aufräumen in der Karte:</b> ⚙️ → Aufräumen – jetzt mit <b>An/Aus</b>, Tag, Uhrzeit und Mindestalter direkt hier (nicht mehr in der Integration). · 🛒 <b>Der Einkaufswagen oben links bringt dich immer zurück zur Liste</b>, die Anleitung steckt im Knopf „📖 Anleitung“ ganz unten. · 🏪 <b>Geschäfte wieder als Liste</b>, Reihenfolge mit ⌃⌄ direkt dort. · 🔓 Das Schloss sitzt in der Leiste oben rechts neben der Version, links zeigt die Leiste „🟢 verbunden“ (orange oder rot bei Problemen). · 📊 Last-Anzeige jetzt unter Ressourcen. · 📜 Neue Produkte im Katalog stehen im Verlauf. · 🔁 Bis zu 50 To-do-Listen – und beim <b>vollen Abgleich</b> bekommt jede Liste nur die Artikel <b>ihres</b> Geschäfts (Tomaten bei Lidl landen nicht mehr auch bei Bring! Aldi). · 🧽 Radiergummi nur noch an Suchfeldern.",
+   "👁️ <b>List view:</b> ⚙️ → List view – untick, and quantity, notes, for whom, who added it, date, photo, star & co. are hidden on items. “For everyone” or “Just for me” (each person for themselves). · 🧹 <b>Cleanup in the card:</b> ⚙️ → Cleanup – now with <b>on/off</b>, day, time and minimum age right here (no longer in the integration). · 🛒 <b>The cart at the top left always takes you back to the list</b>, the guide is behind the “📖 Guide” button at the very bottom. · 🏪 <b>Stores as a list again</b>, order with ⌃⌄ right there. · 🔓 The lock sits in the bar at the top right next to the version, on the left the bar shows “🟢 connected” (orange or red when something is wrong). · 📊 Load display now under Resources. · 📜 New catalogue products show up in the history. · 🔁 Up to 50 to-do lists – and with <b>full sync</b> each list only gets the items of <b>its</b> store (tomatoes for Lidl no longer end up in Bring! Aldi too). · 🧽 Eraser only on search fields now."]
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 // 👁️ Listenansicht: was beim Artikel zu sehen ist. Standard = alles an; einstellbar für alle und pro Benutzer (⚙️ → Listenansicht)
@@ -461,19 +461,21 @@ let EL_DICT = null;       // exakte Texte: deutsch -> englisch
 let EL_PATTERNS = [];     // Texte mit Platzhaltern („{}“)
 // 🛒 Startliste: gängige Produkte (nach Kategorie-Schlüssel), damit schon 1–2 Buchstaben Vorschläge bringen – auch für Neues, das du noch nie gekauft hast
 let EL_START = null, EL_START_PROMISE = null;
+let EL_START_FAIL = 0, EL_DICT_FAIL = 0; // ⏱️ nach einem Fehlschlag frühestens nach 60 s neu versuchen (kein Anfragen-Sturm)
 function elLoadStart() {
-  if (!EL_START_PROMISE) {
+  if (!EL_START_PROMISE && Date.now() - EL_START_FAIL > 60000) {
     EL_START_PROMISE = fetch(`${EL_BASE}/einkaufsliste-start.json?v=${EL_VERSION}`).then((r) => r.json()).then((raw) => {
       const list = [];
       for (const [key, names] of Object.entries(raw || {})) for (const name of names || []) list.push({ name, key, low: String(name).toLowerCase() });
       EL_START = list;
       return list;
-    }).catch(() => { EL_START_PROMISE = null; EL_START = []; return []; });
+    }).catch(() => { EL_START_PROMISE = null; EL_START_FAIL = Date.now(); EL_START = []; return []; });
   }
-  return EL_START_PROMISE;
+  return EL_START_PROMISE || Promise.resolve(EL_START || []);
 }
 let EL_DICT_PROMISE = null;
 const EL_I18N_ROOTS = new Set();
+const EL_OBSERVERS = new Map();
 const EL_SKIP = ".name,.rname,.pname,.inote,.delname,.lname,.stitle,textarea,style,script,[translate=no]";
 const EL_ATTRS = ["placeholder", "title", "aria-label", "label", "alt"];
 const EL_UNIT_RX = /^([\d½¼¾⅓⅔⅛][\d.,/½¼¾⅓⅔⅛\s-]*?)\s*(EL|TL|Msp\.|Pck\.|Prisen?|Dosen?|Becher|Bund|Flaschen?|Kisten?|Glas|Gläser|Rollen?|Beutel|Tüten?|Scheiben?|Zehen?|Tassen?|Schluck|Schuss|Spritzer|Tropfen|Handvoll|Stangen?|Kopf|Köpfe|Würfel|Zweige?|Blatt|Knollen?|Kugeln?|Schalen?|Netze?)$/;
@@ -485,7 +487,7 @@ function elWantLang(hass, config) {
   return l.startsWith("de") ? "de" : "en";
 }
 function elLoadDict() {
-  if (!EL_DICT_PROMISE) {
+  if (!EL_DICT_PROMISE && Date.now() - EL_DICT_FAIL > 60000) {
     EL_DICT_PROMISE = fetch(`${EL_BASE}/einkaufsliste-en.json?v=${EL_VERSION}`).then((r) => r.json()).then((raw) => {
       const dict = {};
       const pats = [];
@@ -500,9 +502,9 @@ function elLoadDict() {
       EL_DICT = dict;
       EL_PATTERNS = pats;
       for (const root of EL_I18N_ROOTS) elTranslateTree(root);
-    }).catch(() => { EL_DICT_PROMISE = null; });
+    }).catch(() => { EL_DICT_PROMISE = null; EL_DICT_FAIL = Date.now(); });
   }
-  return EL_DICT_PROMISE;
+  return EL_DICT_PROMISE || Promise.resolve();
 }
 function elT(text, depth = 0) {
   if (EL_LANG === "de" || !EL_DICT || text == null) return text;
@@ -557,7 +559,7 @@ function elWatch(root, keep = true) {
   if (EL_LANG === "de" && !keep) return;
   if (EL_I18N_ROOTS.has(root)) return;
   if (keep) EL_I18N_ROOTS.add(root); // Einblendungen (Anleitung, Kochen …) nicht merken – die verschwinden wieder
-  new MutationObserver((muts) => {
+  const mo = new MutationObserver((muts) => {
     if (EL_LANG === "de" || !EL_DICT) return;
     for (const mu of muts) {
       if (mu.type === "childList") mu.addedNodes.forEach((x) => elTranslateTree(x));
@@ -565,7 +567,14 @@ function elWatch(root, keep = true) {
       else elTranslateNode(mu.target);
     }
   }).observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: EL_ATTRS });
+  if (keep) EL_OBSERVERS.set(root, mo);
   elTranslateTree(root);
+}
+// 🧹 Karte wird entfernt: Beobachter abmelden und Wurzel vergessen (beim Wiederanhängen meldet sich elWatch neu an)
+function elUnwatch(root) {
+  try { EL_OBSERVERS.get(root)?.disconnect(); } catch (_) { /* egal */ }
+  EL_OBSERVERS.delete(root);
+  EL_I18N_ROOTS.delete(root);
 }
 function elUseLang(hass, config, root) {
   const lang = elWantLang(hass, config);
@@ -1797,6 +1806,7 @@ function askPin(title = "🔒 PIN eingeben") {
     const dots = ov.querySelector(".pdots"), pad = ov.querySelector(".ppad");
     const show = () => { dots.innerHTML = pin ? "●".repeat(pin.length) : "&nbsp;"; };
     const done = (v) => { ov.remove(); document.removeEventListener("keydown", onKey, true); resolve(v); };
+    ov._elClose = () => done(null); // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
     const press = (k) => {
       if (k === "⌫") pin = pin.slice(0, -1);
       else if (k === "✔") { if (pin.length >= 4) done(pin); return; }
@@ -2924,6 +2934,7 @@ function showGarTable() {
   Object.assign(bClose.style, { marginTop: "16px" });
   ov.append(bClose);
   const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+  ov._elClose = close; // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
   const onKey = (e) => { if (e.key === "Escape") close(); };
   document.addEventListener("keydown", onKey);
   bClose.onclick = close;
@@ -3002,6 +3013,17 @@ const PHOTO_QUEUE_MAX = 3 * 1024 * 1024; // so viele Foto-Daten (Zeichen) dürfe
 const QUEUE_KEY = "einkaufsliste_queue";
 const elQueue = (() => { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]"); } catch (_) { return []; } })();
 const elFlush = { busy: false };
+// 🗃️ Nicht gesendete Änderungen (echter Fehler / Eintrag ging nicht durch): nie still wegwerfen, sondern hier aufheben (höchstens 50)
+const FAILED_KEY = "einkaufsliste_queue_failed";
+const elFailed = (() => { try { const l = JSON.parse(localStorage.getItem(FAILED_KEY) || "[]"); return Array.isArray(l) ? l : []; } catch (_) { return []; } })();
+function elFailedAdd(m, reason) {
+  const e = { ...m, _failed_at: Date.now(), _reason: String(reason || "") };
+  delete e.data; // Foto-Daten nicht doppelt im Speicher halten
+  elFailed.push(e);
+  while (elFailed.length > 50) elFailed.shift();
+  try { localStorage.setItem(FAILED_KEY, JSON.stringify(elFailed)); } catch (_) { /* egal */ }
+}
+window.einkaufslisteQueueFailed = { get: () => elFailed.slice() };
 const EL_QUEUE_FINAL = new Set(["invalid", "invalid_format", "not_found", "unauthorized", "unknown_command"]); // sicher „geht nie durch“ – alles andere wird noch einmal versucht
 // 🔁 Nach einem erfolgreichen „anlegen“: vorläufige Nummer (tmp_…) in allen noch wartenden Nachrichten durch die echte ersetzen
 function elQueueRemap(tmp, real) {
@@ -3283,6 +3305,11 @@ class EinkaufslisteCard extends HTMLElement {
       this._updateLockBtn(); // 🔒 nach 10 Minuten verschwindet der Sperr-Knopf von selbst
     }, 60000);
     if (this._hass && !this._unsub && !this._subscribing && Date.now() - (this._subFailAt || 0) > 10000) this._subscribe();
+    if (this._built) { // 🔌 wieder eingehängt: was beim Entfernen abgemeldet wurde, neu anmelden
+      if (!this._tabAC && this._tabAttach) this._tabAttach();
+      if (this.shadowRoot) elWatch(this.shadowRoot);
+      if (EL_LANG !== "de" && !EL_DICT) elLoadDict();
+    }
   }
 
   // 📱 In der HA-App (nicht in der Offline-App)? Dort geht der Bildschirm nur mit der Einstellung der App an
@@ -3301,6 +3328,12 @@ class EinkaufslisteCard extends HTMLElement {
     EL_CARD_SET.delete(this);
     this._awakeStop();
     clearInterval(this._clock);
+    clearTimeout(this._menuTimer);
+    clearTimeout(this._undoTimer);
+    clearTimeout(this._catTimer);
+    try { this._tabAC?.abort(); } catch (_) { /* egal */ }
+    this._tabAC = null;
+    if (this.shadowRoot) elUnwatch(this.shadowRoot);
     if (this._unsub) { this._unsub(); this._unsub = null; }
   }
 
@@ -3409,14 +3442,14 @@ class EinkaufslisteCard extends HTMLElement {
       }
     }
     const ids = {};
-    let sent = 0, retry = false;
+    let sent = 0, retry = false, dropped = 0;
     try {
       while (elQueue.length) {
         const m = { ...elQueue[0] };
         const tmp = m._tmp;
         delete m._tmp;
         for (const k of ["item_id", "recipe_id"]) if (m[k] && ids[m[k]]) m[k] = ids[m[k]];
-        if (String(m.item_id || m.recipe_id || "").startsWith("tmp_")) { elQueue.shift(); continue; } // Eintrag ging nicht durch
+        if (String(m.item_id || m.recipe_id || "").startsWith("tmp_")) { elFailedAdd(elQueue[0], "tmp_parent_failed"); elQueue.shift(); elQueueSave(); dropped += 1; continue; } // Eintrag ging nicht durch (das Anlegen davor ist gescheitert) – aufheben + melden
         try {
           const res = await this._hass.callWS(m);
           if (tmp && res?.id) { ids[tmp] = res.id; elQueueRemap(tmp, res.id); }
@@ -3427,7 +3460,9 @@ class EinkaufslisteCard extends HTMLElement {
             q0._tries = (q0._tries || 0) + 1;
             if (q0._tries < 3) { elQueueSave(); retry = true; break; }
           }
-          // echter Fehler (z. B. Artikel inzwischen gelöscht): diesen einen überspringen
+          // echter Fehler (z. B. Artikel inzwischen gelöscht): diesen einen überspringen – aber merken und melden
+          elFailedAdd(elQueue[0], err?.code || err?.message || "error");
+          dropped += 1;
         }
         elQueue.shift();
         elQueueSave();
@@ -3439,6 +3474,7 @@ class EinkaufslisteCard extends HTMLElement {
       this._updateLive();
     }
     if (retry) setTimeout(() => this._flushQueue(), 15000);
+    if (dropped) this._toast(`⚠️ ${dropped} ${dropped === 1 ? "Änderung konnte" : "Änderungen konnten"} nicht gesendet werden`);
     if (sent && !elQueue.length) this._toast(`✅ Wieder online – ${sent} ${sent === 1 ? "Änderung" : "Änderungen"} nachgeschickt`);
   }
 
@@ -3698,18 +3734,25 @@ class EinkaufslisteCard extends HTMLElement {
       if (e.pointerType !== "mouse" || e.button !== 0) return;
       down = true; this._dragged = false; startX = e.clientX; startLeft = el.scrollLeft;
     });
-    window.addEventListener("pointermove", (e) => {
-      if (!down) return;
-      const dx = e.clientX - startX;
-      if (!this._dragged && Math.abs(dx) > 5) { this._dragged = true; el.classList.add("dragging"); }
-      if (this._dragged) el.scrollLeft = startLeft - dx;
-    });
-    window.addEventListener("pointerup", () => {
-      if (!down) return;
-      down = false;
-      el.classList.remove("dragging");
-      setTimeout(() => { this._dragged = false; }, 0);
-    });
+    // 🧹 Fenster-Listener nur solange die Karte eingehängt ist (AbortController); connectedCallback hängt sie bei Bedarf neu ein
+    this._tabAttach = () => {
+      try { this._tabAC?.abort(); } catch (_) { /* egal */ }
+      const ac = new AbortController();
+      this._tabAC = ac;
+      window.addEventListener("pointermove", (e) => {
+        if (!down) return;
+        const dx = e.clientX - startX;
+        if (!this._dragged && Math.abs(dx) > 5) { this._dragged = true; el.classList.add("dragging"); }
+        if (this._dragged) el.scrollLeft = startLeft - dx;
+      }, { signal: ac.signal });
+      window.addEventListener("pointerup", () => {
+        if (!down) return;
+        down = false;
+        el.classList.remove("dragging");
+        setTimeout(() => { this._dragged = false; }, 0);
+      }, { signal: ac.signal });
+    };
+    this._tabAttach();
   }
 
   // ---------------------------------------------------------------- Helfer
@@ -3801,7 +3844,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (ovs.length === 1) document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
       if (ov.isConnected) {
         const btn = btns.find((b) => /^\s*(✕|×)?\s*(Fertig|Beenden|Done|Finish)\b/i.test(b.textContent || ""));
-        if (btn) btn.click(); else ov.remove();
+        if (btn) btn.click(); else if (ov._elClose) ov._elClose(); else ov.remove();
       }
       return true;
     }
@@ -7802,6 +7845,7 @@ class EinkaufslisteCard extends HTMLElement {
       try { const src = await this._photoData(key, idx); if (mine === seq) img.src = src; } catch (_) { if (mine === seq) close(); }
     };
     const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
+    ov._elClose = close; // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
     const onKey = (e) => {
       if (e.key === "Escape") close();
       if (e.key === "ArrowLeft") { idx--; show(); }
@@ -8136,6 +8180,7 @@ class EinkaufslisteCard extends HTMLElement {
     Object.assign(bClose.style, { marginTop: "14px" });
     ov.append(bClose);
     const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+    ov._elClose = close; // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
     const onKey = (e) => { if (e.key === "Escape") close(); };
     document.addEventListener("keydown", onKey);
     bClose.onclick = close;
@@ -8398,6 +8443,7 @@ class EinkaufslisteCard extends HTMLElement {
     };
     let awake = null;
     const close = () => { awake?.then((a) => a.stop()).catch(() => {}); ov.remove(); document.removeEventListener("keydown", onKey); };
+    ov._elClose = close; // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
     awake = elKeepAwake(ov, this._inHaApp()); // 💡 Bildschirm bleibt beim Kochen an
     awake.then((a) => { { this._toast(a.mode === "lock" ? "💡 Bildschirm bleibt an" : a.mode === "video" ? "💡 Bildschirm bleibt an (Video-Trick) – geht er trotzdem aus, sag Bescheid" : this._awakeHint()); } }).catch(() => {});
     const onKey = (e) => {

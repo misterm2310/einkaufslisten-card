@@ -7,6 +7,7 @@ das gewählte Postfach, wird jede Zeile ein Artikel – genau wie beim „Text e
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
 import html
@@ -18,6 +19,8 @@ from email.utils import parseaddr
 from typing import Any
 
 from homeassistant.core import Event, HomeAssistant, callback
+
+from .netutil import cancel_tasks, track_task
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -157,21 +160,28 @@ class MailImport:
         self.manager = manager
         self._unsub = None
         self._seen: list[str] = []
+        self._tasks: set[asyncio.Task] = set()
+        self._stopped = False
 
     @callback
     def start(self) -> None:
         self.stop()
+        self._stopped = False
         if self.manager.mail_import:
             self._unsub = self.hass.bus.async_listen(EVENT_IMAP, self._on_mail)
 
     @callback
     def stop(self) -> None:
+        self._stopped = True
+        cancel_tasks(self._tasks)
         if self._unsub:
             self._unsub()
             self._unsub = None
 
     @callback
     def _on_mail(self, event: Event) -> None:
+        # ⚠️ Der Absender („From“) wird NICHT geprüft/beglaubigt: Wer die Adresse eines erlaubten Absenders fälscht,
+        # kann Artikel auf die Liste setzen. Darum nur Postfächer verwenden, die Fälschungen (SPF/DKIM) selbst aussortieren.
         cfg = self.manager.mail_import
         data = event.data
         if not cfg or data.get("entry_id") != cfg.get("entry_id"):
@@ -194,7 +204,7 @@ class MailImport:
         if address not in allowed:
             _LOGGER.info("📧 Mail von %s ignoriert – steht nicht bei den erlaubten Absendern", address or "?")
             return
-        self.hass.async_create_task(self._import(data, cfg, name, address))
+        track_task(self.hass, self._tasks, self._import(data, cfg, name, address))
 
     async def _body(self, data: dict[str, Any], entry_id: str) -> str | None:
         """📬 Mailtext selbst holen, wenn er fehlt oder ohne Zeilenumbrüche ankommt (z. B. Samsung-Mail-App)."""
@@ -238,7 +248,7 @@ class MailImport:
     async def _import(self, data: dict[str, Any], cfg: dict[str, Any], name: str, address: str) -> None:
         subject = data.get("subject")
         body = await self._body(data, cfg["entry_id"])
-        if self.manager.mail_import is not cfg:
+        if self._stopped or self.manager.mail_import is not cfg:
             return
         # Nur der Betreff ist ein Geschäft? Dann ist er keine Einkaufszeile
         text = mail_text(body, None if _find_store(self.manager, subject or "", whole=False) else subject)
@@ -254,7 +264,8 @@ class MailImport:
                 added += import_text(self.manager, part, store_id).get("added", 0)
         if added:
             cfg["count"] = int(cfg.get("count", 0)) + added
-            self.manager._changed()
+            if not self._stopped:
+                self.manager._changed()
             after = cfg.get("after", "keep")
             if after in ("seen", "delete") and data.get("uid"):  # 📬 Mail danach als gelesen markieren oder löschen
                 await self._after(after, cfg["entry_id"], str(data["uid"]))

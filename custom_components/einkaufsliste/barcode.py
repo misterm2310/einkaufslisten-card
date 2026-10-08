@@ -139,7 +139,8 @@ def _product_name(product: dict[str, Any]) -> tuple[str | None, str | None]:
             or ""
         ).split()
     )
-    brand = (product.get("brands") or "").split(",")[0].strip()
+    brands = product.get("brands")
+    brand = (brands if isinstance(brands, str) else "").split(",")[0].strip()
     if not name and not brand:
         return None, None
     if not name:
@@ -154,6 +155,12 @@ def _product_name(product: dict[str, Any]) -> tuple[str | None, str | None]:
         if not name or name.lower() == b:
             return brand, None
     return name, brand or None
+
+
+def _check_privacy(manager: Any) -> None:
+    """🔒 Datenschutz an: nichts ins Internet schicken (auch nicht, wenn jemand die Schnittstelle direkt aufruft)."""
+    if getattr(manager, "privacy", False):
+        raise ValueError("🔒 Der Datenschutz ist an – deshalb wird nichts aus dem Internet geholt.")
 
 
 async def async_lookup(hass: HomeAssistant, manager: Any, code: str, fresh: bool = False) -> dict[str, Any]:
@@ -179,6 +186,7 @@ async def async_lookup(hass: HomeAssistant, manager: Any, code: str, fresh: bool
             else None,
         }
 
+    _check_privacy(manager)
     session = async_get_clientsession(hass)
     for source, base in SOURCES:
         url = f"{base}/api/v2/product/{code}.json"
@@ -198,11 +206,14 @@ async def async_lookup(hass: HomeAssistant, manager: Any, code: str, fresh: bool
             continue
         if not isinstance(data, dict) or data.get("status") != 1:
             continue
-        product = data.get("product") or {}
+        product = data.get("product")
+        if not isinstance(product, dict):
+            continue
         name, brand = _product_name(product)
         if not name:
             continue
-        pl_store, pl_name = private_label_store(manager, product.get("brands"), product.get("stores_tags"))
+        pl_store, pl_name = private_label_store(
+            manager, product["brands"] if isinstance(product.get("brands"), str) else None, product.get("stores_tags"))
         return {
             "code": code,
             "found": True,
@@ -263,7 +274,7 @@ async def async_product_type(hass: HomeAssistant, code: str, name: str | None = 
         reached = True
         if not isinstance(data, dict) or data.get("status") != 1:
             continue
-        got = product_type(data.get("product") or {}, name)
+        got = product_type(data["product"] if isinstance(data.get("product"), dict) else {}, name)
         if got:
             return got
     return None if reached else False
@@ -331,6 +342,8 @@ async def _download_photo(hass: HomeAssistant, code: str) -> bytes | None:
 async def async_auto_photo(hass: HomeAssistant, manager: Any, code: str, name: str) -> bool:
     """📸 Produktfoto aus der Datenbank holen – aber nur, wenn es noch kein eigenes Foto gibt."""
     code = _clean_code(code)
+    if getattr(manager, "privacy", False):  # 🔒 läuft im Hintergrund: einfach nichts holen
+        return False
     if not code or not name or manager.photos.get(name.strip().lower()):
         return False
     raw = await _download_photo(hass, code)
@@ -361,6 +374,7 @@ async def async_refresh_photo(hass: HomeAssistant, manager: Any, key: str, only_
     only_missing=True („Alle Fotos neu holen“): ganze Fotos bleiben unangetastet, es kommt nichts doppelt dazu –
     nur abgeschnittene Fotos fliegen raus, und ein neues Foto kommt nur, wenn danach keins mehr da ist.
     """
+    _check_privacy(manager)
     key = (key or "").strip().lower()
     codes = manager.barcodes_for(key)
     if not codes:
@@ -409,7 +423,9 @@ def _tags(tags: list[str] | None, names: dict[str, str]) -> list[str]:
     return out
 
 
-async def async_product_info(hass: HomeAssistant, code: str) -> dict[str, Any]:
+async def async_product_info(hass: HomeAssistant, code: str, manager: Any = None) -> dict[str, Any]:
+    if manager is not None:
+        _check_privacy(manager)
     code = _clean_code(code)
     if not code:
         raise ValueError("Zu diesem Produkt ist kein Barcode hinterlegt.")
@@ -429,14 +445,16 @@ async def async_product_info(hass: HomeAssistant, code: str) -> dict[str, Any]:
             continue
         if not isinstance(data, dict) or data.get("status") != 1:
             continue
-        p = data.get("product") or {}
+        p = data.get("product")
+        if not isinstance(p, dict):
+            continue
         grade = str(p.get("nutriscore_grade") or "").lower()
         return {
             "found": True,
             "code": code,
             "source": source,
             "name": _product_name(p)[0],
-            "brand": (p.get("brands") or "").split(",")[0].strip() or None,
+            "brand": (p["brands"] if isinstance(p.get("brands"), str) else "").split(",")[0].strip() or None,
             "quantity": p.get("quantity") or None,
             "nutriscore": grade.upper() if grade in ("a", "b", "c", "d", "e") else None,
             "nova": p.get("nova_group") or None,

@@ -549,7 +549,7 @@ async def ws_recipe_import(hass, connection, msg):
 )
 @websocket_api.async_response
 async def ws_barcode_info(hass, connection, msg):
-    await _run_async(hass, connection, msg, lambda m: async_product_info(hass, msg["code"]))
+    await _run_async(hass, connection, msg, lambda m: async_product_info(hass, msg["code"], m))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/products"})

@@ -28,6 +28,8 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 BACKUP_FORMAT = "einkaufsliste-sicherung"
 MAX_BACKUP = 300 * 1024 * 1024  # 300 MB – reicht für sehr viele Fotos
+MAX_UNPACKED = 400 * 1024 * 1024  # 400 MB – so viel darf eine Sicherung ausgepackt höchstens groß sein (Zip-Bomben)
+PHOTO_ID = re.compile(r"[0-9a-f]{6,64}")
 MAX_RECIPES = 500
 
 # ------------------------------------------------------------------ 💾 Sicherung
@@ -55,6 +57,28 @@ async def async_export(manager: EinkaufslisteManager) -> bytes:
     return await manager.hass.async_add_executor_job(build)
 
 
+def _validate_backup(data: dict[str, Any]) -> None:
+    """Prüft die Daten einer Sicherung komplett (wirft ValueError, ändert nichts)."""
+    broken = ValueError("Die Sicherung ist beschädigt.")
+    for key in ("stores", "categories", "items", "recipes"):
+        val = data.get(key, [])
+        if not isinstance(val, list) or not all(isinstance(x, dict) for x in val):
+            raise broken
+    photos = data.get("photos", {})
+    if not isinstance(photos, dict):
+        raise broken
+    for entry in photos.values():
+        if not isinstance(entry, dict):
+            raise broken
+        more = entry.get("more", [])
+        db = entry.get("db", [])
+        if not isinstance(more, list) or not isinstance(db, list):
+            raise broken
+        for pid in (entry.get("id"), *more, *db):
+            if not isinstance(pid, str) or not PHOTO_ID.fullmatch(pid):
+                raise ValueError("Die Sicherung enthält ungültige Foto-Kennungen und wurde nicht eingespielt.")
+
+
 async def async_restore(manager: EinkaufslisteManager, raw: bytes) -> dict[str, Any]:
     """Sicherung einspielen: ersetzt ALLES (Liste, Rezepte, Produkte, Einstellungen der Liste, Fotos)."""
 
@@ -64,6 +88,9 @@ async def async_restore(manager: EinkaufslisteManager, raw: bytes) -> dict[str, 
         except zipfile.BadZipFile as err:
             raise ValueError("Das ist keine Sicherung der Einkaufsliste (keine Zip-Datei).") from err
         with zf:
+            infos = zf.infolist()
+            if sum(i.file_size for i in infos) > MAX_UNPACKED:
+                raise ValueError("Die Sicherung ist ausgepackt zu groß (mehr als 400 MB).")
             try:
                 meta = json.loads(zf.read("data.json").decode("utf-8"))
             except (KeyError, ValueError) as err:
@@ -76,12 +103,10 @@ async def async_restore(manager: EinkaufslisteManager, raw: bytes) -> dict[str, 
         return meta, photos
 
     meta, photos = await manager.hass.async_add_executor_job(read)
-    if meta.get("format") != BACKUP_FORMAT or not isinstance(meta.get("data"), dict):
+    if not isinstance(meta, dict) or meta.get("format") != BACKUP_FORMAT or not isinstance(meta.get("data"), dict):
         raise ValueError("Das ist keine Sicherung der Einkaufsliste.")
     data = meta["data"]
-    for key in ("stores", "categories", "items", "recipes"):
-        if not isinstance(data.get(key, []), list):
-            raise ValueError("Die Sicherung ist beschädigt.")
+    _validate_backup(data)  # 🛡️ ALLES prüfen, bevor irgendetwas überschrieben wird
 
     def write_photos() -> None:
         manager.photo_dir.mkdir(parents=True, exist_ok=True)
@@ -97,8 +122,15 @@ async def async_restore(manager: EinkaufslisteManager, raw: bytes) -> dict[str, 
         else:  # ohne Schlüssel kann nichts laufen -> ausschalten statt ins Leere zu laufen
             g = {**g, "api_key": "", "a_on": False, "b_on": False, "links": {}}
         data = {**data, "grocy": g}
-    await manager._store.async_save(data)
-    await manager.async_load()
+    safety = manager._to_storage()  # 🛟 Sicherheitskopie der aktuellen Daten – bei einem Fehler geht alles zurück
+    try:
+        await manager._store.async_save(data)
+        await manager.async_load()
+    except Exception as err:  # noqa: BLE001 – egal was schiefgeht: die alten Daten müssen heil bleiben
+        _LOGGER.warning("Sicherung konnte nicht eingespielt werden, alte Daten werden wiederhergestellt: %s", err)
+        await manager._store.async_save(safety)
+        await manager.async_load()
+        raise ValueError("Die Sicherung ist beschädigt und wurde nicht eingespielt. Die bisherigen Daten sind unverändert.") from err
     if getattr(manager, "sync", None) is not None:
         manager.sync.start()  # 🔁 gewählte To-do-Liste aus der Sicherung übernehmen
     if getattr(manager, "mail", None) is not None:

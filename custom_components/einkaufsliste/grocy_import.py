@@ -1,6 +1,8 @@
 """🥫 Produkte aus Grocy holen (REST-API von Grocy, Anmeldung mit dem Header GROCY-API-KEY).
 
-Der API-Schlüssel wird nur für diese eine Abfrage benutzt und NICHT gespeichert.
+Der einmalige Import (Vorschau/Import) benutzt den API-Schlüssel nur für diese eine Abfrage und speichert ihn nicht.
+Ausnahme: Schaltet man den Dauerabgleich ein (grocy_sync.py), wird der Schlüssel auf dem Server in den Einstellungen
+der Einkaufsliste gespeichert (manager.grocy). Er wird nie an die Karte geschickt und nicht in Sicherungen exportiert.
 Übernommen werden Name, Barcodes und die Produktgruppe (als Kategorie) – kein Lagerbestand, keine Standorte.
 """
 

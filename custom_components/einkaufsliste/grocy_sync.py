@@ -10,6 +10,7 @@ Grocy kennt keine Push-Meldungen, deshalb schauen wir alle 3 Minuten nach. Ände
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import logging
 import re
@@ -24,6 +25,7 @@ from homeassistant.helpers.event import async_call_later, async_track_time_inter
 from homeassistant.util import dt as dt_util
 
 from .const import SIGNAL_UPDATED
+from .netutil import cancel_tasks, track_task
 from .grocy_import import _get, _request, async_fetch, clean_base, import_rows
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,21 +48,26 @@ class GrocySync:
         self._again = False
         self._products: dict[str, str] = {}  # Grocy-Produkt-ID -> Name (zwischengemerkt)
         self._products_at = 0.0
+        self._tasks: set[asyncio.Task] = set()
+        self._stopped = False
 
     # ------------------------------------------------------------------ Start / Stop
     @callback
     def start(self) -> None:
         self.stop()
+        self._stopped = False
         cfg = self.manager.grocy
         if not (cfg.get("url") and cfg.get("api_key") and (cfg.get("a_on") or cfg.get("b_on"))):
             return
         self._unsub = async_track_time_interval(self.hass, self._tick, timedelta(minutes=POLL_MINUTES))
         if cfg.get("a_on") and cfg.get("a_mode", "keep") != "move":  # Änderungen bei uns gleich nach Grocy
             self._unsub_list = async_dispatcher_connect(self.hass, SIGNAL_UPDATED, self._on_list_change)
-        self.hass.async_create_task(self.run())
+        track_task(self.hass, self._tasks, self.run())
 
     @callback
     def stop(self) -> None:
+        self._stopped = True
+        cancel_tasks(self._tasks)
         for name in ("_unsub", "_unsub_list", "_debounce"):
             unsub = getattr(self, name)
             if unsub:
@@ -69,7 +76,7 @@ class GrocySync:
 
     @callback
     def _tick(self, _now: Any) -> None:
-        self.hass.async_create_task(self.run())
+        track_task(self.hass, self._tasks, self.run())
 
     @callback
     def _on_list_change(self) -> None:
@@ -81,7 +88,7 @@ class GrocySync:
         @callback
         def _fire(_now: Any) -> None:
             self._debounce = None
-            self.hass.async_create_task(self.run())
+            track_task(self.hass, self._tasks, self.run())
 
         self._debounce = async_call_later(self.hass, 2.0, _fire)
 
@@ -131,7 +138,7 @@ class GrocySync:
             cfg["count_a"] = int(cfg.get("count_a", 0)) + a
         if b:
             cfg["count_b"] = int(cfg.get("count_b", 0)) + b
-        if a or b or old.get("ok") != ok or old.get("msg") != msg:
+        if (a or b or old.get("ok") != ok or old.get("msg") != msg) and not self._stopped:
             self.manager._changed()
 
     # ------------------------------------------------------------------ 📦 B: neue Produkte
@@ -177,6 +184,10 @@ class GrocySync:
         names = await self._names(session, base, key, {str(r["product_id"]) for r in rows if r.get("product_id")})
         by_id = {str(r["id"]): r for r in rows if r.get("id") is not None}
         m = self.manager
+        marker = f"{list_id}|{mode}"
+        if cfg.get("links_for") not in (None, marker):  # Liste/Art gewechselt: alte Verknüpfungen passen nicht mehr
+            cfg["links"] = {}
+        cfg["links_for"] = marker
         links: dict[str, dict[str, Any]] = cfg.setdefault("links", {})  # Grocy-Zeile -> {"item", "done"}
         items = {i["id"]: i for i in m.items}
         store_id = cfg.get("a_store_id") if m.store_by_id(cfg.get("a_store_id")) else None
@@ -284,6 +295,6 @@ class GrocySync:
         if len(links) > 1000:
             for rid in list(links)[: len(links) - 1000]:
                 del links[rid]
-        if changed or added:
+        if (changed or added) and not self._stopped:
             m._changed()
         return added

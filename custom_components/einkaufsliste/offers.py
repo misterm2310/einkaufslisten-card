@@ -15,6 +15,7 @@ import logging
 import re
 from datetime import timedelta
 from typing import Any
+from urllib.parse import urlparse
 
 import aiohttp
 
@@ -22,6 +23,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
 from homeassistant.util import dt as dt_util
+
+from .netutil import cancel_tasks, track_task
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,6 +51,17 @@ _KEY_PATTERNS = (
 def domain(country: str | None) -> str:
     """marktguru.at für Österreich, sonst marktguru.de."""
     return "at" if str(country or "").upper() == "AT" else "de"
+
+
+def trusted_url(url: str, dom: str) -> bool:
+    """Nur https-Adressen von marktguru.<dom> (und Unter-Domains) – der Rechnername wird wirklich geparst."""
+    try:
+        parsed = urlparse(url)
+        host = (parsed.hostname or "").lower()
+    except ValueError:
+        return False
+    base = f"marktguru.{dom}"
+    return parsed.scheme == "https" and (host == base or host.endswith("." + base))
 
 
 def key_candidates(text: str) -> list[str]:
@@ -144,10 +158,13 @@ class Offers:
         self._unsub = None
         self._first = None
         self._busy = False
+        self._tasks: set[asyncio.Task] = set()
+        self._stopped = False
 
     @callback
     def start(self) -> None:
         self.stop()
+        self._stopped = False
         cfg = self.manager.offers_cfg
         if not cfg or not cfg.get("enabled"):
             return
@@ -156,6 +173,8 @@ class Offers:
 
     @callback
     def stop(self) -> None:
+        self._stopped = True
+        cancel_tasks(self._tasks)
         for attr in ("_unsub", "_first"):
             fn = getattr(self, attr)
             if fn:
@@ -168,9 +187,10 @@ class Offers:
         cfg = self.manager.offers_cfg or {}
         last = cfg.get("last")
         hours = cfg.get("hours", 6)
-        if last and dt_util.utcnow() - dt_util.parse_datetime(last) < timedelta(hours=hours):
+        last_dt = dt_util.parse_datetime(last) if isinstance(last, str) else None
+        if last_dt is not None and dt_util.utcnow() - last_dt < timedelta(hours=hours):
             return
-        self.hass.async_create_task(self.run())
+        track_task(self.hass, self._tasks, self.run())
 
     async def _get(self, session: aiohttp.ClientSession, url: str, **kw: Any) -> aiohttp.ClientResponse:
         async with asyncio.timeout(15):
@@ -195,7 +215,7 @@ class Offers:
         cands = key_candidates(html)
         for src in _SCRIPT.findall(html)[:MAX_SCRIPTS]:
             url = "https:" + src if src.startswith("//") else base + src if src.startswith("/") else src
-            if not url.startswith(("https://www.marktguru.", "https://static.marktguru.", "https://cdn.marktguru.", base)):
+            if not trusted_url(url, dom):
                 continue
             try:
                 resp = await self._get(session, url, headers=_BROWSER)
@@ -224,6 +244,8 @@ class Offers:
 
     async def search(self, query: str) -> list[dict[str, Any]]:
         """🔎 Angebote zu einem beliebigen Produkt (beim Tippen „🏷️ Angebote für … anzeigen“)."""
+        if self.manager.privacy:  # 🔒 Datenschutz an: nichts an Marktguru schicken
+            raise ValueError("🔒 Der Datenschutz ist an – deshalb werden keine Angebote aus dem Internet geholt.")
         cfg = self.manager.offers_cfg
         query = str(query or "").strip()[:60]
         if not cfg or not cfg.get("enabled") or len(query) < 2:
@@ -256,7 +278,7 @@ class Offers:
     async def run(self, force: bool = False) -> dict[str, Any]:
         """Einmal alle offenen Artikel nachschlagen. Gibt den Stand zurück."""
         cfg = self.manager.offers_cfg
-        if not cfg or not cfg.get("enabled") or self._busy:
+        if not cfg or not cfg.get("enabled") or self._busy or self.manager.privacy:  # 🔒 Datenschutz: nichts abfragen
             return {"ok": False}
         self._busy = True
         try:
@@ -347,7 +369,8 @@ class Offers:
         if not key:
             cfg["ok"] = False
             cfg["error"] = "Marktguru ist gerade nicht erreichbar oder hat etwas geändert."
-            m._changed()
+            if not self._stopped:
+                m._changed()
             return {"ok": False}
         names: list[str] = []
         first: dict[str, dict[str, Any]] = {}
@@ -383,6 +406,8 @@ class Offers:
                 if alt:
                     found[name.lower()] = alt
             await asyncio.sleep(1)  # sparsam: eine Anfrage pro Sekunde
+        if self._stopped:  # während der Abfragen beendet/neu gestartet: nichts mehr speichern
+            return {"ok": False}
         m.offers_data = found
         cfg["ok"] = True
         cfg["error"] = None

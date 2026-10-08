@@ -7,6 +7,7 @@ sofort in die Einkaufsliste und wird in der To-do-Liste wieder gelöscht. Ganz o
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -16,6 +17,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 
 from .const import SIGNAL_UPDATED
+from .netutil import cancel_tasks, track_task
 
 # Wie abgeglichen wird:
 #   move = herüberholen und dort löschen (Alexa ist nur der Briefkasten)
@@ -59,20 +61,25 @@ class TodoSync:
         self._retry = None
         self._unsub_list = None
         self._debounce = None
+        self._tasks: set[asyncio.Task] = set()
+        self._stopped = False
 
     @callback
     def start(self) -> None:
         self.stop()
+        self._stopped = False
         cfgs = self.manager.todo_syncs
         if not cfgs:
             return
         self._unsub = async_track_state_change_event(self.hass, [c["entity_id"] for c in cfgs], self._on_change)
         if any(c.get("mode", "move") != "move" for c in cfgs):  # 🔗 Änderungen in der Einkaufsliste auch dorthin
             self._unsub_list = async_dispatcher_connect(self.hass, SIGNAL_UPDATED, self._on_list_change)
-        self.hass.async_create_task(self.run())  # gleich einmal nachschauen
+        track_task(self.hass, self._tasks, self.run())  # gleich einmal nachschauen
 
     @callback
     def stop(self) -> None:
+        self._stopped = True
+        cancel_tasks(self._tasks)
         if self._unsub:
             self._unsub()
             self._unsub = None
@@ -94,7 +101,7 @@ class TodoSync:
         cfg = next((c for c in self.manager.todo_syncs if c["entity_id"] == event.data.get("entity_id")), None)
         if cfg is None or (str(new.state) == "0" and cfg.get("mode", "move") == "move"):
             return
-        self.hass.async_create_task(self.run())
+        track_task(self.hass, self._tasks, self.run())
 
     @callback
     def _on_list_change(self) -> None:
@@ -106,7 +113,7 @@ class TodoSync:
         @callback
         def _fire(_now: Any) -> None:
             self._debounce = None
-            self.hass.async_create_task(self.run())
+            track_task(self.hass, self._tasks, self.run())
 
         self._debounce = async_call_later(self.hass, 1.5, _fire)
 
@@ -167,7 +174,8 @@ class TodoSync:
                 done.append(entry.get("uid") or text)
         if added:
             cfg["count"] = int(cfg.get("count", 0)) + added
-            self.manager._changed()
+            if not self._stopped:
+                self.manager._changed()
         if done:
             try:  # erst eintragen, dann dort löschen – so geht nichts verloren
                 await self.hass.services.async_call(
@@ -185,7 +193,7 @@ class TodoSync:
         @callback
         def _fire(_now: Any) -> None:
             self._retry = None
-            self.hass.async_create_task(self.run())
+            track_task(self.hass, self._tasks, self.run())
 
         self._retry = async_call_later(self.hass, 300, _fire)
 
@@ -320,6 +328,6 @@ class TodoSync:
                 del links[uid]
         if added:
             cfg["count"] = int(cfg.get("count", 0)) + added
-        if changed or added:
+        if (changed or added) and not self._stopped:
             m._changed()
         return added

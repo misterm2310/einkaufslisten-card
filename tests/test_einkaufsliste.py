@@ -3910,3 +3910,227 @@ async def test_komma_im_namen_bleibt_ein_produkt(hass, setup):
     m = mgr(hass)
     it = m.add_item("Sandwichscheiben, Weizen")
     assert len(m.items) == 1 and "Weizen" in it["name"]
+
+
+# ---------------------------------------------------------------- Review-Fixes (Python-Seite)
+async def test_grocy_links_cleared_on_list_or_mode_change(hass, setup, aioclient_mock):
+    """🔗 Wechselt Liste oder Abgleich-Art, werden die Verknüpfungen verworfen (sonst: „in Grocy gelöscht“ -> abgehakt)."""
+    m = mgr(hass)
+    base = "http://g:9283/api/objects"
+    aioclient_mock.get(f"{base}/shopping_list", json=[])
+    aioclient_mock.get(f"{base}/products", json=[])
+    item = m.add_item("Bananen")
+    with patch("custom_components.einkaufsliste.grocy_sync.GrocySync.start"):
+        m.set_grocy(url="g:9283", api_key="K", list_id=1, a_on=True, a_mode="keep")
+        m.grocy["links"] = {"10": {"item": item["id"], "done": False}}
+        m.set_grocy(url="g:9283", api_key="", list_id=1, a_on=True, a_mode="keep")  # nichts geändert
+        assert "10" in m.grocy["links"]
+        m.set_grocy(url="g:9283", api_key="", list_id=2, a_on=True, a_mode="keep")  # andere Liste
+        assert not m.grocy.get("links")
+        m.grocy["links"] = {"10": {"item": item["id"], "done": False}}
+        m.set_grocy(url="g:9283", api_key="", list_id=2, a_on=True, a_mode="sync")  # andere Art
+        assert not m.grocy.get("links")
+    # Sicherheitsnetz im Abgleich selbst: Markierung passt nicht -> Verknüpfungen weg, Artikel bleibt offen
+    m.grocy.update(links={"10": {"item": item["id"], "done": False}}, links_for="9|keep", a_mode="keep", list_id=2)
+    await m.grocy_sync.run()
+    assert m.grocy["links"] == {} and not next(i for i in m.items if i["id"] == item["id"])["checked"]
+
+
+async def test_pin_bruteforce_lock(hass, setup, hass_ws_client) -> None:
+    """🛡️ 5 falsche PINs -> 60 s Sperre (pin/check und alte PIN bei pin/set), danach geht es wieder."""
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    m.set_pin("2310")
+    now = [1000.0]
+    with patch("custom_components.einkaufsliste.manager._monotonic", lambda: now[0]):
+        for n in range(5):
+            await client.send_json({"id": n + 1, "type": "einkaufsliste/pin/check", "pin": "0000"})
+            assert (await client.receive_json())["result"] == {"ok": False}
+        await client.send_json({"id": 10, "type": "einkaufsliste/pin/check", "pin": "2310"})  # richtig, aber gesperrt
+        res = await client.receive_json()
+        assert not res["success"] and "Zu viele" in res["error"]["message"]
+        await client.send_json({"id": 11, "type": "einkaufsliste/pin/set", "pin": "9999", "old": "2310"})
+        assert not (await client.receive_json())["success"]
+        now[0] += 61
+        await client.send_json({"id": 12, "type": "einkaufsliste/pin/check", "pin": "2310"})
+        assert (await client.receive_json())["result"] == {"ok": True}
+        # richtige PIN setzt den Zähler zurück
+        for n in range(4):
+            assert m.check_pin("0000") is False
+        assert m.check_pin("2310") is True
+        for n in range(4):
+            assert m.check_pin("0000") is False
+        assert m.check_pin("2310") is True
+
+
+def _zip_backup(data_json: bytes | str, extra: dict[str, bytes] | None = None) -> bytes:
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("data.json", data_json)
+        for name, blob in (extra or {}).items():
+            zf.writestr(name, blob)
+    return buf.getvalue()
+
+
+async def test_backup_restore_validation(hass, setup, hass_client, hass_read_only_access_token) -> None:
+    """🛡️ Kaputte/manipulierte Sicherung: klare Fehlermeldung, alte Daten bleiben unverändert; Nicht-Admin darf nicht."""
+    import json as _json
+    from custom_components.einkaufsliste import transfer
+    m = mgr(hass)
+    m.add_item("Bleibt")
+    client = await hass_client()
+
+    def wrap(data):
+        return _json.dumps({"format": transfer.BACKUP_FORMAT, "version": "x", "data": data})
+
+    for data in ({"items": [1]}, {"recipes": ["x"]}, {"stores": {"a": 1}}, {"photos": {"milch": {"id": "../../x"}}},
+                 {"photos": {"milch": {"id": "abcdef", "more": ["../../x"]}}}, {"photos": {"milch": {"id": "abcdef", "db": [5]}}},
+                 {"photos": {"milch": "kein dict"}}):
+        resp = await client.post("/api/einkaufsliste/sicherung", data=_zip_backup(wrap(data)))
+        body = await resp.json()
+        assert resp.status == 400 and body["error"], data
+        assert [i["name"] for i in m.items] == ["Bleibt"], data
+    # kein JSON-Objekt / kaputtes JSON
+    for raw in ("[1,2]", "{kaputt"):
+        resp = await client.post("/api/einkaufsliste/sicherung", data=_zip_backup(raw))
+        assert resp.status == 400
+    assert [i["name"] for i in m.items] == ["Bleibt"]
+    # nichts Verdächtiges auf die Platte geschrieben
+    assert not list(m.photo_dir.parent.glob("x*"))
+    # Nicht-Admin
+    ro = await hass_client(hass_read_only_access_token)
+    good = _zip_backup(wrap({"items": []}))
+    assert (await ro.post("/api/einkaufsliste/sicherung", data=good)).status == 403
+    assert [i["name"] for i in m.items] == ["Bleibt"]
+
+
+async def test_backup_restore_size_cap_and_rollback(hass, setup) -> None:
+    """🛡️ Zu große Sicherung (ausgepackt) wird abgelehnt; scheitert das Laden, werden die alten Daten zurückgeholt."""
+    import json as _json
+    from custom_components.einkaufsliste import transfer
+    m = mgr(hass)
+    m.add_item("Alt")
+    good = _zip_backup(_json.dumps({"format": transfer.BACKUP_FORMAT, "data": {"items": []}}))
+    with patch.object(transfer, "MAX_UNPACKED", 10), pytest.raises(ValueError, match="zu groß"):
+        await transfer.async_restore(m, good)
+    assert [i["name"] for i in m.items] == ["Alt"]
+    # Laden der neuen Daten geht schief -> Rollback
+    real = type(m).async_load
+    calls = {"n": 0}
+
+    async def flaky(self):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("kaputt")
+        await real(self)
+
+    with patch.object(type(m), "async_load", flaky), pytest.raises(ValueError, match="unverändert"):
+        await transfer.async_restore(m, good)
+    assert calls["n"] == 2 and [i["name"] for i in m.items] == ["Alt"]
+
+
+async def test_stop_cancels_background_tasks(hass, setup) -> None:
+    """🧹 stop() bricht laufende Hintergrund-Aufgaben ab (Grocy, To-do, Mail, Angebote)."""
+    import asyncio
+    from custom_components.einkaufsliste.grocy_sync import GrocySync
+    from custom_components.einkaufsliste.mail_import import MailImport
+    from custom_components.einkaufsliste.offers import Offers
+    from custom_components.einkaufsliste.todo_sync import TodoSync
+    from custom_components.einkaufsliste.netutil import track_task
+    m = mgr(hass)
+
+    async def hang(*_a, **_k):
+        await asyncio.Event().wait()
+
+    # Grocy: start() startet run() als gemerkte Aufgabe
+    m.grocy = {"url": "http://g", "api_key": "K", "a_on": True, "a_mode": "keep"}
+    with patch.object(GrocySync, "run", hang):
+        m.grocy_sync.start()
+        await asyncio.sleep(0)
+        (task,) = list(m.grocy_sync._tasks)
+        assert not task.done()
+        m.grocy_sync.stop()
+        await asyncio.sleep(0)
+        assert task.cancelled() and not m.grocy_sync._tasks and m.grocy_sync._stopped
+    m.grocy = {}
+    for obj in (m.sync, m.mail, m.offers):
+        t = track_task(hass, obj._tasks, hang())
+        await asyncio.sleep(0)
+        obj.stop()
+        await asyncio.sleep(0)
+        assert t.cancelled() and obj._stopped, type(obj).__name__
+    assert isinstance(m.sync, TodoSync) and isinstance(m.mail, MailImport) and isinstance(m.offers, Offers)
+
+
+async def test_offers_small_fixes(hass, setup, aioclient_mock) -> None:
+    """🏷️ Kaputtes „last“-Datum bricht nichts, Skript-Adressen werden über den Rechnernamen geprüft, Datenschutz sperrt."""
+    from custom_components.einkaufsliste.offers import trusted_url
+    assert trusted_url("https://www.marktguru.de/app.js", "de")
+    assert trusted_url("https://cdn.marktguru.de/x.js", "de") and trusted_url("https://marktguru.de/x", "de")
+    for bad in ("http://www.marktguru.de/x.js", "https://marktguru.de.evil.com/x.js", "https://evil.com/?https://www.marktguru.de/",
+                "https://www.marktguru.de@evil.com/x.js", "https://evilmarktguru.de/x.js", "https://www.marktguru.at/x.js", "//evil.com", ""):
+        assert not trusted_url(bad, "de"), bad
+    m = mgr(hass)
+    m.offers_cfg = {"enabled": True, "zip": "48565", "key": "K", "stores": [], "hours": 6, "last": "kein datum"}
+    with patch.object(type(m.offers), "run") as run:
+        m.offers._tick()
+        await hass.async_block_till_done()
+    assert run.called
+    # Datenschutz an: nichts ins Internet
+    m.set_privacy(True)
+    with pytest.raises(ValueError, match="Datenschutz"):
+        await m.offers.search("Butter")
+    assert await m.offers.run() == {"ok": False}
+    assert aioclient_mock.call_count == 0
+
+
+async def test_privacy_blocks_internet_lookups(hass, setup, hass_ws_client, aioclient_mock) -> None:
+    """🔒 Datenschutz an: Barcode-Suche (Internet), Foto-Neuholen, Produkt-Infos und Auto-Foto sind serverseitig gesperrt."""
+    from custom_components.einkaufsliste.barcode import async_auto_photo
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    m.barcodes["4008400402222"] = {"name": "Bekannt", "note": None}
+    m.set_privacy(True)
+    # Gemerkte Barcodes gehen weiter (kein Internet nötig) – so bricht die Karte nicht
+    await client.send_json({"id": 1, "type": "einkaufsliste/barcode/lookup", "code": "4008400402222"})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["found"] and res["result"]["source"] == "gemerkt"
+    for n, msg in enumerate([{"type": "einkaufsliste/barcode/lookup", "code": "4008400402222", "fresh": True},
+                             {"type": "einkaufsliste/barcode/lookup", "code": "4005900000000"},
+                             {"type": "einkaufsliste/barcode/info", "code": "4005900000000"},
+                             {"type": "einkaufsliste/product/refresh", "key": "bekannt"},
+                             {"type": "einkaufsliste/offers/search", "q": "Butter"}], start=2):
+        await client.send_json({"id": n, **msg})
+        res = await client.receive_json()
+        assert not res["success"] and "Datenschutz" in res["error"]["message"], msg
+    assert await async_auto_photo(hass, m, "4005900000000", "Etwas") is False
+    assert aioclient_mock.call_count == 0
+    # wieder aus -> geht
+    m.set_privacy(False)
+    for base in ("openfoodfacts", "openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{base}.org/api/v2/product/4005900000000.json", status=404)
+    await client.send_json({"id": 20, "type": "einkaufsliste/barcode/lookup", "code": "4005900000000"})
+    assert (await client.receive_json())["result"]["found"] is False
+
+
+async def test_barcode_weird_product_types(hass, setup, hass_ws_client, aioclient_mock) -> None:
+    """🧱 Die Datenbank liefert Unsinn („product“ ist eine Liste, „brands“ eine Zahl) -> kein Absturz."""
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    aioclient_mock.get("https://world.openfoodfacts.org/api/v2/product/4008400402222.json", json={"status": 1, "product": ["x"]})
+    aioclient_mock.get("https://world.openbeautyfacts.org/api/v2/product/4008400402222.json",
+                       json={"status": 1, "product": {"product_name": "Pizza", "brands": 5, "stores_tags": "x"}})
+    aioclient_mock.get("https://world.openproductsfacts.org/api/v2/product/4008400402222.json", status=404)
+    await client.send_json({"id": 1, "type": "einkaufsliste/barcode/lookup", "code": "4008400402222"})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["found"] and res["result"]["name"] == "Pizza" and res["result"]["note"] is None
+    aioclient_mock.clear_requests()
+    aioclient_mock.get("https://world.openfoodfacts.org/api/v2/product/4005900000000.json", json={"status": 1, "product": "x"})
+    for base in ("openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{base}.org/api/v2/product/4005900000000.json", status=404)
+    await client.send_json({"id": 2, "type": "einkaufsliste/barcode/info", "code": "4005900000000"})
+    res = await client.receive_json()
+    assert res["success"] and not res["result"].get("found")
+    assert m is not None
