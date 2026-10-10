@@ -1857,6 +1857,27 @@ class EinkaufslisteManager:
         self._changed()
         return {"removed": len(gone), "recipes": in_recipes}
 
+    def _keep_note_in_catalog(self, item: dict[str, Any]) -> None:
+        """📦 Wird ein Artikel mit Notiz („Dose“, „1 kg“ …) von der Liste genommen, bleibt diese Variante im Katalog –
+        samt Eigener Notiz (die hängt am Produkt-Schlüssel). Rezept-Zutaten gehören zum Rezept und zählen nicht."""
+        note = (item.get("note") or "").strip()
+        if note and not item.get("recipe_id"):
+            self.catalog_extra.setdefault(product_key(item["name"], note), {"name": item["name"], "note": note})
+
+    def _keep_note_in_catalog(self, item: dict[str, Any]) -> None:
+        """📦 Wird ein Artikel mit Notiz („Dose“, „1 kg“ …) von der Liste genommen, bleibt diese Variante im Katalog –
+        samt Eigener Notiz (die hängt am Produkt-Schlüssel). Rezept-Zutaten gehören zum Rezept und zählen nicht."""
+        note = (item.get("note") or "").strip()
+        if note and not item.get("recipe_id"):
+            self.catalog_extra.setdefault(product_key(item["name"], note), {"name": item["name"], "note": note})
+
+    def _keep_note_in_catalog(self, item: dict[str, Any]) -> None:
+        """📦 Wird ein Artikel mit Notiz („Dose“, „1 kg“ …) von der Liste genommen, bleibt diese Variante im Katalog –
+        samt Eigener Notiz (die hängt am Produkt-Schlüssel). Rezept-Zutaten gehören zum Rezept und zählen nicht."""
+        note = (item.get("note") or "").strip()
+        if note and not item.get("recipe_id"):
+            self.catalog_extra.setdefault(product_key(item["name"], note), {"name": item["name"], "note": note})
+
     def purge_items(self, scope: str = "done", store: str | None = None) -> dict[str, Any]:
         """🧽 Artikel von der Liste löschen – der Katalog (Vorschläge, Fotos, Barcodes, Notizen …) bleibt.
 
@@ -1875,6 +1896,7 @@ class EinkaufslisteManager:
                 continue
             self.items.remove(item)
             self._log("remove", item)
+            self._keep_note_in_catalog(item)
             gone.append(item)
         if gone:
             self._changed()
@@ -2650,6 +2672,7 @@ class EinkaufslisteManager:
         item = self.get_item(item_id)
         self.items.remove(item)
         self._log("remove", item)
+        self._keep_note_in_catalog(item)
         key = product_key(item["name"], item.get("note"))
         if not self._name_in_use(key):
             # Artikel ganz gelöscht -> Foto kommt mit weg

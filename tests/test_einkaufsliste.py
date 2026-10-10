@@ -4134,3 +4134,16 @@ async def test_barcode_weird_product_types(hass, setup, hass_ws_client, aioclien
     res = await client.receive_json()
     assert res["success"] and not res["result"].get("found")
     assert m is not None
+
+
+async def test_liste_loeschen_behaelt_notizen(hass, setup):
+    """🧽 Nach „Listen löschen“ bleiben im Katalog auch die Notizen (Notiz am Artikel + Eigene Notiz)."""
+    m = mgr(hass)
+    m.add_item("Bohnen", note="Dose", own_note="Marke Bonduelle")
+    m.add_item("Tee")
+    assert m.purge_items("all")["removed"] == 2 and m.items == []
+    prods = {p["key"]: p for p in m.products()}
+    from custom_components.einkaufsliste.manager import product_key
+    k = product_key("Bohnen", "Dose")
+    assert k in prods, sorted(prods)
+    assert prods[k]["note"] == "Dose" and prods[k]["own_note"] == "Marke Bonduelle"
