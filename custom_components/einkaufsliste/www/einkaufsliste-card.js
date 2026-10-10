@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.74.02";
+const EL_VERSION = "2.75.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.73.02"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.75.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -30,7 +30,7 @@ const EL_GUIDE = [
   { id: "check", icon: "✅", c: "#00897b", t: ["Abhaken & Erledigt", "Checking off & Done"], s: ["Kreis antippen oder wischen", "Tap the circle or swipe"],
     de: [
       "<b>Kreis antippen</b> = gekauft (das Handy vibriert kurz). Am Handy geht auch <b>Wischen</b>: Zeile <b>nach links</b> = abhaken ✔, eine erledigte Zeile <b>nach rechts</b> = wieder auf die Liste ↩.",
-      "Gekauftes rutscht nach unten zu <b>„Erledigt – schon mal gekauft“</b>. Dort wieder wischen oder antippen = zurück auf die Liste, du musst nichts neu tippen.",
+      "Gekauftes rutscht nach unten zu <b>„Erledigt – schon mal gekauft“</b>. Im <b>Laden-Modus</b> steht dort stattdessen <b>„Gerade abgehakt“</b> (neueste zuerst) mit einem großen <b>↩️</b>: aus Versehen abgehakt? Antippen, und es ist samt Notiz und Menge wieder auf der Liste. Beim Beenden des Laden-Modus ist die Anzeige weg. Dort wieder wischen oder antippen = zurück auf die Liste, du musst nichts neu tippen.",
       "<b>↩️ Versehentlich?</b> Unten steht 3 Sekunden „Rückgängig“.",
       "Die Liste ist nach <b>Kategorien</b> sortiert (mit Zahl). Jedes Geschäft kann seine eigene Reihenfolge und eigene Kategorien haben. Bei „Erledigt“ klappst du jede Kategorie einzeln ein. Tippst du ins Eingabefeld, filtert das auch „Erledigt“.",
       "Einmal pro Woche wird <b>automatisch aufgeräumt</b>: Alte Sachen werden abgehakt, <b>gelöscht wird nichts</b>. Ganz unten steht, wann das nächste Mal ist.",
@@ -38,7 +38,7 @@ const EL_GUIDE = [
     ],
     en: [
       "<b>Tap the circle</b> = bought (the phone vibrates briefly). On a phone you can also <b>swipe</b>: a row <b>to the left</b> = check off ✔, a done row <b>to the right</b> = back on the list ↩.",
-      "Bought things slide down to <b>“Done – bought before”</b>. Swipe or tap again there = back on the list, nothing to retype.",
+      "Bought things slide down to <b>“Done – bought before”</b>. In <b>store mode</b> you see <b>“Just ticked off”</b> there instead (newest first) with a big <b>↩️</b>: ticked something by mistake? Tap it and it is back on the list with its note and quantity. When you leave store mode the display is gone. Swipe or tap again there = back on the list, nothing to retype.",
       "<b>↩️ By mistake?</b> “Undo” shows for 3 seconds at the bottom.",
       "The list is sorted by <b>category</b> (with a count). Every store can have its own order and its own categories. Under “Done” you collapse each category separately. Typing in the input field also filters “Done”.",
       "Once a week the list <b>tidies up by itself</b>: old things are checked off, <b>nothing is deleted</b>. The bottom says when the next time is.",
@@ -168,6 +168,7 @@ const EL_GUIDE = [
     de: [
       "Ganz unten unter der Liste: <b>👁️ Ansicht</b>. Dort stellst du ein, was <b>du</b> sehen willst – ohne Zahnrad und PIN, nur für dich, auf allen deinen Geräten.",
       "<b>🏷️ Beschriftungen:</b> Text unter den Icons – nur für dich an oder aus. Ohne eigene Wahl gilt ⚙️ → Extras → Beschriftungen.",
+      "<b>✔️ Animation beim Abhaken:</b> nur für dich aus- oder einschaltbar. Aus = die Zeile verschwindet sofort.",
       "<b>🔠 Schriftgröße:</b> Kleiner · Standard · Größer.",
       "<b>Beim Artikel</b> blendest du Menge, Notizen, Für wen, Datum, Foto, Stern und mehr aus. <b>Oben &amp; beim Eintragen</b> auch die Geschäfte-Leiste, das Eingabefeld, die Geschäft- und Kategorie-Auswahl und die Icon-Leiste.",
       "Was du nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht, nur mit Zugang zum Zahnrad).",
@@ -175,6 +176,7 @@ const EL_GUIDE = [
     en: [
       "At the very bottom under the list: <b>👁️ View</b>. There you choose what <b>you</b> want to see – without the gear and PIN, only for you, on all your devices.",
       "<b>🏷️ Labels:</b> text under the icons – on or off just for you. Without your own choice ⚙️ → Extras → Labels applies.",
+      "<b>✔️ Tick-off animation:</b> can be switched on or off just for you. Off = the row disappears at once.",
       "<b>🔠 Font size:</b> Smaller · Standard · Larger.",
       "<b>On the item</b> you hide quantity, notes, for whom, date, photo, star and more. <b>Top &amp; adding</b> also the store bar, the input field, the store and category choice and the icon bar.",
       "Whatever you do not change comes from “For everyone” (⚙️ → List view, only with access to the gear).",
@@ -361,6 +363,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🛍️ <b>Laden-Modus: „Gerade abgehakt“.</b> Aus Versehen abgehakt? Die Liste zeigt alles aus diesem Einkauf, neueste zuerst. Ein Tipp auf ↩️ holt es samt Notiz und Menge zurück. Beim Beenden des Laden-Modus ist die Anzeige weg. · ✔️ <b>Abhaken ohne Hakeln:</b> Die Zeile verschwindet jetzt sofort statt erst nach einer kleinen Pause. In 👁️ Ansicht lässt sich die Animation nur für dich ausschalten. · 📍 <b>Kein Hochspringen mehr</b> nach dem Entsperren: ein kurzes Flackern des Standorts wirft dich nicht mehr aus dem Laden-Reiter. · 📦 Notizen bleiben im Katalog, wenn die Liste geleert wird.",
+   "🛍️ <b>Store mode: “Just ticked off”.</b> Ticked something by mistake? The list shows everything from this shopping trip, newest first. A tap on ↩️ brings it back with its note and quantity. When you leave store mode the display is gone. · ✔️ <b>Ticking off without stutter:</b> the row now disappears at once instead of after a short pause. In 👁️ View you can switch the animation off just for yourself. · 📍 <b>No more jumping to the top</b> after unlocking: a brief flicker of the location no longer throws you out of the store tab. · 📦 Notes stay in the catalogue when the list is emptied."],
   ["🏷️ <b>Beschriftungen für dich allein:</b> In 👁️ Ansicht (ganz oben, über der Schriftgröße) schaltest du den Text unter den Icons nur für dich an oder aus. Ohne eigene Wahl gilt der Standard aus ⚙️ Extras.",
    "🏷️ <b>Labels just for you:</b> in 👁️ View (right at the top, above the font size) you switch the text under the icons on or off only for yourself. Without your own choice the default from ⚙️ Extras applies."],
   ["🍳 <b>Rezepte aufgeräumt:</b> Die Knöpfe unter jedem Rezept sind jetzt vier gleich große Icons (Liste, Fotos, Kochen, Teilen) – der Name wird nicht mehr abgeschnitten. · 🔤 Den Text zeigt ⚙️ Extras → Beschriftungen oder langes Drücken (auch bei „Was kann ich kochen?“ und Gar-Zeiten). · ✏️ Der Rezept-Editor ist ordentlicher sortiert. · 🗂️ Kategorien und Personen: Farbe, Name und Löschen in einer Zeile, bei Kategorien das Icon darunter.",
@@ -2234,9 +2238,9 @@ ha-card.compact .group { margin-top:4px; }
 .item.swipe-r::before { content:"↩"; right:100%; justify-content:center; color:var(--primary-color, #03a9f4); }
 /* ✔️ Abhak-Animation */
 .item .name { background:linear-gradient(currentColor, currentColor) no-repeat 0 55% / 0 1.5px; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
-.item.checking .name { background-size:100% 1.5px; transition:background-size .22s ease-out; }
-.item.checking .check { color:var(--success-color, #43a047); animation:checkpop .25s ease-out; }
-.item.checking { animation:checkaway .2s ease-in .22s forwards; }
+.item.checking .name { background-size:100% 1.5px; transition:background-size .15s ease-out; }
+.item.checking .check { color:var(--success-color, #43a047); animation:checkpop .18s ease-out; }
+.item.checking { animation:checkaway .14s ease-in .14s forwards; }
 @keyframes checkpop { 50% { transform:scale(1.3); } }
 @keyframes checkaway { to { opacity:.25; transform:translateX(14px); } }
 .donehead { cursor:pointer; user-select:none; }
@@ -2245,6 +2249,10 @@ ha-card.compact .group { margin-top:4px; }
 .donehint { font-size:.75em; color:var(--secondary-text-color); padding:0 4px 4px; }
 /* ✔ „Erledigt – schon mal gekauft“: eigener, blasser Kasten – das ist das Archiv, nicht „noch kaufen“ */
 .donebox { margin-top:12px; padding:4px 6px 6px; border-radius:12px; background:color-mix(in srgb, var(--primary-text-color, #000) 3%, transparent); }
+.justbox .jrow { display:flex; align-items:center; gap:6px; }
+.justbox .jmain { flex:1; min-width:0; }
+.justbox .jback { flex:none; min-width:52px; min-height:52px; --mdc-icon-size:28px; border-radius:14px; justify-content:center; }
+.justbox .ghead { cursor:default; }
 .donebox .item.done .check { color:color-mix(in srgb, var(--success-color, #43a047) 55%, var(--secondary-text-color)); }
 .textbtn { background:none; border:0; cursor:pointer; color:var(--primary-color,#03a9f4); font-size:.85em; padding:6px 4px; }
 .textbtn.danger { color:var(--error-color,#db4437); }
@@ -3272,7 +3280,21 @@ class EinkaufslisteCard extends HTMLElement {
 
   _autoStore() {
     if (!this._config?.auto_store || this._fixedStore || !this._data) return;
-    const near = this._nearStore();
+    let near = this._nearStore();
+    // 📡 Das Handy meldet den Standort nach dem Entsperren oft kurz „weg“ und gleich wieder „im Laden“.
+    // Ohne Pause sprang die Liste dabei zurück nach oben (Reiter „Alle“, dann wieder der Laden) –
+    // jetzt zählt „Laden verlassen“ erst, wenn der Standort 3 Minuten lang weg war.
+    if (this._lastNear && !near) {
+      this._nearLostAt ||= Date.now();
+      if (Date.now() - this._nearLostAt < 180000) {
+        clearTimeout(this._nearTimer);
+        this._nearTimer = setTimeout(() => this._autoStore(), 185000 - (Date.now() - this._nearLostAt));
+        near = this._lastNear;
+      }
+    } else {
+      this._nearLostAt = 0;
+      clearTimeout(this._nearTimer);
+    }
     if (near === this._lastNear) return;
     const prev = this._lastNear;
     this._lastNear = near;
@@ -3281,6 +3303,7 @@ class EinkaufslisteCard extends HTMLElement {
       this._toast(`📍 Du bist bei ${this._store(near)?.name} – hier ist deine Liste dafür`);
       if (this._data?.settings?.auto_shop && !this._shopMode) { // 🛒 Opt-in: im Laden geht der Laden-Modus von selbst an
         this._shopMode = true;
+        this._shopSince = Date.now();
         this._shopAuto = true;
         try { localStorage.setItem("einkaufsliste_shopmode", "1"); } catch (_) { /* egal */ }
         this._toast("🛒 Laden-Modus ist an – viel Spaß beim Einkaufen!");
@@ -3290,6 +3313,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     if (!near && this._shopAuto && this._shopMode) { // Laden verlassen: nur ausschalten, was von selbst anging
       this._shopMode = false;
+      this._shopSince = null;
       try { localStorage.setItem("einkaufsliste_shopmode", "0"); } catch (_) { /* egal */ }
       this._toast("✍️ Laden-Modus aus – bis zum nächsten Einkauf");
     }
@@ -3329,6 +3353,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._awakeStop();
     clearInterval(this._clock);
     clearTimeout(this._menuTimer);
+    clearTimeout(this._nearTimer);
     clearTimeout(this._undoTimer);
     clearTimeout(this._catTimer);
     try { this._tabAC?.abort(); } catch (_) { /* egal */ }
@@ -4635,7 +4660,20 @@ class EinkaufslisteCard extends HTMLElement {
       html.push(this._groupedHtml(open, row, byName).replace(/ghead subhead/g, "ghead"));
     }
 
-    if (this._config.show_checked && (done.length || filter)) {
+    if (this._shopMode && !filter) {
+      // 🛍️ Laden-Modus: „Gerade abgehakt“ – flach, neueste zuerst, mit großem ↩️ (Notiz und Menge bleiben erhalten).
+      // Gilt für diesen Einkauf: alles, was seit dem Einschalten des Laden-Modus abgehakt wurde. Beim Beenden ist die Anzeige weg.
+      const since = this._shopSince || (this._shopSince = Date.now() - 4 * 3600000);
+      const just = items.filter((i) => i.checked && i.checked_at && new Date(i.checked_at).getTime() >= since)
+        .sort((a, b) => String(b.checked_at).localeCompare(String(a.checked_at)));
+      if (just.length) {
+        html.push(`<div class="group donebox justbox">
+          <div class="ghead donehead"><b>Gerade abgehakt</b><span class="n">${just.length}</span></div>
+          <div class="donehint">Aus Versehen abgehakt? Auf ↩️ tippen (oder die Zeile nach rechts wischen) – Notiz und Menge bleiben erhalten. Die Anzeige ist weg, sobald du den Laden-Modus beendest.</div>
+          ${just.map((i) => `<div class="jrow"><div class="jmain">${row(i)}</div><button type="button" class="btn jback" data-act="just-back" data-jid="${esc(i.id)}" title="Zurück auf die Liste" aria-label="Zurück auf die Liste"><ha-icon icon="mdi:undo"></ha-icon></button></div>`).join("")}
+        </div>`);
+      }
+    } else if (this._config.show_checked && (done.length || filter)) {
       const total = allView ? this._groupStores(items.filter((i) => i.checked)).length : items.filter((i) => i.checked).length;
       html.push(`<div class="group donebox">
         <div class="ghead donehead ${this._doneOpen || filter ? "" : "closed"}" role="button" tabindex="0" aria-expanded="${this._doneOpen || filter ? "true" : "false"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
@@ -4807,7 +4845,8 @@ class EinkaufslisteCard extends HTMLElement {
     this._pending.add(id);
     const rowEl = this.shadowRoot.querySelector(`.item[data-id="${id}"]`);
     // ✔️ Abhaken mit kleiner Animation: Haken wird grün, Name durchgestrichen, Zeile rutscht weg – erst danach geht es an HA
-    const anim = !!(it && !it.checked && !undo && rowEl && !matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+    const anim = !!(it && !it.checked && !undo && rowEl && this._viewPrefs().anim !== false && !matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+    const t0 = Date.now();
     rowEl?.classList.add(anim ? "checking" : "pending");
     if (anim) rowEl.querySelector(".check ha-icon")?.setAttribute("icon", "mdi:check-circle");
     // 🧾 Merken, wo ich abgehakt habe – für den automatischen Protokoll-Vorschlag
@@ -4822,8 +4861,13 @@ class EinkaufslisteCard extends HTMLElement {
     const atStore = it && !it.checked && !it.store_id && here && this._store(here) ? here : null;
     const send = () => this._ws({ type: "einkaufsliste/item/toggle", item_id: id, ...(atStore ? { store_id: atStore } : {}), ...(undo ? { undo: true } : {}) })
       .catch(() => {})
-      .finally(() => { this._pending.delete(id); this._renderAll(); });
-    if (anim) setTimeout(send, 420); else send();
+      .finally(() => {
+        this._pending.delete(id);
+        // Die Animation läuft jetzt PARALLEL zum Senden (früher: erst 0,4 s warten, dann senden, dann erst weg).
+        const rest = anim ? 300 - (Date.now() - t0) : 0;
+        if (rest > 0) setTimeout(() => this._renderAll(), rest); else this._renderAll();
+      });
+    send();
   }
 
   _renderMascot(open) {
@@ -5382,6 +5426,8 @@ class EinkaufslisteCard extends HTMLElement {
           : "Was alle in der Familie beim Artikel sehen (Standard). Jeder kann es für sich selbst anders einstellen – ganz unten unter der Liste mit „👁️ Ansicht“, ganz ohne PIN."}</p>
         ${mine ? (() => { const on = cur.labels !== undefined ? !!cur.labels : !!this._data?.settings?.labels; return `<p class="hint"><b>🏷️ Beschriftungen</b> – Text unter den Icons</p>
         <button class="lrow viewrow" data-act="view-labels" aria-pressed="${on}"><ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon><span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Extras → Beschriftungen.</small></span></button>`; })() : ""}
+        ${mine ? (() => { const on = cur.anim !== false; return `<p class="hint"><b>✔️ Abhaken</b></p>
+        <button class="lrow viewrow" data-act="view-anim" aria-pressed="${on}"><ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon><span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`; })() : ""}
         <p class="hint"><b>🔠 Schriftgröße</b></p>
         <div class="fontrow">${[["s", "Kleiner"], ["m", "Standard"], ["l", "Größer"]].map(([f, t]) => `<button class="btn ${(cur.font || "m") === f ? "primary" : ""}" data-act="view-font" data-scope="${scope}" data-font="${f}" aria-pressed="${(cur.font || "m") === f}">${t}</button>`).join("")}</div>
         <p class="hint" style="margin-top:12px"><b>🧩 Oben &amp; beim Eintragen</b> – was du nicht brauchst, blendest du aus</p>
@@ -9486,6 +9532,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       case "shopmode":
         this._shopMode = !this._shopMode;
+        this._shopSince = this._shopMode ? Date.now() : null; // 🛍️ „Gerade abgehakt“ zählt ab jetzt
         this._shopAuto = false; // von Hand geschaltet: die Automatik lässt es in Ruhe
         try { localStorage.setItem("einkaufsliste_shopmode", this._shopMode ? "1" : "0"); } catch (_) { /* egal */ }
         this._menuId = null;
@@ -9547,6 +9594,11 @@ class EinkaufslisteCard extends HTMLElement {
         }
         if (item.checked) this._readd(item);
         else this._toggle(id);
+        break;
+      }
+      case "just-back": { // 🛍️ „Gerade abgehakt“: zurück auf die Liste
+        const target = this._data.items.find((i) => i.id === el.dataset.jid);
+        if (target?.checked && !this._pending.has(target.id)) this._readd(target);
         break;
       }
       case "where-go": {
@@ -9627,6 +9679,15 @@ class EinkaufslisteCard extends HTMLElement {
         prefs[el.dataset.key] = shown[el.dataset.key] === false;
         this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
           .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
+        break;
+      }
+      case "view-anim": { // ✔️ Abhak-Animation nur für mich an/aus
+        const all = this._data.settings?.view_prefs || {};
+        const me = this._hass?.user?.id;
+        const prefs = { ...((me && all[me]) || {}) };
+        prefs.anim = this._viewPrefs().anim === false;
+        this._ws({ type: "einkaufsliste/view/set", scope: "me", prefs })
+          .then(() => setTimeout(() => this._renderMyView(), 150)).catch(() => {});
         break;
       }
       case "view-labels": { // 🏷️ Beschriftungen nur für mich an/aus (überstimmt ⚙️ → Extras)

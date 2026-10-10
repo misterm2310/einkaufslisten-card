@@ -289,6 +289,7 @@ VIEW_KEYS = (
     "qty", "note", "own_note", "for_whom", "added_by", "added_at", "checked_by", "cleanup", "store",
     "recipe", "barcode", "photo", "fav", "offer", "out", "move", "new", "cat_color",
     "tabs", "in_name", "in_store", "in_cat", "in_icons",  # 🧩 Leiste/Eingabe-Felder oben (an/aus)
+    "anim",  # ✔️ Abhak-Animation – pro Benutzer (Standard an)
     "labels",  # 🏷️ Beschriftungen unter den Icons – pro Benutzer (ohne Eintrag gilt der Schalter aus ⚙️ → Extras)
 )
 VIEW_FONTS = ("s", "m", "l")  # 🔠 Schriftgröße: kleiner / Standard / größer

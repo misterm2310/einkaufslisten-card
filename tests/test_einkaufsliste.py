@@ -4147,3 +4147,13 @@ async def test_liste_loeschen_behaelt_notizen(hass, setup):
     k = product_key("Bohnen", "Dose")
     assert k in prods, sorted(prods)
     assert prods[k]["note"] == "Dose" and prods[k]["own_note"] == "Marke Bonduelle"
+
+
+async def test_view_prefs_anim_pro_benutzer(hass, setup, hass_ws_client) -> None:
+    """✔️ Abhak-Animation: eigene Wahl (an UND aus) wird gespeichert."""
+    client = await hass_ws_client(hass)
+    for i, val in enumerate((False, True), start=1):
+        await client.send_json({"id": i, "type": "einkaufsliste/view/set", "scope": "me", "prefs": {"anim": val}})
+        res = await client.receive_json()
+        assert res["success"], res
+        assert res["result"] == {"anim": val}

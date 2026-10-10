@@ -31,7 +31,7 @@
 | 🍽️ **Recipes** | Ingredients onto the list with one tap, scaled for x people. Cook mode, photos, sharing and import (links and US measures too). |
 | 🔍 **Barcodes** | Scan in the HA app or with the phone camera in the offline app: add at home, check off in the store. |
 | 🔁 **“Was out!”** | ⇄ on the item: here again next time, or move it to another store. The list notices what's often missing. |
-| 🛒 **Shop mode** | Big rows, checking off only – one hand on the cart. |
+| 🛒 **Shop mode** | Big rows, checking off only – one hand on the cart. At the bottom “Just ticked off”: ticked something by mistake? Tap ↩️ and it is back with its note and quantity. |
 | 📱 **Offline app** | The complete card as a phone app that opens without a connection. Changes are sent later. |
 | ⏲️ **Cooking times** | Cheat sheet by appliance: 🍲 stove, 🔥 oven, 💨 air fryer. |
 | 🧹 **Cleanup** | Once a week old items get **checked off**, nothing is deleted. On/off, day and time right in the card (⚙️ → Cleanup). |

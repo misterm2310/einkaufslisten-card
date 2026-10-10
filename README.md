@@ -29,7 +29,7 @@
 | 🍽️ **Rezepte** | Zutaten per Tipp auf die Liste, für x Personen umgerechnet. Mit Koch-Modus, Fotos, Teilen und Import (auch Links und US-Maße). |
 | 🔍 **Barcodes** | Scannen in der HA-App oder mit der Handykamera in der Offline-App: zu Hause eintragen, im Laden abhaken. |
 | 🔁 **„War aus!“** | ⇄ am Artikel: nächstes Mal wieder hier oder gleich in ein anderes Geschäft. Die Liste merkt sich, was oft fehlt. |
-| 🛒 **Laden-Modus** | Große Zeilen, nur abhaken – mit einer Hand am Wagen. |
+| 🛒 **Laden-Modus** | Große Zeilen, nur abhaken – mit einer Hand am Wagen. Unten steht **„Gerade abgehakt“**: aus Versehen abgehakt? Auf ↩️ tippen, und es ist samt Notiz und Menge zurück. |
 | 📱 **Offline-App** | Die komplette Karte als App fürs Handy, öffnet auch ohne Netz. Änderungen werden nachgeschickt. |
 | ⏲️ **Gar-Zeiten** | Spickzettel nach Gerät: 🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse. |
 | 🧹 **Aufräumen** | Einmal pro Woche wird Altes **abgehakt**, gelöscht wird nichts. An/Aus, Tag und Uhrzeit direkt in der Karte (⚙️ → Aufräumen). |
