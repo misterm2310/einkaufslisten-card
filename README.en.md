@@ -35,7 +35,7 @@
 | 📱 **Offline app** | The complete card as a phone app that opens without a connection. Changes are sent later. |
 | ⏲️ **Cooking times** | Cheat sheet by appliance: 🍲 stove, 🔥 oven, 💨 air fryer. |
 | 🧹 **Cleanup** | Once a week old items get **checked off**, nothing is deleted. On/off, day and time right in the card (⚙️ → Cleanup). |
-| 👁️ **List view** | Decide what an item shows (quantity, notes, who, when, photo, star …) – default for everyone in ⚙️, **per person** at the very bottom with “👁️ View” (no PIN). |
+| 👁️ **List view** | Decide what an item shows (quantity, notes, who, when, photo, star …) – default for everyone in ⚙️, **per person** at the very bottom with “👁️ View” (no PIN). Both are **collapsible boxes** (font size · top & when adding · on the item), only one is open at a time. |
 | 🟢 **Top bar** | On every page: connected / waiting / offline, 🔓 lock now (with PIN) and the version. |
 | 🔒 **PIN** | Settings (the gear) only with a PIN – the list stays open for everyone. |
 | 📌 **Sidebar** | If you like, its own entry in the sidebar on the left (the list on the full page, no dashboard of its own). **Off** by default: Devices & services → Einkaufsliste → Configure → “Show in sidebar”. |

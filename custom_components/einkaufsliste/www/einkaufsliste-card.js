@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.03";
+const EL_VERSION = "2.76.04";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.03"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.04"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -237,9 +237,9 @@ const EL_HELP = {
     "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
   ]],
   listview: ["view", [
-    "Was beim Artikel zu sehen ist, die Leiste und die Eingabefelder oben sowie die <b>Schriftgröße</b> – das hier ist der Standard <b>für alle</b>. Jeder kann es für sich selbst anders einstellen: ganz unten unter der Liste mit <b>👁️ Ansicht</b>, ohne PIN.",
+    "Was beim Artikel zu sehen ist, die Leiste und die Eingabefelder oben sowie die <b>Schriftgröße</b> – das hier ist der Standard <b>für alle</b>. Jeder kann es für sich selbst anders einstellen: ganz unten unter der Liste mit <b>👁️ Ansicht</b>, ohne PIN. Die Seite besteht aus <b>Kästen zum Aufklappen</b> (Schriftgröße, Oben &amp; beim Eintragen, Beim Artikel) – immer nur einer ist offen.",
   ], [
-    "What you see on an item, the bar and input fields at the top, and the <b>font size</b> – this is the default <b>for everyone</b>. Everybody can set it differently for themselves: at the very bottom under the list with <b>👁️ View</b>, without a PIN.",
+    "What you see on an item, the bar and input fields at the top, and the <b>font size</b> – this is the default <b>for everyone</b>. Everybody can set it differently for themselves: at the very bottom under the list with <b>👁️ View</b>, without a PIN. The page is made of <b>boxes you open and close</b> (font size, top &amp; when adding, on the item) – only one is open at a time.",
   ]],
   offers: ["extras", [
     "Braucht eine <b>Postleitzahl</b> (nur Admins). Dazu: „Nur diese Geschäfte“ (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b>, <b>Ausschalten</b>. Die Statuszeile zeigt Zahl und letzte Prüfung. Die Angebote kommen inoffiziell von Marktguru und können jederzeit ausfallen.",
@@ -364,8 +364,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
-  ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) und Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) sind jetzt Kästen zum Aufklappen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 📖 <b>Die Anleitung</b> (fürs Einkaufen und für die Einstellungen) ist jetzt auch so eine Seite, in den Farben der Karte. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
-   "🗂️ <b>Settings re-sorted:</b> new group 👁️ View (after Health) with list view, labels and light/dark. 📦 “Products” is now called “Products/catalogue”. · 🪗 <b>Collapsible boxes:</b> “From other apps” (automatic, once, paste text, CSV) and Tidy up (automatic, by hand, delete list, delete everything, factory reset) are now boxes you open and close. Only one is open at a time, which looks much tidier. · 🪟 <b>Cooking times, “What can I cook?” and My cards</b> open as a normal page inside the card instead of full screen. The arrow at the top takes you back. · 📖 <b>The guide</b> (for shopping and for the settings) is now such a page too, in the colours of the card. · 🔎 The search in Products/catalogue is cleared when you leave the page, the second eraser under the field is gone."],
+  ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) und die Listenansicht samt „Meine Ansicht“ sind jetzt Kästen zum Aufklappen, im Stil der Hauptgruppen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 📖 <b>Die Anleitung</b> (fürs Einkaufen und für die Einstellungen) ist jetzt auch so eine Seite, in den Farben der Karte. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
+   "🗂️ <b>Settings re-sorted:</b> new group 👁️ View (after Health) with list view, labels and light/dark. 📦 “Products” is now called “Products/catalogue”. · 🪗 <b>Collapsible boxes:</b> “From other apps” (automatic, once, paste text, CSV) Tidy up (automatic, by hand, delete list, delete everything, factory reset) and the list view including “My view” are now boxes you open and close, in the style of the main groups. Only one is open at a time, which looks much tidier. · 🪟 <b>Cooking times, “What can I cook?” and My cards</b> open as a normal page inside the card instead of full screen. The arrow at the top takes you back. · 📖 <b>The guide</b> (for shopping and for the settings) is now such a page too, in the colours of the card. · 🔎 The search in Products/catalogue is cleared when you leave the page, the second eraser under the field is gone."],
   ["🛍️ <b>Laden-Modus: „Gerade abgehakt“.</b> Aus Versehen abgehakt? Die Liste zeigt alles aus diesem Einkauf, neueste zuerst. Ein Tipp auf ↩️ holt es samt Notiz und Menge zurück. Beim Beenden des Laden-Modus ist die Anzeige weg. · ✔️ <b>Abhaken ohne Hakeln:</b> Die Zeile verschwindet jetzt sofort statt erst nach einer kleinen Pause. In 👁️ Ansicht lässt sich die Animation nur für dich ausschalten. · 📍 <b>Kein Hochspringen mehr</b> nach dem Entsperren: ein kurzes Flackern des Standorts wirft dich nicht mehr aus dem Laden-Reiter. · 📦 Notizen bleiben im Katalog, wenn die Liste geleert wird.",
    "🛍️ <b>Store mode: “Just ticked off”.</b> Ticked something by mistake? The list shows everything from this shopping trip, newest first. A tap on ↩️ brings it back with its note and quantity. When you leave store mode the display is gone. · ✔️ <b>Ticking off without stutter:</b> the row now disappears at once instead of after a short pause. In 👁️ View you can switch the animation off just for yourself. · 📍 <b>No more jumping to the top</b> after unlocking: a brief flicker of the location no longer throws you out of the store tab. · 📦 Notes stay in the catalogue when the list is emptied."],
   ["🏷️ <b>Beschriftungen für dich allein:</b> In 👁️ Ansicht (ganz oben, über der Schriftgröße) schaltest du den Text unter den Icons nur für dich an oder aus. Ohne eigene Wahl gilt der Standard aus ⚙️ Ansicht.",
@@ -2281,16 +2281,10 @@ ha-card.compact .group { margin-top:4px; }
 .lgroup .chev { flex:none; color:var(--secondary-text-color); }
 .lrow { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; text-align:left; padding:10px 12px; margin:3px 0; border-radius:12px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
 .lrow:hover { border-color:var(--primary-color,#03a9f4); }
-.xaccs { display:flex; flex-direction:column; gap:8px; }
-.xacc { border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:14px; background:var(--secondary-background-color, rgba(127,127,127,.06)); overflow:hidden; }
-.xacc.open { border-color:var(--primary-color,#03a9f4); }
-.xacc-h { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; text-align:left; padding:10px 12px; border:0; background:none; color:var(--primary-text-color); font:inherit; cursor:pointer; }
-.xacc-h .ic { width:36px; height:36px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; background:var(--ic,#607d8b); color:#fff; }
-.xacc-h small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
-.xacc-h .grow { flex:1 1 auto; min-width:0; }
-.xacc-h .chev { opacity:.5; flex:none; transition:transform .2s; }
-.xacc.open .xacc-h .chev { transform:rotate(180deg); }
-.xacc-b { padding:0 12px 12px; }
+.xaccs { display:flex; flex-direction:column; }
+.xacc .lgroup .chev { transition:transform .2s; }
+.xacc.open .lgroup .chev { transform:rotate(180deg); }
+.xacc-b { padding:4px 12px 12px; }
 .xacc-b[hidden] { display:none; }
 .lrow > ha-icon:first-child { color:var(--primary-color,#03a9f4); }
 .lrow small, .swrow small, .swline small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
@@ -5521,23 +5515,28 @@ class EinkaufslisteCard extends HTMLElement {
     const base = { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
     const cur = mine ? { ...base, ...((me && all[me]) || {}) } : base;
     const scope = mine ? "me" : "all";
+    const g = mine ? "viewme" : "viewall";
     const row = ([k, label, sub]) => `<button class="lrow viewrow" data-act="view-toggle" data-scope="${scope}" data-key="${k}" aria-pressed="${cur[k] !== false}">
           <ha-icon icon="${cur[k] !== false ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>
           <span class="grow"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span></button>`;
+    const top = VIEW_OPTS.slice(VIEW_ITEM_N), item = VIEW_OPTS.slice(0, VIEW_ITEM_N);
+    const cnt = (list) => `${list.filter(([k]) => cur[k] !== false).length} von ${list.length} an`;
+    const labOn = cur.labels !== undefined ? !!cur.labels : !!this._data?.settings?.labels;
+    const animOn = cur.anim !== false;
+    const ck = (on) => `<ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>`;
+    // 🪗 gleiche Aufklapper wie bei Import und Aufräumen (immer nur einer offen)
     return `
         <p class="hint">${mine
           ? `Gilt nur für <b translate="no">${esc(this._hass?.user?.name || "dich")}</b> – auf allen Geräten, auf denen du angemeldet bist. Was du hier nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht).`
           : "Was alle in der Familie beim Artikel sehen (Standard). Jeder kann es für sich selbst anders einstellen – ganz unten unter der Liste mit „👁️ Ansicht“, ganz ohne PIN."}</p>
-        ${mine ? (() => { const on = cur.labels !== undefined ? !!cur.labels : !!this._data?.settings?.labels; return `<p class="hint"><b>🏷️ Beschriftungen</b> – Text unter den Icons</p>
-        <button class="lrow viewrow" data-act="view-labels" aria-pressed="${on}"><ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon><span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.</small></span></button>`; })() : ""}
-        ${mine ? (() => { const on = cur.anim !== false; return `<p class="hint"><b>✔️ Abhaken</b></p>
-        <button class="lrow viewrow" data-act="view-anim" aria-pressed="${on}"><ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon><span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`; })() : ""}
-        <p class="hint"><b>🔠 Schriftgröße</b></p>
-        <div class="fontrow">${[["s", "Kleiner"], ["m", "Standard"], ["l", "Größer"]].map(([f, t]) => `<button class="btn ${(cur.font || "m") === f ? "primary" : ""}" data-act="view-font" data-scope="${scope}" data-font="${f}" aria-pressed="${(cur.font || "m") === f}">${t}</button>`).join("")}</div>
-        <p class="hint" style="margin-top:12px"><b>🧩 Oben &amp; beim Eintragen</b> – was du nicht brauchst, blendest du aus</p>
-        ${VIEW_OPTS.slice(VIEW_ITEM_N).map(row).join("")}
-        <p class="hint" style="margin-top:12px"><b>👁️ Beim Artikel</b></p>
-        ${VIEW_OPTS.slice(0, VIEW_ITEM_N).map(row).join("")}
+        <div class="xaccs">
+        ${mine ? this._acc(g, "labels", "mdi:format-text", "#546e7a", "Beschriftungen", labOn ? "an – Text unter den Icons" : "aus – Text unter den Icons", `<button class="lrow viewrow" data-act="view-labels" aria-pressed="${labOn}">${ck(labOn)}<span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.</small></span></button>`) : ""}
+        ${mine ? this._acc(g, "anim", "mdi:check", "#43a047", "Abhaken", animOn ? "Animation an" : "Animation aus", `<button class="lrow viewrow" data-act="view-anim" aria-pressed="${animOn}">${ck(animOn)}<span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`) : ""}
+        ${this._acc(g, "font", "mdi:format-size", "#1e88e5", "Schriftgröße", { s: "Kleiner", m: "Standard", l: "Größer" }[cur.font || "m"], `
+        <div class="fontrow">${[["s", "Kleiner"], ["m", "Standard"], ["l", "Größer"]].map(([f, t]) => `<button class="btn ${(cur.font || "m") === f ? "primary" : ""}" data-act="view-font" data-scope="${scope}" data-font="${f}" aria-pressed="${(cur.font || "m") === f}">${t}</button>`).join("")}</div>`)}
+        ${this._acc(g, "top", "mdi:view-dashboard-outline", "#8e24aa", "Oben & beim Eintragen", cnt(top), `<p class="hint">Was du nicht brauchst, blendest du aus.</p>${top.map(row).join("")}`)}
+        ${this._acc(g, "item", "mdi:eye-outline", "#fb8c00", "Beim Artikel", cnt(item), item.map(row).join(""))}
+        </div>
         <div class="btnrow">${mine
           ? (me && all[me] ? `<button class="btn" data-act="view-reset" data-scope="me"><ha-icon icon="mdi:restore"></ha-icon>Wie „Für alle“</button>` : "")
           : (all._all ? `<button class="btn" data-act="view-reset" data-scope="all"><ha-icon icon="mdi:restore"></ha-icon>Alles wieder anzeigen</button>` : "")}</div>
@@ -5632,7 +5631,9 @@ class EinkaufslisteCard extends HTMLElement {
   // 🪗 Aufklapper-Kasten (Import „Aus anderen Apps“, Aufräumen): immer nur einer pro Gruppe g offen
   _acc(g, k, icon, color, title, sub, inner) {
     const on = (this._accOpen || {})[g] === k;
-    return `<div class="xacc ${on ? "open" : ""}" data-k="${k}"><button type="button" class="xacc-h" data-act="acc-toggle" data-g="${g}" data-k="${k}" aria-expanded="${on}"><span class="ic" style="--ic:${color}"><ha-icon icon="${icon}"></ha-icon></span><span class="grow"><b>${title}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button><div class="xacc-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
+    const emo = { "mdi:sync": "🔁", "mdi:import": "📥", "mdi:clipboard-text-outline": "📋", "mdi:file-delimited-outline": "📄", "mdi:calendar-sync": "🗓️", "mdi:broom": "🧹", "mdi:delete-sweep-outline": "🧽", "mdi:delete-forever-outline": "🗑️", "mdi:nuke": "💣", "mdi:format-text": "🏷️", "mdi:check": "✔️", "mdi:format-size": "🔠", "mdi:view-dashboard-outline": "🧩", "mdi:eye-outline": "👁️" }[icon] || "📁";
+    // exakt die gleichen Bauteile wie die Hauptgruppen der Einstellungen (lgbox / lgroup / gem) – sieht darum überall genau so aus wie sie
+    return `<div class="lgbox xacc ${on ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="acc-toggle" data-g="${g}" data-k="${k}" aria-expanded="${on}"><span class="gem">${emo}</span><span class="grow"><b>${title}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button><div class="xacc-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
   }
 
   // 📥 Import & Sicherung: Rezepte aus Datei, andere Apps, Backup

@@ -33,7 +33,7 @@
 | 📱 **Offline-App** | Die komplette Karte als App fürs Handy, öffnet auch ohne Netz. Änderungen werden nachgeschickt. |
 | ⏲️ **Gar-Zeiten** | Spickzettel nach Gerät: 🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse. |
 | 🧹 **Aufräumen** | Einmal pro Woche wird Altes **abgehakt**, gelöscht wird nichts. An/Aus, Tag und Uhrzeit direkt in der Karte (⚙️ → Aufräumen). |
-| 👁️ **Listenansicht** | Selbst bestimmen, was beim Artikel steht (Menge, Notizen, wer, wann, Foto, Stern …) – Standard für alle in ⚙️, **pro Person** ganz unten mit „👁️ Ansicht“ (ohne PIN). |
+| 👁️ **Listenansicht** | Selbst bestimmen, was beim Artikel steht (Menge, Notizen, wer, wann, Foto, Stern …) – Standard für alle in ⚙️, **pro Person** ganz unten mit „👁️ Ansicht“ (ohne PIN). Beides sind **Aufklapper** (Schriftgröße · Oben & beim Eintragen · Beim Artikel), immer nur einer ist offen. |
 | 🟢 **Leiste oben** | Auf jeder Seite: verbunden / wartet / offline, 🔓 Sofort-Sperren (mit PIN) und die Version. |
 | 🔒 **PIN** | Das Zahnrad (Einstellungen) nur mit PIN – die Liste bleibt für alle offen. |
 | 📌 **Seitenleiste** | Auf Wunsch ein eigener Eintrag links in der Seitenleiste (die Liste auf der ganzen Seite, ohne eigenes Dashboard). Standardmäßig **aus**: Geräte & Dienste → Einkaufsliste → Konfigurieren → „In der Seitenleiste anzeigen“. |
