@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.08";
+const EL_VERSION = "2.76.09";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.08"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -954,7 +954,8 @@ function showPhotoOverlay(src, title) {
   const hint = document.createElement("div");
   hint.textContent = elT("Tippen zum Schließen");
   Object.assign(hint.style, { color: "#aaa", font: "13px Roboto, sans-serif", marginTop: "10px" });
-  ov.append(cap, img, hint);
+  if (ov.dataset.elpage) ov.append(cap, img, hint);
+  else { Object.assign(cap.style, { color: "#fff", marginTop: "14px", marginBottom: "0" }); ov.append(img, cap, hint); }
   const onKey = (e) => { if (e.key === "Escape") ov.remove(); };
   const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
   ov.addEventListener("click", close);
@@ -5151,14 +5152,14 @@ class EinkaufslisteCard extends HTMLElement {
       return;
     }
     if (!s || this._view !== "list") { f.hidden = true; if (this.$("footBtns")) this.$("footBtns").hidden = true; return; }
-    f.hidden = this._page?.key === "cards" || this._page?.key === "cardedit"; // „Meine Karten“: die Aufräum-Info unten ist weg
+    f.hidden = !!this._page; // „Nächstes Aufräumen“ steht nur auf der Einkaufsliste selbst, auf keiner Seite sonst
     const next = new Date(s.next_cleanup);
     f.innerHTML = (s.cleanup_on === false ? `<ha-icon icon="mdi:broom"></ha-icon><span>Automatisches Aufräumen ist aus</span>`
       : `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`);
     // 👁️ Ansicht + 📖 Anleitung unter der Karte (Offline-App: dort in ihrer eigenen Knopfreihe neben „Abmelden“)
     const fb = this.$("footBtns");
     if (fb) {
-      fb.hidden = !!window.__elOfflineApp;
+      fb.hidden = !!window.__elOfflineApp || !!this._page; // auf Seiten (Gar-Zeiten, Fotos, Karten …) keine Knöpfe unten
       if (!fb.hidden) fb.innerHTML = `<button type="button" class="${this._myViewOpen ? "on" : ""}" data-act="myview" title="👁️ Meine Ansicht – was ich beim Artikel sehe (nur für mich, ohne PIN)">👁️ Ansicht</button><button type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte">📖 Anleitung</button>`;
     }
   }

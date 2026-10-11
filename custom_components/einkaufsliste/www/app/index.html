@@ -583,7 +583,7 @@ function update() {
     wrap.append(foot);
     // 🚪 Abmelden nur unten in der Einkaufsliste und auf der ersten Seite der Einstellungen
     const showFoot = () => {
-      foot.hidden = !(card._view === "list" || (card._view === "settings" && !card._setSec));
+      foot.hidden = !!card._page || !(card._view === "list" || (card._view === "settings" && !card._setSec)); // auf Seiten (Fotos, Karten, Gar-Zeiten …) keine Knöpfe unten
       document.getElementById("viewBtn").hidden = card._view !== "list"; // 👁️ Ansicht nur bei der Liste
       document.getElementById("viewBtn").classList.toggle("on", !!card._myViewOpen && card._view === "list");
     };
