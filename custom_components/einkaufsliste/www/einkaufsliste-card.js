@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.09";
+const EL_VERSION = "2.76.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.08"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -4181,8 +4181,8 @@ class EinkaufslisteCard extends HTMLElement {
     const btnS = this.$("btnSettings");
     const btnR = this.$("btnRecipes");
     btnS.hidden = !c.show_settings || !d;
-    btnR.hidden = !c.show_recipes || !d;
     const inSettings = this._view === "settings" || this._view === "recipe";
+    btnR.hidden = !c.show_recipes || !d || !!this._page || inSettings; // 👨‍🍳 Kochmütze: nicht auf Seiten und in den Einstellungen (in „Rezepte“ selbst ist sie das ✕)
     btnS.classList.toggle("on", inSettings);
     btnR.classList.toggle("on", this._view === "recipes");
     btnS.querySelector("ha-icon").setAttribute("icon", inSettings ? "mdi:close" : "mdi:cog-outline");
