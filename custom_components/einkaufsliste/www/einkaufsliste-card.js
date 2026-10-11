@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.06";
+const EL_VERSION = "2.76.07";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.05"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.07"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -219,12 +219,12 @@ const EL_HELP = {
     "The names for the quick buttons at “For whom?”. Tap a person = change name and colour. Without people the 👤 stays hidden in the list.",
   ]],
   products: ["list", [
-    "<b>Alle Produkte:</b> antippen = ändern oder ganz löschen (Umbenennen zieht Fotos, Barcodes und Rezepte mit). Die Suche findet Name, Notiz, Spitzname, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Filter gibt es auch (ohne Kategorie, ohne Foto, nach Geschäft …). Das <b>Radiergummi</b> am Suchfeld leert die Suche. Verlässt du die Seite, sind Suche und Filter wieder weg.",
+    "<b>Alle Produkte:</b> antippen = ändern oder ganz löschen (Umbenennen zieht Fotos, Barcodes und Rezepte mit). Die Suche findet Name, Notiz, Spitzname, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Filter gibt es auch (ohne Kategorie, ohne Foto, nach Geschäft …). Das <b>Radiergummi</b> am Suchfeld leert die Suche. Die Liste zeigt zuerst 80 Produkte; darunter holt <b>➕ 10 weitere</b> immer 10 dazu und <b>Alle anzeigen</b> den ganzen Rest. Verlässt du die Seite, sind Suche und Filter wieder weg.",
     "<b>Im Produkt:</b> Name, Notiz (📝 nur lesbar, aus dem Barcode), <b>✏️ Eigene Notiz</b>, <b>🏷️ Spitznamen</b> (für alle Produkte möglich), Kategorie, Standard-Geschäft, <b>🧠 gelernte Tippfehler</b> (mit „Vergessen“), Barcodes, 📷 Fotos (Reihenfolge, ⭐ Hauptfoto), <b>🧲 Zusammenführen</b> (aus zwei Namen einen) und „Ganz löschen“.",
     "<b>Neu gescannt:</b> Name prüfen, dann ✔ Passt. <b>➕ Neues Produkt / ▥ Per Barcode</b> legt ein Produkt im Katalog an. <b>🔄 Alles neu holen</b> (Wolke) holt Foto, Name und/oder Notiz aus der Datenbank; eigene Fotos und deine Eigene Notiz bleiben.",
     "<b>Einkaufsliste Produkte löschen</b> löscht Artikel endgültig von der Liste (Barcode und Vorschlag bleiben). <b>🗓️ Seit 3 Monaten nicht gekauft</b> zeigt alte Produkte, auf Wunsch „Alle löschen“.",
   ], [
-    "<b>All products:</b> tap = change or delete completely (renaming takes photos, barcodes and recipes along). The search finds name, note, nickname, barcode, category and store – even with small typos. There are filters too (no category, no photo, by store …). The <b>eraser</b> at the search field clears the search. When you leave the page, search and filter are reset.",
+    "<b>All products:</b> tap = change or delete completely (renaming takes photos, barcodes and recipes along). The search finds name, note, nickname, barcode, category and store – even with small typos. There are filters too (no category, no photo, by store …). The <b>eraser</b> at the search field clears the search. The list first shows 80 products; below it <b>➕ 10 more</b> adds 10 each time and <b>Show all</b> brings the rest. When you leave the page, search and filter are reset.",
     "<b>In a product:</b> name, note (📝 read-only, from the barcode), <b>✏️ own note</b>, <b>🏷️ nicknames</b> (possible for every product), category, default store, <b>🧠 learned typos</b> (with “Forget”), barcodes, 📷 photos (order, ⭐ main photo), <b>🧲 merge</b> (two names into one) and “Delete completely”.",
     "<b>Newly scanned:</b> check the name, then ✔ OK. <b>➕ New product / ▥ By barcode</b> creates a product in the catalogue. <b>🔄 Fetch all again</b> (cloud) gets photo, name and/or note from the database; your own photos and your own note stay.",
     "<b>Delete shopping list products</b> removes items from the list for good (barcode and suggestion stay). <b>🗓️ Not bought for 3 months</b> shows old products, with “Delete all” if you like.",
@@ -364,6 +364,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["📦 <b>Produkte: alle anzeigen.</b> Die Liste zeigt zuerst 80 Produkte. Darunter holt „10 weitere“ immer 10 dazu und „Alle anzeigen“ den ganzen Rest. Dasselbe gilt für „Einkaufsliste Produkte löschen“ (dort starten 60). Suchen und Filtern setzt die Liste wieder auf den Anfang.",
+   "📦 <b>Products: show all.</b> The list first shows 80 products. Below it, “10 more” adds 10 each time and “Show all” brings the rest. The same goes for “Delete shopping list products” (starting at 60). Searching and filtering resets the list to the start."],
   ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) und die Listenansicht samt „Meine Ansicht“ sind jetzt Kästen zum Aufklappen, im Stil der Hauptgruppen. Auch die Reiter bei Import & Sicherung und die Seite Ressourcen sind jetzt solche Kästen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 🧾 Das <b>Einkaufs-Protokoll</b> und die 🏷️ <b>Angebote</b> öffnen ebenfalls als Seite in der Karte. · 📖 <b>Die Anleitung</b> (fürs Einkaufen und für die Einstellungen) ist jetzt auch so eine Seite, in den Farben der Karte, mit Kapiteln im Stil der Hauptgruppen. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
    "🗂️ <b>Settings re-sorted:</b> new group 👁️ View (after Health) with list view, labels and light/dark. 📦 “Products” is now called “Products/catalogue”. · 🪗 <b>Collapsible boxes:</b> “From other apps” (automatic, once, paste text, CSV) Tidy up (automatic, by hand, delete list, delete everything, factory reset) and the list view including “My view” are now boxes you open and close, in the style of the main groups. The tabs in Import & backup and the Resources page are such boxes now too. Only one is open at a time, which looks much tidier. · 🪟 <b>Cooking times, “What can I cook?” and My cards</b> open as a normal page inside the card instead of full screen. The arrow at the top takes you back. · 🧾 The <b>purchase log</b> and the 🏷️ <b>offers</b> open as a page inside the card too. · 📖 <b>The guide</b> (for shopping and for the settings) is now such a page too, in the colours of the card, with chapters in the style of the main groups. · 🔎 The search in Products/catalogue is cleared when you leave the page, the second eraser under the field is gone."],
   ["🛍️ <b>Laden-Modus: „Gerade abgehakt“.</b> Aus Versehen abgehakt? Die Liste zeigt alles aus diesem Einkauf, neueste zuerst. Ein Tipp auf ↩️ holt es samt Notiz und Menge zurück. Beim Beenden des Laden-Modus ist die Anzeige weg. · ✔️ <b>Abhaken ohne Hakeln:</b> Die Zeile verschwindet jetzt sofort statt erst nach einer kleinen Pause. In 👁️ Ansicht lässt sich die Animation nur für dich ausschalten. · 📍 <b>Kein Hochspringen mehr</b> nach dem Entsperren: ein kurzes Flackern des Standorts wirft dich nicht mehr aus dem Laden-Reiter. · 📦 Notizen bleiben im Katalog, wenn die Liste geleert wird.",
@@ -6562,7 +6564,9 @@ class EinkaufslisteCard extends HTMLElement {
     let list = this._products.filter((p) => (!scannedTab || p.scanned) && ff(p) && (!q || this._prodSearchText(p).includes(q)));
     if (scannedTab) list = list.sort((a, b) => String(b.scanned_at || "").localeCompare(String(a.scanned_at || "")));
     if (!list.length) { this._oldKeys = null; box.innerHTML = `<p class="hint">${q ? `Nichts gefunden zu „${esc(q)}“.` : this._prodSel === "~old3m" ? "Nichts Altes – alles wurde in den letzten 3 Monaten gekauft. 👍" : scannedTab ? "Alles geprüft – nichts Neues gescannt. 👍" : "Noch keine Produkte."}</p>`; return; }
-    const shown = list.slice(0, 80);
+    const sig = `${this._prodTab}|${this._prodSel}|${q}`;
+    if (this._prodSig !== sig) { this._prodSig = sig; this._prodLimit = 80; }
+    const shown = list.slice(0, this._prodLimit || 80);
     this._oldKeys = this._prodSel === "~old3m" && !scannedTab ? list.map((p) => p.key) : null;
     const bulk = this._oldKeys ? `<p class="hint">🗓️ Diese ${list.length} Produkte hast du seit 3 Monaten nicht gekauft (gezählt ab dem letzten Abhaken, sonst ab dem Eintragen; Produkte aus Rezepten fehlen hier). Antippen = ansehen oder ganz löschen – oder alle auf einmal:</p><div class="btnrow"><button class="btn danger" data-act="prod-old-del"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Alle ${list.length} löschen</button></div>` : "";
     box.innerHTML = bulk + shown.map((p) => {
@@ -6610,7 +6614,7 @@ class EinkaufslisteCard extends HTMLElement {
         </div>`;
       }
       return rowHtml;
-    }).join("") + (list.length > shown.length ? `<p class="hint">… und ${list.length - shown.length} weitere – oben suchen.</p>` : "");
+    }).join("") + (list.length > shown.length ? `<p class="hint">… und ${list.length - shown.length} weitere – oder oben suchen.</p><div class="btnrow"><button class="btn" data-act="more-more" data-w="prod"><ha-icon icon="mdi:plus"></ha-icon>10 weitere</button><button class="btn" data-act="more-all" data-w="prod"><ha-icon icon="mdi:format-list-bulleted"></ha-icon>Alle anzeigen (${list.length - shown.length} mehr)</button></div>` : "");
   }
 
   _renderDelList() {
@@ -6624,7 +6628,8 @@ class EinkaufslisteCard extends HTMLElement {
       box.innerHTML = `<p class="hint">${q ? `Nichts gefunden zu „${esc(q)}“.` : "Die Liste ist leer."}</p>`;
       return;
     }
-    const shown = items.slice(0, 60);
+    if (this._delSig !== q) { this._delSig = q; this._delLimit = 60; }
+    const shown = items.slice(0, this._delLimit || 60);
     box.innerHTML = shown.map((i) => {
       const st = this._store(i.store_id);
       const info = [st ? st.name : elT("Egal wo"), elT(i.checked ? "erledigt" : "offen"), i.note, i.for_whom && `${elT("für")} ${i.for_whom}`]
@@ -6633,7 +6638,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="grow delname"><b>${esc(i.name)}</b><small>${info}</small></div>
         <button class="iconbtn" data-act="item-delete" title="Ganz löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
       </div>`;
-    }).join("") + (items.length > shown.length ? `<p class="hint">… und ${items.length - shown.length} weitere – tipp oben was ein, um zu suchen.</p>` : "");
+    }).join("") + (items.length > shown.length ? `<p class="hint">… und ${items.length - shown.length} weitere – tipp oben was ein, um zu suchen.</p><div class="btnrow"><button class="btn" data-act="more-more" data-w="del"><ha-icon icon="mdi:plus"></ha-icon>10 weitere</button><button class="btn" data-act="more-all" data-w="del"><ha-icon icon="mdi:format-list-bulleted"></ha-icon>Alle anzeigen (${items.length - shown.length} mehr)</button></div>` : "");
     this._knRestore();
   }
 
@@ -10409,6 +10414,13 @@ class EinkaufslisteCard extends HTMLElement {
           this._prodEdit = null;
           this._loadProducts();
         })();
+        break;
+      }
+      case "more-more":
+      case "more-all": {
+        const all = act === "more-all", prod = el.dataset.w === "prod";
+        if (prod) { this._prodLimit = all ? 1e9 : (this._prodLimit || 80) + 10; this._renderProducts(); }
+        else { this._delLimit = all ? 1e9 : (this._delLimit || 60) + 10; this._renderDelList(); }
         break;
       }
       case "prod-cancel":
