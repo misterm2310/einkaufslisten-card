@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.05";
+const EL_VERSION = "2.76.06";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.05"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -5741,16 +5741,15 @@ class EinkaufslisteCard extends HTMLElement {
         ${mail ? `<p><b>✅ An:</b> <span translate="no">${esc(mail.name)}</span></p>` : ""}
         <p class="hint">🔒 Einrichten oder ändern kann das nur ein Admin – es liest und löscht Mails in einem Postfach.</p></div>`;
     }
-    return `<div class="xaccs">
-        ${this._acc("xferm", "info", "mdi:information-outline", "#1e88e5", "So funktioniert es", "Eine Mail = jede Zeile ein Artikel", `
+    return `
+        <div class="syncbox">
         <p class="hint"><b>📧 Per E-Mail</b>: Eine Mail an dein Einkaufs-Postfach – jede Zeile wird ein Artikel. Dafür in Home Assistant die Integration „IMAP“ mit einer eigenen Mail-Adresse einrichten. Nur Mails von den <b>erlaubten Absendern</b> zählen.</p>
         <ul class="hint xferfmt">
           <li><b>Geschäft im Betreff</b> (z. B. „Aldi“ oder „Einkauf bei Aldi“) → alles aus der Mail kommt dorthin.</li>
           <li><b>Geschäft als Überschrift</b> in der Mail (z. B. „Aldi:“, darunter die Artikel, dann „DM:“ …) → gilt bis zur nächsten Überschrift.</li>
           <li>Sonst gilt das Geschäft unten. Mengen wie „6 Eier“ oder „2 L Milch“ werden erkannt.</li>
           <li>Als gelesen markiert oder gelöscht werden nur Mails, aus denen wirklich etwas auf die Liste kam.</li>
-        </ul>`)}
-        ${this._acc("xferm", "setup", "mdi:email-edit-outline", "#43a047", "Einrichten", mail ? `An: ${esc(mail.name)}` : "Noch nicht eingerichtet", `<div class="syncbox">
+        </ul>
         ${mail ? `<p><b>✅ An:</b> <span translate="no">${esc(mail.name)}</span> → ${store ? `<span translate="no">${esc(store)}</span>` : "<span>Egal wo</span>"}${mail.count ? `<span> · schon ${mail.count}× eingetragen</span>` : ""}${mail.ok === false ? `<br><span>⚠️ Das Postfach gibt es nicht mehr – bitte neu wählen.</span>` : ""}</p>` : ""}
         <div class="srow"><ha-icon class="prev" icon="mdi:email-outline"></ha-icon><select class="grow" id="mailSrc"><option value="">Lade Postfächer …</option></select></div>
         <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="mailStore">${this._selectOptions(this._data.stores, mail?.store_id || null, "🛒 Egal wo")}</select></div>
@@ -5760,7 +5759,6 @@ class EinkaufslisteCard extends HTMLElement {
         </select></div>
         <div class="srow"><ha-icon class="prev" icon="mdi:account-check-outline"></ha-icon><input class="grow" id="mailSenders" value="${esc((mail?.senders || []).join(", "))}" placeholder="Erlaubte Absender, z. B. ich@mail.de, oma@mail.de" translate="no"></div>
         <div class="btnrow"><button class="btn primary" data-act="mail-on"><ha-icon icon="mdi:email-check-outline"></ha-icon>${mail ? "Ändern" : "Einschalten"}</button>${mail ? `<button class="btn" data-act="mail-off"><ha-icon icon="mdi:email-off-outline"></ha-icon>Ausschalten</button>` : ""}</div>
-        </div>`)}
         </div>`;
   }
 
