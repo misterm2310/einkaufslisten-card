@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.01";
+const EL_VERSION = "2.76.02";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -3709,6 +3709,7 @@ class EinkaufslisteCard extends HTMLElement {
       const id = itemEl?.dataset.id;
       if (!id) return;
       navigator.vibrate?.(30);
+      this._closeMyView(); // Artikelmenü auf: „Meine Ansicht“ geht zu
       this._menuId = this._menuId === id ? null : id;
       this._moving = null;
       this._qtyEdit = null;
@@ -5552,6 +5553,10 @@ class EinkaufslisteCard extends HTMLElement {
     return this._myViewOpen;
   }
 
+  _closeMyView() { // „Meine Ansicht“ schließen, falls offen (z. B. wenn ein Artikel bearbeitet wird)
+    if (this._myViewOpen) this.toggleMyView();
+  }
+
   _renderMyView() {
     const box = this.$("myView");
     if (!box) return;
@@ -5559,11 +5564,7 @@ class EinkaufslisteCard extends HTMLElement {
     box.hidden = !this._myViewOpen || !this._data || this._view !== "list";
     clearTimeout(this._mvTimer);
     if (box.hidden) { box.innerHTML = ""; return; }
-    // ⏱️ Ohne Änderung klappt „Meine Ansicht“ nach 4 Sekunden von selbst wieder zu (jede Änderung/Berührung startet die 4 Sekunden neu)
-    const arm = () => { clearTimeout(this._mvTimer); this._mvTimer = setTimeout(() => { if (this._myViewOpen) this.toggleMyView(); }, 4000); };
-    if (!box._mvArmed) { box._mvArmed = true; box.addEventListener("pointerdown", () => { if (!box.hidden) this._mvArm?.(); }); }
-    this._mvArm = arm;
-    arm();
+    // „Meine Ansicht“ bleibt offen, bis man sie schließt (✖ oder Knopf „Ansicht“ unten) – kein Auto-Schließen mehr, damit man in Ruhe lesen und scrollen kann
     box.innerHTML = `<div class="mvhead"><ha-icon icon="mdi:eye-outline"></ha-icon><b>Meine Ansicht</b><button class="iconbtn" type="button" data-act="myview" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>${this._viewHtml(true)}`;
     if (!was) box.scrollIntoView?.({ block: "nearest", behavior: "smooth" }); // gerade aufgeklappt: ins Bild holen
   }
@@ -9778,6 +9779,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       }
       case "edit":
+        this._closeMyView(); // Artikel bearbeiten: „Meine Ansicht“ geht von selbst zu
         this._editing = id;
         this._renderList();
         break;
@@ -10119,6 +10121,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       }
       case "qty-edit": {
+        this._closeMyView();
         const item = this._data.items.find((i) => i.id === id);
         if (this._parseQty(item?.quantity)) {
           this._qtyEdit = this._qtyEdit === id ? null : id;
