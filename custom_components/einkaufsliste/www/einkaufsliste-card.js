@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.75.01";
+const EL_VERSION = "2.76.01";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.75.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -167,7 +167,7 @@ const EL_GUIDE = [
   { id: "view", icon: "👁️", c: "#1e88e5", t: ["Ansicht anpassen", "Adjust the view"], s: ["Schriftgröße, ausblenden – nur für dich", "Font size, hide – just for you"],
     de: [
       "Ganz unten unter der Liste: <b>👁️ Ansicht</b>. Dort stellst du ein, was <b>du</b> sehen willst – ohne Zahnrad und PIN, nur für dich, auf allen deinen Geräten.",
-      "<b>🏷️ Beschriftungen:</b> Text unter den Icons – nur für dich an oder aus. Ohne eigene Wahl gilt ⚙️ → Extras → Beschriftungen.",
+      "<b>🏷️ Beschriftungen:</b> Text unter den Icons – nur für dich an oder aus. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.",
       "<b>✔️ Animation beim Abhaken:</b> nur für dich aus- oder einschaltbar. Aus = die Zeile verschwindet sofort.",
       "<b>🔠 Schriftgröße:</b> Kleiner · Standard · Größer.",
       "<b>Beim Artikel</b> blendest du Menge, Notizen, Für wen, Datum, Foto, Stern und mehr aus. <b>Oben &amp; beim Eintragen</b> auch die Geschäfte-Leiste, das Eingabefeld, die Geschäft- und Kategorie-Auswahl und die Icon-Leiste.",
@@ -175,7 +175,7 @@ const EL_GUIDE = [
     ],
     en: [
       "At the very bottom under the list: <b>👁️ View</b>. There you choose what <b>you</b> want to see – without the gear and PIN, only for you, on all your devices.",
-      "<b>🏷️ Labels:</b> text under the icons – on or off just for you. Without your own choice ⚙️ → Extras → Labels applies.",
+      "<b>🏷️ Labels:</b> text under the icons – on or off just for you. Without your own choice ⚙️ → View → Labels applies.",
       "<b>✔️ Tick-off animation:</b> can be switched on or off just for you. Off = the row disappears at once.",
       "<b>🔠 Font size:</b> Smaller · Standard · Larger.",
       "<b>On the item</b> you hide quantity, notes, for whom, date, photo, star and more. <b>Top &amp; adding</b> also the store bar, the input field, the store and category choice and the icon bar.",
@@ -219,12 +219,12 @@ const EL_HELP = {
     "The names for the quick buttons at “For whom?”. Tap a person = change name and colour. Without people the 👤 stays hidden in the list.",
   ]],
   products: ["list", [
-    "<b>Alle Produkte:</b> antippen = ändern oder ganz löschen (Umbenennen zieht Fotos, Barcodes und Rezepte mit). Die Suche findet Name, Notiz, Spitzname, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Filter (ohne Kategorie, ohne Foto, nach Geschäft …) und das <b>Radiergummi</b> setzen alles zurück.",
+    "<b>Alle Produkte:</b> antippen = ändern oder ganz löschen (Umbenennen zieht Fotos, Barcodes und Rezepte mit). Die Suche findet Name, Notiz, Spitzname, Barcode, Kategorie und Geschäft – auch bei kleinen Tippfehlern. Filter gibt es auch (ohne Kategorie, ohne Foto, nach Geschäft …). Das <b>Radiergummi</b> am Suchfeld leert die Suche. Verlässt du die Seite, sind Suche und Filter wieder weg.",
     "<b>Im Produkt:</b> Name, Notiz (📝 nur lesbar, aus dem Barcode), <b>✏️ Eigene Notiz</b>, <b>🏷️ Spitznamen</b> (für alle Produkte möglich), Kategorie, Standard-Geschäft, <b>🧠 gelernte Tippfehler</b> (mit „Vergessen“), Barcodes, 📷 Fotos (Reihenfolge, ⭐ Hauptfoto), <b>🧲 Zusammenführen</b> (aus zwei Namen einen) und „Ganz löschen“.",
     "<b>Neu gescannt:</b> Name prüfen, dann ✔ Passt. <b>➕ Neues Produkt / ▥ Per Barcode</b> legt ein Produkt im Katalog an. <b>🔄 Alles neu holen</b> (Wolke) holt Foto, Name und/oder Notiz aus der Datenbank; eigene Fotos und deine Eigene Notiz bleiben.",
     "<b>Einkaufsliste Produkte löschen</b> löscht Artikel endgültig von der Liste (Barcode und Vorschlag bleiben). <b>🗓️ Seit 3 Monaten nicht gekauft</b> zeigt alte Produkte, auf Wunsch „Alle löschen“.",
   ], [
-    "<b>All products:</b> tap = change or delete completely (renaming takes photos, barcodes and recipes along). The search finds name, note, nickname, barcode, category and store – even with small typos. Filters (no category, no photo, by store …) and the <b>eraser</b> reset everything.",
+    "<b>All products:</b> tap = change or delete completely (renaming takes photos, barcodes and recipes along). The search finds name, note, nickname, barcode, category and store – even with small typos. There are filters too (no category, no photo, by store …). The <b>eraser</b> at the search field clears the search. When you leave the page, search and filter are reset.",
     "<b>In a product:</b> name, note (📝 read-only, from the barcode), <b>✏️ own note</b>, <b>🏷️ nicknames</b> (possible for every product), category, default store, <b>🧠 learned typos</b> (with “Forget”), barcodes, 📷 photos (order, ⭐ main photo), <b>🧲 merge</b> (two names into one) and “Delete completely”.",
     "<b>Newly scanned:</b> check the name, then ✔ OK. <b>➕ New product / ▥ By barcode</b> creates a product in the catalogue. <b>🔄 Fetch all again</b> (cloud) gets photo, name and/or note from the database; your own photos and your own note stay.",
     "<b>Delete shopping list products</b> removes items from the list for good (barcode and suggestion stay). <b>🗓️ Not bought for 3 months</b> shows old products, with “Delete all” if you like.",
@@ -236,7 +236,7 @@ const EL_HELP = {
     "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
     "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
   ]],
-  listview: ["app", [
+  listview: ["view", [
     "Was beim Artikel zu sehen ist, die Leiste und die Eingabefelder oben sowie die <b>Schriftgröße</b> – das hier ist der Standard <b>für alle</b>. Jeder kann es für sich selbst anders einstellen: ganz unten unter der Liste mit <b>👁️ Ansicht</b>, ohne PIN.",
   ], [
     "What you see on an item, the bar and input fields at the top, and the <b>font size</b> – this is the default <b>for everyone</b>. Everybody can set it differently for themselves: at the very bottom under the list with <b>👁️ View</b>, without a PIN.",
@@ -276,17 +276,17 @@ const EL_HELP = {
   ], [
     "A shopping cart with a face instead of the cart symbol. It has moods (happy, busy, full, asleep) and wears a costume by season. Tap = back to the shopping list. Applies to everyone.",
   ]],
-  labels: ["extras", [
+  labels: ["view", [
     "Zeigt unter den kleinen Icons einen kurzen Text. Gilt für alle Geräte. Auch ohne den Schalter: <b>länger auf ein Icon drücken</b> zeigt, was es macht.",
   ], [
     "Shows a short text under the small icons. Applies to all devices. Even without the switch: <b>press and hold an icon</b> to see what it does.",
   ]],
   transfer: ["data", [
-    "<b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen (bis zu 50), jede mit eigenem Geschäft – entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich; nur Admins) oder <b>einmal herüberholen</b>. Dazu Text einfügen und einen Katalog aus CSV (Name; Kategorie; Barcode; Notiz).",
+    "<b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen (bis zu 50), jede mit eigenem Geschäft – entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich; nur Admins) oder <b>einmal herüberholen</b>. Dazu Text einfügen und einen Katalog aus CSV (Name; Kategorie; Barcode; Notiz). Jedes davon ist ein <b>Kasten zum Aufklappen</b> – es ist immer nur einer offen.",
     "<b>🥫 Grocy:</b> Produkte in den Katalog holen (Adresse und API-Schlüssel, Vorschau mit Häkchen) und der <b>🔄 Dauerabgleich</b> mit getrennten Schaltern für Einkaufsliste und Katalog.",
     "<b>🗣️ Siri / Kurzbefehle:</b> Aktion „Dienst aufrufen“ der Home-Assistant-App, Dienst <code>einkaufsliste.add_item</code>, Daten <code>name: Milch</code>. <b>📧 E-Mail:</b> IMAP-Postfach, erlaubte Absender, Geschäft über Betreff oder „Aldi:“ in der Mail. <b>Sicherung:</b> .zip herunterladen oder einspielen (ersetzt alles!) – nur Admins.",
   ], [
-    "<b>From other apps:</b> several Alexa/to-do lists (up to 50), each with its own store – either 🔁 <b>fetch automatically</b> (fetch &amp; delete there · keep in both · full sync; admins only) or <b>fetch once</b>. Plus pasting text and a catalogue from CSV (name; category; barcode; note).",
+    "<b>From other apps:</b> several Alexa/to-do lists (up to 50), each with its own store – either 🔁 <b>fetch automatically</b> (fetch &amp; delete there · keep in both · full sync; admins only) or <b>fetch once</b>. Plus pasting text and a catalogue from CSV (name; category; barcode; note). Each is a <b>box you open and close</b> – only one is open at a time.",
     "<b>🥫 Grocy:</b> fetch products into the catalogue (address and API key, preview with ticks) and the <b>🔄 continuous sync</b> with separate switches for shopping list and catalogue.",
     "<b>🗣️ Siri / Shortcuts:</b> action “Call service” of the Home Assistant app, service <code>einkaufsliste.add_item</code>, data <code>name: milk</code>. <b>📧 Email:</b> IMAP mailbox, allowed senders, store via subject or “Aldi:” in the mail. <b>Backup:</b> download .zip or restore (replaces everything!) – admins only.",
   ]],
@@ -296,10 +296,10 @@ const EL_HELP = {
     "Who did what and when, with filters (person, store, action), search and a symbol legend. At the top <b>📈 Often not available</b> (✖ hides an entry). How long the history is kept (7/30/90/180/365 days) you set there; “Clear history” deletes it.",
   ]],
   cleanup: ["data", [
-    "Einmal pro Woche werden alte offene Sachen <b>abgehakt</b>, gelöscht wird nichts. An/Aus, Tag, Uhrzeit und Mindestalter stellst du hier ein (gilt für alle). „Jetzt aufräumen“ und „Alles abhaken“ gehen sofort.",
+    "Einmal pro Woche werden alte offene Sachen <b>abgehakt</b>, gelöscht wird nichts. An/Aus, Tag, Uhrzeit und Mindestalter stellst du hier ein (gilt für alle). „Jetzt aufräumen“ und „Alles abhaken“ gehen sofort. Die Seite hat <b>Kästen zum Aufklappen</b> (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) – immer nur einer ist offen.",
     "<b>🧽 Liste löschen</b> (nur Admins): Geschäft wählen, dann „Erledigte löschen“ oder „Liste leeren“. Der Katalog bleibt. <b>🧹 Alles löschen</b>: Liste und ganzer Katalog mit Fotos, Barcodes, Notizen und Favoriten – nicht rückgängig. <b>💣 Werkseinstellungen</b>: wirklich alles zurück auf Anfang (auch Geschäfte, Kategorien, Rezepte, Karten, Verbindungen; nur die PIN bleibt). Alle drei mit Sicherheitsfragen – vorher lieber eine Sicherung machen.",
   ], [
-    "Once a week old open things are <b>checked off</b>, nothing is deleted. On/off, day, time and minimum age you set here (applies to everyone). “Tidy up now” and “Check off all” work at once.",
+    "Once a week old open things are <b>checked off</b>, nothing is deleted. On/off, day, time and minimum age you set here (applies to everyone). “Tidy up now” and “Check off all” work at once. The page has <b>boxes you open and close</b> (automatic, by hand, delete list, delete everything, factory reset) – only one is open at a time.",
     "<b>🧽 Delete list</b> (admins only): choose a store, then “Delete done” or “Empty list”. The catalogue stays. <b>🧹 Delete everything</b>: list and the whole catalogue with photos, barcodes, notes and favourites – cannot be undone. <b>💣 Factory reset</b>: really everything back to the start (also stores, categories, recipes, cards, connections; only the PIN stays). All three ask safety questions – better make a backup first.",
   ]],
   check: ["health", [
@@ -324,7 +324,7 @@ const EL_HELP = {
   ], [
     "Your own address with “Copy” (needs an https address, e.g. Nabu Casa). Open it in the phone browser and add it to the home screen. Almost everything works offline; not available are looking up new barcodes, product info, recipe links, new photos and the backup.",
   ]],
-  theme: ["app", [
+  theme: ["view", [
     "Hell, dunkel oder automatisch – nur in der Offline-App. In der Dashboard-Karte folgt alles dem Home-Assistant-Design.",
   ], [
     "Light, dark or automatic – only in the offline app. In the dashboard card everything follows the Home Assistant theme.",
@@ -342,14 +342,15 @@ const EL_HELP = {
 };
 const EL_HELP_GROUPS = [ // Kapitel der Einstellungs-Anleitung: [Schlüssel, Icon, Titel de, Titel en, [Zeilen], Farbe]
   ["list", "📋", "Meine Liste", "My list", ["stores", "categories", "persons", "products", "recipes"], "#43a047"],
-  ["extras", "🎛️", "Extras", "Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot", "labels"], "#f9a825"],
+  ["extras", "🎛️", "Extras", "Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"], "#f9a825"],
   ["data", "💾", "Daten", "Data", ["transfer", "log", "cleanup"], "#1e88e5"],
   ["health", "🩺", "Gesundheit", "Health", ["check", "errors", "stats"], "#00897b"],
-  ["app", "📱", "App & Info", "App & info", ["listview", "app", "theme", "pin", "privacy"], "#3949ab"],
+  ["view", "👁️", "Ansicht", "View", ["listview", "labels", "theme"], "#1e88e5"],
+  ["app", "📱", "App & Info", "App & info", ["app", "pin", "privacy"], "#3949ab"],
 ];
 
 const EL_HELP_TITLES = { // [Titel de, Titel en, Icon]
-  stores: ["Geschäfte", "Stores", "🏪"], categories: ["Kategorien", "Categories", "🗂️"], persons: ["Personen", "People", "👤"], products: ["Produkte", "Products", "📦"], recipes: ["Rezepte", "Recipes", "👨‍🍳"],
+  stores: ["Geschäfte", "Stores", "🏪"], categories: ["Kategorien", "Categories", "🗂️"], persons: ["Personen", "People", "👤"], products: ["Produkte/Katalog", "Products/catalog", "📦"], recipes: ["Rezepte", "Recipes", "👨‍🍳"],
   offers: ["Angebote", "Offers", "🏷️"], spend: ["Einkaufs-Protokoll", "Purchase log", "🧾"], cards: ["Kundenkarten", "Loyalty cards", "💳"], notetpl: ["Notiz-Vorlagen", "Note templates", "📝"], aicook: ["KI-Kochen", "AI cooking", "🤖"], autoshop: ["Laden-Modus automatisch", "Store mode automatic", "📍"], mascot: ["Maskottchen", "Mascot", "🛒"], labels: ["Beschriftungen", "Labels", "🏷️"],
   transfer: ["Import & Sicherung", "Import & backup", "📥"], log: ["Verlauf", "History", "🕘"], cleanup: ["Aufräumen", "Tidy up", "🧹"],
   check: ["Alles ok?", "All OK?", "✅"], errors: ["Fehler-Protokoll", "Error log", "🐞"], stats: ["Ressourcen", "Resources", "📊"],
@@ -363,12 +364,14 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) und Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) sind jetzt Kästen zum Aufklappen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
+   "🗂️ <b>Settings re-sorted:</b> new group 👁️ View (after Health) with list view, labels and light/dark. 📦 “Products” is now called “Products/catalogue”. · 🪗 <b>Collapsible boxes:</b> “From other apps” (automatic, once, paste text, CSV) and Tidy up (automatic, by hand, delete list, delete everything, factory reset) are now boxes you open and close. Only one is open at a time, which looks much tidier. · 🪟 <b>Cooking times, “What can I cook?” and My cards</b> open as a normal page inside the card instead of full screen. The arrow at the top takes you back. · 🔎 The search in Products/catalogue is cleared when you leave the page, the second eraser under the field is gone."],
   ["🛍️ <b>Laden-Modus: „Gerade abgehakt“.</b> Aus Versehen abgehakt? Die Liste zeigt alles aus diesem Einkauf, neueste zuerst. Ein Tipp auf ↩️ holt es samt Notiz und Menge zurück. Beim Beenden des Laden-Modus ist die Anzeige weg. · ✔️ <b>Abhaken ohne Hakeln:</b> Die Zeile verschwindet jetzt sofort statt erst nach einer kleinen Pause. In 👁️ Ansicht lässt sich die Animation nur für dich ausschalten. · 📍 <b>Kein Hochspringen mehr</b> nach dem Entsperren: ein kurzes Flackern des Standorts wirft dich nicht mehr aus dem Laden-Reiter. · 📦 Notizen bleiben im Katalog, wenn die Liste geleert wird.",
    "🛍️ <b>Store mode: “Just ticked off”.</b> Ticked something by mistake? The list shows everything from this shopping trip, newest first. A tap on ↩️ brings it back with its note and quantity. When you leave store mode the display is gone. · ✔️ <b>Ticking off without stutter:</b> the row now disappears at once instead of after a short pause. In 👁️ View you can switch the animation off just for yourself. · 📍 <b>No more jumping to the top</b> after unlocking: a brief flicker of the location no longer throws you out of the store tab. · 📦 Notes stay in the catalogue when the list is emptied."],
-  ["🏷️ <b>Beschriftungen für dich allein:</b> In 👁️ Ansicht (ganz oben, über der Schriftgröße) schaltest du den Text unter den Icons nur für dich an oder aus. Ohne eigene Wahl gilt der Standard aus ⚙️ Extras.",
-   "🏷️ <b>Labels just for you:</b> in 👁️ View (right at the top, above the font size) you switch the text under the icons on or off only for yourself. Without your own choice the default from ⚙️ Extras applies."],
-  ["🍳 <b>Rezepte aufgeräumt:</b> Die Knöpfe unter jedem Rezept sind jetzt vier gleich große Icons (Liste, Fotos, Kochen, Teilen) – der Name wird nicht mehr abgeschnitten. · 🔤 Den Text zeigt ⚙️ Extras → Beschriftungen oder langes Drücken (auch bei „Was kann ich kochen?“ und Gar-Zeiten). · ✏️ Der Rezept-Editor ist ordentlicher sortiert. · 🗂️ Kategorien und Personen: Farbe, Name und Löschen in einer Zeile, bei Kategorien das Icon darunter.",
-   "🍳 <b>Recipes tidied up:</b> the buttons under each recipe are now four equal icons (list, photos, cook, share) – the name is no longer cut off. · 🔤 The text shows with ⚙️ Extras → Labels or a long press (also for “What can I cook?” and cooking times). · ✏️ The recipe editor is sorted more neatly. · 🗂️ Categories and people: colour, name and delete in one row, for categories the icon below."],
+  ["🏷️ <b>Beschriftungen für dich allein:</b> In 👁️ Ansicht (ganz oben, über der Schriftgröße) schaltest du den Text unter den Icons nur für dich an oder aus. Ohne eigene Wahl gilt der Standard aus ⚙️ Ansicht.",
+   "🏷️ <b>Labels just for you:</b> in 👁️ View (right at the top, above the font size) you switch the text under the icons on or off only for yourself. Without your own choice the default from ⚙️ View applies."],
+  ["🍳 <b>Rezepte aufgeräumt:</b> Die Knöpfe unter jedem Rezept sind jetzt vier gleich große Icons (Liste, Fotos, Kochen, Teilen) – der Name wird nicht mehr abgeschnitten. · 🔤 Den Text zeigt ⚙️ Ansicht → Beschriftungen oder langes Drücken (auch bei „Was kann ich kochen?“ und Gar-Zeiten). · ✏️ Der Rezept-Editor ist ordentlicher sortiert. · 🗂️ Kategorien und Personen: Farbe, Name und Löschen in einer Zeile, bei Kategorien das Icon darunter.",
+   "🍳 <b>Recipes tidied up:</b> the buttons under each recipe are now four equal icons (list, photos, cook, share) – the name is no longer cut off. · 🔤 The text shows with ⚙️ View → Labels or a long press (also for “What can I cook?” and cooking times). · ✏️ The recipe editor is sorted more neatly. · 🗂️ Categories and people: colour, name and delete in one row, for categories the icon below."],
   ["🗂️ <b>Kategorien</b> und 👥 <b>Personen</b> in den Einstellungen wie die Geschäfte: erst die Liste, antippen = nur diesen Eintrag ändern. · 📴 Ohne Netz sagt das ⚙️ Zahnrad gleich „Die Einstellungen gehen nur mit Netz“ (statt einer falschen PIN-Meldung).",
    "🗂️ <b>Categories</b> and 👥 <b>people</b> in the settings work like the stores: first the list, tap = change just that entry. · 📴 Without a connection the ⚙️ gear says “Settings only work with a connection” (instead of a wrong-PIN message)."],
   ["📖 <b>Anleitungen neu:</b> nach Themen sortiert, mit bunten Symbolen. In ⚙️ stehen die Erklärtexte <b>unter</b> den Schaltern jeder Zeile. · 👁️ <b>Ansicht:</b> Schriftgröße (Kleiner / Standard / Größer) einstellbar. · 🙈 <b>Ausblendbar:</b> Geschäfte-Leiste, Eingabefeld, Geschäft- und Kategorie-Auswahl und Icon-Leiste. · ⚙️ <b>Zahnrad</b> jetzt oben neben dem 🔓, der Laden-Modus ganz rechts. · ✍️ <b>Eine Eingabe = ein Produkt</b> (ein Komma gehört zum Namen). · 🔢 Ohne Menge ist es <b>1x</b>. · 🍽️ <b>Rezepte</b> und <b>Geschäfte</b> in der neuen Optik, mit Rahmen wie das Eingabefeld. · 📊 <b>Last</b> auch unter Ressourcen. · 🧹 Der Hinweis „Gibt's auch hier“ ist weg.",
@@ -2036,7 +2039,7 @@ button { font:inherit; color:inherit; }
 .wizard li::before { content:counter(wz); flex:none; width:24px; height:24px; border-radius:50%; background:var(--primary-color,#03a9f4); color:#fff; display:grid; place-items:center; font-weight:700; font-size:.85em; }
 .wizard li span { flex:1; }
 .badge { cursor:pointer; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); border-radius:999px; padding:1px 9px; font-size:.75em; font-weight:600; }
-.iconbtn.serase, .iconbtn.rclear, .rclear, #prodClear { color:var(--error-color,#db4437); }
+.iconbtn.serase, .iconbtn.rclear, .rclear { color:var(--error-color,#db4437); }
 .lbl { display:none; }
 ha-card.labels .lbl { display:block; font-size:10px; font-weight:500; line-height:1.15; margin-top:3px; white-space:nowrap; }
 ha-card.labels .tool, ha-card.labels .head .iconbtn { flex-direction:column; align-items:center; justify-content:flex-start; border-radius:10px; }
@@ -2278,6 +2281,17 @@ ha-card.compact .group { margin-top:4px; }
 .lgroup .chev { flex:none; color:var(--secondary-text-color); }
 .lrow { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; text-align:left; padding:10px 12px; margin:3px 0; border-radius:12px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
 .lrow:hover { border-color:var(--primary-color,#03a9f4); }
+.xaccs { display:flex; flex-direction:column; gap:8px; }
+.xacc { border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:14px; background:var(--secondary-background-color, rgba(127,127,127,.06)); overflow:hidden; }
+.xacc.open { border-color:var(--primary-color,#03a9f4); }
+.xacc-h { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; text-align:left; padding:10px 12px; border:0; background:none; color:var(--primary-text-color); font:inherit; cursor:pointer; }
+.xacc-h .ic { width:36px; height:36px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; background:var(--ic,#607d8b); color:#fff; }
+.xacc-h small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
+.xacc-h .grow { flex:1 1 auto; min-width:0; }
+.xacc-h .chev { opacity:.5; flex:none; transition:transform .2s; }
+.xacc.open .xacc-h .chev { transform:rotate(180deg); }
+.xacc-b { padding:0 12px 12px; }
+.xacc-b[hidden] { display:none; }
 .lrow > ha-icon:first-child { color:var(--primary-color,#03a9f4); }
 .lrow small, .swrow small, .swline small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
 .lrow .grow, .swrow .grow, .swline .grow { flex:1 1 auto; min-width:0; }
@@ -2331,9 +2345,27 @@ ha-card.compact .group { margin-top:4px; }
 .myview .mvhead { display:flex; align-items:center; gap:6px; }
 .myview .mvhead b { flex:1; }
 .sechead { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
-.sechead h3 { margin:0; }
+.sechead h3 { min-width:0; margin:0; }
 .sechead .back { width:36px; height:36px; border-radius:50%; flex:none; align-items:center; justify-content:center; color:var(--primary-text-color); }
 .sechead { gap:12px; margin-bottom:10px; }
+.pagetools { margin-left:auto; display:flex; gap:6px; align-items:center; flex:none; } /* 📄 Seiten in der Karte (Gar-Zeiten, KI, Karten) */
+.pagebody { display:block; }
+.pgcol { display:flex; flex-direction:column; gap:10px; }
+.pgrow { display:flex; align-items:center; gap:10px; }
+.pgrow input[type=checkbox] { width:auto; flex:none; }
+.pgsmall { color:var(--secondary-text-color); font-size:.85em; }
+.pgsv .btn { width:38px; min-width:38px; height:38px; min-height:0; padding:0; border-radius:50%; font-size:20px; }
+.aisug { display:flex; flex-wrap:wrap; gap:6px; margin-top:-4px; }
+.aichip { font:inherit; font-size:.9em; padding:5px 11px; border-radius:16px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:transparent; color:var(--primary-text-color); cursor:pointer; margin:2px 4px 2px 0; }
+.aichip:hover { border-color:var(--primary-color,#03a9f4); background:color-mix(in srgb, var(--primary-color,#03a9f4) 6%, transparent); }
+.aisug .aichip { margin:0; }
+.aicard { border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:var(--card-background-color, var(--ha-card-background, #fff)); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px; }
+.aicard summary { cursor:pointer; }
+.cardlist { display:flex; flex-direction:column; gap:10px; }
+.cc { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; margin:0; padding:16px 14px; border:0; border-radius:14px; cursor:pointer; background:var(--c,#607d8b); color:var(--tc,#fff); font:600 1.1em Roboto,sans-serif; text-align:left; }
+.cc .ci { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .cc small { display:block; font-weight:400; font-size:.7em; opacity:.85; }
+.cc .ce { background:rgba(255,255,255,.22); border-radius:10px; font-size:16px; padding:8px 10px; }
+.cn { color:var(--secondary-text-color); text-align:center; padding:26px 8px; }
 .prodrow { cursor:pointer; }
 .prodrow .pmeta { display:flex; flex-wrap:wrap; gap:2px 8px; }
 .misshint { margin:2px 0 10px; padding:10px 12px; border-radius:12px; background:color-mix(in srgb, var(--warning-color,#ffa600) 16%, transparent); }
@@ -2504,6 +2536,7 @@ label.btn { cursor:pointer; }
 .recipe.rv { border-bottom:0; border-radius:12px 12px 0 0; margin-bottom:0; padding-bottom:4px; }
 ha-card.labels .rtools .btn { flex-direction:column; gap:0; padding:4px 2px; }
 ha-card.labels .rtools .lbl { overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+ha-card.labels .pagetools button.btn { flex-direction:column; gap:0; padding:4px 8px; } ha-card.labels .pagetools .lbl { margin-top:0; }
 ha-card.labels .viewhead button.btn { flex-direction:column; gap:0; padding:4px 8px; } ha-card.labels .viewhead .lbl { margin-top:0; }
 .rtools .rheat { flex:1; align-self:center; font-size:.78em; color:var(--secondary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .heatrow { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border-radius:12px; background:color-mix(in srgb, #ff7043 10%, transparent); border:1px solid color-mix(in srgb, #ff7043 35%, transparent); margin:6px 0; }
@@ -2861,43 +2894,56 @@ async function elKeepAwake(ov, noVideo) { // noVideo: in der HA-App bringt der V
   return { mode, stop };
 }
 
-function showGarTable() {
+// ⏲️ Gar-Zeiten: mit `card` als Seite IN der Karte (wie die anderen Seiten), ohne Karte (Koch-Modus) als Vollbild-Fenster
+function showGarTable(card) {
   const en = EL_LANG !== "de";
-  const ov = makeOverlay();
-  Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
-    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
   const min = en ? "min" : "Min";
-  let dev = 0;
-  ov.innerHTML = `<style>
-    .gar { width:100%; max-width:560px; color:#eee; font:15px/1.4 Roboto,sans-serif; }
+  const asPage = !!(card && card._openPage);
+  let ov = null, host = null, dev = 0;
+  const html = `<style>
+    .gar { width:100%; max-width:560px; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; }
+    .gar.dk { --primary-text-color:#eee; --secondary-text-color:#aaa; --card-background-color:#1e1e1e; --primary-color:#03a9f4; --divider-color:#444; }
     .gar h2 { font-size:20px; margin:4px 0 10px; }
-    .gar .sub { color:#aaa; font-size:13px; margin:0 0 10px; }
+    .gar .sub { color:var(--secondary-text-color); font-size:13px; margin:0 0 10px; }
     .gar .gsearch { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
     .gar .gsearch input { flex:1; width:auto; min-width:0; margin:0; }
     .gar .gerase { background:none; border:0; cursor:pointer; padding:0 6px; line-height:0; color:var(--error-color,#db4437); --mdc-icon-size:22px; }
-    .gar input { width:100%; box-sizing:border-box; font:inherit; padding:10px 12px; border-radius:10px; border:1px solid #444; background:#1e1e1e; color:#eee; margin-bottom:10px; }
+    .gar input { width:100%; box-sizing:border-box; font:inherit; height:42px; padding:0 12px; border-radius:12px; outline:none; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:var(--card-background-color, #fff); color:var(--primary-text-color); }
+    .gar input:focus { border-color:var(--primary-color,#03a9f4); box-shadow:0 0 0 2px color-mix(in srgb, var(--primary-color,#03a9f4) 18%, transparent); }
+    .gar input::placeholder { color:var(--secondary-text-color); opacity:.75; }
+    .gar input[type=search]::-webkit-search-cancel-button { display:none; }
     .gar .gtabs { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px; }
-    .gar .gtabs button { font:inherit; font-size:14px; hyphens:manual; overflow-wrap:anywhere; color:#eee; background:#1e1e1e; border:1px solid #444; border-radius:12px; padding:8px 4px; cursor:pointer; line-height:1.2; }
+    .gar .gtabs button { font:inherit; font-size:14px; hyphens:manual; overflow-wrap:anywhere; color:var(--primary-text-color); background:var(--card-background-color, #fff); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:8px 4px; cursor:pointer; line-height:1.2; }
     .gar .gtabs button b { display:block; font-size:22px; margin-bottom:2px; }
-    .gar .gtabs button.on { background:#03a9f4; border-color:#03a9f4; color:#fff; }
-    .gar .row { background:#1e1e1e; border:1px solid #2c2c2c; border-radius:12px; padding:9px 12px; margin:0 0 6px; }
+    .gar .gtabs button.on { background:var(--primary-color,#03a9f4); border-color:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
+    .gar .row { background:var(--card-background-color, #fff); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 12px; margin:0 0 6px; }
     .gar .top { display:flex; align-items:baseline; gap:10px; }
     .gar .n { font-weight:600; font-size:16px; flex:1; }
-    .gar .v { font-weight:700; white-space:nowrap; color:#fff; }
-    .gar .note { color:#aaa; font-size:13px; margin-top:1px; }
+    .gar .v { font-weight:700; white-space:nowrap; color:var(--primary-text-color); }
+    .gar .note { color:var(--secondary-text-color); font-size:13px; margin-top:1px; }
     .gar .t { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:6px; font-size:15px; }
     .gar .t span { white-space:nowrap; }
-    .gar h3 { font-size:13px; color:#aaa; margin:12px 0 5px; font-weight:600; }
+    .gar h3 { display:block; font-size:13px; color:var(--secondary-text-color); margin:12px 0 5px; font-weight:600; }
   </style>
-  <div class="gar" translate="no">
-    <h2>⏲️ ${en ? "Cooking times" : "Gar-Zeiten"}</h2>
+  <div class="gar${asPage ? "" : " dk"}" translate="no">
+    ${asPage ? "" : `<h2>⏲️ ${en ? "Cooking times" : "Gar-Zeiten"}</h2>`}
     <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
     <div class="gtabs"></div>
     <p class="sub devhint"></p>
     <div class="garlist"></div>
     <p class="sub">${en ? "Guide values – always check the package." : "Richtwerte – im Zweifel gilt die Packung."}</p>
   </div>`;
-  const list = ov.querySelector(".garlist"), inp = ov.querySelector(".gsearch input"), tabs = ov.querySelector(".gtabs"), hint = ov.querySelector(".devhint");
+  let close = null;
+  if (asPage) {
+    card._openPage({ key: "gar", title: en ? "Cooking times" : "Gar-Zeiten", icon: "mdi:timer-outline", color: "#ef6c00", build: (body) => { host = body; body.innerHTML = html; } });
+  } else {
+    ov = makeOverlay();
+    Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
+      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    ov.innerHTML = html;
+    host = ov;
+  }
+  const list = host.querySelector(".garlist"), inp = host.querySelector(".gsearch input"), tabs = host.querySelector(".gtabs"), hint = host.querySelector(".devhint");
   const name = (r) => esc(en ? r[1] : r[0]);
   const noteOf = (r, col) => {
     const n = en ? r[6] : r[5];
@@ -2932,16 +2978,22 @@ function showGarTable() {
       return hit.length ? `<h3>${icon} ${esc(en ? gen : gde)}</h3>${hit.map(fullRow).join("")}` : "";
     }).join("") || `<p class="sub">${en ? "Nothing found." : "Nichts gefunden."}</p>`;
   };
-  tabs.addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) { dev = Number(b.dataset.d); draw(); ov.scrollTop = 0; } });
+  tabs.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-d]");
+    if (!b) return;
+    dev = Number(b.dataset.d); draw();
+    if (ov) ov.scrollTop = 0; else host.scrollIntoView?.({ block: "nearest" });
+  });
   inp.addEventListener("input", draw);
-  const ge = ov.querySelector(".gerase");
+  const ge = host.querySelector(".gerase");
   inp.addEventListener("input", () => { ge.hidden = !inp.value; });
   ge.onclick = () => { inp.value = ""; ge.hidden = true; draw(); inp.focus(); };
   draw();
+  if (asPage) return;
   const bClose = ovButton(en ? "Close" : "Schließen", true);
   Object.assign(bClose.style, { marginTop: "16px" });
   ov.append(bClose);
-  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+  close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
   ov._elClose = close; // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
   const onKey = (e) => { if (e.key === "Escape") close(); };
   document.addEventListener("keydown", onKey);
@@ -3350,6 +3402,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   disconnectedCallback() {
     EL_CARD_SET.delete(this);
+    this._closePage(true);
     this._awakeStop();
     clearInterval(this._clock);
     clearTimeout(this._menuTimer);
@@ -3576,6 +3629,7 @@ class EinkaufslisteCard extends HTMLElement {
           <div id="list"></div>
         </div>
         <div id="otherView" hidden></div>
+        <div id="pageHost" hidden></div>
         <div class="footer" id="footer" hidden></div>
         <div class="myview" id="myView" hidden></div>
       </ha-card>
@@ -3585,7 +3639,7 @@ class EinkaufslisteCard extends HTMLElement {
     const root = this.shadowRoot;
     // 👆 Lange auf ein Icon drücken = kurze Erklärung (am Handy gibt es keine Tooltips)
     let lpTimer = null, lpFired = false;
-    const lpSel = "button.tool, button.iconbtn, button.addbtn, .rtools button.btn, .viewhead button.btn";
+    const lpSel = "button.tool, button.iconbtn, button.addbtn, .rtools button.btn, .viewhead button.btn, .pagetools button.btn";
     root.addEventListener("pointerdown", (e) => {
       const b = e.target.closest?.(lpSel);
       const text = b && !b.closest(".item") ? b.getAttribute("title") : "";
@@ -3852,8 +3906,46 @@ class EinkaufslisteCard extends HTMLElement {
 
   // ---------------------------------------------------------------- Rendern
   // ↩️ Zurück-Taste (Offline-App): Ist die Karte ganz „oben“ (normale Liste, nichts offen)?
+  // 📄 Seite IN der Karte (Gar-Zeiten, „Was kann ich kochen?“, Meine Karten): eigener Behälter #pageHost, den _renderAll nur
+  // ein-/ausblendet, aber nie neu baut – darum bleiben Eingaben bei Live-Updates erhalten. Die Ansicht darunter (_view) bleibt unverändert,
+  // beim Schließen ist man genau wieder dort (Rezepte, Einstellungen, Rezept-Editor mit Entwurf, Liste).
+  _openPage({ key, title, icon, color, build, onClose }) {
+    if (this._page) this._closePage(true);
+    const host = this.$("pageHost");
+    host.innerHTML = `<div class="sec pagehost"><div class="sechead">
+      <button class="iconbtn back" type="button" data-act="page-back" title="Zurück" aria-label="Zurück"><ha-icon icon="mdi:arrow-left"></ha-icon></button>
+      <span class="ic" style="--ic:${esc(color || "#607d8b")}"><ha-icon icon="${esc(icon || "mdi:file-outline")}"></ha-icon></span><h3>${esc(title)}</h3>
+      <span class="pagetools"></span></div><div class="pagebody"></div></div>`;
+    const body = host.querySelector(".pagebody"), tools = host.querySelector(".pagetools");
+    const onKey = (e) => {
+      if (e.key !== "Escape" || document.querySelector("[data-elov]") || this._page?.host !== host) return;
+      e.preventDefault();
+      this._closePage();
+    };
+    document.addEventListener("keydown", onKey);
+    this._page = { key, host, body, tools, onClose, onKey };
+    build(body, tools, () => this._closePage());
+    this._renderAll();
+    this._emitNav();
+    host.scrollIntoView?.({ block: "nearest" });
+    return body;
+  }
+
+  // schließt die Seite; silent = ohne neu zu zeichnen (beim Wechsel zu einer anderen Seite)
+  _closePage(silent = false) {
+    const p = this._page;
+    if (!p) return false;
+    this._page = null;
+    document.removeEventListener("keydown", p.onKey);
+    const host = this.$("pageHost");
+    if (host) { host.innerHTML = ""; host.hidden = true; }
+    try { p.onClose?.(); } catch (_) { /* egal */ }
+    if (!silent) { this._renderAll(); this._emitNav(); }
+    return true;
+  }
+
   einkaufslisteIsRoot() {
-    return !document.querySelector("[data-elov]") && this._view === "list" && !this._shopMode
+    return !document.querySelector("[data-elov]") && !this._page && this._view === "list" && !this._shopMode
       && !this._menuId && !this._editing && !this._moving;
   }
 
@@ -3873,6 +3965,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       return true;
     }
+    if (this._page) { this._closePage(); return true; }
     if (this._menuId || this._editing || this._moving) {
       this._menuId = this._editing = this._moving = null;
       this._renderList();
@@ -3914,6 +4007,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   _renderAll() {
     if (!this._built || !this._config) return;
+    if (this._view !== "settings") { this._prodFilter = ""; this._prodSel = ""; } // 🔎 Katalog-Suche nicht über die Einstellungen hinaus merken
     this._refreshTplChips();
     this.toggleAttribute("privacy", this._privacyOn());
     queueMicrotask(() => this._emitNav());
@@ -3927,7 +4021,7 @@ class EinkaufslisteCard extends HTMLElement {
       ? `${c.title || ""}${c.title ? " · " : ""}${this._store(this._fixedStore).name}` : (c.title || "");
     const cardEl = this.shadowRoot.querySelector("ha-card");
     cardEl.classList.toggle("compact", !!c.compact);
-    const shop = !!this._shopMode && this._view === "list";
+    const shop = !!this._shopMode && this._view === "list" && !this._page;
     cardEl.classList.toggle("shop", shop);
     this.$("topBar")?.classList.toggle("shop", shop); // ⚙️ sitzt jetzt in der Leiste oben: im Laden-Modus weg
     const vp = this._viewPrefs(); // 👁️ Ansicht: Leiste/Eingabefelder ausblenden, Schriftgröße
@@ -3936,7 +4030,7 @@ class EinkaufslisteCard extends HTMLElement {
     cardEl.classList.toggle("f-l", vp.font === "l");
     cardEl.classList.toggle("labels", vp.labels !== undefined ? !!vp.labels : !!d?.settings?.labels); // 🏷️ Beschriftungen unter den Icons: „Meine Ansicht“ gewinnt, sonst der Schalter in ⚙️ → Extras (gilt für alle)
     const btnShop = this.$("btnShop");
-    btnShop.hidden = !d || this._view !== "list";
+    btnShop.hidden = !d || this._view !== "list" || !!this._page;
     btnShop.classList.toggle("on", shop);
     btnShop.title = shop ? "Laden-Modus beenden" : "Laden-Modus (große Zeilen, nur Abhaken)";
     btnShop.querySelector("ha-icon").setAttribute("icon", shop ? "mdi:storefront-remove-outline" : "mdi:storefront-outline"); // 🏪 eigenes Bild – der Wagen links heißt „zur Liste“
@@ -3949,8 +4043,8 @@ class EinkaufslisteCard extends HTMLElement {
     btnAwake.classList.toggle("on", !!this._awakeOn);
     btnAwake.title = this._awakeOn ? "Bildschirm immer an – antippen zum Ausschalten" : "Bildschirm immer an (antippen)";
     btnAwake.querySelector("ha-icon").setAttribute("icon", this._awakeOn ? "mdi:lightbulb-on" : "mdi:lightbulb-outline");
-    this.$("btnCards").hidden = !d?.settings?.cards_on || this._view !== "list"; // 💳 nur wenn in ⚙️ → Extras eingeschaltet (auch im Laden-Modus)
-    this.$("btnSpend").hidden = !d?.settings?.spend || this._view !== "list" || !!this._shopMode; // 🧾 nur wenn in ⚙️ eingeschaltet
+    this.$("btnCards").hidden = !d?.settings?.cards_on || this._view !== "list" || !!this._page; // 💳 nur wenn in ⚙️ → Extras eingeschaltet (auch im Laden-Modus)
+    this.$("btnSpend").hidden = !d?.settings?.spend || this._view !== "list" || !!this._shopMode || !!this._page; // 🧾 nur wenn in ⚙️ eingeschaltet
     this.$("titleIcon").title = `🏠 Zurück zur Einkaufsliste${titleText ? ` · ${titleText}` : ""}`;
     this._renderUpdateBar();
     this._renderTip();
@@ -3978,8 +4072,10 @@ class EinkaufslisteCard extends HTMLElement {
 
     const isList = this._view === "list";
     if (this._view !== "recipe") this._parkForm();
-    this.$("listView").hidden = !isList;
-    this.$("otherView").hidden = isList;
+    const pg = !!this._page; // 📄 offene Seite: Liste/Unteransicht nur verstecken (nicht neu bauen), die Seite selbst bleibt unberührt
+    this.$("listView").hidden = !isList || pg;
+    this.$("otherView").hidden = isList || pg;
+    this.$("pageHost").hidden = !pg;
     const page = `${this._view}|${this._view === "settings" ? this._setSec || "" : ""}`;
     if (this._lastPage !== undefined && this._lastPage !== page) { // ✨ andere Seite: kurz weich einblenden statt hart springen
       const box = this.$(isList ? "listView" : "otherView");
@@ -4992,6 +5088,7 @@ class EinkaufslisteCard extends HTMLElement {
   // ---------------------------------------------------------------- Einstellungen
   _renderSettings() {
     queueMicrotask(() => this._emitNav());
+    if (this._setSec !== "products") { this._prodFilter = ""; this._prodSel = ""; } // 🔎 Suche/Filter im Katalog sind weg, sobald man die Seite verlässt
     this._parkForm();
     const d = this._data;
     const s = d.settings;
@@ -5141,7 +5238,7 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">${persons.length ? "Diese Namen erscheinen als Schnellknöpfe bei 👤 „Für wen?“. Person antippen = Name und Farbe ändern." : "Noch keine Personen – solange bleibt das Feld „Für wen?“ ausgeblendet."}</p>`;
       } },
       { key: "listview", icon: "mdi:eye-outline", title: "Listenansicht – für alle", info: this._viewInfo(), html: () => this._viewHtml() },
-      { key: "products", icon: "mdi:package-variant-closed", title: "Produkte", info: "alle Produkte, Fotos, Barcodes, löschen", html: () => `
+      { key: "products", icon: "mdi:package-variant-closed", title: "Produkte/Katalog", info: "alle Produkte, Fotos, Barcodes, löschen", html: () => `
         <div class="subtabs">
           <button class="tab ${!this._prodTab || this._prodTab === "catalog" ? "active" : ""}" data-act="prod-tab" data-tab="catalog"><ha-icon icon="mdi:package-variant-closed"></ha-icon>Alle Produkte</button>
           <button class="tab ${this._prodTab === "scanned" ? "active" : ""}" data-act="prod-tab" data-tab="scanned" style="--c:var(--warning-color,#ffa600)"><ha-icon icon="mdi:barcode-scan"></ha-icon>Neu gescannt${d.scanned_new ? ` (${d.scanned_new})` : ""}</button>
@@ -5156,7 +5253,6 @@ class EinkaufslisteCard extends HTMLElement {
           : `<p class="hint">Alle Produkte, die die Liste kennt. Antippen = ändern oder ganz löschen. Umbenennen zieht Fotos, Barcodes, Artikel und Rezepte mit.</p>`}
         <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen, z. B. Milch" value="${esc(this._prodFilter || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="prodSearch" ${this._prodFilter ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
         ${this._prodTab === "scanned" ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:filter-variant"></ha-icon><select class="grow" id="prodFilterSel" title="Filter">${this._prodFilterOptions()}</select>
-          <button class="btn" id="prodClear" data-act="prod-clear" title="Eingaben und Filter zurücksetzen" aria-label="Eingaben und Filter zurücksetzen" ${this._prodFilter || this._prodSel ? "" : "hidden"}><ha-icon icon="mdi:eraser"></ha-icon></button>
           <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog" aria-label="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon></button>
           <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog" aria-label="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
           <button class="btn" data-act="prod-refresh-all" title="Alles neu holen (Name, Notiz, Foto) – für alle Produkte mit Barcode, mit Auswahl" aria-label="Alles neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon></button></div>
@@ -5238,6 +5334,8 @@ class EinkaufslisteCard extends HTMLElement {
       { key: "pin", icon: this._data.settings?.pin ? "mdi:lock-outline" : "mdi:lock-open-variant-outline", title: "Schutz", info: this._data.settings?.pin ? "PIN ist an" : "PIN fürs Zahnrad", html: () => this._pinHtml() },
       { key: "log", icon: "mdi:history", title: "Verlauf", info: "wer, wann, was, wie", html: () => this._logSectionHtml() },
       { key: "cleanup", icon: "mdi:broom", title: "Aufräumen", info: s.cleanup_on === false ? "automatisch: aus" : `${WD_SHORT[s.cleanup_weekday]} ${s.cleanup_time} Uhr`, html: () => `
+        <div class="xaccs">
+        ${this._acc("clean", "auto", "mdi:calendar-sync", "#43a047", "Automatisch aufräumen", s.cleanup_on === false ? "aus" : `${WD_LONG[s.cleanup_weekday]} um ${s.cleanup_time} Uhr`, `
         <p class="hint">Einmal pro Woche hakt die Liste von selbst alte Artikel ab. Gelöscht wird nichts – du kannst sie später mit einem Tipp wieder auf die Liste nehmen. Gilt für alle.</p>
         ${this._swHtml("cleanup-toggle", s.cleanup_on !== false, "Automatisch aufräumen")}
         ${s.cleanup_on === false ? "" : `
@@ -5245,13 +5343,15 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="srow"><ha-icon class="prev" icon="mdi:clock-outline"></ha-icon><input class="grow" id="clTime" type="time" value="${esc(s.cleanup_time)}" title="Uhrzeit"></div>
         <div class="srow"><ha-icon class="prev" icon="mdi:calendar-clock"></ha-icon><input class="grow" id="clAge" type="number" min="0" max="60" step="1" inputmode="numeric" value="${esc(s.min_age_days)}" title="Mindestens so viele Tage auf der Liste"><span class="hint">Tage alt</span></div>
         <div class="btnrow"><button class="btn primary" data-act="cleanup-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button></div>
-        <p class="hint">Jeden ${WD_LONG[s.cleanup_weekday]} um ${s.cleanup_time} Uhr werden alle offenen Artikel abgehakt, die mindestens ${s.min_age_days} Tage auf der Liste stehen (7 = eine Woche).</p>`}
-        <hr><p><b>Von Hand</b></p>
+        <p class="hint">Jeden ${WD_LONG[s.cleanup_weekday]} um ${s.cleanup_time} Uhr werden alle offenen Artikel abgehakt, die mindestens ${s.min_age_days} Tage auf der Liste stehen (7 = eine Woche).</p>`}`)}
+        ${this._acc("clean", "hand", "mdi:broom", "#1e88e5", "Von Hand aufräumen", "Jetzt aufräumen oder alles abhaken", `
         <div class="btnrow">
           <button class="btn" data-act="cleanup-now"><ha-icon icon="mdi:broom"></ha-icon>Jetzt aufräumen</button>
           <button class="btn" data-act="cleanup-all"><ha-icon icon="mdi:checkbox-multiple-marked-circle-outline"></ha-icon>Alles abhaken</button>
-        </div>
-        ${this._hass?.user?.is_admin ? `<hr><p><b>🧽 Liste löschen</b> (nur Admins)<br>Hier räumst du die <b>Einkaufsliste</b> richtig auf, zum Beispiel am Sonntag für die neue Woche. Wähle ein Geschäft oder „Alle Geschäfte“:</p>
+        </div>`)}
+        ${this._hass?.user?.is_admin ? `
+        ${this._acc("clean", "purge", "mdi:delete-sweep-outline", "#fb8c00", "Liste löschen", "Erledigte löschen oder Liste leeren – nur Admins", `
+        <p><b>🧽 Liste löschen</b> (nur Admins)<br>Hier räumst du die <b>Einkaufsliste</b> richtig auf, zum Beispiel am Sonntag für die neue Woche. Wähle ein Geschäft oder „Alle Geschäfte“:</p>
         <ul class="hint">
           <li><b>Erledigte löschen</b> = nur das, was schon abgehakt ist („Erledigt – schon mal gekauft“). Offene Artikel bleiben.</li>
           <li><b>Liste leeren</b> = offene <b>und</b> erledigte Artikel, die Liste ist danach wieder leer.</li>
@@ -5261,12 +5361,14 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="btnrow">
           <button class="btn danger" data-act="items-purge" data-scope="done"><ha-icon icon="mdi:check-all"></ha-icon>Erledigte löschen</button>
           <button class="btn danger" data-act="items-purge" data-scope="all"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Liste leeren</button>
-        </div>
-        <hr><p><b>🧹 Alles löschen</b><br>Löscht die <b>Einkaufsliste</b> und den <b>ganzen Katalog</b> mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. <b>Das geht nicht rückgängig.</b> Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.</p>
-        <div class="btnrow"><button class="btn danger" data-act="catalog-wipe"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Katalog &amp; Liste komplett löschen</button></div>
-        <hr><p><b>💣 Werkseinstellungen</b><br>Setzt <b>wirklich alles</b> zurück, als hättest du die Einkaufsliste frisch installiert: Einkaufsliste, Katalog, alle Fotos, <b>Geschäfte, Kategorien, Personen, Rezepte</b>, Kundenkarten, Grocy- und To-do-Verbindungen, Einkaufs-Protokoll, Verlauf und alle Schalter. Danach kommen die Standard-Geschäfte und -Kategorien wieder. Nur die <b>PIN</b> bleibt. <b>Das geht nicht rückgängig</b> – vorher eine Sicherung machen.</p>
+        </div>`)}
+        ${this._acc("clean", "wipe", "mdi:delete-forever-outline", "#e53935", "Alles löschen", "Liste und ganzen Katalog löschen – nur Admins", `
+        <p><b>🧹 Alles löschen</b><br>Löscht die <b>Einkaufsliste</b> und den <b>ganzen Katalog</b> mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. <b>Das geht nicht rückgängig.</b> Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.</p>
+        <div class="btnrow"><button class="btn danger" data-act="catalog-wipe"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Katalog &amp; Liste komplett löschen</button></div>`)}
+        ${this._acc("clean", "factory", "mdi:nuke", "#b71c1c", "Werkseinstellungen", "Alles zurücksetzen – nur Admins", `
+        <p><b>💣 Werkseinstellungen</b><br>Setzt <b>wirklich alles</b> zurück, als hättest du die Einkaufsliste frisch installiert: Einkaufsliste, Katalog, alle Fotos, <b>Geschäfte, Kategorien, Personen, Rezepte</b>, Kundenkarten, Grocy- und To-do-Verbindungen, Einkaufs-Protokoll, Verlauf und alle Schalter. Danach kommen die Standard-Geschäfte und -Kategorien wieder. Nur die <b>PIN</b> bleibt. <b>Das geht nicht rückgängig</b> – vorher eine Sicherung machen.</p>
         <p class="hint">Gedacht für den kompletten Neuanfang, zum Beispiel nach einem Grocy-Import. Wenn du die Integration nur entfernst und neu installierst, bleiben deine Daten nämlich erhalten (so macht es Home Assistant).</p>
-        <div class="btnrow"><button class="btn danger" data-act="factory-reset"><ha-icon icon="mdi:nuke"></ha-icon>Werkseinstellungen – alles löschen</button></div>` : `<p class="hint">🧽 Liste löschen, 🧹 „Alles löschen“ und 💣 Werkseinstellungen gibt es nur für Admins.</p>`}` },
+        <div class="btnrow"><button class="btn danger" data-act="factory-reset"><ha-icon icon="mdi:nuke"></ha-icon>Werkseinstellungen – alles löschen</button></div>`)}` : `<p class="hint">🧽 Liste löschen, 🧹 „Alles löschen“ und 💣 Werkseinstellungen gibt es nur für Admins.</p>`}` },
     ];
     if (this._setSec === "recipe_groups") { this._setSec = "recipes"; this._recTab = "groups"; } // alter Weg zu den Rezept-Gruppen
     const cur = sections.find((x) => x.key === this._setSec && !x.alias);
@@ -5361,10 +5463,11 @@ class EinkaufslisteCard extends HTMLElement {
   _settingsListHtml(sections) {
     const groups = [
       ["📋 Meine Liste", ["stores", "categories", "persons", "products", "recipes"]],
-      ["🎛️ Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot", "labels"]],
+      ["🎛️ Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"]],
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
-      ["📱 App & Info", ["listview", "app", "theme", "pin", "privacy", "news", "credits"]],
+      ["👁️ Ansicht", ["listview", "labels", "theme"]],
+      ["📱 App & Info", ["app", "pin", "privacy", "news", "credits"]],
     ];
     const kw = {
       stores: "laden markt zone standort icon eigenmarken", categories: "kategorie farbe reihenfolge", persons: "für wen namen familie",
@@ -5425,7 +5528,7 @@ class EinkaufslisteCard extends HTMLElement {
           ? `Gilt nur für <b translate="no">${esc(this._hass?.user?.name || "dich")}</b> – auf allen Geräten, auf denen du angemeldet bist. Was du hier nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht).`
           : "Was alle in der Familie beim Artikel sehen (Standard). Jeder kann es für sich selbst anders einstellen – ganz unten unter der Liste mit „👁️ Ansicht“, ganz ohne PIN."}</p>
         ${mine ? (() => { const on = cur.labels !== undefined ? !!cur.labels : !!this._data?.settings?.labels; return `<p class="hint"><b>🏷️ Beschriftungen</b> – Text unter den Icons</p>
-        <button class="lrow viewrow" data-act="view-labels" aria-pressed="${on}"><ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon><span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Extras → Beschriftungen.</small></span></button>`; })() : ""}
+        <button class="lrow viewrow" data-act="view-labels" aria-pressed="${on}"><ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon><span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.</small></span></button>`; })() : ""}
         ${mine ? (() => { const on = cur.anim !== false; return `<p class="hint"><b>✔️ Abhaken</b></p>
         <button class="lrow viewrow" data-act="view-anim" aria-pressed="${on}"><ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon><span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`; })() : ""}
         <p class="hint"><b>🔠 Schriftgröße</b></p>
@@ -5525,6 +5628,12 @@ class EinkaufslisteCard extends HTMLElement {
     } catch (_) { /* Meldung kam schon */ }
   }
 
+  // 🪗 Aufklapper-Kasten (Import „Aus anderen Apps“, Aufräumen): immer nur einer pro Gruppe g offen
+  _acc(g, k, icon, color, title, sub, inner) {
+    const on = (this._accOpen || {})[g] === k;
+    return `<div class="xacc ${on ? "open" : ""}" data-k="${k}"><button type="button" class="xacc-h" data-act="acc-toggle" data-g="${g}" data-k="${k}" aria-expanded="${on}"><span class="ic" style="--ic:${color}"><ha-icon icon="${icon}"></ha-icon></span><span class="grow"><b>${title}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button><div class="xacc-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
+  }
+
   // 📥 Import & Sicherung: Rezepte aus Datei, andere Apps, Backup
   _xferHtml() {
     const tab = !this._xferTab || this._xferTab === "recipes" ? "apps" : this._xferTab; // „Rezepte aus Datei“ ist jetzt unter ⚙️ → Rezepte
@@ -5536,7 +5645,8 @@ class EinkaufslisteCard extends HTMLElement {
       const syncs = this._data.settings?.todo_syncs || [];
       const modeName = { move: "herüberholen & dort löschen", keep: "bei beiden behalten", sync: "voller Abgleich" };
       const editSync = syncs.find((x) => x.entity_id === this._syncSel) || null;
-      body = `
+      const acc = (...a) => this._acc("xfer", ...a);
+      const autoInner = `
         <div class="syncbox">
         <p class="hint">${EL_LANG === "en" ? `<b>🔁 Bring over automatically</b>: everything that lands on the chosen lists moves <b>right away</b> into the shopping list – no automation needed. You can use <b>several lists</b>, each with its <b>own store</b> and its own kind. Choose below: 🗑️ delete there · 🔗 keep on both (checking off is matched both ways) · 🔄 full sync (everything from the shopping list also goes there, without store and note). For <b>Alexa</b>: set up the “Alexa Devices” integration in Home Assistant and pick its shopping list here. Then “Alexa, add milk to my shopping list” is all it takes.` : `<b>🔁 Automatisch herüberholen</b>: Alles, was auf den gewählten Listen landet, wandert <b>sofort</b> in die Einkaufsliste – ganz ohne Automation. Du kannst <b>mehrere Listen</b> nehmen, jede mit <b>eigenem Geschäft</b> und eigener Art. Unten auswählen: 🗑️ dort löschen · 🔗 bei beiden behalten (Abhaken wird in beide Richtungen abgeglichen) · 🔄 voller Abgleich (zusätzlich kommt alles aus der Einkaufsliste auch dorthin, ohne Geschäft und Notiz). Für <b>Alexa</b>: in Home Assistant die Integration „Alexa Devices“ einrichten und hier deren Einkaufsliste wählen. Dann reicht „Alexa, setz Milch auf die Einkaufsliste“.`}</p>
         ${syncs.map((sy) => `<div class="syncrow" data-ent="${esc(sy.entity_id)}"><span class="grow"><b>✅</b> <span translate="no">${esc(sy.name || sy.entity_id)}</span> → ${sy.store_id && this._store(sy.store_id) ? `<span translate="no">${esc(this._store(sy.store_id).name)}</span>` : "<span>Egal wo</span>"}<span> · ${modeName[sy.mode] || ""}</span>${sy.count ? `<span> · ${sy.count} geholt</span>` : ""}${sy.ok === false ? ` <span title="Liste gerade nicht erreichbar">⚠️</span>` : ""}</span>
@@ -5551,20 +5661,29 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="syncStore">${this._selectOptions(this._data.stores, editSync?.store_id || null, "🛒 Egal wo")}</select></div>
         <div class="btnrow"><button class="btn primary" data-act="sync-on"><ha-icon icon="mdi:sync"></ha-icon>${editSync ? "Speichern" : "Hinzufügen"}</button>${editSync ? `<button class="btn" data-act="sync-cancel">Abbrechen</button>` : ""}</div>
         `}
-        </div>
+        </div>`;
+      const onceInner = `
         <p class="hint" style="margin-top:14px"><b>Einmal herüberholen</b>: Die Artikel einer anderen HA-Liste (z. B. der eingebauten Einkaufsliste oder einer Google-/Bring!-Liste, die in HA eingebunden ist) herüberholen. Die alte Liste bleibt, wie sie ist.</p>
         <div class="srow"><ha-icon class="prev" icon="mdi:format-list-checks"></ha-icon><select class="grow" id="xferTodo"><option value="">Lade Listen …</option></select></div>
         <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="xferTodoStore">${stores}</select></div>
-        <div class="btnrow"><button class="btn primary" data-act="xfer-todo"><ha-icon icon="mdi:import"></ha-icon>Herüberholen</button></div>
+        <div class="btnrow"><button class="btn primary" data-act="xfer-todo"><ha-icon icon="mdi:import"></ha-icon>Herüberholen</button></div>`;
+      const textInner = `
         <p class="hint" style="margin-top:14px"><b>Text einfügen</b>: In Bring!, Google Keep & Co. die Liste „teilen“ oder kopieren und hier einfügen – ein Artikel pro Zeile. Aufzählungszeichen und Häkchen stören nicht, schon abgehakte (☑, [x]) bleiben draußen.</p>
         <textarea id="xferText" rows="6" placeholder="Milch&#10;2 Äpfel&#10;- Brot&#10;☐ Butter"></textarea>
         <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="xferTextStore">${stores}</select></div>
-        <div class="btnrow"><button class="btn primary" data-act="xfer-text"><ha-icon icon="mdi:playlist-plus"></ha-icon>Auf die Liste</button></div>
-        ${admin ? `<p class="hint" style="margin-top:14px"><b>📄 Katalog aus CSV oder Liste</b>: Eine Datei (CSV/Text) oder eingefügte Zeilen als <b>Produkte in den Katalog</b> – nicht auf die Einkaufsliste. Eine Zeile pro Produkt. Mit Kopfzeile (<code>Name; Kategorie; Barcode; Notiz</code>, Reihenfolge egal) oder ohne – dann gilt genau diese Reihenfolge. Trenner <code>;</code> , oder Tab. Was es schon gibt, wird nicht überschrieben.</p>
+        <div class="btnrow"><button class="btn primary" data-act="xfer-text"><ha-icon icon="mdi:playlist-plus"></ha-icon>Auf die Liste</button></div>`;
+      const csvInner = `<p class="hint" style="margin-top:14px"><b>📄 Katalog aus CSV oder Liste</b>: Eine Datei (CSV/Text) oder eingefügte Zeilen als <b>Produkte in den Katalog</b> – nicht auf die Einkaufsliste. Eine Zeile pro Produkt. Mit Kopfzeile (<code>Name; Kategorie; Barcode; Notiz</code>, Reihenfolge egal) oder ohne – dann gilt genau diese Reihenfolge. Trenner <code>;</code> , oder Tab. Was es schon gibt, wird nicht überschrieben.</p>
         <textarea id="csvText" rows="5" placeholder="Name;Kategorie;Barcode;Notiz&#10;Milch;Milchprodukte;4006381333931;Bio&#10;Brot"></textarea>
         <div class="btnrow"><label class="btn"><ha-icon icon="mdi:file-delimited-outline"></ha-icon>Datei wählen …<input type="file" id="csvFile" accept=".csv,.txt,text/csv,text/plain" hidden></label></div>
         <label class="favrow"><input type="checkbox" id="csvCats" checked><span>Kategorien neu anlegen, falls es sie hier noch nicht gibt</span></label>
-        <div class="btnrow"><button class="btn primary" data-act="csv-go"><ha-icon icon="mdi:database-import-outline"></ha-icon>In den Katalog</button></div>` : ""}
+        <div class="btnrow"><button class="btn primary" data-act="csv-go"><ha-icon icon="mdi:database-import-outline"></ha-icon>In den Katalog</button></div>`;
+      const en = EL_LANG === "en";
+      body = `<div class="xaccs">
+        ${acc("auto", "mdi:sync", "#43a047", "Automatisch herüberholen", syncs.length ? (en ? `${syncs.length} list(s) active` : `${syncs.length} ${syncs.length === 1 ? "Liste" : "Listen"} aktiv`) : "Noch keine Liste eingerichtet", autoInner)}
+        ${acc("once", "mdi:import", "#1e88e5", "Einmal herüberholen", "Eine andere HA-Liste einmalig übernehmen", onceInner)}
+        ${acc("text", "mdi:clipboard-text-outline", "#fb8c00", "Text einfügen", "Bring!, Keep & Co. – ein Artikel pro Zeile", textInner)}
+        ${admin ? acc("csv", "mdi:file-delimited-outline", "#8e24aa", "Katalog aus CSV", "Produkte in den Katalog, nicht auf die Liste", csvInner) : ""}
+        </div>
         <div id="xferRes"></div>`;
     } else if (tab === "grocy") {
       body = admin ? this._grocyHtml() : `<p class="hint">🔒 Produkte aus Grocy holen darf nur ein Admin – es ruft ein anderes Gerät im Netz ab.</p>`;
@@ -5711,22 +5830,30 @@ class EinkaufslisteCard extends HTMLElement {
   // … und der Dialog: Zutaten eintippen, Ideen holen, Fehlendes auf die Liste oder als Rezept
   _aiCook() {
     if (this._privacyBlock()) return;
-    const ov = makeOverlay();
-    Object.assign(ov.style, { justifyContent: "flex-start", overflowY: "auto", touchAction: "auto" });
+    // 📄 Seite IN der Karte (kein Vollbild-Fenster): die Eingaben bleiben, solange die Seite offen ist
     const agentName = this._hass?.states?.[this._data.settings?.ai_agent]?.attributes?.friendly_name || this._data.settings?.ai_agent || "KI";
-    const fld = "width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee";
     const last = this._aiLast || { text: "", wish: "", list: false, servings: 2 };
-    const svb = "width:38px;height:38px;border-radius:50%;border:1px solid #666;background:#2a2a2a;color:#eee;font:600 20px Roboto,sans-serif;cursor:pointer;padding:0";
-    ov.innerHTML = `<div style="max-width:560px;width:100%;display:flex;flex-direction:column;gap:10px;margin:auto 0">
-      <div style="font:600 19px Roboto,sans-serif;text-align:center">🤖 Was kann ich kochen?</div>
-      <div style="opacity:.8;font-size:.92em">Schreib auf, was du da hast – es müssen keine Produkte aus dem Katalog sein. Eine Zutat pro Zeile oder mit Komma.</div>
-      <textarea data-in rows="5" style="${fld}" placeholder="Nudeln&#10;2 Tomaten&#10;Feta&#10;Reste vom Hähnchen"></textarea>
-      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-list> <span>Offene Artikel von der Einkaufsliste mitnehmen</span></label>
-      <input data-wish style="${fld}" maxlength="200" placeholder="Wünsche, z. B. vegetarisch, schnell">
-      <div data-sv style="display:flex;gap:10px;align-items:center"><span>👥 Für</span><button type="button" data-svm style="${svb}" aria-label="Weniger">−</button><b data-svn style="min-width:1.5em;text-align:center">2</b><button type="button" data-svp style="${svb}" aria-label="Mehr">+</button><span>Personen</span></div>
-      <div style="opacity:.65;font-size:.82em">🔒 Die Namen der Zutaten gehen an den Assistenten „${esc(agentName)}“ in Home Assistant. Antworten einer KI können falsch sein – bitte kurz prüfen.</div>
-      <div data-btns style="display:flex;gap:10px;justify-content:flex-end"></div>
+    let ov = null;
+    this._openPage({ key: "ai", title: "Was kann ich kochen?", icon: "mdi:robot-happy-outline", color: SET_COLORS.aicook, build: (body) => {
+      ov = body;
+      body.innerHTML = `<div class="pgcol">
+      <div class="pgsmall">Schreib auf, was du da hast – es müssen keine Produkte aus dem Katalog sein. Eine Zutat pro Zeile oder mit Komma.</div>
+      <textarea data-in rows="5" placeholder="Nudeln&#10;2 Tomaten&#10;Feta&#10;Reste vom Hähnchen"></textarea>
+      <label class="pgrow"><input type="checkbox" data-list> <span>Offene Artikel von der Einkaufsliste mitnehmen</span></label>
+      <input data-wish maxlength="200" placeholder="Wünsche, z. B. vegetarisch, schnell">
+      <div data-sv class="pgrow pgsv"><span>👥 Für</span><button type="button" class="btn" data-svm aria-label="Weniger">−</button><b data-svn style="min-width:1.5em;text-align:center">2</b><button type="button" class="btn" data-svp aria-label="Mehr">+</button><span>Personen</span></div>
+      <div class="pgsmall">🔒 Die Namen der Zutaten gehen an den Assistenten „${esc(agentName)}“ in Home Assistant. Antworten einer KI können falsch sein – bitte kurz prüfen.</div>
+      <div data-btns class="btnrow" style="justify-content:flex-end"></div>
       <div data-res></div></div>`;
+    } });
+    if (!ov) return;
+    const pbtn = (label, main = false) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = main ? "btn primary" : "btn";
+      b.textContent = label;
+      return b;
+    };
     const $ = (sel) => ov.querySelector(sel);
     $("[data-in]").value = last.text; $("[data-wish]").value = last.wish; $("[data-list]").checked = last.list === true;
     let servings = Math.min(20, Math.max(1, Number(last.servings) || 2));
@@ -5737,7 +5864,7 @@ class EinkaufslisteCard extends HTMLElement {
     // 📚 Vorschläge aus dem Katalog beim Tippen (nur Namen; es gehen weiter nur die Zutaten aus der Liste an die KI)
     const ta = $("[data-in]");
     const sug = document.createElement("div");
-    sug.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-top:-4px";
+    sug.className = "aisug";
     ta.after(sug);
     const frag = () => {
       const pos = ta.selectionStart ?? ta.value.length;
@@ -5764,7 +5891,7 @@ class EinkaufslisteCard extends HTMLElement {
         const b = document.createElement("button");
         b.type = "button";
         b.textContent = n;
-        b.style.cssText = "font:14px Roboto,sans-serif;padding:5px 11px;border-radius:16px;border:1px solid #555;background:#2a2a2a;color:#eee;cursor:pointer";
+        b.className = "aichip";
         b.addEventListener("pointerdown", (e) => e.preventDefault()); // Fokus bleibt im Feld
         b.onclick = () => {
           const g = frag();
@@ -5782,23 +5909,20 @@ class EinkaufslisteCard extends HTMLElement {
     ta.addEventListener("click", drawSug);
     ta.addEventListener("keyup", (e) => { if (e.key.startsWith("Arrow")) drawSug(); });
     const res = $("[data-res]");
-    const close = ovButton("Schließen");
-    const go = ovButton("🤖 Ideen holen", true);
-    $("[data-btns]").append(close, go);
-    close.onclick = () => ov.remove();
+    const go = pbtn("🤖 Ideen holen", true);
+    $("[data-btns]").append(go);
     const names = () => $("[data-in]").value.split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean);
     const card = (idea) => {
       const box = document.createElement("div");
-      box.style.cssText = "background:rgba(255,255,255,.09);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px";
+      box.className = "aicard";
       const list = (a) => a.map(esc).join(", ");
       box.innerHTML = `<div><b style="font-size:1.08em" translate="no">${esc(idea.name)}</b>${idea.time || idea.servings ? ` <small style="opacity:.7">${[idea.time, idea.servings ? `${idea.servings} ${elT("Portionen")}` : ""].filter(Boolean).map(esc).join(" · ")}</small>` : ""}</div>
         <div data-hm style="display:flex;flex-direction:column;gap:6px"></div>
-        ${idea.steps.length ? `<details><summary style="cursor:pointer">${elT("Zubereitung")}</summary><ol style="margin:6px 0 0;padding-left:20px" translate="no">${idea.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></details>` : ""}
+        ${idea.steps.length ? `<details><summary>${elT("Zubereitung")}</summary><ol style="margin:6px 0 0;padding-left:20px" translate="no">${idea.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></details>` : ""}
         <div data-ab style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"></div>`;
       const ab = box.querySelector("[data-ab]");
       // ✅/🛒 Zutaten antippen: von „Hast du“ nach „Fehlt“ (und zurück) verschieben
       const hm = box.querySelector("[data-hm]");
-      const chipCss = "font:14px Roboto,sans-serif;padding:4px 10px;border-radius:14px;border:1px solid #666;background:#2a2a2a;color:#eee;cursor:pointer;margin:2px 4px 2px 0";
       let b = null;
       const draw = () => {
         const row = (icon, title, arr, from, to) => {
@@ -5812,7 +5936,7 @@ class EinkaufslisteCard extends HTMLElement {
             c.type = "button";
             c.textContent = x;
             c.title = elT(from === "have" ? "Doch nicht da – auf „Fehlt“ setzen" : "Doch da – auf „Hast du“ setzen");
-            c.style.cssText = chipCss;
+            c.className = "aichip";
             c.onclick = () => { arr.splice(arr.indexOf(x), 1); to.push(x); draw(); };
             w.append(c);
           }
@@ -5825,13 +5949,13 @@ class EinkaufslisteCard extends HTMLElement {
         else { const n = document.createElement("div"); n.style.fontSize = ".92em"; n.textContent = `👍 ${elT("Es fehlt nichts")}`; hm.append(n); }
         if (idea.have.length + idea.missing.length) {
           const t = document.createElement("div");
-          t.style.cssText = "opacity:.6;font-size:.8em";
+          t.className = "pgsmall";
           t.textContent = elT("Tipp auf eine Zutat verschiebt sie zwischen „Hast du“ und „Fehlt“.");
           hm.append(t);
         }
         if (b) { b.hidden = !idea.missing.length; b.disabled = false; b.textContent = elT("🛒 Fehlendes auf die Liste"); }
       };
-      b = ovButton("🛒 Fehlendes auf die Liste");
+      b = pbtn("🛒 Fehlendes auf die Liste");
       b.onclick = async () => {
         b.disabled = true;
         try {
@@ -5841,7 +5965,7 @@ class EinkaufslisteCard extends HTMLElement {
         } catch (_) { b.disabled = false; }
       };
       ab.append(b);
-      const rb = ovButton("👨‍🍳 Als Rezept speichern");
+      const rb = pbtn("👨‍🍳 Als Rezept speichern");
       rb.onclick = async () => {
         rb.disabled = true;
         try {
@@ -5870,7 +5994,7 @@ class EinkaufslisteCard extends HTMLElement {
       const ingredients = names(), use_list = $("[data-list]").checked, wishes = $("[data-wish]").value.trim();
       this._aiLast = { text: $("[data-in]").value, wish: wishes, list: use_list, servings };
       go.disabled = true;
-      res.innerHTML = `<p style="text-align:center;opacity:.8">⏳ ${elT("Die KI überlegt … das kann bis zu einer Minute dauern.")}</p>`;
+      res.innerHTML = `<p class="pgsmall" style="text-align:center">⏳ ${elT("Die KI überlegt … das kann bis zu einer Minute dauern.")}</p>`;
       try {
         const r = await this._hass.callWS({ type: "einkaufsliste/ai/cook", ingredients, use_list, wishes, servings });
         res.innerHTML = "";
@@ -5880,7 +6004,7 @@ class EinkaufslisteCard extends HTMLElement {
         res.append(wrap);
         elTranslateTree(res);
       } catch (err) {
-        res.innerHTML = `<p style="color:#ffb74d;text-align:center">⚠️ ${esc(elT(err?.message || "Das hat nicht geklappt 🙈"))}</p>`;
+        res.innerHTML = `<p style="color:var(--warning-color,#ffa600);text-align:center">⚠️ ${esc(elT(err?.message || "Das hat nicht geklappt 🙈"))}</p>`;
       }
       go.disabled = false;
     };
@@ -6411,7 +6535,6 @@ class EinkaufslisteCard extends HTMLElement {
   _renderProducts() {
     const box = this.$("prodList");
     if (!box || !this._products) return;
-    const pc = this.$("prodClear"); if (pc) pc.hidden = !(this._prodFilter || this._prodSel); // 🧽 nur zeigen, wenn es etwas zurückzusetzen gibt
     const q = (this._prodFilter || "").trim().toLowerCase();
     const scannedTab = this._prodTab === "scanned";
     const ff = scannedTab ? () => true : this._prodFilterFn();
@@ -8417,7 +8540,7 @@ class EinkaufslisteCard extends HTMLElement {
     const bIng = ovButton("🥕"), bGar = ovButton("⏲️"), bClose = ovButton("✕"), bPhoto = ovButton("📷");
     bIng.title = elT("Zutaten"); bPhoto.title = elT("Foto zu diesem Schritt"); bPhoto.style.display = "none";
     bGar.title = elT("Gar-Zeiten");
-    bGar.onclick = () => showGarTable();
+    bGar.onclick = () => showGarTable(); // im Koch-Fenster bleibt es ein Fenster (die Seite läge dahinter)
     head.append(title, bPhoto, bIng, bGar, bClose);
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
@@ -8893,29 +9016,14 @@ class EinkaufslisteCard extends HTMLElement {
 
   _openCards() {
     if (!this._data?.settings?.cards_on) return;
-    const ov = makeOverlay();
-    Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
-      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
-    let cards = this._cardsCached(), offline = false;
+    // 📄 Seite IN der Karte (wie die anderen Seiten): ← und Zurück-Taste führen zur Liste; _showCard/_editCard bleiben Vollbild-Fenster darüber
+    let cards = this._cardsCached(), offline = false, body = null, tools = null;
     const draw = () => {
-      ov.innerHTML = `<style>
-        .cw { width:100%; max-width:560px; font:15px/1.4 Roboto,sans-serif; color:#eee; }
-        .ch { display:flex; align-items:center; gap:8px; margin:6px 0 14px; } .ch h2 { flex:1; margin:0; font-size:20px; }
-        .cc { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; margin:0 0 10px; padding:16px 14px; border:0; border-radius:14px; cursor:pointer;
-          background:var(--c,#3a3a3a); color:#fff; font:600 18px Roboto,sans-serif; text-align:left; }
-        .cc .ci { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .cc small { display:block; font-weight:400; font-size:12px; opacity:.85; }
-        .ce { background:rgba(255,255,255,.22); border:0; border-radius:10px; color:#fff; font-size:16px; padding:8px 10px; cursor:pointer; }
-        .cn { color:#bbb; text-align:center; padding:26px 8px; }
-      </style><div class="cw"><div class="ch"><h2>💳 Meine Karten</h2></div>
-        ${cards.map((c) => `<button type="button" class="cc" data-id="${esc(c.id)}" style="${c.color ? `--c:${esc(c.color)}` : ""}"><span class="ci"><span translate="no">${esc(c.name)}</span><small>${c.shared ? "👪 für alle" : "👤 nur ich"}${c.has_photo ? " · 📷" : ""}</small></span><span class="ce" data-edit="${esc(c.id)}" title="Bearbeiten">✏️</span></button>`).join("")
+      if (!body?.isConnected) return;
+      body.innerHTML = `<div class="cardlist">${cards.map((c) => `<button type="button" class="cc" data-id="${esc(c.id)}" style="${c.color ? `--c:${esc(c.color)};--tc:${elTextOn(c.color)}` : ""}"><span class="ci"><span translate="no">${esc(c.name)}</span><small>${c.shared ? "👪 für alle" : "👤 nur ich"}${c.has_photo ? " · 📷" : ""}</small></span><span class="ce" data-edit="${esc(c.id)}" title="Bearbeiten">✏️</span></button>`).join("")
           || `<div class="cn">Noch keine Karte. Tipp auf „➕ Karte“ – dann scannen oder die Nummer eintippen.</div>`}
         ${offline ? `<div class="cn">📴 Kein Netz – das sind die zuletzt gemerkten Karten.</div>` : ""}</div>`;
-      const head = ov.querySelector(".ch");
-      const add = ovButton("➕ Karte", true), close = ovButton("✖");
-      add.onclick = () => this._editCard(null, async () => { const l = await this._cardsFetch(); if (l) { cards = l; draw(); } });
-      close.onclick = () => ov.remove();
-      head.append(add, close);
-      ov.querySelectorAll(".cc").forEach((b) => {
+      body.querySelectorAll(".cc").forEach((b) => {
         b.onclick = (e) => {
           const card = cards.find((c) => c.id === b.dataset.id);
           if (!card) return;
@@ -8924,8 +9032,19 @@ class EinkaufslisteCard extends HTMLElement {
         };
       });
     };
+    this._openPage({ key: "cards", title: "Meine Karten", icon: "mdi:credit-card-outline", color: SET_COLORS.cards, build: (bd, tl) => {
+      body = bd; tools = tl;
+      const add = document.createElement("button");
+      add.type = "button";
+      add.className = "btn primary";
+      add.title = "Karte hinzufügen";
+      add.setAttribute("aria-label", "Karte hinzufügen");
+      add.innerHTML = `<ha-icon icon="mdi:plus"></ha-icon><span class="lbl">Karte</span>`; // nur Icon – Text bei „Beschriftungen“ oder langem Drücken
+      add.onclick = () => this._editCard(null, async () => { const l = await this._cardsFetch(); if (l) { cards = l; draw(); } });
+      tools.append(add);
+    } });
     draw();
-    this._cardsFetch().then((l) => { if (!ov.isConnected) return; if (l) { cards = l; offline = false; } else offline = true; draw(); });
+    this._cardsFetch().then((l) => { if (!body?.isConnected) return; if (l) { cards = l; offline = false; } else offline = true; draw(); });
   }
 
   // 💳 Foto einer Karte (liegt nur auf dem Home Assistant, nur für den, der die Karte sehen darf) – gemerkt auf diesem Gerät, damit es auch ohne Netz geht
@@ -9551,6 +9670,9 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderList();
         break;
       }
+      case "page-back":
+        this._closePage();
+        break;
       case "view": {
         const v = el.dataset.view;
         const current = this._view === "recipe" ? "settings" : this._view;
@@ -9559,6 +9681,7 @@ class EinkaufslisteCard extends HTMLElement {
           this._unlockSettings(); // 🔒 erst die PIN, dann das Zahnrad
           break;
         }
+        this._closePage(true);
         this._view = current === v ? "list" : v;
         if (this._view === "settings" && current !== "settings") this._setSec = null;
         this._draft = null;
@@ -9570,7 +9693,12 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderList();
         break;
       case "home": // 🛒 Einkaufswagen (oder Maskottchen) oben links: von überall zurück auf die Einkaufsliste
-        if (this._view !== "list") {
+        if (this._page) {
+          this._closePage(true);
+          this._view = "list";
+          this._setSec = null;
+          this._renderAll();
+        } else if (this._view !== "list") {
           this._view = "list";
           this._setSec = null;
           this._renderAll();
@@ -10032,7 +10160,7 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderList();
         break;
       case "gar":
-        showGarTable();
+        showGarTable(this);
         break;
       case "ocr-list":
         this._ocrList();
@@ -10316,14 +10444,6 @@ class EinkaufslisteCard extends HTMLElement {
             this._loadProducts();
           } finally { if (!this._refreshNone) say(""); this._refreshAllBusy = false; }
         })();
-        break;
-      }
-      case "prod-clear": { // 🧽 Radiergummi im Katalog: Suchfeld leeren + Filter zurück auf „alle“
-        this._prodFilter = ""; this._prodSel = "";
-        const si = this.$("prodSearch"); if (si) si.value = "";
-        const fs = this.$("prodFilterSel"); if (fs) fs.value = fs.options[0]?.value ?? "";
-        this._renderProducts();
-        si?.focus?.();
         break;
       }
       case "prod-refresh-close": { // ✖ Bericht von „Alles neu holen“ schließen (nur der Bericht, nicht der laufende Fortschritt)
@@ -10739,6 +10859,19 @@ class EinkaufslisteCard extends HTMLElement {
         this._syncSel = null;
         this._renderSettings();
         break;
+      case "acc-toggle": { // Aufklapper: immer nur einer offen, ohne neu zu zeichnen (Eingaben bleiben)
+        const g = el.dataset.g, k = el.dataset.k;
+        this._accOpen = this._accOpen || {};
+        this._accOpen[g] = this._accOpen[g] === k ? "" : k;
+        const box = el.closest(".xaccs");
+        (box || this.shadowRoot).querySelectorAll(".xacc").forEach((b) => {
+          const on = b.dataset.k === this._accOpen[g];
+          b.classList.toggle("open", on);
+          b.querySelector(".xacc-h")?.setAttribute("aria-expanded", String(on));
+          b.querySelector(".xacc-b").hidden = !on;
+        });
+        break;
+      }
       case "xfer-tab":
         this._xferTab = el.dataset.tab;
         this._renderSettings();
