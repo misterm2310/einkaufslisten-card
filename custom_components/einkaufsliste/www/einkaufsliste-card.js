@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.02";
+const EL_VERSION = "2.76.03";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.01"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.03"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -364,8 +364,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
-  ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) und Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) sind jetzt Kästen zum Aufklappen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
-   "🗂️ <b>Settings re-sorted:</b> new group 👁️ View (after Health) with list view, labels and light/dark. 📦 “Products” is now called “Products/catalogue”. · 🪗 <b>Collapsible boxes:</b> “From other apps” (automatic, once, paste text, CSV) and Tidy up (automatic, by hand, delete list, delete everything, factory reset) are now boxes you open and close. Only one is open at a time, which looks much tidier. · 🪟 <b>Cooking times, “What can I cook?” and My cards</b> open as a normal page inside the card instead of full screen. The arrow at the top takes you back. · 🔎 The search in Products/catalogue is cleared when you leave the page, the second eraser under the field is gone."],
+  ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) und Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) sind jetzt Kästen zum Aufklappen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 📖 <b>Die Anleitung</b> (fürs Einkaufen und für die Einstellungen) ist jetzt auch so eine Seite, in den Farben der Karte. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
+   "🗂️ <b>Settings re-sorted:</b> new group 👁️ View (after Health) with list view, labels and light/dark. 📦 “Products” is now called “Products/catalogue”. · 🪗 <b>Collapsible boxes:</b> “From other apps” (automatic, once, paste text, CSV) and Tidy up (automatic, by hand, delete list, delete everything, factory reset) are now boxes you open and close. Only one is open at a time, which looks much tidier. · 🪟 <b>Cooking times, “What can I cook?” and My cards</b> open as a normal page inside the card instead of full screen. The arrow at the top takes you back. · 📖 <b>The guide</b> (for shopping and for the settings) is now such a page too, in the colours of the card. · 🔎 The search in Products/catalogue is cleared when you leave the page, the second eraser under the field is gone."],
   ["🛍️ <b>Laden-Modus: „Gerade abgehakt“.</b> Aus Versehen abgehakt? Die Liste zeigt alles aus diesem Einkauf, neueste zuerst. Ein Tipp auf ↩️ holt es samt Notiz und Menge zurück. Beim Beenden des Laden-Modus ist die Anzeige weg. · ✔️ <b>Abhaken ohne Hakeln:</b> Die Zeile verschwindet jetzt sofort statt erst nach einer kleinen Pause. In 👁️ Ansicht lässt sich die Animation nur für dich ausschalten. · 📍 <b>Kein Hochspringen mehr</b> nach dem Entsperren: ein kurzes Flackern des Standorts wirft dich nicht mehr aus dem Laden-Reiter. · 📦 Notizen bleiben im Katalog, wenn die Liste geleert wird.",
    "🛍️ <b>Store mode: “Just ticked off”.</b> Ticked something by mistake? The list shows everything from this shopping trip, newest first. A tap on ↩️ brings it back with its note and quantity. When you leave store mode the display is gone. · ✔️ <b>Ticking off without stutter:</b> the row now disappears at once instead of after a short pause. In 👁️ View you can switch the animation off just for yourself. · 📍 <b>No more jumping to the top</b> after unlocking: a brief flicker of the location no longer throws you out of the store tab. · 📦 Notes stay in the catalogue when the list is emptied."],
   ["🏷️ <b>Beschriftungen für dich allein:</b> In 👁️ Ansicht (ganz oben, über der Schriftgröße) schaltest du den Text unter den Icons nur für dich an oder aus. Ohne eigene Wahl gilt der Standard aus ⚙️ Ansicht.",
@@ -2901,7 +2901,7 @@ function showGarTable(card) {
   const asPage = !!(card && card._openPage);
   let ov = null, host = null, dev = 0;
   const html = `<style>
-    .gar { width:100%; max-width:560px; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; }
+    .gar { width:100%; max-width:${asPage ? "none" : "560px"}; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; }
     .gar.dk { --primary-text-color:#eee; --secondary-text-color:#aaa; --card-background-color:#1e1e1e; --primary-color:#03a9f4; --divider-color:#444; }
     .gar h2 { font-size:20px; margin:4px 0 10px; }
     .gar .sub { color:var(--secondary-text-color); font-size:13px; margin:0 0 10px; }
@@ -8255,18 +8255,25 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _showGuide(kind = "user") {
-    const ov = makeOverlay();
-    ov.dataset.elthemed = "1"; // eigene Hell/Dunkel-Farben (siehe unten)
-    // 🌓 Hell oder Dunkel: wie die Karte gerade (Offline-App: deine Auswahl in ⚙️, sonst das Home-Assistant-Design)
+    // 📖 Anleitung als Seite IN der Karte (Pfeil zurück, Farben der Karte) – nur wenn die Karte Seiten kann, sonst wie früher als Fenster
+    const asPage = !!this._openPage;
+    let ov = null;
     const dk = this.hasAttribute("dark");
-    ov.style.colorScheme = dk ? "dark" : "light";
-    Object.assign(ov.style, { background: dk ? "#111" : "#f2f2f2", color: dk ? "#eee" : "#222", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
-      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    if (asPage) {
+      this._openPage({ key: "guide", title: kind === "settings" ? (EL_LANG !== "de" ? "Settings guide" : "Anleitung Einstellungen") : (EL_LANG !== "de" ? "Guide" : "Anleitung"), icon: "mdi:book-open-variant", color: "#3949ab", build: (body) => { ov = body; } });
+    } else {
+      // 🌓 Hell oder Dunkel: wie die Karte gerade (Offline-App: deine Auswahl in ⚙️, sonst das Home-Assistant-Design)
+      ov = makeOverlay();
+      ov.dataset.elthemed = "1"; // eigene Hell/Dunkel-Farben (siehe unten)
+      ov.style.colorScheme = dk ? "dark" : "light";
+      Object.assign(ov.style, { background: dk ? "#111" : "#f2f2f2", color: dk ? "#eee" : "#222", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    }
     const sec = (icon, title, body, open = false, c = "#607d8b", sub = "") => `<details class="elg-sec" style="--gc:${c}" ${open ? "open" : ""}><summary><span class="elg-ic">${icon}</span><span class="elg-tt"><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span></summary><div>${body}</div></details>`;
     const appSec = kind === "settings" ? "" : this._guideAppSec(sec);
     ov.innerHTML = `<style>
-      .elg { --g-text:${dk ? "#eee" : "#222"}; --g-strong:${dk ? "#fff" : "#000"}; --g-mute:${dk ? "#aaa" : "#666"}; --g-card:${dk ? "#1e1e1e" : "#fff"}; --g-line:${dk ? "#333" : "#d6d6d6"}; --g-key:${dk ? "#333" : "#e4e4e4"}; --g-field:${dk ? "#111" : "#fff"}; --g-fline:${dk ? "#444" : "#bbb"}; --g-btn:${dk ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)"};
-        width:100%; max-width:640px; color:var(--g-text); font:15px/1.5 Roboto, sans-serif; }
+      .elg { ${asPage ? "--g-text:var(--primary-text-color); --g-strong:var(--primary-text-color); --g-mute:var(--secondary-text-color); --g-card:var(--card-background-color, #fff); --g-line:var(--divider-color, rgba(127,127,127,.3)); --g-key:rgba(127,127,127,.2); --g-field:var(--card-background-color, #fff); --g-fline:var(--divider-color, rgba(127,127,127,.4)); --g-btn:rgba(127,127,127,.18);" : `--g-text:${dk ? "#eee" : "#222"}; --g-strong:${dk ? "#fff" : "#000"}; --g-mute:${dk ? "#aaa" : "#666"}; --g-card:${dk ? "#1e1e1e" : "#fff"}; --g-line:${dk ? "#333" : "#d6d6d6"}; --g-key:${dk ? "#333" : "#e4e4e4"}; --g-field:${dk ? "#111" : "#fff"}; --g-fline:${dk ? "#444" : "#bbb"}; --g-btn:${dk ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)"};`}
+        width:100%; max-width:${asPage ? "none" : "640px"}; color:var(--g-text); font:15px/1.5 Roboto, sans-serif; }
       .elg h2 { font-size:21px; margin:6px 0 4px; display:flex; align-items:center; gap:8px; }
       .elg .elg-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
       .elg .elg-sub { color:var(--g-mute); margin:0 0 12px; font-size:14px; }
@@ -8346,6 +8353,7 @@ class EinkaufslisteCard extends HTMLElement {
         setTimeout(() => { btn.textContent = EL_LANG !== "de" ? "📋 Copy" : "📋 Kopieren"; }, 2500);
       });
     });
+    if (asPage) return; // der Pfeil oben (und Esc) bringt zurück
     const bClose = ovButton("Schließen", true);
     Object.assign(bClose.style, { marginTop: "14px" });
     ov.append(bClose);
