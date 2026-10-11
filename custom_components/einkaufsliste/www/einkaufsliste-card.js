@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.07";
+const EL_VERSION = "2.76.08";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.07"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.08"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -230,10 +230,10 @@ const EL_HELP = {
     "<b>Delete shopping list products</b> removes items from the list for good (barcode and suggestion stay). <b>🗓️ Not bought for 3 months</b> shows old products, with “Delete all” if you like.",
   ]],
   recipes: ["list", [
-    "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
+    "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
     "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
   ], [
-    "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
+    "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; a list like the categories: tap a group = change name, colour and icon, ⌃⌄ = order; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
     "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
   ]],
   listview: ["view", [
@@ -252,9 +252,9 @@ const EL_HELP = {
     "Its own switch plus <b>“🎉 Ask automatically”</b> (appears only when the log is on). Switching off only hides the display – the entries stay stored. Applies to all devices.",
   ]],
   cards: ["extras", [
-    "Der Schalter gilt für alle. Ob eine Karte „für alle“ oder „nur ich“ ist, wählst du beim Anlegen der Karte.",
+    "Der Schalter gilt für alle. Ob eine Karte „für alle“ oder „nur ich“ ist, wählst du beim Anlegen der Karte. „Meine Karten“ und „Karte ändern“ sind Seiten in der Karte: ← oben links geht zurück.",
   ], [
-    "The switch applies to everyone. Whether a card is “for everyone” or “only me” you choose when creating the card.",
+    "The switch applies to everyone. Whether a card is “for everyone” or “only me” you choose when creating the card. “My cards” and “Edit card” are pages inside the card: ← at the top left goes back.",
   ]],
   notetpl: ["extras", [
     "Kleine Knöpfe unter dem ✏️ Eigene-Notiz-Feld (beim Eintragen, Bearbeiten und im Katalog). Ein Text pro Zeile, gilt für alle Geräte.",
@@ -364,6 +364,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🪟 <b>Fenster als Seiten:</b> PIN-Eingabe, Foto (machen, zuschneiden, ansehen), Barcode eintippen, Scanner, Karte ändern, Teilen und Rückfragen öffnen nicht mehr als Vollbild, sondern als Seite in der Karte mit ← oben links. Zurück führt an die Stelle, wo du warst. Nur der Koch-Modus bleibt Vollbild, dort sind auch die Gar-Zeiten jetzt über die ganze Breite. · 🏷️ <b>Rezept-Gruppen wie Kategorien:</b> erst die Liste, Gruppe antippen = Name, Farbe und Icon ändern. · 💳 <b>Meine Karten</b> im Look der Einstellungen mit Farbstreifen links, ohne die Aufräum-Info unten. · 📖 <b>Anleitung</b> steht auch ganz unten auf der ersten Seite der Einstellungen. · 🗂️ Wenn du die Einstellungen verlässt, sind alle Gruppen und Reiter wieder zu. Die Kategorien klappen nicht mehr von selbst zu.",
+   "🪟 <b>Windows as pages:</b> PIN entry, photos (take, crop, view), typing a barcode, scanner, edit card, share and questions no longer open full screen but as a page inside the card with ← at the top left. Back takes you to where you were. Only cooking mode stays full screen, and its cooking times now use the full width too. · 🏷️ <b>Recipe groups like categories:</b> first the list, tap a group = change name, colour and icon. · 💳 <b>My cards</b> in the look of the settings with a colour stripe on the left, without the tidy-up info at the bottom. · 📖 <b>Guide</b> is also at the very bottom of the first settings page. · 🗂️ When you leave the settings, all groups and tabs are closed again. The categories no longer close by themselves."],
   ["📦 <b>Produkte: alle anzeigen.</b> Die Liste zeigt zuerst 80 Produkte. Darunter holt „10 weitere“ immer 10 dazu und „Alle anzeigen“ den ganzen Rest. Dasselbe gilt für „Einkaufsliste Produkte löschen“ (dort starten 60). Suchen und Filtern setzt die Liste wieder auf den Anfang.",
    "📦 <b>Products: show all.</b> The list first shows 80 products. Below it, “10 more” adds 10 each time and “Show all” brings the rest. The same goes for “Delete shopping list products” (starting at 60). Searching and filtering resets the list to the start."],
   ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) und die Listenansicht samt „Meine Ansicht“ sind jetzt Kästen zum Aufklappen, im Stil der Hauptgruppen. Auch die Reiter bei Import & Sicherung und die Seite Ressourcen sind jetzt solche Kästen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 🧾 Das <b>Einkaufs-Protokoll</b> und die 🏷️ <b>Angebote</b> öffnen ebenfalls als Seite in der Karte. · 📖 <b>Die Anleitung</b> (fürs Einkaufen und für die Einstellungen) ist jetzt auch so eine Seite, in den Farben der Karte, mit Kapiteln im Stil der Hauptgruppen. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
@@ -937,30 +939,26 @@ function distance(lat1, lon1, lat2, lon2) {
   return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Großes Foto über allem anzeigen
+// Großes Foto anzeigen (als Seite in der Karte; Titel steht oben neben dem Pfeil)
 function showPhotoOverlay(src, title) {
-  const overlay = document.createElement("div");
-  Object.assign(overlay.style, {
-    position: "fixed", inset: "0", background: "rgba(0,0,0,.88)", zIndex: "10000",
-    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-    padding: "16px", cursor: "zoom-out", boxSizing: "border-box",
-  });
+  const ov = makeOverlay();
+  ov.style.cursor = "zoom-out";
+  const cap = document.createElement("div");
+  cap.dataset.ptitle = "1";
+  cap.textContent = title;
+  Object.assign(cap.style, { font: "500 17px Roboto, sans-serif", marginBottom: "12px", textAlign: "center" });
   const img = document.createElement("img");
   img.src = src;
   img.alt = title;
   Object.assign(img.style, { maxWidth: "100%", maxHeight: "80vh", borderRadius: "14px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
-  const cap = document.createElement("div");
-  cap.textContent = title;
-  Object.assign(cap.style, { color: "#fff", font: "500 17px Roboto, sans-serif", marginTop: "14px", textAlign: "center" });
   const hint = document.createElement("div");
   hint.textContent = elT("Tippen zum Schließen");
-  Object.assign(hint.style, { color: "#aaa", font: "13px Roboto, sans-serif", marginTop: "4px" });
-  overlay.append(img, cap, hint);
-  const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
-  const onKey = (e) => { if (e.key === "Escape") close(); };
-  overlay.addEventListener("click", close);
-  document.addEventListener("keydown", onKey);
-  document.body.appendChild(overlay);
+  Object.assign(hint.style, { color: "#aaa", font: "13px Roboto, sans-serif", marginTop: "10px" });
+  ov.append(cap, img, hint);
+  const onKey = (e) => { if (e.key === "Escape") ov.remove(); };
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+  ov.addEventListener("click", close);
+  if (!ov.dataset.elpage) document.addEventListener("keydown", onKey);
 }
 
 // 🔥 Backofen & Co.
@@ -1392,7 +1390,17 @@ async function elReadCodeFromFile(file) {
 
 // 🌓 Fenster (Gar-Zeiten, KI-Kochen, Scanner, Foto …) sind im Code dunkel gebaut. Ist die Karte hell, werden ihre Grautöne hier umgedreht:
 // dunkel ↔ hell. Bunte Farben (grüne/blaue Knöpfe, Warnrot) bleiben, Bilder/Video/Codes werden nicht angefasst.
+let EL_ACTIVE = null; // 👆 zuletzt angetippte Karte: dort öffnen sich Fenster als Seite
 const EL_CARD_SET = new Set(); // 🗂️ alle offenen Karten – in HA liegen sie tief in Shadow-DOMs, document.querySelectorAll findet sie dort nicht
+// 📄 Karte, in der ein neues Fenster als Seite aufgehen soll (null = altes Vollbild-Fenster)
+function elPageCard() {
+  const ok = (c) => c && c.isConnected && c.shadowRoot && typeof c._pushPage === "function";
+  if (ok(EL_ACTIVE)) return EL_ACTIVE;
+  const all = [...EL_CARD_SET].filter(ok);
+  return all.length === 1 ? all[0] : null;
+}
+// Ist irgendwo ein Fenster offen (Vollbild oder Seite)?
+const elOvOpen = () => !!document.querySelector("[data-elov]") || [...EL_CARD_SET].some((c) => c._page?.ov);
 function elIsDark() {
   const c = [...EL_CARD_SET].find((x) => x.shadowRoot);
   return c ? c.hasAttribute("dark") : true;
@@ -1436,7 +1444,7 @@ function elLightOverlay(ov) {
       const cs = getComputedStyle(el);
       const parent = el === ov ? null : getComputedStyle(el.parentElement);
       const col = parse(cs.color), bg = parse(cs.backgroundColor);
-      if (el === ov) put(el, "backgroundColor", "#f2f2f2"); // wie die Anleitung: heller, nicht durchscheinender Grund
+      if (el === ov) { if (!ov.dataset.elpage) put(el, "backgroundColor", "#f2f2f2"); } // wie die Anleitung: heller, nicht durchscheinender Grund (als Seite: der Grund der Karte)
       else if (bg && bg[3] > 0 && grey(bg)) put(el, "backgroundColor", flip(bg));
       // Schrift: nur wenn sie nicht einfach von oben geerbt ist und nicht auf buntem Grund steht
       if (col && grey(col) && (!parent || parent.color !== cs.color)) {
@@ -1467,8 +1475,27 @@ function elLightOverlay(ov) {
   new MutationObserver((_, o) => { if (!ov.isConnected) { obs.disconnect(); o.disconnect(); } }).observe(document.body, { childList: true });
 }
 
-function makeOverlay() {
+// opts.full = Vollbild erzwingen (Koch-Modus). Sonst: als Seite IN der Karte (← oben links, Titel aus der Überschrift des Fensters)
+function makeOverlay(opts = {}) {
   const ov = document.createElement("div");
+  const card = !opts.full && !document.querySelector("[data-elov]") ? elPageCard() : null; // über einem Vollbild-Fenster (Koch-Modus) bleibt es ein Fenster
+  if (card) {
+    Object.assign(ov.style, {
+      position: "relative", background: "transparent", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start",
+      padding: "4px 0 16px", boxSizing: "border-box", color: "#fff", font: "15px Roboto, sans-serif", touchAction: "pan-y", colorScheme: "dark",
+      width: "100%", overflowX: "hidden",
+    });
+    ov.dataset.elpage = "1";
+    const desc = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML");
+    Object.defineProperty(ov, "innerHTML", { configurable: true, get() { return desc.get.call(this); }, set(v) { desc.set.call(this, v); card._ovTitle(ov); } });
+    ov.remove = () => card._popPage(ov);
+    card._pushPage(ov, opts);
+    if (!elIsDark() && !opts.dark) elLightOverlay(ov); // 🌓 helle Karte = helles Fenster (dark: schwarzes Fenster bleibt schwarz, z. B. Kamera)
+    elWatch(ov, false);
+    const mo = new MutationObserver(() => { if (!ov.isConnected || card._ovTitle(ov)) mo.disconnect(); }); // Titel kommt auch, wenn der Inhalt per append() statt innerHTML gebaut wird
+    mo.observe(ov, { childList: true, subtree: true });
+    return ov;
+  }
   // 🪟 Ein neues Fenster liegt immer über den schon offenen (z. B. die Kamera über „Karte ändern“)
   const top = Math.max(0, ...[...document.querySelectorAll("[data-elov]")].map((o) => parseInt(o.style.zIndex, 10) || 0));
   Object.assign(ov.style, {
@@ -1510,7 +1537,7 @@ const elIsPc = () => !!window.matchMedia?.("(hover: hover) and (pointer: fine)")
 function askPhotoDrop(title = "🖼️ Foto hinzufügen") {
   return new Promise((resolve) => {
     const ov = makeOverlay();
-    ov.style.background = "rgba(0,0,0,.7)";
+    if (!ov.dataset.elpage) ov.style.background = "rgba(0,0,0,.7)";
     ov.innerHTML = `<div style="width:100%;max-width:460px;background:#222;border-radius:18px;padding:18px;box-shadow:0 4px 24px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:12px">
       <div style="font:600 17px Roboto,sans-serif;text-align:center">${esc(elT(title))}</div>
       <div data-zone style="border:2px dashed rgba(255,255,255,.45);border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;line-height:1.5;transition:background .15s">
@@ -1565,8 +1592,8 @@ function askPhotoDrop(title = "🖼️ Foto hinzufügen") {
 function askPhotoSource(camera = true, heading = "Foto – woher?") {
   return new Promise((resolve) => {
     const ov = makeOverlay();
-    ov.style.justifyContent = "flex-end";
-    ov.style.background = "rgba(0,0,0,.7)";
+    ov.style.justifyContent = ov.dataset.elpage ? "flex-start" : "flex-end";
+    if (!ov.dataset.elpage) ov.style.background = "rgba(0,0,0,.7)";
     const box = document.createElement("div");
     box.style.cssText = "width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;padding:16px;margin-bottom:10px;background:#222;border-radius:18px;box-shadow:0 4px 24px rgba(0,0,0,.5)";
     const title = document.createElement("div");
@@ -1632,8 +1659,8 @@ async function elScanLive(hint) {
   try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); } catch (_) { return undefined; }
   try { read = await elLiveReader(); } catch (_) { stream.getTracks().forEach((t) => t.stop()); return undefined; }
   return new Promise((resolve) => {
-    const ov = makeOverlay();
-    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between" });
+    const ov = makeOverlay({ title: "📷 Einscannen", dark: true });
+    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { minHeight: "min(72vh, 640px)", borderRadius: "14px" } : {}) });
     const video = document.createElement("video");
     Object.assign(video, { playsInline: true, muted: true, autoplay: true, srcObject: stream });
     video.setAttribute("playsinline", "");
@@ -1683,8 +1710,8 @@ async function elCameraShot() {
     return undefined;
   }
   return new Promise((resolve) => {
-    const ov = makeOverlay();
-    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between" });
+    const ov = makeOverlay({ title: "📷 Foto machen", dark: true });
+    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { minHeight: "min(72vh, 640px)", borderRadius: "14px" } : {}) });
     const video = document.createElement("video");
     Object.assign(video, { playsInline: true, muted: true, autoplay: true, srcObject: stream });
     video.setAttribute("playsinline", "");
@@ -1804,17 +1831,27 @@ async function elClipboardImage() {
 }
 
 // 🔒 PIN-Eingabe wie am Handy: gibt die getippte PIN zurück (oder null bei „Abbrechen“)
-function askPin(title = "🔒 PIN eingeben") {
+// card gegeben = als Seite IN der Karte (wie Gar-Zeiten, ← = Abbrechen); sonst altes Vollbild-Fenster
+function askPin(title = "🔒 PIN eingeben", card = null) {
   return new Promise((resolve) => {
-    const ov = makeOverlay();
+    const asPage = typeof card?._openPage === "function";
+    let ov = null, finished = false;
+    if (asPage) card._openPage({ key: "pin", title: elT(title).replace(/^\S+\s/, ""), icon: "mdi:lock-outline", color: SET_COLORS.pin || "#607d8b", onBack: () => done(null), build: (bd) => { ov = bd; } });
+    else ov = makeOverlay();
     let pin = "";
-    ov.innerHTML = `<div style="text-align:center;max-width:300px;width:100%">
-      <div style="font:600 19px Roboto,sans-serif;margin-bottom:6px">${esc(elT(title))}</div>
+    ov.innerHTML = `<div style="text-align:center;max-width:300px;width:100%;margin:0 auto">
+      ${asPage ? "" : `<div style="font:600 19px Roboto,sans-serif;margin-bottom:6px">${esc(elT(title))}</div>`}
       <div class="pdots" style="font-size:28px;letter-spacing:10px;min-height:40px;margin:10px 0 16px">&nbsp;</div>
       <div class="ppad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div></div>`;
     const dots = ov.querySelector(".pdots"), pad = ov.querySelector(".ppad");
     const show = () => { dots.innerHTML = pin ? "●".repeat(pin.length) : "&nbsp;"; };
-    const done = (v) => { ov.remove(); document.removeEventListener("keydown", onKey, true); resolve(v); };
+    const done = (v) => {
+      if (finished) return;
+      finished = true;
+      document.removeEventListener("keydown", onKey, true);
+      if (asPage) card._closePage(); else ov.remove();
+      resolve(v);
+    };
     ov._elClose = () => done(null); // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
     const press = (k) => {
       if (k === "⌫") pin = pin.slice(0, -1);
@@ -1823,12 +1860,14 @@ function askPin(title = "🔒 PIN eingeben") {
       show();
     };
     for (const k of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✔"]) {
-      const b = ovButton(k, k === "✔");
+      let b;
+      if (asPage) { b = document.createElement("button"); b.type = "button"; b.className = k === "✔" ? "btn primary" : "btn"; b.textContent = k; Object.assign(b.style, { justifyContent: "center" }); }
+      else b = ovButton(k, k === "✔");
       Object.assign(b.style, { fontSize: "24px", padding: "16px 0", margin: "0", width: "100%" });
       b.onclick = () => press(k);
       pad.append(b);
     }
-    const cancel = ovButton(elT("Abbrechen"));
+    const cancel = asPage ? Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: elT("Abbrechen") }) : ovButton(elT("Abbrechen"));
     Object.assign(cancel.style, { marginTop: "18px" });
     cancel.onclick = () => done(null);
     ov.firstElementChild.append(cancel);
@@ -1903,8 +1942,9 @@ const pinRemember = () => { try { localStorage.setItem(PIN_KEY, String(Date.now(
 async function editImage(file, max = 900, quality = 0.8) {
   const img = await loadImage(file);
   return new Promise((resolve) => {
-    const ov = makeOverlay();
+    const ov = makeOverlay({ title: "✂️ Foto zuschneiden", dark: true });
     ov.style.background = "#000";
+    if (ov.dataset.elpage) Object.assign(ov.style, { overflow: "hidden", borderRadius: "14px", padding: "16px" }); // der große Schatten des Rahmens soll nicht über die Seite laufen
     let rot = 0;
     let src = null; // gedrehtes Bild (Arbeitskopie)
     const wrap = document.createElement("div");
@@ -2358,9 +2398,10 @@ ha-card.compact .group { margin-top:4px; }
 .aicard { border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:var(--card-background-color, var(--ha-card-background, #fff)); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px; }
 .aicard summary { cursor:pointer; }
 .cardlist { display:flex; flex-direction:column; gap:10px; }
-.cc { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; margin:0; padding:16px 14px; border:0; border-radius:14px; cursor:pointer; background:var(--c,#607d8b); color:var(--tc,#fff); font:600 1.1em Roboto,sans-serif; text-align:left; }
-.cc .ci { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .cc small { display:block; font-weight:400; font-size:.7em; opacity:.85; }
-.cc .ce { background:rgba(255,255,255,.22); border-radius:10px; font-size:16px; padding:8px 10px; }
+.cc { display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; margin:0; padding:10px 8px 10px 10px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-left:6px solid var(--c,#607d8b); border-radius:12px; cursor:pointer; background:var(--card-background-color, var(--ha-card-background, #fff)); color:var(--primary-text-color); font:inherit; text-align:left; } /* wie die Zeilen in den Einstellungen: Farbe als Streifen links */
+.cc > ha-icon { color:var(--c,#607d8b); flex:0 0 auto; }
+.cc .ci { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; } .cc small { display:block; font-weight:400; font-size:.78em; color:var(--secondary-text-color); }
+.cc .ce { border-radius:10px; font-size:16px; padding:6px 8px; }
 .cn { color:var(--secondary-text-color); text-align:center; padding:26px 8px; }
 .prodrow { cursor:pointer; }
 .prodrow .pmeta { display:flex; flex-wrap:wrap; gap:2px 8px; }
@@ -2896,9 +2937,13 @@ function showGarTable(card) {
   const min = en ? "min" : "Min";
   const asPage = !!(card && card._openPage);
   let ov = null, host = null, dev = 0;
+  const fromPage = !asPage && !document.querySelector("[data-elov]") && !!elPageCard(); // sonst (z. B. im Koch-Modus): Vollbild im neuen Look
   const html = `<style>
-    .gar { width:100%; max-width:${asPage ? "none" : "560px"}; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; }
-    .gar.dk { --primary-text-color:#eee; --secondary-text-color:#aaa; --card-background-color:#1e1e1e; --primary-color:#03a9f4; --divider-color:#444; }
+    .gar { width:100%; max-width:none; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; }
+    .gar .gh { display:flex; align-items:center; gap:12px; margin:0 0 12px; }
+    .gar .gback { width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
+    .gar .gic { width:36px; height:36px; flex:none; border-radius:10px; display:flex; align-items:center; justify-content:center; background:#ef6c00; color:#fff; --mdc-icon-size:20px; }
+    .gar .gt { font-size:20px; font-weight:600; min-width:0; }
     .gar h2 { font-size:20px; margin:4px 0 10px; }
     .gar .sub { color:var(--secondary-text-color); font-size:13px; margin:0 0 10px; }
     .gar .gsearch { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
@@ -2921,8 +2966,8 @@ function showGarTable(card) {
     .gar .t span { white-space:nowrap; }
     .gar h3 { display:block; font-size:13px; color:var(--secondary-text-color); margin:12px 0 5px; font-weight:600; }
   </style>
-  <div class="gar${asPage ? "" : " dk"}" translate="no">
-    ${asPage ? "" : `<h2>⏲️ ${en ? "Cooking times" : "Gar-Zeiten"}</h2>`}
+  <div class="gar" translate="no">
+    ${asPage || fromPage ? "" : `<div class="gh"><button type="button" class="gback" title="${en ? "Back" : "Zurück"}" aria-label="${en ? "Back" : "Zurück"}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:timer-outline"></ha-icon></span><div class="gt">${en ? "Cooking times" : "Gar-Zeiten"}</div></div>`}
     <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
     <div class="gtabs"></div>
     <p class="sub devhint"></p>
@@ -2933,10 +2978,14 @@ function showGarTable(card) {
   if (asPage) {
     card._openPage({ key: "gar", title: en ? "Cooking times" : "Gar-Zeiten", icon: "mdi:timer-outline", color: "#ef6c00", build: (body) => { host = body; body.innerHTML = html; } });
   } else {
-    ov = makeOverlay();
-    Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
-      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
-    ov.innerHTML = html;
+    ov = makeOverlay({ title: "⏲️ " + (en ? "Cooking times" : "Gar-Zeiten") });
+    if (ov.dataset.elpage) ov.innerHTML = html;
+    else { // 🖥️ Vollbild (Koch-Modus), aber im Look der Seiten: Grund und Farben des HA-Themes, Kopfzeile mit ←
+      ov.dataset.elthemed = "1";
+      Object.assign(ov.style, { background: "var(--primary-background-color, #fafafa)", color: "var(--primary-text-color, #212121)", colorScheme: "", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+      ov.innerHTML = html;
+    }
     host = ov;
   }
   const list = host.querySelector(".garlist"), inp = host.querySelector(".gsearch input"), tabs = host.querySelector(".gtabs"), hint = host.querySelector(".devhint");
@@ -2985,15 +3034,12 @@ function showGarTable(card) {
   inp.addEventListener("input", () => { ge.hidden = !inp.value; });
   ge.onclick = () => { inp.value = ""; ge.hidden = true; draw(); inp.focus(); };
   draw();
-  if (asPage) return;
-  const bClose = ovButton(en ? "Close" : "Schließen", true);
-  Object.assign(bClose.style, { marginTop: "16px" });
-  ov.append(bClose);
+  if (asPage || ov.dataset.elpage) return;
   close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
   ov._elClose = close; // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
   const onKey = (e) => { if (e.key === "Escape") close(); };
   document.addEventListener("keydown", onKey);
-  bClose.onclick = close;
+  ov.querySelector(".gback").onclick = close;
 }
 
 // 🛒😊 Maskottchen: ein kleiner Einkaufswagen mit Gesicht – seine Laune hängt an der Liste
@@ -3636,6 +3682,7 @@ class EinkaufslisteCard extends HTMLElement {
     // 👆 Lange auf ein Icon drücken = kurze Erklärung (am Handy gibt es keine Tooltips)
     let lpTimer = null, lpFired = false;
     const lpSel = "button.tool, button.iconbtn, button.addbtn, .rtools button.btn, .viewhead button.btn, .pagetools button.btn";
+    root.addEventListener("pointerdown", () => { EL_ACTIVE = this; }, true);
     root.addEventListener("pointerdown", (e) => {
       const b = e.target.closest?.(lpSel);
       const text = b && !b.closest(".item") ? b.getAttribute("title") : "";
@@ -3906,7 +3953,7 @@ class EinkaufslisteCard extends HTMLElement {
   // 📄 Seite IN der Karte (Gar-Zeiten, „Was kann ich kochen?“, Meine Karten): eigener Behälter #pageHost, den _renderAll nur
   // ein-/ausblendet, aber nie neu baut – darum bleiben Eingaben bei Live-Updates erhalten. Die Ansicht darunter (_view) bleibt unverändert,
   // beim Schließen ist man genau wieder dort (Rezepte, Einstellungen, Rezept-Editor mit Entwurf, Liste).
-  _openPage({ key, title, icon, color, build, onClose }) {
+  _openPage({ key, title, icon, color, build, onClose, onBack }) {
     if (this._page) this._closePage(true);
     const host = this.$("pageHost");
     host.innerHTML = `<div class="sec pagehost"><div class="sechead">
@@ -3915,18 +3962,94 @@ class EinkaufslisteCard extends HTMLElement {
       <span class="pagetools"></span></div><div class="pagebody"></div></div>`;
     const body = host.querySelector(".pagebody"), tools = host.querySelector(".pagetools");
     const onKey = (e) => {
-      if (e.key !== "Escape" || document.querySelector("[data-elov]") || this._page?.host !== host) return;
+      if (e.key !== "Escape" || elOvOpen() || this._page?.host !== host) return;
       e.preventDefault();
-      this._closePage();
+      this._pageBack();
     };
     document.addEventListener("keydown", onKey);
-    this._page = { key, host, body, tools, onClose, onKey };
+    this._page = { key, host, body, tools, onClose, onKey, onBack };
     build(body, tools, () => this._closePage());
     this._renderAll();
     this._emitNav();
     host.scrollIntoView?.({ block: "nearest" });
     return body;
   }
+
+  // 🪟 Fenster (makeOverlay) als Seite: liegt über der offenen Seite/Ansicht, ← bringt zurück an die alte Stelle
+  _pushPage(ov, opts = {}) {
+    const host = this.$("pageHost");
+    const prev = this._page ? { page: this._page, nodes: [...host.childNodes] } : null;
+    if (prev) { document.removeEventListener("keydown", prev.page.onKey); host.replaceChildren(); }
+    host.hidden = false;
+    host.innerHTML = `<div class="sec pagehost"><div class="sechead">
+      <button class="iconbtn back" type="button" data-act="page-back" title="Zurück" aria-label="Zurück"><ha-icon icon="mdi:arrow-left"></ha-icon></button>
+      <span class="ic" style="--ic:${esc(opts.color || "#607d8b")}"><ha-icon icon="${esc(opts.icon || "mdi:information-outline")}"></ha-icon></span><h3></h3>
+      <span class="pagetools"></span></div><div class="pagebody"></div></div>`;
+    const body = host.querySelector(".pagebody"), tools = host.querySelector(".pagetools");
+    body.append(ov);
+    const onKey = (e) => {
+      if (e.key !== "Escape" || this._page?.host !== host || this._page?.ov !== ov) return;
+      e.preventDefault();
+      this._pageBack();
+    };
+    document.addEventListener("keydown", onKey);
+    this._page = { key: "ov", host, body, tools, ov, onKey, prev, onBack: () => { // wie die Zurück-Taste bei einem Vollbild-Fenster: „Abbrechen/Schließen“ drücken, damit wartender Code eine Antwort bekommt
+        const btns = [...ov.querySelectorAll("button")];
+        const close = btns.find((b) => /^\s*(✕|✖️?|×)\s*$|^\s*(✕|✖️?|×)?\s*(Schließen|Abbrechen|Close|Cancel)\b/i.test(b.textContent || ""));
+        if (close) { close.click(); return; }
+        if (ov._elClose) { ov._elClose(); return; }
+        const fin = btns.find((b) => /^\s*(✕|×)?\s*(Fertig|Beenden|Done|Finish)\b/i.test(b.textContent || ""));
+        if (fin) fin.click();
+        if (ov.isConnected) ov.remove();
+      } };
+    if (opts.title) this._ovTitle(ov, opts.title);
+    if (!prev) this._renderAll();
+    this._emitNav();
+    host.scrollIntoView?.({ block: "nearest" });
+  }
+
+  // Titel der Seite = erste Überschrift des Fensters (wandert nach oben neben den ← Pfeil); führendes Emoji wird zum Symbol
+  _ovTitle(ov, force) {
+    const p = this._page;
+    if (!p || p.ov !== ov) return false;
+    if (p.titled && !force) return true;
+    let text = force || "";
+    if (!text) {
+      const el = [...ov.querySelectorAll('[data-ptitle],h1,h2,h3,[style*="font:600"],[style*="font-weight:600"],[style*="font: 600"]')]
+        .find((x) => !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(x.tagName) && x.textContent.trim() && x.textContent.trim().length <= 70 && !x.querySelector("input,button,select,textarea"));
+      if (el) { text = el.textContent.trim(); el.remove(); }
+    }
+    if (!text) return false;
+    p.titled = true;
+    const m = /^(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)\s*(.*)$/su.exec(text);
+    const h = p.host.querySelector(".pagehost h3"), ic = p.host.querySelector(".pagehost .ic");
+    if (h) h.textContent = m ? m[2] || text : text;
+    if (ic && m) ic.innerHTML = `<span style="font-size:20px;line-height:1">${esc(m[1])}</span>`;
+    else if (ic && text.startsWith("▥")) { ic.innerHTML = `<ha-icon icon="mdi:barcode-scan"></ha-icon>`; if (h) h.textContent = text.replace(/^▥\s*/, ""); }
+    return true;
+  }
+
+  // Fenster-Seite schließen und die vorherige Seite wieder anzeigen
+  _popPage(ov) {
+    const p = this._page;
+    Element.prototype.remove.call(ov);
+    if (!p || p.ov !== ov) return;
+    document.removeEventListener("keydown", p.onKey);
+    const host = p.host;
+    if (p.prev) {
+      host.replaceChildren(...p.prev.nodes);
+      this._page = p.prev.page;
+      document.addEventListener("keydown", this._page.onKey);
+    } else {
+      this._page = null;
+      host.innerHTML = ""; host.hidden = true;
+      this._renderAll();
+    }
+    this._emitNav();
+  }
+
+  // ← / Esc / Zurück-Taste: eine Seite kann einen eigenen Rückweg haben (z. B. „Karte ändern“ → zurück zu „Meine Karten“)
+  _pageBack() { const p = this._page; if (p?.onBack) p.onBack(); else this._closePage(); }
 
   // schließt die Seite; silent = ohne neu zu zeichnen (beim Wechsel zu einer anderen Seite)
   _closePage(silent = false) {
@@ -3937,12 +4060,13 @@ class EinkaufslisteCard extends HTMLElement {
     const host = this.$("pageHost");
     if (host) { host.innerHTML = ""; host.hidden = true; }
     try { p.onClose?.(); } catch (_) { /* egal */ }
+    for (let q = p; q; q = q.prev?.page) { if (q.ov) { try { q.ov._elClose?.(); } catch (_) { /* egal */ } } } // wartende Fenster (Foto, PIN …) sauber beenden
     if (!silent) { this._renderAll(); this._emitNav(); }
     return true;
   }
 
   einkaufslisteIsRoot() {
-    return !document.querySelector("[data-elov]") && !this._page && this._view === "list" && !this._shopMode
+    return !elOvOpen() && !this._page && this._view === "list" && !this._shopMode
       && !this._menuId && !this._editing && !this._moving;
   }
 
@@ -3962,7 +4086,7 @@ class EinkaufslisteCard extends HTMLElement {
       }
       return true;
     }
-    if (this._page) { this._closePage(); return true; }
+    if (this._page) { this._pageBack(); return true; }
     if (this._menuId || this._editing || this._moving) {
       this._menuId = this._editing = this._moving = null;
       this._renderList();
@@ -3973,6 +4097,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._view === "settings") {
       if (this._storeSel) this._storeSel = null;
       else if (this._catSel) this._catSel = null;
+      else if (this._rgSel) this._rgSel = null;
       else if (this._perSel) this._perSel = null;
       else if (this._setSec) {
         this._setSec = null; // Einstellungen sind nur eine Ebene tief: zurück = Übersicht
@@ -4005,6 +4130,9 @@ class EinkaufslisteCard extends HTMLElement {
   _renderAll() {
     if (!this._built || !this._config) return;
     if (this._view !== "settings") { this._prodFilter = ""; this._prodSel = ""; } // 🔎 Katalog-Suche nicht über die Einstellungen hinaus merken
+    const inSet = this._view === "settings" || this._view === "recipe";
+    if (this._wasInSet && !inSet) { this._setOpen = null; this._accOpen = { stats: "" }; this._xferTab = "none"; } // 🗂️ Einstellungen verlassen: alle Gruppen und Reiter wieder zu
+    this._wasInSet = inSet;
     this._refreshTplChips();
     this.toggleAttribute("privacy", this._privacyOn());
     queueMicrotask(() => this._emitNav());
@@ -5016,8 +5144,14 @@ class EinkaufslisteCard extends HTMLElement {
   _renderFooter() {
     const f = this.$("footer");
     const s = this._data?.settings;
+    if (s && this._view === "settings" && !this._setSec && !this._page && !window.__elOfflineApp) { // 📖 Einstellungen, erste Seite: „Anleitung“ ganz unten (wie in der Offline-App neben „Abmelden“)
+      f.hidden = true;
+      const fb = this.$("footBtns");
+      if (fb) { fb.hidden = false; fb.innerHTML = `<button type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte">📖 Anleitung</button>`; }
+      return;
+    }
     if (!s || this._view !== "list") { f.hidden = true; if (this.$("footBtns")) this.$("footBtns").hidden = true; return; }
-    f.hidden = false;
+    f.hidden = this._page?.key === "cards" || this._page?.key === "cardedit"; // „Meine Karten“: die Aufräum-Info unten ist weg
     const next = new Date(s.next_cleanup);
     f.innerHTML = (s.cleanup_on === false ? `<ha-icon icon="mdi:broom"></ha-icon><span>Automatisches Aufräumen ist aus</span>`
       : `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`);
@@ -5200,15 +5334,34 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="tab ${this._recTab === "file" ? "active" : ""}" data-act="rec-tab" data-tab="file"><ha-icon icon="mdi:file-document-outline"></ha-icon>Rezepte aus Datei</button>
         </div>
         ${this._recTab === "file" ? this._recFileHtml() : this._recTab === "groups" ? `
-        ${(d.recipe_groups || []).map((e, i) => row("recipe_groups", e, i, d.recipe_groups.length)).join("")}
-        <form class="srow" data-addkind="recipe_groups">
-          <ha-icon class="prev" icon="mdi:tag-plus-outline"></ha-icon>
+${(() => {
+          // 🏷️ wie bei den Kategorien: erst die Liste, antippen = nur diese Gruppe einstellen
+          const gs = d.recipe_groups || [];
+          const gIcon = (e) => { const ic = e.icon || "mdi:tag-outline"; return ic.includes(":") ? ic : "mdi:" + ic; };
+          const k = gs.findIndex((x) => x.id === this._rgSel);
+          if (k >= 0) {
+            const e = gs[k];
+            return `
+        <div class="storehead" style="--sc:${esc(e.color || "#9e9e9e")}"><ha-icon icon="${esc(gIcon(e))}"></ha-icon><b translate="no">${esc(e.name)}</b></div>
+        <div class="srow" data-kind="recipe_groups" data-id="${e.id}"><input type="color" value="${esc(e.color || "#9e9e9e")}" data-field="color" title="Farbe"><input class="grow" value="${esc(e.name)}" data-field="name" placeholder="Name, z. B. Grillen" title="Name"><button class="iconbtn" data-act="group-remove" title="Löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button></div>
+        <div class="srow stack" data-kind="recipe_groups" data-id="${e.id}">${this._iconField(e.icon, 'data-field="icon"')}</div>
+        <div class="picker" hidden></div>
+        <p class="hint">Name, Farbe und Icon ändern, 🗑️ löscht die Gruppe. Das Icon der Gruppe bekommen automatisch alle Rezepte dieser Gruppe. Icon: einfach den Namen tippen (z. B. <b>fish</b>, <b>pizza</b> oder <b>cake</b>) und aus der Vorschau antippen.</p>`;
+          }
+          return `
+        <div class="storelist">${gs.map((e, i) => `<div class="srow storerow" data-kind="recipe_groups" data-id="${e.id}" style="--sc:${esc(e.color || "#9e9e9e")}">
+            <button class="storepick grow" type="button" data-act="rg-sel" data-id="${e.id}"><ha-icon icon="${esc(gIcon(e))}"></ha-icon><span><b translate="no">${esc(e.name)}</b><small>antippen zum Einstellen</small></span></button>
+            <button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
+            <button class="iconbtn" data-act="down" ${i === gs.length - 1 ? "disabled" : ""} title="Nach unten"><ha-icon icon="mdi:chevron-down"></ha-icon></button>
+          </div>`).join("")}</div>
+        <form class="srow stack" data-addkind="recipe_groups">
           <input class="grow" name="name" placeholder="Neue Gruppe, z. B. Grillen">
           ${this._iconField("", 'name="icon" data-newicon="1"')}
-          <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
+          <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon>Hinzufügen</button>
         </form>
         <div class="picker" hidden></div>
-        <p class="hint">Das Icon der Gruppe bekommen automatisch alle Rezepte dieser Gruppe. Icon: einfach den Namen tippen (z. B. <b>fish</b>, <b>pizza</b> oder <b>cake</b>) und aus der Vorschau antippen.</p>` : `
+        <p class="hint">⌃⌄ = Reihenfolge der Gruppen. Gruppe antippen = Name, Farbe und Icon ändern. Das Icon der Gruppe bekommen automatisch alle Rezepte dieser Gruppe. Icon: einfach den Namen tippen (z. B. <b>fish</b>, <b>pizza</b> oder <b>cake</b>) und aus der Vorschau antippen.</p>`;
+        })()}` : `
         ${recipes.length ? this._recipeSearchHtml("recipeSearchS") : ""}
         <div id="setRecipeList"></div>`}` },
       { key: "recipe_groups", parent: "recipes", alias: true },
@@ -5393,11 +5546,14 @@ class EinkaufslisteCard extends HTMLElement {
     }
     const storeOpen = cur.key === "stores" && d.stores.some((x) => x.id === this._storeSel);
     const catOpen = cur.key === "categories" && d.categories.some((x) => x.id === this._catSel);
+    const rgOpen = cur.key === "recipes" && this._recTab === "groups" && (d.recipe_groups || []).some((x) => x.id === this._rgSel);
     const perOpen = cur.key === "persons" && (d.persons || []).some((x) => x.id === this._perSel);
     const back = storeOpen
       ? `<button class="iconbtn back" data-act="store-sel" data-id="" title="Alle Geschäfte" aria-label="Alle Geschäfte"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
       : catOpen
       ? `<button class="iconbtn back" data-act="cat-sel" data-id="" title="Alle Kategorien" aria-label="Alle Kategorien"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
+      : rgOpen
+      ? `<button class="iconbtn back" data-act="rg-sel" data-id="" title="Alle Gruppen" aria-label="Alle Gruppen"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
       : perOpen
       ? `<button class="iconbtn back" data-act="per-sel" data-id="" title="Alle Personen" aria-label="Alle Personen"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
       : `<button class="iconbtn back" data-act="set-sec" data-sec="" title="Übersicht" aria-label="Übersicht"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`;
@@ -5410,21 +5566,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${this._hintsBottom(cur.html())}
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
-    // ⏱️ Kategorien: ohne Änderung/Berührung geht die LISTE nach 4 Sekunden von selbst zurück zur Übersicht –
-    // aber nie, solange ein Eintrag zum Bearbeiten offen ist (Farbwähler, Icon, Name brauchen Zeit)
-    clearTimeout(this._catTimer);
-    if (cur.key === "categories" && !catOpen) {
-      const ov = this.$("otherView");
-      const arm = () => {
-        clearTimeout(this._catTimer);
-        this._catTimer = setTimeout(() => {
-          if (this._view === "settings" && this._setSec === "categories" && !this._catSel) { this._setSec = ""; this._catSel = null; this._renderSettings(); }
-        }, 4000);
-      };
-      this._catArm = arm;
-      if (!ov._catArmed) { ov._catArmed = true; for (const ev of ["pointerdown", "keydown", "input", "change", "scroll"]) ov.addEventListener(ev, () => { if (this._setSec === "categories") this._catArm?.(); }, true); }
-      arm();
-    }
+    clearTimeout(this._catTimer); // kein automatisches Zuklappen mehr bei den Kategorien
     if (cur.key === "stats") this._loadStats();
     if (cur.key === "errors") this._loadErrors();
     if (cur.key === "products" && this._prodTab !== "delete") { this._renderProducts(); this._loadProducts(); }
@@ -5592,7 +5734,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   async _unlockSettings() {
     if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); return; }
-    const pin = await askPin();
+    const pin = await askPin(undefined, this);
     if (pin == null) return;
     if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); return; }
     const res = await this._ws({ type: "einkaufsliste/pin/check", pin }).catch(() => null);
@@ -5619,12 +5761,12 @@ class EinkaufslisteCard extends HTMLElement {
   async _pinChange(off) {
     const on = !!this._data.settings?.pin;
     let old = null;
-    if (on) { old = await askPin("🔒 Aktuelle PIN"); if (old == null) return; }
+    if (on) { old = await askPin("🔒 Aktuelle PIN", this); if (old == null) return; }
     let pin = null;
     if (!off) {
-      pin = await askPin("🔢 Neue PIN (4–8 Ziffern)");
+      pin = await askPin("🔢 Neue PIN (4–8 Ziffern)", this);
       if (pin == null) return;
-      const again = await askPin("🔁 Neue PIN nochmal");
+      const again = await askPin("🔁 Neue PIN nochmal", this);
       if (again == null) return;
       if (again !== pin) { this._toast("Die beiden PINs sind unterschiedlich 🙈"); return; }
     }
@@ -7574,7 +7716,7 @@ class EinkaufslisteCard extends HTMLElement {
 
   // ⌨️ Strg + V mit einem Bild: in der Liste = Foto fürs Eintragen, im Rezept-Editor = Rezept-Foto
   _onPaste(e) {
-    if (document.querySelector("[data-elov]")) return; // ein Fenster (z. B. Foto hinzufügen) kümmert sich selbst
+    if (elOvOpen()) return; // ein Fenster (z. B. Foto hinzufügen) kümmert sich selbst
     const item = [...(e.clipboardData?.items || [])].find((i) => i.kind === "file" && i.type.startsWith("image/"));
     const file = item?.getAsFile();
     if (!file) return;
@@ -7993,7 +8135,7 @@ class EinkaufslisteCard extends HTMLElement {
     const count = () => (this._data?.photo_counts?.[key] || (this._data?.photos?.[key] ? 1 : 0));
     if (!count()) return;
     let idx = Math.min(start, count() - 1);
-    const ov = makeOverlay();
+    const ov = makeOverlay({ title: "📷 " + label });
     const img = document.createElement("img");
     Object.assign(img.style, { maxWidth: "100%", maxHeight: "66vh", borderRadius: "14px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
     const cap = document.createElement("div");
@@ -8560,7 +8702,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 👨‍🍳 Koch-Modus: Schritt für Schritt, groß, Bildschirm bleibt an
-  async _cookMode(r) {
+  async _cookMode(r) {  // 👨‍🍳 bleibt Vollbild (große Schritte)
     const steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
     const heat = r.heat || [];
     if (!steps.length && !heat.length) return;
@@ -8569,7 +8711,7 @@ class EinkaufslisteCard extends HTMLElement {
     const finalStep = !!r.id && !this._privacyOn() && !this._hasPhoto(this._recipePhotoKey(r.id));
     const total = steps.length + (finalStep ? 1 : 0);
     let idx = 0;
-    const ov = makeOverlay();
+    const ov = makeOverlay({ full: true });
     Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
       paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 90px)" });
     const wrapW = { width: "100%", maxWidth: "700px" };
@@ -9078,7 +9220,7 @@ class EinkaufslisteCard extends HTMLElement {
     let cards = this._cardsCached(), offline = false, body = null, tools = null;
     const draw = () => {
       if (!body?.isConnected) return;
-      body.innerHTML = `<div class="cardlist">${cards.map((c) => `<button type="button" class="cc" data-id="${esc(c.id)}" style="${c.color ? `--c:${esc(c.color)};--tc:${elTextOn(c.color)}` : ""}"><span class="ci"><span translate="no">${esc(c.name)}</span><small>${c.shared ? "👪 für alle" : "👤 nur ich"}${c.has_photo ? " · 📷" : ""}</small></span><span class="ce" data-edit="${esc(c.id)}" title="Bearbeiten">✏️</span></button>`).join("")
+      body.innerHTML = `<div class="cardlist">${cards.map((c) => `<button type="button" class="cc" data-id="${esc(c.id)}" style="${c.color ? `--c:${esc(c.color)}` : ""}"><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="ci"><span translate="no">${esc(c.name)}</span><small>${c.shared ? "👪 für alle" : "👤 nur ich"}${c.has_photo ? " · 📷" : ""}</small></span><span class="ce" data-edit="${esc(c.id)}" title="Bearbeiten">✏️</span></button>`).join("")
           || `<div class="cn">Noch keine Karte. Tipp auf „➕ Karte“ – dann scannen oder die Nummer eintippen.</div>`}
         ${offline ? `<div class="cn">📴 Kein Netz – das sind die zuletzt gemerkten Karten.</div>` : ""}</div>`;
       body.querySelectorAll(".cc").forEach((b) => {
@@ -9193,9 +9335,21 @@ class EinkaufslisteCard extends HTMLElement {
 
   // ➕ / ✏️ Karte anlegen oder ändern. card = null: neu. done: danach Liste neu holen.
   _editCard(card, done) {
-    const ov = makeOverlay();
-    Object.assign(ov.style, { background: "rgba(0,0,0,.92)", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
-      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    // 📄 Seite IN der Karte (wie Gar-Zeiten): ← führt zurück zu „Meine Karten“; ohne Seiten-Funktion bleibt es das alte Vollbild-Fenster
+    const asPage = typeof this._openPage === "function";
+    const back = () => this._openCards();
+    let ov;
+    if (asPage) this._openPage({ key: "cardedit", title: card ? "Karte ändern" : "Neue Karte", icon: "mdi:credit-card-edit-outline", color: SET_COLORS.cards, onBack: back, build: (bd) => { ov = bd; } });
+    else {
+      ov = makeOverlay();
+      Object.assign(ov.style, { background: "rgba(0,0,0,.92)", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    }
+    const finish = () => { if (asPage) back(); else { ov.remove(); done?.(); } };
+    const mkBtn = (label, main = false) => { if (!asPage) return ovButton(label, main); const b = document.createElement("button"); b.type = "button"; b.className = main ? "btn primary" : "btn"; b.textContent = label; return b; };
+    const C = asPage
+      ? { fg: "var(--primary-text-color)", inBg: "var(--card-background-color, var(--ha-card-background, #fff))", inBd: "color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent)", chip: "color-mix(in srgb, var(--primary-text-color, #000) 10%, transparent)", hint: "var(--secondary-text-color)", del: "var(--error-color, #db4437)", swOn: "var(--primary-text-color)", sw0: "#9e9e9e" }
+      : { fg: "#eee", inBg: "#222", inBd: "#555", chip: "rgba(255,255,255,.14)", hint: "#aaa", del: "#ff8a80", swOn: "#fff", sw0: "#3a3a3a" };
     const COLORS = ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#00897b", "#1e88e5", "#5e35b1", "#d81b60", "#6d4c41", "#546e7a"];
     const NAMES = ["Payback", "DeutschlandCard", "Kaufland Card", "Lidl Plus", "REWE Bonus", "Edeka", "dm", "Rossmann", "IKEA Family", "Aldi", "Penny", "Netto", "Müller"];
     // fmt = Darstellung: kommt automatisch vom Scanner (qr, aztec, ean13 …); von Hand getippt = "auto" (die Karte rät)
@@ -9203,14 +9357,14 @@ class EinkaufslisteCard extends HTMLElement {
     const canScan = (this._hasAppScanner() || (window.isSecureContext && !!navigator.mediaDevices?.getUserMedia)) && !this._privacyOn();
     const canPhoto = !this._privacyOn();
     ov.innerHTML = `<style>
-      .cw { width:100%; max-width:520px; font:15px/1.4 Roboto,sans-serif; color:#eee; display:flex; flex-direction:column; gap:10px; }
+      .cw { width:100%; max-width:520px; font:15px/1.4 Roboto,sans-serif; color:${C.fg}; display:flex; flex-direction:column; gap:10px; }
       .cw h2 { margin:6px 0 0; font-size:20px; }
-      .cw input[type=text], .cw select { width:100%; box-sizing:border-box; padding:12px; border-radius:10px; border:1px solid #555; background:#222; color:#fff; font:16px Roboto,sans-serif; }
-      .cw .chips { display:flex; flex-wrap:wrap; gap:6px; } .cw .chips button { border:0; border-radius:999px; padding:6px 12px; background:rgba(255,255,255,.14); color:#fff; font:14px Roboto,sans-serif; cursor:pointer; }
-      .cw .chips button.on { background:#43a047; } .cw .sw { width:34px; height:34px; border-radius:50%; padding:0 !important; border:3px solid transparent !important; }
-      .cw .sw.on { border-color:#fff !important; } .cw .pv { background:#fff; border-radius:10px; padding:6px; display:none; } .cw .pv svg { display:block; margin:0 auto; max-height:130px; width:100%; }
-      .cw .row { display:flex; gap:8px; flex-wrap:wrap; } .cw .hint { color:#aaa; font-size:13px; margin:0; }
-    </style><div class="cw"><h2>${card ? "✏️ Karte ändern" : "➕ Neue Karte"}</h2>
+      .cw input[type=text], .cw select { width:100%; box-sizing:border-box; padding:12px; border-radius:10px; border:1px solid ${C.inBd}; background:${C.inBg}; color:${C.fg}; font:16px Roboto,sans-serif; }
+      .cw .chips { display:flex; flex-wrap:wrap; gap:6px; } .cw .chips button { border:0; border-radius:999px; padding:6px 12px; background:${C.chip}; color:${C.fg}; font:14px Roboto,sans-serif; cursor:pointer; }
+      .cw .chips button.on { background:#43a047; color:#fff; } .cw .sw { width:34px; height:34px; border-radius:50%; padding:0 !important; border:3px solid transparent !important; }
+      .cw .sw.on { border-color:${C.swOn} !important; } .cw .pv { background:#fff; border-radius:10px; padding:6px; display:none; } .cw .pv svg { display:block; margin:0 auto; max-height:130px; width:100%; }
+      .cw .row { display:flex; gap:8px; flex-wrap:wrap; } .cw .hint { color:${C.hint}; font-size:13px; margin:0; }
+    </style><div class="cw">${asPage ? "" : `<h2>${card ? "✏️ Karte ändern" : "➕ Neue Karte"}</h2>`}
       <div class="row" id="cdTop"></div>
       <input type="text" id="cdName" maxlength="30" placeholder="Name, z. B. Payback" value="${esc(card?.name || "")}" autocomplete="off">
       ${card ? "" : `<div class="chips" id="cdNames">${NAMES.map((n) => `<button type="button">${esc(n)}</button>`).join("")}</div>`}
@@ -9221,7 +9375,7 @@ class EinkaufslisteCard extends HTMLElement {
         : `<p class="hint">🔒 Datenschutz ist an – Kamera, Fotos und Scanner sind aus. Nummer eintippen geht.</p>`}
       ${card ? `<p class="hint">${card.shared ? "👪 Diese Karte sehen alle in der Familie." : "👤 Diese Karte siehst nur du."}</p>`
         : `<div class="chips" id="cdWho"><button type="button" data-v="1" class="on">👪 Für alle</button><button type="button" data-v="0">👤 Nur für mich</button></div>`}
-      <div class="chips" id="cdCol"><button type="button" class="sw ${st.color ? "" : "on"}" data-c="" style="background:#3a3a3a" title="Grau"></button>${COLORS.map((c) => `<button type="button" class="sw ${st.color === c ? "on" : ""}" data-c="${c}" style="background:${c}"></button>`).join("")}</div>
+      <div class="chips" id="cdCol"><button type="button" class="sw ${st.color ? "" : "on"}" data-c="" style="background:${C.sw0}" title="Grau"></button>${COLORS.map((c) => `<button type="button" class="sw ${st.color === c ? "on" : ""}" data-c="${c}" style="background:${c}"></button>`).join("")}</div>
       <div class="row" id="cdBtns"></div></div>`;
     const $ = (sel) => ov.querySelector(sel);
     const preview = () => {
@@ -9232,7 +9386,7 @@ class EinkaufslisteCard extends HTMLElement {
     };
     const photoInfo = () => {
       const info = $("#cdPhInfo");
-      info.innerHTML = st.hasPhoto ? `📷 ${st.photo ? "Neues Foto – wird beim Speichern abgelegt." : "Foto gespeichert."} <button type="button" data-a="phdel" style="border:0;background:none;color:#ff8a80;font:inherit;cursor:pointer;padding:0 0 0 6px">🗑️ Foto entfernen</button>` : "";
+      info.innerHTML = st.hasPhoto ? `📷 ${st.photo ? "Neues Foto – wird beim Speichern abgelegt." : "Foto gespeichert."} <button type="button" data-a="phdel" style="border:0;background:none;color:${C.del};font:inherit;cursor:pointer;padding:0 0 0 6px">🗑️ Foto entfernen</button>` : "";
       info.querySelector('[data-a="phdel"]')?.addEventListener("click", () => { st.photo = ""; st.hasPhoto = false; photoInfo(); });
     };
     $("#cdCode").addEventListener("input", () => { st.fmt = "auto"; preview(); });
@@ -9240,7 +9394,7 @@ class EinkaufslisteCard extends HTMLElement {
     ov.querySelectorAll("#cdWho button").forEach((b) => { b.onclick = () => { st.shared = b.dataset.v === "1"; ov.querySelectorAll("#cdWho button").forEach((x) => x.classList.toggle("on", x === b)); }; });
     ov.querySelectorAll("#cdCol button").forEach((b) => { b.onclick = () => { st.color = b.dataset.c; ov.querySelectorAll("#cdCol button").forEach((x) => x.classList.toggle("on", x === b)); }; });
     if (canScan) {
-      const sc = ovButton("📷 Einscannen", true);
+      const sc = mkBtn("📷 Einscannen", true);
       sc.onclick = async () => {
         const got = (k) => { $("#cdCode").value = k.code; st.fmt = k.kind; preview(); this._toast("📷 Karte erkannt – jetzt noch einen Namen geben"); };
         const r = await elScanLive("Halte den QR-Code, Aztec-Code oder Strichcode der Karte ins Bild."); // eigener Scanner kann auch Aztec (z. B. Penny)
@@ -9254,7 +9408,7 @@ class EinkaufslisteCard extends HTMLElement {
       $("#cdTop").append(sc);
     }
     if (canPhoto) {
-      const pb = ovButton("📷 Foto der Karte");
+      const pb = mkBtn("📷 Foto der Karte");
       pb.onclick = async () => {
         const file = await this._cardImageFile();
         if (!file) return;
@@ -9273,13 +9427,13 @@ class EinkaufslisteCard extends HTMLElement {
       $("#cdTop").append(pb);
     }
     const bar = $("#cdBtns");
-    const cancel = ovButton("Abbrechen"), save = ovButton("💾 Speichern", true);
-    cancel.onclick = () => ov.remove();
+    const cancel = mkBtn("Abbrechen"), save = mkBtn("💾 Speichern", true);
+    cancel.onclick = () => { if (asPage) back(); else ov.remove(); };
     if (card) {
-      const del = ovButton("🗑️ Löschen");
+      const del = mkBtn("🗑️ Löschen");
       del.onclick = async () => {
         if (!elConfirm(`Karte „${card.name}“ wirklich löschen?`)) return;
-        try { await this._ws({ type: "einkaufsliste/card/remove", card_id: card.id }); this._cardPhotoForget(card.id); ov.remove(); done?.(); } catch (_) { /* Meldung kam schon */ }
+        try { await this._ws({ type: "einkaufsliste/card/remove", card_id: card.id }); this._cardPhotoForget(card.id); finish(); } catch (_) { /* Meldung kam schon */ }
       };
       bar.append(del);
     }
@@ -9294,7 +9448,7 @@ class EinkaufslisteCard extends HTMLElement {
         const id = res?.id || card?.id;
         if (id && st.photo) { try { localStorage.setItem(this._cardPhotoKey(id), st.photo); } catch (_) { /* egal */ } }
         else if (id && st.photo === "") this._cardPhotoForget(id);
-        ov.remove(); done?.();
+        finish();
       } catch (_) { /* Meldung kam schon */ }
     };
     bar.append(cancel, save);
@@ -9729,7 +9883,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       }
       case "page-back":
-        this._closePage();
+        this._pageBack();
         break;
       case "view": {
         const v = el.dataset.view;
@@ -10340,13 +10494,18 @@ class EinkaufslisteCard extends HTMLElement {
         this._renderSettings();
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
         break;
+      case "rg-sel":
+        this._rgSel = el.dataset.id || null;
+        this._renderSettings();
+        this.$("otherView").scrollIntoView?.({ block: "nearest" });
+        break;
       case "per-sel":
         this._perSel = el.dataset.id || null;
         this._renderSettings();
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
         break;
       case "rec-tab":
-        this._recTab = el.dataset.tab;
+        this._recTab = el.dataset.tab; this._rgSel = null;
         this._renderSettings();
         break;
       case "set-grp": // 🗂️ eine Überschrift auf = die vorherige zu
@@ -10355,7 +10514,7 @@ class EinkaufslisteCard extends HTMLElement {
         break;
       case "set-sec":
         if (el.dataset.sec !== "stores") this._storeSel = null;
-        this._catSel = null; this._perSel = null;
+        this._catSel = null; this._perSel = null; this._rgSel = null;
         this._setSec = el.dataset.sec || null;
         this._renderSettings();
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
