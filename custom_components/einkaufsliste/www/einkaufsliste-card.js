@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.04";
+const EL_VERSION = "2.76.05";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.04"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.05"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -282,11 +282,11 @@ const EL_HELP = {
     "Shows a short text under the small icons. Applies to all devices. Even without the switch: <b>press and hold an icon</b> to see what it does.",
   ]],
   transfer: ["data", [
-    "<b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen (bis zu 50), jede mit eigenem Geschäft – entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich; nur Admins) oder <b>einmal herüberholen</b>. Dazu Text einfügen und einen Katalog aus CSV (Name; Kategorie; Barcode; Notiz). Jedes davon ist ein <b>Kasten zum Aufklappen</b> – es ist immer nur einer offen.",
+    "<b>Aus anderen Apps:</b> mehrere Alexa-/To-do-Listen (bis zu 50), jede mit eigenem Geschäft – entweder 🔁 <b>automatisch herüberholen</b> (Holen &amp; dort löschen · Bei beiden behalten · Voller Abgleich; nur Admins) oder <b>einmal herüberholen</b>. Dazu Text einfügen und einen Katalog aus CSV (Name; Kategorie; Barcode; Notiz). Jedes davon ist ein <b>Kasten zum Aufklappen</b> – es ist immer nur einer offen. Auch die Reiter oben (Aus anderen Apps, Grocy, E-Mail, Sicherung) sind solche Kästen: Antippen öffnet, nochmal antippen schließt.",
     "<b>🥫 Grocy:</b> Produkte in den Katalog holen (Adresse und API-Schlüssel, Vorschau mit Häkchen) und der <b>🔄 Dauerabgleich</b> mit getrennten Schaltern für Einkaufsliste und Katalog.",
     "<b>🗣️ Siri / Kurzbefehle:</b> Aktion „Dienst aufrufen“ der Home-Assistant-App, Dienst <code>einkaufsliste.add_item</code>, Daten <code>name: Milch</code>. <b>📧 E-Mail:</b> IMAP-Postfach, erlaubte Absender, Geschäft über Betreff oder „Aldi:“ in der Mail. <b>Sicherung:</b> .zip herunterladen oder einspielen (ersetzt alles!) – nur Admins.",
   ], [
-    "<b>From other apps:</b> several Alexa/to-do lists (up to 50), each with its own store – either 🔁 <b>fetch automatically</b> (fetch &amp; delete there · keep in both · full sync; admins only) or <b>fetch once</b>. Plus pasting text and a catalogue from CSV (name; category; barcode; note). Each is a <b>box you open and close</b> – only one is open at a time.",
+    "<b>From other apps:</b> several Alexa/to-do lists (up to 50), each with its own store – either 🔁 <b>fetch automatically</b> (fetch &amp; delete there · keep in both · full sync; admins only) or <b>fetch once</b>. Plus pasting text and a catalogue from CSV (name; category; barcode; note). Each is a <b>box you open and close</b> – only one is open at a time. The tabs at the top (From other apps, Grocy, Email, Backup) are such boxes too: tap to open, tap again to close.",
     "<b>🥫 Grocy:</b> fetch products into the catalogue (address and API key, preview with ticks) and the <b>🔄 continuous sync</b> with separate switches for shopping list and catalogue.",
     "<b>🗣️ Siri / Shortcuts:</b> action “Call service” of the Home Assistant app, service <code>einkaufsliste.add_item</code>, data <code>name: milk</code>. <b>📧 Email:</b> IMAP mailbox, allowed senders, store via subject or “Aldi:” in the mail. <b>Backup:</b> download .zip or restore (replaces everything!) – admins only.",
   ]],
@@ -364,8 +364,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
-  ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) und die Listenansicht samt „Meine Ansicht“ sind jetzt Kästen zum Aufklappen, im Stil der Hauptgruppen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 📖 <b>Die Anleitung</b> (fürs Einkaufen und für die Einstellungen) ist jetzt auch so eine Seite, in den Farben der Karte. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
-   "🗂️ <b>Settings re-sorted:</b> new group 👁️ View (after Health) with list view, labels and light/dark. 📦 “Products” is now called “Products/catalogue”. · 🪗 <b>Collapsible boxes:</b> “From other apps” (automatic, once, paste text, CSV) Tidy up (automatic, by hand, delete list, delete everything, factory reset) and the list view including “My view” are now boxes you open and close, in the style of the main groups. Only one is open at a time, which looks much tidier. · 🪟 <b>Cooking times, “What can I cook?” and My cards</b> open as a normal page inside the card instead of full screen. The arrow at the top takes you back. · 📖 <b>The guide</b> (for shopping and for the settings) is now such a page too, in the colours of the card. · 🔎 The search in Products/catalogue is cleared when you leave the page, the second eraser under the field is gone."],
+  ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) und die Listenansicht samt „Meine Ansicht“ sind jetzt Kästen zum Aufklappen, im Stil der Hauptgruppen. Auch die Reiter bei Import & Sicherung und die Seite Ressourcen sind jetzt solche Kästen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 🧾 Das <b>Einkaufs-Protokoll</b> und die 🏷️ <b>Angebote</b> öffnen ebenfalls als Seite in der Karte. · 📖 <b>Die Anleitung</b> (fürs Einkaufen und für die Einstellungen) ist jetzt auch so eine Seite, in den Farben der Karte, mit Kapiteln im Stil der Hauptgruppen. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
+   "🗂️ <b>Settings re-sorted:</b> new group 👁️ View (after Health) with list view, labels and light/dark. 📦 “Products” is now called “Products/catalogue”. · 🪗 <b>Collapsible boxes:</b> “From other apps” (automatic, once, paste text, CSV) Tidy up (automatic, by hand, delete list, delete everything, factory reset) and the list view including “My view” are now boxes you open and close, in the style of the main groups. The tabs in Import & backup and the Resources page are such boxes now too. Only one is open at a time, which looks much tidier. · 🪟 <b>Cooking times, “What can I cook?” and My cards</b> open as a normal page inside the card instead of full screen. The arrow at the top takes you back. · 🧾 The <b>purchase log</b> and the 🏷️ <b>offers</b> open as a page inside the card too. · 📖 <b>The guide</b> (for shopping and for the settings) is now such a page too, in the colours of the card, with chapters in the style of the main groups. · 🔎 The search in Products/catalogue is cleared when you leave the page, the second eraser under the field is gone."],
   ["🛍️ <b>Laden-Modus: „Gerade abgehakt“.</b> Aus Versehen abgehakt? Die Liste zeigt alles aus diesem Einkauf, neueste zuerst. Ein Tipp auf ↩️ holt es samt Notiz und Menge zurück. Beim Beenden des Laden-Modus ist die Anzeige weg. · ✔️ <b>Abhaken ohne Hakeln:</b> Die Zeile verschwindet jetzt sofort statt erst nach einer kleinen Pause. In 👁️ Ansicht lässt sich die Animation nur für dich ausschalten. · 📍 <b>Kein Hochspringen mehr</b> nach dem Entsperren: ein kurzes Flackern des Standorts wirft dich nicht mehr aus dem Laden-Reiter. · 📦 Notizen bleiben im Katalog, wenn die Liste geleert wird.",
    "🛍️ <b>Store mode: “Just ticked off”.</b> Ticked something by mistake? The list shows everything from this shopping trip, newest first. A tap on ↩️ brings it back with its note and quantity. When you leave store mode the display is gone. · ✔️ <b>Ticking off without stutter:</b> the row now disappears at once instead of after a short pause. In 👁️ View you can switch the animation off just for yourself. · 📍 <b>No more jumping to the top</b> after unlocking: a brief flicker of the location no longer throws you out of the store tab. · 📦 Notes stay in the catalogue when the list is emptied."],
   ["🏷️ <b>Beschriftungen für dich allein:</b> In 👁️ Ansicht (ganz oben, über der Schriftgröße) schaltest du den Text unter den Icons nur für dich an oder aus. Ohne eigene Wahl gilt der Standard aus ⚙️ Ansicht.",
@@ -2282,8 +2282,8 @@ ha-card.compact .group { margin-top:4px; }
 .lrow { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; text-align:left; padding:10px 12px; margin:3px 0; border-radius:12px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
 .lrow:hover { border-color:var(--primary-color,#03a9f4); }
 .xaccs { display:flex; flex-direction:column; }
-.xacc .lgroup .chev { transition:transform .2s; }
-.xacc.open .lgroup .chev { transform:rotate(180deg); }
+.xacc > .lgroup > .chev { transition:transform .2s; }
+.xacc.open > .lgroup > .chev { transform:rotate(180deg); }
 .xacc-b { padding:4px 12px 12px; }
 .xacc-b[hidden] { display:none; }
 .lrow > ha-icon:first-child { color:var(--primary-color,#03a9f4); }
@@ -5261,12 +5261,18 @@ class EinkaufslisteCard extends HTMLElement {
       { key: "privacy", icon: "mdi:shield-lock-outline", title: "Datenschutz", info: this._privacyOn() ? "an – keine Kamera/Fotos" : "aus", html: () => this._privacyHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
       { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
-      { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher, Umfang & Last", html: () => `
+      { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher, Umfang & Last", html: () => {
+        this._accOpen = this._accOpen || {};
+        if (this._accOpen.stats === undefined) this._accOpen.stats = "space"; // beim ersten Öffnen steht der Speicher gleich offen
+        return `<div class="xaccs">
+        ${this._acc("stats", "space", "mdi:chart-donut", "#00897b", "Speicher & Umfang", "So viel Platz braucht die Einkaufsliste", `
         <p class="hint">So viel Platz braucht die Einkaufsliste in deinem Home Assistant.</p>
-        <div id="statsBox"><p class="hint">Lade …</p></div>
-        <hr><p><b>📊 Last</b><br>Wie stark arbeitet die Einkaufsliste gerade? Bei hoher Auslastung des Servers hilft das, die Ursache zu finden.</p>
+        <div id="statsBox"><p class="hint">Lade …</p></div>`)}
+        ${this._acc("stats", "load", "mdi:speedometer", "#fb8c00", "Last", "Wie stark arbeitet die Einkaufsliste gerade?", `
+        <p class="hint">Wie stark arbeitet die Einkaufsliste gerade? Bei hoher Auslastung des Servers hilft das, die Ursache zu finden.</p>
         <div id="loadRes" class="hint">Tippe auf „Last anzeigen“.</div>
-        <div class="btnrow"><button class="btn" data-act="load-run"><ha-icon icon="mdi:speedometer"></ha-icon>Last anzeigen</button></div>` },
+        <div class="btnrow"><button class="btn" data-act="load-run"><ha-icon icon="mdi:speedometer"></ha-icon>Last anzeigen</button></div>`)}
+        </div>`; } },
       { key: "check", icon: "mdi:check-decagram-outline", title: "Alles ok?", info: "prüfen & reparieren", html: () => `
         <p class="hint">Sucht nach kaputten oder unvollständigen Einträgen: Produkte ohne Kategorie, Artikel ohne Geschäft, fehlende oder übrige Fotos, Barcodes ohne Produkt und Verweise auf Gelöschtes. Jeder Fund steht einzeln da – mit Haken und wie repariert wird. Repariert wird nur, was du anhakst.</p>
         <div class="btnrow"><button class="btn primary" data-act="check-run"><ha-icon icon="mdi:magnify"></ha-icon>Jetzt prüfen</button></div>
@@ -5421,8 +5427,8 @@ class EinkaufslisteCard extends HTMLElement {
     if (cur.key === "errors") this._loadErrors();
     if (cur.key === "products" && this._prodTab !== "delete") { this._renderProducts(); this._loadProducts(); }
     if (cur.key === "recipes" && this._recTab !== "groups" && this._recTab !== "file") this._renderSetRecipeList();
-    if (cur.key === "transfer" && this._xferTab === "apps") this._loadTodoLists();
-    if (cur.key === "transfer" && this._xferTab === "mail") this._loadMailSources();
+    if (cur.key === "transfer" && this._xferTabNow() === "apps") this._loadTodoLists();
+    if (cur.key === "transfer" && this._xferTabNow() === "mail") this._loadMailSources();
     this._renderDelList();
   }
 
@@ -5631,16 +5637,21 @@ class EinkaufslisteCard extends HTMLElement {
   // 🪗 Aufklapper-Kasten (Import „Aus anderen Apps“, Aufräumen): immer nur einer pro Gruppe g offen
   _acc(g, k, icon, color, title, sub, inner) {
     const on = (this._accOpen || {})[g] === k;
-    const emo = { "mdi:sync": "🔁", "mdi:import": "📥", "mdi:clipboard-text-outline": "📋", "mdi:file-delimited-outline": "📄", "mdi:calendar-sync": "🗓️", "mdi:broom": "🧹", "mdi:delete-sweep-outline": "🧽", "mdi:delete-forever-outline": "🗑️", "mdi:nuke": "💣", "mdi:format-text": "🏷️", "mdi:check": "✔️", "mdi:format-size": "🔠", "mdi:view-dashboard-outline": "🧩", "mdi:eye-outline": "👁️" }[icon] || "📁";
+    const emo = { "mdi:sync": "🔁", "mdi:import": "📥", "mdi:clipboard-text-outline": "📋", "mdi:file-delimited-outline": "📄", "mdi:calendar-sync": "🗓️", "mdi:broom": "🧹", "mdi:delete-sweep-outline": "🧽", "mdi:delete-forever-outline": "🗑️", "mdi:nuke": "💣", "mdi:format-text": "🏷️", "mdi:check": "✔️", "mdi:format-size": "🔠", "mdi:view-dashboard-outline": "🧩", "mdi:eye-outline": "👁️", "mdi:download": "⬇️", "mdi:backup-restore": "♻️", "mdi:cloud-download-outline": "🥫", "mdi:sync-circle": "🔄", "mdi:information-outline": "ℹ️", "mdi:email-edit-outline": "✉️", "mdi:chart-donut": "📊", "mdi:speedometer": "⏱️" }[icon] || "📁";
     // exakt die gleichen Bauteile wie die Hauptgruppen der Einstellungen (lgbox / lgroup / gem) – sieht darum überall genau so aus wie sie
     return `<div class="lgbox xacc ${on ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="acc-toggle" data-g="${g}" data-k="${k}" aria-expanded="${on}"><span class="gem">${emo}</span><span class="grow"><b>${title}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button><div class="xacc-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
   }
 
   // 📥 Import & Sicherung: Rezepte aus Datei, andere Apps, Backup
+  _xferTabNow() { // welcher Kasten bei „Import & Sicherung“ offen ist: apps | grocy | mail | backup | "" (alle zu)
+    const t = this._xferTab;
+    if (t === "none") return "";
+    return !t || t === "recipes" ? "apps" : t; // „Rezepte aus Datei“ ist jetzt unter ⚙️ → Rezepte
+  }
+
   _xferHtml() {
-    const tab = !this._xferTab || this._xferTab === "recipes" ? "apps" : this._xferTab; // „Rezepte aus Datei“ ist jetzt unter ⚙️ → Rezepte
+    const tab = this._xferTabNow();
     const admin = !!this._hass?.user?.is_admin;
-    const t = (k, icon, label) => `<button class="tab ${tab === k ? "active" : ""}" data-act="xfer-tab" data-tab="${k}"><ha-icon icon="${icon}"></ha-icon>${label}</button>`;
     const stores = this._selectOptions(this._data.stores, this._data.stores[0]?.id, "🛒 Welches Geschäft?");
     let body = "";
     if (tab === "apps") {
@@ -5691,15 +5702,20 @@ class EinkaufslisteCard extends HTMLElement {
       body = admin ? this._grocyHtml() : `<p class="hint">🔒 Produkte aus Grocy holen darf nur ein Admin – es ruft ein anderes Gerät im Netz ab.</p>`;
     } else if (tab === "mail") {
       body = this._mailHtml();
-    } else {
-      body = admin ? `
+    } else if (tab === "backup") {
+      body = admin ? `<div class="xaccs">
+        ${this._acc("xferb", "dl", "mdi:download", "#1e88e5", "Sicherung herunterladen", "Alles in einer .zip-Datei", `
         <p class="hint"><b>Sicherung herunterladen</b>: Alles in einer Datei (.zip) – Liste, Rezepte, Produkte, Barcodes, Fotos, Geschäfte, Personen, Verlauf. Gut für vor einem Umzug oder einfach so.</p>
-        <div class="btnrow"><button class="btn primary" data-act="xfer-backup"><ha-icon icon="mdi:download"></ha-icon>Sicherung herunterladen</button></div>
+        <div class="btnrow"><button class="btn primary" data-act="xfer-backup"><ha-icon icon="mdi:download"></ha-icon>Sicherung herunterladen</button></div>`)}
+        ${this._acc("xferb", "up", "mdi:backup-restore", "#e53935", "Sicherung einspielen", "Ersetzt alles, was jetzt da ist", `
         <p class="hint" style="margin-top:14px"><b>Sicherung einspielen</b>: Ersetzt <b>alles</b>, was jetzt da ist, durch den Stand aus der Datei. Vorher am besten selbst noch eine Sicherung ziehen 😉</p>
-        <div class="btnrow"><label class="btn" style="--c:var(--error-color,#db4437)"><ha-icon icon="mdi:backup-restore"></ha-icon>Sicherung einspielen …<input type="file" id="xferRestore" accept=".zip,application/zip" hidden></label></div>
+        <div class="btnrow"><label class="btn" style="--c:var(--error-color,#db4437)"><ha-icon icon="mdi:backup-restore"></ha-icon>Sicherung einspielen …<input type="file" id="xferRestore" accept=".zip,application/zip" hidden></label></div>`)}
+        </div>
         <div id="xferRes"></div>` : `<p class="hint">🔒 Sicherungen darf nur ein Admin herunterladen oder einspielen.</p>`;
     }
-    return `<div class="subtabs">${t("apps", "mdi:swap-horizontal-circle-outline", "Aus anderen Apps")}${t("grocy", "mdi:fridge-outline", "Grocy")}${t("mail", "mdi:email-outline", "E-Mail")}${t("backup", "mdi:content-save-outline", "Sicherung")}</div>${body}`;
+    // 🗂️ die Reiter oben sind jetzt Kästen wie die Hauptgruppen: nur der offene zeigt seinen Inhalt, nochmal antippen klappt ihn zu
+    const tabs = [["apps", "🔁", "Aus anderen Apps", "Alexa-/To-do-Listen, Text, CSV-Katalog"], ["grocy", "🥫", "Grocy", "Produkte in den Katalog holen"], ["mail", "📧", "E-Mail", "Artikel per Mail aufs Postfach"], ["backup", "💾", "Sicherung", "Alles als .zip herunterladen oder einspielen"]];
+    return `<div class="xaccs">${tabs.map(([k, emo, label, sub]) => `<div class="lgbox xacc ${tab === k ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="xfer-tab" data-tab="${k}" aria-expanded="${tab === k}"><span class="gem">${emo}</span><span class="grow"><b>${label}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>${tab === k ? `<div class="xacc-b">${body}</div>` : ""}</div>`).join("")}</div>`;
   }
 
   // 📥 Rezepte aus Datei einlesen (⚙️ → Rezepte, dritter Reiter)
@@ -5725,15 +5741,16 @@ class EinkaufslisteCard extends HTMLElement {
         ${mail ? `<p><b>✅ An:</b> <span translate="no">${esc(mail.name)}</span></p>` : ""}
         <p class="hint">🔒 Einrichten oder ändern kann das nur ein Admin – es liest und löscht Mails in einem Postfach.</p></div>`;
     }
-    return `
-        <div class="syncbox">
+    return `<div class="xaccs">
+        ${this._acc("xferm", "info", "mdi:information-outline", "#1e88e5", "So funktioniert es", "Eine Mail = jede Zeile ein Artikel", `
         <p class="hint"><b>📧 Per E-Mail</b>: Eine Mail an dein Einkaufs-Postfach – jede Zeile wird ein Artikel. Dafür in Home Assistant die Integration „IMAP“ mit einer eigenen Mail-Adresse einrichten. Nur Mails von den <b>erlaubten Absendern</b> zählen.</p>
         <ul class="hint xferfmt">
           <li><b>Geschäft im Betreff</b> (z. B. „Aldi“ oder „Einkauf bei Aldi“) → alles aus der Mail kommt dorthin.</li>
           <li><b>Geschäft als Überschrift</b> in der Mail (z. B. „Aldi:“, darunter die Artikel, dann „DM:“ …) → gilt bis zur nächsten Überschrift.</li>
           <li>Sonst gilt das Geschäft unten. Mengen wie „6 Eier“ oder „2 L Milch“ werden erkannt.</li>
           <li>Als gelesen markiert oder gelöscht werden nur Mails, aus denen wirklich etwas auf die Liste kam.</li>
-        </ul>
+        </ul>`)}
+        ${this._acc("xferm", "setup", "mdi:email-edit-outline", "#43a047", "Einrichten", mail ? `An: ${esc(mail.name)}` : "Noch nicht eingerichtet", `<div class="syncbox">
         ${mail ? `<p><b>✅ An:</b> <span translate="no">${esc(mail.name)}</span> → ${store ? `<span translate="no">${esc(store)}</span>` : "<span>Egal wo</span>"}${mail.count ? `<span> · schon ${mail.count}× eingetragen</span>` : ""}${mail.ok === false ? `<br><span>⚠️ Das Postfach gibt es nicht mehr – bitte neu wählen.</span>` : ""}</p>` : ""}
         <div class="srow"><ha-icon class="prev" icon="mdi:email-outline"></ha-icon><select class="grow" id="mailSrc"><option value="">Lade Postfächer …</option></select></div>
         <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="mailStore">${this._selectOptions(this._data.stores, mail?.store_id || null, "🛒 Egal wo")}</select></div>
@@ -5743,6 +5760,7 @@ class EinkaufslisteCard extends HTMLElement {
         </select></div>
         <div class="srow"><ha-icon class="prev" icon="mdi:account-check-outline"></ha-icon><input class="grow" id="mailSenders" value="${esc((mail?.senders || []).join(", "))}" placeholder="Erlaubte Absender, z. B. ich@mail.de, oma@mail.de" translate="no"></div>
         <div class="btnrow"><button class="btn primary" data-act="mail-on"><ha-icon icon="mdi:email-check-outline"></ha-icon>${mail ? "Ändern" : "Einschalten"}</button>${mail ? `<button class="btn" data-act="mail-off"><ha-icon icon="mdi:email-off-outline"></ha-icon>Ausschalten</button>` : ""}</div>
+        </div>`)}
         </div>`;
   }
 
@@ -6018,7 +6036,8 @@ class EinkaufslisteCard extends HTMLElement {
     let url = this._grocyUrl;
     if (url == null && sv?.url) url = this._grocyUrl = sv.url;
     if (url == null) { try { url = localStorage.getItem("einkaufsliste_grocy_url") || ""; } catch (_) { url = ""; } this._grocyUrl = url; }
-    return `
+    return `<div class="xaccs">
+      ${this._acc("xferg", "once", "mdi:cloud-download-outline", "#00897b", "Produkte einmal holen", "Name, Barcodes und Gruppe in den Katalog", `
       <div class="syncbox">
       <p class="hint"><b>🥫 Aus Grocy</b>: Holt deine Produkte aus Grocy in den Katalog – <b>Name</b>, <b>Barcodes</b> und die <b>Produktgruppe</b> (wird zur Kategorie). Lagerbestand, Haltbarkeit und Standorte bleiben draußen. Was es hier schon gibt, wird nicht überschrieben.</p>
       <ul class="hint xferfmt">
@@ -6030,8 +6049,10 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="srow"><ha-icon class="prev" icon="mdi:key-outline"></ha-icon><input class="grow" id="grocyKey" type="password" value="${esc(this._grocyKey || "")}" placeholder="API-Schlüssel" translate="no" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
       <div class="btnrow"><button class="btn primary" data-act="grocy-fetch"><ha-icon icon="mdi:cloud-download-outline"></ha-icon>Produkte holen</button></div>
       <div id="grocyOut">${this._grocyOutHtml()}</div>
+      </div>`)}
+      ${this._acc("xferg", "sync", "mdi:sync-circle", "#43a047", "Dauerabgleich", "Home Assistant schaut regelmäßig bei Grocy nach", `
+      <div class="syncbox" id="grocySync">${this._grocySyncHtml()}</div>`)}
       </div>
-      <div class="syncbox" id="grocySync">${this._grocySyncHtml()}</div>
       <div id="xferRes"></div>`;
   }
 
@@ -8067,9 +8088,16 @@ class EinkaufslisteCard extends HTMLElement {
   async _showSpend(tab = "add") {
     if (!this._data?.settings?.spend) return;
     const autoAsk = !!this._spendAutoPrompt; this._spendAutoPrompt = false; // 🎉 von selbst aufgegangen?
-    const ov = makeOverlay();
-    Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
-      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    // 🧾 als Seite IN der Karte (Pfeil zurück, Farben der Karte); ohne Seiten-Fähigkeit wie früher als dunkles Fenster
+    const asPage = !!this._openPage;
+    let ov = null;
+    if (asPage) {
+      this._openPage({ key: "spend", title: EL_LANG === "de" ? "Einkaufs-Protokoll" : "Purchase log", icon: "mdi:receipt-text-outline", color: "#3949ab", build: (body) => { ov = body; } });
+    } else {
+      ov = makeOverlay();
+      Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    }
     const loc = EL_LANG === "de" ? "de-DE" : "en-GB";
     const eur = (n) => n.toLocaleString(loc, { style: "currency", currency: "EUR" });
     const cnt = (n) => EL_LANG === "de" ? `${n} ${n === 1 ? "Einkauf" : "Einkäufe"}` : `${n} ${n === 1 ? "purchase" : "purchases"}`;
@@ -8139,29 +8167,29 @@ class EinkaufslisteCard extends HTMLElement {
           ${list.length ? list.map((e) => `<div class="sp-e"><div><b translate="no">${esc(this._store(e.s)?.name || e.sn)}</b><br><small>${esc(dayName(e.t))}${e.w ? ` · <span translate="no">${esc(e.w)}</span>` : ""}</small></div><span>${eur(e.a)}</span><button class="sp-x" data-sp="bon" data-id="${esc(e.id)}" title="${this._hasPhoto("bon#" + e.id) ? "Bon-Foto ansehen" : "Bon-Foto dazu"}">${this._hasPhoto("bon#" + e.id) ? "📷" : "➕📷"}</button><button class="sp-x" data-sp="del" data-id="${esc(e.id)}" title="Löschen">✖</button></div>`).join("") : `<p class="sp-hint">Nichts gefunden – ändere den Filter oder trag einen Einkauf ein.</p>`}`;
       }
       ov.innerHTML = `<style>
-        .sp { width:100%; max-width:560px; color:#eee; font:15px/1.5 Roboto, sans-serif; }
+        .sp { width:100%; max-width:${asPage ? "none" : "560px"}; ${asPage ? "--sp-text:var(--primary-text-color); --sp-mute:var(--secondary-text-color); --sp-card:var(--card-background-color, #fff); --sp-line:var(--divider-color, rgba(127,127,127,.35)); --sp-fline:var(--divider-color, rgba(127,127,127,.5)); --sp-bar:rgba(127,127,127,.25); --sp-err:var(--error-color,#db4437);" : "--sp-text:#eee; --sp-mute:#aaa; --sp-card:#1e1e1e; --sp-line:#333; --sp-fline:#444; --sp-bar:#2a2a2a; --sp-err:#ff8a80;"} color:var(--sp-text); font:15px/1.5 Roboto, sans-serif; }
         .sp .sp-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
         .sp h2 { font-size:21px; margin:6px 0; } .sp h3 { font-size:16px; margin:16px 0 6px; }
         .sp-tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:8px 0 12px; }
-        .sp-tabs button, .sp-q { background:#1e1e1e; color:#eee; border:1px solid #333; border-radius:10px; padding:10px; font:inherit; cursor:pointer; }
+        .sp-tabs button, .sp-q { background:var(--sp-card); color:var(--sp-text); border:1px solid var(--sp-line); border-radius:10px; padding:10px; font:inherit; cursor:pointer; }
         .sp-tabs button.on, .sp-q.on { background:#1e88e5; border-color:#1e88e5; color:#fff; font-weight:600; }
         .sp-q-row { display:flex; gap:6px; margin-bottom:8px; } .sp-q { flex:1; padding:8px 6px; }
-        .sp select, .sp input { width:100%; box-sizing:border-box; font:inherit; font-size:max(16px,1em); padding:10px 12px; border-radius:10px; border:1px solid #444; background:#1e1e1e; color:#eee; color-scheme:dark; }
+        .sp select, .sp input { width:100%; box-sizing:border-box; font:inherit; font-size:max(16px,1em); padding:10px 12px; border-radius:10px; border:1px solid var(--sp-fline); background:var(--sp-card); color:var(--sp-text); ${asPage ? "" : "color-scheme:dark;"} }
         .sp-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
-        .sp-l { display:block; margin:10px 0 4px; color:#aaa; font-size:14px; }
-        .sp-hint { color:#aaa; } .sp small { color:#aaa; }
+        .sp-l { display:block; margin:10px 0 4px; color:var(--sp-mute); font-size:14px; }
+        .sp-hint { color:var(--sp-mute); } .sp small { color:var(--sp-mute); }
         .sp-main { width:100%; margin-top:14px; background:#43a047; color:#fff; border:0; border-radius:12px; padding:13px; font:600 16px Roboto,sans-serif; cursor:pointer; }
-        .sp-err { color:#ff8a80; margin-top:8px; }
-        .sp-total { background:#1e1e1e; border:1px solid #333; border-radius:12px; padding:12px 14px; margin:6px 0; display:grid; grid-template-columns:1fr auto; gap:0 10px; }
+        .sp-err { color:var(--sp-err); margin-top:8px; }
+        .sp-total { background:var(--sp-card); border:1px solid var(--sp-line); border-radius:12px; padding:12px 14px; margin:6px 0; display:grid; grid-template-columns:1fr auto; gap:0 10px; }
         .sp-total b { font-size:24px; } .sp-total small { grid-column:1 / -1; }
         .sp-bt { display:flex; justify-content:space-between; gap:10px; }
-        .sp-b { background:#2a2a2a; border-radius:6px; height:10px; margin:4px 0 2px; overflow:hidden; } .sp-b i { display:block; height:100%; border-radius:6px; }
+        .sp-b { background:var(--sp-bar); border-radius:6px; height:10px; margin:4px 0 2px; overflow:hidden; } .sp-b i { display:block; height:100%; border-radius:6px; }
         .sp-bar, .sp-month { margin:8px 0; }
-        .sp-e { display:grid; grid-template-columns:1fr auto auto auto; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #2a2a2a; }
-        .sp-x { background:none; border:0; color:#888; cursor:pointer; font-size:15px; padding:6px; }
+        .sp-e { display:grid; grid-template-columns:1fr auto auto auto; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--sp-line); }
+        .sp-x { background:none; border:0; color:var(--sp-mute); cursor:pointer; font-size:15px; padding:6px; }
       </style>
       <div class="sp">
-        <div class="sp-top"><h2>🧾 Einkaufs-Protokoll</h2><button class="sp-x" data-sp="close" title="Schließen" style="font-size:22px">✕</button></div>
+        ${asPage ? "" : `<div class="sp-top"><h2>🧾 Einkaufs-Protokoll</h2><button class="sp-x" data-sp="close" title="Schließen" style="font-size:22px">✕</button></div>`}
         <div class="sp-tabs"><button class="${cur === "add" ? "on" : ""}" data-sp="tab" data-t="add">➕ Eintragen</button><button class="${cur === "stats" ? "on" : ""}" data-sp="tab" data-t="stats">📊 Auswertung</button></div>
         ${body}
       </div>`;
@@ -8278,16 +8306,16 @@ class EinkaufslisteCard extends HTMLElement {
       .elg h2 { font-size:21px; margin:6px 0 4px; display:flex; align-items:center; gap:8px; }
       .elg .elg-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
       .elg .elg-sub { color:var(--g-mute); margin:0 0 12px; font-size:14px; }
-      .elg-sec { background:var(--g-card); border:1px solid var(--g-line); border-radius:12px; margin:8px 0; overflow:hidden; }
-      .elg-sec { border-left:4px solid var(--gc, #607d8b); }
-      .elg-sec summary { cursor:pointer; padding:10px 14px; font-weight:600; font-size:16px; list-style:none; display:flex; align-items:center; gap:12px; }
-      .elg-ic { flex:none; width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:20px; background:color-mix(in srgb, var(--gc, #607d8b) 18%, transparent); }
+      .elg-sec { border:1px solid var(--g-line); border-radius:12px; margin:10px 0 0; overflow:hidden; } /* wie die Hauptgruppen der Einstellungen */
+      .elg-sec summary { cursor:pointer; padding:10px 12px; font-weight:600; font-size:16px; list-style:none; display:flex; align-items:center; gap:12px; background:color-mix(in srgb, var(--g-strong) 3%, transparent); }
+      .elg-sec[open] summary { border-bottom:1px solid var(--g-line); }
+      .elg-ic { flex:none; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:19px; background:color-mix(in srgb, var(--g-strong) 7%, transparent); }
       .elg-tt { flex:1; min-width:0; } .elg-tt b { display:block; } .elg-tt small { display:block; font-weight:400; font-size:12.5px; color:var(--g-mute); }
       .elg-row { margin:12px 0 2px; }
       .elg-sec summary::-webkit-details-marker { display:none; }
-      .elg-sec summary::after { content:"＋"; margin-left:auto; opacity:.6; }
-      .elg-sec[open] summary::after { content:"－"; }
-      .elg-sec > div { padding:0 14px 12px; }
+      .elg-sec summary::after { content:""; flex:none; width:8px; height:8px; margin:0 6px 4px auto; border-right:2px solid var(--g-mute); border-bottom:2px solid var(--g-mute); transform:rotate(45deg); transition:transform .2s; }
+      .elg-sec[open] summary::after { transform:rotate(225deg); margin-bottom:-4px; }
+      .elg-sec > div { padding:8px 12px 12px; }
       .elcredits { text-align:center; } .elcredits p { margin:8px 0; }
       .ellogo { background:#fff; border-radius:14px; padding:10px; display:inline-block; max-width:100%; }
       .ellogo img { display:block; max-width:100%; width:280px; height:auto; }
@@ -8736,6 +8764,23 @@ class EinkaufslisteCard extends HTMLElement {
   _offersOverlay(titleHtml, list, btnLabel, onTake) {
     const eur = (n) => `${Number(n).toFixed(2).replace(".", ",")} €`;
     const day = (iso) => { if (!iso) return ""; const d = new Date(iso); return `${WD_SHORT[pyWd(d)]}. ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`; };
+    if (this._openPage) { // 🏷️ als Seite IN der Karte (Pfeil zurück, Farben der Karte)
+      this._openPage({ key: "offers", title: "Angebote", icon: "mdi:tag-outline", color: "#d81b60", build: (body) => {
+        body.innerHTML = `<div style="font:600 17px Roboto,sans-serif;margin:2px 0 10px">${titleHtml}</div>
+        ${list.map((o, n) => `<div style="padding:10px 0;border-top:1px solid var(--divider-color, rgba(127,127,127,.35))"><div style="display:flex;gap:12px;align-items:center">
+          ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
+          <div style="flex:1;min-width:0">
+            <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span style="font-size:12px;color:#fb8c00">🔀 <span>Ähnlich</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
+            <div style="color:var(--secondary-text-color);font-size:13px" translate="no">${esc(o.d || "")}${o.q ? ` · ${esc(o.q)}` : ""}</div>
+            <div style="font-size:13px;color:var(--secondary-text-color)">${o.from ? `<span>ab</span> ${esc(day(o.from))} ` : ""}${o.to ? `<span>bis</span> ${esc(day(o.to))}` : ""}</div>
+          </div>
+          <div style="text-align:right;flex:none"><div style="font:700 18px Roboto,sans-serif;color:#2e7d32">${eur(o.p)}</div>${o.op ? `<div style="color:var(--secondary-text-color);text-decoration:line-through;font-size:13px">${eur(o.op)}</div>` : ""}</div>
+        </div><div style="text-align:right;margin-top:6px"><button type="button" class="btn primary" data-take="${n}">${esc(elT(btnLabel))}</button></div></div>`).join("")}
+        <div style="color:var(--secondary-text-color);font-size:12px;margin-top:10px">Quelle: Marktguru (inoffiziell) · Angaben ohne Gewähr · kann jederzeit aufhören zu funktionieren</div>`;
+        body.querySelectorAll("[data-take]").forEach((b) => { b.onclick = () => onTake(list[Number(b.dataset.take)], () => this._closePage()); });
+      } });
+      return;
+    }
     const ov = makeOverlay();
     Object.assign(ov.style, { justifyContent: "flex-start", overflowY: "auto", touchAction: "auto" });
     const card = document.createElement("div");
@@ -10876,16 +10921,17 @@ class EinkaufslisteCard extends HTMLElement {
         this._accOpen = this._accOpen || {};
         this._accOpen[g] = this._accOpen[g] === k ? "" : k;
         const box = el.closest(".xaccs");
-        (box || this.shadowRoot).querySelectorAll(".xacc").forEach((b) => {
+        (box ? [...box.children] : []).filter((b) => b.classList.contains("xacc")).forEach((b) => {
           const on = b.dataset.k === this._accOpen[g];
           b.classList.toggle("open", on);
-          b.querySelector(".xacc-h")?.setAttribute("aria-expanded", String(on));
-          b.querySelector(".xacc-b").hidden = !on;
+          b.querySelector(":scope > .xacc-h")?.setAttribute("aria-expanded", String(on));
+          const body = b.querySelector(":scope > .xacc-b");
+          if (body) body.hidden = !on;
         });
         break;
       }
       case "xfer-tab":
-        this._xferTab = el.dataset.tab;
+        this._xferTab = this._xferTabNow() === el.dataset.tab ? "none" : el.dataset.tab; // den offenen nochmal antippen = zu
         this._renderSettings();
         break;
       case "xfer-backup":
