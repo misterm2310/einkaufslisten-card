@@ -1,7 +1,8 @@
 name: Releases aufräumen
 
 # 🧹 Damit es nicht immer mehr Releases werden: Nach jedem neuen Release
-# bleiben nur die wichtigen (Liste unten) und die neuesten 10 stehen.
+# bleiben nur die wichtigen (Liste unten) und die neuesten 10 normalen Versionen stehen.
+# 🧪 Betas (Vorabversionen) zählen nicht mit: nur die allerneueste Beta bleibt.
 # Alles andere wird gelöscht – Release UND Tag. Der Code bleibt in der Git-Historie.
 # Von Hand starten geht auch: Actions → „Releases aufräumen“ → Run workflow.
 on:
@@ -30,10 +31,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          # alle Releases, das Neueste zuerst
-          gh release list --repo "$REPO" --limit 500 --json tagName,createdAt \
-            --jq 'sort_by(.createdAt) | reverse | .[].tagName' > alle.txt
-          echo "Releases gefunden: $(wc -l < alle.txt)"
+          # alle Releases mit Kennzeichen „Vorabversion“ (Beta) holen
+          gh release list --repo "$REPO" --limit 500 --json tagName,createdAt,isPrerelease > releases.json
+          # normale Versionen, das Neueste zuerst
+          jq -r 'map(select(.isPrerelease | not)) | sort_by(.createdAt) | reverse | .[].tagName' releases.json > alle.txt
+          # 🧪 Betas, das Neueste zuerst: nur die allerneueste Beta bleibt
+          jq -r 'map(select(.isPrerelease)) | sort_by(.createdAt) | reverse | .[].tagName' releases.json > betas.txt
+          echo "Normale Releases: $(wc -l < alle.txt), Betas: $(wc -l < betas.txt)"
           head -n "$NEUESTE" alle.txt > neueste.txt
           geloescht=0
           while read -r tag; do
@@ -44,4 +48,9 @@ jobs:
             gh release delete "$tag" --repo "$REPO" --yes --cleanup-tag
             geloescht=$((geloescht + 1))
           done < alle.txt
-          echo "Fertig – $geloescht Releases gelöscht, $(( $(wc -l < alle.txt) - geloescht )) bleiben."
+          tail -n +2 betas.txt | while read -r tag; do
+            [ -z "$tag" ] && continue
+            echo "🗑️ lösche alte Beta: $tag"
+            gh release delete "$tag" --repo "$REPO" --yes --cleanup-tag
+          done
+          echo "Fertig – $geloescht normale Releases gelöscht, neueste Beta bleibt: $(head -n 1 betas.txt)"
