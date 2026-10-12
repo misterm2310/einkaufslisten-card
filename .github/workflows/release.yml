@@ -8,7 +8,7 @@ on:
   workflow_run:
     workflows: ["Prüfen"]
     types: [completed]
-    branches: [main]
+    branches: [main, beta]   # 🧪 „beta“ = Testversionen (Vorabversion, nur für HACS „Beta-Versionen anzeigen“)
   workflow_dispatch:
 
 permissions:
@@ -34,12 +34,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
+          BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
         run: |
+          # 🧪 Sicherung: Auf „beta“ nur Versionen mit -beta, auf „main“ nie eine -beta
+          PRE=""
+          case "$TAG" in *-beta*) PRE="--prerelease";; esac
+          if [ "$BRANCH" = "beta" ] && [ -z "$PRE" ]; then echo "Auf beta nur -beta-Versionen – nichts zu tun."; exit 0; fi
+          if [ "$BRANCH" != "beta" ] && [ -n "$PRE" ]; then echo "-beta gehört auf den Zweig beta – nichts zu tun."; exit 0; fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG gibt es schon – nichts zu tun."
           else
             # 📝 Kurze deutsche Beschreibung: die Commit-Texte seit dem letzten Release
-            PREV=$(git describe --tags --abbrev=0 "$SHA^" 2>/dev/null || true)
+            PREV=$(git describe --tags --abbrev=0 --exclude '*-beta*' "$SHA^" 2>/dev/null || true)
             RANGE=${PREV:+$PREV..}$SHA
             {
               echo "## Was ist neu"
@@ -48,8 +54,8 @@ jobs:
               [ -n "$PREV" ] && echo "**Alle Änderungen:** https://github.com/${GITHUB_REPOSITORY}/compare/${PREV}...${TAG}"
             } > notes.md
             if ! grep -q "^- " notes.md; then
-              gh release create "$TAG" --target "$SHA" --title "$TAG" --generate-notes
+              gh release create "$TAG" --target "$SHA" --title "$TAG" $PRE --generate-notes
             else
-              gh release create "$TAG" --target "$SHA" --title "$TAG" --notes-file notes.md
+              gh release create "$TAG" --target "$SHA" --title "$TAG" $PRE --notes-file notes.md
             fi
           fi
