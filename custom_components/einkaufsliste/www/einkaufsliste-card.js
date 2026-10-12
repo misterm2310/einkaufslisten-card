@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.11";
+const EL_VERSION = "2.76.12";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.08"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -364,8 +364,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
-  ["🪟 <b>Fenster als Seiten:</b> PIN-Eingabe, Foto (machen, zuschneiden, ansehen), Barcode eintippen, Scanner, Karte ändern, Teilen und Rückfragen öffnen nicht mehr als Vollbild, sondern als Seite in der Karte mit ← oben links. Zurück führt an die Stelle, wo du warst. Nur der Koch-Modus bleibt Vollbild, dort sind auch die Gar-Zeiten jetzt über die ganze Breite. · 🏷️ <b>Rezept-Gruppen wie Kategorien:</b> erst die Liste, Gruppe antippen = Name, Farbe und Icon ändern. · 💳 <b>Meine Karten</b> im Look der Einstellungen mit Farbstreifen links, ohne die Aufräum-Info unten. · 📖 <b>Anleitung</b> steht auch ganz unten auf der ersten Seite der Einstellungen. · 🗂️ Wenn du die Einstellungen verlässt, sind alle Gruppen und Reiter wieder zu. Die Kategorien klappen nicht mehr von selbst zu. · 🔢 Menge bei einem Vorschlag per Tipp auf „3x“ entfernt = jetzt 1x statt der alten Menge. Das Menge-Symbol ist wieder die 123. · 👁️ „Meine Ansicht“ schließt sich, wenn du die Liste verlässt.",
-   "🪟 <b>Windows as pages:</b> PIN entry, photos (take, crop, view), typing a barcode, scanner, edit card, share and questions no longer open full screen but as a page inside the card with ← at the top left. Back takes you to where you were. Only cooking mode stays full screen, and its cooking times now use the full width too. · 🏷️ <b>Recipe groups like categories:</b> first the list, tap a group = change name, colour and icon. · 💳 <b>My cards</b> in the look of the settings with a colour stripe on the left, without the tidy-up info at the bottom. · 📖 <b>Guide</b> is also at the very bottom of the first settings page. · 🗂️ When you leave the settings, all groups and tabs are closed again. The categories no longer close by themselves. · 🔢 Removing the quantity of a suggestion with a tap on “3x” now gives 1x instead of the old quantity. The quantity icon is the 123 again. · 👁️ “My view” closes when you leave the list."],
+  ["🪟 <b>Fenster als Seiten:</b> PIN-Eingabe, Foto (machen, zuschneiden, ansehen), Barcode eintippen, Scanner, Karte ändern, Teilen und Rückfragen öffnen nicht mehr als Vollbild, sondern als Seite in der Karte mit ← oben links. Zurück führt an die Stelle, wo du warst. Nur der Koch-Modus bleibt Vollbild, dort sind auch die Gar-Zeiten jetzt über die ganze Breite. · 🏷️ <b>Rezept-Gruppen wie Kategorien:</b> erst die Liste, Gruppe antippen = Name, Farbe und Icon ändern. · 💳 <b>Meine Karten</b> im Look der Einstellungen mit Farbstreifen links, ohne die Aufräum-Info unten. · 📖 <b>Anleitung</b> steht auch ganz unten auf der ersten Seite der Einstellungen. · 🗂️ Wenn du die Einstellungen verlässt, sind alle Gruppen und Reiter wieder zu. Die Kategorien klappen nicht mehr von selbst zu. · 🏷️ Der Angebote-Knopf sitzt jetzt ganz rechts in der Zeile, weit weg von der Menge. · 🔢 Menge bei einem Vorschlag per Tipp auf „3x“ entfernt = jetzt 1x statt der alten Menge. Das Menge-Symbol ist wieder die 123. · 👁️ „Meine Ansicht“ schließt sich, wenn du die Liste verlässt.",
+   "🪟 <b>Windows as pages:</b> PIN entry, photos (take, crop, view), typing a barcode, scanner, edit card, share and questions no longer open full screen but as a page inside the card with ← at the top left. Back takes you to where you were. Only cooking mode stays full screen, and its cooking times now use the full width too. · 🏷️ <b>Recipe groups like categories:</b> first the list, tap a group = change name, colour and icon. · 💳 <b>My cards</b> in the look of the settings with a colour stripe on the left, without the tidy-up info at the bottom. · 📖 <b>Guide</b> is also at the very bottom of the first settings page. · 🗂️ When you leave the settings, all groups and tabs are closed again. The categories no longer close by themselves. · 🏷️ The offers button now sits at the far right of the row, well away from the quantity. · 🔢 Removing the quantity of a suggestion with a tap on “3x” now gives 1x instead of the old quantity. The quantity icon is the 123 again. · 👁️ “My view” closes when you leave the list."],
   ["📦 <b>Produkte: alle anzeigen.</b> Die Liste zeigt zuerst 80 Produkte. Darunter holt „10 weitere“ immer 10 dazu und „Alle anzeigen“ den ganzen Rest. Dasselbe gilt für „Einkaufsliste Produkte löschen“ (dort starten 60). Suchen und Filtern setzt die Liste wieder auf den Anfang.",
    "📦 <b>Products: show all.</b> The list first shows 80 products. Below it, “10 more” adds 10 each time and “Show all” brings the rest. The same goes for “Delete shopping list products” (starting at 60). Searching and filtering resets the list to the start."],
   ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) und die Listenansicht samt „Meine Ansicht“ sind jetzt Kästen zum Aufklappen, im Stil der Hauptgruppen. Auch die Reiter bei Import & Sicherung und die Seite Ressourcen sind jetzt solche Kästen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 🧾 Das <b>Einkaufs-Protokoll</b> und die 🏷️ <b>Angebote</b> öffnen ebenfalls als Seite in der Karte. · 📖 <b>Die Anleitung</b> (fürs Einkaufen und für die Einstellungen) ist jetzt auch so eine Seite, in den Farben der Karte, mit Kapiteln im Stil der Hauptgruppen. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
@@ -2257,7 +2257,9 @@ ha-card.compact .item .meta { display:none; }
 ha-card.compact .item .check { padding:3px; }
 ha-card.compact .ghead { padding:3px 4px 0; }
 ha-card.compact .group { margin-top:4px; }
-.item .acts { display:flex; opacity:.55; }
+.item .acts { display:flex; }
+.item .acts .iconbtn[data-act="move"] { opacity:.55; }
+.item:hover .acts .iconbtn[data-act="move"] { opacity:1; }
 .delrow { padding:4px 0; border-bottom:1px solid var(--divider-color, rgba(127,127,127,.15)); }
 .delname { min-width:0; }
 .delname b { display:block; font-weight:500; word-break:break-word; }
@@ -2464,6 +2466,7 @@ ha-card.compact .group { margin-top:4px; }
 .item:focus, .recipe:focus, .delrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
+.item .acts .offtag .oi { font-size:20px; line-height:1; display:block; }
 .broomred ha-icon { --mdc-icon-size:15px; color:#e53935; vertical-align:-0.2em; }
 .offgone { opacity:.75; }
 .health { display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 10px; padding:10px 12px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-left-width:5px; background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
@@ -4550,8 +4553,12 @@ class EinkaufslisteCard extends HTMLElement {
     const codes = this._barcodesOf(pk);
     if (v.barcode && codes.length && !this._shopMode) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥</span>`);
     const off = item.offer;
+    let offBtn = "";
     if (!v.offer) { /* 🏷️ Angebote ausgeblendet */ } else if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
-    else if (!item.checked && this._offersFor(item).length) meta.unshift(`<span class="offtag" data-act="offers-show" data-id="${item.id}" title="${this._offersFor(item).every((o) => o.alt) ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}">${this._offersFor(item).every((o) => o.alt) ? "🔀" : "🏷️"}</span>`); // 🏷️ ganz vorn, vor dem Geschäft
+    else if (!item.checked && this._offersFor(item).length) { // 🏷️ eigener Knopf ganz rechts (weit weg von der Menge, größer zu treffen)
+      const alt = this._offersFor(item).every((o) => o.alt);
+      offBtn = `<button class="iconbtn offtag" data-act="offers-show" data-id="${item.id}" title="${alt ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}"><span class="oi">${alt ? "🔀" : "🏷️"}</span></button>`;
+    }
     else if (!item.checked && off?.expired && Date.now() - new Date(off.expired) < DAY) meta.unshift(`<span class="offgone" title="Das Angebot ist abgelaufen">⌛ Angebot vorbei</span>`);
     // ✍️ Wer & wann: „✍️ Anna, Mo.“ (heute: „vor 5 Min“)
     const when = c.show_dates && v.added_at && !item.checked && !this._shopMode && item.added_at ? fmtWhen(item.added_at) : "";
@@ -4583,7 +4590,7 @@ class EinkaufslisteCard extends HTMLElement {
           <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}${qty}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${who}${v.fav ? this._favStar(pk) : ""}${v.photo && this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
-        ${v.move && !item.checked && this._data.stores.length > 1 ? `<div class="acts"><button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button></div>` : ""}
+        ${(v.move && !item.checked && this._data.stores.length > 1) || offBtn ? `<div class="acts">${offBtn}${v.move && !item.checked && this._data.stores.length > 1 ? `<button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button>` : ""}</div>` : ""}
       </div>`;
   }
 
@@ -9003,7 +9010,7 @@ ${(() => {
       : last ? `<p><b>✅ An</b> <span>· zuletzt</span> ${WD_SHORT[pyWd(last)]}. ${String(last.getHours()).padStart(2, "0")}:${String(last.getMinutes()).padStart(2, "0")} <span>·</span> ${o.count || 0} <span>Angebote gefunden</span></p>`
       : `<p><b>✅ An</b> <span>– die ersten Angebote kommen in ein paar Minuten.</span></p>`;
     return `
-      <p class="hint"><b>🏷️ Angebote aus den Prospekten</b>: Steht etwas von deiner Liste gerade im Angebot, bekommt der Artikel ein kleines 🏷️. Lange drücken → <b>Angebote</b> zeigt Geschäft, Preis und wie lange es gilt. Gibt es nichts Genaues, aber Ähnliches (z. B. „Milch“ für „H-Milch“), steht stattdessen ein blaues <b>🔀</b> – höchstens 4 Treffer.</p>
+      <p class="hint"><b>🏷️ Angebote aus den Prospekten</b>: Steht etwas von deiner Liste gerade im Angebot, bekommt der Artikel rechts in der Zeile einen 🏷️-Knopf. Lange drücken → <b>Angebote</b> zeigt Geschäft, Preis und wie lange es gilt. Gibt es nichts Genaues, aber Ähnliches (z. B. „Milch“ für „H-Milch“), steht stattdessen ein blaues <b>🔀</b> – höchstens 4 Treffer.</p>
       <p class="hint warnbox">⚠️ <b>Inoffiziell.</b> Die Angebote kommen von Marktguru – ohne Absprache mit Marktguru, so wie die Webseite sie auch jedem Browser zeigt. Das kann <b>jederzeit ohne Vorwarnung aufhören</b> zu funktionieren. Die Einkaufsliste selbst läuft dann ganz normal weiter. Nachgeschaut werden nur die Namen offener Artikel und deine Postleitzahl – sonst nichts.</p>
       ${status}
       ${admin ? `
