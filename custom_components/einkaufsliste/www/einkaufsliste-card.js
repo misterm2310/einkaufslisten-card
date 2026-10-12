@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.12";
+const EL_VERSION = "2.76.13";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.08"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -2466,7 +2466,7 @@ ha-card.compact .group { margin-top:4px; }
 .item:focus, .recipe:focus, .delrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
-.item .acts .offtag .oi { font-size:20px; line-height:1; display:block; }
+.item .acts .offtag .oi { font-size:calc(var(--mdc-icon-size, 24px) * .75); width:var(--mdc-icon-size, 24px); height:var(--mdc-icon-size, 24px); display:flex; align-items:center; justify-content:center; line-height:1; } /* 🏷️ so groß wie das ⇄ daneben */
 .broomred ha-icon { --mdc-icon-size:15px; color:#e53935; vertical-align:-0.2em; }
 .offgone { opacity:.75; }
 .health { display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 10px; padding:10px 12px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-left-width:5px; background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
