@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.14";
+const EL_VERSION = "2.76.15-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.08"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -3340,7 +3340,7 @@ class EinkaufslisteCard extends HTMLElement {
     const show = !!server && server !== EL_VERSION;
     bar.hidden = !show;
     if (show) {
-      const num = (v) => String(v).split(".").map((x) => Number(x) || 0);
+      const num = (v) => String(v).split(".").map((x) => parseInt(x, 10) || 0);
       const [a, b] = [num(server), num(EL_VERSION)];
       const serverNewer = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
       bar.innerHTML = serverNewer > 0
