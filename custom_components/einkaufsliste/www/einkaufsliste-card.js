@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.10";
+const EL_VERSION = "2.76.11";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.08"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -364,8 +364,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
-  ["🪟 <b>Fenster als Seiten:</b> PIN-Eingabe, Foto (machen, zuschneiden, ansehen), Barcode eintippen, Scanner, Karte ändern, Teilen und Rückfragen öffnen nicht mehr als Vollbild, sondern als Seite in der Karte mit ← oben links. Zurück führt an die Stelle, wo du warst. Nur der Koch-Modus bleibt Vollbild, dort sind auch die Gar-Zeiten jetzt über die ganze Breite. · 🏷️ <b>Rezept-Gruppen wie Kategorien:</b> erst die Liste, Gruppe antippen = Name, Farbe und Icon ändern. · 💳 <b>Meine Karten</b> im Look der Einstellungen mit Farbstreifen links, ohne die Aufräum-Info unten. · 📖 <b>Anleitung</b> steht auch ganz unten auf der ersten Seite der Einstellungen. · 🗂️ Wenn du die Einstellungen verlässt, sind alle Gruppen und Reiter wieder zu. Die Kategorien klappen nicht mehr von selbst zu.",
-   "🪟 <b>Windows as pages:</b> PIN entry, photos (take, crop, view), typing a barcode, scanner, edit card, share and questions no longer open full screen but as a page inside the card with ← at the top left. Back takes you to where you were. Only cooking mode stays full screen, and its cooking times now use the full width too. · 🏷️ <b>Recipe groups like categories:</b> first the list, tap a group = change name, colour and icon. · 💳 <b>My cards</b> in the look of the settings with a colour stripe on the left, without the tidy-up info at the bottom. · 📖 <b>Guide</b> is also at the very bottom of the first settings page. · 🗂️ When you leave the settings, all groups and tabs are closed again. The categories no longer close by themselves."],
+  ["🪟 <b>Fenster als Seiten:</b> PIN-Eingabe, Foto (machen, zuschneiden, ansehen), Barcode eintippen, Scanner, Karte ändern, Teilen und Rückfragen öffnen nicht mehr als Vollbild, sondern als Seite in der Karte mit ← oben links. Zurück führt an die Stelle, wo du warst. Nur der Koch-Modus bleibt Vollbild, dort sind auch die Gar-Zeiten jetzt über die ganze Breite. · 🏷️ <b>Rezept-Gruppen wie Kategorien:</b> erst die Liste, Gruppe antippen = Name, Farbe und Icon ändern. · 💳 <b>Meine Karten</b> im Look der Einstellungen mit Farbstreifen links, ohne die Aufräum-Info unten. · 📖 <b>Anleitung</b> steht auch ganz unten auf der ersten Seite der Einstellungen. · 🗂️ Wenn du die Einstellungen verlässt, sind alle Gruppen und Reiter wieder zu. Die Kategorien klappen nicht mehr von selbst zu. · 🔢 Menge bei einem Vorschlag per Tipp auf „3x“ entfernt = jetzt 1x statt der alten Menge. Das Menge-Symbol ist wieder die 123. · 👁️ „Meine Ansicht“ schließt sich, wenn du die Liste verlässt.",
+   "🪟 <b>Windows as pages:</b> PIN entry, photos (take, crop, view), typing a barcode, scanner, edit card, share and questions no longer open full screen but as a page inside the card with ← at the top left. Back takes you to where you were. Only cooking mode stays full screen, and its cooking times now use the full width too. · 🏷️ <b>Recipe groups like categories:</b> first the list, tap a group = change name, colour and icon. · 💳 <b>My cards</b> in the look of the settings with a colour stripe on the left, without the tidy-up info at the bottom. · 📖 <b>Guide</b> is also at the very bottom of the first settings page. · 🗂️ When you leave the settings, all groups and tabs are closed again. The categories no longer close by themselves. · 🔢 Removing the quantity of a suggestion with a tap on “3x” now gives 1x instead of the old quantity. The quantity icon is the 123 again. · 👁️ “My view” closes when you leave the list."],
   ["📦 <b>Produkte: alle anzeigen.</b> Die Liste zeigt zuerst 80 Produkte. Darunter holt „10 weitere“ immer 10 dazu und „Alle anzeigen“ den ganzen Rest. Dasselbe gilt für „Einkaufsliste Produkte löschen“ (dort starten 60). Suchen und Filtern setzt die Liste wieder auf den Anfang.",
    "📦 <b>Products: show all.</b> The list first shows 80 products. Below it, “10 more” adds 10 each time and “Show all” brings the rest. The same goes for “Delete shopping list products” (starting at 60). Searching and filtering resets the list to the start."],
   ["🗂️ <b>Einstellungen neu sortiert:</b> Neue Gruppe 👁️ Ansicht (nach Gesundheit) mit Listenansicht, Beschriftungen und Hell/Dunkel. 📦 „Produkte“ heißt jetzt „Produkte/Katalog“. · 🪗 <b>Aufklapper:</b> „Aus anderen Apps“ (Automatisch, Einmal, Text einfügen, CSV) Aufräumen (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) und die Listenansicht samt „Meine Ansicht“ sind jetzt Kästen zum Aufklappen, im Stil der Hauptgruppen. Auch die Reiter bei Import & Sicherung und die Seite Ressourcen sind jetzt solche Kästen. Es ist immer nur einer offen, das wirkt viel übersichtlicher. · 🪟 <b>Gar-Zeiten, „Was kann ich kochen?“ und Meine Karten</b> öffnen als normale Seite in der Karte statt als Vollbild. Der Pfeil oben führt zurück. · 🧾 Das <b>Einkaufs-Protokoll</b> und die 🏷️ <b>Angebote</b> öffnen ebenfalls als Seite in der Karte. · 📖 <b>Die Anleitung</b> (fürs Einkaufen und für die Einstellungen) ist jetzt auch so eine Seite, in den Farben der Karte, mit Kapiteln im Stil der Hauptgruppen. · 🔎 Die Suche bei Produkte/Katalog wird beim Verlassen der Seite geleert, der zweite Radiergummi unter dem Feld ist weg.",
@@ -3637,7 +3637,7 @@ class EinkaufslisteCard extends HTMLElement {
             <button class="primary addbtn" type="submit" title="Hinzufügen"><ha-icon icon="mdi:check-bold"></ha-icon></button>
             <div class="sugg" id="sugg" hidden></div>
             <div class="toolbar">
-              <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric-1-circle-outline"></ha-icon><span class="lbl">Menge</span></button>
+              <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon><span class="lbl">Menge</span></button>
               <button class="tool" id="tOwn" type="button" data-act="tool" data-field="inOwn" title="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben"><ha-icon icon="mdi:pencil-outline"></ha-icon><span class="lbl">Notiz</span></button>
               <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon><span class="lbl">Für wen</span></button>
               <button class="tool plus" id="btnNewBarcode" type="button" data-act="new-barcode" title="Barcode zum neuen Produkt" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon><span class="lbl">Barcode</span></button>
@@ -4131,8 +4131,9 @@ class EinkaufslisteCard extends HTMLElement {
   _renderAll() {
     if (!this._built || !this._config) return;
     if (this._view !== "settings") { this._prodFilter = ""; this._prodSel = ""; } // 🔎 Katalog-Suche nicht über die Einstellungen hinaus merken
+    if (this._myViewOpen && (this._view !== "list" || this._page)) { this._myViewOpen = false; queueMicrotask(() => this._emitNav()); } // 👁️ „Meine Ansicht“ klappt zu, sobald man irgendwohin geht
     const inSet = this._view === "settings" || this._view === "recipe";
-    if (this._wasInSet && !inSet) { this._setOpen = null; this._accOpen = { stats: "" }; this._xferTab = "none"; } // 🗂️ Einstellungen verlassen: alle Gruppen und Reiter wieder zu
+    if (this._wasInSet && !inSet) { this._setOpen = null; this._accOpen = { stats: "" }; this._xferTab = "none"; this._lastSetSec = undefined; } // 🗂️ Einstellungen verlassen: alle Gruppen und Reiter wieder zu
     this._wasInSet = inSet;
     this._refreshTplChips();
     this.toggleAttribute("privacy", this._privacyOn());
@@ -4485,6 +4486,7 @@ class EinkaufslisteCard extends HTMLElement {
       return;
     }
     set("inQty", i.quantity);
+    this._qtyOff = false;
     // ✏️ Eigene Notiz genau dieser Variante (Name + Notiz) – nie die einer anderen Variante desselben Namens („AA“ bei „9V Block“)
     let own = i.own_note || this._ownNote(c.name, i.note) || "";
     let note = i.note;
@@ -4593,7 +4595,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="menurow" data-id="${item.id}">
         ${b("menu-edit", "mdi:pencil-outline", "Bearbeiten")}
         ${!item.checked && this._data.stores.length > 1 ? b("menu-move", "mdi:swap-horizontal", "Verschieben") : ""}
-        ${b("menu-qty", "mdi:numeric-1-circle-outline", "Menge", item.quantity ? "#1e88e5" : "")}
+        ${b("menu-qty", "mdi:numeric", "Menge", item.quantity ? "#1e88e5" : "")}
         ${b("menu-cat", "mdi:shape-outline", "Kategorie", cat ? (cat.color || "#43a047") : "")}
         ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(pk) ? "Fotos" : "Foto", this._hasPhoto(pk) ? "#00897b" : "")}
         ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", codes ? "Barcode ✓" : "Barcode", codes ? "#8e24aa" : "") : ""}
@@ -5220,6 +5222,11 @@ class EinkaufslisteCard extends HTMLElement {
   // ---------------------------------------------------------------- Einstellungen
   _renderSettings() {
     queueMicrotask(() => this._emitNav());
+    if (this._lastSetSec !== undefined && this._lastSetSec !== this._setSec) { // 🗂️ einen Bereich verlassen (zurück, anderer Bereich): seine Aufklapper und Reiter sind danach wieder zu
+      this._accOpen = { stats: "" }; this._xferTab = "none"; this._recTab = null; this._prodTab = null;
+      this._storeSel = this._catSel = this._perSel = this._rgSel = null; this._prodEdit = null;
+    }
+    this._lastSetSec = this._setSec;
     if (this._setSec !== "products") { this._prodFilter = ""; this._prodSel = ""; } // 🔎 Suche/Filter im Katalog sind weg, sobald man die Seite verlässt
     this._parkForm();
     const d = this._data;
@@ -8022,7 +8029,7 @@ ${(() => {
       nb.title = this._pendingBarcode ? "Barcode ist dabei – antippen zum Entfernen" : "Barcode zum neuen Produkt";
     }
     const tools = [
-      ["tQty", "qtyBox", this.$("inQty")?.value.trim(), "mdi:numeric-1-circle-outline"],
+      ["tQty", "qtyBox", this.$("inQty")?.value.trim(), "mdi:numeric"],
       ["tOwn", "inOwn", this.$("inOwn")?.value.trim() ? "✓" : "", "mdi:pencil-outline"],
       ["tFor", "forBox", this.$("inFor")?.value, "mdi:account-outline"],
     ];
@@ -9785,6 +9792,8 @@ ${(() => {
       if (v) msg[key] = v;
     }
     if (this._pendingBarcode) { msg.barcode = this._pendingBarcode; msg.via = "scan"; }
+    if (!msg.quantity && this._qtyOff) msg.quantity = "1";
+    this._qtyOff = false;
     if (!msg.quantity) { const sp = splitQty(name); if (sp.qty) { msg.name = sp.name; msg.quantity = sp.bare ? sp.num : sp.qty; } }
     // 📏 Nur eine Zahl? Selbst gewählte Einheit dran – sonst nimmt Home Assistant die gemerkte Einheit (oder x)
     if (msg.quantity && isBareQty(msg.quantity) && this._qtyUnit) msg.quantity = qtyFmt(msg.quantity, this._qtyUnit);
@@ -10163,7 +10172,9 @@ ${(() => {
       }
       case "qty-chip": {
         const q = this.$("inQty");
-        q.value = q.value === el.dataset.v ? "" : el.dataset.v;
+        const wasOn = q.value === el.dataset.v;
+        q.value = wasOn ? "" : el.dataset.v;
+        this._qtyOff = wasOn; // ➖ Menge absichtlich entfernt → beim Hinzufügen 1x (nicht die alte Menge)
         q.hidden = true;
         this.$("qtyBox").hidden = true;
         this._updateTools();

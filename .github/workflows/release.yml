@@ -38,5 +38,18 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG gibt es schon – nichts zu tun."
           else
-            gh release create "$TAG" --target "$SHA" --title "$TAG" --generate-notes
+            # 📝 Kurze deutsche Beschreibung: die Commit-Texte seit dem letzten Release
+            PREV=$(git describe --tags --abbrev=0 "$SHA^" 2>/dev/null || true)
+            RANGE=${PREV:+$PREV..}$SHA
+            {
+              echo "## Was ist neu"
+              git log "$RANGE" --no-merges --pretty=format:'- %s'
+              echo
+              [ -n "$PREV" ] && echo "**Alle Änderungen:** https://github.com/${GITHUB_REPOSITORY}/compare/${PREV}...${TAG}"
+            } > notes.md
+            if ! grep -q "^- " notes.md; then
+              gh release create "$TAG" --target "$SHA" --title "$TAG" --generate-notes
+            else
+              gh release create "$TAG" --target "$SHA" --title "$TAG" --notes-file notes.md
+            fi
           fi
