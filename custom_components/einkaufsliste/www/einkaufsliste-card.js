@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.4";
+const EL_VERSION = "2.76.15-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -11677,6 +11677,14 @@ if (!customElements.get("einkaufsliste-card-editor")) customElements.define("ein
 // ↩️ Zurück-Taste am Handy in der HA-Karte: Solange ein Fenster oder eine Unterseite offen ist, liegt ein „Merkzettel“ im Verlauf.
 // Zurück nimmt ihn weg und schließt genau einen Schritt (oberstes Fenster, Einstellungen → Liste …) – die Seite bleibt stehen.
 // Die Offline-App (/einkaufsliste/app) hat ihren eigenen Merkzettel, dort bleibt das hier aus.
+// 🧷 Der Merkzettel im Verlauf darf die Liste nicht nach oben schieben: Der Browser stellt beim „Zurück“ die Position wieder her, die beim Anlegen des Merkzettels galt – da stand die Liste schon ganz oben.
+// Die Einstellung gehört zum Verlaufseintrag, zu dem man zurückkehrt – darum VOR dem Anlegen auf „manual“, danach wieder wie vorher.
+function elPushGuard(state) {
+  const prev = history.scrollRestoration;
+  try { history.scrollRestoration = "manual"; } catch (_) { /* egal */ }
+  history.pushState(state, "");
+  try { history.scrollRestoration = prev || "auto"; } catch (_) { /* egal */ }
+}
 (function elBackGuard() {
   if (/\/einkaufsliste\/app/.test(location.pathname)) return;
   let timer = null, ignorePop = false;
@@ -11685,7 +11693,7 @@ if (!customElements.get("einkaufsliste-card-editor")) customElements.define("ein
   const sync = () => {
     timer = null;
     const open = !!isOpen(), st = history.state;
-    if (open && !st?.elCardGuard) history.pushState({ ...(st || {}), elCardGuard: 1 }, "");
+    if (open && !st?.elCardGuard) elPushGuard({ ...(st || {}), elCardGuard: 1 });
     else if (!open && st?.elCardGuard) { ignorePop = true; history.back(); }
   };
   const schedule = () => { if (!timer) timer = setTimeout(sync, 80); };

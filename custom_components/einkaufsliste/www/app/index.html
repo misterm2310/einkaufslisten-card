@@ -500,7 +500,12 @@ function syncGuard() {
   if (!card || scan || !card.einkaufslisteIsRoot) return;
   const open = !card.einkaufslisteIsRoot();
   const st = history.state;
-  if (open && !st?.elGuard && !st?.elScan) history.pushState({ elGuard: 1 }, "");
+  if (open && !st?.elGuard && !st?.elScan) { // 🧷 Verlaufseintrag, zu dem man zurückkehrt, ohne Scroll-Wiederherstellung (sonst springt die Liste beim Schließen kurz nach oben)
+    const prevSR = history.scrollRestoration;
+    try { history.scrollRestoration = "manual"; } catch (_) { /* egal */ }
+    history.pushState({ elGuard: 1 }, "");
+    try { history.scrollRestoration = prevSR || "auto"; } catch (_) { /* egal */ }
+  }
   else if (!open && st?.elGuard) { ignorePop = true; history.back(); }
 }
 const scheduleGuard = () => { if (!guardTimer) guardTimer = setTimeout(syncGuard, 80); };
