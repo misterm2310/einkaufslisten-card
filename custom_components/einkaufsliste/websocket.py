@@ -19,6 +19,7 @@ from .grocy_import import async_fetch, clean_base, import_rows, parse_catalog_te
 from .recipe_import import async_import
 from .const import DOMAIN, PUSH_DELAY, SIGNAL_UPDATED
 from .mail_import import mail_sources
+from .osm_hours import async_search_hours
 from .transfer import async_todo_text, import_recipe_file, import_text, import_text_by_store, todo_lists
 from .manager import AUTO_CATEGORY, EinkaufslisteManager, person_name_for_user, product_key
 
@@ -124,6 +125,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_errors_clear,
         ws_errors_report,
         ws_product_merge,
+        ws_hours_search,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -546,6 +548,21 @@ def ws_recipe_unapply(hass, connection, msg):
 @websocket_api.async_response
 async def ws_recipe_import(hass, connection, msg):
     await _run_async(hass, connection, msg, lambda m: async_import(hass, m, msg["text"]))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/hours/search",
+        vol.Required("name"): str,
+        vol.Optional("zone"): OPT_STR,
+    }
+)
+@websocket_api.async_response
+async def ws_hours_search(hass, connection, msg):
+    async def go(m):
+        return {"results": await async_search_hours(hass, m, msg["name"], msg.get("zone"))}
+
+    await _run_async(hass, connection, msg, go)
 
 
 @websocket_api.websocket_command(

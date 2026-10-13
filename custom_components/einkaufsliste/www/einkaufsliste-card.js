@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.9";
+const EL_VERSION = "2.76.15-beta.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -84,7 +84,7 @@ const EL_GUIDE = [
       "<b>🧮 Rechner:</b> Im Laden-Modus steht oben links neben den 💳 Karten ein Rechner. Antippen, rechnen (+ − × ÷ und %): jede Taste vibriert kurz (wo das Handy es kann). Mit dem ← Pfeil geht es zurück an die Stelle in der Liste, wo du warst.",
       "<b>🔊 Vorlesen:</b> Unter der Liste steht „🔊 Vorlesen“. Antippen, dann liest dein Handy die offenen Artikel vor (bei einem gewählten Geschäft nur dessen Artikel). Nochmal antippen = Stopp. Praktisch, wenn du die Hände voll hast. In der HA-App geht das Vorlesen nicht (dort fehlt die Sprachausgabe), nimm dafür die Offline-App.",
       "<b>📳 Vibration:</b> Unter 👁️ Ansicht → Vibration stellst du die Stärke ein: Aus, Schwach, Normal oder Stark. Das gilt nur für dieses Gerät. Manche Handys (z. B. iPhone) vibrieren im Browser nie.",
-      "<b>🕒 Öffnungszeiten:</b> Unter ⚙️ → Geschäfte → Geschäft antippen trägst du für jeden Tag die Zeiten ein. Mit „＋ Zeit“ geht mehr als ein Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr), mit „📋 auf Tage…“ übertragst du die Zeiten auf andere Tage. Mit „＋ Filiale“ bekommt jede Filiale eines Geschäfts (z. B. 3× K&K) eigene Zeiten. Hat das Geschäft zu, wird sein Reiter oben grau (bei Filialen nur, wenn alle zu haben). Den Namen gedrückt halten zeigt die Zeiten. Mit „🎌 An Feiertagen zu“ und deinem Bundesland gilt es an gesetzlichen Feiertagen als geschlossen.",
+      "<b>🕒 Öffnungszeiten:</b> Unter ⚙️ → Geschäfte → Geschäft antippen trägst du für jeden Tag die Zeiten ein. Mit „＋ Zeit“ geht mehr als ein Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr), mit „📋 auf Tage…“ übertragst du die Zeiten auf andere Tage. Mit „＋ Filiale“ bekommt jede Filiale eines Geschäfts (z. B. 3× K&K) eigene Zeiten. Hat das Geschäft zu, wird sein Reiter oben grau (bei Filialen nur, wenn alle zu haben). Den Namen gedrückt halten zeigt die Zeiten. Mit „🎌 An Feiertagen zu“ und deinem Bundesland gilt es an gesetzlichen Feiertagen als geschlossen. Mit „🌐 Zeiten aus OpenStreetMap“ holt Home Assistant die Zeiten auf Knopfdruck aus dem Netz (die Zeiten stammen von Freiwilligen, bitte prüfen).",
       "<b>🗞️ Prospekt-Link:</b> Unter ⚙️ → Geschäfte → Geschäft kannst du die Adresse eines Prospekts eintragen (z. B. von Bofrost oder Aldi). Den Namen oben gedrückt halten, dann „🗞️ Prospekt öffnen“. Es wird nur die Adresse gespeichert, nichts selbst abgerufen.",
       "<b>💡 Bildschirm immer an:</b> Im Laden-Modus erscheint ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an. In der HA-App klappt das nur mit der App-Einstellung „Bildschirm anlassen“.",
       "<b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.",
@@ -365,6 +365,8 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🌐 Öffnungszeiten aus OpenStreetMap holen (Knopf im Öffnungszeiten-Editor, nur auf Knopfdruck)",
+   "New: 🌐 fetch opening hours from OpenStreetMap (button in the opening-hours editor, only on tap)"],
   ["Neu: 🏬 Filialen lassen sich mit ▲ ▼ sortieren",
    "New: 🏬 branches can be sorted with ▲ ▼"],
   ["Neu: 🏬 Filialen pro Geschäft mit eigenen Öffnungszeiten (z. B. 3× K&K); der Reiter ist nur grau, wenn alle Filialen zu haben; Editor klappt zu, wenn man das Geschäft verlässt; Feiertage auch ohne Zeiten; „Mo–Sa“ statt „Mo–Fr“",
@@ -399,6 +401,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🌐 <b>Öffnungszeiten aus dem Netz:</b> Im Editor „Zeiten aus OpenStreetMap“ antippen – Home Assistant sucht das Geschäft und du übernimmst die Zeiten (als Filiale oder fürs Geschäft). Nur auf Knopfdruck.",
+   "🌐 <b>Opening hours from the web:</b> tap “Times from OpenStreetMap” in the editor – Home Assistant looks the store up and you take over the times (as a branch or for the store). Only on tap."],
   ["🗞️ <b>Prospekt-Link:</b> Pro Geschäft eine Adresse eintragen (⚙️ → Geschäfte). Namen gedrückt halten → „Prospekt öffnen“. Gespeichert wird nur die Adresse.",
    "🗞️ <b>Flyer link:</b> enter one address per store (⚙️ → Stores). Press and hold the name → “Open flyer”. Only the address is stored."],
   ["🔊 <b>Liste vorlesen:</b> Unter der Liste „🔊 Vorlesen“ antippen – dein Handy liest die offenen Artikel vor. Nochmal antippen = Stopp.",
@@ -2706,6 +2710,7 @@ label.btn { cursor:pointer; }
 .hoursed .hd.zu .rngs { opacity:.35; }
 .hoursed .hbranch { border:1px solid var(--divider-color,rgba(127,127,127,.3)); border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:6px; }
 .hoursed .hbranch > .hr { flex-wrap:nowrap; }
+.hoursed .hhead { margin-top:4px; }
 .hoursed .hbranch input[data-bn] { width:auto !important; flex:1 1 0; min-width:0; font:inherit; padding:5px 8px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
 .hourspop .hbox { max-height:85vh; overflow-y:auto; }
 .hourspop .hbr { display:flex; flex-direction:column; gap:2px; border-top:1px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:6px; margin-top:4px; font-size:.92em; }
@@ -3796,6 +3801,36 @@ class EinkaufslisteCard extends HTMLElement {
     setTimeout(close, 20000);
   }
 
+  // 🌐 Suchergebnisse von OpenStreetMap: antippen übernimmt die Zeiten (als Filiale oder für das Geschäft)
+  _showOsm(storeId, results) {
+    const st = this._store(storeId);
+    if (!st) return;
+    this.shadowRoot.querySelector(".hourspop")?.remove();
+    const hasBr = Array.isArray(st.branches) && st.branches.length > 0;
+    const rows = results.length ? results.map((r, i) => `<div class="hbr osmres"><b translate="no">${esc(r.name)}</b><div class="hint">${esc(r.address || r.place)}${r.distance_km != null ? ` · ${String(r.distance_km).replace(".", ",")} km` : ""}</div><div class="hint">${r.hours ? `✔ Zeiten lesbar: ${esc(r.raw || "")}` : r.raw ? `⚠ Zeiten nicht lesbar: ${esc(r.raw)}` : "Keine Zeiten bei OpenStreetMap"}</div><div class="hr"><button type="button" class="btn" data-osm="${i}" data-mode="branch">＋ Als Filiale</button>${hasBr ? "" : `<button type="button" class="btn" data-osm="${i}" data-mode="store">Für das Geschäft</button>`}</div></div>`).join("")
+      : `<p class="hint">Nichts gefunden. Probier einen kürzeren Namen oder trage die Zeiten selbst ein.</p>`;
+    const ov = document.createElement("div");
+    ov.className = "hourspop";
+    ov.innerHTML = `<div class="hbox"><b>🌐 Gefunden bei OpenStreetMap</b>${results.length ? `<p class="hint">Antippen übernimmt die Zeiten. Du kannst sie danach noch ändern.${hasBr ? "" : " „Für das Geschäft“ ersetzt die bisherigen Zeiten."}</p>` : ""}${rows}<p class="hint">© OpenStreetMap-Mitwirkende. Die Zeiten stammen von Freiwilligen und sind ohne Gewähr.</p><button type="button" class="btn" data-osm-close="1">Schließen</button></div>`;
+    ov.addEventListener("click", (e) => {
+      const b = e.target.closest?.("button[data-osm],button[data-osm-close]");
+      if (!b) { if (e.target === ov) ov.remove(); return; }
+      if (b.dataset.osmClose) { ov.remove(); return; }
+      const r = results[+b.dataset.osm];
+      if (!r) return;
+      if (b.dataset.mode === "store") {
+        if (!r.hours) { this._toast("🌐 Die Zeiten sind dort nicht lesbar – bitte selbst eintragen"); return; }
+        this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: storeId, hours: r.hours })
+          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
+      } else {
+        this._hoursSendBranches(storeId, [...this._branchesCollect(storeId), { name: r.place, hours: r.hours || null }], true);
+      }
+      this._toast(r.hours ? "🌐 Übernommen – bitte kurz prüfen" : "🌐 Filiale angelegt – Zeiten dort nicht lesbar, bitte selbst eintragen");
+      ov.remove();
+    });
+    this.shadowRoot.appendChild(ov);
+  }
+
   _hoursRngHtml(a, b) {
     return `<div class="rng"><input type="time" data-hf="from" value="${a}"><span>–</span><input type="time" data-hf="to" value="${b}"><button type="button" class="btn x" data-act="hours-del" title="Zeitfenster löschen">✕</button></div>`;
   }
@@ -3816,12 +3851,12 @@ class EinkaufslisteCard extends HTMLElement {
       const has = br.length ? `${br.length} Filialen mit eigenen Zeiten.` : h ? "Öffnungszeiten sind eingetragen." : "";
       return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ${h || br.length ? "ändern" : "eintragen (optional)"}</button><p class="hint">${has || "Noch keine eingetragen – das ist in Ordnung, dann ändert sich nichts."}</p></div>`;
     }
-    const sel = `<div class="srow" data-kind="stores" data-id="${e.id}"><select class="grow" data-field="holiday_state" title="An den gesetzlichen Feiertagen dieses Bundeslandes gilt das Geschäft als geschlossen"><option value="">🎌 Feiertage ignorieren</option>${Object.entries(EL_STATES).map(([k, v]) => `<option value="${k}" ${e.holiday_state === k ? "selected" : ""}>🎌 An Feiertagen zu – ${v}</option>`).join("")}</select></div>`;
+    const sel = `<b class="hhead">🎌 An Feiertagen zu</b><div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:calendar-star"></ha-icon><select class="grow" data-field="holiday_state" title="An den gesetzlichen Feiertagen dieses Bundeslandes gilt das Geschäft als geschlossen"><option value="">Feiertage ignorieren</option>${Object.entries(EL_STATES).map(([k, v]) => `<option value="${k}" ${e.holiday_state === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>`;
     let main;
     if (br.length) {
-      main = br.map((b) => `<div class="hbranch"><div class="hr"><span>🏬</span><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="btn" data-act="hours-brtoggle" data-bid="${b.id}">${this._brOpen === b.id ? "▴ Zeiten" : "▾ Zeiten"}</button><button type="button" class="btn x" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben">▲</button><button type="button" class="btn x" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten">▼</button><button type="button" class="btn x" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen">🗑</button></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
+      main = br.map((b) => `<div class="hbranch"><div class="hr"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="btn" data-act="hours-brtoggle" data-bid="${b.id}">${this._brOpen === b.id ? "▴ Zeiten" : "▾ Zeiten"}</button><button type="button" class="iconbtn" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben"><ha-icon icon="mdi:arrow-up"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten"><ha-icon icon="mdi:arrow-down"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
     } else main = this._hoursWeekHtml(h, e.id, "");
-    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button>${main}<div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button></div>${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten; der Reiter ist nur grau, wenn alle Filialen zu haben. Mit ▲ ▼ sortierst du die Filialen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
+    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button>${main}<div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button><button type="button" class="btn" data-act="hours-osm" data-id="${e.id}" title="Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)">🌐 Zeiten aus OpenStreetMap</button></div>${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten; der Reiter ist nur grau, wenn alle Filialen zu haben. Mit den Pfeilen sortierst du die Filialen. 🌐 „Zeiten aus OpenStreetMap“ sucht das Geschäft im Netz (nur auf Knopfdruck) – die Zeiten stammen von Freiwilligen, bitte kurz prüfen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
   }
 
   _hoursCollect(box) {
@@ -10475,6 +10510,19 @@ ${(() => {
         this._brOpen = this._brOpen === el.dataset.bid ? null : el.dataset.bid;
         this._renderSettings();
         break;
+      case "hours-osm": {
+        const sid = el.dataset.id;
+        const st = this._store(sid);
+        askText("🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und deinen ungefähren Standort an overpass-api.de. Name des Geschäfts:", "z. B. K&K", st?.name || "").then(async (name) => {
+          if (!name) return;
+          this._toast("🌐 Suche läuft …");
+          try {
+            const r = await this._ws({ type: "einkaufsliste/hours/search", name, zone: storeZones(st)[0] || null });
+            this._showOsm(sid, r?.results || []);
+          } catch (_) { /* Meldung kam schon */ }
+        });
+        break;
+      }
       case "hours-brup": case "hours-brdown": { // 🏬 Filialen sortieren
         const sid = this._hoursOpenFor;
         const list = this._branchesCollect(sid);
