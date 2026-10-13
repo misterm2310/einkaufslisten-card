@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.6";
+const EL_VERSION = "2.76.15-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -82,9 +82,9 @@ const EL_GUIDE = [
     de: [
       "Das <b>🏪 Geschäft ganz rechts</b> schaltet den <b>Laden-Modus</b> ein: große Zeilen, nur Abhaken, nur das Wichtigste. Nochmal antippen = wieder normal. Er bleibt auf diesem Gerät gespeichert.",
       "<b>🧮 Rechner:</b> Im Laden-Modus steht oben links neben den 💳 Karten ein Rechner. Antippen, rechnen (+ − × ÷ und %): jede Taste vibriert kurz (wo das Handy es kann). Mit dem ← Pfeil geht es zurück an die Stelle in der Liste, wo du warst.",
-      "<b>🔊 Vorlesen:</b> Unter der Liste steht „🔊 Vorlesen“. Antippen, dann liest dein Handy die offenen Artikel vor (bei einem gewählten Geschäft nur dessen Artikel). Nochmal antippen = Stopp. Praktisch, wenn du die Hände voll hast.",
+      "<b>🔊 Vorlesen:</b> Unter der Liste steht „🔊 Vorlesen“. Antippen, dann liest dein Handy die offenen Artikel vor (bei einem gewählten Geschäft nur dessen Artikel). Nochmal antippen = Stopp. Praktisch, wenn du die Hände voll hast. In der HA-App geht das Vorlesen nicht (dort fehlt die Sprachausgabe), nimm dafür die Offline-App.",
       "<b>📳 Vibration:</b> Unter 👁️ Ansicht → Vibration stellst du die Stärke ein: Aus, Schwach, Normal oder Stark. Das gilt nur für dieses Gerät. Manche Handys (z. B. iPhone) vibrieren im Browser nie.",
-      "<b>🕒 Öffnungszeiten:</b> Unter ⚙️ → Geschäfte → Geschäft antippen trägst du für jeden Tag die Zeiten ein. Mit „＋ Zeit“ geht mehr als ein Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr), mit „📋 auf Tage…“ übertragst du die Zeiten auf andere Tage. Hat das Geschäft zu, wird sein Reiter oben grau. Den Namen gedrückt halten zeigt die Zeiten.",
+      "<b>🕒 Öffnungszeiten:</b> Unter ⚙️ → Geschäfte → Geschäft antippen trägst du für jeden Tag die Zeiten ein. Mit „＋ Zeit“ geht mehr als ein Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr), mit „📋 auf Tage…“ übertragst du die Zeiten auf andere Tage. Hat das Geschäft zu, wird sein Reiter oben grau. Den Namen gedrückt halten zeigt die Zeiten. Mit „🎌 An Feiertagen zu“ und deinem Bundesland gilt es an gesetzlichen Feiertagen als geschlossen.",
       "<b>🗞️ Prospekt-Link:</b> Unter ⚙️ → Geschäfte → Geschäft kannst du die Adresse eines Prospekts eintragen (z. B. von Bofrost oder Aldi). Den Namen oben gedrückt halten, dann „🗞️ Prospekt öffnen“. Es wird nur die Adresse gespeichert, nichts selbst abgerufen.",
       "<b>💡 Bildschirm immer an:</b> Im Laden-Modus erscheint ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an. In der HA-App klappt das nur mit der App-Einstellung „Bildschirm anlassen“.",
       "<b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.",
@@ -365,6 +365,12 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🎌 „An Feiertagen zu“ bei den Öffnungszeiten (nach Bundesland); Öffnungszeiten sind jetzt eingeklappt und optional",
+   "New: 🎌 “Closed on holidays” for opening hours (by state); opening hours are now collapsed and optional"],
+  ["📳 Die PIN-Eingabe vibriert jetzt wie der Rechner",
+   "📳 PIN entry now vibrates like the calculator"],
+  ["🔊 Vorlesen: liest von oben nach unten wie auf dem Bildschirm, „1x“ ohne „x“; in der HA-App kommt ein Hinweis, dass es dort nicht geht",
+   "🔊 Read aloud: reads top to bottom as on screen, “1x” without the “x”; the HA app shows a note that it does not work there"],
   ["Neu: 🗞️ Prospekt-Link pro Geschäft (Namen gedrückt halten → „Prospekt öffnen“)",
    "New: 🗞️ flyer link per store (press and hold the name → “Open flyer”)"],
   ["Neu: 🔊 „Vorlesen“ unter der Liste – liest die offenen Artikel vor",
@@ -503,16 +509,53 @@ const DAY = 86400000;
 const elMin = (hhmm) => { const m = /^(\d\d):(\d\d)$/.exec(hhmm || ""); return m ? +m[1] * 60 + +m[2] : null; };
 const elRanges = (d) => (!d || !d.length ? null : typeof d[0] === "string" ? [d] : d); // alt: ein [von, bis]
 const elRangesTxt = (d) => { const r = elRanges(d); return r ? r.map((x) => `${x[0]} – ${x[1]}`).join(", ") : "zu"; };
-function elOpenNow(hours, now = new Date()) {
+// 🎌 Gesetzliche Feiertage je Bundesland (berechnet, ohne Internet)
+const EL_STATES = { BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen", HH: "Hamburg", HE: "Hessen", MV: "Mecklenburg-Vorpommern", NI: "Niedersachsen", NW: "Nordrhein-Westfalen", RP: "Rheinland-Pfalz", SL: "Saarland", SN: "Sachsen", ST: "Sachsen-Anhalt", SH: "Schleswig-Holstein", TH: "Thüringen" };
+function elEaster(y) { // Gauß
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, mo - 1, da);
+}
+function elHolidayName(date, st) {
+  if (!st || !EL_STATES[st]) return null;
+  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+  const fix = { "1.1": "Neujahr", "1.5": "Tag der Arbeit", "3.10": "Tag der Deutschen Einheit", "25.12": "1. Weihnachtstag", "26.12": "2. Weihnachtstag" };
+  if (["BW", "BY", "ST"].includes(st)) fix["6.1"] = "Heilige Drei Könige";
+  if (["BE", "MV"].includes(st)) fix["8.3"] = "Frauentag";
+  if (st === "SL") fix["15.8"] = "Mariä Himmelfahrt";
+  if (st === "TH") fix["20.9"] = "Weltkindertag";
+  if (["BB", "HB", "HH", "MV", "NI", "SN", "ST", "SH", "TH"].includes(st)) fix["31.10"] = "Reformationstag";
+  if (["BW", "BY", "NW", "RP", "SL"].includes(st)) fix["1.11"] = "Allerheiligen";
+  if (fix[`${d}.${m}`]) return fix[`${d}.${m}`];
+  const e = elEaster(y), t = new Date(y, m - 1, d);
+  const diff = Math.round((t - e) / DAY);
+  const mov = { "-2": "Karfreitag", 1: "Ostermontag", 39: "Christi Himmelfahrt", 50: "Pfingstmontag" };
+  if (st === "BB") { mov[0] = "Ostersonntag"; mov[49] = "Pfingstsonntag"; }
+  if (["BW", "BY", "HE", "NW", "RP", "SL"].includes(st)) mov[60] = "Fronleichnam";
+  if (mov[diff]) return mov[diff];
+  if (st === "SN" && t.getDay() === 3 && m === 11 && d >= 16 && d <= 22) return "Buß- und Bettag";
+  return null;
+}
+function elOpenNow(hours, now = new Date(), hol = null) {
   if (!Array.isArray(hours) || hours.length !== 7) return null; // null = unbekannt → normal anzeigen
   const cur = now.getHours() * 60 + now.getMinutes();
+  const dayAt = (k) => { const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate() + k); return { dt, h: elHolidayName(dt, hol) }; };
   const wd = pyWd(now);
+  const t0 = dayAt(0);
+  if (t0.h) { // 🎌 Feiertag
+    for (let k = 1; k <= 14; k++) {
+      const x = dayAt(k); const r = !x.h && elRanges(hours[(wd + k) % 7]);
+      if (r) return { open: false, holiday: t0.h, next: r[0][0], dayIdx: (wd + k) % 7, today: false };
+    }
+    return { open: false, holiday: t0.h };
+  }
   const today = elRanges(hours[wd]) || [];
   for (const r of today) if (cur >= elMin(r[0]) && cur < elMin(r[1])) return { open: true, until: r[1] };
   const later = today.find((r) => cur < elMin(r[0]));
   if (later) return { open: false, next: later[0], today: true };
-  for (let k = 1; k <= 7; k++) { // nächster Öffnungstag
-    const r = elRanges(hours[(wd + k) % 7]);
+  for (let k = 1; k <= 14; k++) { // nächster Öffnungstag (Feiertage überspringen)
+    const x = dayAt(k); const r = !x.h && elRanges(hours[(wd + k) % 7]);
     if (r) return { open: false, next: r[0][0], dayIdx: (wd + k) % 7, today: false };
   }
   return { open: false };
@@ -1913,6 +1956,7 @@ function askPin(title = "🔒 PIN eingeben", card = null) {
     };
     ov._elClose = () => done(null); // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
     const press = (k) => {
+      elVibrate(12); // 📳 jede PIN-Taste kurz, wie im Rechner (Stärke aus Ansicht → Vibration)
       if (k === "⌫") pin = pin.slice(0, -1);
       else if (k === "✔") { if (pin.length >= 4) done(pin); return; }
       else if (pin.length < 8) pin += k;
@@ -3515,7 +3559,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._clock = setInterval(() => {
       if (this._view === "list" && !this._editing && this._data) this._renderList(); // „vor 5 Min“ aktuell halten
       if (this._data && !this._fixedStore && (this._data.stores || []).some((x) => x.hours)) {
-        const sig = this._data.stores.map((x) => (elOpenNow(x.hours)?.open === false ? "0" : "1")).join("");
+        const sig = this._data.stores.map((x) => (elOpenNow(x.hours, new Date(), x.holiday_state)?.open === false ? "0" : "1")).join("");
         if (sig !== this._hoursSig) { this._hoursSig = sig; this._renderTabs(); } // 🕒 Geschäft auf-/zugegangen
       }
       this._updateLockBtn(); // 🔒 nach 10 Minuten verschwindet der Sperr-Knopf von selbst
@@ -3701,10 +3745,11 @@ class EinkaufslisteCard extends HTMLElement {
     const st = this._store(storeId);
     if (!st) return;
     this.shadowRoot.querySelector(".hourspop")?.remove();
-    const info = elOpenNow(st.hours);
+    const info = elOpenNow(st.hours, new Date(), st.holiday_state);
     const today = pyWd(new Date());
     let status = "";
     if (!info) status = "";
+    else if (info.holiday) status = `🎌 Heute ist Feiertag (${info.holiday}) – geschlossen${info.next ? `, öffnet ${WD_LONG[info.dayIdx]} um ${info.next} Uhr` : ""}`;
     else if (info.open) status = `🟢 Jetzt geöffnet bis ${info.until} Uhr`;
     else if (info.today) status = `🔴 Geschlossen – öffnet heute um ${info.next} Uhr`;
     else if (info.next) status = `🔴 Geschlossen – öffnet ${WD_LONG[info.dayIdx]} um ${info.next} Uhr`;
@@ -3727,12 +3772,15 @@ class EinkaufslisteCard extends HTMLElement {
 
   _hoursEditHtml(e) {
     const h = Array.isArray(e.hours) ? e.hours : null;
+    if (this._hoursOpenFor !== e.id) { // 🕒 optional: erst auf Wunsch aufklappen
+      return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ${h ? "ändern" : "eintragen (optional)"}</button><p class="hint">${h ? "Öffnungszeiten sind eingetragen." : "Noch keine eingetragen – das ist in Ordnung, dann ändert sich nichts."}</p></div>`;
+    }
     const rows = WD_SHORT.map((w, i) => {
       const r = h ? elRanges(h[i]) : null;
       const zu = h && !r;
       return `<div class="hd ${zu ? "zu" : ""}" data-wd="${i}"><div class="hr"><b>${w}</b><label><input type="checkbox" data-hf="zu" ${zu ? "checked" : ""}> zu</label><button type="button" class="btn" data-act="hours-add" title="Noch ein Zeitfenster (z. B. nach der Mittagspause)">＋ Zeit</button><button type="button" class="btn" data-act="hours-cp" title="Diese Zeiten auf andere Tage übertragen">📋 auf Tage…</button></div><div class="rngs">${(r || [["08:00", "20:00"]]).map((x) => this._hoursRngHtml(x[0], x[1])).join("")}</div><div class="chips" hidden>${WD_SHORT.map((w2, k) => (k === i ? "" : `<button type="button" class="btn" data-act="hours-to" data-to="${k}">${w2}</button>`)).join("")}<button type="button" class="btn" data-act="hours-to" data-to="wk">Mo–Fr</button><button type="button" class="btn" data-act="hours-to" data-to="all">Alle</button></div></div>`;
     }).join("");
-    return `<div class="hoursed" data-kind="stores" data-id="${e.id}" data-hoursed="1"><b>🕒 Öffnungszeiten</b>${rows}<div class="hr"><button type="button" class="btn" data-act="hours-clear">Alle löschen</button></div><p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage.</p></div>`;
+    return `<div class="hoursed" data-kind="stores" data-id="${e.id}" data-hoursed="1"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button>${rows}<div class="hr"><button type="button" class="btn" data-act="hours-clear">Alle löschen</button></div><div class="srow" data-kind="stores" data-id="${e.id}"><select class="grow" data-field="holiday_state" title="An den gesetzlichen Feiertagen dieses Bundeslandes gilt das Geschäft als geschlossen"><option value="">🎌 Feiertage ignorieren</option>${Object.entries(EL_STATES).map(([k, v]) => `<option value="${k}" ${e.holiday_state === k ? "selected" : ""}>🎌 An Feiertagen zu – ${v}</option>`).join("")}</select></div><p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
   }
 
   _hoursCollect(box) {
@@ -4427,7 +4475,7 @@ class EinkaufslisteCard extends HTMLElement {
     const noneFn = (i) => !i.store_id;
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
     for (const s of d.stores) {
-      const closed = elOpenNow(s.hours)?.open === false;
+      const closed = elOpenNow(s.hours, new Date(), s.holiday_state)?.open === false;
       parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || !i.store_id)}</span>${bubble((i) => i.store_id === s.id || !i.store_id, active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
@@ -5338,14 +5386,21 @@ class EinkaufslisteCard extends HTMLElement {
   // 🔊 Liste vorlesen (Sprachausgabe des Geräts): liest die offenen Artikel des gerade gezeigten Reiters vor; nochmal antippen = Stopp
   toggleSpeak() {
     const ss = window.speechSynthesis;
-    if (!ss || typeof SpeechSynthesisUtterance === "undefined") { this._toast("🔊 Dieses Gerät kann nicht vorlesen"); return false; }
+    if (!ss || typeof SpeechSynthesisUtterance === "undefined") { this._toast(this._inHaApp() ? "🔊 Vorlesen geht in der HA-App nicht – bitte die Offline-App benutzen" : "🔊 Dieses Gerät kann nicht vorlesen"); return false; }
     if (this._speaking) { this._speaking = false; ss.cancel(); this._renderFooter(); return false; }
-    const open = (this._data?.items || []).filter((i) => !i.checked && this._matchesTab(i));
+    // 🔊 Reihenfolge wie auf dem Bildschirm (von oben nach unten): aus der gezeichneten Liste lesen, nicht aus den Rohdaten
+    const byId = new Map((this._data?.items || []).map((i) => [i.id, i]));
+    const seen = new Set();
+    const open = [...(this.$("list")?.querySelectorAll(".group:not(.donebox) .item[data-id]") || [])]
+      .map((el) => byId.get(el.dataset.id)).filter((i) => i && !i.checked && !seen.has(i.id) && seen.add(i.id));
+    if (!open.length) open.push(...(this._data?.items || []).filter((i) => !i.checked && this._matchesTab(i))); // Notnagel
     if (!open.length) { this._toast("🔊 Nichts zum Vorlesen – die Liste ist leer"); return false; }
     const de = EL_LANG === "de";
     const st = this._fixedStore || (this._activeTab !== "all" && this._activeTab !== "none" ? this._activeTab : null);
     const stName = st ? this._store(st)?.name : "";
-    const parts = open.map((i) => `${i.quantity ? i.quantity + " " : ""}${i.name}`);
+    // 🔊 „2x“ / „x2“ / „2×“ nicht als Buchstabe „x“ vorlesen – nur die Zahl
+    const q = (v) => String(v || "").trim().replace(/^(\d+(?:[.,]\d+)?)\s*[x×]$/i, "$1").replace(/^[x×]\s*(\d+(?:[.,]\d+)?)$/i, "$1");
+    const parts = open.map((i) => `${q(i.quantity) ? q(i.quantity) + " " : ""}${i.name}`);
     const text = (de ? `Auf der Liste${stName ? " für " + stName : ""} stehen ${open.length} ${open.length === 1 ? "Artikel" : "Artikel"}: ` : `On the list${stName ? " for " + stName : ""} there ${open.length === 1 ? "is 1 item" : "are " + open.length + " items"}: `) + parts.join(", ") + ".";
     ss.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -5908,7 +5963,7 @@ ${(() => {
         ${mine ? this._acc(g, "labels", "mdi:format-text", "#546e7a", "Beschriftungen", labOn ? "an – Text unter den Icons" : "aus – Text unter den Icons", `<button class="lrow viewrow" data-act="view-labels" aria-pressed="${labOn}">${ck(labOn)}<span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "anim", "mdi:check", "#43a047", "Abhaken", animOn ? "Animation an" : "Animation aus", `<button class="lrow viewrow" data-act="view-anim" aria-pressed="${animOn}">${ck(animOn)}<span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "haptic", "mdi:vibrate", "#8e24aa", "Vibration", { off: "Aus", low: "Schwach", normal: "Normal", high: "Stark" }[elHapticLevel()], `
-        <p class="hint">Nur für dieses Gerät. Beim Abhaken, im Rechner und beim langen Drücken. Manche Handys (z. B. iPhone) vibrieren im Browser nie.</p>
+        <p class="hint">Nur für dieses Gerät. Beim Abhaken, im Rechner, bei der PIN-Eingabe und beim langen Drücken. Manche Handys (z. B. iPhone) vibrieren im Browser nie.</p>
         <div class="fontrow">${[["off", "Aus"], ["low", "Schwach"], ["normal", "Normal"], ["high", "Stark"]].map(([k, t]) => `<button class="btn ${elHapticLevel() === k ? "primary" : ""}" data-act="view-haptic" data-level="${k}" aria-pressed="${elHapticLevel() === k}">${t}</button>`).join("")}</div>`) : ""}
         ${this._acc(g, "font", "mdi:format-size", "#1e88e5", "Schriftgröße", { s: "Kleiner", m: "Standard", l: "Größer" }[cur.font || "m"], `
         <div class="fontrow">${[["s", "Kleiner"], ["m", "Standard"], ["l", "Größer"]].map(([f, t]) => `<button class="btn ${(cur.font || "m") === f ? "primary" : ""}" data-act="view-font" data-scope="${scope}" data-font="${f}" aria-pressed="${(cur.font || "m") === f}">${t}</button>`).join("")}</div>`)}
@@ -10318,6 +10373,10 @@ ${(() => {
           .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
         break;
       }
+      case "hours-toggle":
+        this._hoursOpenFor = this._hoursOpenFor === el.dataset.id ? null : el.dataset.id;
+        this._renderSettings();
+        break;
       case "hours-add": case "hours-del": case "hours-cp": case "hours-to": case "hours-clear": {
         const box = el.closest(".hoursed");
         const d = el.closest(".hd");

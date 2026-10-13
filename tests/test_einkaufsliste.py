@@ -741,6 +741,18 @@ async def test_store_flyer(hass, setup, hass_ws_client):
     assert await upd("") and m.store_by_id(aldi)["flyer"] is None
 
 
+async def test_store_holiday_state(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    for n, (val, ok) in enumerate([("nw", True), ("XX", False), ("", True)], 1):
+        await client.send_json({"id": n, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "holiday_state": val})
+        assert (await client.receive_json())["success"] is ok
+        if n == 1:
+            assert m.store_by_id(aldi)["holiday_state"] == "NW"
+    assert m.store_by_id(aldi)["holiday_state"] is None
+
+
 async def test_store_zone(hass, setup, hass_ws_client):
     client = await hass_ws_client(hass)
     m = mgr(hass)

@@ -306,6 +306,9 @@ TODO_SYNC_MAX = 50  # 🔁 so viele To-do-Listen dürfen herübergeholt werden (
 _HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
+HOLIDAY_STATES = ("BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH")
+
+
 def _clean_flyer(value: Any) -> str | None:
     """Prospekt-Link: leer = keiner, sonst nur http(s)-Adresse ohne Leerzeichen, höchstens 500 Zeichen."""
     url = (value or "").strip() if isinstance(value, str) else ""
@@ -3800,6 +3803,11 @@ class EinkaufslisteManager:
             entry["brands"] = [b.strip() for b in re.split(r"[,;]", fields["brands"] or "") if b.strip()][:30]
         if "flyer" in fields and kind == "stores":  # 🗞️ Prospekt-Link (nur Adresse speichern, es wird nie etwas abgerufen)
             entry["flyer"] = _clean_flyer(fields["flyer"])
+        if "holiday_state" in fields and kind == "stores":  # 🎌 Bundesland: an dessen Feiertagen ist das Geschäft zu (leer = Feiertage ignorieren)
+            code = (fields["holiday_state"] or "").strip().upper()
+            if code and code not in HOLIDAY_STATES:
+                raise ValueError("Das Bundesland kenne ich nicht.")
+            entry["holiday_state"] = code or None
         if "hours" in fields and kind == "stores":  # 🕒 Öffnungszeiten (7 Tage Mo..So; None = zu; sonst ["08:00","20:00"])
             entry["hours"] = _clean_hours(fields["hours"])
         self._changed()
