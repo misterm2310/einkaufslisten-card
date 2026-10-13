@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.14";
+const EL_VERSION = "2.76.15-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.08"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -3340,7 +3340,7 @@ class EinkaufslisteCard extends HTMLElement {
     const show = !!server && server !== EL_VERSION;
     bar.hidden = !show;
     if (show) {
-      const num = (v) => String(v).split(".").map((x) => Number(x) || 0);
+      const num = (v) => String(v).split(".").map((x) => parseInt(x, 10) || 0);
       const [a, b] = [num(server), num(EL_VERSION)];
       const serverNewer = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
       bar.innerHTML = serverNewer > 0
@@ -3957,7 +3957,26 @@ class EinkaufslisteCard extends HTMLElement {
   // 📄 Seite IN der Karte (Gar-Zeiten, „Was kann ich kochen?“, Meine Karten): eigener Behälter #pageHost, den _renderAll nur
   // ein-/ausblendet, aber nie neu baut – darum bleiben Eingaben bei Live-Updates erhalten. Die Ansicht darunter (_view) bleibt unverändert,
   // beim Schließen ist man genau wieder dort (Rezepte, Einstellungen, Rezept-Editor mit Entwurf, Liste).
+  // 📍 Beim Öffnen einer Seite merken, wie weit die Liste gescrollt war – beim Schließen genau dorthin zurück (sonst landet man oben)
+  _scrollSnap() {
+    const out = [];
+    const up = (el) => el.assignedSlot || el.parentElement || el.getRootNode?.()?.host || null;
+    for (let el = this; el; el = up(el)) if (el.scrollTop > 0) out.push([el, el.scrollTop]);
+    const se = document.scrollingElement;
+    if (se && se.scrollTop > 0 && !out.some(([e]) => e === se)) out.push([se, se.scrollTop]);
+    return { list: out, view: this._view };
+  }
+
+  _scrollRestore(snap) {
+    if (!snap || snap.view !== this._view || !snap.list.length) return; // andere Ansicht = nicht zurückspringen
+    const run = () => { for (const [el, t] of snap.list) { try { el.scrollTop = t; } catch (_) { /* egal */ } } };
+    run();
+    requestAnimationFrame(() => { run(); requestAnimationFrame(run); });
+    setTimeout(run, 150);
+  }
+
   _openPage({ key, title, icon, color, build, onClose, onBack }) {
+    if (!this._page) this._pageScroll = this._scrollSnap();
     if (this._page) this._closePage(true);
     const host = this.$("pageHost");
     host.innerHTML = `<div class="sec pagehost"><div class="sechead">
@@ -3982,6 +4001,7 @@ class EinkaufslisteCard extends HTMLElement {
   // 🪟 Fenster (makeOverlay) als Seite: liegt über der offenen Seite/Ansicht, ← bringt zurück an die alte Stelle
   _pushPage(ov, opts = {}) {
     const host = this.$("pageHost");
+    if (!this._page) this._pageScroll = this._scrollSnap();
     const prev = this._page ? { page: this._page, nodes: [...host.childNodes] } : null;
     if (prev) { document.removeEventListener("keydown", prev.page.onKey); host.replaceChildren(); }
     host.hidden = false;
@@ -4048,6 +4068,7 @@ class EinkaufslisteCard extends HTMLElement {
       this._page = null;
       host.innerHTML = ""; host.hidden = true;
       this._renderAll();
+      this._scrollRestore(this._pageScroll); this._pageScroll = null;
     }
     this._emitNav();
   }
@@ -4065,7 +4086,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (host) { host.innerHTML = ""; host.hidden = true; }
     try { p.onClose?.(); } catch (_) { /* egal */ }
     for (let q = p; q; q = q.prev?.page) { if (q.ov) { try { q.ov._elClose?.(); } catch (_) { /* egal */ } } } // wartende Fenster (Foto, PIN …) sauber beenden
-    if (!silent) { this._renderAll(); this._emitNav(); }
+    if (!silent) { this._renderAll(); this._emitNav(); this._scrollRestore(this._pageScroll); this._pageScroll = null; }
     return true;
   }
 
@@ -4555,7 +4576,7 @@ class EinkaufslisteCard extends HTMLElement {
     const off = item.offer;
     let offBtn = "";
     if (!v.offer) { /* 🏷️ Angebote ausgeblendet */ } else if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
-    else if (!item.checked && this._offersFor(item).length) { // 🏷️ eigener Knopf ganz rechts (weit weg von der Menge, größer zu treffen)
+    else if (!item.checked && !this._shopMode && this._offersFor(item).length) { // 🏷️ im Laden-Modus ausgeblendet; sonst eigener Knopf ganz rechts (weit weg von der Menge, größer zu treffen)
       const alt = this._offersFor(item).every((o) => o.alt);
       offBtn = `<button class="iconbtn offtag" data-act="offers-show" data-id="${item.id}" title="${alt ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}"><span class="oi">${alt ? "🔀" : "🏷️"}</span></button>`;
     }
