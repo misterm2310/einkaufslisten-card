@@ -2075,7 +2075,7 @@
 "📳 Die PIN-Eingabe vibriert jetzt wie der Rechner": "📳 PIN entry now vibrates like the calculator",
 "🔊 Vorlesen: liest von oben nach unten wie auf dem Bildschirm, „1x“ ohne „x“; in der HA-App kommt ein Hinweis, dass es dort nicht geht": "🔊 Read aloud: reads top to bottom as on screen, “1x” without the “x”; the HA app shows a note that it does not work there",
 "Name der Filiale": "Branch name",
-"z. B. Borghorst": "e.g. Borghorst",
+"z. B. Innenstadt": "e.g. Downtown",
 "＋ Filiale": "＋ Branch",
 "Alle Zeiten löschen": "Delete all times",
 "▾ Zeiten": "▾ Times",
@@ -2128,5 +2128,10 @@
 "Sachsen-Anhalt": "Saxony-Anhalt",
 "Schleswig-Holstein": "Schleswig-Holstein",
 "Thüringen": "Thuringia",
-"Fix: 🌐 OpenStreetMap-Suche leichter und mit Ersatz-Servern, wenn der Hauptserver überlastet ist (Fehler 504)": "Fix: 🌐 OpenStreetMap search is lighter and uses backup servers when the main server is overloaded (error 504)"
+"Fix: 🌐 OpenStreetMap-Suche leichter und mit Ersatz-Servern, wenn der Hauptserver überlastet ist (Fehler 504)": "Fix: 🌐 OpenStreetMap search is lighter and uses backup servers when the main server is overloaded (error 504)",
+"🗞️ Prospekt-Link": "🗞️ Flyer link",
+"Zeiten dieser Filiale zuklappen": "Collapse this branch's times",
+"Zeiten dieser Filiale anzeigen": "Show this branch's times",
+"Beispiel: Mo–Sa 07:00–22:00 Uhr, Sonntag zu. Gespeichert wird erst, wenn du eine Zeit einträgst.": "Example: Mon–Sat 07:00–22:00, Sunday closed. Nothing is saved until you enter a time.",
+"Öffnungszeiten-Editor: Knöpfe „Filiale“ und „OpenStreetMap“ oben, Zeiten einer Filiale per Uhr-Icon, Sonntag von Anfang an „zu“, Beispieltext statt Vorgabe, Überschrift beim Prospekt-Link": "Opening-hours editor: “Branch” and “OpenStreetMap” buttons at the top, a branch's times via clock icon, Sunday closed from the start, example text instead of defaults, heading for the flyer link"
 }

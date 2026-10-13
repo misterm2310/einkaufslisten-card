@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.11";
+const EL_VERSION = "2.76.15-beta.12";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -365,6 +365,8 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Öffnungszeiten-Editor: Knöpfe „Filiale“ und „OpenStreetMap“ oben, Zeiten einer Filiale per Uhr-Icon, Sonntag von Anfang an „zu“, Beispieltext statt Vorgabe, Überschrift beim Prospekt-Link",
+   "Opening-hours editor: “Branch” and “OpenStreetMap” buttons at the top, a branch's times via clock icon, Sunday closed from the start, example text instead of defaults, heading for the flyer link"],
   ["Fix: 🌐 OpenStreetMap-Suche leichter und mit Ersatz-Servern, wenn der Hauptserver überlastet ist (Fehler 504)",
    "Fix: 🌐 OpenStreetMap search is lighter and uses backup servers when the main server is overloaded (error 504)"],
   ["Neu: 🌐 Öffnungszeiten aus OpenStreetMap holen (Knopf im Öffnungszeiten-Editor, nur auf Knopfdruck)",
@@ -2711,8 +2713,10 @@ label.btn { cursor:pointer; }
 .hoursed input[type=time] { width:auto !important; min-width:0; flex:1 1 0; font:inherit; padding:3px 6px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
 .hoursed .hd.zu .rngs { opacity:.35; }
 .hoursed .hbranch { border:1px solid var(--divider-color,rgba(127,127,127,.3)); border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:6px; }
-.hoursed .hbranch > .hr { flex-wrap:nowrap; }
+.hoursed .hbranch > .hr { flex-wrap:wrap; }
 .hoursed .hhead { margin-top:4px; }
+.hoursed .hbranch .iconbtn.on { background:color-mix(in srgb, var(--primary-color,#03a9f4) 22%, transparent); border-radius:50%; }
+.shead { display:block; margin:8px 0 2px; }
 .hoursed .hbranch input[data-bn] { width:auto !important; flex:1 1 0; min-width:0; font:inherit; padding:5px 8px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
 .hourspop .hbox { max-height:85vh; overflow-y:auto; }
 .hourspop .hbr { display:flex; flex-direction:column; gap:2px; border-top:1px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:6px; margin-top:4px; font-size:.92em; }
@@ -3840,10 +3844,11 @@ class EinkaufslisteCard extends HTMLElement {
   _hoursWeekHtml(h, storeId, branchId) { // 7 Tage-Editor (für das Geschäft oder für eine Filiale)
     const rows = WD_SHORT.map((w, i) => {
       const r = h ? elRanges(h[i]) : null;
-      const zu = h && !r;
-      return `<div class="hd ${zu ? "zu" : ""}" data-wd="${i}"><div class="hr"><b>${w}</b><label><input type="checkbox" data-hf="zu" ${zu ? "checked" : ""}> zu</label><button type="button" class="btn" data-act="hours-add" title="Noch ein Zeitfenster (z. B. nach der Mittagspause)">＋ Zeit</button><button type="button" class="btn" data-act="hours-cp" title="Diese Zeiten auf andere Tage übertragen">📋 auf Tage…</button></div><div class="rngs">${(r || [["08:00", "20:00"]]).map((x) => this._hoursRngHtml(x[0], x[1])).join("")}</div><div class="chips" hidden>${WD_SHORT.map((w2, k) => (k === i ? "" : `<button type="button" class="btn" data-act="hours-to" data-to="${k}">${w2}</button>`)).join("")}<button type="button" class="btn" data-act="hours-to" data-to="wk">Mo–Sa</button><button type="button" class="btn" data-act="hours-to" data-to="all">Alle</button></div></div>`;
+      const zu = h ? !r : i === 6; // noch nichts eingetragen: Sonntag ist von Anfang an „zu“
+      return `<div class="hd ${zu ? "zu" : ""}" data-wd="${i}"><div class="hr"><b>${w}</b><label><input type="checkbox" data-hf="zu" ${zu ? "checked" : ""}> zu</label><button type="button" class="btn" data-act="hours-add" title="Noch ein Zeitfenster (z. B. nach der Mittagspause)">＋ Zeit</button><button type="button" class="btn" data-act="hours-cp" title="Diese Zeiten auf andere Tage übertragen">📋 auf Tage…</button></div><div class="rngs">${(r || [["", ""]]).map((x) => this._hoursRngHtml(x[0], x[1])).join("")}</div><div class="chips" hidden>${WD_SHORT.map((w2, k) => (k === i ? "" : `<button type="button" class="btn" data-act="hours-to" data-to="${k}">${w2}</button>`)).join("")}<button type="button" class="btn" data-act="hours-to" data-to="wk">Mo–Sa</button><button type="button" class="btn" data-act="hours-to" data-to="all">Alle</button></div></div>`;
     }).join("");
-    return `<div class="hoursed" data-kind="stores" data-id="${storeId}" data-hoursed="1" ${branchId ? `data-branch="${branchId}"` : ""}>${rows}<div class="hr"><button type="button" class="btn" data-act="hours-clear">Alle Zeiten löschen</button></div></div>`;
+    const example = h ? "" : `<p class="hint">Beispiel: Mo–Sa 07:00–22:00 Uhr, Sonntag zu. Gespeichert wird erst, wenn du eine Zeit einträgst.</p>`;
+    return `<div class="hoursed" data-kind="stores" data-id="${storeId}" data-hoursed="1" ${branchId ? `data-branch="${branchId}"` : ""}>${example}${rows}<div class="hr"><button type="button" class="btn" data-act="hours-clear">Alle Zeiten löschen</button></div></div>`;
   }
 
   _hoursEditHtml(e) {
@@ -3856,9 +3861,9 @@ class EinkaufslisteCard extends HTMLElement {
     const sel = `<b class="hhead">🎌 An Feiertagen zu</b><div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:calendar-star"></ha-icon><select class="grow" data-field="holiday_state" title="An den gesetzlichen Feiertagen dieses Bundeslandes gilt das Geschäft als geschlossen"><option value="">Feiertage ignorieren</option>${Object.entries(EL_STATES).map(([k, v]) => `<option value="${k}" ${e.holiday_state === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>`;
     let main;
     if (br.length) {
-      main = br.map((b) => `<div class="hbranch"><div class="hr"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="btn" data-act="hours-brtoggle" data-bid="${b.id}">${this._brOpen === b.id ? "▴ Zeiten" : "▾ Zeiten"}</button><button type="button" class="iconbtn" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben"><ha-icon icon="mdi:arrow-up"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten"><ha-icon icon="mdi:arrow-down"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
+      main = br.map((b) => `<div class="hbranch"><div class="hr"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="iconbtn ${this._brOpen === b.id ? "on" : ""}" data-act="hours-brtoggle" data-bid="${b.id}" title="Zeiten dieser Filiale ${this._brOpen === b.id ? "zuklappen" : "anzeigen"}"><ha-icon icon="mdi:clock-outline"></ha-icon></button></div><div class="hr"><button type="button" class="iconbtn" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben"><ha-icon icon="mdi:arrow-up"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten"><ha-icon icon="mdi:arrow-down"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
     } else main = this._hoursWeekHtml(h, e.id, "");
-    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button>${main}<div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button><button type="button" class="btn" data-act="hours-osm" data-id="${e.id}" title="Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)">🌐 Zeiten aus OpenStreetMap</button></div>${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten; der Reiter ist nur grau, wenn alle Filialen zu haben. Mit den Pfeilen sortierst du die Filialen. 🌐 „Zeiten aus OpenStreetMap“ sucht das Geschäft im Netz (nur auf Knopfdruck) – die Zeiten stammen von Freiwilligen, bitte kurz prüfen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
+    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button><div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button><button type="button" class="btn" data-act="hours-osm" data-id="${e.id}" title="Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)">🌐 Zeiten aus OpenStreetMap</button></div>${main}${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten; der Reiter ist nur grau, wenn alle Filialen zu haben. Mit den Pfeilen sortierst du die Filialen. 🌐 „Zeiten aus OpenStreetMap“ sucht das Geschäft im Netz (nur auf Knopfdruck) – die Zeiten stammen von Freiwilligen, bitte kurz prüfen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
   }
 
   _hoursCollect(box) {
@@ -5652,6 +5657,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${this._catSetHtml(e)}
         ${this._catOrderHtml(e)}
         ${this._hoursEditHtml(e)}
+        <b class="shead">🗞️ Prospekt-Link</b>
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:newspaper-variant-outline"></ha-icon><input class="grow" type="url" inputmode="url" data-field="flyer" value="${esc(e.flyer || "")}" placeholder="🗞️ Prospekt-Link (https://…)" title="Adresse des Prospekts. Wird nur beim Antippen geöffnet."></div>
         <p class="hint">🗞️ Prospekt-Link: Nur die Adresse wird gespeichert. Die Karte ruft nie selbst etwas dort ab; erst wenn du im Fenster (Namen gedrückt halten) „Prospekt öffnen“ antippst, öffnet sich die Seite – ohne dass sie erfährt, woher du kommst.</p>
         ${zones.length ? "" : `<p class="hint">📍 Noch keine Zonen in Home Assistant angelegt (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen).</p>`}
@@ -10544,7 +10550,7 @@ ${(() => {
       case "hours-bradd": {
         const sid = el.dataset.id;
         const st = this._store(sid);
-        askText("Name der Filiale", "z. B. Borghorst").then((name) => {
+        askText("Name der Filiale", "z. B. Innenstadt").then((name) => {
           if (!name) return;
           const cur = this._branchesCollect(sid);
           // erste Filiale übernimmt die bisherigen Zeiten des Geschäfts (nichts geht verloren)
