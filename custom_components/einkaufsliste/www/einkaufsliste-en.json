@@ -1998,5 +1998,8 @@
 "Eintragen geht wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie vom letzten Mal.": "Adding works like on the list: type the name (with suggestions), 🔢 quantity, ✏️ own note, 👤 for whom, 📷 photo, ▥ barcode – then ✔. “As last time” = store & category from last time.",
 "Auf die Liste – Zutaten auswählen": "To the list – choose ingredients",
 "Von der Liste – alle offenen Zutaten dieses Rezepts": "Off the list – all open ingredients of this recipe",
-"Von Liste": "Off list"
+"Von Liste": "Off list",
+"<b>🧮 Rechner:</b> Im Laden-Modus steht oben links neben den 💳 Karten ein Rechner. Antippen, rechnen (+ − × ÷ und %), mit dem ← Pfeil geht es zurück an die Stelle in der Liste, wo du warst.": "<b>🧮 Calculator:</b> In store mode there is a calculator at the top left, next to the 💳 cards. Tap it, calculate (+ − × ÷ and %), and the ← arrow takes you back to your place in the list.",
+"Rechner": "Calculator",
+"Fehler": "Error"
 }

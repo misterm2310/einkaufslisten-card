@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.2";
+const EL_VERSION = "2.76.15-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.08"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -81,6 +81,7 @@ const EL_GUIDE = [
   { id: "shop", icon: "🛍️", c: "#7cb342", t: ["Im Laden", "In the store"], s: ["Laden-Modus, Scannen & abhaken", "Store mode, scan & check off"],
     de: [
       "Das <b>🏪 Geschäft ganz rechts</b> schaltet den <b>Laden-Modus</b> ein: große Zeilen, nur Abhaken, nur das Wichtigste. Nochmal antippen = wieder normal. Er bleibt auf diesem Gerät gespeichert.",
+      "<b>🧮 Rechner:</b> Im Laden-Modus steht oben links neben den 💳 Karten ein Rechner. Antippen, rechnen (+ − × ÷ und %), mit dem ← Pfeil geht es zurück an die Stelle in der Liste, wo du warst.",
       "<b>💡 Bildschirm immer an:</b> Im Laden-Modus erscheint ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an. In der HA-App klappt das nur mit der App-Einstellung „Bildschirm anlassen“.",
       "<b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.",
       "Bist du laut Standort im Geschäft, <b>hakt ▥ das gescannte Produkt ab</b> (siehe „Barcodes“).",
@@ -357,6 +358,18 @@ const EL_HELP_TITLES = { // [Titel de, Titel en, Icon]
   listview: ["Listenansicht – für alle", "List view – for everyone", "👁️"], app: ["Offline-App", "Offline app", "📱"], theme: ["Hell / Dunkel", "Light / dark", "🌓"], pin: ["Schutz (PIN)", "Protection (PIN)", "🔒"], privacy: ["Datenschutz", "Privacy", "🛡️"],
 };
 const EL_NEWS_MAX = 15;
+// 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
+// Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
+const EL_BETA_NEWS = [
+  ["Beim Schließen eines Fotos oder einer Seite bleibt die Liste beim Produkt stehen und springt nicht mehr nach oben (auch in der Erledigt-Liste, ohne Gleiten)",
+   "When you close a photo or a page, the list stays at the product instead of jumping to the top (also in the done list, without gliding)"],
+  ["Im Laden-Modus ist das Angebotszeichen 🏷️ ausgeblendet",
+   "In store mode the offer sign 🏷️ is hidden"],
+  ["Neu: 🧮 Rechner im Laden-Modus, oben links neben den 💳 Karten",
+   "New: 🧮 calculator in store mode, at the top left next to the 💳 cards"],
+  ["„Was ist neu“ zeigt in einer Beta oben einen eigenen Kasten mit den Neuerungen dieser Beta",
+   "In a beta, “What's new” shows its own box at the top with the changes of this beta"],
+];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -364,6 +377,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🧮 <b>Rechner im Laden-Modus:</b> Oben links neben den 💳 Karten. Große Tasten für + − × ÷ und %, ← bringt dich zurück an die Stelle in der Liste.",
+   "🧮 <b>Calculator in store mode:</b> at the top left, next to the 💳 cards. Big keys for + − × ÷ and %, ← takes you back to your place in the list."],
   ["🪟 <b>Fenster als Seiten:</b> PIN-Eingabe, Foto (machen, zuschneiden, ansehen), Barcode eintippen, Scanner, Karte ändern, Teilen und Rückfragen öffnen nicht mehr als Vollbild, sondern als Seite in der Karte mit ← oben links. Zurück führt an die Stelle, wo du warst. Nur der Koch-Modus bleibt Vollbild, dort sind auch die Gar-Zeiten jetzt über die ganze Breite. · 🏷️ <b>Rezept-Gruppen wie Kategorien:</b> erst die Liste, Gruppe antippen = Name, Farbe und Icon ändern. · 💳 <b>Meine Karten</b> im Look der Einstellungen mit Farbstreifen links, ohne die Aufräum-Info unten. · 📖 <b>Anleitung</b> steht auch ganz unten auf der ersten Seite der Einstellungen. · 🗂️ Wenn du die Einstellungen verlässt, sind alle Gruppen und Reiter wieder zu. Die Kategorien klappen nicht mehr von selbst zu. · 🏷️ Der Angebote-Knopf sitzt jetzt ganz rechts in der Zeile, weit weg von der Menge. · 🔢 Menge bei einem Vorschlag per Tipp auf „3x“ entfernt = jetzt 1x statt der alten Menge. Das Menge-Symbol ist wieder die 123. · 👁️ „Meine Ansicht“ schließt sich, wenn du die Liste verlässt.",
    "🪟 <b>Windows as pages:</b> PIN entry, photos (take, crop, view), typing a barcode, scanner, edit card, share and questions no longer open full screen but as a page inside the card with ← at the top left. Back takes you to where you were. Only cooking mode stays full screen, and its cooking times now use the full width too. · 🏷️ <b>Recipe groups like categories:</b> first the list, tap a group = change name, colour and icon. · 💳 <b>My cards</b> in the look of the settings with a colour stripe on the left, without the tidy-up info at the bottom. · 📖 <b>Guide</b> is also at the very bottom of the first settings page. · 🗂️ When you leave the settings, all groups and tabs are closed again. The categories no longer close by themselves. · 🏷️ The offers button now sits at the far right of the row, well away from the quantity. · 🔢 Removing the quantity of a suggestion with a tap on “3x” now gives 1x instead of the old quantity. The quantity icon is the 123 again. · 👁️ “My view” closes when you leave the list."],
   ["📦 <b>Produkte: alle anzeigen.</b> Die Liste zeigt zuerst 80 Produkte. Darunter holt „10 weitere“ immer 10 dazu und „Alle anzeigen“ den ganzen Rest. Dasselbe gilt für „Einkaufsliste Produkte löschen“ (dort starten 60). Suchen und Filtern setzt die Liste wieder auf den Anfang.",
@@ -2233,10 +2248,21 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .qval { min-width:44px; text-align:center; font-weight:600; font-size:1.1em; }
 ha-card.shop form.add { display:none; }
 ha-card.shop #btnRecipes { display:none; }
+ha-card.shop #btnCalc { order:0; } /* 🧮 Rechner (nur im Laden-Modus) steht links vor den 💳 Karten */
 ha-card.shop #btnCards { order:1; } /* im Laden-Modus: 💳 vor dem Laden-Modus-Knopf (Plätze getauscht) */
 ha-card.shop #btnAwake { order:2; } /* 💡 Bildschirm immer an: zwischen 💳 und Laden-Modus-Knopf (nur im Laden-Modus) */
 ha-card.shop #btnShop { order:3; }
 #btnAwake.on { color:var(--primary-color,#03a9f4); }
+.calc { max-width:340px; margin:6px auto 12px; }
+.calc .cdisp { background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:14px; padding:10px 14px; text-align:right; margin-bottom:10px; min-height:3.4em; }
+.calc .cexpr { font-size:.9em; opacity:.65; min-height:1.3em; }
+.calc .cnum { font-size:2.2em; font-weight:600; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.calc .ckeys { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.calc .ckeys button { height:60px; border-radius:14px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); background:transparent; color:inherit; font:inherit; font-size:1.5em; cursor:pointer; }
+.calc .ckeys button:active { background:rgba(127,127,127,.25); }
+.calc .ckeys button.op { color:var(--primary-color,#03a9f4); font-weight:600; }
+.calc .ckeys button.eq { background:var(--primary-color,#03a9f4); color:#fff; border-color:transparent; }
+.calc .ckeys button.clr { color:#e53935; }
 ha-card.shop .item { padding:11px 5px; font-size:1.2em; }
 ha-card.shop .item .name { font-weight:600; }
 ha-card.shop .item .check { padding:9px; --mdc-icon-size:38px; }
@@ -3624,6 +3650,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="head">
           <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="home" title="🏠 Zurück zur Einkaufsliste"></ha-icon><span id="mascot" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
           <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon><span class="lbl">Bildschirm</span></button>
+          <button class="iconbtn" id="btnCalc" data-act="calc" title="Rechner" hidden><ha-icon icon="mdi:calculator-variant-outline"></ha-icon><span class="lbl">Rechner</span></button>
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
           <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon><span class="lbl">Rezepte</span></button>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:storefront-outline"></ha-icon><span class="lbl">Laden</span></button>
@@ -3969,7 +3996,8 @@ class EinkaufslisteCard extends HTMLElement {
 
   _scrollRestore(snap) {
     if (!snap || snap.view !== this._view || !snap.list.length) return; // andere Ansicht = nicht zurückspringen
-    const run = () => { for (const [el, t] of snap.list) { try { el.scrollTop = t; } catch (_) { /* egal */ } } };
+    // „instant“: bei weichem Scrollen (scroll-behavior: smooth) würde die Liste sonst sichtbar von oben nach unten gleiten
+    const run = () => { for (const [el, t] of snap.list) { try { if (el.scrollTo) el.scrollTo({ top: t, behavior: "instant" }); else el.scrollTop = t; } catch (_) { try { el.scrollTop = t; } catch (__) { /* egal */ } } } };
     run();
     requestAnimationFrame(() => { run(); requestAnimationFrame(run); });
     setTimeout(run, 150);
@@ -4190,6 +4218,7 @@ class EinkaufslisteCard extends HTMLElement {
     this.$("btnFavAll").hidden = !(d?.favorites || []).length; // ⭐ nur da, wenn es Favoriten gibt
     const btnAwake = this.$("btnAwake"); // 💡 nur im Laden-Modus; geht beim Verlassen von selbst aus
     btnAwake.hidden = !shop;
+    this.$("btnCalc").hidden = !shop; // 🧮 Rechner nur im Laden-Modus
     if (!shop && this._awakeOn) this._awakeStop();
     btnAwake.classList.toggle("on", !!this._awakeOn);
     btnAwake.title = this._awakeOn ? "Bildschirm immer an – antippen zum Ausschalten" : "Bildschirm immer an (antippen)";
@@ -8654,7 +8683,9 @@ ${(() => {
   _newsHtml(en = EL_LANG !== "de") {
     // 🆕 höchstens 15 Neuerungen – das Neueste oben, Älteres fällt hinten raus
     const items = EL_NEWS.flatMap((n) => (en ? n[1] : n[0]).split(" · ")).slice(0, EL_NEWS_MAX);
-    return `<div ${en ? 'translate="no"' : ""}><p class="hint">${en ? "The latest new features up to version" : "Die letzten Neuerungen bis Version"} <b>${EL_NEWS_VERSION}</b> – ${en ? "the newest is at the top" : "das Neueste steht oben"}</p><ul>${items.map((x) => `<li>${x}</li>`).join("")}</ul></div>`;
+    const beta = /-beta/i.test(EL_VERSION) && EL_BETA_NEWS.length
+      ? `<div style="border:1px solid #fb8c00;border-radius:12px;padding:10px 12px;margin:0 0 12px;background:rgba(251,140,0,.1)"><b>🧪 ${en ? "You are in the beta" : "Du bist in der Beta"} ${esc(EL_VERSION)}</b><p class="hint" style="margin:4px 0 2px">${en ? "New in this beta:" : "Neu in dieser Beta:"}</p><ul style="margin:0">${EL_BETA_NEWS.map((n) => `<li>${en ? n[1] : n[0]}</li>`).join("")}</ul></div>` : "";
+    return `<div ${en ? 'translate="no"' : ""}>${beta}<p class="hint">${en ? "The latest new features up to version" : "Die letzten Neuerungen bis Version"} <b>${EL_NEWS_VERSION}</b> – ${en ? "the newest is at the top" : "das Neueste steht oben"}</p><ul>${items.map((x) => `<li>${x}</li>`).join("")}</ul></div>`;
   }
 
   // 🔒 Datenschutz: ehrlich, was in Home Assistant bleibt und was ins Internet geht
@@ -9248,6 +9279,41 @@ ${(() => {
       try { localStorage.setItem(this._cardsKey(), JSON.stringify(list)); } catch (_) { /* Speicher voll/gesperrt: egal */ }
       return list;
     } catch (_) { return null; }
+  }
+
+  // 🧮 Rechner (Laden-Modus): Seite IN der Karte, ← bringt zurück an die alte Stelle der Liste
+  _openCalc() {
+    let cur = "0", acc = null, op = null, fresh = false, err = false;
+    const num = (x) => parseFloat(String(x).replace(",", "."));
+    const fmt = (x) => String(x).replace(".", ",");
+    const calc = (a, o, b) => {
+      const r = o === "+" ? a + b : o === "−" ? a - b : o === "×" ? a * b : b === 0 ? NaN : a / b;
+      return Number.isFinite(r) ? parseFloat(r.toPrecision(12)) : NaN;
+    };
+    const keys = [["C", "clr"], ["⌫", ""], ["%", ""], ["÷", "op"], ["7"], ["8"], ["9"], ["×", "op"], ["4"], ["5"], ["6"], ["−", "op"], ["1"], ["2"], ["3"], ["+", "op"], ["0"], [","], ["=", "eq"]];
+    this._openPage({ key: "calc", title: "Rechner", icon: "mdi:calculator-variant-outline", color: "#00897b", build: (body) => {
+      body.innerHTML = `<div class="calc"><div class="cdisp"><div class="cexpr"></div><div class="cnum"></div></div><div class="ckeys">${
+        keys.map(([k, c]) => `<button type="button" data-k="${k}" class="${c}" ${k === "0" ? 'style="grid-column:span 2"' : ""} aria-label="${k}">${k}</button>`).join("")}</div></div>`;
+      const exprEl = body.querySelector(".cexpr"), numEl = body.querySelector(".cnum");
+      const draw = () => { exprEl.textContent = err ? "" : acc !== null && op ? `${fmt(acc)} ${op}` : ""; numEl.textContent = err ? "Fehler" : fmt(cur); };
+      const press = (k) => {
+        if (err && k !== "C") { err = false; cur = "0"; acc = null; op = null; fresh = false; }
+        if (/^\d$/.test(k)) { if (fresh || cur === "0") cur = k; else if (cur.replace(/[-.]/g, "").length < 12) cur += k; fresh = false; }
+        else if (k === ",") { if (fresh) { cur = "0"; fresh = false; } if (!cur.includes(".")) cur += "."; }
+        else if (k === "C") { cur = "0"; acc = null; op = null; fresh = false; err = false; }
+        else if (k === "⌫") { if (!fresh) cur = cur.length > 1 && cur !== "-0" ? cur.slice(0, -1) : "0"; }
+        else if (k === "%") { cur = String(parseFloat((num(cur) / 100).toPrecision(12))); fresh = true; }
+        else if (k === "=") {
+          if (op && acc !== null) { const r = calc(acc, op, num(cur)); if (Number.isNaN(r)) err = true; else cur = String(r); acc = null; op = null; fresh = true; }
+        } else { // + − × ÷
+          if (op && acc !== null && !fresh) { const r = calc(acc, op, num(cur)); if (Number.isNaN(r)) { err = true; draw(); return; } acc = r; cur = String(r); } else acc = num(cur);
+          op = k; fresh = true;
+        }
+        draw();
+      };
+      body.querySelector(".ckeys").addEventListener("click", (e) => { const b = e.target.closest("button[data-k]"); if (b) press(b.dataset.k); });
+      draw();
+    } });
   }
 
   _openCards() {
@@ -11066,6 +11132,9 @@ ${(() => {
         break;
       case "cards":
         this._openCards();
+        break;
+      case "calc":
+        this._openCalc();
         break;
       case "cards-toggle":
         this._ws({ type: "einkaufsliste/cards/enable", on: !this._data.settings?.cards_on })
