@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.13";
+const EL_VERSION = "2.76.15-beta.14";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -365,6 +365,8 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Fix: Beim langen Drücken auf ein Geschäft oben kann das Handy-Menü („Kopieren“) nicht mehr im Fenster mit den Öffnungszeiten erscheinen",
+   "Fix: pressing and holding a store at the top can no longer bring up the phone menu (“Copy”) in the opening-hours window"],
   ["Neu: 🕒 Im Reiter steht eine Uhr in der Geschäftsfarbe statt des Punkts, wenn für das Geschäft Uhrzeiten hinterlegt sind",
    "New: 🕒 the tab shows a clock in the store colour instead of the dot when opening hours are set for the store"],
   ["Öffnungszeiten-Editor: Knöpfe „Filiale“ und „OpenStreetMap“ oben, Zeiten einer Filiale per Uhr-Icon, Sonntag von Anfang an „zu“, Beispieltext statt Vorgabe, Überschrift beim Prospekt-Link",
@@ -2242,7 +2244,7 @@ ha-card.labels .tool { padding:4px 6px; }
 .tabs::-webkit-scrollbar { height:4px; }
 .tabs::-webkit-scrollbar-thumb { background:var(--divider-color, rgba(127,127,127,.35)); border-radius:4px; }
 @media (hover:none) { .tabs { scrollbar-width:none; } .tabs::-webkit-scrollbar { display:none; } }
-.tab { --c: var(--primary-color,#03a9f4); flex:0 0 auto; border:1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background:transparent; border-radius:999px; padding:5px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.9em; }
+.tab { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; --c: var(--primary-color,#03a9f4); flex:0 0 auto; border:1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background:transparent; border-radius:999px; padding:5px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.9em; }
 .tab.closed:not(.active) { opacity:.45; filter:grayscale(1); } /* 🕒 Geschäft hat gerade zu */
 .tab.closed.active { filter:grayscale(.8); opacity:.8; }
 .tab .tclock { --mdc-icon-size:17px; color:var(--c); flex:0 0 auto; display:inline-flex; }
@@ -2699,6 +2701,8 @@ label.btn { cursor:pointer; }
 .picker button span { font-size:.55em; color:var(--secondary-text-color); max-width:44px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .picker .none { grid-column:1/-1; font-size:.8em; color:var(--secondary-text-color); padding:4px; }
 .sec p { margin:4px 0; font-size:.9em; line-height:1.4; }
+.hourspop { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+.hourspop a { -webkit-touch-callout:none; -webkit-user-drag:none; }
 .hourspop { position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.35); }
 .hourspop .hbox { background:var(--card-background-color,#fff); color:var(--primary-text-color); border-radius:16px; padding:16px 18px; min-width:240px; max-width:90vw; box-shadow:0 8px 30px rgba(0,0,0,.35); display:flex; flex-direction:column; gap:6px; }
 .hourspop .hstat { font-weight:600; margin-bottom:4px; }
@@ -3809,6 +3813,10 @@ class EinkaufslisteCard extends HTMLElement {
     ov.innerHTML = `<div class="hbox"><b translate="no">🕒 ${esc(st.name)}</b>${body}${/^https?:\/\//i.test(st.flyer || "") ? `<a class="btn flyer" href="${esc(st.flyer)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🗞️ Prospekt öffnen</a>` : ""}<button type="button" class="btn">OK</button></div>`;
     const close = () => ov.remove();
     ov.addEventListener("click", close);
+    ov.addEventListener("contextmenu", (e) => e.preventDefault()); // kein „Kopieren/Teilen“-Menü des Handys
+    // 👆 Das Fenster geht unter dem noch gedrückten Finger auf: kurz „durchlässig“, damit der Finger nichts darin antippt oder markiert
+    ov.style.pointerEvents = "none";
+    setTimeout(() => { ov.style.pointerEvents = ""; }, 500);
     this.shadowRoot.appendChild(ov);
     setTimeout(close, 20000);
   }

@@ -2134,5 +2134,6 @@
 "Zeiten dieser Filiale anzeigen": "Show this branch's times",
 "Beispiel: Mo–Sa 07:00–22:00 Uhr, Sonntag zu. Gespeichert wird erst, wenn du eine Zeit einträgst.": "Example: Mon–Sat 07:00–22:00, Sunday closed. Nothing is saved until you enter a time.",
 "Öffnungszeiten-Editor: Knöpfe „Filiale“ und „OpenStreetMap“ oben, Zeiten einer Filiale per Uhr-Icon, Sonntag von Anfang an „zu“, Beispieltext statt Vorgabe, Überschrift beim Prospekt-Link": "Opening-hours editor: “Branch” and “OpenStreetMap” buttons at the top, a branch's times via clock icon, Sunday closed from the start, example text instead of defaults, heading for the flyer link",
-"Neu: 🕒 Im Reiter steht eine Uhr in der Geschäftsfarbe statt des Punkts, wenn für das Geschäft Uhrzeiten hinterlegt sind": "New: 🕒 the tab shows a clock in the store colour instead of the dot when opening hours are set for the store"
+"Neu: 🕒 Im Reiter steht eine Uhr in der Geschäftsfarbe statt des Punkts, wenn für das Geschäft Uhrzeiten hinterlegt sind": "New: 🕒 the tab shows a clock in the store colour instead of the dot when opening hours are set for the store",
+"Fix: Beim langen Drücken auf ein Geschäft oben kann das Handy-Menü („Kopieren“) nicht mehr im Fenster mit den Öffnungszeiten erscheinen": "Fix: pressing and holding a store at the top can no longer bring up the phone menu (“Copy”) in the opening-hours window"
 }
