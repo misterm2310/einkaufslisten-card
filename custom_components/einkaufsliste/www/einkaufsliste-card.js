@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.8";
+const EL_VERSION = "2.76.15-beta.9";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -365,6 +365,8 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🏬 Filialen lassen sich mit ▲ ▼ sortieren",
+   "New: 🏬 branches can be sorted with ▲ ▼"],
   ["Neu: 🏬 Filialen pro Geschäft mit eigenen Öffnungszeiten (z. B. 3× K&K); der Reiter ist nur grau, wenn alle Filialen zu haben; Editor klappt zu, wenn man das Geschäft verlässt; Feiertage auch ohne Zeiten; „Mo–Sa“ statt „Mo–Fr“",
    "New: 🏬 branches per store with their own opening hours (e.g. 3× K&K); the tab is only grey when all branches are closed; the editor collapses when you leave the store; holidays also without times; “Mon–Sat” instead of “Mon–Fri”"],
   ["Neu: 🎌 „An Feiertagen zu“ bei den Öffnungszeiten (nach Bundesland); Öffnungszeiten sind jetzt eingeklappt und optional",
@@ -3817,9 +3819,9 @@ class EinkaufslisteCard extends HTMLElement {
     const sel = `<div class="srow" data-kind="stores" data-id="${e.id}"><select class="grow" data-field="holiday_state" title="An den gesetzlichen Feiertagen dieses Bundeslandes gilt das Geschäft als geschlossen"><option value="">🎌 Feiertage ignorieren</option>${Object.entries(EL_STATES).map(([k, v]) => `<option value="${k}" ${e.holiday_state === k ? "selected" : ""}>🎌 An Feiertagen zu – ${v}</option>`).join("")}</select></div>`;
     let main;
     if (br.length) {
-      main = br.map((b) => `<div class="hbranch"><div class="hr"><span>🏬</span><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="btn" data-act="hours-brtoggle" data-bid="${b.id}">${this._brOpen === b.id ? "▴ Zeiten" : "▾ Zeiten"}</button><button type="button" class="btn x" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen">🗑</button></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
+      main = br.map((b) => `<div class="hbranch"><div class="hr"><span>🏬</span><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="btn" data-act="hours-brtoggle" data-bid="${b.id}">${this._brOpen === b.id ? "▴ Zeiten" : "▾ Zeiten"}</button><button type="button" class="btn x" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben">▲</button><button type="button" class="btn x" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten">▼</button><button type="button" class="btn x" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen">🗑</button></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
     } else main = this._hoursWeekHtml(h, e.id, "");
-    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button>${main}<div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button></div>${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten; der Reiter ist nur grau, wenn alle Filialen zu haben. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
+    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button>${main}<div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button></div>${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten; der Reiter ist nur grau, wenn alle Filialen zu haben. Mit ▲ ▼ sortierst du die Filialen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
   }
 
   _hoursCollect(box) {
@@ -10473,6 +10475,16 @@ ${(() => {
         this._brOpen = this._brOpen === el.dataset.bid ? null : el.dataset.bid;
         this._renderSettings();
         break;
+      case "hours-brup": case "hours-brdown": { // 🏬 Filialen sortieren
+        const sid = this._hoursOpenFor;
+        const list = this._branchesCollect(sid);
+        const k = list.findIndex((b) => b.id === el.dataset.bid);
+        const k2 = act === "hours-brup" ? k - 1 : k + 1;
+        if (k < 0 || k2 < 0 || k2 >= list.length) break;
+        [list[k], list[k2]] = [list[k2], list[k]];
+        this._hoursSendBranches(sid, list, true);
+        break;
+      }
       case "hours-brdel": {
         const sid = this._hoursOpenFor;
         const left = this._branchesCollect(sid).filter((b) => b.id !== el.dataset.bid);
