@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.3";
+const EL_VERSION = "2.76.15-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -81,7 +81,7 @@ const EL_GUIDE = [
   { id: "shop", icon: "🛍️", c: "#7cb342", t: ["Im Laden", "In the store"], s: ["Laden-Modus, Scannen & abhaken", "Store mode, scan & check off"],
     de: [
       "Das <b>🏪 Geschäft ganz rechts</b> schaltet den <b>Laden-Modus</b> ein: große Zeilen, nur Abhaken, nur das Wichtigste. Nochmal antippen = wieder normal. Er bleibt auf diesem Gerät gespeichert.",
-      "<b>🧮 Rechner:</b> Im Laden-Modus steht oben links neben den 💳 Karten ein Rechner. Antippen, rechnen (+ − × ÷ und %), mit dem ← Pfeil geht es zurück an die Stelle in der Liste, wo du warst.",
+      "<b>🧮 Rechner:</b> Im Laden-Modus steht oben links neben den 💳 Karten ein Rechner. Antippen, rechnen (+ − × ÷ und %): jede Taste vibriert kurz (wo das Handy es kann). Mit dem ← Pfeil geht es zurück an die Stelle in der Liste, wo du warst.",
       "<b>💡 Bildschirm immer an:</b> Im Laden-Modus erscheint ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an. In der HA-App klappt das nur mit der App-Einstellung „Bildschirm anlassen“.",
       "<b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.",
       "Bist du laut Standort im Geschäft, <b>hakt ▥ das gescannte Produkt ab</b> (siehe „Barcodes“).",
@@ -3991,16 +3991,20 @@ class EinkaufslisteCard extends HTMLElement {
     for (let el = this; el; el = up(el)) if (el.scrollTop > 0) out.push([el, el.scrollTop]);
     const se = document.scrollingElement;
     if (se && se.scrollTop > 0 && !out.some(([e]) => e === se)) out.push([se, se.scrollTop]);
-    return { list: out, view: this._view };
+    return { list: out, view: this._view, h: this.offsetHeight };
   }
 
   _scrollRestore(snap) {
     if (!snap || snap.view !== this._view || !snap.list.length) return; // andere Ansicht = nicht zurückspringen
     // „instant“: bei weichem Scrollen (scroll-behavior: smooth) würde die Liste sonst sichtbar von oben nach unten gleiten
     const run = () => { for (const [el, t] of snap.list) { try { if (el.scrollTo) el.scrollTo({ top: t, behavior: "instant" }); else el.scrollTop = t; } catch (_) { try { el.scrollTop = t; } catch (__) { /* egal */ } } } };
+    // 🧱 Die Karte behält kurz ihre alte Höhe und das Browser-„Scroll-Verankern“ ist aus: sonst kann die Position beim Aufbauen der Liste noch einmal nach oben rutschen
+    if (snap.h) this.style.minHeight = snap.h + "px";
+    for (const [el] of snap.list) { try { el.style.overflowAnchor = "none"; } catch (_) { /* egal */ } }
     run();
     requestAnimationFrame(() => { run(); requestAnimationFrame(run); });
     setTimeout(run, 150);
+    setTimeout(() => { run(); this.style.minHeight = ""; for (const [el] of snap.list) { try { el.style.overflowAnchor = ""; } catch (_) { /* egal */ } } }, 600);
   }
 
   _openPage({ key, title, icon, color, build, onClose, onBack }) {
@@ -9311,7 +9315,7 @@ ${(() => {
         }
         draw();
       };
-      body.querySelector(".ckeys").addEventListener("click", (e) => { const b = e.target.closest("button[data-k]"); if (b) press(b.dataset.k); });
+      body.querySelector(".ckeys").addEventListener("click", (e) => { const b = e.target.closest("button[data-k]"); if (b) { try { navigator.vibrate?.(12); } catch (_) { /* egal */ } press(b.dataset.k); } });
       draw();
     } });
   }
