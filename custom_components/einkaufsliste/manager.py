@@ -309,6 +309,26 @@ _HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 HOLIDAY_STATES = ("BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH")
 
 
+def _clean_branches(value: Any) -> list[dict[str, Any]] | None:
+    """Filialen eines Geschäfts: Liste aus {id, name, hours}. Leer/None = keine Filialen."""
+    if not value:
+        return None
+    if not isinstance(value, (list, tuple)):
+        raise ValueError("Filialen bitte als Liste.")
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for b in list(value)[:12]:
+        if not isinstance(b, dict):
+            raise ValueError("Filiale ungültig.")
+        name = _clean(b.get("name"))[:40] if isinstance(b.get("name"), str) else ""
+        if not name:
+            raise ValueError("Jede Filiale braucht einen Namen.")
+        bid = b.get("id") if isinstance(b.get("id"), str) and b.get("id") and b.get("id") not in seen else _new_id()
+        seen.add(bid)
+        out.append({"id": bid, "name": name, "hours": _clean_hours(b.get("hours"))})
+    return out or None
+
+
 def _clean_flyer(value: Any) -> str | None:
     """Prospekt-Link: leer = keiner, sonst nur http(s)-Adresse ohne Leerzeichen, höchstens 500 Zeichen."""
     url = (value or "").strip() if isinstance(value, str) else ""
@@ -3801,6 +3821,8 @@ class EinkaufslisteManager:
                 entry["cats"] = [c for c in dict.fromkeys(fields["cats"]) if c in known]
         if "brands" in fields and kind == "stores":  # 🏷️ eigene Eigenmarken („Milsani, Moser Roth“)
             entry["brands"] = [b.strip() for b in re.split(r"[,;]", fields["brands"] or "") if b.strip()][:30]
+        if "branches" in fields and kind == "stores":  # 🏬 Filialen mit eigenen Öffnungszeiten
+            entry["branches"] = _clean_branches(fields["branches"])
         if "flyer" in fields and kind == "stores":  # 🗞️ Prospekt-Link (nur Adresse speichern, es wird nie etwas abgerufen)
             entry["flyer"] = _clean_flyer(fields["flyer"])
         if "holiday_state" in fields and kind == "stores":  # 🎌 Bundesland: an dessen Feiertagen ist das Geschäft zu (leer = Feiertage ignorieren)

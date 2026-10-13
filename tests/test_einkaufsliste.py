@@ -753,6 +753,29 @@ async def test_store_holiday_state(hass, setup, hass_ws_client):
     assert m.store_by_id(aldi)["holiday_state"] is None
 
 
+async def test_store_branches(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    n = 0
+    async def upd(branches):
+        nonlocal n
+        n += 1
+        await client.send_json({"id": n, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "branches": branches})
+        return (await client.receive_json())["success"]
+    week = [[["08:00", "20:00"]]] * 6 + [None]
+    assert await upd([{"name": "Borghorst", "hours": week}, {"name": " Steinfurt ", "hours": None}])
+    br = m.store_by_id(aldi)["branches"]
+    assert [b["name"] for b in br] == ["Borghorst", "Steinfurt"] and br[0]["id"] != br[1]["id"]
+    assert br[0]["hours"][0] == [["08:00", "20:00"]] and br[1]["hours"] is None
+    keep = br[0]["id"]
+    assert await upd([{"id": keep, "name": "Borghorst", "hours": None}])
+    assert m.store_by_id(aldi)["branches"][0]["id"] == keep  # id bleibt stabil
+    assert not await upd([{"name": "", "hours": None}])
+    assert not await upd([{"name": "X", "hours": [["25:00", "26:00"]] + [None] * 6}])
+    assert await upd([]) and m.store_by_id(aldi)["branches"] is None
+
+
 async def test_store_zone(hass, setup, hass_ws_client):
     client = await hass_ws_client(hass)
     m = mgr(hass)

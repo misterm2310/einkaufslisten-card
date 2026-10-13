@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.7";
+const EL_VERSION = "2.76.15-beta.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -84,7 +84,7 @@ const EL_GUIDE = [
       "<b>🧮 Rechner:</b> Im Laden-Modus steht oben links neben den 💳 Karten ein Rechner. Antippen, rechnen (+ − × ÷ und %): jede Taste vibriert kurz (wo das Handy es kann). Mit dem ← Pfeil geht es zurück an die Stelle in der Liste, wo du warst.",
       "<b>🔊 Vorlesen:</b> Unter der Liste steht „🔊 Vorlesen“. Antippen, dann liest dein Handy die offenen Artikel vor (bei einem gewählten Geschäft nur dessen Artikel). Nochmal antippen = Stopp. Praktisch, wenn du die Hände voll hast. In der HA-App geht das Vorlesen nicht (dort fehlt die Sprachausgabe), nimm dafür die Offline-App.",
       "<b>📳 Vibration:</b> Unter 👁️ Ansicht → Vibration stellst du die Stärke ein: Aus, Schwach, Normal oder Stark. Das gilt nur für dieses Gerät. Manche Handys (z. B. iPhone) vibrieren im Browser nie.",
-      "<b>🕒 Öffnungszeiten:</b> Unter ⚙️ → Geschäfte → Geschäft antippen trägst du für jeden Tag die Zeiten ein. Mit „＋ Zeit“ geht mehr als ein Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr), mit „📋 auf Tage…“ übertragst du die Zeiten auf andere Tage. Hat das Geschäft zu, wird sein Reiter oben grau. Den Namen gedrückt halten zeigt die Zeiten. Mit „🎌 An Feiertagen zu“ und deinem Bundesland gilt es an gesetzlichen Feiertagen als geschlossen.",
+      "<b>🕒 Öffnungszeiten:</b> Unter ⚙️ → Geschäfte → Geschäft antippen trägst du für jeden Tag die Zeiten ein. Mit „＋ Zeit“ geht mehr als ein Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr), mit „📋 auf Tage…“ übertragst du die Zeiten auf andere Tage. Mit „＋ Filiale“ bekommt jede Filiale eines Geschäfts (z. B. 3× K&K) eigene Zeiten. Hat das Geschäft zu, wird sein Reiter oben grau (bei Filialen nur, wenn alle zu haben). Den Namen gedrückt halten zeigt die Zeiten. Mit „🎌 An Feiertagen zu“ und deinem Bundesland gilt es an gesetzlichen Feiertagen als geschlossen.",
       "<b>🗞️ Prospekt-Link:</b> Unter ⚙️ → Geschäfte → Geschäft kannst du die Adresse eines Prospekts eintragen (z. B. von Bofrost oder Aldi). Den Namen oben gedrückt halten, dann „🗞️ Prospekt öffnen“. Es wird nur die Adresse gespeichert, nichts selbst abgerufen.",
       "<b>💡 Bildschirm immer an:</b> Im Laden-Modus erscheint ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an. In der HA-App klappt das nur mit der App-Einstellung „Bildschirm anlassen“.",
       "<b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.",
@@ -365,6 +365,8 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🏬 Filialen pro Geschäft mit eigenen Öffnungszeiten (z. B. 3× K&K); der Reiter ist nur grau, wenn alle Filialen zu haben; Editor klappt zu, wenn man das Geschäft verlässt; Feiertage auch ohne Zeiten; „Mo–Sa“ statt „Mo–Fr“",
+   "New: 🏬 branches per store with their own opening hours (e.g. 3× K&K); the tab is only grey when all branches are closed; the editor collapses when you leave the store; holidays also without times; “Mon–Sat” instead of “Mon–Fri”"],
   ["Neu: 🎌 „An Feiertagen zu“ bei den Öffnungszeiten (nach Bundesland); Öffnungszeiten sind jetzt eingeklappt und optional",
    "New: 🎌 “Closed on holidays” for opening hours (by state); opening hours are now collapsed and optional"],
   ["📳 Die PIN-Eingabe vibriert jetzt wie der Rechner",
@@ -401,7 +403,7 @@ const EL_NEWS = [
    "🔊 <b>Read the list aloud:</b> tap “🔊 Read aloud” below the list – your phone reads out the open items. Tap again to stop."],
   ["📳 <b>Vibration einstellbar:</b> Unter 👁️ Ansicht → Vibration: Aus, Schwach, Normal oder Stark (nur für dieses Gerät).",
    "📳 <b>Adjustable vibration:</b> under 👁️ View → Vibration: Off, Low, Normal or Strong (this device only)."],
-  ["🕒 <b>Öffnungszeiten:</b> In ⚙️ → Geschäfte pro Tag eintragen, auch mehrere Zeitfenster und auf andere Tage übertragen. Hat das Geschäft zu, wird sein Reiter grau. Den Namen gedrückt halten zeigt die Zeiten.",
+  ["🕒 <b>Öffnungszeiten:</b> In ⚙️ → Geschäfte pro Tag eintragen, auch mehrere Zeitfenster und auf andere Tage übertragen. Mehrere Märkte der gleichen Kette (z. B. 3× K&K) bekommen mit „＋ Filiale“ jeweils eigene Zeiten. Hat das Geschäft zu, wird sein Reiter grau. Den Namen gedrückt halten zeigt die Zeiten.",
    "🕒 <b>Opening hours:</b> enter them per day in ⚙️ → Stores, also several time slots, and copy them to other days. When a store is closed its tab turns grey. Press and hold the name to see the hours."],
   ["🧮 <b>Rechner im Laden-Modus:</b> Oben links neben den 💳 Karten. Große Tasten für + − × ÷ und %, ← bringt dich zurück an die Stelle in der Liste.",
    "🧮 <b>Calculator in store mode:</b> at the top left, next to the 💳 cards. Big keys for + − × ÷ and %, ← takes you back to your place in the list."],
@@ -538,7 +540,10 @@ function elHolidayName(date, st) {
   return null;
 }
 function elOpenNow(hours, now = new Date(), hol = null) {
-  if (!Array.isArray(hours) || hours.length !== 7) return null; // null = unbekannt → normal anzeigen
+  if (!Array.isArray(hours) || hours.length !== 7) { // ohne Zeiten: nur Feiertage zählen (falls Bundesland gewählt), sonst unbekannt → normal anzeigen
+    const hn = elHolidayName(now, hol);
+    return hn ? { open: false, holiday: hn } : null;
+  }
   const cur = now.getHours() * 60 + now.getMinutes();
   const dayAt = (k) => { const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate() + k); return { dt, h: elHolidayName(dt, hol) }; };
   const wd = pyWd(now);
@@ -560,6 +565,25 @@ function elOpenNow(hours, now = new Date(), hol = null) {
   }
   return { open: false };
 }
+// 🏬 Geschäft mit Filialen: jede Filiale hat eigene Zeiten. Der Reiter ist nur grau, wenn ALLE zu haben.
+function elStoreInfos(st, now = new Date()) {
+  const br = Array.isArray(st?.branches) && st.branches.length ? st.branches : null;
+  if (!br) return { branches: null, info: elOpenNow(st?.hours, now, st?.holiday_state) };
+  return { branches: br.map((b) => ({ b, info: elOpenNow(b.hours, now, st.holiday_state) })), info: null };
+}
+function elStoreClosed(st, now = new Date()) {
+  const r = elStoreInfos(st, now);
+  return r.branches ? r.branches.every((x) => x.info?.open === false) : r.info?.open === false;
+}
+function elHasHoursInfo(st) { return !!(st?.hours || st?.holiday_state || (st?.branches || []).length); }
+const elStatusTxt = (info) => {
+  if (!info) return "";
+  if (info.holiday) return `🎌 Heute ist Feiertag (${info.holiday}) – geschlossen${info.next ? `, öffnet ${WD_LONG[info.dayIdx]} um ${info.next} Uhr` : ""}`;
+  if (info.open) return `🟢 Jetzt geöffnet bis ${info.until} Uhr`;
+  if (info.today) return `🔴 Geschlossen – öffnet heute um ${info.next} Uhr`;
+  if (info.next) return `🔴 Geschlossen – öffnet ${WD_LONG[info.dayIdx]} um ${info.next} Uhr`;
+  return "🔴 Geschlossen";
+};
 
 // 🌍 Englisch als zweite Sprache: Die Karte ist auf Deutsch geschrieben. Ist Home Assistant NICHT auf Deutsch
 // (oder steht in der Karte „language: en“), holt sie sich einmal das Wörterbuch einkaufsliste-en.json
@@ -2678,6 +2702,11 @@ label.btn { cursor:pointer; }
 .hoursed input[type=checkbox] { width:auto; flex:0 0 auto; margin:0; }
 .hoursed input[type=time] { width:auto !important; min-width:0; flex:1 1 0; font:inherit; padding:3px 6px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
 .hoursed .hd.zu .rngs { opacity:.35; }
+.hoursed .hbranch { border:1px solid var(--divider-color,rgba(127,127,127,.3)); border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:6px; }
+.hoursed .hbranch > .hr { flex-wrap:nowrap; }
+.hoursed .hbranch input[data-bn] { width:auto !important; flex:1 1 0; min-width:0; font:inherit; padding:5px 8px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
+.hourspop .hbox { max-height:85vh; overflow-y:auto; }
+.hourspop .hbr { display:flex; flex-direction:column; gap:2px; border-top:1px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:6px; margin-top:4px; font-size:.92em; }
 .hint { color:var(--secondary-text-color); font-size:.8em !important; }
 /* 📋 Bericht von „Alles neu holen“: eigener Kasten, ✖ zum Schließen (erst wenn fertig), lange Berichte scrollen */
 .refrep { position:relative; margin:6px 0; padding:8px 10px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; }
@@ -3558,8 +3587,8 @@ class EinkaufslisteCard extends HTMLElement {
     clearInterval(this._clock);
     this._clock = setInterval(() => {
       if (this._view === "list" && !this._editing && this._data) this._renderList(); // „vor 5 Min“ aktuell halten
-      if (this._data && !this._fixedStore && (this._data.stores || []).some((x) => x.hours)) {
-        const sig = this._data.stores.map((x) => (elOpenNow(x.hours, new Date(), x.holiday_state)?.open === false ? "0" : "1")).join("");
+      if (this._data && !this._fixedStore && (this._data.stores || []).some((x) => elHasHoursInfo(x))) {
+        const sig = this._data.stores.map((x) => (elStoreClosed(x) ? "0" : "1")).join("");
         if (sig !== this._hoursSig) { this._hoursSig = sig; this._renderTabs(); } // 🕒 Geschäft auf-/zugegangen
       }
       this._updateLockBtn(); // 🔒 nach 10 Minuten verschwindet der Sperr-Knopf von selbst
@@ -3745,42 +3774,52 @@ class EinkaufslisteCard extends HTMLElement {
     const st = this._store(storeId);
     if (!st) return;
     this.shadowRoot.querySelector(".hourspop")?.remove();
-    const info = elOpenNow(st.hours, new Date(), st.holiday_state);
     const today = pyWd(new Date());
-    let status = "";
-    if (!info) status = "";
-    else if (info.holiday) status = `🎌 Heute ist Feiertag (${info.holiday}) – geschlossen${info.next ? `, öffnet ${WD_LONG[info.dayIdx]} um ${info.next} Uhr` : ""}`;
-    else if (info.open) status = `🟢 Jetzt geöffnet bis ${info.until} Uhr`;
-    else if (info.today) status = `🔴 Geschlossen – öffnet heute um ${info.next} Uhr`;
-    else if (info.next) status = `🔴 Geschlossen – öffnet ${WD_LONG[info.dayIdx]} um ${info.next} Uhr`;
-    else status = "🔴 Geschlossen";
-    const rows = Array.isArray(st.hours)
-      ? st.hours.map((d, i) => `<div class="hrow ${i === today ? "today" : ""}"><span>${WD_LONG[i]}</span><span>${elRangesTxt(d)}</span></div>`).join("")
-      : `<p class="hint">Noch keine Öffnungszeiten eingetragen. Du kannst sie unter ⚙️ Einstellungen → Geschäfte → ${esc(st.name)} eintragen – dann wird der Reiter grau, wenn das Geschäft zu hat.</p>`;
+    const week = (h) => h.map((d, i) => `<div class="hrow ${i === today ? "today" : ""}"><span>${WD_LONG[i]}</span><span>${elRangesTxt(d)}</span></div>`).join("");
+    const res = elStoreInfos(st);
+    let body = "";
+    if (res.branches) { // 🏬 jede Filiale mit Stand und Zeiten
+      body = res.branches.map(({ b, info }) => `<div class="hbr"><b translate="no">🏬 ${esc(b.name)}</b>${info ? `<div class="hstat">${elStatusTxt(info)}</div>` : ""}${Array.isArray(b.hours) ? week(b.hours) : `<p class="hint">Keine Zeiten eingetragen.</p>`}</div>`).join("");
+    } else {
+      const status = elStatusTxt(res.info);
+      body = `${status ? `<div class="hstat">${status}</div>` : ""}${Array.isArray(st.hours) ? week(st.hours)
+        : `<p class="hint">Noch keine Öffnungszeiten eingetragen. Du kannst sie unter ⚙️ Einstellungen → Geschäfte → ${esc(st.name)} eintragen – dann wird der Reiter grau, wenn das Geschäft zu hat.</p>`}`;
+    }
     const ov = document.createElement("div");
     ov.className = "hourspop";
-    ov.innerHTML = `<div class="hbox"><b translate="no">🕒 ${esc(st.name)}</b>${status ? `<div class="hstat">${status}</div>` : ""}${rows}${/^https?:\/\//i.test(st.flyer || "") ? `<a class="btn flyer" href="${esc(st.flyer)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🗞️ Prospekt öffnen</a>` : ""}<button type="button" class="btn">OK</button></div>`;
+    ov.innerHTML = `<div class="hbox"><b translate="no">🕒 ${esc(st.name)}</b>${body}${/^https?:\/\//i.test(st.flyer || "") ? `<a class="btn flyer" href="${esc(st.flyer)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🗞️ Prospekt öffnen</a>` : ""}<button type="button" class="btn">OK</button></div>`;
     const close = () => ov.remove();
     ov.addEventListener("click", close);
     this.shadowRoot.appendChild(ov);
-    setTimeout(close, 15000);
+    setTimeout(close, 20000);
   }
 
   _hoursRngHtml(a, b) {
     return `<div class="rng"><input type="time" data-hf="from" value="${a}"><span>–</span><input type="time" data-hf="to" value="${b}"><button type="button" class="btn x" data-act="hours-del" title="Zeitfenster löschen">✕</button></div>`;
   }
 
-  _hoursEditHtml(e) {
-    const h = Array.isArray(e.hours) ? e.hours : null;
-    if (this._hoursOpenFor !== e.id) { // 🕒 optional: erst auf Wunsch aufklappen
-      return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ${h ? "ändern" : "eintragen (optional)"}</button><p class="hint">${h ? "Öffnungszeiten sind eingetragen." : "Noch keine eingetragen – das ist in Ordnung, dann ändert sich nichts."}</p></div>`;
-    }
+  _hoursWeekHtml(h, storeId, branchId) { // 7 Tage-Editor (für das Geschäft oder für eine Filiale)
     const rows = WD_SHORT.map((w, i) => {
       const r = h ? elRanges(h[i]) : null;
       const zu = h && !r;
-      return `<div class="hd ${zu ? "zu" : ""}" data-wd="${i}"><div class="hr"><b>${w}</b><label><input type="checkbox" data-hf="zu" ${zu ? "checked" : ""}> zu</label><button type="button" class="btn" data-act="hours-add" title="Noch ein Zeitfenster (z. B. nach der Mittagspause)">＋ Zeit</button><button type="button" class="btn" data-act="hours-cp" title="Diese Zeiten auf andere Tage übertragen">📋 auf Tage…</button></div><div class="rngs">${(r || [["08:00", "20:00"]]).map((x) => this._hoursRngHtml(x[0], x[1])).join("")}</div><div class="chips" hidden>${WD_SHORT.map((w2, k) => (k === i ? "" : `<button type="button" class="btn" data-act="hours-to" data-to="${k}">${w2}</button>`)).join("")}<button type="button" class="btn" data-act="hours-to" data-to="wk">Mo–Fr</button><button type="button" class="btn" data-act="hours-to" data-to="all">Alle</button></div></div>`;
+      return `<div class="hd ${zu ? "zu" : ""}" data-wd="${i}"><div class="hr"><b>${w}</b><label><input type="checkbox" data-hf="zu" ${zu ? "checked" : ""}> zu</label><button type="button" class="btn" data-act="hours-add" title="Noch ein Zeitfenster (z. B. nach der Mittagspause)">＋ Zeit</button><button type="button" class="btn" data-act="hours-cp" title="Diese Zeiten auf andere Tage übertragen">📋 auf Tage…</button></div><div class="rngs">${(r || [["08:00", "20:00"]]).map((x) => this._hoursRngHtml(x[0], x[1])).join("")}</div><div class="chips" hidden>${WD_SHORT.map((w2, k) => (k === i ? "" : `<button type="button" class="btn" data-act="hours-to" data-to="${k}">${w2}</button>`)).join("")}<button type="button" class="btn" data-act="hours-to" data-to="wk">Mo–Sa</button><button type="button" class="btn" data-act="hours-to" data-to="all">Alle</button></div></div>`;
     }).join("");
-    return `<div class="hoursed" data-kind="stores" data-id="${e.id}" data-hoursed="1"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button>${rows}<div class="hr"><button type="button" class="btn" data-act="hours-clear">Alle löschen</button></div><div class="srow" data-kind="stores" data-id="${e.id}"><select class="grow" data-field="holiday_state" title="An den gesetzlichen Feiertagen dieses Bundeslandes gilt das Geschäft als geschlossen"><option value="">🎌 Feiertage ignorieren</option>${Object.entries(EL_STATES).map(([k, v]) => `<option value="${k}" ${e.holiday_state === k ? "selected" : ""}>🎌 An Feiertagen zu – ${v}</option>`).join("")}</select></div><p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
+    return `<div class="hoursed" data-kind="stores" data-id="${storeId}" data-hoursed="1" ${branchId ? `data-branch="${branchId}"` : ""}>${rows}<div class="hr"><button type="button" class="btn" data-act="hours-clear">Alle Zeiten löschen</button></div></div>`;
+  }
+
+  _hoursEditHtml(e) {
+    const h = Array.isArray(e.hours) ? e.hours : null;
+    const br = Array.isArray(e.branches) ? e.branches : [];
+    if (this._hoursOpenFor !== e.id) { // 🕒 optional: erst auf Wunsch aufklappen
+      const has = br.length ? `${br.length} Filialen mit eigenen Zeiten.` : h ? "Öffnungszeiten sind eingetragen." : "";
+      return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ${h || br.length ? "ändern" : "eintragen (optional)"}</button><p class="hint">${has || "Noch keine eingetragen – das ist in Ordnung, dann ändert sich nichts."}</p></div>`;
+    }
+    const sel = `<div class="srow" data-kind="stores" data-id="${e.id}"><select class="grow" data-field="holiday_state" title="An den gesetzlichen Feiertagen dieses Bundeslandes gilt das Geschäft als geschlossen"><option value="">🎌 Feiertage ignorieren</option>${Object.entries(EL_STATES).map(([k, v]) => `<option value="${k}" ${e.holiday_state === k ? "selected" : ""}>🎌 An Feiertagen zu – ${v}</option>`).join("")}</select></div>`;
+    let main;
+    if (br.length) {
+      main = br.map((b) => `<div class="hbranch"><div class="hr"><span>🏬</span><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="btn" data-act="hours-brtoggle" data-bid="${b.id}">${this._brOpen === b.id ? "▴ Zeiten" : "▾ Zeiten"}</button><button type="button" class="btn x" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen">🗑</button></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
+    } else main = this._hoursWeekHtml(h, e.id, "");
+    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button>${main}<div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button></div>${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten; der Reiter ist nur grau, wenn alle Filialen zu haben. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
   }
 
   _hoursCollect(box) {
@@ -3793,7 +3832,25 @@ class EinkaufslisteCard extends HTMLElement {
     return out.every((x) => x === null) ? null : out;
   }
 
+  // 🏬 Alle Filialen eines Geschäfts aus dem Bildschirm einsammeln (zugeklappte aus den gespeicherten Daten)
+  _branchesCollect(storeId) {
+    const st = this._store(storeId);
+    const root = this.shadowRoot;
+    return (st?.branches || []).map((b) => {
+      const box = root.querySelector(`.hoursed[data-branch="${b.id}"]`);
+      const nm = root.querySelector(`input[data-bn="${b.id}"]`);
+      return { id: b.id, name: (nm?.value || "").trim() || b.name, hours: box ? this._hoursCollect(box) : (b.hours || null) };
+    });
+  }
+
+  _hoursSendBranches(storeId, branches, rerender = false) {
+    const p = this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: storeId, branches: branches.length ? branches : null });
+    p.then(() => { if (rerender) setTimeout(() => this._renderSettings(), 150); })
+      .catch(() => { this._toast("🕒 Uhrzeiten nicht gespeichert – Ende muss nach dem Beginn liegen, Zeitfenster dürfen sich nicht überschneiden"); });
+  }
+
   _hoursSave(box) {
+    if (box.dataset.branch) { this._hoursSendBranches(box.dataset.id, this._branchesCollect(box.dataset.id)); return; }
     const hours = this._hoursCollect(box);
     this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: box.dataset.id, hours })
       .catch(() => { this._toast("🕒 Uhrzeiten nicht gespeichert – Ende muss nach dem Beginn liegen, Zeitfenster dürfen sich nicht überschneiden"); });
@@ -4329,7 +4386,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     if (this._view === "recipe") { this._draft = null; this._view = "settings"; this._renderAll(); return true; }
     if (this._view === "settings") {
-      if (this._storeSel) this._storeSel = null;
+      if (this._storeSel) { this._storeSel = null; this._hoursOpenFor = null; }
       else if (this._catSel) this._catSel = null;
       else if (this._rgSel) this._rgSel = null;
       else if (this._perSel) this._perSel = null;
@@ -4475,7 +4532,7 @@ class EinkaufslisteCard extends HTMLElement {
     const noneFn = (i) => !i.store_id;
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
     for (const s of d.stores) {
-      const closed = elOpenNow(s.hours, new Date(), s.holiday_state)?.open === false;
+      const closed = elStoreClosed(s);
       parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || !i.store_id)}</span>${bubble((i) => i.store_id === s.id || !i.store_id, active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
@@ -5493,7 +5550,7 @@ class EinkaufslisteCard extends HTMLElement {
     queueMicrotask(() => this._emitNav());
     if (this._lastSetSec !== undefined && this._lastSetSec !== this._setSec) { // 🗂️ einen Bereich verlassen (zurück, anderer Bereich): seine Aufklapper und Reiter sind danach wieder zu
       this._accOpen = { stats: "" }; this._xferTab = "none"; this._recTab = null; this._prodTab = null;
-      this._storeSel = this._catSel = this._perSel = this._rgSel = null; this._prodEdit = null;
+      this._storeSel = this._catSel = this._perSel = this._rgSel = null; this._hoursOpenFor = null; this._prodEdit = null;
     }
     this._lastSetSec = this._setSec;
     if (this._setSec !== "products") { this._prodFilter = ""; this._prodSel = ""; } // 🔎 Suche/Filter im Katalog sind weg, sobald man die Seite verlässt
@@ -10396,7 +10453,7 @@ ${(() => {
         } else if (act === "hours-to") {
           const to = el.dataset.to;
           const days = [...box.querySelectorAll(".hd[data-wd]")];
-          const targets = to === "all" ? days : to === "wk" ? days.slice(0, 5) : [days[+to]];
+          const targets = to === "all" ? days : to === "wk" ? days.slice(0, 6) : [days[+to]];
           const zu = d.querySelector('[data-hf="zu"]').checked;
           const rs = [...d.querySelectorAll(".rng")].map((r) => this._hoursRngHtml(r.querySelector('[data-hf="from"]').value, r.querySelector('[data-hf="to"]').value)).join("");
           for (const t2 of targets) {
@@ -10407,7 +10464,31 @@ ${(() => {
           d.querySelector(".chips").hidden = true;
           this._hoursSave(box);
           this._toast("🕒 Übertragen");
+        } else if (box.dataset.branch) { // 🏬 Zeiten dieser Filiale löschen
+          this._hoursSendBranches(box.dataset.id, this._branchesCollect(box.dataset.id).map((b) => (b.id === box.dataset.branch ? { ...b, hours: null } : b)), true);
         } else this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: box.dataset.id, hours: null }).then(() => this._renderSettings()).catch(() => {});
+        break;
+      }
+      case "hours-brtoggle":
+        this._brOpen = this._brOpen === el.dataset.bid ? null : el.dataset.bid;
+        this._renderSettings();
+        break;
+      case "hours-brdel": {
+        const sid = this._hoursOpenFor;
+        const left = this._branchesCollect(sid).filter((b) => b.id !== el.dataset.bid);
+        this._hoursSendBranches(sid, left, true);
+        break;
+      }
+      case "hours-bradd": {
+        const sid = el.dataset.id;
+        const st = this._store(sid);
+        askText("Name der Filiale", "z. B. Borghorst").then((name) => {
+          if (!name) return;
+          const cur = this._branchesCollect(sid);
+          // erste Filiale übernimmt die bisherigen Zeiten des Geschäfts (nichts geht verloren)
+          cur.push({ name, hours: !cur.length && Array.isArray(st?.hours) ? st.hours : null });
+          this._hoursSendBranches(sid, cur, true);
+        });
         break;
       }
       case "view-haptic": { // 📳 Vibrationsstärke (nur dieses Gerät)
@@ -10853,6 +10934,7 @@ ${(() => {
         break;
       case "store-sel":
         this._storeSel = el.dataset.id || null;
+        this._hoursOpenFor = null; // 🕒 Öffnungszeiten-Editor klappt zu, wenn man das Geschäft verlässt
         this._renderSettings();
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
         break;
@@ -10880,7 +10962,7 @@ ${(() => {
         this._renderSettings();
         break;
       case "set-sec":
-        if (el.dataset.sec !== "stores") this._storeSel = null;
+        if (el.dataset.sec !== "stores") { this._storeSel = null; this._hoursOpenFor = null; }
         this._catSel = null; this._perSel = null; this._rgSel = null;
         this._setSec = el.dataset.sec || null;
         this._renderSettings();
@@ -11787,6 +11869,12 @@ ${(() => {
     if (t.id === "logDays") {
       this._ws({ type: "einkaufsliste/log/settings", days: Number(t.value) })
         .then(() => { this._toast(`📋 Verlauf wird ${t.value} Tage aufgehoben`); this._loadLog(); }).catch(() => {});
+      return;
+    }
+    if (t.dataset?.bn) { // 🏬 Filiale umbenannt
+      const sid = this._hoursOpenFor;
+      if (!t.value.trim()) { this._renderSettings(); return; }
+      this._hoursSendBranches(sid, this._branchesCollect(sid));
       return;
     }
     const hbox = t.closest?.(".hoursed[data-hoursed]"); // 🕒 Öffnungszeiten speichern
