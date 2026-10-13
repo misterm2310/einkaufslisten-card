@@ -303,6 +303,51 @@ def _clean_view(prefs: Any) -> dict[str, Any]:
 TODO_SYNC_MAX = 50  # 🔁 so viele To-do-Listen dürfen herübergeholt werden (früher 10)
 
 
+_HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+def _clean_flyer(value: Any) -> str | None:
+    """Prospekt-Link: leer = keiner, sonst nur http(s)-Adresse ohne Leerzeichen, höchstens 500 Zeichen."""
+    url = (value or "").strip() if isinstance(value, str) else ""
+    if not url:
+        return None
+    if len(url) > 500 or re.search(r"\s", url) or not re.match(r"^https?://[^/\s]+", url, re.I):
+        raise ValueError("Bitte eine Adresse, die mit https:// beginnt.")
+    return url
+
+
+def _clean_hours(value: Any) -> list[Any] | None:
+    """Öffnungszeiten prüfen: None (keine Angabe) oder 7 Einträge (Mo..So).
+    Je Tag: None = zu, sonst Liste von Zeitfenstern [[von, bis], ...] (alt: ein einzelnes [von, bis])."""
+    if value is None:
+        return None
+    if not isinstance(value, (list, tuple)) or len(value) != 7:
+        raise ValueError("Öffnungszeiten brauchen 7 Tage (Mo bis So).")
+    out: list[Any] = []
+    for day in value:
+        if not day:
+            out.append(None)
+            continue
+        if not isinstance(day, (list, tuple)):
+            raise ValueError("Uhrzeit bitte als HH:MM.")
+        ranges = [day] if len(day) == 2 and all(isinstance(x, str) for x in day) else list(day)
+        clean: list[list[str]] = []
+        for rng in ranges:
+            if not isinstance(rng, (list, tuple)) or len(rng) != 2 or not all(
+                isinstance(x, str) and _HHMM.match(x) for x in rng
+            ):
+                raise ValueError("Uhrzeit bitte als HH:MM.")
+            if rng[1] <= rng[0]:
+                raise ValueError("Ende muss nach dem Beginn liegen.")
+            clean.append([rng[0], rng[1]])
+        clean.sort()
+        for a, b in zip(clean, clean[1:]):
+            if b[0] < a[1]:
+                raise ValueError("Zeitfenster dürfen sich nicht überschneiden.")
+        out.append(clean or None)
+    return None if all(d is None for d in out) else out
+
+
 class EinkaufslisteManager:
     """Verwaltet alle Daten der Einkaufsliste."""
 
@@ -3753,6 +3798,10 @@ class EinkaufslisteManager:
                 entry["cats"] = [c for c in dict.fromkeys(fields["cats"]) if c in known]
         if "brands" in fields and kind == "stores":  # 🏷️ eigene Eigenmarken („Milsani, Moser Roth“)
             entry["brands"] = [b.strip() for b in re.split(r"[,;]", fields["brands"] or "") if b.strip()][:30]
+        if "flyer" in fields and kind == "stores":  # 🗞️ Prospekt-Link (nur Adresse speichern, es wird nie etwas abgerufen)
+            entry["flyer"] = _clean_flyer(fields["flyer"])
+        if "hours" in fields and kind == "stores":  # 🕒 Öffnungszeiten (7 Tage Mo..So; None = zu; sonst ["08:00","20:00"])
+            entry["hours"] = _clean_hours(fields["hours"])
         self._changed()
         return entry
 

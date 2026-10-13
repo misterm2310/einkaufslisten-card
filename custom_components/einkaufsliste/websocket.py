@@ -400,11 +400,13 @@ def ws_group_add(hass, connection, msg):
         vol.Optional("brands"): OPT_STR,
         vol.Optional("cat_order"): vol.Any(None, [str]),
         vol.Optional("cats"): vol.Any(None, [str]),
+        vol.Optional("hours"): vol.Any(None, list),
+        vol.Optional("flyer"): OPT_STR,
     }
 )
 @callback
 def ws_group_update(hass, connection, msg):
-    fields = _pick(msg, "name", "color", "icon", "zone", "zones", "brands", "cat_order", "cats")
+    fields = _pick(msg, "name", "color", "icon", "zone", "zones", "brands", "cat_order", "cats", "hours", "flyer")
     _run(
         hass, connection, msg, lambda m: m.update_group(msg["kind"], msg["group_id"], **fields)
     )

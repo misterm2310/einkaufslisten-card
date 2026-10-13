@@ -699,6 +699,48 @@ async def test_category_guessing(hass, setup):
     assert m.category_by_id(m.items[0]["category_id"])["name"] == "Backwaren"
 
 
+async def test_store_hours(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    week = [["08:00", "20:00"]] * 6 + [None]
+    await client.send_json({"id": 1, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "hours": week})
+    assert (await client.receive_json())["success"]
+    assert m.store_by_id(aldi)["hours"][0] == [["08:00", "20:00"]] and m.store_by_id(aldi)["hours"][6] is None
+    split = [[["14:00", "18:00"], ["08:00", "12:00"]]] + [None] * 6  # mehrere Zeitfenster, wird sortiert
+    await client.send_json({"id": 2, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "hours": split})
+    assert (await client.receive_json())["success"]
+    assert m.store_by_id(aldi)["hours"][0] == [["08:00", "12:00"], ["14:00", "18:00"]]
+    overlap = [[["08:00", "12:00"], ["11:00", "18:00"]]] + [None] * 6
+    await client.send_json({"id": 3, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "hours": overlap})
+    assert not (await client.receive_json())["success"]
+    bad = [["20:00", "08:00"]] + [None] * 6
+    await client.send_json({"id": 4, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "hours": bad})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 5, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "hours": [None] * 7})
+    r = await client.receive_json()
+    assert r["success"] and m.store_by_id(aldi)["hours"] is None, r
+
+
+async def test_store_flyer(hass, setup, hass_ws_client):
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    n = 0
+    async def upd(url):
+        nonlocal n
+        n += 1
+        await client.send_json({"id": n, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "flyer": url})
+        return (await client.receive_json())["success"]
+    assert await upd("https://www.kaufda.de/Geschaefte/Bofrost")
+    assert m.store_by_id(aldi)["flyer"] == "https://www.kaufda.de/Geschaefte/Bofrost"
+    assert not await upd("javascript:alert(1)")
+    assert not await upd("ftp://x.de/a")
+    assert not await upd("https://a.de/ b")
+    assert m.store_by_id(aldi)["flyer"] == "https://www.kaufda.de/Geschaefte/Bofrost"
+    assert await upd("") and m.store_by_id(aldi)["flyer"] is None
+
+
 async def test_store_zone(hass, setup, hass_ws_client):
     client = await hass_ws_client(hass)
     m = mgr(hass)

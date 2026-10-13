@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.5";
+const EL_VERSION = "2.76.15-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -82,6 +82,10 @@ const EL_GUIDE = [
     de: [
       "Das <b>🏪 Geschäft ganz rechts</b> schaltet den <b>Laden-Modus</b> ein: große Zeilen, nur Abhaken, nur das Wichtigste. Nochmal antippen = wieder normal. Er bleibt auf diesem Gerät gespeichert.",
       "<b>🧮 Rechner:</b> Im Laden-Modus steht oben links neben den 💳 Karten ein Rechner. Antippen, rechnen (+ − × ÷ und %): jede Taste vibriert kurz (wo das Handy es kann). Mit dem ← Pfeil geht es zurück an die Stelle in der Liste, wo du warst.",
+      "<b>🔊 Vorlesen:</b> Unter der Liste steht „🔊 Vorlesen“. Antippen, dann liest dein Handy die offenen Artikel vor (bei einem gewählten Geschäft nur dessen Artikel). Nochmal antippen = Stopp. Praktisch, wenn du die Hände voll hast.",
+      "<b>📳 Vibration:</b> Unter 👁️ Ansicht → Vibration stellst du die Stärke ein: Aus, Schwach, Normal oder Stark. Das gilt nur für dieses Gerät. Manche Handys (z. B. iPhone) vibrieren im Browser nie.",
+      "<b>🕒 Öffnungszeiten:</b> Unter ⚙️ → Geschäfte → Geschäft antippen trägst du für jeden Tag die Zeiten ein. Mit „＋ Zeit“ geht mehr als ein Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr), mit „📋 auf Tage…“ übertragst du die Zeiten auf andere Tage. Hat das Geschäft zu, wird sein Reiter oben grau. Den Namen gedrückt halten zeigt die Zeiten.",
+      "<b>🗞️ Prospekt-Link:</b> Unter ⚙️ → Geschäfte → Geschäft kannst du die Adresse eines Prospekts eintragen (z. B. von Bofrost oder Aldi). Den Namen oben gedrückt halten, dann „🗞️ Prospekt öffnen“. Es wird nur die Adresse gespeichert, nichts selbst abgerufen.",
       "<b>💡 Bildschirm immer an:</b> Im Laden-Modus erscheint ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an. In der HA-App klappt das nur mit der App-Einstellung „Bildschirm anlassen“.",
       "<b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.",
       "Bist du laut Standort im Geschäft, <b>hakt ▥ das gescannte Produkt ab</b> (siehe „Barcodes“).",
@@ -361,6 +365,14 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🗞️ Prospekt-Link pro Geschäft (Namen gedrückt halten → „Prospekt öffnen“)",
+   "New: 🗞️ flyer link per store (press and hold the name → “Open flyer”)"],
+  ["Neu: 🔊 „Vorlesen“ unter der Liste – liest die offenen Artikel vor",
+   "New: 🔊 “Read aloud” below the list – reads out the open items"],
+  ["Neu: 📳 Vibration einstellbar (👁️ Ansicht → Vibration)",
+   "New: 📳 adjustable vibration (👁️ View → Vibration)"],
+  ["Neu: 🕒 Öffnungszeiten pro Geschäft (auch mehrere Zeitfenster am Tag); geschlossene Geschäfte werden oben grau, Namen gedrückt halten zeigt die Zeiten",
+   "New: 🕒 opening hours per store (also several time slots a day); closed stores turn grey at the top, press and hold the name to see the hours"],
   ["Beim Schließen eines Fotos oder einer Seite bleibt die Liste beim Produkt stehen und springt nicht mehr nach oben (auch in der Erledigt-Liste, ohne Gleiten)",
    "When you close a photo or a page, the list stays at the product instead of jumping to the top (also in the done list, without gliding)"],
   ["Im Laden-Modus ist das Angebotszeichen 🏷️ ausgeblendet",
@@ -377,6 +389,14 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🗞️ <b>Prospekt-Link:</b> Pro Geschäft eine Adresse eintragen (⚙️ → Geschäfte). Namen gedrückt halten → „Prospekt öffnen“. Gespeichert wird nur die Adresse.",
+   "🗞️ <b>Flyer link:</b> enter one address per store (⚙️ → Stores). Press and hold the name → “Open flyer”. Only the address is stored."],
+  ["🔊 <b>Liste vorlesen:</b> Unter der Liste „🔊 Vorlesen“ antippen – dein Handy liest die offenen Artikel vor. Nochmal antippen = Stopp.",
+   "🔊 <b>Read the list aloud:</b> tap “🔊 Read aloud” below the list – your phone reads out the open items. Tap again to stop."],
+  ["📳 <b>Vibration einstellbar:</b> Unter 👁️ Ansicht → Vibration: Aus, Schwach, Normal oder Stark (nur für dieses Gerät).",
+   "📳 <b>Adjustable vibration:</b> under 👁️ View → Vibration: Off, Low, Normal or Strong (this device only)."],
+  ["🕒 <b>Öffnungszeiten:</b> In ⚙️ → Geschäfte pro Tag eintragen, auch mehrere Zeitfenster und auf andere Tage übertragen. Hat das Geschäft zu, wird sein Reiter grau. Den Namen gedrückt halten zeigt die Zeiten.",
+   "🕒 <b>Opening hours:</b> enter them per day in ⚙️ → Stores, also several time slots, and copy them to other days. When a store is closed its tab turns grey. Press and hold the name to see the hours."],
   ["🧮 <b>Rechner im Laden-Modus:</b> Oben links neben den 💳 Karten. Große Tasten für + − × ÷ und %, ← bringt dich zurück an die Stelle in der Liste.",
    "🧮 <b>Calculator in store mode:</b> at the top left, next to the 💳 cards. Big keys for + − × ÷ and %, ← takes you back to your place in the list."],
   ["🪟 <b>Fenster als Seiten:</b> PIN-Eingabe, Foto (machen, zuschneiden, ansehen), Barcode eintippen, Scanner, Karte ändern, Teilen und Rückfragen öffnen nicht mehr als Vollbild, sondern als Seite in der Karte mit ← oben links. Zurück führt an die Stelle, wo du warst. Nur der Koch-Modus bleibt Vollbild, dort sind auch die Gar-Zeiten jetzt über die ganze Breite. · 🏷️ <b>Rezept-Gruppen wie Kategorien:</b> erst die Liste, Gruppe antippen = Name, Farbe und Icon ändern. · 💳 <b>Meine Karten</b> im Look der Einstellungen mit Farbstreifen links, ohne die Aufräum-Info unten. · 📖 <b>Anleitung</b> steht auch ganz unten auf der ersten Seite der Einstellungen. · 🗂️ Wenn du die Einstellungen verlässt, sind alle Gruppen und Reiter wieder zu. Die Kategorien klappen nicht mehr von selbst zu. · 🏷️ Der Angebote-Knopf sitzt jetzt ganz rechts in der Zeile, weit weg von der Menge. · 🔢 Menge bei einem Vorschlag per Tipp auf „3x“ entfernt = jetzt 1x statt der alten Menge. Das Menge-Symbol ist wieder die 123. · 👁️ „Meine Ansicht“ schließt sich, wenn du die Liste verlässt.",
@@ -478,6 +498,25 @@ const LOG_VIA = { card: "✍️", scan: "▥", recipe: "🍳", merge: "🔗", cl
 const WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 const pyWd = (d) => (d.getDay() + 6) % 7;
 const DAY = 86400000;
+
+// 🕒 Öffnungszeiten: hours = null (keine Angabe) oder 7 Einträge Mo..So, je null = zu oder ["08:00","20:00"]
+const elMin = (hhmm) => { const m = /^(\d\d):(\d\d)$/.exec(hhmm || ""); return m ? +m[1] * 60 + +m[2] : null; };
+const elRanges = (d) => (!d || !d.length ? null : typeof d[0] === "string" ? [d] : d); // alt: ein [von, bis]
+const elRangesTxt = (d) => { const r = elRanges(d); return r ? r.map((x) => `${x[0]} – ${x[1]}`).join(", ") : "zu"; };
+function elOpenNow(hours, now = new Date()) {
+  if (!Array.isArray(hours) || hours.length !== 7) return null; // null = unbekannt → normal anzeigen
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const wd = pyWd(now);
+  const today = elRanges(hours[wd]) || [];
+  for (const r of today) if (cur >= elMin(r[0]) && cur < elMin(r[1])) return { open: true, until: r[1] };
+  const later = today.find((r) => cur < elMin(r[0]));
+  if (later) return { open: false, next: later[0], today: true };
+  for (let k = 1; k <= 7; k++) { // nächster Öffnungstag
+    const r = elRanges(hours[(wd + k) % 7]);
+    if (r) return { open: false, next: r[0][0], dayIdx: (wd + k) % 7, today: false };
+  }
+  return { open: false };
+}
 
 // 🌍 Englisch als zweite Sprache: Die Karte ist auf Deutsch geschrieben. Ist Home Assistant NICHT auf Deutsch
 // (oder steht in der Karte „language: en“), holt sie sich einmal das Wörterbuch einkaufsliste-en.json
@@ -1547,6 +1586,10 @@ const elInHaApp = (hass) => !!(
 // ⌨️ Zeilen, die sich mit der Tastatur anwählen lassen (Katalog hat seine eigene Steuerung)
 const EL_KN = ".item[data-id], .recipe[data-id], .delrow[data-id]";
 // 🖥️ PC/Laptop mit Maus (kein Touch)
+// 📳 Vibration: Stärke pro Gerät wählbar (Meine Ansicht → Vibration): aus · schwach · normal · stark
+const EL_HAPTIC = { off: 0, low: 0.5, normal: 1, high: 2 };
+const elHapticLevel = () => { try { const v = localStorage.getItem("einkaufsliste_haptic"); return v && v in EL_HAPTIC ? v : "normal"; } catch (_) { return "normal"; } };
+function elVibrate(ms) { try { const f = EL_HAPTIC[elHapticLevel()]; if (f > 0) navigator.vibrate?.(Math.max(5, Math.round(ms * f))); } catch (_) { /* egal */ } }
 const elIsPc = () => !!window.matchMedia?.("(hover: hover) and (pointer: fine)").matches && !(navigator.maxTouchPoints > 0);
 
 // 🖥️ Am PC: Fenster mit großer Fläche – Bild reinziehen, Strg + V oder klicken. Gibt eine Datei, "browse" oder null
@@ -1705,7 +1748,7 @@ async function elScanLive(hint) {
       let hit = null;
       try { hit = await read(video); } catch (_) { /* nächstes Bild */ }
       if (over) return;
-      if (hit?.rawValue) { navigator.vibrate?.(40); const k = elCodeKind(hit.rawValue, "auto", hit.format); finish({ code: k.code, kind: k.kind }); return; }
+      if (hit?.rawValue) { elVibrate(40); const k = elCodeKind(hit.rawValue, "auto", hit.format); finish({ code: k.code, kind: k.kind }); return; }
       timer = setTimeout(tick, 120);
     };
     video.play?.().catch(() => {});
@@ -1774,7 +1817,7 @@ async function elCameraShot() {
     shot.onclick = () => {
       const w = video.videoWidth, h = video.videoHeight;
       if (!w || !h) return;
-      navigator.vibrate?.(20);
+      elVibrate(20);
       const cv = document.createElement("canvas");
       cv.width = w;
       cv.height = h;
@@ -2118,6 +2161,8 @@ ha-card.labels .tool { padding:4px 6px; }
 .tabs::-webkit-scrollbar-thumb { background:var(--divider-color, rgba(127,127,127,.35)); border-radius:4px; }
 @media (hover:none) { .tabs { scrollbar-width:none; } .tabs::-webkit-scrollbar { display:none; } }
 .tab { --c: var(--primary-color,#03a9f4); flex:0 0 auto; border:1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background:transparent; border-radius:999px; padding:5px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.9em; }
+.tab.closed:not(.active) { opacity:.45; filter:grayscale(1); } /* 🕒 Geschäft hat gerade zu */
+.tab.closed.active { filter:grayscale(.8); opacity:.8; }
 .tab .dot { width:9px; height:9px; border-radius:50%; background:var(--c); }
 .tab .n { opacity:.7; font-size:.85em; }
 .tab.active { background:var(--c); border-color:var(--c); color:var(--tc, #fff); }
@@ -2570,6 +2615,25 @@ label.btn { cursor:pointer; }
 .picker button span { font-size:.55em; color:var(--secondary-text-color); max-width:44px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .picker .none { grid-column:1/-1; font-size:.8em; color:var(--secondary-text-color); padding:4px; }
 .sec p { margin:4px 0; font-size:.9em; line-height:1.4; }
+.hourspop { position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.35); }
+.hourspop .hbox { background:var(--card-background-color,#fff); color:var(--primary-text-color); border-radius:16px; padding:16px 18px; min-width:240px; max-width:90vw; box-shadow:0 8px 30px rgba(0,0,0,.35); display:flex; flex-direction:column; gap:6px; }
+.hourspop .hstat { font-weight:600; margin-bottom:4px; }
+.hourspop .hrow { display:flex; justify-content:space-between; gap:20px; padding:2px 0; }
+.hourspop .hrow.today { font-weight:700; }
+.hourspop .btn { align-self:flex-end; margin-top:6px; }
+.hourspop a.flyer { align-self:stretch; text-align:center; text-decoration:none; padding:8px 12px; border:1px solid var(--divider-color,#ccc); border-radius:999px; color:var(--primary-color,#03a9f4); }
+.hoursed { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
+.hoursed .hd { border-top:1px solid var(--divider-color,rgba(127,127,127,.25)); padding-top:6px; display:flex; flex-direction:column; gap:4px; }
+.hoursed .hr { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.hoursed .hr b { width:26px; }
+.hoursed .rng { display:flex; align-items:center; gap:6px; }
+.hoursed .rng .x { padding:2px 8px; }
+.hoursed .chips { display:flex; flex-wrap:wrap; gap:4px; }
+.hoursed .chips .btn { padding:3px 9px; }
+.hoursed label { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+.hoursed input[type=checkbox] { width:auto; flex:0 0 auto; margin:0; }
+.hoursed input[type=time] { width:auto !important; min-width:0; flex:1 1 0; font:inherit; padding:3px 6px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
+.hoursed .hd.zu .rngs { opacity:.35; }
 .hint { color:var(--secondary-text-color); font-size:.8em !important; }
 /* 📋 Bericht von „Alles neu holen“: eigener Kasten, ✖ zum Schließen (erst wenn fertig), lange Berichte scrollen */
 .refrep { position:relative; margin:6px 0; padding:8px 10px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; }
@@ -3450,6 +3514,10 @@ class EinkaufslisteCard extends HTMLElement {
     clearInterval(this._clock);
     this._clock = setInterval(() => {
       if (this._view === "list" && !this._editing && this._data) this._renderList(); // „vor 5 Min“ aktuell halten
+      if (this._data && !this._fixedStore && (this._data.stores || []).some((x) => x.hours)) {
+        const sig = this._data.stores.map((x) => (elOpenNow(x.hours)?.open === false ? "0" : "1")).join("");
+        if (sig !== this._hoursSig) { this._hoursSig = sig; this._renderTabs(); } // 🕒 Geschäft auf-/zugegangen
+      }
       this._updateLockBtn(); // 🔒 nach 10 Minuten verschwindet der Sperr-Knopf von selbst
     }, 60000);
     if (this._hass && !this._unsub && !this._subscribing && Date.now() - (this._subFailAt || 0) > 10000) this._subscribe();
@@ -3628,6 +3696,61 @@ class EinkaufslisteCard extends HTMLElement {
     if (sent && !elQueue.length) this._toast(`✅ Wieder online – ${sent} ${sent === 1 ? "Änderung" : "Änderungen"} nachgeschickt`);
   }
 
+  // 🕒 Öffnungszeiten-Fenster (Geschäftsname lange drücken)
+  _showHours(storeId) {
+    const st = this._store(storeId);
+    if (!st) return;
+    this.shadowRoot.querySelector(".hourspop")?.remove();
+    const info = elOpenNow(st.hours);
+    const today = pyWd(new Date());
+    let status = "";
+    if (!info) status = "";
+    else if (info.open) status = `🟢 Jetzt geöffnet bis ${info.until} Uhr`;
+    else if (info.today) status = `🔴 Geschlossen – öffnet heute um ${info.next} Uhr`;
+    else if (info.next) status = `🔴 Geschlossen – öffnet ${WD_LONG[info.dayIdx]} um ${info.next} Uhr`;
+    else status = "🔴 Geschlossen";
+    const rows = Array.isArray(st.hours)
+      ? st.hours.map((d, i) => `<div class="hrow ${i === today ? "today" : ""}"><span>${WD_LONG[i]}</span><span>${elRangesTxt(d)}</span></div>`).join("")
+      : `<p class="hint">Noch keine Öffnungszeiten eingetragen. Du kannst sie unter ⚙️ Einstellungen → Geschäfte → ${esc(st.name)} eintragen – dann wird der Reiter grau, wenn das Geschäft zu hat.</p>`;
+    const ov = document.createElement("div");
+    ov.className = "hourspop";
+    ov.innerHTML = `<div class="hbox"><b translate="no">🕒 ${esc(st.name)}</b>${status ? `<div class="hstat">${status}</div>` : ""}${rows}${/^https?:\/\//i.test(st.flyer || "") ? `<a class="btn flyer" href="${esc(st.flyer)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🗞️ Prospekt öffnen</a>` : ""}<button type="button" class="btn">OK</button></div>`;
+    const close = () => ov.remove();
+    ov.addEventListener("click", close);
+    this.shadowRoot.appendChild(ov);
+    setTimeout(close, 15000);
+  }
+
+  _hoursRngHtml(a, b) {
+    return `<div class="rng"><input type="time" data-hf="from" value="${a}"><span>–</span><input type="time" data-hf="to" value="${b}"><button type="button" class="btn x" data-act="hours-del" title="Zeitfenster löschen">✕</button></div>`;
+  }
+
+  _hoursEditHtml(e) {
+    const h = Array.isArray(e.hours) ? e.hours : null;
+    const rows = WD_SHORT.map((w, i) => {
+      const r = h ? elRanges(h[i]) : null;
+      const zu = h && !r;
+      return `<div class="hd ${zu ? "zu" : ""}" data-wd="${i}"><div class="hr"><b>${w}</b><label><input type="checkbox" data-hf="zu" ${zu ? "checked" : ""}> zu</label><button type="button" class="btn" data-act="hours-add" title="Noch ein Zeitfenster (z. B. nach der Mittagspause)">＋ Zeit</button><button type="button" class="btn" data-act="hours-cp" title="Diese Zeiten auf andere Tage übertragen">📋 auf Tage…</button></div><div class="rngs">${(r || [["08:00", "20:00"]]).map((x) => this._hoursRngHtml(x[0], x[1])).join("")}</div><div class="chips" hidden>${WD_SHORT.map((w2, k) => (k === i ? "" : `<button type="button" class="btn" data-act="hours-to" data-to="${k}">${w2}</button>`)).join("")}<button type="button" class="btn" data-act="hours-to" data-to="wk">Mo–Fr</button><button type="button" class="btn" data-act="hours-to" data-to="all">Alle</button></div></div>`;
+    }).join("");
+    return `<div class="hoursed" data-kind="stores" data-id="${e.id}" data-hoursed="1"><b>🕒 Öffnungszeiten</b>${rows}<div class="hr"><button type="button" class="btn" data-act="hours-clear">Alle löschen</button></div><p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage.</p></div>`;
+  }
+
+  _hoursCollect(box) {
+    const out = [];
+    for (const d of box.querySelectorAll(".hd[data-wd]")) {
+      if (d.querySelector('[data-hf="zu"]').checked) { out.push(null); continue; }
+      const rs = [...d.querySelectorAll(".rng")].map((r) => [r.querySelector('[data-hf="from"]').value, r.querySelector('[data-hf="to"]').value]).filter((x) => x[0] && x[1]);
+      out.push(rs.length ? rs : null);
+    }
+    return out.every((x) => x === null) ? null : out;
+  }
+
+  _hoursSave(box) {
+    const hours = this._hoursCollect(box);
+    this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: box.dataset.id, hours })
+      .catch(() => { this._toast("🕒 Uhrzeiten nicht gespeichert – Ende muss nach dem Beginn liegen, Zeitfenster dürfen sich nicht überschneiden"); });
+  }
+
   _toast(message) {
     this.dispatchEvent(new CustomEvent("hass-notification", { detail: { message: elT(message) }, bubbles: true, composed: true }));
   }
@@ -3719,12 +3842,18 @@ class EinkaufslisteCard extends HTMLElement {
       const text = b && !b.closest(".item") ? b.getAttribute("title") : "";
       clearTimeout(lpTimer);
       lpFired = false;
+      const tb = e.target.closest?.('.tab[data-act="tab"]'); // 🕒 Geschäftsname gedrückt halten = Öffnungszeiten
+      if (tb && this._store(tb.dataset.tab)) {
+        const sid = tb.dataset.tab;
+        lpTimer = setTimeout(() => { lpFired = true; elVibrate(20); this._showHours(sid); }, 550);
+        return;
+      }
       if (!text) return;
-      lpTimer = setTimeout(() => { lpFired = true; navigator.vibrate?.(20); this._toast(text); }, 550);
+      lpTimer = setTimeout(() => { lpFired = true; elVibrate(20); this._toast(text); }, 550);
     }, true);
     for (const ev of ["pointerup", "pointercancel", "pointerleave"]) root.addEventListener(ev, () => clearTimeout(lpTimer), true);
     root.addEventListener("click", (e) => { if (lpFired) { lpFired = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true); // der Druck war nur zum Nachlesen
-    root.addEventListener("contextmenu", (e) => { if (e.target.closest?.(lpSel)) e.preventDefault(); }, true);
+    root.addEventListener("contextmenu", (e) => { if (e.target.closest?.(lpSel) || e.target.closest?.('.tab[data-act="tab"]')) e.preventDefault(); }, true);
     this.$("addForm").addEventListener("submit", (e) => this._onAdd(e));
     this.$("newPhotoFile").addEventListener("change", (e) => this._onNewPhotoFile(e));
     this.$("inCat").addEventListener("change", () => { this._catManual = !!this.$("inCat").value; this._updateTools(); });
@@ -3782,7 +3911,7 @@ class EinkaufslisteCard extends HTMLElement {
     const open = (itemEl) => {
       const id = itemEl?.dataset.id;
       if (!id) return;
-      navigator.vibrate?.(30);
+      elVibrate(30);
       this._closeMyView(); // Artikelmenü auf: „Meine Ansicht“ geht zu
       this._menuId = this._menuId === id ? null : id;
       this._moving = null;
@@ -4298,7 +4427,8 @@ class EinkaufslisteCard extends HTMLElement {
     const noneFn = (i) => !i.store_id;
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
     for (const s of d.stores) {
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""}" style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || !i.store_id)}</span>${bubble((i) => i.store_id === s.id || !i.store_id, active === s.id)}</button>`);
+      const closed = elOpenNow(s.hours)?.open === false;
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || !i.store_id)}</span>${bubble((i) => i.store_id === s.id || !i.store_id, active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
@@ -5124,7 +5254,7 @@ class EinkaufslisteCard extends HTMLElement {
   _toggle(id, undo = false) {
     if (!id || this._pending.has(id)) return;
     const it = this._data?.items.find((i) => i.id === id);
-    if (it && !it.checked) { try { navigator.vibrate?.(35); } catch (_) { /* egal */ } }
+    if (it && !it.checked) { try { elVibrate(35); } catch (_) { /* egal */ } }
     // ↩️ Versehentlich abgehakt? 3 Sekunden lang kann man es zurücknehmen (nur bei dem, der selbst abgehakt hat)
     if (it && !it.checked) this._undoShow(`„${it.name}“ abgehakt`, () => this._undoCheck(id)); else this._undoHide();
     this._pending.add(id);
@@ -5205,6 +5335,29 @@ class EinkaufslisteCard extends HTMLElement {
     }
   }
 
+  // 🔊 Liste vorlesen (Sprachausgabe des Geräts): liest die offenen Artikel des gerade gezeigten Reiters vor; nochmal antippen = Stopp
+  toggleSpeak() {
+    const ss = window.speechSynthesis;
+    if (!ss || typeof SpeechSynthesisUtterance === "undefined") { this._toast("🔊 Dieses Gerät kann nicht vorlesen"); return false; }
+    if (this._speaking) { this._speaking = false; ss.cancel(); this._renderFooter(); return false; }
+    const open = (this._data?.items || []).filter((i) => !i.checked && this._matchesTab(i));
+    if (!open.length) { this._toast("🔊 Nichts zum Vorlesen – die Liste ist leer"); return false; }
+    const de = EL_LANG === "de";
+    const st = this._fixedStore || (this._activeTab !== "all" && this._activeTab !== "none" ? this._activeTab : null);
+    const stName = st ? this._store(st)?.name : "";
+    const parts = open.map((i) => `${i.quantity ? i.quantity + " " : ""}${i.name}`);
+    const text = (de ? `Auf der Liste${stName ? " für " + stName : ""} stehen ${open.length} ${open.length === 1 ? "Artikel" : "Artikel"}: ` : `On the list${stName ? " for " + stName : ""} there ${open.length === 1 ? "is 1 item" : "are " + open.length + " items"}: `) + parts.join(", ") + ".";
+    ss.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = de ? "de-DE" : "en-US";
+    const end = () => { if (this._speaking) { this._speaking = false; this._renderFooter(); } window.dispatchEvent(new CustomEvent("einkaufsliste-speak-end")); };
+    u.onend = end; u.onerror = end;
+    this._speaking = true;
+    ss.speak(u);
+    this._renderFooter();
+    return true;
+  }
+
   _renderFooter() {
     const f = this.$("footer");
     const s = this._data?.settings;
@@ -5223,7 +5376,7 @@ class EinkaufslisteCard extends HTMLElement {
     const fb = this.$("footBtns");
     if (fb) {
       fb.hidden = !!window.__elOfflineApp || !!this._page; // auf Seiten (Gar-Zeiten, Fotos, Karten …) keine Knöpfe unten
-      if (!fb.hidden) fb.innerHTML = `<button type="button" class="${this._myViewOpen ? "on" : ""}" data-act="myview" title="👁️ Meine Ansicht – was ich beim Artikel sehe (nur für mich, ohne PIN)">👁️ Ansicht</button><button type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte">📖 Anleitung</button>`;
+      if (!fb.hidden) fb.innerHTML = `<button type="button" class="${this._myViewOpen ? "on" : ""}" data-act="myview" title="👁️ Meine Ansicht – was ich beim Artikel sehe (nur für mich, ohne PIN)">👁️ Ansicht</button><button type="button" class="${this._speaking ? "on" : ""}" data-act="speak" title="Die offenen Artikel vorlesen (nochmal antippen = Stopp)">${this._speaking ? "⏹ Stopp" : "🔊 Vorlesen"}</button><button type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte">📖 Anleitung</button>`;
     }
   }
 
@@ -5347,6 +5500,9 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="picker" hidden></div>
         ${this._catSetHtml(e)}
         ${this._catOrderHtml(e)}
+        ${this._hoursEditHtml(e)}
+        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:newspaper-variant-outline"></ha-icon><input class="grow" type="url" inputmode="url" data-field="flyer" value="${esc(e.flyer || "")}" placeholder="🗞️ Prospekt-Link (https://…)" title="Adresse des Prospekts. Wird nur beim Antippen geöffnet."></div>
+        <p class="hint">🗞️ Prospekt-Link: Nur die Adresse wird gespeichert. Die Karte ruft nie selbst etwas dort ab; erst wenn du im Fenster (Namen gedrückt halten) „Prospekt öffnen“ antippst, öffnet sich die Seite – ohne dass sie erfährt, woher du kommst.</p>
         ${zones.length ? "" : `<p class="hint">📍 Noch keine Zonen in Home Assistant angelegt (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen).</p>`}
         <p class="hint">🖼️ Icon: Namen tippen (z. B. <b>baguette</b>, <b>pill</b>, <b>hammer</b>) und aus der Vorschau antippen. Leer lassen = Icon der Zone, sonst 🛒.</p>
         <p class="hint">📍 Zonen: Bist du in einer davon, springt die Liste auf dieses Geschäft – mehrere gehen, z. B. für mehrere Filialen. 🏷️ Eigenmarken: Beim Scannen landen diese Marken gleich hier.</p>`;
@@ -5751,6 +5907,9 @@ ${(() => {
         <div class="xaccs">
         ${mine ? this._acc(g, "labels", "mdi:format-text", "#546e7a", "Beschriftungen", labOn ? "an – Text unter den Icons" : "aus – Text unter den Icons", `<button class="lrow viewrow" data-act="view-labels" aria-pressed="${labOn}">${ck(labOn)}<span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "anim", "mdi:check", "#43a047", "Abhaken", animOn ? "Animation an" : "Animation aus", `<button class="lrow viewrow" data-act="view-anim" aria-pressed="${animOn}">${ck(animOn)}<span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`) : ""}
+        ${mine ? this._acc(g, "haptic", "mdi:vibrate", "#8e24aa", "Vibration", { off: "Aus", low: "Schwach", normal: "Normal", high: "Stark" }[elHapticLevel()], `
+        <p class="hint">Nur für dieses Gerät. Beim Abhaken, im Rechner und beim langen Drücken. Manche Handys (z. B. iPhone) vibrieren im Browser nie.</p>
+        <div class="fontrow">${[["off", "Aus"], ["low", "Schwach"], ["normal", "Normal"], ["high", "Stark"]].map(([k, t]) => `<button class="btn ${elHapticLevel() === k ? "primary" : ""}" data-act="view-haptic" data-level="${k}" aria-pressed="${elHapticLevel() === k}">${t}</button>`).join("")}</div>`) : ""}
         ${this._acc(g, "font", "mdi:format-size", "#1e88e5", "Schriftgröße", { s: "Kleiner", m: "Standard", l: "Größer" }[cur.font || "m"], `
         <div class="fontrow">${[["s", "Kleiner"], ["m", "Standard"], ["l", "Größer"]].map(([f, t]) => `<button class="btn ${(cur.font || "m") === f ? "primary" : ""}" data-act="view-font" data-scope="${scope}" data-font="${f}" aria-pressed="${(cur.font || "m") === f}">${t}</button>`).join("")}</div>`)}
         ${this._acc(g, "top", "mdi:view-dashboard-outline", "#8e24aa", "Oben & beim Eintragen", cnt(top), `<p class="hint">Was du nicht brauchst, blendest du aus.</p>${top.map(row).join("")}`)}
@@ -9315,7 +9474,7 @@ ${(() => {
         }
         draw();
       };
-      body.querySelector(".ckeys").addEventListener("click", (e) => { const b = e.target.closest("button[data-k]"); if (b) { try { navigator.vibrate?.(12); } catch (_) { /* egal */ } press(b.dataset.k); } });
+      body.querySelector(".ckeys").addEventListener("click", (e) => { const b = e.target.closest("button[data-k]"); if (b) { try { elVibrate(12); } catch (_) { /* egal */ } press(b.dataset.k); } });
       draw();
     } });
   }
@@ -9610,7 +9769,7 @@ ${(() => {
         last = { code, at: Date.now() };
         const note = await onCode(code);
         if (note) ext.fireMessage({ type: "bar_code/notify", payload: { message: note } });
-        navigator.vibrate?.(60);
+        elVibrate(60);
       } else if (msg.command === "bar_code/aborted") {
         done();
         close();
@@ -10157,6 +10316,45 @@ ${(() => {
         prefs.font = el.dataset.font;
         this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
           .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
+        break;
+      }
+      case "hours-add": case "hours-del": case "hours-cp": case "hours-to": case "hours-clear": {
+        const box = el.closest(".hoursed");
+        const d = el.closest(".hd");
+        if (act === "hours-add") {
+          const last = [...d.querySelectorAll(".rng")].pop();
+          const lt = last?.querySelector('[data-hf="to"]').value || "12:00";
+          d.querySelector(".rngs").insertAdjacentHTML("beforeend", this._hoursRngHtml(lt, (() => { const m = Math.min(elMin(lt) + 120, 1439); return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; })()));
+          d.querySelector('[data-hf="zu"]').checked = false; d.classList.remove("zu");
+          this._hoursSave(box);
+        } else if (act === "hours-del") {
+          const rngs = d.querySelector(".rngs");
+          if (rngs.children.length > 1) el.closest(".rng").remove();
+          else d.querySelector('[data-hf="zu"]').checked = true, d.classList.add("zu");
+          this._hoursSave(box);
+        } else if (act === "hours-cp") {
+          d.querySelector(".chips").hidden = !d.querySelector(".chips").hidden;
+        } else if (act === "hours-to") {
+          const to = el.dataset.to;
+          const days = [...box.querySelectorAll(".hd[data-wd]")];
+          const targets = to === "all" ? days : to === "wk" ? days.slice(0, 5) : [days[+to]];
+          const zu = d.querySelector('[data-hf="zu"]').checked;
+          const rs = [...d.querySelectorAll(".rng")].map((r) => this._hoursRngHtml(r.querySelector('[data-hf="from"]').value, r.querySelector('[data-hf="to"]').value)).join("");
+          for (const t2 of targets) {
+            if (t2 === d) continue;
+            t2.querySelector(".rngs").innerHTML = rs;
+            t2.querySelector('[data-hf="zu"]').checked = zu; t2.classList.toggle("zu", zu);
+          }
+          d.querySelector(".chips").hidden = true;
+          this._hoursSave(box);
+          this._toast("🕒 Übertragen");
+        } else this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: box.dataset.id, hours: null }).then(() => this._renderSettings()).catch(() => {});
+        break;
+      }
+      case "view-haptic": { // 📳 Vibrationsstärke (nur dieses Gerät)
+        try { localStorage.setItem("einkaufsliste_haptic", el.dataset.level in EL_HAPTIC ? el.dataset.level : "normal"); } catch (_) { /* egal */ }
+        elVibrate(40); // Kostprobe
+        this._renderMyView();
         break;
       }
       case "view-reset":
@@ -11032,6 +11230,9 @@ ${(() => {
           this._view = "settings"; this._setSec = "stores"; this._renderAll();
         }
         break;
+      case "speak": // 🔊 Liste vorlesen
+        this.toggleSpeak();
+        break;
       case "guide":
         this._showGuide();
         break;
@@ -11527,6 +11728,14 @@ ${(() => {
     if (t.id === "logDays") {
       this._ws({ type: "einkaufsliste/log/settings", days: Number(t.value) })
         .then(() => { this._toast(`📋 Verlauf wird ${t.value} Tage aufgehoben`); this._loadLog(); }).catch(() => {});
+      return;
+    }
+    const hbox = t.closest?.(".hoursed[data-hoursed]"); // 🕒 Öffnungszeiten speichern
+    if (hbox && t.dataset.hf) {
+      const d = t.closest(".hd");
+      if (t.dataset.hf === "zu") d.classList.toggle("zu", t.checked);
+      else { const cb = d.querySelector('[data-hf="zu"]'); if (cb.checked) { cb.checked = false; d.classList.remove("zu"); } }
+      this._hoursSave(hbox);
       return;
     }
     const srow = t.closest(".srow[data-kind]");

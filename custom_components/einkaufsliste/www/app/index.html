@@ -457,7 +457,7 @@ async function scanOpen(p) {
     if (hit?.rawValue && hit.rawValue === me.last.code && Date.now() - me.last.at < 2500) me.last.at = Date.now();
     else if (hit?.rawValue) {
       me.last = { code: hit.rawValue, at: Date.now() };
-      navigator.vibrate?.(40);
+      { try { const f = { off: 0, low: 0.5, normal: 1, high: 2 }[localStorage.getItem("einkaufsliste_haptic")] ?? 1; if (f > 0) navigator.vibrate?.(Math.round(40 * f)); } catch (_) { /* egal */ } } // 📳 Stärke wie in Meine Ansicht → Vibration
       const shade = el.querySelector(".shade");
       shade.classList.add("hit"); setTimeout(() => shade.classList.remove("hit"), 600);
       toCard("bar_code/scan_result", hit);
@@ -584,17 +584,20 @@ function update() {
     // 🚪 Abmelden ganz unten – damit man beim Abhaken nicht aus Versehen draufkommt
     const foot = document.createElement("div");
     foot.className = "foot";
-    foot.innerHTML = `<button id="viewBtn" title="${T("👁️ Meine Ansicht – was ich beim Artikel sehe", "👁️ My view – what I see on items")}">${T("👁️ Ansicht", "👁️ View")}</button><button id="guideBtn">${T("📖 Anleitung", "📖 Guide")}</button><button id="logoutBtn">${T("Abmelden", "Log out")}</button>`;
+    foot.innerHTML = `<button id="viewBtn" title="${T("👁️ Meine Ansicht – was ich beim Artikel sehe", "👁️ My view – what I see on items")}">${T("👁️ Ansicht", "👁️ View")}</button><button id="speakBtn" title="${T("Die offenen Artikel vorlesen (nochmal antippen = Stopp)", "Read the open items aloud (tap again = stop)")}">${T("🔊 Vorlesen", "🔊 Read aloud")}</button><button id="guideBtn">${T("📖 Anleitung", "📖 Guide")}</button><button id="logoutBtn">${T("Abmelden", "Log out")}</button>`;
     wrap.append(foot);
     // 🚪 Abmelden nur unten in der Einkaufsliste und auf der ersten Seite der Einstellungen
     const showFoot = () => {
       foot.hidden = !!card._page || !(card._view === "list" || (card._view === "settings" && !card._setSec)); // auf Seiten (Fotos, Karten, Gar-Zeiten …) keine Knöpfe unten
       document.getElementById("viewBtn").hidden = card._view !== "list"; // 👁️ Ansicht nur bei der Liste
       document.getElementById("viewBtn").classList.toggle("on", !!card._myViewOpen && card._view === "list");
+      document.getElementById("speakBtn").hidden = card._view !== "list"; // 🔊 Vorlesen nur bei der Liste
     };
     window.addEventListener("einkaufsliste-nav", () => setTimeout(showFoot, 0));
     showFoot();
     document.getElementById("guideBtn").addEventListener("click", () => card._showGuide?.());
+    document.getElementById("speakBtn").addEventListener("click", (e) => { const on = !!card.toggleSpeak?.(); e.currentTarget.classList.toggle("on", on); e.currentTarget.textContent = on ? T("⏹ Stopp", "⏹ Stop") : T("🔊 Vorlesen", "🔊 Read aloud"); });
+    window.addEventListener("einkaufsliste-speak-end", () => { const b = document.getElementById("speakBtn"); if (b) { b.classList.remove("on"); b.textContent = T("🔊 Vorlesen", "🔊 Read aloud"); } });
     document.getElementById("viewBtn").addEventListener("click", (e) => e.currentTarget.classList.toggle("on", !!card.toggleMyView?.()));
     document.getElementById("logoutBtn").addEventListener("click", () => {
       if (confirm(T("Abmelden? Noch nicht gesendete Änderungen gehen verloren.", "Log out? Changes not sent yet will be lost."))) logout(false);
