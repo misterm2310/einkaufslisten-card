@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.12";
+const EL_VERSION = "2.76.15-beta.13";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -365,6 +365,8 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🕒 Im Reiter steht eine Uhr in der Geschäftsfarbe statt des Punkts, wenn für das Geschäft Uhrzeiten hinterlegt sind",
+   "New: 🕒 the tab shows a clock in the store colour instead of the dot when opening hours are set for the store"],
   ["Öffnungszeiten-Editor: Knöpfe „Filiale“ und „OpenStreetMap“ oben, Zeiten einer Filiale per Uhr-Icon, Sonntag von Anfang an „zu“, Beispieltext statt Vorgabe, Überschrift beim Prospekt-Link",
    "Opening-hours editor: “Branch” and “OpenStreetMap” buttons at the top, a branch's times via clock icon, Sunday closed from the start, example text instead of defaults, heading for the flyer link"],
   ["Fix: 🌐 OpenStreetMap-Suche leichter und mit Ersatz-Servern, wenn der Hauptserver überlastet ist (Fehler 504)",
@@ -585,6 +587,8 @@ function elStoreClosed(st, now = new Date()) {
   const r = elStoreInfos(st, now);
   return r.branches ? r.branches.every((x) => x.info?.open === false) : r.info?.open === false;
 }
+// 🕒 Gibt es echte Uhrzeiten (beim Geschäft oder bei einer Filiale)? Dann steht im Reiter eine Uhr statt des Punkts
+function elHasTimes(st) { return Array.isArray(st?.hours) || (Array.isArray(st?.branches) && st.branches.some((b) => Array.isArray(b.hours))); }
 function elHasHoursInfo(st) { return !!(st?.hours || st?.holiday_state || (st?.branches || []).length); }
 const elStatusTxt = (info) => {
   if (!info) return "";
@@ -2241,6 +2245,8 @@ ha-card.labels .tool { padding:4px 6px; }
 .tab { --c: var(--primary-color,#03a9f4); flex:0 0 auto; border:1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background:transparent; border-radius:999px; padding:5px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.9em; }
 .tab.closed:not(.active) { opacity:.45; filter:grayscale(1); } /* 🕒 Geschäft hat gerade zu */
 .tab.closed.active { filter:grayscale(.8); opacity:.8; }
+.tab .tclock { --mdc-icon-size:17px; color:var(--c); flex:0 0 auto; display:inline-flex; }
+.tab.active .tclock { color:var(--tc, #fff); }
 .tab .dot { width:9px; height:9px; border-radius:50%; background:var(--c); }
 .tab .n { opacity:.7; font-size:.85em; }
 .tab.active { background:var(--c); border-color:var(--c); color:var(--tc, #fff); }
@@ -4577,7 +4583,7 @@ class EinkaufslisteCard extends HTMLElement {
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
     for (const s of d.stores) {
       const closed = elStoreClosed(s);
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}"><span class="dot"></span>${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || !i.store_id)}</span>${bubble((i) => i.store_id === s.id || !i.store_id, active === s.id)}</button>`);
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || !i.store_id)}</span>${bubble((i) => i.store_id === s.id || !i.store_id, active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
