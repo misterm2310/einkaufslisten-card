@@ -2094,7 +2094,7 @@
 "Neu: 🌐 Öffnungszeiten aus OpenStreetMap holen (Knopf im Öffnungszeiten-Editor, nur auf Knopfdruck)": "New: 🌐 fetch opening hours from OpenStreetMap (button in the opening-hours editor, only on tap)",
 "🌐 Zeiten aus OpenStreetMap": "🌐 Times from OpenStreetMap",
 "Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)": "Looks the store up on OpenStreetMap and takes over the times (only on tap)",
-"🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und deinen ungefähren Standort an overpass-api.de. Name des Geschäfts:": "🌐 Search OpenStreetMap? For this Home Assistant sends the name and your approximate location to overpass-api.de. Name of the store:",
+"🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und deinen ungefähren Standort an overpass-api.de (ist der überlastet, an einen Ersatz-Server). Name des Geschäfts:": "🌐 Search OpenStreetMap? For this Home Assistant sends the name and your approximate location to overpass-api.de (or to a backup server if that one is overloaded). Name of the store:",
 "z. B. K&K": "e.g. K&K",
 "🌐 Suche läuft …": "🌐 Searching …",
 "🌐 Gefunden bei OpenStreetMap": "🌐 Found on OpenStreetMap",
@@ -2127,5 +2127,6 @@
 "Sachsen": "Saxony",
 "Sachsen-Anhalt": "Saxony-Anhalt",
 "Schleswig-Holstein": "Schleswig-Holstein",
-"Thüringen": "Thuringia"
+"Thüringen": "Thuringia",
+"Fix: 🌐 OpenStreetMap-Suche leichter und mit Ersatz-Servern, wenn der Hauptserver überlastet ist (Fehler 504)": "Fix: 🌐 OpenStreetMap search is lighter and uses backup servers when the main server is overloaded (error 504)"
 }

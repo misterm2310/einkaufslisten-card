@@ -61,3 +61,23 @@ async def test_search_privacy_and_short_name(hass):
         await async_search_hours(hass, MagicMock(privacy=True), "K&K")
     with pytest.raises(ValueError):
         await async_search_hours(hass, MagicMock(privacy=False), "K")
+
+
+async def test_search_falls_back_to_next_server(hass):
+    bad = MagicMock(status=504)
+    good = MagicMock(status=200)
+    good.json = AsyncMock(return_value={"elements": [{"lat": 52.1, "lon": 7.4, "tags": {"name": "K&K", "opening_hours": "Mo-Sa 08:00-20:00"}}]})
+    session = MagicMock()
+    session.post = AsyncMock(side_effect=[bad, good])
+    with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session):
+        res = await async_search_hours(hass, MagicMock(privacy=False), "K&K")
+    assert len(res) == 1 and session.post.call_count == 2
+
+
+async def test_search_all_servers_down(hass):
+    bad = MagicMock(status=504)
+    session = MagicMock()
+    session.post = AsyncMock(return_value=bad)
+    with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session):
+        with pytest.raises(ValueError, match="überlastet"):
+            await async_search_hours(hass, MagicMock(privacy=False), "K&K")

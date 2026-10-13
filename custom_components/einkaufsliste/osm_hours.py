@@ -20,7 +20,12 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .barcode import USER_AGENT, _check_privacy
 
 _LOGGER = logging.getLogger(__name__)
-OVERPASS = "https://overpass-api.de/api/interpreter"
+# Der Hauptserver ist oft überlastet (Fehler 504): dann der Reihe nach die Ersatz-Server fragen
+OVERPASS_SERVERS = (
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+)
 _DAYS = {"Mo": 0, "Tu": 1, "We": 2, "Th": 3, "Fr": 4, "Sa": 5, "Su": 6}
 _TIME = re.compile(r"^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$")
 
@@ -130,7 +135,7 @@ def _address(tags: dict[str, Any]) -> str:
 
 
 async def async_search_hours(
-    hass: HomeAssistant, manager: Any, name: str, zone: str | None = None, radius_km: int = 15
+    hass: HomeAssistant, manager: Any, name: str, zone: str | None = None, radius_km: int = 10
 ) -> list[dict[str, Any]]:
     """Geschäfte mit diesem Namen in der Nähe suchen (Mitte: Zone des Geschäfts, sonst Zuhause)."""
     _check_privacy(manager)
@@ -145,20 +150,31 @@ async def async_search_hours(
         except (AttributeError, KeyError, TypeError, ValueError):
             pass
     radius = max(1, min(int(radius_km), 30)) * 1000
+    rx = _regex_escape(name)
+    around = f"(around:{radius},{lat:.5f},{lon:.5f})"
+    # leichte Abfrage: erst nach Schlüssel „shop“/„amenity“ filtern, dann nach dem Namen
     query = (
-        f'[out:json][timeout:20];nwr[~"^(shop|amenity)$"~"."]["name"~"{_regex_escape(name)}",i]'
-        f"(around:{radius},{lat:.5f},{lon:.5f});out center tags 40;"
+        f'[out:json][timeout:15];(nwr["shop"]["name"~"{rx}",i]{around};'
+        f'nwr["amenity"]["name"~"{rx}",i]{around};);out center tags 40;'
     )
     session = async_get_clientsession(hass)
-    try:
-        async with asyncio.timeout(25):
-            resp = await session.post(OVERPASS, data={"data": query}, headers={"User-Agent": USER_AGENT})
-            if resp.status != 200:
-                raise ValueError("OpenStreetMap antwortet gerade nicht (Fehler %s). Bitte später nochmal." % resp.status)
-            data = await resp.json(content_type=None)
-    except (TimeoutError, aiohttp.ClientError) as err:
-        _LOGGER.debug("OpenStreetMap nicht erreichbar: %s", err)
-        raise ValueError("OpenStreetMap ist gerade nicht erreichbar.") from err
+    data: Any = None
+    last = "keine Antwort"
+    for url in OVERPASS_SERVERS:
+        try:
+            async with asyncio.timeout(20):
+                resp = await session.post(url, data={"data": query}, headers={"User-Agent": USER_AGENT})
+                if resp.status != 200:
+                    last = f"Fehler {resp.status}"
+                    _LOGGER.debug("OpenStreetMap-Server %s antwortet mit %s", url, resp.status)
+                    continue
+                data = await resp.json(content_type=None)
+                break
+        except (TimeoutError, aiohttp.ClientError, ValueError) as err:
+            last = "nicht erreichbar"
+            _LOGGER.debug("OpenStreetMap-Server %s nicht erreichbar: %s", url, err)
+    if data is None:
+        raise ValueError(f"OpenStreetMap ist gerade überlastet oder nicht erreichbar ({last}). Bitte in ein paar Minuten nochmal versuchen.")
     out: list[dict[str, Any]] = []
     for el in (data.get("elements") if isinstance(data, dict) else None) or []:
         tags = el.get("tags") if isinstance(el, dict) else None

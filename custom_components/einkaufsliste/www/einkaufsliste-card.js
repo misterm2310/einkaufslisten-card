@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.10";
+const EL_VERSION = "2.76.15-beta.11";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -365,6 +365,8 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Fix: 🌐 OpenStreetMap-Suche leichter und mit Ersatz-Servern, wenn der Hauptserver überlastet ist (Fehler 504)",
+   "Fix: 🌐 OpenStreetMap search is lighter and uses backup servers when the main server is overloaded (error 504)"],
   ["Neu: 🌐 Öffnungszeiten aus OpenStreetMap holen (Knopf im Öffnungszeiten-Editor, nur auf Knopfdruck)",
    "New: 🌐 fetch opening hours from OpenStreetMap (button in the opening-hours editor, only on tap)"],
   ["Neu: 🏬 Filialen lassen sich mit ▲ ▼ sortieren",
@@ -10513,7 +10515,7 @@ ${(() => {
       case "hours-osm": {
         const sid = el.dataset.id;
         const st = this._store(sid);
-        askText("🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und deinen ungefähren Standort an overpass-api.de. Name des Geschäfts:", "z. B. K&K", st?.name || "").then(async (name) => {
+        askText("🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und deinen ungefähren Standort an overpass-api.de (ist der überlastet, an einen Ersatz-Server). Name des Geschäfts:", "z. B. K&K", st?.name || "").then(async (name) => {
           if (!name) return;
           this._toast("🌐 Suche läuft …");
           try {
