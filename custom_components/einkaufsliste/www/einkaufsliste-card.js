@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.1";
+const EL_VERSION = "2.76.16-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,12 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🔢 Beim Eintragen zeigt der Mengen-Knopf die Zahl in Blau statt „123“, sobald eine Menge gewählt ist",
+   "New: 🔢 when adding, the quantity button shows the number in blue instead of “123” as soon as a quantity is chosen"],
+  ["Neu: 🖼️ „Hier gibt es Fotos“ zeigt jetzt ein Bild-Symbol (bei mehreren Fotos gestapelte Bilder) statt der Kamera – überall; die Kamera bleibt fürs Aufnehmen",
+   "New: 🖼️ “there are photos” now shows a picture icon (stacked pictures for several photos) instead of the camera – everywhere; the camera stays for taking photos"],
+  ["Neu: 🛒 Im Laden-Modus steht das Foto-Symbol rechts, wo sonst das Angebotszeichen war",
+   "New: 🛒 in store mode the photo icon is on the right, where the offer sign used to be"],
   ["Neu: 🍐 Beim Tippen steht der genau getippte Name zuerst („Birne“ vor „Birnen“)",
    "New: 🍐 while typing, the name exactly as typed comes first (“Pear” before “Pears”)"],
   ["Neu: 🛒 Im Laden-Modus steht unten nur noch „🔊 Vorlesen“ – ohne „Nächstes Aufräumen“ und ohne die anderen Knöpfe (auch in der Offline-App)",
@@ -2267,6 +2273,7 @@ input.swchk:focus-visible { outline:2px solid var(--primary-color,#03a9f4); outl
 #btnScan.instore, .tool.instore { color:var(--success-color,#43a047); background:color-mix(in srgb, var(--success-color,#43a047) 14%, transparent); }
 #btnScan.instore::after, .tool.instore::after { content:"✓"; position:absolute; right:3px; bottom:2px; font-size:10px; font-weight:700; line-height:1; }
 .item.unknown .name { color:var(--warning-color,#ff9800); animation: pulse 1.6s infinite; }
+.tool .tval.qn { font-size:1.15em; margin-left:0; min-width:22px; justify-content:center; text-align:center; }
 .tool .tval { font-size:.8em; font-weight:600; margin-left:3px; line-height:1; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chipbox { display:flex; flex-direction:column; gap:6px; }
 form.add .sugg { grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:6px; margin-top:-2px; }
@@ -2603,6 +2610,7 @@ ha-card.compact .group { margin-top:4px; }
 .item:focus, .recipe:focus, .delrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
+.item .acts .shopphoto { color:var(--primary-color,#03a9f4); } .item .acts .shopphoto ha-icon { --mdc-icon-size:22px; display:flex; } /* 📷 so groß wie das Angebotszeichen */
 .item .acts .offtag .oi { font-size:calc(var(--mdc-icon-size, 24px) * .6); width:var(--mdc-icon-size, 24px); height:var(--mdc-icon-size, 24px); display:flex; align-items:center; justify-content:center; line-height:1; } /* 🏷️ bunt, aber klein und dezent */
 .broomred ha-icon { --mdc-icon-size:15px; color:#e53935; vertical-align:-0.2em; }
 .offgone { opacity:.75; }
@@ -4886,6 +4894,9 @@ class EinkaufslisteCard extends HTMLElement {
       offBtn = `<button class="iconbtn offtag" data-act="offers-show" data-id="${item.id}" title="${alt ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}"><span class="oi">${alt ? "🔀" : "🏷️"}</span></button>`;
     }
     else if (!item.checked && off?.expired && Date.now() - new Date(off.expired) < DAY) meta.unshift(`<span class="offgone" title="Das Angebot ist abgelaufen">⌛ Angebot vorbei</span>`);
+    if (this._shopMode && !offBtn && v.photo && this._hasPhoto(this._pk(item.name, item.note))) { // 📷 Laden-Modus: Foto-Symbol steht dort, wo sonst das Angebotszeichen war (gleiche Größe)
+      offBtn = `<button class="iconbtn offtag shopphoto" data-act="photo-view" data-name="${esc(this._pk(item.name, item.note))}" title="Foto ansehen"><ha-icon icon="${this._photoIcon(this._pk(item.name, item.note))}"></ha-icon></button>`;
+    }
     // ✍️ Wer & wann: „✍️ Anna, Mo.“ (heute: „vor 5 Min“)
     const when = c.show_dates && v.added_at && !item.checked && !this._shopMode && item.added_at ? fmtWhen(item.added_at) : "";
     if (c.show_added_by && v.added_by && item.added_by) meta.push(`<span title="Eingetragen von"><span translate="no">✍️ ${esc(this._who(item.added_by))}</span>${when ? `, <span>${when}</span>` : ""}</span>`);
@@ -4913,7 +4924,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""} ${this._knMarked === item.id ? "marked" : ""}" tabindex="0" data-id="${item.id}" style="--cc:${esc((v.cat_color && cat?.color) || "transparent")}${recipe && this._rgroup(recipe.group)?.color ? `;--rc:${esc(this._rgroup(recipe.group).color)}` : ""}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
-          <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}${qty}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${who}${v.fav ? this._favStar(pk) : ""}${v.photo && this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
+          <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}${qty}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${who}${v.fav ? this._favStar(pk) : ""}${v.photo && !this._shopMode && this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="${this._photoIcon(pk)}"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
         ${(v.move && !item.checked && this._data.stores.length > 1) || offBtn ? `<div class="acts">${offBtn}${v.move && !item.checked && this._data.stores.length > 1 ? `<button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button>` : ""}</div>` : ""}
@@ -7558,7 +7569,7 @@ ${(() => {
   _recipePhotoBtn(r) {
     const key = this._recipePhotoKey(r.id);
     return this._hasPhoto(key)
-      ? ` <button class="photobtn" data-act="photo-view" data-name="${esc(key)}" data-title="${esc(r.name)}" title="Rezept-Fotos ansehen"><ha-icon icon="mdi:camera"></ha-icon>${this._data.photo_counts?.[key] > 1 ? `<small class="pcount">${this._data.photo_counts[key]}</small>` : ""}</button>` : "";
+      ? ` <button class="photobtn" data-act="photo-view" data-name="${esc(key)}" data-title="${esc(r.name)}" title="Rezept-Fotos ansehen"><ha-icon icon="${this._photoIcon(key)}"></ha-icon>${this._data.photo_counts?.[key] > 1 ? `<small class="pcount">${this._data.photo_counts[key]}</small>` : ""}</button>` : "";
   }
 
   // 🏷️ Rezept-Gruppe und Icon (das Icon kommt immer von der Gruppe)
@@ -7583,7 +7594,7 @@ ${(() => {
     const key = this._recipePhotoKey(r.id);
     if (!this._hasPhoto(key)) return "";
     const n = this._data.photo_counts?.[key] || 1;
-    return `<button class="btn" data-act="photo-view" data-name="${esc(key)}" data-title="${esc(r.name)}" title="Rezept-Fotos ansehen"><ha-icon icon="mdi:camera"></ha-icon><span class="lbl">Fotos${n > 1 ? " (" + n + ")" : ""}</span></button>`;
+    return `<button class="btn" data-act="photo-view" data-name="${esc(key)}" data-title="${esc(r.name)}" title="Rezept-Fotos ansehen"><ha-icon icon="${this._photoIcon(key)}"></ha-icon><span class="lbl">Fotos${n > 1 ? " (" + n + ")" : ""}</span></button>`;
   }
 
   _renderRecipePhoto() {
@@ -7732,7 +7743,7 @@ ${(() => {
       ].filter(Boolean).join("");
       return `<div class="item rrow ${this._rEditIdx === n ? "editing" : ""}" data-n="${n}" style="--cc:${esc(cat?.color || "transparent")}">
         <div class="txt">
-          <div class="line">${it.quantity ? `<span class="qty">${esc(it.quantity)}</span>` : ""}<span class="name">${esc(it.name)}</span>${it.for_whom ? this._forWhomHtml(it.for_whom) : ""}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="mdi:camera"></ha-icon></button>` : ""}</div>
+          <div class="line">${it.quantity ? `<span class="qty">${esc(it.quantity)}</span>` : ""}<span class="name">${esc(it.name)}</span>${it.for_whom ? this._forWhomHtml(it.for_whom) : ""}${this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="${this._photoIcon(pk)}"></ha-icon></button>` : ""}</div>
           <div class="meta">${meta}</div>
         </div>
         <button class="iconbtn" data-act="ritem-edit" title="Bearbeiten"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
@@ -8047,6 +8058,11 @@ ${(() => {
 
   _barcodesOf(key) {
     return (key && this._data?.barcodes_by_name?.[String(key).toLowerCase()]) || [];
+  }
+
+  // 🖼️ Symbol „hier gibt es Fotos“: ein Bild, bei mehreren gestapelte Bilder (die Kamera bleibt fürs Aufnehmen)
+  _photoIcon(key) {
+    return (this._data?.photo_counts?.[String(key || "").toLowerCase()] || this._data?.photo_counts?.[key] || 0) > 1 ? "mdi:image-multiple" : "mdi:image";
   }
 
   _hasPhoto(name) {
@@ -8410,14 +8426,14 @@ ${(() => {
       if (!btn || !box) continue;
       btn.classList.toggle("on", !box.hidden);
       btn.classList.toggle("filled", !!value && tool === "tOwn"); // ✏️ Notiz: kleiner blauer Punkt (wie Foto und Barcode)
-      const label = "";
+      const label = tool === "tQty" && value ? ((String(value).match(/\d+(?:[.,]\d+)?/) || [String(value).slice(0, 4)])[0]) : ""; // 🔢 Menge: nur die Zahl, in Blau, statt „123“
       btn.classList.toggle("blue", !!value && tool !== "tOwn"); // 🔢 Menge, 👤 Für wen: Symbol blau, ohne Text dahinter
       btn.classList.toggle("hasval", !!label);
       const lblTxt = {tQty: "Menge", tOwn: "Notiz", tFor: "Für wen"}[tool] || "";
       const key = icon + "|" + label;
       if (btn._key !== key) {
         btn._key = key;
-        btn.innerHTML = `<ha-icon icon="${icon}"></ha-icon>${label ? `<span class="tval">${esc(label)}</span>` : ""}<span class="lbl">${lblTxt}</span>`;
+        btn.innerHTML = `${label ? "" : `<ha-icon icon="${icon}"></ha-icon>`}${label ? `<span class="tval qn">${esc(label)}</span>` : ""}<span class="lbl">${lblTxt}</span>`;
       }
     }
   }
@@ -8428,7 +8444,7 @@ ${(() => {
     btn.classList.toggle("filled", !!this._newPhoto);
     this._updateTools();
     btn.title = this._newPhoto ? "Foto ist dabei – antippen zum Entfernen" : "Foto zum Artikel";
-    btn.querySelector("ha-icon").setAttribute("icon", this._newPhoto ? "mdi:camera" : "mdi:camera-plus-outline");
+    btn.querySelector("ha-icon").setAttribute("icon", this._newPhoto ? "mdi:image" : "mdi:camera-plus-outline");
   }
 
   async _onPhotoFile(e) {
@@ -8476,7 +8492,7 @@ ${(() => {
       this._toast(`📸 Foto für „${this._pkLabel(target.name)}“ gespeichert`);
       if (target.button) {
         target.button.classList.add("on");
-        target.button.querySelector("ha-icon")?.setAttribute("icon", "mdi:camera");
+        target.button.querySelector("ha-icon")?.setAttribute("icon", "mdi:image");
       } else if (target.keepEdit) {
         /* Rezept-Editor bleibt offen */
       } else if (this._view === "settings" && this._setSec === "products") {
