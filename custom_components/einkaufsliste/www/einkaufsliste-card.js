@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.2";
+const EL_VERSION = "2.76.16-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,16 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 👋 In der Leiste oben steht ein Gruß nach Uhrzeit mit deinem Vornamen („☀️ Guten Morgen, Marco“); ist er zu lang für den Platz, läuft er als Laufschrift",
+   "New: 👋 the bar at the top shows a greeting by time of day with your first name (“☀️ Good morning, Marco”); if it is too long for the space it scrolls as a ticker"],
+  ["Neu: 🛒 Das Maskottchen gähnt morgens von 6 bis 9 Uhr und schläft abends ab 21 Uhr (bisher 23 Uhr)",
+   "New: 🛒 the mascot yawns in the morning from 6 to 9 and sleeps in the evening from 9 pm (was 11 pm)"],
+  ["Neu: 🎃 Der Kürbis am Maskottchen ist größer und steht von 2 Wochen vor bis 1 Woche nach Halloween (17.10. bis 7.11.); auch die anderen Deko-Teile sind größer",
+   "New: 🎃 the mascot's pumpkin is bigger and shows from 2 weeks before to 1 week after Halloween (17 Oct to 7 Nov); the other decorations are bigger too"],
+  ["Neu: 🔓 Das offene Schloss oben blinkt rot in der letzten Minute, bevor die PIN wieder gefragt wird – antippen sperrt sofort",
+   "New: 🔓 the open lock at the top blinks red in the last minute before the PIN is asked again – tap it to lock right away"],
+  ["Neu: 🖼️ Auch im Katalog zeigt „Fotos“ das Bild-Symbol (bei mehreren gestapelte Bilder); die Filter heißen „Mit Foto“ und „Ohne Foto“",
+   "New: 🖼️ the catalogue shows the picture icon for photos too (stacked pictures for several); the filters are called “With photo” and “Without photo”"],
   ["Neu: 🔢 Beim Eintragen zeigt der Mengen-Knopf die Zahl in Blau statt „123“, sobald eine Menge gewählt ist",
    "New: 🔢 when adding, the quantity button shows the number in blue instead of “123” as soon as a quantity is chosen"],
   ["Neu: 🖼️ „Hier gibt es Fotos“ zeigt jetzt ein Bild-Symbol (bei mehreren Fotos gestapelte Bilder) statt der Kamera – überall; die Kamera bleibt fürs Aufnehmen",
@@ -2062,6 +2072,7 @@ function askBarcode(title, canScan) {
 const elAppTheme = () => { try { return localStorage.getItem("einkaufsliste_theme") || "auto"; } catch (_) { return "auto"; } };
 const PIN_KEY = "einkaufsliste_pin_until";
 const pinUnlocked = () => { try { return Number(localStorage.getItem(PIN_KEY) || 0) > Date.now(); } catch (_) { return false; } };
+const pinLeft = () => { try { return Number(localStorage.getItem(PIN_KEY) || 0) - Date.now(); } catch (_) { return 0; } }; // ⏳ so viele ms bleibt die PIN noch gemerkt
 const pinRemember = () => { try { localStorage.setItem(PIN_KEY, String(Date.now() + 10 * 60000)); } catch (_) { /* egal */ } };
 
 /**
@@ -2295,6 +2306,9 @@ input[hidden] + .tplchips { display:none; }
 .unitchips .chip2 { padding:4px 10px; min-width:34px; font-size:.85em; }
 .unitchips .ulabel { font-size:.8em; opacity:.7; align-self:center; margin-right:2px; }
 @keyframes pulse { 50% { opacity:.3; } }
+#btnLock.expiring { color:#e53935; animation: lockblink 1s steps(2, start) infinite; } #btnLock.expiring ha-icon { color:#e53935; }
+@keyframes lockblink { 50% { opacity:.2; } }
+@media (prefers-reduced-motion: reduce) { #btnLock.expiring { animation:none; } }
 
 .photobtn .pcount { font-size:10px; font-weight:700; margin-left:1px; }
 .photobtn { background:none; border:0; cursor:pointer; padding:0 2px; color:var(--primary-color,#03a9f4); line-height:0; --mdc-icon-size:17px; align-self:center; }
@@ -2515,6 +2529,12 @@ ha-card.compact .group { margin-top:4px; }
 .topbar .grow { flex:1; }
 .topbar .iconbtn { padding:2px; --mdc-icon-size:20px; color:var(--secondary-text-color); }
 .topbar .ver { opacity:.8; }
+.greetwrap { min-width:0; overflow:hidden; white-space:nowrap; text-align:center; color:var(--primary-text-color); }
+.greetwrap #greet { display:inline-block; }
+.greetwrap.run { text-align:left; }
+.greetwrap.run #greet { animation:greetrun var(--gd,10s) linear infinite; } /* 📜 zu lang für die Leiste: Laufschrift */
+@keyframes greetrun { from { transform:translateX(var(--gw,100px)); } to { transform:translateX(calc(-1 * var(--tw,100px))); } }
+@media (prefers-reduced-motion: reduce) { .greetwrap.run { text-overflow:ellipsis; } .greetwrap.run #greet { animation:none; } }
 .topbar .lbl { display:none; } .topbar.shop #btnSettings { display:none; }
 .pill { cursor:pointer; border-radius:999px; padding:2px 10px; background:color-mix(in srgb, var(--success-color,#43a047) 18%, transparent); color:var(--primary-text-color); white-space:nowrap; }
 .pill.wait { background:color-mix(in srgb, var(--warning-color,#ffa600) 25%, transparent); }
@@ -2551,6 +2571,7 @@ ha-card.compact .group { margin-top:4px; }
 .cc .ce { border-radius:10px; font-size:16px; padding:6px 8px; }
 .cn { color:var(--secondary-text-color); text-align:center; padding:26px 8px; }
 .prodrow { cursor:pointer; }
+.prodrow .pphotos { display:inline-flex; align-items:center; gap:2px; color:var(--primary-color,#03a9f4); font-weight:600; } .prodrow .pphotos ha-icon { --mdc-icon-size:16px; }
 .prodrow .pmeta { display:flex; flex-wrap:wrap; gap:2px 8px; }
 .misshint { margin:2px 0 10px; padding:10px 12px; border-radius:12px; background:color-mix(in srgb, var(--warning-color,#ffa600) 16%, transparent); }
 .misshint .dbtns { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
@@ -3230,7 +3251,8 @@ function easterDate(y) { // Gauß'sche Osterformel
 }
 function mascotMood(open, now = new Date()) {
   const hr = now.getHours();
-  if (hr >= 23 || hr < 6) return "sleep";
+  if (hr >= 21 || hr < 6) return "sleep"; // 😴 ab 21 Uhr bis 6 Uhr
+  if (hr < 9) return "tired"; // 🥱 morgens von 6 bis 9 Uhr müde
   if (open === 0) return "happy";
   if (open <= 5) return "ok";
   if (open <= 15) return "busy";
@@ -3242,13 +3264,16 @@ function mascotDeco(now = new Date()) {
   if (m === 12 && d <= 26) return "santa";
   const e = easterDate(now.getFullYear()), diff = Math.round((startOfDay(now) - startOfDay(e)) / DAY);
   if (diff >= -3 && diff <= 1) return "bunny";
-  if (m === 10 && d >= 29) return "pumpkin";
+  const dh = Math.round((startOfDay(now) - startOfDay(new Date(now.getFullYear(), 9, 31))) / DAY);
+  if (dh >= -14 && dh <= 7) return "pumpkin"; // 🎃 2 Wochen vor bis 1 Woche nach Halloween (17.10.–7.11.)
   // 👗 Sonst das Kostüm der Jahreszeit: Frühling = Blume, Sommer = Sonnenbrille, Herbst = Blatt, Winter = Schal
   return m >= 3 && m <= 5 ? "spring" : m >= 6 && m <= 8 ? "summer" : m >= 9 && m <= 11 ? "autumn" : "winter";
 }
 function mascotSvg(mood, deco) {
   const eyes = mood === "sleep"
     ? `<path d="M12.5 13.5q1.5 1.2 3 0M19.5 13.5q1.5 1.2 3 0" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>`
+    : mood === "tired"
+      ? `<path d="M12.4 13.6h3.2M19.4 13.6h3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`
     : mood === "full"
       ? `<path d="M12.6 12.2l2.6 2.6M15.2 12.2l-2.6 2.6M19.8 12.2l2.6 2.6M22.4 12.2l-2.6 2.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>`
       : `<circle cx="14" cy="13.4" r="1.3" fill="currentColor"/><circle cx="21" cy="13.4" r="1.3" fill="currentColor"/>`;
@@ -3257,22 +3282,23 @@ function mascotSvg(mood, deco) {
     ok: `<path d="M14.6 16.8q2.9 2 5.8 0" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>`,
     busy: `<path d="M14.8 17.4h5.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>`,
     full: `<ellipse cx="17.5" cy="17.6" rx="1.6" ry="1.2" fill="currentColor"/>`,
+    tired: `<ellipse cx="17.5" cy="17.8" rx="1.9" ry="2.3" fill="currentColor"/>`,
     sleep: `<path d="M15.6 17.2q1.9 1 3.8 0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>`,
   }[mood];
   const extra = mood === "busy" ? `<path d="M24.6 9.4q1.4 2.2 0 3.2q-1.4-1 0-3.2z" fill="#4fc3f7"/>`
     : mood === "sleep" ? `<text x="25" y="8" font-size="5.5" font-weight="700" fill="currentColor" opacity=".7">z</text><text x="28" y="4.6" font-size="4" font-weight="700" fill="currentColor" opacity=".5">z</text>`
       : mood === "happy" ? `<path d="M26.5 4.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="#fdd835"/>` : "";
   const hat = {
-    santa: `<path d="M10 9.2q6-7.4 14.6-1.4l-2 1.4z" fill="#e53935"/><rect x="9.4" y="8.6" width="16" height="2" rx="1" fill="#fff"/><circle cx="25.4" cy="7.4" r="1.4" fill="#fff"/>`,
-    bunny: `<ellipse cx="14" cy="4.6" rx="1.5" ry="4" fill="#f8bbd0" stroke="currentColor" stroke-width=".7"/><ellipse cx="21" cy="4.6" rx="1.5" ry="4" fill="#f8bbd0" stroke="currentColor" stroke-width=".7"/>`,
-    party: `<path d="M15 9.4l2.6-7.2 2.6 7.2z" fill="#ab47bc"/><circle cx="17.6" cy="2" r="1" fill="#fdd835"/>`,
-    pumpkin: `<ellipse cx="29" cy="24.6" rx="2.6" ry="2.2" fill="#fb8c00"/><path d="M29 22.4v-1.2" stroke="#43a047" stroke-width=".9"/>`,
-    spring: `<g transform="translate(9.6 6.6)"><circle cx="0" cy="-1.5" r="1.2" fill="#f48fb1"/><circle cx="1.5" cy="0" r="1.2" fill="#f48fb1"/><circle cx="0" cy="1.5" r="1.2" fill="#f48fb1"/><circle cx="-1.5" cy="0" r="1.2" fill="#f48fb1"/><circle cx="0" cy="0" r="1" fill="#fdd835"/></g>`,
-    summer: `<rect x="11.2" y="11.6" width="5.6" height="3.4" rx="1.3" fill="#263238"/><rect x="18.2" y="11.6" width="5.6" height="3.4" rx="1.3" fill="#263238"/><path d="M16.8 12.8h1.4" stroke="#263238" stroke-width="1"/>`,
-    autumn: `<path d="M8.6 7.4q3.2-4.2 6.4.2q-3.2 3.4-6.4-.2z" fill="#ef6c00"/><path d="M8.8 7.2l4.2-2.4" stroke="#8d4a00" stroke-width=".6"/>`,
-    winter: `<path d="M7.4 9.2h23.2" stroke="#e53935" stroke-width="2.4" stroke-linecap="round"/><path d="M28 9.8v5.2" stroke="#e53935" stroke-width="2.3" stroke-linecap="round"/><path d="M11 9.2v.1M15 9.2v.1M19 9.2v.1M23 9.2v.1" stroke="#fff" stroke-width="1" stroke-linecap="round"/>`,
+    santa: `<path d="M9.6 9.6q6.4-9.6 15.6-1.6l-2.2 1.6z" fill="#e53935"/><rect x="8.8" y="8.8" width="17.6" height="2.8" rx="1.4" fill="#fff"/><circle cx="25.6" cy="7" r="2" fill="#fff"/>`,
+    bunny: `<ellipse cx="13.4" cy="5" rx="2" ry="5" fill="#f8bbd0" stroke="currentColor" stroke-width=".8"/><ellipse cx="21.6" cy="5" rx="2" ry="5" fill="#f8bbd0" stroke="currentColor" stroke-width=".8"/>`,
+    party: `<path d="M13.6 9.6l3.9-9 3.9 9z" fill="#ab47bc" stroke="#6a1b9a" stroke-width=".5"/><circle cx="17.5" cy="1.4" r="1.4" fill="#fdd835"/><path d="M15.2 6.2h4.6" stroke="#fff" stroke-width=".9"/>`,
+    pumpkin: `<g transform="translate(29.2 23)"><ellipse cx="0" cy="0" rx="7" ry="5.8" fill="#fb8c00" stroke="#e65100" stroke-width=".7"/><path d="M0-5.8q-2.6 5.8 0 11.6M-3.8-5q-3.2 5 0 10M3.8-5q3.2 5 0 10" fill="none" stroke="#e65100" stroke-width=".6"/><path d="M0-5.8v-2.2q1.2-1.2 2.8-.9" fill="none" stroke="#43a047" stroke-width="1.5" stroke-linecap="round"/><path d="M-3.4-1.2l1.8 2.4h-3.6zM3.4-1.2l1.8 2.4h-3.6z" fill="#3e2723"/><path d="M-3 2.2q3 2.4 6 0" fill="none" stroke="#3e2723" stroke-width="1.1" stroke-linecap="round"/></g>`, // 🎃 groß, unten rechts VOR dem Wagen (ragt etwas über den Rand)
+    spring: `<g transform="translate(9.6 6.4) scale(1.5)"><circle cx="0" cy="-1.5" r="1.2" fill="#f48fb1"/><circle cx="1.5" cy="0" r="1.2" fill="#f48fb1"/><circle cx="0" cy="1.5" r="1.2" fill="#f48fb1"/><circle cx="-1.5" cy="0" r="1.2" fill="#f48fb1"/><circle cx="0" cy="0" r="1" fill="#fdd835"/></g>`,
+    summer: `<rect x="10.4" y="11" width="6.6" height="4.2" rx="1.6" fill="#263238"/><rect x="18" y="11" width="6.6" height="4.2" rx="1.6" fill="#263238"/><path d="M17 12.4h1" stroke="#263238" stroke-width="1.2"/><path d="M10.6 11.6l-2.2-1.2M24.4 11.6l2.2-1.2" stroke="#263238" stroke-width="1" stroke-linecap="round"/>`,
+    autumn: `<g transform="translate(8.2 7.8) scale(1.5)"><path d="M0 0q3.2-4.2 6.4.2q-3.2 3.4-6.4-.2z" fill="#ef6c00"/><path d="M.2-.2l4.2-2.4" stroke="#8d4a00" stroke-width=".5"/></g>`,
+    winter: `<path d="M7 9.4h24" stroke="#e53935" stroke-width="3.2" stroke-linecap="round"/><path d="M28.4 10.4v6.4" stroke="#e53935" stroke-width="3" stroke-linecap="round"/><path d="M11 9.4v.1M15.4 9.4v.1M19.8 9.4v.1M24.2 9.4v.1" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>`,
   }[deco] || "";
-  return `<svg class="mascot ${mood}" viewBox="0 0 34 30" width="30" height="27" aria-hidden="true">
+  return `<svg class="mascot ${mood}" viewBox="0 0 34 30" width="30" height="27" style="overflow:visible" aria-hidden="true">
     <path d="M2 4.5h3.6l1.6 3.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M7.2 7.7h23l-2.6 12.4q-.3 1.4-1.7 1.4H10.6q-1.4 0-1.7-1.4z" fill="color-mix(in srgb, var(--primary-color,#03a9f4) 18%, transparent)" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
     <circle cx="12" cy="25.6" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="24.6" cy="25.6" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -3490,6 +3516,27 @@ class EinkaufslisteCard extends HTMLElement {
     });
   }
 
+  // 👋 Gruß in der Leiste oben (nach Uhrzeit, mit Vornamen); passt er nicht hinein, läuft er als Laufschrift
+  _updateGreeting(now = new Date()) {
+    const el = this.$("greet"), wrap = this.$("greetWrap");
+    if (!el || !wrap) return;
+    const hr = now.getHours();
+    const base = hr >= 22 || hr < 5 ? "🌙 Gute Nacht" : hr < 10 ? "☀️ Guten Morgen" : hr < 12 ? "🍽️ Mahlzeit" : hr < 18 ? "👋 Grüß dich" : "🌆 Guten Abend";
+    const first = String(this._hass?.user?.name || "").trim().split(/\s+/)[0];
+    const txt = first ? `${elT(base)}, ${first}` : elT(base);
+    const key = txt + "|" + wrap.clientWidth;
+    if (this._greetKey === key) return;
+    this._greetKey = key;
+    el.textContent = txt;
+    wrap.classList.remove("run");
+    const gw = wrap.clientWidth, tw = el.scrollWidth;
+    if (gw > 0 && tw > gw + 1) {
+      wrap.style.setProperty("--gw", gw + "px"); wrap.style.setProperty("--tw", tw + "px");
+      wrap.style.setProperty("--gd", Math.max(6, Math.round((gw + tw) / 40)) + "s");
+      wrap.classList.add("run");
+    }
+  }
+
   // 🟢 Live-Anzeige in der Leiste oben: verbunden = grün, wartet = orange, sonst rot (Offline-App: „offline – letzter Stand“)
   _updateLive() {
     const dot = this.$("livePill");
@@ -3504,6 +3551,7 @@ class EinkaufslisteCard extends HTMLElement {
     dot.title = wait ? `⏳ ${wait} ${wait === 1 ? "Sache wartet" : "Sachen warten"} aufs Netz`
       : ok ? "Verbunden – alles ist aktuell · antippen = zurück zur Liste" : "Keine Verbindung – Änderungen kommen gerade nicht an";
     if (ok && wait) this._flushQueue();
+    this._updateGreeting();
   }
 
   // 🔄 Update-Hinweis: Karte (Handy-Speicher) und Integration haben verschiedene Versionen
@@ -3602,6 +3650,8 @@ class EinkaufslisteCard extends HTMLElement {
       }
       this._updateLockBtn(); // 🔒 nach 10 Minuten verschwindet der Sperr-Knopf von selbst
     }, 60000);
+    clearInterval(this._lockClock);
+    this._lockClock = setInterval(() => { if (this.$("btnLock") && !this.$("btnLock").hidden) this._updateLockBtn(); this._updateGreeting(); }, 5000); // 🔴 rechtzeitig blinken und pünktlich verschwinden
     if (this._hass && !this._unsub && !this._subscribing && Date.now() - (this._subFailAt || 0) > 10000) this._subscribe();
     if (this._built) { // 🔌 wieder eingehängt: was beim Entfernen abgemeldet wurde, neu anmelden
       if (!this._tabAC && this._tabAttach) this._tabAttach();
@@ -3627,6 +3677,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._closePage(true);
     this._awakeStop();
     clearInterval(this._clock);
+    clearInterval(this._lockClock);
     clearTimeout(this._menuTimer);
     clearTimeout(this._nearTimer);
     clearTimeout(this._undoTimer);
@@ -3913,7 +3964,7 @@ class EinkaufslisteCard extends HTMLElement {
       <style>${STYLE}</style>
       <!-- 🟢 Leiste wie früher in der Offline-App: ÜBER der Karte, nicht im weißen Kasten -->
       <div class="topbar" id="topBar">
-        <span class="pill" id="livePill" data-act="home"></span><span class="grow"></span>
+        <span class="pill" id="livePill" data-act="home"></span><span class="grow greetwrap" id="greetWrap"><span id="greet"></span></span>
         <button class="iconbtn" id="btnLock" type="button" data-act="pin-lock" title="Einstellungen jetzt sperren" hidden><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon></button>
         <button class="iconbtn" id="btnSettings" data-act="view" data-view="settings" title="Geschäfte & Kategorien"><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Einstellungen</span></button>
         <span class="ver" translate="no">v${EL_VERSION}</span>
@@ -5842,8 +5893,8 @@ ${(() => {
       { key: "aicook", icon: "mdi:robot-happy-outline", title: "KI-Kochen", info: this._data.settings?.ai_on ? "an" : "aus", html: () => this._aiSettingsHtml() },
       { key: "mascot", icon: "mdi:emoticon-happy-outline", title: "Maskottchen", info: this._data.settings?.mascot ? "an – für alle" : "aus", html: () => `
         ${this._swHtml("mascot-toggle", !!this._data.settings?.mascot, "Maskottchen anzeigen")}
-        <p class="hint">Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen bringt dich wie der Wagen zurück zur Einkaufsliste.</p>
-        <div class="mascotprev">${mascotSvg("happy", null)}${mascotSvg("busy", null)}${mascotSvg("full", null)}${mascotSvg("sleep", null)}</div>
+        <p class="hint">Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, gähnt morgens von 6 bis 9 Uhr, schläft abends ab 21 Uhr und hat an Feiertagen Deko auf (Halloween: 2 Wochen vorher bis 1 Woche nachher). Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen bringt dich wie der Wagen zurück zur Einkaufsliste.</p>
+        <div class="mascotprev">${mascotSvg("happy", null)}${mascotSvg("busy", null)}${mascotSvg("full", null)}${mascotSvg("tired", null)}${mascotSvg("sleep", null)}</div>
         <div class="mascotprev">${["spring", "summer", "autumn", "winter"].map((x) => mascotSvg("happy", x)).join("")}</div>
         <p class="hint">Der Schalter gilt für <b>alle</b> – auf allen Handys, im Dashboard und in der App.</p>` },
       { key: "cards", icon: "mdi:credit-card-outline", title: "Kundenkarten", info: this._data.settings?.cards_on ? "an – für alle" : "aus", html: () => `
@@ -6112,7 +6163,11 @@ ${(() => {
   // 🔒 Sofort-Sperren: in der Leiste oben neben der Versionsnummer (auf allen Seiten) – nur mit PIN und entsperrt
   _updateLockBtn() {
     const btn = this.$("btnLock");
-    if (btn) btn.hidden = !(this._data?.settings?.pin && pinUnlocked());
+    if (!btn) return;
+    btn.hidden = !(this._data?.settings?.pin && pinUnlocked());
+    const soon = !btn.hidden && pinLeft() <= 60000; // 🔴 die letzte Minute: das offene Schloss blinkt rot – antippen sperrt weiter sofort
+    btn.classList.toggle("expiring", soon);
+    btn.title = soon ? "Gleich wieder gesperrt – antippen sperrt sofort" : "Einstellungen jetzt sperren";
   }
 
   _lockNow() {
@@ -6933,7 +6988,7 @@ ${(() => {
     const d = this._data, f = this._prodSel || "";
     const opt = (v, l) => `<option value="${esc(v)}" ${v === f ? "selected" : ""}>${l}</option>`;
     return opt("", "🔽 Alle Produkte") + opt("~nocat", "📦 Ohne Kategorie") + opt("~nostore", "🛒 Ohne Geschäft")
-      + opt("~open", "🛍️ Steht auf der Liste") + opt("~photo", "📷 Mit Foto") + opt("~nophoto", "📷 Ohne Foto")
+      + opt("~open", "🛍️ Steht auf der Liste") + opt("~photo", "🖼️ Mit Foto") + opt("~nophoto", "🖼️ Ohne Foto")
       + opt("~barcode", "▥ Mit Barcode") + opt("~nobarcode", "▥ Ohne Barcode") + opt("~old3m", "🗓️ Seit 3 Monaten nicht gekauft")
       + `<optgroup label="Geschäft">${d.stores.map((st) => opt(`s:${st.id}`, `🏪 ${esc(st.name)}`)).join("")}</optgroup>`
       + `<optgroup label="Kategorie">${d.categories.map((c) => opt(`c:${c.id}`, `🏷️ ${esc(c.name)}`)).join("")}</optgroup>`;
@@ -7108,7 +7163,7 @@ ${(() => {
         cat ? `<span>${esc(cat.name)}</span>` : "",
         (p.aliases || []).length ? `<span title="Spitznamen">🏷️ ${esc(this._capAliases(p.aliases).join(", "))}</span>` : "",
         p.barcodes.length ? `<span>▥ ${p.barcodes.length}</span>` : "",
-        p.photos ? `<span>📷 ${p.photos}${p.photos >= 6 ? " (voll)" : ""}</span>` : "",
+        p.photos ? `<span class="pphotos" title="Fotos"><ha-icon icon="${p.photos > 1 ? "mdi:image-multiple" : "mdi:image"}"></ha-icon>${p.photos}${p.photos >= 6 ? " (voll)" : ""}</span>` : "", // 🖼️ ein Bild, bei mehreren gestapelte Bilder
         p.open ? `<span>🛒 steht drauf</span>` : "",
         this._prodSel === "~old3m" ? `<span>🗓️ ${p.last_bought ? "zuletzt gekauft" : "zuletzt eingetragen"} ${this._prodAgo(p)}</span>` : "",
       ].filter(Boolean).join("");

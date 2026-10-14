@@ -1109,8 +1109,8 @@
 "🔽 Alle Produkte": "🔽 All products",
 "🛒 Ohne Geschäft": "🛒 No store",
 "🛍️ Steht auf der Liste": "🛍️ On the list",
-"📷 Mit Foto": "📷 With photo",
-"📷 Ohne Foto": "📷 Without photo",
+"🖼️ Mit Foto": "🖼️ With photo",
+"🖼️ Ohne Foto": "🖼️ Without photo",
 "▥ Mit Barcode": "▥ With barcode",
 "▥ Ohne Barcode": "▥ Without barcode",
 "Steht dann in jedem Geschäft – abgehakt wird's da, wo du es kaufst": "Then it shows up in every store – it gets checked off wherever you buy it",
@@ -1909,7 +1909,7 @@
 "neu seit deinem letzten Blick": "new since you last looked",
 "🎨 Farbe der Kategorie": "🎨 Category colour",
 "farbiger Streifen links": "coloured stripe on the left",
-"Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, schläft nachts und hat an Feiertagen Deko auf. Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen bringt dich wie der Wagen zurück zur Einkaufsliste.": "Instead of the cart icon at the top left there's a little shopping cart with a face. It beams when the list is empty, sweats when the cart is full, sleeps at night and dresses up on holidays. Otherwise it wears the costume of the season: a flower in spring, sunglasses in summer, a leaf in autumn, a scarf in winter. Tapping it takes you back to the shopping list, just like the cart.",
+"Statt des Einkaufswagen-Symbols oben links sitzt dann ein kleiner Einkaufswagen mit Gesicht. Er strahlt bei leerer Liste, schwitzt bei vollem Wagen, gähnt morgens von 6 bis 9 Uhr, schläft abends ab 21 Uhr und hat an Feiertagen Deko auf (Halloween: 2 Wochen vorher bis 1 Woche nachher). Sonst trägt er das Kostüm der Jahreszeit: Blume im Frühling, Sonnenbrille im Sommer, Blatt im Herbst, Schal im Winter. Antippen bringt dich wie der Wagen zurück zur Einkaufsliste.": "Instead of the cart icon at the top left there's a little shopping cart with a face. It beams when the list is empty, sweats when the cart is full, yawns in the morning from 6 to 9, sleeps in the evening from 9 pm and dresses up on holidays (Halloween: 2 weeks before to 1 week after). Otherwise it wears the costume of the season: a flower in spring, sunglasses in summer, a leaf in autumn, a scarf in winter. Tapping it takes you back to the shopping list, just like the cart.",
 "Automatisches Aufräumen ist aus": "Automatic cleanup is off",
 "💡 Tipp: Ganz unten auf „📖 Anleitung“ tippen – dort steht, wie alles geht.": "💡 Tip: tap “📖 Guide” at the very bottom – it explains everything.",
 "🟢 verbunden": "🟢 connected",
@@ -2135,5 +2135,10 @@
 "Beispiel: Mo–Sa 07:00–22:00 Uhr, Sonntag zu. Gespeichert wird erst, wenn du eine Zeit einträgst.": "Example: Mon–Sat 07:00–22:00, Sunday closed. Nothing is saved until you enter a time.",
 "Öffnungszeiten-Editor: Knöpfe „Filiale“ und „OpenStreetMap“ oben, Zeiten einer Filiale per Uhr-Icon, Sonntag von Anfang an „zu“, Beispieltext statt Vorgabe, Überschrift beim Prospekt-Link": "Opening-hours editor: “Branch” and “OpenStreetMap” buttons at the top, a branch's times via clock icon, Sunday closed from the start, example text instead of defaults, heading for the flyer link",
 "Neu: 🕒 Im Reiter steht eine Uhr in der Geschäftsfarbe statt des Punkts, wenn für das Geschäft Uhrzeiten hinterlegt sind": "New: 🕒 the tab shows a clock in the store colour instead of the dot when opening hours are set for the store",
-"Fix: Beim langen Drücken auf ein Geschäft oben kann das Handy-Menü („Kopieren“) nicht mehr im Fenster mit den Öffnungszeiten erscheinen": "Fix: pressing and holding a store at the top can no longer bring up the phone menu (“Copy”) in the opening-hours window"
+"Fix: Beim langen Drücken auf ein Geschäft oben kann das Handy-Menü („Kopieren“) nicht mehr im Fenster mit den Öffnungszeiten erscheinen": "Fix: pressing and holding a store at the top can no longer bring up the phone menu (“Copy”) in the opening-hours window",
+"🌙 Gute Nacht": "🌙 Good night",
+"☀️ Guten Morgen": "☀️ Good morning",
+"🍽️ Mahlzeit": "🍽️ Lunchtime",
+"👋 Grüß dich": "👋 Hello there",
+"🌆 Guten Abend": "🌆 Good evening"
 }
