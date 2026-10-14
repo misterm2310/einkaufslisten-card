@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.16";
+const EL_VERSION = "2.76.15";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,46 +375,6 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
-  ["Fix: Der Update-Hinweis vergleicht Testversionen jetzt genau (2.76.15-beta.5 ist neuer als 2.76.14, aber älter als 2.76.15) und zeigt so richtig „Neue Version da – Neu laden“ statt fälschlich „Home Assistant neu starten“",
-   "Fix: the update notice now compares test versions exactly (2.76.15-beta.5 is newer than 2.76.14 but older than 2.76.15) and correctly shows “New version available – Reload” instead of wrongly “restart Home Assistant”"],
-  ["Neu: 🛍️ Sensor „Zuletzt gekauft“ und Ereignis einkaufsliste_item_bought beim Abhaken – für eigene Automationen (z. B. Inventar); ein Inventar selbst ist bewusst nicht eingebaut",
-   "New: 🛍️ “Last bought” sensor and event einkaufsliste_item_bought when checking off – for your own automations (e.g. inventory); an inventory itself is deliberately not built in"],
-  ["Fix: Beim langen Drücken auf ein Geschäft oben kann das Handy-Menü („Kopieren“) nicht mehr im Fenster mit den Öffnungszeiten erscheinen",
-   "Fix: pressing and holding a store at the top can no longer bring up the phone menu (“Copy”) in the opening-hours window"],
-  ["Neu: 🕒 Im Reiter steht eine Uhr in der Geschäftsfarbe statt des Punkts, wenn für das Geschäft Uhrzeiten hinterlegt sind",
-   "New: 🕒 the tab shows a clock in the store colour instead of the dot when opening hours are set for the store"],
-  ["Öffnungszeiten-Editor: Knöpfe „Filiale“ und „OpenStreetMap“ oben, Zeiten einer Filiale per Uhr-Icon, Sonntag von Anfang an „zu“, Beispieltext statt Vorgabe, Überschrift beim Prospekt-Link",
-   "Opening-hours editor: “Branch” and “OpenStreetMap” buttons at the top, a branch's times via clock icon, Sunday closed from the start, example text instead of defaults, heading for the flyer link"],
-  ["Fix: 🌐 OpenStreetMap-Suche leichter und mit Ersatz-Servern, wenn der Hauptserver überlastet ist (Fehler 504)",
-   "Fix: 🌐 OpenStreetMap search is lighter and uses backup servers when the main server is overloaded (error 504)"],
-  ["Neu: 🌐 Öffnungszeiten aus OpenStreetMap holen (Knopf im Öffnungszeiten-Editor, nur auf Knopfdruck)",
-   "New: 🌐 fetch opening hours from OpenStreetMap (button in the opening-hours editor, only on tap)"],
-  ["Neu: 🏬 Filialen lassen sich mit ▲ ▼ sortieren",
-   "New: 🏬 branches can be sorted with ▲ ▼"],
-  ["Neu: 🏬 Filialen pro Geschäft mit eigenen Öffnungszeiten (z. B. 3× K&K); der Reiter ist nur grau, wenn alle Filialen zu haben; Editor klappt zu, wenn man das Geschäft verlässt; Feiertage auch ohne Zeiten; „Mo–Sa“ statt „Mo–Fr“",
-   "New: 🏬 branches per store with their own opening hours (e.g. 3× K&K); the tab is only grey when all branches are closed; the editor collapses when you leave the store; holidays also without times; “Mon–Sat” instead of “Mon–Fri”"],
-  ["Neu: 🎌 „An Feiertagen zu“ bei den Öffnungszeiten (nach Bundesland); Öffnungszeiten sind jetzt eingeklappt und optional",
-   "New: 🎌 “Closed on holidays” for opening hours (by state); opening hours are now collapsed and optional"],
-  ["📳 Die PIN-Eingabe vibriert jetzt wie der Rechner",
-   "📳 PIN entry now vibrates like the calculator"],
-  ["🔊 Vorlesen: liest von oben nach unten wie auf dem Bildschirm, „1x“ ohne „x“; in der HA-App kommt ein Hinweis, dass es dort nicht geht",
-   "🔊 Read aloud: reads top to bottom as on screen, “1x” without the “x”; the HA app shows a note that it does not work there"],
-  ["Neu: 🗞️ Prospekt-Link pro Geschäft (Namen gedrückt halten → „Prospekt öffnen“)",
-   "New: 🗞️ flyer link per store (press and hold the name → “Open flyer”)"],
-  ["Neu: 🔊 „Vorlesen“ unter der Liste – liest die offenen Artikel vor",
-   "New: 🔊 “Read aloud” below the list – reads out the open items"],
-  ["Neu: 📳 Vibration einstellbar (👁️ Ansicht → Vibration)",
-   "New: 📳 adjustable vibration (👁️ View → Vibration)"],
-  ["Neu: 🕒 Öffnungszeiten pro Geschäft (auch mehrere Zeitfenster am Tag); geschlossene Geschäfte werden oben grau, Namen gedrückt halten zeigt die Zeiten",
-   "New: 🕒 opening hours per store (also several time slots a day); closed stores turn grey at the top, press and hold the name to see the hours"],
-  ["Beim Schließen eines Fotos oder einer Seite bleibt die Liste beim Produkt stehen und springt nicht mehr nach oben (auch in der Erledigt-Liste, ohne Gleiten)",
-   "When you close a photo or a page, the list stays at the product instead of jumping to the top (also in the done list, without gliding)"],
-  ["Im Laden-Modus ist das Angebotszeichen 🏷️ ausgeblendet",
-   "In store mode the offer sign 🏷️ is hidden"],
-  ["Neu: 🧮 Rechner im Laden-Modus, oben links neben den 💳 Karten",
-   "New: 🧮 calculator in store mode, at the top left next to the 💳 cards"],
-  ["„Was ist neu“ zeigt in einer Beta oben einen eigenen Kasten mit den Neuerungen dieser Beta",
-   "In a beta, “What's new” shows its own box at the top with the changes of this beta"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -423,6 +383,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🛍️ <b>Für eigene Automationen:</b> Neuer Sensor „Zuletzt gekauft“ (zuletzt abgehakter Artikel) und das Ereignis <code>einkaufsliste_item_bought</code> – es feuert bei jedem Abhaken einzeln, z. B. um den Artikel in ein Inventar zu schreiben. Ein Inventar ist bewusst nicht eingebaut.",
+   "🛍️ <b>For your own automations:</b> new “Last bought” sensor (last checked-off item) and the event <code>einkaufsliste_item_bought</code> – it fires once per item when checked off, e.g. to write the item into an inventory. An inventory itself is deliberately not built in."],
   ["🌐 <b>Öffnungszeiten aus dem Netz:</b> Im Editor „Zeiten aus OpenStreetMap“ antippen – Home Assistant sucht das Geschäft und du übernimmst die Zeiten (als Filiale oder fürs Geschäft). Nur auf Knopfdruck.",
    "🌐 <b>Opening hours from the web:</b> tap “Times from OpenStreetMap” in the editor – Home Assistant looks the store up and you take over the times (as a branch or for the store). Only on tap."],
   ["🗞️ <b>Prospekt-Link:</b> Pro Geschäft eine Adresse eintragen (⚙️ → Geschäfte). Namen gedrückt halten → „Prospekt öffnen“. Gespeichert wird nur die Adresse.",
