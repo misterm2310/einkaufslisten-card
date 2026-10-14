@@ -4249,3 +4249,13 @@ async def test_view_prefs_anim_pro_benutzer(hass, setup, hass_ws_client) -> None
         res = await client.receive_json()
         assert res["success"], res
         assert res["result"] == {"anim": val}
+
+
+async def test_view_prefs_gruss_pro_benutzer(hass, setup, hass_ws_client) -> None:
+    """👋 Gruß in der Leiste: eigene Wahl (an UND aus) wird gespeichert."""
+    client = await hass_ws_client(hass)
+    for i, val in enumerate((False, True), start=1):
+        await client.send_json({"id": i, "type": "einkaufsliste/view/set", "scope": "me", "prefs": {"greet": val}})
+        res = await client.receive_json()
+        assert res["success"], res
+        assert res["result"] == {"greet": val}

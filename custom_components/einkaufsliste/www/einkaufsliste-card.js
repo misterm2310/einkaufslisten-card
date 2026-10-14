@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.3";
+const EL_VERSION = "2.76.16-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 👁️ Den Gruß in der Leiste schaltest du in „👁️ Ansicht“ ab (nur für dich)",
+   "New: 👁️ you can switch the greeting in the bar off under “👁️ View” (only for you)"],
   ["Neu: 👋 In der Leiste oben steht ein Gruß nach Uhrzeit mit deinem Vornamen („☀️ Guten Morgen, Marco“); ist er zu lang für den Platz, läuft er als Laufschrift",
    "New: 👋 the bar at the top shows a greeting by time of day with your first name (“☀️ Good morning, Marco”); if it is too long for the space it scrolls as a ticker"],
   ["Neu: 🛒 Das Maskottchen gähnt morgens von 6 bis 9 Uhr und schläft abends ab 21 Uhr (bisher 23 Uhr)",
@@ -3523,7 +3525,8 @@ class EinkaufslisteCard extends HTMLElement {
     const hr = now.getHours();
     const base = hr >= 22 || hr < 5 ? "🌙 Gute Nacht" : hr < 10 ? "☀️ Guten Morgen" : hr < 12 ? "🍽️ Mahlzeit" : hr < 18 ? "👋 Grüß dich" : "🌆 Guten Abend";
     const first = String(this._hass?.user?.name || "").trim().split(/\s+/)[0];
-    const txt = first ? `${elT(base)}, ${first}` : elT(base);
+    const on = this._viewPrefs().greet !== false; // 👁️ Meine Ansicht: Gruß abschaltbar
+    const txt = !on ? "" : first ? `${elT(base)}, ${first}` : elT(base);
     const key = txt + "|" + wrap.clientWidth;
     if (this._greetKey === key) return;
     this._greetKey = key;
@@ -6111,6 +6114,7 @@ ${(() => {
     const cnt = (list) => `${list.filter(([k]) => cur[k] !== false).length} von ${list.length} an`;
     const labOn = cur.labels !== undefined ? !!cur.labels : !!this._data?.settings?.labels;
     const animOn = cur.anim !== false;
+    const greetOn = cur.greet !== false;
     const ck = (on) => `<ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>`;
     // 🪗 gleiche Aufklapper wie bei Import und Aufräumen (immer nur einer offen)
     return `
@@ -6120,6 +6124,7 @@ ${(() => {
         <div class="xaccs">
         ${mine ? this._acc(g, "labels", "mdi:format-text", "#546e7a", "Beschriftungen", labOn ? "an – Text unter den Icons" : "aus – Text unter den Icons", `<button class="lrow viewrow" data-act="view-labels" aria-pressed="${labOn}">${ck(labOn)}<span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "anim", "mdi:check", "#43a047", "Abhaken", animOn ? "Animation an" : "Animation aus", `<button class="lrow viewrow" data-act="view-anim" aria-pressed="${animOn}">${ck(animOn)}<span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`) : ""}
+        ${mine ? this._acc(g, "greet", "mdi:hand-wave-outline", "#fb8c00", "Gruß", greetOn ? "an" : "aus", `<button class="lrow viewrow" data-act="view-greet" aria-pressed="${greetOn}">${ck(greetOn)}<span class="grow"><b>Gruß in der Leiste oben</b><small>Nur für dich. Aus = die Leiste bleibt in der Mitte leer.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "haptic", "mdi:vibrate", "#8e24aa", "Vibration", { off: "Aus", low: "Schwach", normal: "Normal", high: "Stark" }[elHapticLevel()], `
         <p class="hint">Nur für dieses Gerät. Beim Abhaken, im Rechner, bei der PIN-Eingabe und beim langen Drücken. Manche Handys (z. B. iPhone) vibrieren im Browser nie.</p>
         <div class="fontrow">${[["off", "Aus"], ["low", "Schwach"], ["normal", "Normal"], ["high", "Stark"]].map(([k, t]) => `<button class="btn ${elHapticLevel() === k ? "primary" : ""}" data-act="view-haptic" data-level="${k}" aria-pressed="${elHapticLevel() === k}">${t}</button>`).join("")}</div>`) : ""}
@@ -10509,6 +10514,15 @@ ${(() => {
         prefs[el.dataset.key] = shown[el.dataset.key] === false;
         this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
           .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
+        break;
+      }
+      case "view-greet": { // 👋 Gruß in der Leiste nur für mich an/aus
+        const all = this._data.settings?.view_prefs || {};
+        const me = this._hass?.user?.id;
+        const prefs = { ...((me && all[me]) || {}) };
+        prefs.greet = this._viewPrefs().greet === false;
+        this._ws({ type: "einkaufsliste/view/set", scope: "me", prefs })
+          .then(() => setTimeout(() => { this._renderMyView(); this._updateGreeting(); }, 150)).catch(() => {});
         break;
       }
       case "view-anim": { // ✔️ Abhak-Animation nur für mich an/aus
