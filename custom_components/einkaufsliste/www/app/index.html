@@ -592,6 +592,8 @@ function update() {
       document.getElementById("viewBtn").hidden = card._view !== "list"; // 👁️ Ansicht nur bei der Liste
       document.getElementById("viewBtn").classList.toggle("on", !!card._myViewOpen && card._view === "list");
       document.getElementById("speakBtn").hidden = card._view !== "list"; // 🔊 Vorlesen nur bei der Liste
+      const shop = !!card._shopMode && card._view === "list"; // 🛒 Laden-Modus: unten nur „🔊 Vorlesen“
+      for (const id of ["viewBtn", "guideBtn", "logoutBtn"]) { const b = document.getElementById(id); if (b && shop) b.hidden = true; else if (b && id !== "viewBtn") b.hidden = false; }
     };
     window.addEventListener("einkaufsliste-nav", () => setTimeout(showFoot, 0));
     showFoot();

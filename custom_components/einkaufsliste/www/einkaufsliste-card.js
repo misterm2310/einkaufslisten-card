@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15";
+const EL_VERSION = "2.76.16-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,10 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🍐 Beim Tippen steht der genau getippte Name zuerst („Birne“ vor „Birnen“)",
+   "New: 🍐 while typing, the name exactly as typed comes first (“Pear” before “Pears”)"],
+  ["Neu: 🛒 Im Laden-Modus steht unten nur noch „🔊 Vorlesen“ – ohne „Nächstes Aufräumen“ und ohne die anderen Knöpfe (auch in der Offline-App)",
+   "New: 🛒 in store mode only “🔊 Read aloud” is left at the bottom – without “Next tidy-up” and the other buttons (also in the offline app)"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -4755,6 +4759,7 @@ class EinkaufslisteCard extends HTMLElement {
       fuzzy.sort((a, b) => a.sc - b.sc);
       cands.push(...fuzzy.slice(0, 2));
     }
+    for (const c of cands) if (c.name && c.name.toLowerCase() === q && c.sc > -0.5) c.sc = -0.5; // 🍐 genau so getippt („Birne“) steht vor „Birnen“
     cands.sort((a, b) => a.sc - b.sc);
     return cands.slice(0, recipe ? 8 : 2); // Einkaufsliste: höchstens 2 Vorschläge – sonst wird's zu viel
   }
@@ -5512,7 +5517,8 @@ class EinkaufslisteCard extends HTMLElement {
       return;
     }
     if (!s || this._view !== "list") { f.hidden = true; if (this.$("footBtns")) this.$("footBtns").hidden = true; return; }
-    f.hidden = !!this._page; // „Nächstes Aufräumen“ steht nur auf der Einkaufsliste selbst, auf keiner Seite sonst
+    const shop = !!this._shopMode; // 🛒 Laden-Modus: unten nichts außer „🔊 Vorlesen“ (kein „Nächstes Aufräumen“, keine Knöpfe)
+    f.hidden = !!this._page || shop; // „Nächstes Aufräumen“ steht nur auf der Einkaufsliste selbst, auf keiner Seite sonst
     const next = new Date(s.next_cleanup);
     f.innerHTML = (s.cleanup_on === false ? `<ha-icon icon="mdi:broom"></ha-icon><span>Automatisches Aufräumen ist aus</span>`
       : `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`);
@@ -5520,7 +5526,7 @@ class EinkaufslisteCard extends HTMLElement {
     const fb = this.$("footBtns");
     if (fb) {
       fb.hidden = !!window.__elOfflineApp || !!this._page; // auf Seiten (Gar-Zeiten, Fotos, Karten …) keine Knöpfe unten
-      if (!fb.hidden) fb.innerHTML = `<button type="button" class="${this._myViewOpen ? "on" : ""}" data-act="myview" title="👁️ Meine Ansicht – was ich beim Artikel sehe (nur für mich, ohne PIN)">👁️ Ansicht</button><button type="button" class="${this._speaking ? "on" : ""}" data-act="speak" title="Die offenen Artikel vorlesen (nochmal antippen = Stopp)">${this._speaking ? "⏹ Stopp" : "🔊 Vorlesen"}</button><button type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte">📖 Anleitung</button>`;
+      if (!fb.hidden) fb.innerHTML = shop ? `<button type="button" class="${this._speaking ? "on" : ""}" data-act="speak" title="Die offenen Artikel vorlesen (nochmal antippen = Stopp)">${this._speaking ? "⏹ Stopp" : "🔊 Vorlesen"}</button>` : `<button type="button" class="${this._myViewOpen ? "on" : ""}" data-act="myview" title="👁️ Meine Ansicht – was ich beim Artikel sehe (nur für mich, ohne PIN)">👁️ Ansicht</button><button type="button" class="${this._speaking ? "on" : ""}" data-act="speak" title="Die offenen Artikel vorlesen (nochmal antippen = Stopp)">${this._speaking ? "⏹ Stopp" : "🔊 Vorlesen"}</button><button type="button" data-act="guide" title="Anleitung fürs Einkaufen und die Rezepte">📖 Anleitung</button>`;
     }
   }
 
