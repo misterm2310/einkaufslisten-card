@@ -39,6 +39,7 @@ from .const import (
     DEFAULT_STORES,
     EVENT_CLEANUP,
     EVENT_ITEM_ADDED,
+    EVENT_ITEM_BOUGHT,
     HISTORY_LIMIT,
     ERROR_LIMIT,
     OFFER_OPEN_DAYS,
@@ -2353,6 +2354,27 @@ class EinkaufslisteManager:
             },
         )
 
+    def _fire_bought(self, item: dict[str, Any], by: str | None) -> None:
+        """🛍️ Ein Artikel wurde abgehakt (= gekauft) – für eigene Automationen, z. B. Inventar."""
+        store = self.store_by_id(item.get("store_id"))
+        cat = self.category_by_id(item.get("category_id"))
+        recipe = self.recipe_by_id(item.get("recipe_id"))
+        self.hass.bus.async_fire(
+            EVENT_ITEM_BOUGHT,
+            {
+                "item_id": item["id"],
+                "name": item["name"],
+                "quantity": item.get("quantity"),
+                "note": item.get("note"),
+                "for_whom": item.get("for_whom"),
+                "store": store["name"] if store else None,
+                "category": cat["name"] if cat else None,
+                "recipe": recipe["name"] if recipe else None,
+                "added_by": item.get("added_by"),
+                "bought_by": by,
+            },
+        )
+
     # ------------------------------------------------------------------ Artikel
     @callback
     def add_item(
@@ -2608,11 +2630,13 @@ class EinkaufslisteManager:
         if checked and (item.get("recipe_id") or item.get("from_offer")):
             # Rezept-Zutaten und Artikel aus Angeboten verschwinden beim Abhaken ganz von der Liste
             self.items.remove(item)
+            self._fire_bought(item, by)
             self._changed()
             return {**item, "checked": True, "checked_at": _now_iso(), "checked_by": by, "removed": True}
         if checked:
             item.update(checked=True, checked_at=_now_iso(), checked_by=by, out_at=None)
             self._learn_store(item["name"], item.get("store_id"))  # 🏪 hier gekauft = gibt's hier
+            self._fire_bought(item, by)
         elif undo:
             # ↩️ Rückgängig: nur den Haken weg – altes Datum und Eintrager bleiben
             item.update(checked=False, checked_at=None, checked_by=None)

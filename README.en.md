@@ -256,6 +256,7 @@ Everything works in the visual editor. For YAML fans:
 | `sensor.einkaufsliste_<store>` | one sensor **per store**: open items there, attribute `artikel` |
 | `binary_sensor.einkaufsliste_etwas_zu_kaufen` (English HA: `…_something_to_buy`) | on as soon as anything is open |
 | `sensor.einkaufsliste_zuletzt_eingetragen` (English HA: `…_last_added`) | last added item with `von` (who), `wann` (when), `geschaeft` (store) |
+| `sensor.einkaufsliste_zuletzt_gekauft` (English HA: `…_last_bought`) | last checked-off item with `von`, `wann`, `geschaeft`, `menge` (tidy-up does not count as a purchase) |
 
 | Action | What happens |
 |---|---|
@@ -265,7 +266,7 @@ Everything works in the visual editor. For YAML fans:
 | `einkaufsliste.remove_item` | deletes an item (`name`, optional `store`) |
 | `einkaufsliste.cleanup` | cleans up now; `force: true` checks off everything |
 
-Events: `einkaufsliste_item_added`, `einkaufsliste_cleanup`.
+Events: `einkaufsliste_item_added`, `einkaufsliste_item_bought` (when an item is checked off – one event per item, with `name`, `quantity`, `note`, `for_whom`, `store`, `category`, `recipe`, `added_by`, `bought_by`; ideal for your own automation that writes the item into an inventory), `einkaufsliste_cleanup`.
 
 ```yaml
 # Example: message when you arrive at Aldi and something is on the list there

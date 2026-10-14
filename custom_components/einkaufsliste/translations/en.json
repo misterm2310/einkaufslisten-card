@@ -129,6 +129,9 @@
       "zuletzt_eingetragen": {
         "name": "Last added"
       },
+      "zuletzt_gekauft": {
+        "name": "Last bought"
+      },
       "gesundheit": {
         "name": "Health",
         "state": {

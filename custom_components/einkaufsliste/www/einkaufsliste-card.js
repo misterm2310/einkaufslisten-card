@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.14";
+const EL_VERSION = "2.76.15-beta.15";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -365,6 +365,8 @@ const EL_NEWS_MAX = 15;
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🛍️ Sensor „Zuletzt gekauft“ und Ereignis einkaufsliste_item_bought beim Abhaken – für eigene Automationen (z. B. Inventar); ein Inventar selbst ist bewusst nicht eingebaut",
+   "New: 🛍️ “Last bought” sensor and event einkaufsliste_item_bought when checking off – for your own automations (e.g. inventory); an inventory itself is deliberately not built in"],
   ["Fix: Beim langen Drücken auf ein Geschäft oben kann das Handy-Menü („Kopieren“) nicht mehr im Fenster mit den Öffnungszeiten erscheinen",
    "Fix: pressing and holding a store at the top can no longer bring up the phone menu (“Copy”) in the opening-hours window"],
   ["Neu: 🕒 Im Reiter steht eine Uhr in der Geschäftsfarbe statt des Punkts, wenn für das Geschäft Uhrzeiten hinterlegt sind",

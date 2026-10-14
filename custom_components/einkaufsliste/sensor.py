@@ -24,7 +24,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     manager: EinkaufslisteManager = hass.data[DOMAIN]["manager"]
-    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry), GesundheitSensor(manager, entry)])
+    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry), ZuletztGekauftSensor(manager, entry), GesundheitSensor(manager, entry)])
 
     # 🏪 Ein Sensor pro Geschäft – neue Geschäfte bekommen ihren Sensor automatisch, gelöschte verschwinden
     known: dict[str, GeschaeftSensor] = {}
@@ -159,6 +159,50 @@ class ZuletztEingetragenSensor(_Base):
             "notiz": (item or {}).get("note"),
             "fuer": (item or {}).get("for_whom"),
             "wieder_drauf": last.get("a") == "readd",
+            "wie": last.get("v"),
+        }
+
+
+class ZuletztGekauftSensor(_Base):
+    """sensor.einkaufsliste_zuletzt_gekauft – was wurde zuletzt abgehakt, von wem, wann?"""
+
+    _attr_translation_key = "zuletzt_gekauft"
+    _attr_icon = "mdi:cart-check"
+
+    def __init__(self, manager: EinkaufslisteManager, entry: ConfigEntry) -> None:
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_zuletzt_gekauft"
+
+    def _last(self) -> dict[str, Any] | None:
+        # Aufräum-Abhaken („cleanup“) ist kein Einkauf
+        for e in reversed(self._m.log):
+            if e.get("a") == "check" and e.get("n") and e.get("v") != "cleanup":
+                return e
+        items = [i for i in self._m.items if i.get("checked") and i.get("checked_at")]
+        if not items:
+            return None
+        i = max(items, key=lambda x: x["checked_at"])
+        return {"n": i["name"], "s": i.get("store_id"), "w": i.get("checked_by"), "t": i["checked_at"], "a": "check", "v": None}
+
+    @property
+    def native_value(self) -> str | None:
+        last = self._last()
+        return last["n"] if last else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        last = self._last()
+        if not last:
+            return {}
+        store = self._m.store_by_id(last.get("s"))
+        item = next((i for i in self._m.items if i["name"] == last["n"] and i.get("store_id") == last.get("s")), None)
+        return {
+            "von": last.get("w"),
+            "wann": last.get("t"),
+            "geschaeft": store["name"] if store else None,
+            "menge": (item or {}).get("quantity"),
+            "notiz": (item or {}).get("note"),
+            "fuer": (item or {}).get("for_whom"),
             "wie": last.get("v"),
         }
 

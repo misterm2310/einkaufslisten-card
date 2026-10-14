@@ -1833,6 +1833,21 @@ async def test_more_sensors(hass: HomeAssistant, setup) -> None:
     last = hass.states.get("sensor.einkaufsliste_zuletzt_eingetragen")
     assert last.state == "Milch"
     assert last.attributes["von"] == "Anna" and last.attributes["geschaeft"] == "Aldi" and last.attributes["menge"] == "2 L"
+    # 🛍️ Abhaken: Ereignis + Sensor „zuletzt gekauft“
+    bought: list = []
+    hass.bus.async_listen("einkaufsliste_item_bought", lambda ev: bought.append(ev.data))
+    assert hass.states.get("sensor.einkaufsliste_zuletzt_gekauft").state == "unknown"
+    milch = next(i for i in m.items if i["name"] == "Milch")
+    with m.acting("Berta", None, "card"):
+        m.set_checked(milch["id"], True, by="Berta")
+    await hass.async_block_till_done()
+    assert len(bought) == 1 and bought[0]["name"] == "Milch" and bought[0]["bought_by"] == "Berta" and bought[0]["store"] == "Aldi"
+    gk = hass.states.get("sensor.einkaufsliste_zuletzt_gekauft")
+    assert gk.state == "Milch" and gk.attributes["von"] == "Berta" and gk.attributes["geschaeft"] == "Aldi"
+    with m.acting("Berta", None, "card"):
+        m.set_checked(milch["id"], False, undo=True)  # Rückgängig löst nichts aus
+    await hass.async_block_till_done()
+    assert len(bought) == 1
     # neues Geschäft -> neuer Sensor, gelöscht -> weg
     kl = m.add_group("stores", "Kaufland")
     await hass.async_block_till_done()

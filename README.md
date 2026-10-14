@@ -255,6 +255,7 @@ Alles geht im visuellen Editor. Für YAML-Fans:
 | `sensor.einkaufsliste_<geschäft>` | **pro Geschäft** die offenen Artikel, Attribut `artikel` |
 | `binary_sensor.einkaufsliste_etwas_zu_kaufen` | an, sobald etwas offen ist |
 | `sensor.einkaufsliste_zuletzt_eingetragen` | letzter Artikel mit `von`, `wann`, `geschaeft` |
+| `sensor.einkaufsliste_zuletzt_gekauft` | zuletzt abgehakter Artikel mit `von`, `wann`, `geschaeft`, `menge` (Aufräumen zählt nicht als Einkauf) |
 
 | Aktion | Was passiert |
 |---|---|
@@ -264,7 +265,7 @@ Alles geht im visuellen Editor. Für YAML-Fans:
 | `einkaufsliste.remove_item` | Artikel löschen (`name`, optional `store`) |
 | `einkaufsliste.cleanup` | jetzt aufräumen, mit `force: true` alles abhaken |
 
-Events: `einkaufsliste_item_added`, `einkaufsliste_cleanup`.
+Events: `einkaufsliste_item_added`, `einkaufsliste_item_bought` (beim Abhaken – jeder Artikel einzeln, mit `name`, `quantity`, `note`, `for_whom`, `store`, `category`, `recipe`, `added_by`, `bought_by`; ideal für eine eigene Automation, die den Artikel z. B. in ein Inventar schreibt), `einkaufsliste_cleanup`.
 
 ```yaml
 # Beispiel: Nachricht, wenn man bei Aldi ankommt und dort etwas auf der Liste steht

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.76.15-beta.14"
+VERSION = "2.76.15-beta.15"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
@@ -12,6 +12,7 @@ PUSH_DELAY = 0.3  # ⏱️ Sekunden: schnelle Änderungen werden zu einem Paket 
 
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
 EVENT_ITEM_ADDED = f"{DOMAIN}_item_added"
+EVENT_ITEM_BOUGHT = f"{DOMAIN}_item_bought"
 EVENT_CLEANUP = f"{DOMAIN}_cleanup"
 
 STATIC_URL = "/einkaufsliste_files"
