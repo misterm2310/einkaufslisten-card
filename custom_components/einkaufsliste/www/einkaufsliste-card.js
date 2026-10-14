@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.15-beta.15";
+const EL_VERSION = "2.76.15-beta.16";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -362,9 +362,21 @@ const EL_HELP_TITLES = { // [Titel de, Titel en, Icon]
   listview: ["Listenansicht – für alle", "List view – for everyone", "👁️"], app: ["Offline-App", "Offline app", "📱"], theme: ["Hell / Dunkel", "Light / dark", "🌓"], pin: ["Schutz (PIN)", "Protection (PIN)", "🔒"], privacy: ["Datenschutz", "Privacy", "🛡️"],
 };
 const EL_NEWS_MAX = 15;
+// 🔢 Versionen vergleichen, auch Testversionen: 2.76.15-beta.5 ist neuer als 2.76.14, aber älter als 2.76.15. > 0 = a neuer, < 0 = b neuer
+function elVerCmp(a, b) {
+  const p = (v) => {
+    const m = /^(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))?/.exec(String(v).trim());
+    return m ? [Number(m[1]), Number(m[2]), Number(m[3]), m[4] === undefined ? Infinity : Number(m[4])] : [0, 0, 0, Infinity];
+  };
+  const [x, y] = [p(a), p(b)];
+  for (let i = 0; i < 4; i++) if (x[i] !== y[i]) return x[i] > y[i] ? 1 : -1;
+  return 0;
+}
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Fix: Der Update-Hinweis vergleicht Testversionen jetzt genau (2.76.15-beta.5 ist neuer als 2.76.14, aber älter als 2.76.15) und zeigt so richtig „Neue Version da – Neu laden“ statt fälschlich „Home Assistant neu starten“",
+   "Fix: the update notice now compares test versions exactly (2.76.15-beta.5 is newer than 2.76.14 but older than 2.76.15) and correctly shows “New version available – Reload” instead of wrongly “restart Home Assistant”"],
   ["Neu: 🛍️ Sensor „Zuletzt gekauft“ und Ereignis einkaufsliste_item_bought beim Abhaken – für eigene Automationen (z. B. Inventar); ein Inventar selbst ist bewusst nicht eingebaut",
    "New: 🛍️ “Last bought” sensor and event einkaufsliste_item_bought when checking off – for your own automations (e.g. inventory); an inventory itself is deliberately not built in"],
   ["Fix: Beim langen Drücken auf ein Geschäft oben kann das Handy-Menü („Kopieren“) nicht mehr im Fenster mit den Öffnungszeiten erscheinen",
@@ -3528,9 +3540,7 @@ class EinkaufslisteCard extends HTMLElement {
     const show = !!server && server !== EL_VERSION;
     bar.hidden = !show;
     if (show) {
-      const num = (v) => String(v).split(".").map((x) => parseInt(x, 10) || 0);
-      const [a, b] = [num(server), num(EL_VERSION)];
-      const serverNewer = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+      const serverNewer = elVerCmp(server, EL_VERSION);
       bar.innerHTML = serverNewer > 0
         ? `🔄 <b>Neue Version ${esc(server)} ist da (hier läuft noch ${EL_VERSION}).</b><button class="btn" data-act="reload">Neu laden</button>`
         : `🔄 <b>Die Karte ist schon ${EL_VERSION}, Home Assistant noch ${esc(server)} – bitte Home Assistant neu starten.</b>`;
