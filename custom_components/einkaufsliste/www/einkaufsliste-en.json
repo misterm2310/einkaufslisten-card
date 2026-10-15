@@ -2160,5 +2160,8 @@
 "🛒 Zutaten sind auf der Liste": "🛒 Ingredients are on the list",
 "📅 Wochenplan": "📅 Meal plan",
 "Eingeplante Rezepte automatisch zurücksetzen": "Reset planned recipes automatically",
-"📅 Gespeichert": "📅 Saved"
+"📅 Gespeichert": "📅 Saved",
+"Essensplan": "Meal plan",
+"Essensplan bei den Rezepten zeigen": "Show the meal plan for recipes",
+"Nur für dich. Aus = kein „Planen“-Knopf und keine Abschnitte, nur die Rezepte.": "Only for you. Off = no “Plan” button and no sections, just the recipes."
 }

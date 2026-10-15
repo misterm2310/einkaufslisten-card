@@ -4288,3 +4288,13 @@ async def test_wochenplan_rezepte(hass, setup) -> None:
     st = m.as_dict()["settings"]
     assert (st["plan_reset_on"], st["plan_reset_day"]) == (False, 3)
 
+
+async def test_view_prefs_essensplan_pro_benutzer(hass, setup, hass_ws_client) -> None:
+    """📅 Essensplan anzeigen: eigene Wahl (an UND aus) wird gespeichert."""
+    client = await hass_ws_client(hass)
+    for i, val in enumerate((False, True), start=1):
+        await client.send_json({"id": i, "type": "einkaufsliste/view/set", "scope": "me", "prefs": {"plan": val}})
+        res = await client.receive_json()
+        assert res["success"], res
+        assert res["result"] == {"plan": val}
+

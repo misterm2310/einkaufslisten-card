@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.6";
+const EL_VERSION = "2.76.16-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 👁️ Den Essensplan bei den Rezepten schaltest du in „👁️ Ansicht“ ab (nur für dich): dann gibt es keinen „Planen“-Knopf und keine Abschnitte",
+   "New: 👁️ you can switch the meal plan for recipes off under “👁️ View” (only for you): then there is no “Plan” button and no sections"],
   ["Neu: 📅 Essensplan bei den Rezepten: jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen (Knopf bei jedem Rezept). Oben stehen dann „Diese Woche“ und „Wünsche“, dazu „Alle Zutaten auf die Liste“. In ⚙️ → Rezepte stellst du ein, an welchem Wochentag (03:30 Uhr) „Diese Woche“ automatisch zurückgesetzt wird – oder schaltest es ab",
    "New: 📅 meal plan for recipes: every recipe can be set to “💭 Wish” or “📅 This week” (button on each recipe). The top then shows “This week” and “Wishes”, plus “All ingredients to the list”. In ⚙️ → Recipes you choose the weekday (03:30) when “This week” is reset automatically – or switch it off"],
   ["Neu: 👁️ Den Gruß in der Leiste schaltest du in „👁️ Ansicht“ ab (nur für dich)",
@@ -6127,6 +6129,7 @@ ${(() => {
     const labOn = cur.labels !== undefined ? !!cur.labels : !!this._data?.settings?.labels;
     const animOn = cur.anim !== false;
     const greetOn = cur.greet !== false;
+    const planViewOn = cur.plan !== false;
     const ck = (on) => `<ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>`;
     // 🪗 gleiche Aufklapper wie bei Import und Aufräumen (immer nur einer offen)
     return `
@@ -6137,6 +6140,7 @@ ${(() => {
         ${mine ? this._acc(g, "labels", "mdi:format-text", "#546e7a", "Beschriftungen", labOn ? "an – Text unter den Icons" : "aus – Text unter den Icons", `<button class="lrow viewrow" data-act="view-labels" aria-pressed="${labOn}">${ck(labOn)}<span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "anim", "mdi:check", "#43a047", "Abhaken", animOn ? "Animation an" : "Animation aus", `<button class="lrow viewrow" data-act="view-anim" aria-pressed="${animOn}">${ck(animOn)}<span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "greet", "mdi:hand-wave-outline", "#fb8c00", "Gruß", greetOn ? "an" : "aus", `<button class="lrow viewrow" data-act="view-greet" aria-pressed="${greetOn}">${ck(greetOn)}<span class="grow"><b>Gruß in der Leiste oben</b><small>Nur für dich. Aus = die Leiste bleibt in der Mitte leer.</small></span></button>`) : ""}
+        ${mine ? this._acc(g, "plan", "mdi:calendar-check", "#43a047", "Essensplan", planViewOn ? "an" : "aus", `<button class="lrow viewrow" data-act="view-plan" aria-pressed="${planViewOn}">${ck(planViewOn)}<span class="grow"><b>Essensplan bei den Rezepten zeigen</b><small>Nur für dich. Aus = kein „Planen“-Knopf und keine Abschnitte, nur die Rezepte.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "haptic", "mdi:vibrate", "#8e24aa", "Vibration", { off: "Aus", low: "Schwach", normal: "Normal", high: "Stark" }[elHapticLevel()], `
         <p class="hint">Nur für dieses Gerät. Beim Abhaken, im Rechner, bei der PIN-Eingabe und beim langen Drücken. Manche Handys (z. B. iPhone) vibrieren im Browser nie.</p>
         <div class="fontrow">${[["off", "Aus"], ["low", "Schwach"], ["normal", "Normal"], ["high", "Stark"]].map(([k, t]) => `<button class="btn ${elHapticLevel() === k ? "primary" : ""}" data-act="view-haptic" data-level="${k}" aria-pressed="${elHapticLevel() === k}">${t}</button>`).join("")}</div>`) : ""}
@@ -7325,13 +7329,14 @@ ${(() => {
         : via ? `🥕 enthält ${this._markHit(via, q)}`
         : ""; // nur bei der Suche: warum gefunden
       const pl = PL[r.plan || ""];
+      const planOn = this._viewPrefs().plan !== false; // 👁️ Meine Ansicht: Essensplan abschaltbar
       return `
         <div class="recipe rv ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
           <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
-          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}</div>
+          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${planOn && pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}</div>
         </div>
         <div class="rtools" data-id="${r.id}">
-          <button class="btn plan ${r.plan || ""}" data-act="recipe-plan" title="Essensplan: antippen = nichts → 💭 Wunsch → 📅 Diese Woche"><ha-icon icon="${pl[0]}"></ha-icon><span class="lbl">${pl[1]}</span></button>
+          ${planOn ? `<button class="btn plan ${r.plan || ""}" data-act="recipe-plan" title="Essensplan: antippen = nichts → 💭 Wunsch → 📅 Diese Woche"><ha-icon icon="${pl[0]}"></ha-icon><span class="lbl">${pl[1]}</span></button>` : ""}
           <button class="btn" data-act="recipe-apply" title="Auf die Liste – Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon><span class="lbl">Auf die Liste</span></button>
           ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Von der Liste – alle offenen Zutaten dieses Rezepts (${onList(r)}) von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon><span class="lbl">Von Liste (${onList(r)})</span></button>` : ""}
           ${this._recipePhotoToolBtn(r)}
@@ -7342,7 +7347,7 @@ ${(() => {
     // 📅 Essensplan: oben „Diese Woche“, dann „Wünsche“, dann der Rest (nur wenn überhaupt etwas geplant ist)
     const weekN = (this._data.recipes || []).filter((r) => r.plan === "week").length;
     const wishN = (this._data.recipes || []).filter((r) => r.plan === "wish").length;
-    if (weekN + wishN > 0 && !q) {
+    if (weekN + wishN > 0 && !q && this._viewPrefs().plan !== false) {
       const grp = (key) => found.filter((x) => (x.r.plan || "") === key);
       const sec = (title, list, extra = "") => list.length ? `<h4 class="plansec">${title}</h4>${extra}` + list.map(rowHtml).join("") : "";
       const applyBtn = `<div class="btnrow"><button class="btn" type="button" data-act="recipe-plan-apply"><ha-icon icon="mdi:cart-plus"></ha-icon>Alle Zutaten auf die Liste</button></div>`;
@@ -10547,6 +10552,15 @@ ${(() => {
         prefs[el.dataset.key] = shown[el.dataset.key] === false;
         this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
           .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
+        break;
+      }
+      case "view-plan": { // 📅 Essensplan nur für mich an/aus
+        const all = this._data.settings?.view_prefs || {};
+        const me = this._hass?.user?.id;
+        const prefs = { ...((me && all[me]) || {}) };
+        prefs.plan = this._viewPrefs().plan === false;
+        this._ws({ type: "einkaufsliste/view/set", scope: "me", prefs })
+          .then(() => setTimeout(() => { this._renderMyView(); if (this.$("recipeList")) this._renderRecipeList(); }, 150)).catch(() => {});
         break;
       }
       case "view-greet": { // 👋 Gruß in der Leiste nur für mich an/aus

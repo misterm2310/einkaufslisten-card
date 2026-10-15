@@ -297,6 +297,7 @@ VIEW_KEYS = (
     "tabs", "in_name", "in_store", "in_cat", "in_icons",  # 🧩 Leiste/Eingabe-Felder oben (an/aus)
     "anim",  # ✔️ Abhak-Animation – pro Benutzer (Standard an)
     "greet",  # 👋 Gruß in der Leiste oben – pro Benutzer (Standard an)
+    "plan",  # 📅 Essensplan bei den Rezepten – pro Benutzer (Standard an)
     "labels",  # 🏷️ Beschriftungen unter den Icons – pro Benutzer (ohne Eintrag gilt der Schalter aus ⚙️ → Extras)
 )
 VIEW_FONTS = ("s", "m", "l")  # 🔠 Schriftgröße: kleiner / Standard / größer
