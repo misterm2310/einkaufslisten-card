@@ -219,6 +219,11 @@ def purchase_photo_key(purchase_id: str) -> str:
     return f"bon#{purchase_id}".lower()
 
 
+def _plan(value: Any) -> str:
+    """📅 Wochenplan eines Rezepts: "" = nichts, "wish" = 💭 Essenswunsch, "week" = 📅 diese Woche."""
+    return value if value in ("wish", "week") else ""
+
+
 def recipe_step_photo_key(recipe_id: str, step: int) -> str:
     """📷 Foto zu einem Kochschritt (0 = erster Schritt): liegt bei den Produkt-Fotos, Schlüssel „rezept#<id>#s<n>“."""
     return f"rezept#{recipe_id}#s{int(step)}".lower()
@@ -405,6 +410,9 @@ class EinkaufslisteManager:
         self.ai_pantry: list[str] = []  # 🧂 „Immer im Haus“ – geht bei jeder KI-Kochen-Anfrage mit
         self.ai_avoid: list[str] = []  # 🚫 „Das nie vorschlagen“ (Allergien, Abneigungen)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
+        self.plan_reset_on: bool = True  # 📅 Wochenplan: eingeplante Rezepte am Wochentag automatisch zurücksetzen
+        self.plan_reset_day: int = 0  # 0 = Montag … 6 = Sonntag (Uhrzeit fest 03:30)
+        self.plan_last_reset: str | None = None
         self.labels: bool = False  # 🏷️ Text unter den Icons an/aus – gilt für alle Karten und Handys
         self.privacy: bool = False  # 🔒 Datenschutz an = keine Kamera, keine Fotos, kein Barcode-Scanner (für alle Geräte)
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
@@ -431,6 +439,7 @@ class EinkaufslisteManager:
         self.missed_hidden: dict[str, str] = {}  # 📈 „Oft nicht bekommen“ weggeklickt: "name|geschäft" -> seit wann
         self._actor = {}
         self._unsub_time: Callable[[], None] | None = None
+        self._unsub_plan: Callable[[], None] | None = None
         # 🧹 Aufräumen: in der Karte einstellbar (⚙️ → Aufräumen). None = noch nie gespeichert → alte Werte aus den Integrations-Optionen
         self.cleanup_cfg: dict[str, Any] | None = None
 
@@ -572,6 +581,7 @@ class EinkaufslisteManager:
             recipe.setdefault("servings", None)
             recipe.setdefault("servings_unit", "persons")
             recipe.setdefault("group", None)
+            recipe["plan"] = _plan(recipe.get("plan"))
             for entry in recipe.get("items", []):
                 entry["note"] = _note(entry.get("note"))
                 new_qty = norm_qty(entry.get("quantity"))
@@ -598,6 +608,10 @@ class EinkaufslisteManager:
         self.typos = data.get("typos", {})
         self.pin_hash = data.get("pin")
         self.mascot = bool(data.get("mascot", False))
+        self.plan_reset_on = bool(data.get("plan_reset_on", True))
+        pd = data.get("plan_reset_day", 0)
+        self.plan_reset_day = pd if isinstance(pd, int) and not isinstance(pd, bool) and 0 <= pd <= 6 else 0
+        self.plan_last_reset = data.get("plan_last_reset")
         self.labels = bool(data.get("labels", False))
         nt = data.get("note_templates")
         self.note_templates = [str(x) for x in nt][:30] if isinstance(nt, list) else None
@@ -678,6 +692,9 @@ class EinkaufslisteManager:
             "typos": self.typos,
             "pin": self.pin_hash,
             "mascot": self.mascot,
+            "plan_reset_on": self.plan_reset_on,
+            "plan_reset_day": self.plan_reset_day,
+            "plan_last_reset": self.plan_last_reset,
             "labels": self.labels,
             "note_templates": self.note_templates,
             "ai_agent": self.ai_agent,
@@ -772,6 +789,8 @@ class EinkaufslisteManager:
                 "pin": bool(self.pin_hash),
                 "app_url": self._app_url(),
                 "mascot": self.mascot,
+                "plan_reset_on": self.plan_reset_on,
+                "plan_reset_day": self.plan_reset_day,
                 "labels": self.labels,
                 "note_templates": self.effective_note_templates(),
                 "note_templates_custom": self.note_templates is not None,
@@ -1084,6 +1103,54 @@ class EinkaufslisteManager:
         """🛒😊 Maskottchen für alle an- oder ausschalten."""
         self.mascot = bool(on)
         self._changed()
+
+    @callback
+    def set_plan_reset(self, on: bool | None = None, day: int | None = None) -> None:
+        """📅 Wochenplan: Zurücksetzen der eingeplanten Rezepte an/aus und Wochentag (gilt für alle)."""
+        if day is not None:
+            if isinstance(day, bool) or not 0 <= int(day) <= 6:
+                raise ValueError("Diesen Wochentag gibt es nicht.")
+            self.plan_reset_day = int(day)
+        if on is not None:
+            self.plan_reset_on = bool(on)
+        self._schedule_plan_reset()
+        self._changed()
+
+    def _last_planned_plan_reset(self, now: datetime | None = None) -> datetime:
+        """Letzter Zeitpunkt (03:30 am eingestellten Wochentag), an dem zurückgesetzt werden sollte."""
+        now = dt_util.as_local(now or dt_util.now())
+        back = (now.weekday() - self.plan_reset_day) % 7
+        planned = (now - timedelta(days=back)).replace(hour=3, minute=30, second=0, microsecond=0)
+        if planned > now:
+            planned -= timedelta(days=7)
+        return planned
+
+    @callback
+    def reset_plan(self, reference: datetime | None = None) -> int:
+        """📅 Alle „📅 Diese Woche“-Rezepte zurück auf „nichts“ (Wünsche 💭 bleiben)."""
+        n = 0
+        for recipe in self.recipes:
+            if recipe.get("plan") == "week":
+                recipe["plan"] = ""
+                n += 1
+        self.plan_last_reset = (reference or dt_util.now()).isoformat()
+        self._changed()
+        return n
+
+    @callback
+    def _schedule_plan_reset(self) -> None:
+        if self._unsub_plan:
+            self._unsub_plan()
+            self._unsub_plan = None
+        if not self.plan_reset_on:
+            return
+        self._unsub_plan = async_track_time_change(self.hass, self._handle_plan_time, hour=3, minute=30, second=0)
+
+    @callback
+    def _handle_plan_time(self, now: datetime) -> None:
+        now = dt_util.as_local(now)
+        if self.plan_reset_on and now.weekday() == self.plan_reset_day:
+            self.reset_plan(reference=now)
 
     def set_labels(self, on: bool) -> None:
         """🏷️ Text unter den Icons für alle an- oder ausschalten."""
@@ -3490,6 +3557,14 @@ class EinkaufslisteManager:
         self.expire_offers()
         self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: self.expire_offers(), timedelta(hours=1))
         self._schedule_cleanup()
+        self._schedule_plan_reset()
+        if self.plan_reset_on:  # 📅 verpasst (HA war aus)? Dann jetzt nachholen
+            planned = self._last_planned_plan_reset()
+            done = dt_util.parse_datetime(self.plan_last_reset or "")
+            if done is None:
+                self.plan_last_reset = planned.isoformat()  # erster Start: nichts löschen, nur merken
+            elif done < planned:
+                self.reset_plan(reference=planned)
         # Verpasst (z. B. HA war zur Aufräumzeit aus)? Dann jetzt nachholen.
         last_planned = self.last_scheduled_cleanup()
         last_done = dt_util.parse_datetime(self.last_cleanup or "")
@@ -3528,6 +3603,9 @@ class EinkaufslisteManager:
         if getattr(self, "_unsub_offer_exp", None):
             self._unsub_offer_exp()
             self._unsub_offer_exp = None
+        if self._unsub_plan:
+            self._unsub_plan()
+            self._unsub_plan = None
         if self._unsub_time:
             self._unsub_time()
             self._unsub_time = None
@@ -3598,6 +3676,7 @@ class EinkaufslisteManager:
             "servings": _servings(servings),
             "servings_unit": _servings_unit(servings_unit),
             "group": self._group(group),
+            "plan": "",
         }
         if ai:  # 🤖 von der KI vorgeschlagen – bleibt für immer dran, auch nach dem Bearbeiten
             recipe["ai"] = True
@@ -3631,6 +3710,8 @@ class EinkaufslisteManager:
             recipe["servings_unit"] = _servings_unit(fields["servings_unit"])
         if "group" in fields:
             recipe["group"] = self._group(fields["group"])
+        if "plan" in fields:
+            recipe["plan"] = _plan(fields["plan"])
         self._changed()
         return recipe
 

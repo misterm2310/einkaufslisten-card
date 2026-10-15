@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.4";
+const EL_VERSION = "2.76.16-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 📅 Essensplan bei den Rezepten: jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen (Knopf bei jedem Rezept). Oben stehen dann „Diese Woche“ und „Wünsche“, dazu ein Filter und „Alle Zutaten auf die Liste“. In ⚙️ → Rezepte stellst du ein, an welchem Wochentag (03:30 Uhr) „Diese Woche“ automatisch zurückgesetzt wird – oder schaltest es ab",
+   "New: 📅 meal plan for recipes: every recipe can be set to “💭 Wish” or “📅 This week” (button on each recipe). The top then shows “This week” and “Wishes”, plus a filter and “All ingredients to the list”. In ⚙️ → Recipes you choose the weekday (03:30) when “This week” is reset automatically – or switch it off"],
   ["Neu: 👁️ Den Gruß in der Leiste schaltest du in „👁️ Ansicht“ ab (nur für dich)",
    "New: 👁️ you can switch the greeting in the bar off under “👁️ View” (only for you)"],
   ["Neu: 👋 In der Leiste oben steht ein Gruß nach Uhrzeit mit deinem Vornamen („☀️ Guten Morgen, Marco“); ist er zu lang für den Platz, läuft er als Laufschrift",
@@ -2611,6 +2613,14 @@ ha-card.compact .group { margin-top:4px; }
 .rtools [data-act="photo-view"] ha-icon { color:var(--primary-color,#03a9f4); }
 .rtools [data-act="recipe-cook"] ha-icon { color:var(--error-color,#e53935); }
 .rtools [data-act="recipe-share"] ha-icon { color:var(--success-color,#43a047); }
+.plansec { margin:12px 4px 4px; font-size:14px; color:var(--secondary-text-color); }
+.planchips { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; }
+.planchip { cursor:pointer; border:1px solid var(--divider-color,#ccc); border-radius:999px; padding:3px 12px; background:transparent; color:var(--primary-text-color); font:inherit; }
+.planchip.active { background:var(--primary-color,#03a9f4); color:#fff; border-color:transparent; }
+.planset { margin:8px 0 12px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); }
+.plantag { font-size:13px; }
+.rtools .btn.plan.week { background:color-mix(in srgb, var(--success-color,#43a047) 22%, transparent); }
+.rtools .btn.plan.wish { background:color-mix(in srgb, var(--warning-color,#ffa600) 25%, transparent); }
 .rbtns [data-act="recipe-apply"] { background:transparent; color:var(--primary-text-color); border:2px solid var(--primary-color,#03a9f4); } /* 🛒 Auf die Liste: blauer Rahmen, nicht gefüllt */
 .rtools [data-act="recipe-apply"] ha-icon, [data-act="recipe-apply"] ha-icon { color:var(--success-color,#43a047); } /* 🛒 Wagen grün */
 .bclist { display:flex; flex-wrap:wrap; gap:6px; }
@@ -3422,7 +3432,7 @@ function applyQueued(data, list, hass) {
         break;
       case "einkaufsliste/recipe/update": {
         const r = (data.recipes || []).find((x) => x.id === m.recipe_id);
-        if (r) { for (const k of ["name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group"]) if (k in m) r[k] = m[k]; r._queued = true; }
+        if (r) { for (const k of ["name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "plan"]) if (k in m) r[k] = m[k]; r._queued = true; }
         break;
       }
       case "einkaufsliste/recipe/remove":
@@ -5803,6 +5813,11 @@ ${(() => {
         <div class="picker" hidden></div>
         <p class="hint">⌃⌄ = Reihenfolge der Gruppen. Gruppe antippen = Name, Farbe und Icon ändern. Das Icon der Gruppe bekommen automatisch alle Rezepte dieser Gruppe. Icon: einfach den Namen tippen (z. B. <b>fish</b>, <b>pizza</b> oder <b>cake</b>) und aus der Vorschau antippen.</p>`;
         })()}` : `
+        <div class="planset"><b>📅 Wochenplan</b>
+          ${this._swHtml("plan-reset-toggle", d.settings?.plan_reset_on !== false, "Eingeplante Rezepte automatisch zurücksetzen")}
+          ${d.settings?.plan_reset_on === false ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:calendar-week"></ha-icon><select class="grow" id="planDaySel" title="Zurücksetzen am">${WD_LONG.map((w, i) => `<option value="${i}" ${i === (d.settings?.plan_reset_day ?? 0) ? "selected" : ""}>${w}</option>`).join("")}</select></div>
+          <p class="hint">Jeden ${WD_LONG[d.settings?.plan_reset_day ?? 0]} um 03:30 Uhr gehen alle „📅 Diese Woche“-Rezepte zurück auf „nichts“. 💭 Essenswünsche bleiben stehen. Gilt für alle.</p>`}
+        </div>
         ${recipes.length ? this._recipeSearchHtml("recipeSearchS") : ""}
         <div id="setRecipeList"></div>`}` },
       { key: "recipe_groups", parent: "recipes", alias: true },
@@ -7307,22 +7322,41 @@ ${(() => {
     const found = this._recipeMatches(q);
     if (q && !found.length) html.push(`<div class="empty"><ha-icon icon="mdi:magnify-close"></ha-icon>Nix gefunden für „${esc(q)}“. 🕵️<br>Weniger Buchstaben probieren?</div>`);
     const onList = (r) => this._data.items.filter((i) => i.recipe_id === r.id && !i.checked).length;
-    for (const { r, via, fuzzy } of found) {
+    const PL = { week: ["mdi:calendar-check", "Diese Woche", "📅"], wish: ["mdi:thought-bubble-outline", "Wunsch", "💭"], "": ["mdi:calendar-plus", "Planen", ""] };
+    const rowHtml = ({ r, via, fuzzy }) => {
       const sub = fuzzy ? "🤓 Meintest du das?"
         : via ? `🥕 enthält ${this._markHit(via, q)}`
         : ""; // nur bei der Suche: warum gefunden
-      html.push(`
+      const pl = PL[r.plan || ""];
+      return `
         <div class="recipe rv ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
           <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
-          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}</b>${sub ? `<small>${sub}</small>` : ""}</div>
+          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}</div>
         </div>
         <div class="rtools" data-id="${r.id}">
+          <button class="btn plan ${r.plan || ""}" data-act="recipe-plan" title="Essensplan: antippen = nichts → 💭 Wunsch → 📅 Diese Woche"><ha-icon icon="${pl[0]}"></ha-icon><span class="lbl">${pl[1]}</span></button>
           <button class="btn" data-act="recipe-apply" title="Auf die Liste – Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon><span class="lbl">Auf die Liste</span></button>
           ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Von der Liste – alle offenen Zutaten dieses Rezepts (${onList(r)}) von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon><span class="lbl">Von Liste (${onList(r)})</span></button>` : ""}
           ${this._recipePhotoToolBtn(r)}
           ${(r.steps || "").trim() ? `<button class="btn" data-act="recipe-cook" title="Kochen"><ha-icon icon="mdi:fire"></ha-icon><span class="lbl">Kochen</span></button>` : ""}
           <button class="btn" data-act="recipe-share" title="Teilen"><ha-icon icon="mdi:share-variant-outline"></ha-icon><span class="lbl">Teilen</span></button>
-        </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`);
+        </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`;
+    };
+    // 📅 Essensplan: oben „Diese Woche“, dann „Wünsche“, dann der Rest (nur wenn überhaupt etwas geplant ist)
+    const weekN = (this._data.recipes || []).filter((r) => r.plan === "week").length;
+    const wishN = (this._data.recipes || []).filter((r) => r.plan === "wish").length;
+    if (weekN + wishN > 0 && !q) {
+      const pf = this._planFilter === "week" || this._planFilter === "wish" ? this._planFilter : "";
+      const chip = (v, label) => `<button class="planchip ${pf === v ? "active" : ""}" type="button" data-act="recipe-planfilter" data-v="${v}">${label}</button>`;
+      html.push(`<div class="planchips">${chip("", "Alle")}${chip("week", `📅 Diese Woche ${weekN}`)}${chip("wish", `💭 Wünsche ${wishN}`)}</div>`);
+      const grp = (key) => found.filter((x) => (x.r.plan || "") === key);
+      const sec = (title, list, extra = "") => list.length ? `<h4 class="plansec">${title}</h4>${extra}` + list.map(rowHtml).join("") : "";
+      const applyBtn = `<div class="btnrow"><button class="btn" type="button" data-act="recipe-plan-apply"><ha-icon icon="mdi:cart-plus"></ha-icon>Alle Zutaten auf die Liste</button></div>`;
+      if (pf !== "wish") html.push(sec(`📅 Diese Woche (${weekN})`, grp("week"), applyBtn));
+      if (pf !== "week") html.push(sec(`💭 Essenswünsche (${wishN})`, grp("wish")));
+      if (!pf) html.push(sec("🍽️ Alle Rezepte", grp("")));
+    } else {
+      for (const x of found) html.push(rowHtml(x));
     }
     box.innerHTML = html.join("");
     this._knRestore();
@@ -10231,6 +10265,11 @@ ${(() => {
       if (t.id === "recipeSearch") this._renderRecipeList(); else this._renderSetRecipeList();
       return;
     }
+    if (t.id === "planDaySel") { // 📅 Tag zum Zurücksetzen speichern
+      this._ws({ type: "einkaufsliste/plan_reset/set", day: Number(t.value) })
+        .then(() => { this._toast("📅 Gespeichert"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+      return;
+    }
     if (t.id === "prodFilterSel") {
       this._prodSel = t.value;
       this._renderProducts();
@@ -11639,6 +11678,32 @@ ${(() => {
           const n = r?.added?.length || 0;
           this._toast(n ? `⭐ Auf die Liste: ${r.added.slice(0, 4).join(", ")}${n > 4 ? " …" : ""}` : "⭐ Alle Favoriten stehen schon auf der Liste 👍");
         }).catch(() => {});
+        break;
+      case "recipe-plan": { // 📅 antippen: nichts → 💭 Wunsch → 📅 Diese Woche → nichts
+        const rec = this._recipe(el.closest(".rtools")?.dataset.id);
+        if (!rec) break;
+        const next = !rec.plan ? "wish" : rec.plan === "wish" ? "week" : "";
+        this._ws({ type: "einkaufsliste/recipe/update", recipe_id: rec.id, plan: next })
+          .then(() => { rec.plan = next; this._toast(next === "week" ? "📅 Diese Woche eingeplant" : next === "wish" ? "💭 Als Essenswunsch gemerkt" : "Aus dem Essensplan genommen"); this._renderRecipeList(); }).catch(() => {});
+        break;
+      }
+      case "recipe-planfilter":
+        this._planFilter = el.dataset.v || "";
+        this._renderRecipeList();
+        break;
+      case "recipe-plan-apply": { // 🛒 alle Zutaten der eingeplanten Rezepte auf die Liste
+        const list = (this._data.recipes || []).filter((r) => r.plan === "week" && (r.items || []).length);
+        if (!list.length) { this._toast("Kein eingeplantes Rezept mit Zutaten"); break; }
+        if (!elConfirm(`Alle Zutaten von ${list.length} eingeplanten Rezepten auf die Liste setzen?`)) break;
+        (async () => {
+          for (const r of list) { try { await this._ws({ type: "einkaufsliste/recipe/apply", recipe_id: r.id }); } catch (_) { /* nächstes */ } }
+          this._toast("🛒 Zutaten sind auf der Liste");
+        })();
+        break;
+      }
+      case "plan-reset-toggle":
+        this._ws({ type: "einkaufsliste/plan_reset/set", on: this._data.settings?.plan_reset_on === false })
+          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
         break;
       case "mascot-toggle":
         this._ws({ type: "einkaufsliste/mascot/set", on: !this._data.settings?.mascot })

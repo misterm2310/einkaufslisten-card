@@ -72,6 +72,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_mail_sources,
         ws_mail_import,
         ws_mascot,
+        ws_plan_reset,
         ws_labels,
         ws_catalog_wipe,
         ws_factory_reset,
@@ -498,11 +499,12 @@ def ws_recipe_add(hass, connection, msg):
         vol.Optional("servings_unit"): vol.In(["persons", "trays"]),
         vol.Optional("group"): vol.Any(None, str),
         vol.Optional("step_map"): [vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=999)))],
+        vol.Optional("plan"): vol.In(["", "wish", "week"]),
     }
 )
 @callback
 def ws_recipe_update(hass, connection, msg):
-    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map")
+    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan")
     _run(hass, connection, msg, lambda m: m.update_recipe(msg["recipe_id"], **fields))
 
 
@@ -777,6 +779,18 @@ def ws_labels(hass, connection, msg):
 def ws_view_set(hass, connection, msg):
     """👁️ Listenansicht: was beim Artikel zu sehen ist – für alle oder nur für mich."""
     _run(hass, connection, msg, lambda m: m.set_view(msg["scope"], msg["prefs"]))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/plan_reset/set",
+        vol.Optional("on"): bool,
+        vol.Optional("day"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
+    }
+)
+@callback
+def ws_plan_reset(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.set_plan_reset(msg.get("on"), msg.get("day")))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/mascot/set", vol.Required("on"): bool})

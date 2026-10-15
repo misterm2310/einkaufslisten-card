@@ -4259,3 +4259,32 @@ async def test_view_prefs_gruss_pro_benutzer(hass, setup, hass_ws_client) -> Non
         res = await client.receive_json()
         assert res["success"], res
         assert res["result"] == {"greet": val}
+
+
+async def test_wochenplan_rezepte(hass, setup) -> None:
+    """📅 Rezepte: Wunsch / Diese Woche; Zurücksetzen am Wochentag lässt Wünsche stehen."""
+    m = mgr(hass)
+    a = m.add_recipe("Lasagne", [{"name": "Nudelplatten"}])
+    b = m.add_recipe("Pizza", [{"name": "Mehl"}])
+    c = m.add_recipe("Suppe", [{"name": "Möhren"}])
+    assert a["plan"] == ""
+    m.update_recipe(a["id"], plan="week")
+    m.update_recipe(b["id"], plan="wish")
+    m.update_recipe(c["id"], plan="quatsch")  # ungültig -> nichts
+    assert [r["plan"] for r in m.recipes] == ["week", "wish", ""]
+    assert m.reset_plan() == 1
+    assert [r["plan"] for r in m.recipes] == ["", "wish", ""]
+    # Einstellung: Wochentag und an/aus
+    m.set_plan_reset(on=False, day=3)
+    assert (m.plan_reset_on, m.plan_reset_day) == (False, 3)
+    with pytest.raises(ValueError):
+        m.set_plan_reset(day=9)
+    # Zeitpunkt: letzter Donnerstag 03:30
+    now = datetime(2026, 10, 15, 12, 0, tzinfo=tz())  # Donnerstag
+    assert m._last_planned_plan_reset(now) == datetime(2026, 10, 15, 3, 30, tzinfo=tz())
+    now = datetime(2026, 10, 15, 2, 0, tzinfo=tz())  # vor 03:30 -> Woche davor
+    assert m._last_planned_plan_reset(now) == datetime(2026, 10, 8, 3, 30, tzinfo=tz())
+    # Werte kommen in den Daten an
+    st = m.as_dict()["settings"]
+    assert (st["plan_reset_on"], st["plan_reset_day"]) == (False, 3)
+

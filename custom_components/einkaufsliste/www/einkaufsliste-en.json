@@ -2143,5 +2143,22 @@
 "🌆 Guten Abend": "🌆 Good evening",
 "Gruß": "Greeting",
 "Gruß in der Leiste oben": "Greeting in the bar at the top",
-"Nur für dich. Aus = die Leiste bleibt in der Mitte leer.": "Only for you. Off = the middle of the bar stays empty."
+"Nur für dich. Aus = die Leiste bleibt in der Mitte leer.": "Only for you. Off = the middle of the bar stays empty.",
+"Planen": "Plan",
+"Wunsch": "Wish",
+"Diese Woche": "This week",
+"Essensplan: antippen = nichts → 💭 Wunsch → 📅 Diese Woche": "Meal plan: tap = nothing → 💭 Wish → 📅 This week",
+"📅 Diese Woche eingeplant": "📅 Planned for this week",
+"💭 Als Essenswunsch gemerkt": "💭 Noted as a meal wish",
+"Aus dem Essensplan genommen": "Removed from the meal plan",
+"📅 Diese Woche": "📅 This week",
+"💭 Wünsche": "💭 Wishes",
+"💭 Essenswünsche": "💭 Meal wishes",
+"🍽️ Alle Rezepte": "🍽️ All recipes",
+"Alle Zutaten auf die Liste": "All ingredients to the list",
+"Kein eingeplantes Rezept mit Zutaten": "No planned recipe with ingredients",
+"🛒 Zutaten sind auf der Liste": "🛒 Ingredients are on the list",
+"📅 Wochenplan": "📅 Meal plan",
+"Eingeplante Rezepte automatisch zurücksetzen": "Reset planned recipes automatically",
+"📅 Gespeichert": "📅 Saved"
 }
