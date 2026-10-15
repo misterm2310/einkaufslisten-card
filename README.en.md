@@ -28,7 +28,7 @@
 | ♻️ **Nothing gets lost** | Checked items move down to “Done”. Tap the circle again = back on the list. |
 | 🏷️ **For whom & who** | *Cheese (for Grandma)* – and in small print who added it. |
 | ⚡ **Quick entry** | “3 milk” or “500 g flour” – quantity and name are recognised, one entry is always one product. Suggestions bring back everything from last time. After just **1–2 letters** you also get suggestions from a built-in list of ~1400 common products (with category, German only). |
-| 🍽️ **Recipes** | Ingredients onto the list with one tap, scaled for x people. Cook mode, photos, sharing and import (links and US measures too). **📅 Meal plan** (can be switched off per person under 👁️ View)**:** every recipe can be set to “💭 Wish” or “📅 This week”; the planned ones are shown at the top, plus “All ingredients to the list”. |
+| 🍽️ **Recipes** | Ingredients onto the list with one tap, scaled for x people. Cook mode, photos, sharing and import (links and US measures too). **📅 Meal plan** (can be switched off per person under 👁️ View)**:** every recipe can be set to “💭 Wish” or “📅 This week”; the planned ones are shown at the top, plus “All ingredients to the list” (shows each planned recipe one after the other with the number of people and ingredients to untick). |
 | 🔍 **Barcodes** | Scan in the HA app or with the phone camera in the offline app: add at home, check off in the store. |
 | 🔁 **“Was out!”** | ⇄ on the item: here again next time, or move it to another store. The list notices what's often missing. |
 | 🛒 **Shop mode** | Big rows, checking off only – one hand on the cart. At the bottom “Just ticked off”: ticked something by mistake? Tap ↩️ and it is back with its note and quantity. |

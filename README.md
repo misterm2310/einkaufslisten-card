@@ -26,7 +26,7 @@
 | ♻️ **Nichts geht verloren** | Abgehaktes rutscht nach unten zu „Erledigt“. Kreis antippen = wieder drauf. |
 | 🏷️ **Für wen & wer** | *Käse (für Oma)* – und klein darunter, wer es eingetragen hat. |
 | ⚡ **Schnell eintragen** | „3 milch“ oder „500 g mehl“ – Menge und Name werden erkannt, eine Eingabe ist immer ein Produkt. Vorschläge übernehmen alles vom letzten Mal. Schon nach **1–2 Buchstaben** kommen auch Vorschläge aus einer eingebauten Liste mit ~1400 gängigen Produkten (mit Kategorie, nur deutsch). |
-| 🍽️ **Rezepte** | Zutaten per Tipp auf die Liste, für x Personen umgerechnet. Mit Koch-Modus, Fotos, Teilen und Import (auch Links und US-Maße). **📅 Essensplan** (pro Person unter 👁️ Ansicht abschaltbar)**:** jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen; oben stehen die geplanten, dazu „Alle Zutaten auf die Liste“. |
+| 🍽️ **Rezepte** | Zutaten per Tipp auf die Liste, für x Personen umgerechnet. Mit Koch-Modus, Fotos, Teilen und Import (auch Links und US-Maße). **📅 Essensplan** (pro Person unter 👁️ Ansicht abschaltbar)**:** jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen; oben stehen die geplanten, dazu „Alle Zutaten auf die Liste“ (zeigt jedes eingeplante Rezept nacheinander mit Personenzahl und Zutaten zum Abwählen). |
 | 🔍 **Barcodes** | Scannen in der HA-App oder mit der Handykamera in der Offline-App: zu Hause eintragen, im Laden abhaken. |
 | 🔁 **„War aus!“** | ⇄ am Artikel: nächstes Mal wieder hier oder gleich in ein anderes Geschäft. Die Liste merkt sich, was oft fehlt. |
 | 🛒 **Laden-Modus** | Große Zeilen, nur abhaken – mit einer Hand am Wagen. Unten steht **„Gerade abgehakt“**: aus Versehen abgehakt? Auf ↩️ tippen, und es ist samt Notiz und Menge zurück. |

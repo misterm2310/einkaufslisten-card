@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.7";
+const EL_VERSION = "2.76.16-beta.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -377,8 +377,8 @@ function elVerCmp(a, b) {
 const EL_BETA_NEWS = [
   ["Neu: 👁️ Den Essensplan bei den Rezepten schaltest du in „👁️ Ansicht“ ab (nur für dich): dann gibt es keinen „Planen“-Knopf und keine Abschnitte",
    "New: 👁️ you can switch the meal plan for recipes off under “👁️ View” (only for you): then there is no “Plan” button and no sections"],
-  ["Neu: 📅 Essensplan bei den Rezepten: jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen (Knopf bei jedem Rezept). Oben stehen dann „Diese Woche“ und „Wünsche“, dazu „Alle Zutaten auf die Liste“. In ⚙️ → Rezepte stellst du ein, an welchem Wochentag (03:30 Uhr) „Diese Woche“ automatisch zurückgesetzt wird – oder schaltest es ab",
-   "New: 📅 meal plan for recipes: every recipe can be set to “💭 Wish” or “📅 This week” (button on each recipe). The top then shows “This week” and “Wishes”, plus “All ingredients to the list”. In ⚙️ → Recipes you choose the weekday (03:30) when “This week” is reset automatically – or switch it off"],
+  ["Neu: 📅 Essensplan bei den Rezepten: jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen (Knopf bei jedem Rezept). Oben stehen dann „Diese Woche“ und „Wünsche“, dazu „Alle Zutaten auf die Liste“. In ⚙️ → Rezepte stellst du ein, an welchem Wochentag (03:30 Uhr) „Diese Woche“ automatisch zurückgesetzt wird – oder schaltest es ab. „Alle Zutaten auf die Liste“ zeigt jedes eingeplante Rezept nacheinander mit Personenzahl und Zutaten zum Abwählen",
+   "New: 📅 meal plan for recipes: every recipe can be set to “💭 Wish” or “📅 This week” (button on each recipe). The top then shows “This week” and “Wishes”, plus “All ingredients to the list”. In ⚙️ → Recipes you choose the weekday (03:30) when “This week” is reset automatically – or switch it off. “All ingredients to the list” shows each planned recipe one after the other with the number of people and ingredients to untick"],
   ["Neu: 👁️ Den Gruß in der Leiste schaltest du in „👁️ Ansicht“ ab (nur für dich)",
    "New: 👁️ you can switch the greeting in the bar off under “👁️ View” (only for you)"],
   ["Neu: 👋 In der Leiste oben steht ein Gruß nach Uhrzeit mit deinem Vornamen („☀️ Guten Morgen, Marco“); ist er zu lang für den Platz, läuft er als Laufschrift",
@@ -7092,7 +7092,7 @@ ${(() => {
     if (e.key === "Escape" && !e.target?.closest?.("[data-elov]")) {
       if (this._editing) { const id = this._editing; this._editing = null; this._knMarked = id; this._knStamp = Date.now(); this._renderList(); return true; }
       if (this._menuId) { const id = this._menuId; this._menuId = null; this._knMarked = id; this._knStamp = Date.now(); this._renderList(); return true; }
-      if (this._pickRecipe) { const id = this._pickRecipe; this._pickRecipe = null; this._knMarked = id; this._knStamp = Date.now(); this._renderRecipes(); return true; }
+      if (this._pickRecipe) { const id = this._pickRecipe; this._pickRecipe = null; this._planQueue = null; this._planTotal = 0; this._knMarked = id; this._knStamp = Date.now(); this._renderRecipes(); return true; }
     }
     const t = e.target;
     // ↓ aus dem Suchfeld in die Liste
@@ -7400,6 +7400,25 @@ ${(() => {
     return [...this._pickSel].some((n) => r.items[n] && this._pickNeedsStore(r.items[n]) && !(String(n) in this._pickStores));
   }
 
+  // 📅 nächstes eingeplantes Rezept in der Auswahl-Maske öffnen (oder fertig → zur Liste)
+  _planNext(goList = false) {
+    const q = this._planQueue || [];
+    while (q.length && !this._recipe(q[0])) q.shift();
+    if (!q.length) {
+      this._planQueue = null; this._planTotal = 0; this._pickRecipe = null;
+      if (goList) { this._view = "list"; this._renderAll(); } else this._renderRecipes();
+      return;
+    }
+    const r = this._recipe(q.shift());
+    const open = this._pickOpenSet();
+    this._pickRecipe = r.id;
+    this._pickPers = r.servings || null;
+    this._pickStores = {};
+    this._pickSel = new Set(r.items.map((it, n) => (open.has(this._pickKey(it)) || it.basic ? -1 : n)).filter((n) => n >= 0));
+    this._renderRecipes();
+    setTimeout(() => this.shadowRoot.querySelector(".rpick")?.scrollIntoView({ block: "center", behavior: "smooth" }), 60);
+  }
+
   _pickHtml(r) {
     const open = this._pickOpenSet();
     const sel = this._pickSel;
@@ -7432,13 +7451,15 @@ ${(() => {
         <small>${this._pickPers === r.servings ? "wie im Rezept" : `Rezept ist für ${r.servings} ${servLabel(r.servings_unit, r.servings)} – Mengen umgerechnet`}</small>
       </div>` : "";
     const missing = this._pickMissingStore(r);
+    const qn = this._planTotal && this._planQueue ? this._planTotal - this._planQueue.length : 0; // 📅 „Rezept 2 von 3“
     return `<div class="rpick" data-id="${r.id}">
+      ${qn ? `<div class="phead"><b>📅 Rezept ${qn} von ${this._planTotal}</b><span><button class="linkbtn" data-act="pick-end">Beenden</button></span></div>` : ""}
       ${pers}
       <div class="phead">Was davon brauchst du?<span>
         <button class="linkbtn" data-act="pick-all">Alle</button> · <button class="linkbtn" data-act="pick-none">Keine</button></span></div>
       ${rows}
       <div class="pbtns">
-        <button class="btn" data-act="pick-cancel">Abbrechen</button>
+        <button class="btn" data-act="pick-cancel">${qn ? "Überspringen" : "Abbrechen"}</button>
         <button class="primary addbtn" data-act="pick-go" ${sel.size && !missing ? "" : "disabled"}><ha-icon icon="mdi:check-bold"></ha-icon>${sel.size} auf die Liste</button>
       </div>
       ${missing ? `<p class="hint pmiss">🛒 Bitte erst bei allen neuen Zutaten das Geschäft wählen.</p>` : ""}
@@ -11695,14 +11716,11 @@ ${(() => {
           .then(() => { rec.plan = next; this._toast(next === "week" ? "📅 Diese Woche eingeplant" : next === "wish" ? "💭 Als Essenswunsch gemerkt" : "Aus dem Essensplan genommen"); this._renderRecipeList(); }).catch(() => {});
         break;
       }
-      case "recipe-plan-apply": { // 🛒 alle Zutaten der eingeplanten Rezepte auf die Liste
-        const list = (this._data.recipes || []).filter((r) => r.plan === "week" && (r.items || []).length);
-        if (!list.length) { this._toast("Kein eingeplantes Rezept mit Zutaten"); break; }
-        if (!elConfirm(`Alle Zutaten von ${list.length} eingeplanten Rezepten auf die Liste setzen?`)) break;
-        (async () => {
-          for (const r of list) { try { await this._ws({ type: "einkaufsliste/recipe/apply", recipe_id: r.id }); } catch (_) { /* nächstes */ } }
-          this._toast("🛒 Zutaten sind auf der Liste");
-        })();
+      case "recipe-plan-apply": { // 🛒 eingeplante Rezepte nacheinander auf die Liste – jedes mit der Auswahl-Maske (Personen, Zutaten)
+        const ids = (this._data.recipes || []).filter((r) => r.plan === "week" && (r.items || []).length).map((r) => r.id);
+        if (!ids.length) { this._toast("Kein eingeplantes Rezept mit Zutaten"); break; }
+        this._planQueue = ids; this._planTotal = ids.length;
+        this._planNext();
         break;
       }
       case "plan-reset-toggle":
@@ -11843,6 +11861,7 @@ ${(() => {
       case "recipe-apply": {
         const r = this._recipe(el.closest(".rtools, .recipe").dataset.id);
         if (!r) { this._toast("Das Rezept gibt es nicht mehr."); break; }
+        this._planQueue = null; this._planTotal = 0;
         if (this._pickRecipe === r.id) { this._pickRecipe = null; this._renderRecipes(); break; }
         const open = this._pickOpenSet();
         this._pickRecipe = r.id;
@@ -11883,7 +11902,12 @@ ${(() => {
         break;
       }
       case "pick-cancel":
+        if (this._planQueue) { this._planNext(true); break; } // 📅 Überspringen: nächstes Rezept
         this._pickRecipe = null;
+        this._renderRecipes();
+        break;
+      case "pick-end": // 📅 ganzen Ablauf beenden
+        this._planQueue = null; this._planTotal = 0; this._pickRecipe = null;
         this._renderRecipes();
         break;
       case "pick-go": {
@@ -11906,6 +11930,7 @@ ${(() => {
             this._toast(res.added
               ? `🍽️ ${res.added} Zutaten für „${r.name}“ auf der Liste${res.already ? ` (${res.already} standen schon drauf)` : ""}`
               : `Alles für „${r.name}“ steht schon auf der Liste 👍`);
+            if (this._planQueue) { this._planNext(true); return; } // 📅 weiter mit dem nächsten Rezept
             this._view = "list";
             this._renderAll();
           }).catch(() => {});
