@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.5";
+const EL_VERSION = "2.76.16-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,8 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
-  ["Neu: 📅 Essensplan bei den Rezepten: jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen (Knopf bei jedem Rezept). Oben stehen dann „Diese Woche“ und „Wünsche“, dazu ein Filter und „Alle Zutaten auf die Liste“. In ⚙️ → Rezepte stellst du ein, an welchem Wochentag (03:30 Uhr) „Diese Woche“ automatisch zurückgesetzt wird – oder schaltest es ab",
-   "New: 📅 meal plan for recipes: every recipe can be set to “💭 Wish” or “📅 This week” (button on each recipe). The top then shows “This week” and “Wishes”, plus a filter and “All ingredients to the list”. In ⚙️ → Recipes you choose the weekday (03:30) when “This week” is reset automatically – or switch it off"],
+  ["Neu: 📅 Essensplan bei den Rezepten: jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen (Knopf bei jedem Rezept). Oben stehen dann „Diese Woche“ und „Wünsche“, dazu „Alle Zutaten auf die Liste“. In ⚙️ → Rezepte stellst du ein, an welchem Wochentag (03:30 Uhr) „Diese Woche“ automatisch zurückgesetzt wird – oder schaltest es ab",
+   "New: 📅 meal plan for recipes: every recipe can be set to “💭 Wish” or “📅 This week” (button on each recipe). The top then shows “This week” and “Wishes”, plus “All ingredients to the list”. In ⚙️ → Recipes you choose the weekday (03:30) when “This week” is reset automatically – or switch it off"],
   ["Neu: 👁️ Den Gruß in der Leiste schaltest du in „👁️ Ansicht“ ab (nur für dich)",
    "New: 👁️ you can switch the greeting in the bar off under “👁️ View” (only for you)"],
   ["Neu: 👋 In der Leiste oben steht ein Gruß nach Uhrzeit mit deinem Vornamen („☀️ Guten Morgen, Marco“); ist er zu lang für den Platz, läuft er als Laufschrift",
@@ -2614,9 +2614,6 @@ ha-card.compact .group { margin-top:4px; }
 .rtools [data-act="recipe-cook"] ha-icon { color:var(--error-color,#e53935); }
 .rtools [data-act="recipe-share"] ha-icon { color:var(--success-color,#43a047); }
 .plansec { margin:12px 4px 4px; font-size:14px; color:var(--secondary-text-color); }
-.planchips { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; }
-.planchip { cursor:pointer; border:1px solid var(--divider-color,#ccc); border-radius:999px; padding:3px 12px; background:transparent; color:var(--primary-text-color); font:inherit; }
-.planchip.active { background:var(--primary-color,#03a9f4); color:#fff; border-color:transparent; }
 .planset { margin:8px 0 12px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); }
 .plantag { font-size:13px; }
 .rtools .btn.plan.week { background:color-mix(in srgb, var(--success-color,#43a047) 22%, transparent); }
@@ -7346,15 +7343,12 @@ ${(() => {
     const weekN = (this._data.recipes || []).filter((r) => r.plan === "week").length;
     const wishN = (this._data.recipes || []).filter((r) => r.plan === "wish").length;
     if (weekN + wishN > 0 && !q) {
-      const pf = this._planFilter === "week" || this._planFilter === "wish" ? this._planFilter : "";
-      const chip = (v, label) => `<button class="planchip ${pf === v ? "active" : ""}" type="button" data-act="recipe-planfilter" data-v="${v}">${label}</button>`;
-      html.push(`<div class="planchips">${chip("", "Alle")}${chip("week", `📅 Diese Woche ${weekN}`)}${chip("wish", `💭 Wünsche ${wishN}`)}</div>`);
       const grp = (key) => found.filter((x) => (x.r.plan || "") === key);
       const sec = (title, list, extra = "") => list.length ? `<h4 class="plansec">${title}</h4>${extra}` + list.map(rowHtml).join("") : "";
       const applyBtn = `<div class="btnrow"><button class="btn" type="button" data-act="recipe-plan-apply"><ha-icon icon="mdi:cart-plus"></ha-icon>Alle Zutaten auf die Liste</button></div>`;
-      if (pf !== "wish") html.push(sec(`📅 Diese Woche (${weekN})`, grp("week"), applyBtn));
-      if (pf !== "week") html.push(sec(`💭 Essenswünsche (${wishN})`, grp("wish")));
-      if (!pf) html.push(sec("🍽️ Alle Rezepte", grp("")));
+      html.push(sec(`📅 Diese Woche (${weekN})`, grp("week"), applyBtn));
+      html.push(sec(`💭 Essenswünsche (${wishN})`, grp("wish")));
+      html.push(sec("🍽️ Alle Rezepte", grp("")));
     } else {
       for (const x of found) html.push(rowHtml(x));
     }
@@ -11687,10 +11681,6 @@ ${(() => {
           .then(() => { rec.plan = next; this._toast(next === "week" ? "📅 Diese Woche eingeplant" : next === "wish" ? "💭 Als Essenswunsch gemerkt" : "Aus dem Essensplan genommen"); this._renderRecipeList(); }).catch(() => {});
         break;
       }
-      case "recipe-planfilter":
-        this._planFilter = el.dataset.v || "";
-        this._renderRecipeList();
-        break;
       case "recipe-plan-apply": { // 🛒 alle Zutaten der eingeplanten Rezepte auf die Liste
         const list = (this._data.recipes || []).filter((r) => r.plan === "week" && (r.items || []).length);
         if (!list.length) { this._toast("Kein eingeplantes Rezept mit Zutaten"); break; }
