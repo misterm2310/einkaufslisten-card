@@ -4289,6 +4289,36 @@ async def test_wochenplan_rezepte(hass, setup) -> None:
     assert (st["plan_reset_on"], st["plan_reset_day"]) == (False, 3)
 
 
+async def test_eigene_notiz_rezept_zutaten(hass, setup) -> None:
+    """✏️ Eigene Notiz im Rezept: gehört zum Produkt, steht auf der Liste und bei Änderung im Katalog."""
+    from custom_components.einkaufsliste.manager import product_key
+    m = mgr(hass)
+    r = m.add_recipe("Obstsalat", [{"name": "Pfirsich", "own_note": "Dose"}, {"name": "Banane"}])
+    assert m.own_notes.get(product_key("Pfirsich", None)) == "Dose"
+    assert m.own_notes.get(product_key("Banane", None)) is None
+    m.apply_recipe(r["id"])
+    onlist = {i["name"]: i for i in m.items if i.get("recipe_id") == r["id"]}
+    assert onlist["Pfirsich"].get("own_note") == "Dose"
+    assert not onlist["Banane"].get("own_note")
+    # Änderung im Katalog/Rezept wirkt auch auf den Rezept-Artikel auf der Liste
+    m.update_recipe(r["id"], items=[{"name": "Pfirsich", "own_note": "Glas"}, {"name": "Banane"}])
+    assert onlist["Pfirsich"].get("own_note") == "Glas"
+    # Beim Bearbeiten des Rezept-Artikels auf der Liste
+    m.update_item(onlist["Banane"]["id"], own_note="Reif")
+    assert m.own_notes.get(product_key("Banane", None)) == "Reif"
+    assert onlist["Banane"].get("own_note") == "Reif"
+    assert onlist["Banane"].get("note") is None  # wird NICHT zur Variante
+    # Notiz löschen
+    m.update_recipe(r["id"], items=[{"name": "Pfirsich", "own_note": ""}, {"name": "Banane"}])
+    assert m.own_notes.get(product_key("Pfirsich", None)) is None
+    assert not onlist["Pfirsich"].get("own_note")
+    # Nochmal aufs Rezept setzen: Zutat bekommt die Notiz des Produkts
+    m.update_recipe(r["id"], items=[{"name": "Pfirsich", "own_note": "Dose"}, {"name": "Banane"}])
+    m.unapply_recipe(r["id"])
+    m.apply_recipe(r["id"])
+    assert any(i["name"] == "Pfirsich" and i.get("own_note") == "Dose" for i in m.items)
+
+
 async def test_view_prefs_essensplan_pro_benutzer(hass, setup, hass_ws_client) -> None:
     """📅 Essensplan anzeigen: eigene Wahl (an UND aus) wird gespeichert."""
     client = await hass_ws_client(hass)

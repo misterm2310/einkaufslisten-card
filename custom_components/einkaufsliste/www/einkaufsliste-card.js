@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.8";
+const EL_VERSION = "2.76.16-beta.9";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: ✏️ Eigene Notiz auch bei Rezepten: im Rezept eine Zutat antippen (z. B. „Pfirsich“ → „Dose“), die Notiz steht dann im Rezept und auf der Liste. Sie gehört zum Produkt, eine Änderung im Katalog wirkt also auch bei Rezept-Artikeln. Beim Bearbeiten eines Rezept-Artikels auf der Liste gibt es das Notizfeld jetzt auch",
+   "New: ✏️ own note for recipes too: tap an ingredient in the recipe (e.g. “Peach” → “can”), the note then shows in the recipe and on the list. It belongs to the product, so a change in the catalogue also applies to recipe items. When editing a recipe item on the list the note field is there now as well"],
   ["Neu: 👁️ Den Essensplan bei den Rezepten schaltest du in „👁️ Ansicht“ ab (nur für dich): dann gibt es keinen „Planen“-Knopf und keine Abschnitte",
    "New: 👁️ you can switch the meal plan for recipes off under “👁️ View” (only for you): then there is no “Plan” button and no sections"],
   ["Neu: 📅 Essensplan bei den Rezepten: jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen (Knopf bei jedem Rezept). Oben stehen dann „Diese Woche“ und „Wünsche“, dazu „Alle Zutaten auf die Liste“. In ⚙️ → Rezepte stellst du ein, an welchem Wochentag (03:30 Uhr) „Diese Woche“ automatisch zurückgesetzt wird – oder schaltest es ab. „Alle Zutaten auf die Liste“ zeigt jedes eingeplante Rezept nacheinander mit Personenzahl und Zutaten zum Abwählen",
@@ -5157,7 +5159,7 @@ class EinkaufslisteCard extends HTMLElement {
         <input id="edQty" value="${esc(item.quantity || "")}" placeholder="${esc(`${EL_LANG === "de" ? "Menge" : "Quantity"}, ${this._qtyExample(item.name)}`)}">
         <select id="edFor" title="Für wen?">${this._personOptions(item.for_whom)}</select>
         ${item.note ? `${this._noteIsOwn(item.name, item.note) ? `<input class="full" id="edNote" value="${esc(item.note)}" placeholder="✏️ Eigene Notiz, z. B. große Packung">` : `<input type="hidden" id="edNote" value="${esc(item.note)}">`}` : `<input type="hidden" id="edNote" value="">`}
-        ${item.recipe_id ? "" : (item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt">${this._tplChipsHtml(item.own_note || "")}`)}
+        ${(item.note && this._noteIsOwn(item.name, item.note) ? `<input type="hidden" id="edOwn" value="${esc(item.own_note || "")}">` : `<input class="full" id="edOwn" value="${esc(item.own_note || "")}" maxlength="120" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt">${this._tplChipsHtml(item.own_note || "")}`)}
         <input class="full" id="edAliases" value="${esc(this._itemAliases(item).join(", "))}" data-orig="${esc(this._itemAliases(item).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
@@ -7428,7 +7430,7 @@ ${(() => {
       const on = sel.has(n);
       const qty = scaleQty(it.quantity, f);
       const qchip = qty ? `<span class="pqty">${qty !== (it.quantity || null) ? `<b class="pscaled">${esc(qty)}</b>` : esc(qty)}</span> ` : ""; // 🔢 Menge vor dem Namen
-      const info = [this._noteChip(it.name, it.note), it.for_whom ? esc("für " + it.for_whom) : ""].filter(Boolean).join(" · ");
+      const info = [this._noteChip(it.name, it.note), this._ownChip(it), it.for_whom ? esc("für " + it.for_whom) : ""].filter(Boolean).join(" · ");
       const ask = on && stores.length && this._pickNeedsStore(it);
       const chosen = this._pickStores[String(n)];
       return `<div class="pickrow ${on ? "on" : ""} ${it.basic ? "basic" : ""}" data-act="pick-toggle" data-n="${n}">
@@ -7814,7 +7816,6 @@ ${(() => {
     this.$("btnScan").classList.remove("instore");
     this.$("btnScan").title = "Barcode scannen";
     this.$("tBasic").hidden = false;
-    this.$("tOwn").hidden = true; // ✏️ Eigene Notiz gibt es nur für Artikel auf der Liste, nicht für Rezept-Zutaten
     this.$("inOwn").hidden = true;
     this.$("rEditHint").hidden = true;
   }
@@ -7851,6 +7852,7 @@ ${(() => {
       const meta = [
         `<span class="chip" style="--c:${esc(st?.color || "#888")}">${esc(st?.name || "Wie zuletzt")}</span>`,
         this._noteChip(it.name, it.note),
+        this._ownChip(it),
         it.barcode || this._barcodesOf(pk).length ? `<span class="bc">▥</span>` : "",
         it.basic ? `<span>🧂 Grundvorrat</span>` : "",
         cat ? `<span>${esc(cat.name)}</span>` : "",
@@ -7886,6 +7888,9 @@ ${(() => {
       category_id: this.$("inCat").value || null,
       basic: !!this._rBasic,
     };
+    // ✏️ Eigene Notiz gehört zum Produkt (Name + Notiz): nur mitschicken, wenn sie sich geändert hat ("" = löschen)
+    const ownVal = (this.$("inOwn")?.value || "").trim();
+    if (ownVal !== (this._ownNote(ing.name, ing.note) || "")) ing.own_note = ownVal;
     const idx = this._rEditIdx;
     if (this._pendingBarcode) ing.barcode = this._pendingBarcode;
     else if (idx != null && dr.items[idx]?.barcode) ing.barcode = dr.items[idx].barcode;
@@ -7919,6 +7924,9 @@ ${(() => {
     this.$("inQty").value = it.quantity || "";
     this.$("inNote").value = it.note || "";
     this.$("inNote").hidden = !it.note;
+    const ownTxt = it.own_note != null ? it.own_note : this._ownNote(it.name, it.note);
+    this.$("inOwn").value = ownTxt || "";
+    this.$("inOwn").hidden = !ownTxt;
     const f = this.$("inFor");
     if (it.for_whom && ![...f.options].some((o) => o.value === it.for_whom)) {
       const o = document.createElement("option"); o.value = o.textContent = it.for_whom; f.appendChild(o);
@@ -8135,6 +8143,12 @@ ${(() => {
   // 📝 nur wenn die Notiz zu einem Barcode gehört – sonst (alte, selbst getippte Notiz) wird sie als ✏️ gezeigt
   _noteIsOwn(name, note) {
     return !!note && !this._barcodesOf(this._pk(name, note)).length;
+  }
+
+  // ✏️ Eigene Notiz der Zutat (gehört zum Produkt) als Chip – für Rezepte
+  _ownChip(it) {
+    const t = it.own_note != null ? it.own_note : this._ownNote(it.name, it.note);
+    return t ? `<span class="inote iown" title="Eigene Notiz – bleibt beim Produkt">✏️ ${esc(t)}</span>` : "";
   }
 
   _noteChip(name, note) {

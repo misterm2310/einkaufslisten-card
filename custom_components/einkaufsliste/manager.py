@@ -1905,8 +1905,6 @@ class EinkaufslisteManager:
             for k in keys:
                 self.own_notes.setdefault(k, text)
         for item in self.items:  # Artikel und Merkzettel gleichziehen
-            if item.get("recipe_id"):
-                continue
             okey = product_key(item["name"], item.get("note"))
             if item.get("own_note"):
                 self.own_notes.setdefault(okey, item["own_note"])
@@ -1921,7 +1919,7 @@ class EinkaufslisteManager:
         else:
             self.own_notes.pop(key, None)
         for thing in self.items:
-            if not thing.get("recipe_id") and product_key(thing["name"], thing.get("note")) == key:
+            if product_key(thing["name"], thing.get("note")) == key:
                 if text:
                     thing["own_note"] = text
                 else:
@@ -2497,8 +2495,8 @@ class EinkaufslisteManager:
         # Rezept-Zutaten kommen zusätzlich auf die Liste (eigener Eintrag pro Rezept)
         recipe_id = recipe_id if self.recipe_by_id(recipe_id) else None
         # ✏️ Eigene Notiz: nichts mitgegeben (None) = die vom letzten Mal beim Produkt nehmen, "" = ausdrücklich keine
-        if recipe_id is not None:
-            own = None
+        if recipe_id is not None:  # ✏️ Rezept-Zutaten tragen die Eigene Notiz ihres Produkts (nie eine mitgegebene)
+            own = self.own_notes.get(product_key(name, note))
         elif own_note is None:
             own = self.own_notes.get(product_key(name, note))
         else:
@@ -2621,12 +2619,12 @@ class EinkaufslisteManager:
             item["category_id"] = self._check_category(fields["category_id"])
         if "quantity" in fields:
             item["quantity"] = norm_qty(_clean(fields["quantity"]))
-        if "own_note" in fields and not item.get("recipe_id"):
+        if "own_note" in fields:
             item["own_note"] = _own(fields["own_note"])
         key = item["name"].lower()
         if key in self.history:
             self.history[key].update(store_id=item["store_id"], category_id=item["category_id"])
-        if "own_note" in fields and not item.get("recipe_id"):
+        if "own_note" in fields:
             self._set_own_note(item["name"], item.get("note"), item.get("own_note"))
         self._log_changes(before, item)
         if aliases is not None:
@@ -3636,6 +3634,8 @@ class EinkaufslisteManager:
                 raise ValueError(f"„{name}“ steht doppelt im Rezept.")
             seen.add(key)
             out.append(entry)
+            if "own_note" in raw:  # ✏️ Eigene Notiz im Rezept eingetragen: gehört zum Produkt (Name + Notiz), auch auf der Liste
+                self._set_own_note(name, entry["note"], _own(raw.get("own_note")))
             code = "".join(ch for ch in str(raw.get("barcode") or "") if ch.isdigit())
             if code:  # im Rezept gescannt -> Barcode gehört ab jetzt zu diesem Produkt
                 self.learn_barcode(code, name, entry["store_id"], entry["category_id"], entry["note"])

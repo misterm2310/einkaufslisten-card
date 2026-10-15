@@ -463,6 +463,7 @@ RECIPE_ITEM = vol.Schema(
         vol.Optional("category_id"): OPT_STR,
         vol.Optional("barcode"): OPT_STR,
         vol.Optional("basic"): bool,
+        vol.Optional("own_note"): OPT_STR,  # ✏️ Eigene Notiz (beim Produkt)
     }
 )
 
