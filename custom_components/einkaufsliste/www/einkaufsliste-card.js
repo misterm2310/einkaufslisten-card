@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.6";
+const EL_VERSION = "2.76.17-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: ✨ Einheitliche Symbole: Seitenköpfe (Timer, Gar-Zeiten, Fotos, Foto machen, Einscannen, Zuschneiden), die Knöpfe oben in der Kochansicht, der Timer-Knopf in den Gar-Zeiten und die laufenden Timer nutzen jetzt überall dieselben Linien-Symbole statt Emojis. Timer = Stoppuhr, Gar-Zeiten = Topf, Fotos = Galerie.",
+   "New: ✨ consistent icons: page headers (timer, cooking times, photos, take photo, scan, crop), the buttons at the top of the cooking view, the timer button in the cooking times and the running timers now use the same line icons everywhere instead of emojis. Timer = stopwatch, cooking times = pot, photos = gallery."],
   ["Fix: ⏱️ Das Timer-Fenster aus den Gar-Zeiten zeigte oben alles doppelt (zwei Pfeile, zwei „Timer“). Jetzt steht die Kopfzeile nur noch einmal da.",
    "Fix: ⏱️ the timer window opened from the cooking times showed everything twice at the top (two arrows, two “Timer”). The header now appears only once."],
   ["Neu: 🖼️ Foto-Seiten (Produkt, Rezept, Kassenbon …) zeigen oben links ein Galerie-Symbol statt des Kamera-Emojis.",
@@ -1682,6 +1684,27 @@ function ovButton(label, main = false) {
   b.style.cssText = main ? OV_BTN_MAIN : OV_BTN;
   return b;
 }
+
+// 🎛️ Symbol-Knopf für Fenster (statt Emoji): einheitliche Linien-Symbole wie in der ganzen Karte
+function ovIconButton(icon, title = "") {
+  const b = ovButton("");
+  const ic = document.createElement("ha-icon");
+  ic.setAttribute("icon", icon);
+  ic.style.cssText = "--mdc-icon-size:22px;display:block;";
+  b.append(ic);
+  b.style.padding = "9px 12px"; b.style.lineHeight = "0";
+  if (title) { b.title = title; b.setAttribute("aria-label", title); }
+  return b;
+}
+// 🧭 Seitenkopf: fester Symbol-Satz je Fenster (Symbol + Farbe), damit überall dasselbe steht
+const EL_PAGE_ICONS = [
+  [/^⏱️?/u, "mdi:timer-outline", "#26a69a"], // Timer
+  [/^⏲️?/u, "mdi:pot-steam-outline", "#ef6c00"], // Gar-Zeiten
+  [/^📷\s*Einscannen/u, "mdi:barcode-scan", "#43a047"],
+  [/^📷\s*Foto machen/u, "mdi:camera-outline", "#1e88e5"],
+  [/^📷/u, "mdi:image-multiple-outline", "#1e88e5"], // Foto-Seiten (Galerie)
+  [/^✂️?/u, "mdi:crop", "#1e88e5"],
+];
 
 // 📷 Woher kommt das Foto? Kamera · Galerie · Einfügen (Zwischenablage) – gibt "camera" | "gallery" | "paste" | null
 const elCanPaste = () => !!(window.isSecureContext && navigator.clipboard?.read);
@@ -3183,7 +3206,7 @@ function showGarTable(card, tcard = null) {
     .gar h2 { font-size:20px; margin:4px 0 10px; }
     .gar .sub { color:var(--secondary-text-color); font-size:13px; margin:0 0 10px; }
     .gar .gtimer { display:flex; justify-content:flex-end; margin:0 0 10px; }
-    .gar .gtimer button { font:inherit; font-size:15px; font-weight:600; cursor:pointer; color:var(--primary-text-color); background:var(--card-background-color, #fff); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:8px 14px; }
+    .gar .gtimer button { display:inline-flex; align-items:center; gap:6px; --mdc-icon-size:20px; font:inherit; font-size:15px; font-weight:600; cursor:pointer; color:var(--primary-text-color); background:var(--card-background-color, #fff); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:8px 14px; }
     .gar .gsearch { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
     .gar .gsearch input { flex:1; width:auto; min-width:0; margin:0; }
     .gar .gerase { background:none; border:0; cursor:pointer; padding:0 6px; line-height:0; color:var(--error-color,#db4437); --mdc-icon-size:22px; }
@@ -3205,8 +3228,8 @@ function showGarTable(card, tcard = null) {
     .gar h3 { display:block; font-size:13px; color:var(--secondary-text-color); margin:12px 0 5px; font-weight:600; }
   </style>
   <div class="gar" translate="no">
-    ${asPage || fromPage ? "" : `<div class="gh"><button type="button" class="gback" title="${en ? "Back" : "Zurück"}" aria-label="${en ? "Back" : "Zurück"}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:timer-outline"></ha-icon></span><div class="gt">${en ? "Cooking times" : "Gar-Zeiten"}</div></div>`}
-    <div class="gtimer"><button type="button" class="gtbtn" title="${en ? "Start a timer" : "Timer starten"}" aria-label="${en ? "Start a timer" : "Timer starten"}">⏱️ ${en ? "Timer" : "Timer"}</button></div>
+    ${asPage || fromPage ? "" : `<div class="gh"><button type="button" class="gback" title="${en ? "Back" : "Zurück"}" aria-label="${en ? "Back" : "Zurück"}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:pot-steam-outline"></ha-icon></span><div class="gt">${en ? "Cooking times" : "Gar-Zeiten"}</div></div>`}
+    <div class="gtimer"><button type="button" class="gtbtn" title="${en ? "Start a timer" : "Timer starten"}" aria-label="${en ? "Start a timer" : "Timer starten"}"><ha-icon icon="mdi:timer-outline"></ha-icon>Timer</button></div>
     <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
     <div class="gtabs"></div>
     <p class="sub devhint"></p>
@@ -3215,7 +3238,7 @@ function showGarTable(card, tcard = null) {
   </div>`;
   let close = null;
   if (asPage) {
-    card._openPage({ key: "gar", title: en ? "Cooking times" : "Gar-Zeiten", icon: "mdi:timer-outline", color: "#ef6c00", build: (body) => { host = body; body.innerHTML = html; } });
+    card._openPage({ key: "gar", title: en ? "Cooking times" : "Gar-Zeiten", icon: "mdi:pot-steam-outline", color: "#ef6c00", build: (body) => { host = body; body.innerHTML = html; } });
   } else {
     ov = makeOverlay({ title: "⏲️ " + (en ? "Cooking times" : "Gar-Zeiten") });
     if (ov.dataset.elpage) ov.innerHTML = html;
@@ -4462,7 +4485,8 @@ class EinkaufslisteCard extends HTMLElement {
     const m = /^(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)\s*(.*)$/su.exec(text);
     const h = p.host.querySelector(".pagehost h3"), ic = p.host.querySelector(".pagehost .ic");
     if (h) h.textContent = m ? m[2] || text : text;
-    if (ic && m && m[1].startsWith("📷")) ic.innerHTML = `<ha-icon icon="mdi:image-multiple"></ha-icon>`; // 🖼️ Foto-Seiten: Galerie-Symbol statt Kamera-Emoji
+    const known = m && EL_PAGE_ICONS.find(([re]) => re.test(text));
+    if (ic && known) { ic.innerHTML = `<ha-icon icon="${known[1]}"></ha-icon>`; ic.style.setProperty("--ic", known[2]); } // einheitliche Linien-Symbole statt Emoji
     else if (ic && m) ic.innerHTML = `<span style="font-size:20px;line-height:1">${esc(m[1])}</span>`;
     else if (ic && text.startsWith("▥")) { ic.innerHTML = `<ha-icon icon="mdi:barcode-scan"></ha-icon>`; if (h) h.textContent = text.replace(/^▥\s*/, ""); }
     return true;
@@ -9291,8 +9315,8 @@ ${(() => {
     const title = document.createElement("div");
     title.textContent = `👨‍🍳 ${r.name}`;
     Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
-    const bGar = ovButton("⏲️"), bClose = ovButton("✕"), bPhoto = ovButton("📷"), bTimer = ovButton("⏱️");
-    bTimer.title = elT("Timer"); bTimer.style.marginRight = "14px"; // etwas Luft zum 📷
+    const bGar = ovIconButton("mdi:pot-steam-outline"), bClose = ovIconButton("mdi:close"), bPhoto = ovIconButton("mdi:image-multiple-outline"), bTimer = ovIconButton("mdi:timer-outline");
+    bTimer.title = elT("Timer"); bTimer.style.marginRight = "14px"; // etwas Luft zum Foto-Symbol
     bTimer.onclick = () => this._timerWindow(r, elStepSeconds(steps[idx]) || 300, finalStep && idx === steps.length ? 0 : idx + 1);
     bPhoto.title = elT("Foto zu diesem Schritt"); bPhoto.style.display = "none";
     bGar.title = elT("Gar-Zeiten");
@@ -9571,10 +9595,15 @@ ${(() => {
     const rn = this._recipe(t.recipe_id)?.name;
     const chip = document.createElement("span");
     Object.assign(chip.style, {
-      display: "inline-flex", alignItems: "center", gap: "8px", borderRadius: "999px", padding: "4px 6px 4px 12px", font: "600 15px Roboto,sans-serif",
+      display: "inline-flex", alignItems: "center", gap: "8px", borderRadius: "999px", padding: "4px 6px 4px 10px", font: "600 15px Roboto,sans-serif",
       background: done ? "rgba(229,57,53,.88)" : "rgba(66,165,245,.25)", color: done ? "#fff" : "inherit", border: done ? "1px solid #ff8a80" : "1px solid rgba(66,165,245,.5)",
     });
-    chip.textContent = `${done ? "⏰" : "⏲️"} ${rn ? rn + " – " : ""}${t.label} ${done ? "– fertig!" : elClock(left)}`;
+    const cic = document.createElement("ha-icon");
+    cic.setAttribute("icon", done ? "mdi:bell-ring-outline" : "mdi:timer-outline");
+    cic.style.cssText = "--mdc-icon-size:18px;flex:none;";
+    const ctx = document.createElement("span");
+    ctx.textContent = `${rn ? rn + " – " : ""}${t.label} ${done ? "– fertig!" : elClock(left)}`;
+    chip.append(cic, ctx);
     const x = document.createElement("button");
     x.type = "button"; x.textContent = "✕"; x.title = done ? "Timer wegmachen" : "Timer abbrechen";
     Object.assign(x.style, { border: "none", background: "rgba(255,255,255,.18)", color: "inherit", borderRadius: "999px", width: "26px", height: "26px", cursor: "pointer", font: "14px Roboto,sans-serif" });
