@@ -3852,6 +3852,28 @@ async def test_cleanup_settings_in_card(hass: HomeAssistant, setup, freezer) -> 
         m.set_cleanup(weekday=7)
 
 
+async def test_cleanup_skip_stores(hass: HomeAssistant, setup) -> None:
+    """🏬 Beim Aufräumen lassen sich Geschäfte ausnehmen: dort bleibt alles offen (nur „Alles abhaken“ nimmt sie mit)."""
+    m = mgr(hass)
+    m.set_cleanup(min_age_days=0)
+    stores = m.as_dict()["stores"]
+    assert len(stores) >= 2
+    a, b = stores[0]["id"], stores[1]["id"]
+    ia = m.add_item("Milch", store_id=a)
+    ib = m.add_item("Brot", store_id=b)
+    res = m.set_cleanup(skip_stores=[b, b, "gibt-es-nicht"])
+    assert res["on"] and m.as_dict()["settings"]["cleanup_skip_stores"] == [b]  # doppelt/unbekannt fliegt raus
+    assert m._to_storage()["cleanup"]["skip_stores"] == [b]
+    m.cleanup()
+    assert ia["checked"] and not ib["checked"]
+    m.set_cleanup(on=False)  # andere Einstellungen ändern die Auswahl nicht
+    assert m.as_dict()["settings"]["cleanup_skip_stores"] == [b]
+    m.cleanup(force=True)  # „Alles abhaken“ nimmt auch ausgenommene mit
+    assert ib["checked"]
+    m.set_cleanup(skip_stores=[])
+    assert m.as_dict()["settings"]["cleanup_skip_stores"] == []
+
+
 async def test_cleanup_settings_ws(hass, setup, hass_ws_client) -> None:
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "einkaufsliste/cleanup/settings", "on": False})

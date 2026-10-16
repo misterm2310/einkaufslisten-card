@@ -458,11 +458,19 @@ class EinkaufslisteManager:
         """🧹 Automatisches Aufräumen an/aus (Standard: an)."""
         return bool((self.cleanup_cfg or {}).get("on", True))
 
+    @property
+    def cleanup_skip_stores(self) -> list[str]:
+        """🏬 Geschäfte, die beim automatischen Aufräumen ausgenommen sind (nur noch vorhandene)."""
+        ids = (self.cleanup_cfg or {}).get("skip_stores") or []
+        return [s for s in ids if self.store_by_id(s)]
+
     def set_cleanup(
-        self, on: bool | None = None, weekday: int | None = None, time: str | None = None, min_age_days: int | None = None
+        self, on: bool | None = None, weekday: int | None = None, time: str | None = None, min_age_days: int | None = None,
+        skip_stores: list[str] | None = None,
     ) -> dict[str, Any]:
-        """🧹 Aufräumen in der Karte einstellen: an/aus, Wochentag, Uhrzeit, Mindestalter (gilt für alle)."""
+        """🧹 Aufräumen in der Karte einstellen: an/aus, Wochentag, Uhrzeit, Mindestalter, ausgenommene Geschäfte (gilt für alle)."""
         cfg = {
+            "skip_stores": self.cleanup_skip_stores,
             "on": self.cleanup_on,
             CONF_CLEANUP_WEEKDAY: self.cleanup_weekday,
             CONF_CLEANUP_TIME: "%02d:%02d:00" % self.cleanup_time,
@@ -485,6 +493,8 @@ class EinkaufslisteManager:
             if not 0 <= int(min_age_days) <= 60:
                 raise ValueError("Bitte 0 bis 60 Tage.")
             cfg[CONF_MIN_AGE_DAYS] = int(min_age_days)
+        if skip_stores is not None:
+            cfg["skip_stores"] = [s for s in dict.fromkeys(skip_stores) if self.store_by_id(s)]
         if on is not None:
             if on and not cfg["on"]:
                 self.last_cleanup = _now_iso()  # frisch eingeschaltet: nicht sofort Verpasstes nachholen
@@ -792,6 +802,7 @@ class EinkaufslisteManager:
                 "cleanup_time": "%02d:%02d" % self.cleanup_time,
                 "min_age_days": self.min_age_days,
                 "cleanup_on": self.cleanup_on,
+                "cleanup_skip_stores": self.cleanup_skip_stores,
                 "view_prefs": self.view_prefs,
                 "next_cleanup": self.next_cleanup().isoformat(),
                 "pin": bool(self.pin_hash),
@@ -3527,9 +3538,10 @@ class EinkaufslisteManager:
         done: list[dict[str, Any]] = []
         now = _now_iso()
         keep: list[dict[str, Any]] = []
+        skip = set() if force else set(self.cleanup_skip_stores)  # 🏬 ausgenommene Geschäfte bleiben (außer bei „Alles abhaken“)
         for item in self.items:
             keep.append(item)
-            if item["checked"]:
+            if item["checked"] or (skip and item.get("store_id") in skip):
                 continue
             # „war aus“ startet die Frist neu: gezählt wird ab dem späteren Datum
             added = max(filter(None, (_local_date(item.get("added_at")), _local_date(item.get("out_at")))), default=ref_date)

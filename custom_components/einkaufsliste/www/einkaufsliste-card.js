@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.2";
+const EL_VERSION = "2.76.17-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🏬 Beim automatischen Aufräumen lassen sich einzelne Geschäfte ausnehmen (⚙️ → Aufräumen → Automatisch aufräumen). Artikel dieser Geschäfte bleiben offen; „Alles abhaken“ von Hand nimmt sie weiterhin mit. Außerdem entfällt im Laden-Modus die Bildschirm-Drehsperre – dafür bitte die Sperre am Handy nutzen.",
+   "New: 🏬 individual stores can be excluded from automatic cleanup (⚙️ → Cleanup → Clean up automatically). Items of those stores stay open; “Check all” by hand still includes them. Also, store mode no longer locks the screen rotation – please use your phone’s own rotation lock."],
   ["Neu: 📐 In der Kochansicht (breit) sind Schritte und Zutaten im Verhältnis 2 zu 1: die Schritte nehmen zwei Drittel, die Zutaten ein Drittel. Außerdem heißt ein Timer ohne eigenen Namen jetzt „Rezept – Schritt 2“ (mit „–“ statt „·“, auch im Sensor)",
    "New: 📐 in the cooking view (wide) steps and ingredients are in a 2 to 1 ratio: the steps take two thirds, the ingredients one third. Also a timer without its own name is now called “Recipe – Schritt 2” (with “–” instead of “·”, also in the sensor)"],
   ["Neu: ⏱️ In der Kochansicht öffnet das Timer-Symbol oben (links neben 📷) ein Timer-Fenster: Name (optional, leer = „Rezept – Schritt 2“), Schnellwahl (1 Min bis 1 Std), die Zeit aus dem Schritt-Text als Vorgabe, − und +, „Timer starten“ und darunter alle Timer. Die Timer-Zeile unter dem Rezeptschritt ist dafür weggefallen. Der Name steht in den Chips, im Sensor, im Ereignis und im Dashboard",
@@ -3626,29 +3628,6 @@ class EinkaufslisteCard extends HTMLElement {
     return best?.id || null;
   }
 
-  // 🔒 Laden-Modus: Bildschirm bleibt im Hoch- oder Querformat, wie beim Start. Der Browser erlaubt das nur teilweise
-  // (meist nur im Vollbild oder als installierte App, auf dem iPhone gar nicht) – dann gibt es einen kurzen Hinweis.
-  async _orient(on, announce = true) {
-    try {
-      const o = window.screen?.orientation;
-      if (!on) {
-        if (this._orientLocked) { this._orientLocked = false; o?.unlock?.(); }
-        return;
-      }
-      if (!o?.lock) throw new Error("keine Drehsperre");
-      const kind = String(o.type).startsWith("landscape") ? "landscape" : "portrait";
-      await o.lock(kind);
-      this._orientLocked = true;
-      if (announce) setTimeout(() => this._toast(kind === "landscape" ? "🔒 Querformat bleibt gesperrt" : "🔒 Hochformat bleibt gesperrt"), 1800);
-    } catch (_) {
-      this._orientLocked = false;
-      if (announce && !this._orientHint) {
-        this._orientHint = true;
-        setTimeout(() => this._toast("🔒 Drehsperre geht hier nicht – bitte die Drehsperre am Handy benutzen"), 1800);
-      }
-    }
-  }
-
   _autoStore() {
     if (!this._config?.auto_store || this._fixedStore || !this._data) return;
     let near = this._nearStore();
@@ -3678,7 +3657,6 @@ class EinkaufslisteCard extends HTMLElement {
         this._shopAuto = true;
         try { localStorage.setItem("einkaufsliste_shopmode", "1"); localStorage.setItem("einkaufsliste_shopauto", "1"); } catch (_) { /* egal */ } // 📌 „ging von selbst an“ bleibt auch nach dem Neuladen gemerkt
         this._toast("🛒 Laden-Modus ist an – viel Spaß beim Einkaufen!");
-        this._orient(true);
       }
     } else if (prev && this._tab === prev) {
       this._tab = "all";
@@ -3688,7 +3666,6 @@ class EinkaufslisteCard extends HTMLElement {
       this._shopSince = null;
       try { localStorage.setItem("einkaufsliste_shopmode", "0"); } catch (_) { /* egal */ }
       this._toast("✍️ Laden-Modus aus – bis zum nächsten Einkauf");
-      this._orient(false);
     }
     if (!near && this._hass?.states) {
       this._shopAuto = false;
@@ -3737,7 +3714,6 @@ class EinkaufslisteCard extends HTMLElement {
     clearInterval(this._clock);
     clearInterval(this._lockClock);
     clearInterval(this._tTick); this._tTick = null;
-    this._orient(false);
     clearTimeout(this._menuTimer);
     clearTimeout(this._nearTimer);
     clearTimeout(this._undoTimer);
@@ -4328,6 +4304,7 @@ class EinkaufslisteCard extends HTMLElement {
   _autoCheckDate(item) {
     const s = this._data?.settings;
     if (!s || item.checked || s.cleanup_on === false) return null; // 🧹 automatisches Aufräumen aus: kein Datum
+    if (item.store_id && (s.cleanup_skip_stores || []).includes(item.store_id)) return null; // 🏬 Geschäft ist vom Aufräumen ausgenommen
     let d = new Date(s.next_cleanup);
     const added = new Date(Math.max(new Date(item.added_at || 0), new Date(item.out_at || 0))); // „war aus“ startet die Frist neu
     for (let i = 0; i < 60 && dayDiff(d, added) < s.min_age_days; i++) d = new Date(d.getTime() + 7 * DAY);
@@ -4559,7 +4536,6 @@ class EinkaufslisteCard extends HTMLElement {
       this._shopMode = false;
       this._shopAuto = false;
       try { localStorage.setItem("einkaufsliste_shopmode", "0"); localStorage.setItem("einkaufsliste_shopauto", "0"); } catch (_) { /* egal */ }
-      this._orient(false);
       this._renderAll();
       return true;
     }
@@ -4591,7 +4567,6 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._shopMode === undefined) {
       try { this._shopMode = localStorage.getItem("einkaufsliste_shopmode") === "1"; } catch (_) { this._shopMode = false; }
       try { this._shopAuto = this._shopMode && localStorage.getItem("einkaufsliste_shopauto") === "1"; } catch (_) { this._shopAuto = false; } // 📌 ging er von selbst an? Dann geht er auch von selbst aus
-      if (this._shopMode) this._orient(true, false); // 🔒 nach dem Neuladen die Drehsperre wieder versuchen (still)
       try { this._dupIgnore = new Set(JSON.parse(localStorage.getItem("einkaufsliste_dup_ignore") || "[]")); } catch (_) { this._dupIgnore = new Set(); }
     }
     const d = this._data;
@@ -6009,6 +5984,8 @@ ${(() => {
         <div class="srow"><ha-icon class="prev" icon="mdi:clock-outline"></ha-icon><input class="grow" id="clTime" type="time" value="${esc(s.cleanup_time)}" title="Uhrzeit"></div>
         <div class="srow"><ha-icon class="prev" icon="mdi:calendar-clock"></ha-icon><input class="grow" id="clAge" type="number" min="0" max="60" step="1" inputmode="numeric" value="${esc(s.min_age_days)}" title="Mindestens so viele Tage auf der Liste"><span class="hint">Tage alt</span></div>
         <div class="btnrow"><button class="btn primary" data-act="cleanup-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button></div>
+        ${(this._data.stores || []).length ? `<p class="hint"><b>Geschäfte ausnehmen:</b> Was hier an ist, wird beim automatischen Aufräumen übersprungen und bleibt offen.</p>
+        ${this._data.stores.map((st) => `<button class="swline" data-act="cleanup-skip" data-id="${esc(st.id)}" aria-pressed="${(s.cleanup_skip_stores || []).includes(st.id)}"><span class="grow"><b>${esc(st.name)}</b><small>nicht aufräumen</small></span><span class="tgl"><span></span></span></button>`).join("")}` : ""}
         <p class="hint">Jeden ${WD_LONG[s.cleanup_weekday]} um ${s.cleanup_time} Uhr werden alle offenen Artikel abgehakt, die mindestens ${s.min_age_days} Tage auf der Liste stehen (7 = eine Woche).</p>`}`)}
         ${this._acc("clean", "hand", "mdi:broom", "#1e88e5", "Von Hand aufräumen", "Jetzt aufräumen oder alles abhaken", `
         <div class="btnrow">
@@ -10766,7 +10743,6 @@ ${(() => {
         this._shopSince = this._shopMode ? Date.now() : null; // 🛍️ „Gerade abgehakt“ zählt ab jetzt
         this._shopAuto = false; // von Hand geschaltet: die Automatik lässt es in Ruhe
         try { localStorage.setItem("einkaufsliste_shopmode", this._shopMode ? "1" : "0"); localStorage.setItem("einkaufsliste_shopauto", "0"); } catch (_) { /* egal */ }
-        this._orient(this._shopMode);
         this._menuId = null;
         this._toast(this._shopMode ? "🛒 Laden-Modus an – viel Spaß beim Einkaufen!" : "✍️ Laden-Modus aus");
         this._renderAll();
@@ -11068,6 +11044,16 @@ ${(() => {
         const on = this._data.settings?.cleanup_on === false;
         this._ws({ type: "einkaufsliste/cleanup/settings", on })
           .then(() => { this._toast(on ? "🧹 Automatisches Aufräumen ist an" : "🧹 Automatisches Aufräumen ist aus – aufgeräumt wird nur noch von Hand"); setTimeout(() => this._renderSettings(), 150); })
+          .catch(() => {});
+        break;
+      }
+      case "cleanup-skip": { // 🏬 Geschäft vom automatischen Aufräumen ausnehmen / wieder aufnehmen
+        const cur = new Set(this._data.settings?.cleanup_skip_stores || []);
+        const id = el.dataset.id;
+        const was = cur.has(id);
+        if (was) cur.delete(id); else cur.add(id);
+        this._ws({ type: "einkaufsliste/cleanup/settings", skip_stores: [...cur] })
+          .then(() => { this._toast(was ? "🧹 Wird wieder mit aufgeräumt" : "🏬 Wird beim Aufräumen übersprungen"); setTimeout(() => this._renderSettings(), 150); })
           .catch(() => {});
         break;
       }

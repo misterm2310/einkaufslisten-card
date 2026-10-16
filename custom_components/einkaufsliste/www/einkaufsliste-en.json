@@ -2172,5 +2172,10 @@
 "Timer wegmachen": "Dismiss timer",
 "Timer abbrechen": "Cancel timer",
 "Name (optional)": "Name (optional)",
-"Timer": "Timer"
+"Timer": "Timer",
+"Geschäfte ausnehmen:": "Exclude stores:",
+"Was hier an ist, wird beim automatischen Aufräumen übersprungen und bleibt offen.": "Whatever is on here is skipped by automatic cleanup and stays open.",
+"nicht aufräumen": "don't clean up",
+"🧹 Wird wieder mit aufgeräumt": "🧹 Will be cleaned up again",
+"🏬 Wird beim Aufräumen übersprungen": "🏬 Skipped when cleaning up"
 }

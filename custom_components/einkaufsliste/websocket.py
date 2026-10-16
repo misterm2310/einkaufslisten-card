@@ -349,12 +349,13 @@ def ws_item_remove(hass, connection, msg):
         vol.Optional("weekday"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
         vol.Optional("time"): str,
         vol.Optional("min_age_days"): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
+        vol.Optional("skip_stores"): [str],
     }
 )
 @callback
 def ws_cleanup_settings(hass, connection, msg):
-    """🧹 Aufräumen in der Karte einstellen: an/aus, Tag, Uhrzeit, Mindestalter (gilt für alle)."""
-    _run(hass, connection, msg, lambda m: m.set_cleanup(msg.get("on"), msg.get("weekday"), msg.get("time"), msg.get("min_age_days")))
+    """🧹 Aufräumen in der Karte einstellen: an/aus, Tag, Uhrzeit, Mindestalter, ausgenommene Geschäfte (gilt für alle)."""
+    _run(hass, connection, msg, lambda m: m.set_cleanup(msg.get("on"), msg.get("weekday"), msg.get("time"), msg.get("min_age_days"), msg.get("skip_stores")))
 
 
 @websocket_api.websocket_command(
