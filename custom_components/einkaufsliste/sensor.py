@@ -273,7 +273,8 @@ class OffeneArtikelSensor(SensorEntity):
 
 
 class KochtimerSensor(_Base):
-    """sensor.einkaufsliste_kochtimer – wann klingelt der nächste Kochtimer? (Zeitpunkt; leer = kein Timer läuft)"""
+    """sensor.einkaufsliste_kochtimer – wann klingelt der nächste Kochtimer? (Zeitpunkt; ohne laufenden Timer: wann der letzte abgelaufene
+    klingelte, solange er noch auf „fertig“ steht; leer = kein Timer da. Wie viele wirklich laufen, steht in „laufend“)"""
 
     _attr_translation_key = "kochtimer"
     _attr_device_class = SensorDeviceClass.TIMESTAMP
@@ -290,7 +291,10 @@ class KochtimerSensor(_Base):
     @property
     def native_value(self):
         running = self._running()
-        return dt_util.parse_datetime(running[0]["end"]) if running else None
+        if running:
+            return dt_util.parse_datetime(running[0]["end"])
+        done = sorted((t for t in self._m.timers if t.get("done")), key=lambda t: t["end"])
+        return dt_util.parse_datetime(done[-1]["end"]) if done else None  # 🔔 fertig, aber noch nicht weggedrückt: Anzeige bleibt
 
     def _name(self, t: dict[str, Any]) -> str:
         """„Lasagne · Schritt 2“ – damit man bei mehreren Rezepten weiß, welcher Timer es ist."""

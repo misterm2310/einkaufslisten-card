@@ -4319,13 +4319,14 @@ async def test_eigene_notiz_rezept_zutaten(hass, setup) -> None:
     assert any(i["name"] == "Pfirsich" and i.get("own_note") == "Dose" for i in m.items)
 
 
-async def test_kochtimer(hass, setup) -> None:
+async def test_kochtimer(hass, setup, freezer) -> None:
     """⏲️ Kochtimer läuft in HA: Ereignis am Ende, bleibt als „fertig“ stehen, ✕ löscht, Sensor, Neustart."""
     from pytest_homeassistant_custom_component.common import async_capture_events
     m = mgr(hass)
     r = m.add_recipe("Lasagne", [{"name": "Mehl"}], steps="Anbraten\nBacken 30 Minuten")
     events = async_capture_events(hass, "einkaufsliste_timer_fertig")
-    t = m.start_timer(90, "Backen", r["id"], 2, "Marco")
+    t = m.start_timer(90, "Backen", r["id"], 2, "Marco", "user123")
+    assert t["by_id"] == "user123"  # 🔔 nur dieses Konto soll piepen
     assert t["done"] is False and t["step"] == 2 and t["recipe_id"] == r["id"]
     assert m.as_dict()["timers"][0]["id"] == t["id"] and m.as_dict()["server_now"] > 0
     await hass.async_block_till_done()
@@ -4350,11 +4351,23 @@ async def test_kochtimer(hass, setup) -> None:
     await hass.async_block_till_done()
     assert len(events) == 1 and events[0].data["label"] == "Backen" and events[0].data["recipe"] == "Lasagne" and events[0].data["step"] == 2
     assert m.timers[0]["done"] is True
-    assert hass.states.get("sensor.einkaufsliste_kochtimer").attributes["fertig"] == 1
+    st = hass.states.get("sensor.einkaufsliste_kochtimer")
+    assert st.attributes["fertig"] == 1 and st.attributes["laufend"] == 0
+    assert st.state not in ("unknown", "unavailable")  # 🔔 fertig, aber nicht weggedrückt: Anzeige im Dashboard bleibt
     m.cancel_timer(t["id"])
     assert m.timers == []
     await hass.async_block_till_done()
+    assert hass.states.get("sensor.einkaufsliste_kochtimer").state == "unknown"  # weggedrückt: leer
     assert Template(card, hass).async_render().strip() == "Kein Timer läuft 😴"
+    # Nicht weggedrückt: nach einer Stunde räumt sich der fertige Timer selbst weg, der Sensor wird leer
+    m.start_timer(60, "Ei")
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=65))
+    await hass.async_block_till_done()
+    assert [x["done"] for x in m.timers] == [True]
+    freezer.tick(timedelta(hours=1, minutes=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert m.timers == [] and hass.states.get("sensor.einkaufsliste_kochtimer").state == "unknown"
     # Neustart: laufender Timer wird neu gestellt, kurz verpasster klingelt sofort, lange verpasster still
     t2 = m.start_timer(600, "Nudeln")
     m._unsub_timers.pop(t2["id"])()

@@ -3567,7 +3567,7 @@ class EinkaufslisteManager:
 
     def start_timer(
         self, seconds: Any, label: str | None = None, recipe_id: str | None = None,
-        step: int | None = None, by: str | None = None,
+        step: int | None = None, by: str | None = None, by_id: str | None = None,
     ) -> dict[str, Any]:
         """⏲️ Kochtimer starten: läuft hier in Home Assistant weiter, auch wenn die Karte zu ist."""
         try:
@@ -3588,6 +3588,7 @@ class EinkaufslisteManager:
             "seconds": sec,
             "end": (dt_util.utcnow() + timedelta(seconds=sec)).isoformat(),
             "by": by,
+            "by_id": by_id,  # 🔔 nur dieses Konto bekommt Piepen/Meldung (leer = alle)
             "done": False,
         }
         self.timers.append(timer)
@@ -3632,6 +3633,25 @@ class EinkaufslisteManager:
         self._unsub_timers[tid] = async_track_point_in_utc_time(self.hass, _fire, end)
 
     @callback
+    def _schedule_prune(self, timer: dict[str, Any]) -> None:
+        """⏲️ Ein abgelaufener Timer bleibt TIMER_KEEP stehen und verschwindet dann von selbst (Sensor wird leer)."""
+        end = dt_util.parse_datetime(timer["end"])
+        if end is None:
+            return
+        tid = timer["id"]
+        old = self._unsub_timers.pop(tid, None)
+        if old:
+            old()
+
+        @callback
+        def _fire(_now: datetime) -> None:
+            self._unsub_timers.pop(tid, None)
+            self._prune_timers()
+            self._changed()
+
+        self._unsub_timers[tid] = async_track_point_in_utc_time(self.hass, _fire, end + self.TIMER_KEEP + timedelta(seconds=1))
+
+    @callback
     def _timer_due(self, timer_id: str, quiet: bool = False) -> None:
         """⏲️ Zeit um: als fertig merken und das Ereignis feuern (für Automationen, z. B. Alexa-Ansage)."""
         self._unsub_timers.pop(timer_id, None)
@@ -3639,6 +3659,7 @@ class EinkaufslisteManager:
         if timer is None or timer.get("done"):
             return
         timer["done"] = True
+        self._schedule_prune(timer)
         if not quiet:
             recipe = self.recipe_by_id(timer.get("recipe_id"))
             self.hass.bus.async_fire(
@@ -3664,7 +3685,7 @@ class EinkaufslisteManager:
             if end is None:
                 self.timers.remove(t)
             elif t.get("done"):
-                continue
+                self._schedule_prune(t)
             elif end > now:
                 self._schedule_timer(t)
             else:  # verpasst: nur kurz danach noch melden, sonst still als „fertig“ merken

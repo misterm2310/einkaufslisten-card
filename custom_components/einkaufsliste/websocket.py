@@ -809,7 +809,7 @@ def ws_plan_reset(hass, connection, msg):
 def ws_timer_start(hass, connection, msg):
     """⏲️ Kochtimer starten (läuft in Home Assistant)."""
     who = _user_name(hass, connection)
-    _run(hass, connection, msg, lambda m: m.start_timer(msg["seconds"], msg.get("label"), msg.get("recipe_id"), msg.get("step"), who))
+    _run(hass, connection, msg, lambda m: m.start_timer(msg["seconds"], msg.get("label"), msg.get("recipe_id"), msg.get("step"), who, connection.user.id if connection.user else None))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/timer/cancel", vol.Required("timer_id"): str})

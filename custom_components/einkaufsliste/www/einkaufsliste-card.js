@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16";
+const EL_VERSION = "2.76.17-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,10 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: ⏲️ Der Kochtimer-Sensor bleibt gesetzt, solange ein abgelaufener Timer noch nicht weggedrückt ist (höchstens 1 Stunde). So kann eine Dashboard-Zeile „FERTIG“ stehen bleiben; wie viele laufen, steht in „laufend“",
+   "New: ⏲️ the cooking timer sensor stays set as long as a finished timer has not been dismissed (1 hour at most). So a dashboard line “DONE” can stay; how many are running is in “laufend”"],
+  ["Neu: 🔔 Piepen, Vibration und Meldung bei einem abgelaufenen Kochtimer bekommt nur, wer ihn gestartet hat. Die Timer-Chips sehen weiter alle",
+   "New: 🔔 the beep, vibration and message for a finished cooking timer only go to the person who started it. Everyone still sees the timer chips"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -9564,6 +9568,7 @@ ${(() => {
     for (const t of ts) {
       if ((t.done || this._timerRemain(t) <= 0) && !EL_ALARMED.has(t.id)) {
         EL_ALARMED.add(t.id);
+        if (t.by_id && this._hass?.user?.id && t.by_id !== this._hass.user.id) continue; // 🔔 nur wer den Timer gestartet hat, hört ihn (die Chips sehen alle)
         this._toast(`⏰ ${t.label}${this._recipe(t.recipe_id) ? " · " + this._recipe(t.recipe_id).name : ""} ist fertig!`);
         this._beep();
       }
