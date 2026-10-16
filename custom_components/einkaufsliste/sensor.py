@@ -297,9 +297,9 @@ class KochtimerSensor(_Base):
         return dt_util.parse_datetime(done[-1]["end"]) if done else None  # 🔔 fertig, aber noch nicht weggedrückt: Anzeige bleibt
 
     def _name(self, t: dict[str, Any]) -> str:
-        """„Lasagne · Schritt 2“ – damit man bei mehreren Rezepten weiß, welcher Timer es ist."""
+        """„Lasagne – Schritt 2“ – damit man bei mehreren Rezepten weiß, welcher Timer es ist."""
         recipe = self._m.recipe_by_id(t.get("recipe_id"))
-        return f"{recipe['name']} · {t['label']}" if recipe else t["label"]
+        return f"{recipe['name']} – {t['label']}" if recipe else t["label"]
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

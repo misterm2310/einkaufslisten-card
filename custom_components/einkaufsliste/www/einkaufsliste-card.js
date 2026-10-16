@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.1";
+const EL_VERSION = "2.76.17-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,10 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 📐 In der Kochansicht (breit) sind Schritte und Zutaten im Verhältnis 2 zu 1: die Schritte nehmen zwei Drittel, die Zutaten ein Drittel. Außerdem heißt ein Timer ohne eigenen Namen jetzt „Rezept – Schritt 2“ (mit „–“ statt „·“, auch im Sensor)",
+   "New: 📐 in the cooking view (wide) steps and ingredients are in a 2 to 1 ratio: the steps take two thirds, the ingredients one third. Also a timer without its own name is now called “Recipe – Schritt 2” (with “–” instead of “·”, also in the sensor)"],
+  ["Neu: ⏱️ In der Kochansicht öffnet das Timer-Symbol oben (links neben 📷) ein Timer-Fenster: Name (optional, leer = „Rezept – Schritt 2“), Schnellwahl (1 Min bis 1 Std), die Zeit aus dem Schritt-Text als Vorgabe, − und +, „Timer starten“ und darunter alle Timer. Die Timer-Zeile unter dem Rezeptschritt ist dafür weggefallen. Der Name steht in den Chips, im Sensor, im Ereignis und im Dashboard",
+   "New: ⏱️ in the cooking view the timer symbol at the top (left of 📷) opens a timer window: name (optional, empty = “Recipe – Schritt 2”), quick choices (1 min to 1 h), the time from the step text as a default, − and +, “Start timer” and all timers below. The timer row under the recipe step is gone for this. The name shows in the chips, the sensor, the event and the dashboard"],
   ["Neu: ⏲️ Der Kochtimer-Sensor bleibt gesetzt, solange ein abgelaufener Timer noch nicht weggedrückt ist (höchstens 1 Stunde). So kann eine Dashboard-Zeile „FERTIG“ stehen bleiben; wie viele laufen, steht in „laufend“",
    "New: ⏲️ the cooking timer sensor stays set as long as a finished timer has not been dismissed (1 hour at most). So a dashboard line “DONE” can stay; how many are running is in “laufend”"],
   ["Neu: 🔔 Piepen, Vibration und Meldung bei einem abgelaufenen Kochtimer bekommt nur, wer ihn gestartet hat. Die Timer-Chips sehen weiter alle",
@@ -9295,11 +9299,13 @@ ${(() => {
     const title = document.createElement("div");
     title.textContent = `👨‍🍳 ${r.name}`;
     Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
-    const bGar = ovButton("⏲️"), bClose = ovButton("✕"), bPhoto = ovButton("📷");
+    const bGar = ovButton("⏲️"), bClose = ovButton("✕"), bPhoto = ovButton("📷"), bTimer = ovButton("⏱️");
+    bTimer.title = elT("Timer"); bTimer.style.marginRight = "14px"; // etwas Luft zum 📷
+    bTimer.onclick = () => this._timerWindow(r, elStepSeconds(steps[idx]) || 300, finalStep && idx === steps.length ? 0 : idx + 1);
     bPhoto.title = elT("Foto zu diesem Schritt"); bPhoto.style.display = "none";
     bGar.title = elT("Gar-Zeiten");
     bGar.onclick = () => showGarTable(); // im Koch-Fenster bleibt es ein Fenster (die Seite läge dahinter)
-    head.append(title, bPhoto, bGar, bClose);
+    head.append(title, bTimer, bPhoto, bGar, bClose);
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
     heatBox.innerHTML = heat.map((h) => `<div style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 17px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
@@ -9309,8 +9315,6 @@ ${(() => {
     Object.assign(text.style, { font: "500 clamp(22px, 6vw, 34px)/1.35 Roboto,sans-serif", whiteSpace: "pre-wrap", minHeight: "3em" });
     const pic = document.createElement("div"); // 📷 Foto zum Schritt (falls eins da ist)
     Object.assign(pic.style, { display: "none", marginTop: "14px", textAlign: "center" });
-    const trow = document.createElement("div"); // ⏲️ Timer zu diesem Schritt (Zeit aus dem Text, mit − und +)
-    Object.assign(trow.style, { display: "none", alignItems: "center", flexWrap: "wrap", gap: "8px", marginTop: "16px" });
     const nav = document.createElement("div");
     Object.assign(nav.style, { ...wrapW, display: "flex", gap: "10px", marginTop: "12px", padding: "6px 0 0" });
     const bPrev = ovButton("‹ Zurück"), bNext = ovButton("Weiter ›", true);
@@ -9322,7 +9326,7 @@ ${(() => {
     Object.assign(main.style, { ...wrapW, flex: "1 1 auto", minHeight: "0", display: "flex", gap: "16px", marginTop: "6px" });
     const left = document.createElement("div");
     Object.assign(left.style, { flex: "1 1 58%", minWidth: "0", minHeight: "0", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" });
-    left.append(pos, text, pic, trow);
+    left.append(pos, text, pic);
     const ing = document.createElement("div");
     Object.assign(ing.style, { overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", minWidth: "0", minHeight: "0", font: "17px/1.6 Roboto,sans-serif", color: "#ddd" });
     let ingOn = true;
@@ -9374,9 +9378,9 @@ ${(() => {
       main.style.flexDirection = wide ? "row" : "column";
       ing.style.display = ingOn ? "block" : "none";
       Object.assign(ing.style, wide
-        ? { flex: "0 1 40%", borderLeft: "1px solid #333", borderTop: "none", paddingLeft: "16px", paddingTop: "0" }
+        ? { flex: "0 0 calc((100% - 16px) / 3)", boxSizing: "border-box", borderLeft: "1px solid #333", borderTop: "none", paddingLeft: "16px", paddingTop: "0" }
         : { flex: "1 1 0", borderLeft: "none", borderTop: "1px solid #333", paddingLeft: "0", paddingTop: "8px" });
-      left.style.flex = !ingOn ? "1 1 100%" : wide ? "1 1 58%" : "0 1 auto"; // Hochformat: Schritt so hoch wie nötig (höchstens die halbe Höhe), der Rest gehört den Zutaten
+      left.style.flex = !ingOn ? "1 1 100%" : wide ? "1 1 0" : "0 1 auto"; // 📐 breit: Schritte 2 Teile, Zutaten 1 Teil // Hochformat: Schritt so hoch wie nötig (höchstens die halbe Höhe), der Rest gehört den Zutaten
       left.style.maxHeight = ingOn && !wide ? "52%" : "none";
       text.style.font = wide ? "500 clamp(20px, 2.6vw, 32px)/1.35 Roboto,sans-serif" : "500 clamp(20px, 5.4vw, 30px)/1.35 Roboto,sans-serif";
     };
@@ -9388,28 +9392,7 @@ ${(() => {
     ro?.observe(ov);
     layout();
     // ⏲️ Zeit aus dem Schritt-Text („30 Minuten“, „1,5 Std“, „45 Sek“); sonst 5 Minuten
-    const tsel = {};
-    const stepSec = () => tsel[idx] ?? (elStepSeconds(steps[idx]) || 300);
-    const renderRow = (last) => {
-      trow.innerHTML = "";
-      if (last) { trow.style.display = "none"; return; }
-      trow.style.display = "flex";
-      const lbl = document.createElement("span");
-      Object.assign(lbl.style, { font: "600 18px Roboto,sans-serif", minWidth: "84px", textAlign: "center" });
-      const adj = (d) => { const cur = stepSec(); const st = cur < 120 ? 15 : cur < 600 ? 60 : 300; tsel[idx] = Math.max(5, Math.min(86400, cur + d * st)); lbl.textContent = elFmtDur(tsel[idx]); };
-      const bM = ovButton("−"), bP = ovButton("+"), bGo = ovButton("⏲️ Timer starten", true);
-      for (const b of [bM, bP]) Object.assign(b.style, { width: "48px", padding: "10px 0", fontSize: "22px" });
-      lbl.textContent = elFmtDur(stepSec());
-      bM.onclick = () => adj(-1); bP.onclick = () => adj(1);
-      bGo.onclick = async () => {
-        this._audioPrime();
-        try {
-          await this._ws({ type: "einkaufsliste/timer/start", seconds: stepSec(), label: `Schritt ${idx + 1}`, ...(r.id ? { recipe_id: r.id } : {}), step: idx + 1 });
-          this._toast("⏲️ Timer läuft – auch wenn du die App wechselst");
-        } catch (_) { /* Meldung kommt von _ws */ }
-      };
-      trow.append(bM, lbl, bP, bGo);
-    };
+    // ⏱️ Der Timer lebt im Fenster oben (⏱️ neben 📷): Name optional, Schnellwahl, Zeit aus dem Schritt-Text als Vorgabe
     const renderTimers = () => {
       const ts = this._data?.timers || [];
       timerBar.style.display = ts.length ? "flex" : "none";
@@ -9422,7 +9405,6 @@ ${(() => {
       const last = finalStep && idx === steps.length; // 📸 letzter Schritt: Foto vom fertigen Gericht
       pos.textContent = `Schritt ${idx + 1} von ${total}`;
       autoL.start(); // 📜 neuer Schritt: Text beginnt oben, läuft bei Überlänge von selbst
-      renderRow(last);
       if (r.id) { try { localStorage.setItem("einkaufsliste_cook", JSON.stringify({ rid: r.id, idx, pers, t: Date.now() })); } catch (_) { /* geht auch ohne */ } } // 📌 nach Neuladen geht es hier weiter
       text.textContent = last ? "📸 Foto vom fertigen Gericht – es kommt in die Rezept-Fotos. Guten Appetit! 😋" : steps[idx];
       pic.style.display = "none";
@@ -9477,6 +9459,7 @@ ${(() => {
     awake = elKeepAwake(ov, this._inHaApp()); // 💡 Bildschirm bleibt beim Kochen an
     awake.then((a) => { { this._toast(a.mode === "lock" ? "💡 Bildschirm bleibt an" : a.mode === "video" ? "💡 Bildschirm bleibt an (Video-Trick) – geht er trotzdem aus, sag Bescheid" : this._awakeHint()); } }).catch(() => {});
     const onKey = (e) => {
+      if (document.querySelector("[data-eltimer]")) return; // Timer-Fenster offen: Tasten gehören dem Fenster
       if (e.key === "Escape") close();
       if (ov.querySelector("[data-elintro]")) return; // erst die Personenzahl bestätigen
       if (e.key === "ArrowRight" && idx < total - 1) { idx++; show(); }
@@ -9523,6 +9506,70 @@ ${(() => {
   // ⏲️ ---------------------------------------------------------- Kochtimer (laufen in Home Assistant)
   _timerRemain(t) { return Math.round((Date.parse(t.end) - (Date.now() + (this._clockOff || 0))) / 1000); }
 
+
+  // ⏱️ Timer-Fenster (im Look der Seiten, über der Kochansicht): Name optional, Schnellwahl, − und +, Liste aller Timer
+  _timerWindow(r, preset = 300, stepNo = 0) {
+    const en = EL_LANG !== "de";
+    const T = (de, eng) => (en ? eng : de);
+    let tsec = Math.max(5, Math.min(86400, Number(preset) || 300));
+    const ov = makeOverlay({ title: "⏱️ Timer" });
+    ov.dataset.eltimer = "1";
+    ov.dataset.elthemed = "1";
+    Object.assign(ov.style, { background: "var(--primary-background-color, #fafafa)", color: "var(--primary-text-color, #212121)", colorScheme: "", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
+      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    ov.innerHTML = `<style>
+      .tmw { width:100%; max-width:560px; margin:0 auto; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; display:flex; flex-direction:column; gap:14px; }
+      .tmw .gh { display:flex; align-items:center; gap:12px; margin:0; }
+      .tmw .gback { width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
+      .tmw .gic { width:36px; height:36px; flex:none; border-radius:10px; display:flex; align-items:center; justify-content:center; background:#26a69a; color:#fff; --mdc-icon-size:20px; }
+      .tmw .gt { font-size:20px; font-weight:600; min-width:0; }
+      .tmw input[type=text] { width:100%; box-sizing:border-box; padding:14px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.5)); background:var(--card-background-color, #fff); color:var(--primary-text-color); font:500 18px Roboto,sans-serif; }
+      .tmw .pre, .tmw .adj { display:flex; flex-wrap:wrap; gap:8px; }
+      .tmw .adj { align-items:center; justify-content:center; gap:12px; }
+      .tmw button.b { border:0; border-radius:12px; padding:12px 16px; cursor:pointer; background:var(--secondary-background-color, rgba(127,127,127,.18)); color:var(--primary-text-color); font:600 16px Roboto,sans-serif; }
+      .tmw .adj button.b { width:64px; font-size:26px; padding:10px 0; }
+      .tmw .lbl { font:600 24px Roboto,sans-serif; min-width:120px; text-align:center; }
+      .tmw button.go { background:#43a047; color:#fff; padding:16px; font-size:18px; }
+      .tmw .list { display:flex; flex-wrap:wrap; gap:6px; }
+      .tmw .sub { color:var(--secondary-text-color); font-size:13px; margin:0; }
+    </style>
+    <div class="tmw" translate="no">
+      <div class="gh"><button type="button" class="gback" title="${T("Zurück", "Back")}" aria-label="${T("Zurück", "Back")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:timer-outline"></ha-icon></span><span class="gt">${T("Timer", "Timer")}</span></div>
+      <input type="text" maxlength="40" autocomplete="off" placeholder="${T("Name (optional)", "Name (optional)")}" aria-label="${T("Name (optional)", "Name (optional)")}">
+      <div class="pre"></div>
+      <div class="adj"><button type="button" class="b m">−</button><span class="lbl"></span><button type="button" class="b p">+</button></div>
+      <button type="button" class="b go">⏲️ ${T("Timer starten", "Start timer")}</button>
+      <p class="sub">${stepNo ? T(`Ohne Namen heißt der Timer „${r.name} – Schritt ${stepNo}“.`, `Without a name the timer is called “${r.name} – Schritt ${stepNo}”.`) : T("Ohne Namen heißt der Timer „Timer“.", "Without a name the timer is called “Timer”.")}</p>
+      <div class="list"></div>
+    </div>`;
+    const q = (sel) => ov.querySelector(sel);
+    const inp = q("input"), lbl = q(".lbl"), list = q(".list");
+    const setT = (sec) => { tsec = Math.max(5, Math.min(86400, sec)); lbl.textContent = elFmtDur(tsec); };
+    for (const sec of [60, 300, 600, 900, 1800, 2700, 3600]) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "b"; b.textContent = elFmtDur(sec);
+      b.onclick = () => setT(sec); q(".pre").append(b);
+    }
+    const step = () => (tsec < 120 ? 15 : tsec < 600 ? 60 : 300);
+    q(".m").onclick = () => setT(tsec - step()); q(".p").onclick = () => setT(tsec + step());
+    setT(tsec);
+    const draw = () => list.replaceChildren(...(this._data?.timers || []).map((t) => this._timerChip(t)));
+    draw();
+    this._timerWinTick = draw;
+    const close = () => { this._timerWinTick = null; ov.remove(); document.removeEventListener("keydown", onKey); };
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    document.addEventListener("keydown", onKey);
+    ov._elClose = close;
+    q(".gback").onclick = close;
+    q(".go").onclick = async () => {
+      this._audioPrime();
+      try {
+        await this._ws({ type: "einkaufsliste/timer/start", seconds: tsec, label: inp.value.trim() || (stepNo ? `Schritt ${stepNo}` : "Timer"), ...(r.id ? { recipe_id: r.id } : {}), ...(stepNo ? { step: stepNo } : {}) });
+        inp.value = "";
+        this._toast("⏲️ Timer läuft – auch wenn du die App wechselst");
+      } catch (_) { /* Meldung kommt von _ws */ }
+    };
+  }
+
   _timerChip(t) {
     const left = this._timerRemain(t);
     const done = !!t.done || left <= 0;
@@ -9532,7 +9579,7 @@ ${(() => {
       display: "inline-flex", alignItems: "center", gap: "8px", borderRadius: "999px", padding: "4px 6px 4px 12px", font: "600 15px Roboto,sans-serif",
       background: done ? "rgba(229,57,53,.88)" : "rgba(66,165,245,.25)", color: done ? "#fff" : "inherit", border: done ? "1px solid #ff8a80" : "1px solid rgba(66,165,245,.5)",
     });
-    chip.textContent = `${done ? "⏰" : "⏲️"} ${rn ? rn + " · " : ""}${t.label} ${done ? "– fertig!" : elClock(left)}`;
+    chip.textContent = `${done ? "⏰" : "⏲️"} ${rn ? rn + " – " : ""}${t.label} ${done ? "– fertig!" : elClock(left)}`;
     const x = document.createElement("button");
     x.type = "button"; x.textContent = "✕"; x.title = done ? "Timer wegmachen" : "Timer abbrechen";
     Object.assign(x.style, { border: "none", background: "rgba(255,255,255,.18)", color: "inherit", borderRadius: "999px", width: "26px", height: "26px", cursor: "pointer", font: "14px Roboto,sans-serif" });
@@ -9569,12 +9616,13 @@ ${(() => {
       if ((t.done || this._timerRemain(t) <= 0) && !EL_ALARMED.has(t.id)) {
         EL_ALARMED.add(t.id);
         if (t.by_id && this._hass?.user?.id && t.by_id !== this._hass.user.id) continue; // 🔔 nur wer den Timer gestartet hat, hört ihn (die Chips sehen alle)
-        this._toast(`⏰ ${t.label}${this._recipe(t.recipe_id) ? " · " + this._recipe(t.recipe_id).name : ""} ist fertig!`);
+        this._toast(`⏰ ${t.label}${this._recipe(t.recipe_id) ? " – " + this._recipe(t.recipe_id).name : ""} ist fertig!`);
         this._beep();
       }
     }
     this._renderTimerStrip();
     this._cookTick?.();
+    this._timerWinTick?.();
   }
 
   _audioPrime() { // beim Antippen wecken – sonst darf der Browser später nicht piepen

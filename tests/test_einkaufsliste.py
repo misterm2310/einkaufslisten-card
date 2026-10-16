@@ -4332,8 +4332,8 @@ async def test_kochtimer(hass, setup, freezer) -> None:
     await hass.async_block_till_done()
     st = hass.states.get("sensor.einkaufsliste_kochtimer")
     assert st is not None and st.attributes["laufend"] == 1 and st.state != "unknown"
-    assert st.attributes["naechster"] == "Lasagne · Backen"
-    assert st.attributes["timer"][0]["name"] == "Lasagne · Backen" and st.attributes["timer"][0]["rezept"] == "Lasagne"
+    assert st.attributes["naechster"] == "Lasagne – Backen"
+    assert st.attributes["timer"][0]["name"] == "Lasagne – Backen" and st.attributes["timer"][0]["rezept"] == "Lasagne"
     # 🖼️ Die Markdown-Karte aus der Anleitung muss mit diesen Attributen wirklich funktionieren
     from homeassistant.helpers.template import Template
     card = (
@@ -4341,7 +4341,7 @@ async def test_kochtimer(hass, setup, freezer) -> None:
         "- {{ '⏰ **' ~ x.name ~ '** – fertig!' if x.fertig else '⏲️ **' ~ x.name ~ '** – noch ' ~ (((as_datetime(x.ende) - now()).total_seconds() // 60) | int) ~ ' Min' }}\n"
         "{% else %}Kein Timer läuft 😴{% endfor %}"
     )
-    assert Template(card, hass).async_render().strip() == "- ⏲️ **Lasagne · Backen** – noch 1 Min"
+    assert Template(card, hass).async_render().strip() == "- ⏲️ **Lasagne – Backen** – noch 1 Min"
     with pytest.raises(ValueError):
         m.start_timer(0)
     with pytest.raises(ValueError):
