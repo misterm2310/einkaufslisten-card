@@ -292,13 +292,27 @@ class KochtimerSensor(_Base):
         running = self._running()
         return dt_util.parse_datetime(running[0]["end"]) if running else None
 
+    def _name(self, t: dict[str, Any]) -> str:
+        """„Lasagne · Schritt 2“ – damit man bei mehreren Rezepten weiß, welcher Timer es ist."""
+        recipe = self._m.recipe_by_id(t.get("recipe_id"))
+        return f"{recipe['name']} · {t['label']}" if recipe else t["label"]
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
+        running = self._running()
         return {
-            "laufend": len(self._running()),
+            "laufend": len(running),
             "fertig": sum(1 for t in self._m.timers if t.get("done")),
+            "naechster": self._name(running[0]) if running else None,  # z. B. für eine Ansage
             "timer": [
-                {"label": t["label"], "schritt": t.get("step"), "ende": t["end"], "fertig": bool(t.get("done"))}
+                {
+                    "name": self._name(t),
+                    "rezept": (self._m.recipe_by_id(t.get("recipe_id")) or {}).get("name"),
+                    "label": t["label"],
+                    "schritt": t.get("step"),
+                    "ende": t["end"],
+                    "fertig": bool(t.get("done")),
+                }
                 for t in self._m.timers
             ],
         }

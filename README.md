@@ -284,6 +284,50 @@ actions:
       message: "🛒 Bei Aldi stehen {{ states('sensor.einkaufsliste_aldi') }} Sachen auf der Liste"
 ```
 
+### ⏲️ Kochtimer im Dashboard und per Ansage
+
+Der Kochtimer (in der Kochansicht bei jedem Schritt) läuft in Home Assistant weiter, auch wenn die App zu ist. Er zeigt sich so:
+
+- **Von selbst:** Die Einkaufslisten-Karte zeigt oben für jeden laufenden Timer einen Chip mit der Restzeit.
+- **Als Kachel** (der nächste Timer, HA schreibt „in 25 Minuten"):
+
+```yaml
+type: tile
+entity: sensor.einkaufsliste_kochtimer
+name: Kochtimer
+```
+
+- **Als Liste aller Timer** (Markdown-Karte, mit Rezeptname und Restzeit):
+
+```yaml
+type: markdown
+title: ⏲️ Kochtimer
+content: >-
+  {% for x in state_attr('sensor.einkaufsliste_kochtimer', 'timer') or [] %}
+  - {{ '⏰ **' ~ x.name ~ '** – fertig!' if x.fertig else '⏲️ **' ~ x.name ~ '** – noch ' ~ (((as_datetime(x.ende) - now()).total_seconds() // 60) | int) ~ ' Min' }}
+  {% else %}
+  Kein Timer läuft 😴
+  {% endfor %}
+```
+
+- **Ansage oder Meldung, wenn ein Timer fertig ist:** Das Ereignis `einkaufsliste_timer_fertig` kommt mit `label`, `recipe`, `step` und `by`. Beispiel mit einer Handy-Meldung (für Alexa oder einen Lautsprecher nimmst du statt `notify.notify` deinen eigenen Dienst, z. B. von Alexa Media Player):
+
+```yaml
+alias: Kochtimer – Meldung
+description: Meldet, wenn ein Kochtimer der Einkaufsliste fertig ist.
+triggers:
+  - trigger: event
+    event_type: einkaufsliste_timer_fertig
+actions:
+  - action: notify.notify
+    continue_on_error: true
+    data:
+      title: "⏰ Kochtimer"
+      message: "{{ trigger.event.data.recipe or 'Timer' }} · {{ trigger.event.data.label }} ist fertig!"
+```
+
+Der Sensor hat außerdem die Felder `naechster` (z. B. „Lasagne · Schritt 2"), `laufend` und `fertig`. Bis zu 12 Timer laufen gleichzeitig.
+
 ---
 
 ## ❓ Häufige Fragen

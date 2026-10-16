@@ -285,6 +285,50 @@ actions:
       message: "🛒 There are {{ states('sensor.einkaufsliste_aldi') }} things on the list at Aldi"
 ```
 
+### ⏲️ Cooking timer on the dashboard and as an announcement
+
+The cooking timer (in cooking view at each step) keeps running in Home Assistant even if the app is closed. You can see it like this:
+
+- **By itself:** the shopping list card shows a chip with the remaining time on top for every running timer.
+- **As a tile** (the next timer, HA writes “in 25 minutes”):
+
+```yaml
+type: tile
+entity: sensor.einkaufsliste_kochtimer
+name: Cooking timer
+```
+
+- **As a list of all timers** (Markdown card, with recipe name and remaining time):
+
+```yaml
+type: markdown
+title: ⏲️ Cooking timer
+content: >-
+  {% for x in state_attr('sensor.einkaufsliste_kochtimer', 'timer') or [] %}
+  - {{ '⏰ **' ~ x.name ~ '** – done!' if x.fertig else '⏲️ **' ~ x.name ~ '** – ' ~ (((as_datetime(x.ende) - now()).total_seconds() // 60) | int) ~ ' min left' }}
+  {% else %}
+  No timer running 😴
+  {% endfor %}
+```
+
+- **Announcement or message when a timer is done:** the event `einkaufsliste_timer_fertig` comes with `label`, `recipe`, `step` and `by`. Example with a phone message (for Alexa or a speaker use your own service instead of `notify.notify`, e.g. from Alexa Media Player):
+
+```yaml
+alias: Cooking timer – message
+description: Sends a message when a cooking timer of the shopping list is done.
+triggers:
+  - trigger: event
+    event_type: einkaufsliste_timer_fertig
+actions:
+  - action: notify.notify
+    continue_on_error: true
+    data:
+      title: "⏰ Cooking timer"
+      message: "{{ trigger.event.data.recipe or 'Timer' }} · {{ trigger.event.data.label }} is done!"
+```
+
+The sensor also has the fields `naechster` (e.g. “Lasagna · Schritt 2”), `laufend` (running) and `fertig` (done). Up to 12 timers run at the same time.
+
 ---
 
 ## ❓ FAQ

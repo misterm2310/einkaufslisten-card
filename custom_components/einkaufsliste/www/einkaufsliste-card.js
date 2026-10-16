@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.11";
+const EL_VERSION = "2.76.16-beta.12";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: ⏲️ Der Kochtimer-Sensor nennt jetzt auch das Rezept („Lasagne · Schritt 2“) und das Feld „naechster“. In der Anleitung stehen fertige Dashboard-Karten (Kachel, Liste aller Timer) und eine Beispiel-Automation zum Kopieren",
+   "New: ⏲️ the cooking timer sensor now also names the recipe (“Lasagna · Schritt 2”) and has a field “naechster”. The guide has ready-made dashboard cards (tile, list of all timers) and an example automation to copy"],
   ["Neu: 👨‍🍳 Kochansicht überarbeitet: Vorher fragt sie „Für wie viele Personen kochst du?“, danach stehen die Schritte links und die Zutaten (umgerechnet) rechts, auf dem Handy im Hochformat Schritt oben und Zutaten darunter. Ist ein Text zu lang für den Platz, läuft er langsam von selbst (Wischen oder Mausrad hält ihn an). Die Kochansicht merkt sich Schritt und Personenzahl, wenn die Seite neu lädt",
    "New: 👨‍🍳 cooking view reworked: it first asks “How many people are you cooking for?”, then the steps are on the left and the ingredients (recalculated) on the right, on a phone in portrait the step on top and the ingredients below. If a text is too long for the space it scrolls slowly by itself (swiping or the mouse wheel stops it). The cooking view remembers step and number of people when the page reloads"],
   ["Neu: ⏲️ Kochtimer pro Schritt: Die Zeit aus dem Text („30 Minuten“) steht schon da, mit − und + änderbar. Der Timer läuft in Home Assistant weiter, auch wenn du die App wechselst, und zeigt sich oben als Chip. Am Ende piept und vibriert die Karte. Für Automationen (z. B. Alexa-Ansage) gibt es das Ereignis einkaufsliste_timer_fertig und den Sensor sensor.einkaufsliste_kochtimer",
