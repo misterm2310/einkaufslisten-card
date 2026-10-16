@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.76.16-beta.10"
+VERSION = "2.76.16-beta.11"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
@@ -14,6 +14,7 @@ SIGNAL_UPDATED = f"{DOMAIN}_updated"
 EVENT_ITEM_ADDED = f"{DOMAIN}_item_added"
 EVENT_ITEM_BOUGHT = f"{DOMAIN}_item_bought"
 EVENT_CLEANUP = f"{DOMAIN}_cleanup"
+EVENT_TIMER = f"{DOMAIN}_timer_fertig"  # ⏲️ Kochtimer abgelaufen
 
 STATIC_URL = "/einkaufsliste_files"
 CARD_FILENAME = "einkaufsliste-card.js"

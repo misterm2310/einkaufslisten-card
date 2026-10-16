@@ -132,6 +132,9 @@
       "zuletzt_gekauft": {
         "name": "Zuletzt gekauft"
       },
+      "kochtimer": {
+        "name": "Kochtimer"
+      },
       "gesundheit": {
         "name": "Gesundheit",
         "state": {

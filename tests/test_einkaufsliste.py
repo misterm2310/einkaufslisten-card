@@ -4319,6 +4319,43 @@ async def test_eigene_notiz_rezept_zutaten(hass, setup) -> None:
     assert any(i["name"] == "Pfirsich" and i.get("own_note") == "Dose" for i in m.items)
 
 
+async def test_kochtimer(hass, setup) -> None:
+    """⏲️ Kochtimer läuft in HA: Ereignis am Ende, bleibt als „fertig“ stehen, ✕ löscht, Sensor, Neustart."""
+    from pytest_homeassistant_custom_component.common import async_capture_events
+    m = mgr(hass)
+    r = m.add_recipe("Lasagne", [{"name": "Mehl"}], steps="Anbraten\nBacken 30 Minuten")
+    events = async_capture_events(hass, "einkaufsliste_timer_fertig")
+    t = m.start_timer(90, "Backen", r["id"], 2, "Marco")
+    assert t["done"] is False and t["step"] == 2 and t["recipe_id"] == r["id"]
+    assert m.as_dict()["timers"][0]["id"] == t["id"] and m.as_dict()["server_now"] > 0
+    await hass.async_block_till_done()
+    st = hass.states.get("sensor.einkaufsliste_kochtimer")
+    assert st is not None and st.attributes["laufend"] == 1 and st.state != "unknown"
+    with pytest.raises(ValueError):
+        m.start_timer(0)
+    with pytest.raises(ValueError):
+        m.start_timer(24 * 3600 + 1)
+    # Zeit um -> Ereignis, Timer bleibt als „fertig“
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=95))
+    await hass.async_block_till_done()
+    assert len(events) == 1 and events[0].data["label"] == "Backen" and events[0].data["recipe"] == "Lasagne" and events[0].data["step"] == 2
+    assert m.timers[0]["done"] is True
+    assert hass.states.get("sensor.einkaufsliste_kochtimer").attributes["fertig"] == 1
+    m.cancel_timer(t["id"])
+    assert m.timers == []
+    # Neustart: laufender Timer wird neu gestellt, kurz verpasster klingelt sofort, lange verpasster still
+    t2 = m.start_timer(600, "Nudeln")
+    m._unsub_timers.pop(t2["id"])()
+    m.timers.append({**t2, "id": "kurz", "label": "Kurz", "end": (dt_util.utcnow() - timedelta(seconds=30)).isoformat()})
+    m.timers.append({**t2, "id": "lang", "label": "Lang", "end": (dt_util.utcnow() - timedelta(minutes=30)).isoformat()})
+    events.clear()
+    m._restore_timers()
+    await hass.async_block_till_done()
+    assert t2["id"] in m._unsub_timers
+    assert [e.data["label"] for e in events] == ["Kurz"]
+    assert {x["id"]: x["done"] for x in m.timers} == {t2["id"]: False, "kurz": True, "lang": True}
+
+
 async def test_view_prefs_essensplan_pro_benutzer(hass, setup, hass_ws_client) -> None:
     """📅 Essensplan anzeigen: eigene Wahl (an UND aus) wird gespeichert."""
     client = await hass_ws_client(hass)

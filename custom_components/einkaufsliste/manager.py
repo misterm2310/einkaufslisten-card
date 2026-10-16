@@ -22,7 +22,7 @@ from time import monotonic as _monotonic
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.event import async_track_time_change, async_track_time_interval
+from homeassistant.helpers.event import async_track_point_in_utc_time, async_track_time_change, async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
@@ -38,6 +38,7 @@ from .const import (
     DEFAULT_OPTIONS,
     DEFAULT_STORES,
     EVENT_CLEANUP,
+    EVENT_TIMER,
     EVENT_ITEM_ADDED,
     EVENT_ITEM_BOUGHT,
     HISTORY_LIMIT,
@@ -441,6 +442,8 @@ class EinkaufslisteManager:
         self._actor = {}
         self._unsub_time: Callable[[], None] | None = None
         self._unsub_plan: Callable[[], None] | None = None
+        self.timers: list[dict[str, Any]] = []  # ⏲️ Kochtimer (laufen hier in HA, nicht im Browser)
+        self._unsub_timers: dict[str, Callable[[], None]] = {}
         # 🧹 Aufräumen: in der Karte einstellbar (⚙️ → Aufräumen). None = noch nie gespeichert → alte Werte aus den Integrations-Optionen
         self.cleanup_cfg: dict[str, Any] | None = None
 
@@ -613,6 +616,7 @@ class EinkaufslisteManager:
         pd = data.get("plan_reset_day", 0)
         self.plan_reset_day = pd if isinstance(pd, int) and not isinstance(pd, bool) and 0 <= pd <= 6 else 0
         self.plan_last_reset = data.get("plan_last_reset")
+        self.timers = [t for t in (data.get("timers") or []) if isinstance(t, dict) and t.get("id") and t.get("end")]
         self.labels = bool(data.get("labels", False))
         nt = data.get("note_templates")
         self.note_templates = [str(x) for x in nt][:30] if isinstance(nt, list) else None
@@ -696,6 +700,7 @@ class EinkaufslisteManager:
             "plan_reset_on": self.plan_reset_on,
             "plan_reset_day": self.plan_reset_day,
             "plan_last_reset": self.plan_last_reset,
+            "timers": self.timers,
             "labels": self.labels,
             "note_templates": self.note_templates,
             "ai_agent": self.ai_agent,
@@ -763,6 +768,8 @@ class EinkaufslisteManager:
             "categories": self.categories,
             "items": self.items,
             "recipes": self.recipes,
+            "timers": self.timers,  # ⏲️ laufende/fertige Kochtimer
+            "server_now": int(dt_util.utcnow().timestamp() * 1000),  # für die Uhr-Abweichung der Karte
             "persons": self.persons,
             "photos": {k: v.get("updated") for k, v in self.photos.items()},
             "photo_counts": {k: 1 + len(v["more"]) for k, v in self.photos.items() if v.get("more")},
@@ -3551,8 +3558,121 @@ class EinkaufslisteManager:
         _LOGGER.debug("Einkaufsliste aufgeräumt: %s Artikel abgehakt", len(done))
         return done
 
+    # ------------------------------------------------------------------ ⏲️ Kochtimer
+    TIMER_MAX = 12  # so viele Timer gleichzeitig
+    TIMER_KEEP = timedelta(hours=1)  # abgelaufene bleiben so lange sichtbar (bis jemand ✕ tippt)
+
+    def _timer_by_id(self, timer_id: str) -> dict[str, Any] | None:
+        return next((t for t in self.timers if t["id"] == timer_id), None)
+
+    def start_timer(
+        self, seconds: Any, label: str | None = None, recipe_id: str | None = None,
+        step: int | None = None, by: str | None = None,
+    ) -> dict[str, Any]:
+        """⏲️ Kochtimer starten: läuft hier in Home Assistant weiter, auch wenn die Karte zu ist."""
+        try:
+            sec = int(seconds)
+        except (TypeError, ValueError):
+            raise ValueError("Die Zeit ist keine Zahl.") from None
+        if not 1 <= sec <= 24 * 3600:
+            raise ValueError("Ein Timer geht von 1 Sekunde bis 24 Stunden.")
+        self._prune_timers()
+        if len(self.timers) >= self.TIMER_MAX:
+            raise ValueError(f"Es laufen schon {self.TIMER_MAX} Timer – bitte erst einen löschen.")
+        recipe = self.recipe_by_id(recipe_id) if recipe_id else None
+        timer = {
+            "id": uuid.uuid4().hex[:8],
+            "label": (_clean(label) or (recipe["name"] if recipe else "Timer"))[:60],
+            "recipe_id": recipe["id"] if recipe else None,
+            "step": int(step) if isinstance(step, int) and not isinstance(step, bool) and step >= 1 else None,
+            "seconds": sec,
+            "end": (dt_util.utcnow() + timedelta(seconds=sec)).isoformat(),
+            "by": by,
+            "done": False,
+        }
+        self.timers.append(timer)
+        self._schedule_timer(timer)
+        self._changed()
+        return timer
+
+    @callback
+    def cancel_timer(self, timer_id: str) -> None:
+        """⏲️ Timer löschen (laufend oder schon abgelaufen)."""
+        timer = self._timer_by_id(timer_id)
+        if timer is None:
+            return
+        self.timers.remove(timer)
+        unsub = self._unsub_timers.pop(timer_id, None)
+        if unsub:
+            unsub()
+        self._changed()
+
+    def _prune_timers(self) -> None:
+        now = dt_util.utcnow()
+        for t in list(self.timers):
+            end = dt_util.parse_datetime(t["end"])
+            if t.get("done") and (end is None or now - end > self.TIMER_KEEP):
+                self.timers.remove(t)
+                self._unsub_timers.pop(t["id"], None)
+
+    @callback
+    def _schedule_timer(self, timer: dict[str, Any]) -> None:
+        end = dt_util.parse_datetime(timer["end"])
+        if end is None or timer.get("done"):
+            return
+        old = self._unsub_timers.pop(timer["id"], None)
+        if old:
+            old()
+        tid = timer["id"]
+
+        @callback
+        def _fire(_now: datetime) -> None:  # @callback: läuft im Event-Loop (ein Lambda liefe in einem Thread)
+            self._timer_due(tid)
+
+        self._unsub_timers[tid] = async_track_point_in_utc_time(self.hass, _fire, end)
+
+    @callback
+    def _timer_due(self, timer_id: str, quiet: bool = False) -> None:
+        """⏲️ Zeit um: als fertig merken und das Ereignis feuern (für Automationen, z. B. Alexa-Ansage)."""
+        self._unsub_timers.pop(timer_id, None)
+        timer = self._timer_by_id(timer_id)
+        if timer is None or timer.get("done"):
+            return
+        timer["done"] = True
+        if not quiet:
+            recipe = self.recipe_by_id(timer.get("recipe_id"))
+            self.hass.bus.async_fire(
+                EVENT_TIMER,
+                {
+                    "timer_id": timer["id"],
+                    "label": timer["label"],
+                    "recipe": recipe["name"] if recipe else None,
+                    "step": timer.get("step"),
+                    "seconds": timer["seconds"],
+                    "by": timer.get("by"),
+                },
+            )
+        self._changed()
+
+    @callback
+    def _restore_timers(self) -> None:
+        """⏲️ Nach einem Neustart: laufende Timer neu stellen, kurz verpasste sofort klingeln lassen."""
+        now = dt_util.utcnow()
+        self._prune_timers()
+        for t in list(self.timers):
+            end = dt_util.parse_datetime(t["end"])
+            if end is None:
+                self.timers.remove(t)
+            elif t.get("done"):
+                continue
+            elif end > now:
+                self._schedule_timer(t)
+            else:  # verpasst: nur kurz danach noch melden, sonst still als „fertig“ merken
+                self._timer_due(t["id"], quiet=(now - end) > timedelta(minutes=2))
+
     @callback
     def async_start_scheduler(self) -> None:
+        self._restore_timers()
         self.expire_offers()
         self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: self.expire_offers(), timedelta(hours=1))
         self._schedule_cleanup()
@@ -3608,6 +3728,9 @@ class EinkaufslisteManager:
         if self._unsub_time:
             self._unsub_time()
             self._unsub_time = None
+        for unsub in list(self._unsub_timers.values()):
+            unsub()
+        self._unsub_timers.clear()
 
     # ------------------------------------------------------------------ Rezepte
     def _recipe_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:

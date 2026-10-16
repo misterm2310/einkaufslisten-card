@@ -15,6 +15,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, SIGNAL_UPDATED, VERSION
 from .manager import EinkaufslisteManager
@@ -24,7 +25,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     manager: EinkaufslisteManager = hass.data[DOMAIN]["manager"]
-    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry), ZuletztGekauftSensor(manager, entry), GesundheitSensor(manager, entry)])
+    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry), ZuletztGekauftSensor(manager, entry), GesundheitSensor(manager, entry), KochtimerSensor(manager, entry)])
 
     # 🏪 Ein Sensor pro Geschäft – neue Geschäfte bekommen ihren Sensor automatisch, gelöschte verschwinden
     known: dict[str, GeschaeftSensor] = {}
@@ -268,6 +269,38 @@ class OffeneArtikelSensor(SensorEntity):
             "abgehakt": sum(1 for i in self._m.items if i["checked"]),
             "artikel": artikel,
             "naechstes_aufraeumen": self._m.next_cleanup().isoformat() if self._m.cleanup_on else None,
+        }
+
+
+class KochtimerSensor(_Base):
+    """sensor.einkaufsliste_kochtimer – wann klingelt der nächste Kochtimer? (Zeitpunkt; leer = kein Timer läuft)"""
+
+    _attr_translation_key = "kochtimer"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:timer-outline"
+    _unrecorded_attributes = frozenset({"timer"})
+
+    def __init__(self, manager: EinkaufslisteManager, entry: ConfigEntry) -> None:
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_kochtimer"
+
+    def _running(self) -> list[dict[str, Any]]:
+        return sorted((t for t in self._m.timers if not t.get("done")), key=lambda t: t["end"])
+
+    @property
+    def native_value(self):
+        running = self._running()
+        return dt_util.parse_datetime(running[0]["end"]) if running else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "laufend": len(self._running()),
+            "fertig": sum(1 for t in self._m.timers if t.get("done")),
+            "timer": [
+                {"label": t["label"], "schritt": t.get("step"), "ende": t["end"], "fertig": bool(t.get("done"))}
+                for t in self._m.timers
+            ],
         }
 
 

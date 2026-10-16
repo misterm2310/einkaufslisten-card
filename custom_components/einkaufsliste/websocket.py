@@ -73,6 +73,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_mail_import,
         ws_mascot,
         ws_plan_reset,
+        ws_timer_start,
+        ws_timer_cancel,
         ws_labels,
         ws_catalog_wipe,
         ws_factory_reset,
@@ -792,6 +794,29 @@ def ws_view_set(hass, connection, msg):
 @callback
 def ws_plan_reset(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.set_plan_reset(msg.get("on"), msg.get("day")))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/timer/start",
+        vol.Required("seconds"): vol.All(vol.Coerce(int), vol.Range(min=1, max=86400)),
+        vol.Optional("label"): OPT_STR,
+        vol.Optional("recipe_id"): OPT_STR,
+        vol.Optional("step"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=999))),
+    }
+)
+@callback
+def ws_timer_start(hass, connection, msg):
+    """⏲️ Kochtimer starten (läuft in Home Assistant)."""
+    who = _user_name(hass, connection)
+    _run(hass, connection, msg, lambda m: m.start_timer(msg["seconds"], msg.get("label"), msg.get("recipe_id"), msg.get("step"), who))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/timer/cancel", vol.Required("timer_id"): str})
+@callback
+def ws_timer_cancel(hass, connection, msg):
+    """⏲️ Kochtimer löschen (laufend oder abgelaufen)."""
+    _run(hass, connection, msg, lambda m: m.cancel_timer(msg["timer_id"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/mascot/set", vol.Required("on"): bool})
