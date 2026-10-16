@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.5";
+const EL_VERSION = "2.76.17-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Fix: ⏱️ Das Timer-Fenster aus den Gar-Zeiten zeigte oben alles doppelt (zwei Pfeile, zwei „Timer“). Jetzt steht die Kopfzeile nur noch einmal da.",
+   "Fix: ⏱️ the timer window opened from the cooking times showed everything twice at the top (two arrows, two “Timer”). The header now appears only once."],
   ["Neu: 🖼️ Foto-Seiten (Produkt, Rezept, Kassenbon …) zeigen oben links ein Galerie-Symbol statt des Kamera-Emojis.",
    "New: 🖼️ photo pages (product, recipe, receipt …) now show a gallery icon at the top left instead of the camera emoji."],
   ["Neu: ⏱️ Auch in den Gar-Zeiten gibt es oben rechts einen Timer-Knopf. Er öffnet das Timer-Fenster (Name optional, 5 Minuten vorgewählt), auch mitten im Kochen.",
@@ -9504,9 +9506,12 @@ ${(() => {
     let tsec = Math.max(5, Math.min(86400, Number(preset) || 300));
     const ov = makeOverlay({ title: "⏱️ Timer" });
     ov.dataset.eltimer = "1";
-    ov.dataset.elthemed = "1";
-    Object.assign(ov.style, { background: "var(--primary-background-color, #fafafa)", color: "var(--primary-text-color, #212121)", colorScheme: "", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
-      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    const asPage = !!ov.dataset.elpage; // 📄 als Seite in der Karte: Kopfzeile (← Timer) kommt von der Seite, nicht doppelt
+    ov.dataset.elthemed = "1"; // eigene Hell/Dunkel-Farben aus dem Theme (kein Umdrehen der Grautöne)
+    if (!asPage) {
+      Object.assign(ov.style, { background: "var(--primary-background-color, #fafafa)", color: "var(--primary-text-color, #212121)", colorScheme: "", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    }
     ov.innerHTML = `<style>
       .tmw { width:100%; max-width:560px; margin:0 auto; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; display:flex; flex-direction:column; gap:14px; }
       .tmw .gh { display:flex; align-items:center; gap:12px; margin:0; }
@@ -9524,7 +9529,7 @@ ${(() => {
       .tmw .sub { color:var(--secondary-text-color); font-size:13px; margin:0; }
     </style>
     <div class="tmw" translate="no">
-      <div class="gh"><button type="button" class="gback" title="${T("Zurück", "Back")}" aria-label="${T("Zurück", "Back")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:timer-outline"></ha-icon></span><span class="gt">${T("Timer", "Timer")}</span></div>
+      ${asPage ? "" : `<div class="gh"><button type="button" class="gback" title="${T("Zurück", "Back")}" aria-label="${T("Zurück", "Back")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:timer-outline"></ha-icon></span><span class="gt">${T("Timer", "Timer")}</span></div>`}
       <input type="text" maxlength="40" autocomplete="off" placeholder="${T("Name (optional)", "Name (optional)")}" aria-label="${T("Name (optional)", "Name (optional)")}">
       <div class="pre"></div>
       <div class="adj"><button type="button" class="b m">−</button><span class="lbl"></span><button type="button" class="b p">+</button></div>
@@ -9549,7 +9554,7 @@ ${(() => {
     const onKey = (e) => { if (e.key === "Escape") close(); };
     document.addEventListener("keydown", onKey);
     ov._elClose = close;
-    q(".gback").onclick = close;
+    if (!asPage) q(".gback").onclick = close;
     q(".go").onclick = async () => {
       this._audioPrime();
       try {
