@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.13";
+const EL_VERSION = "2.76.16";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -375,44 +375,6 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
-  ["Neu: 🛒 Der Laden-Modus sperrt jetzt die Bildschirmdrehung, wie sie beim Start war (Hoch- oder Querformat). Das klappt nur, wenn Handy und Browser es erlauben (meist Vollbild oder installierte App, auf dem iPhone nicht), sonst gibt es einen kurzen Hinweis. Außerdem: Ging der Laden-Modus bei einem Geschäft von selbst an, geht er auch nach einem Neuladen der App zu Hause wieder von selbst aus",
-   "New: 🛒 store mode now locks the screen rotation as it was at the start (portrait or landscape). This only works if phone and browser allow it (usually full screen or an installed app, not on the iPhone), otherwise a short hint appears. Also: if store mode switched on by itself at a store, it now also switches off by itself at home even after the app was reloaded"],
-  ["Neu: ⏲️ Der Kochtimer-Sensor nennt jetzt auch das Rezept („Lasagne · Schritt 2“) und das Feld „naechster“. In der Anleitung stehen fertige Dashboard-Karten (Kachel, Liste aller Timer) und eine Beispiel-Automation zum Kopieren",
-   "New: ⏲️ the cooking timer sensor now also names the recipe (“Lasagna · Schritt 2”) and has a field “naechster”. The guide has ready-made dashboard cards (tile, list of all timers) and an example automation to copy"],
-  ["Neu: 👨‍🍳 Kochansicht überarbeitet: Vorher fragt sie „Für wie viele Personen kochst du?“, danach stehen die Schritte links und die Zutaten (umgerechnet) rechts, auf dem Handy im Hochformat Schritt oben und Zutaten darunter. Ist ein Text zu lang für den Platz, läuft er langsam von selbst (Wischen oder Mausrad hält ihn an). Die Kochansicht merkt sich Schritt und Personenzahl, wenn die Seite neu lädt",
-   "New: 👨‍🍳 cooking view reworked: it first asks “How many people are you cooking for?”, then the steps are on the left and the ingredients (recalculated) on the right, on a phone in portrait the step on top and the ingredients below. If a text is too long for the space it scrolls slowly by itself (swiping or the mouse wheel stops it). The cooking view remembers step and number of people when the page reloads"],
-  ["Neu: ⏲️ Kochtimer pro Schritt: Die Zeit aus dem Text („30 Minuten“) steht schon da, mit − und + änderbar. Der Timer läuft in Home Assistant weiter, auch wenn du die App wechselst, und zeigt sich oben als Chip. Am Ende piept und vibriert die Karte. Für Automationen (z. B. Alexa-Ansage) gibt es das Ereignis einkaufsliste_timer_fertig und den Sensor sensor.einkaufsliste_kochtimer",
-   "New: ⏲️ cooking timer per step: the time from the text (“30 minutes”) is already filled in, adjustable with − and +. The timer keeps running in Home Assistant even if you switch apps and shows as a chip on top. At the end the card beeps and vibrates. For automations (e.g. an Alexa announcement) there is the event einkaufsliste_timer_fertig and the sensor sensor.einkaufsliste_kochtimer"],
-  ["Neu: 👨‍🍳 In der Kochansicht stellst du bei den Zutaten (🥕) die Personenzahl mit − und + um, die Mengen werden mitgerechnet. Start ist die Zahl, die du zuletzt beim „Auf die Liste“ gewählt hast, sonst wie im Rezept. Das Rezept selbst bleibt unverändert",
-   "New: 👨‍🍳 in cooking view you change the number of people under the ingredients (🥕) with − and +, the amounts are recalculated. It starts with the number you last chose when putting the recipe on the list, otherwise as in the recipe. The recipe itself stays unchanged"],
-  ["Neu: ✏️ Eigene Notiz auch bei Rezepten: im Rezept eine Zutat antippen (z. B. „Pfirsich“ → „Dose“), die Notiz steht dann im Rezept und auf der Liste. Sie gehört zum Produkt, eine Änderung im Katalog wirkt also auch bei Rezept-Artikeln. Beim Bearbeiten eines Rezept-Artikels auf der Liste gibt es das Notizfeld jetzt auch",
-   "New: ✏️ own note for recipes too: tap an ingredient in the recipe (e.g. “Peach” → “can”), the note then shows in the recipe and on the list. It belongs to the product, so a change in the catalogue also applies to recipe items. When editing a recipe item on the list the note field is there now as well"],
-  ["Neu: 👁️ Den Essensplan bei den Rezepten schaltest du in „👁️ Ansicht“ ab (nur für dich): dann gibt es keinen „Planen“-Knopf und keine Abschnitte",
-   "New: 👁️ you can switch the meal plan for recipes off under “👁️ View” (only for you): then there is no “Plan” button and no sections"],
-  ["Neu: 📅 Essensplan bei den Rezepten: jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen (Knopf bei jedem Rezept). Oben stehen dann „Diese Woche“ und „Wünsche“, dazu „Alle Zutaten auf die Liste“. In ⚙️ → Rezepte stellst du ein, an welchem Wochentag (03:30 Uhr) „Diese Woche“ automatisch zurückgesetzt wird – oder schaltest es ab. „Alle Zutaten auf die Liste“ zeigt jedes eingeplante Rezept nacheinander mit Personenzahl und Zutaten zum Abwählen",
-   "New: 📅 meal plan for recipes: every recipe can be set to “💭 Wish” or “📅 This week” (button on each recipe). The top then shows “This week” and “Wishes”, plus “All ingredients to the list”. In ⚙️ → Recipes you choose the weekday (03:30) when “This week” is reset automatically – or switch it off. “All ingredients to the list” shows each planned recipe one after the other with the number of people and ingredients to untick"],
-  ["Neu: 👁️ Den Gruß in der Leiste schaltest du in „👁️ Ansicht“ ab (nur für dich)",
-   "New: 👁️ you can switch the greeting in the bar off under “👁️ View” (only for you)"],
-  ["Neu: 👋 In der Leiste oben steht ein Gruß nach Uhrzeit mit deinem Vornamen („☀️ Guten Morgen, Marco“); ist er zu lang für den Platz, läuft er als Laufschrift",
-   "New: 👋 the bar at the top shows a greeting by time of day with your first name (“☀️ Good morning, Marco”); if it is too long for the space it scrolls as a ticker"],
-  ["Neu: 🛒 Das Maskottchen gähnt morgens von 6 bis 9 Uhr und schläft abends ab 21 Uhr (bisher 23 Uhr)",
-   "New: 🛒 the mascot yawns in the morning from 6 to 9 and sleeps in the evening from 9 pm (was 11 pm)"],
-  ["Neu: 🎃 Der Kürbis am Maskottchen ist größer und steht von 2 Wochen vor bis 1 Woche nach Halloween (17.10. bis 7.11.); auch die anderen Deko-Teile sind größer",
-   "New: 🎃 the mascot's pumpkin is bigger and shows from 2 weeks before to 1 week after Halloween (17 Oct to 7 Nov); the other decorations are bigger too"],
-  ["Neu: 🔓 Das offene Schloss oben blinkt rot in der letzten Minute, bevor die PIN wieder gefragt wird – antippen sperrt sofort",
-   "New: 🔓 the open lock at the top blinks red in the last minute before the PIN is asked again – tap it to lock right away"],
-  ["Neu: 🖼️ Auch im Katalog zeigt „Fotos“ das Bild-Symbol (bei mehreren gestapelte Bilder); die Filter heißen „Mit Foto“ und „Ohne Foto“",
-   "New: 🖼️ the catalogue shows the picture icon for photos too (stacked pictures for several); the filters are called “With photo” and “Without photo”"],
-  ["Neu: 🔢 Beim Eintragen zeigt der Mengen-Knopf die Zahl in Blau statt „123“, sobald eine Menge gewählt ist",
-   "New: 🔢 when adding, the quantity button shows the number in blue instead of “123” as soon as a quantity is chosen"],
-  ["Neu: 🖼️ „Hier gibt es Fotos“ zeigt jetzt ein Bild-Symbol (bei mehreren Fotos gestapelte Bilder) statt der Kamera – überall; die Kamera bleibt fürs Aufnehmen",
-   "New: 🖼️ “there are photos” now shows a picture icon (stacked pictures for several photos) instead of the camera – everywhere; the camera stays for taking photos"],
-  ["Neu: 🛒 Im Laden-Modus steht das Foto-Symbol rechts, wo sonst das Angebotszeichen war",
-   "New: 🛒 in store mode the photo icon is on the right, where the offer sign used to be"],
-  ["Neu: 🍐 Beim Tippen steht der genau getippte Name zuerst („Birne“ vor „Birnen“)",
-   "New: 🍐 while typing, the name exactly as typed comes first (“Pear” before “Pears”)"],
-  ["Neu: 🛒 Im Laden-Modus steht unten nur noch „🔊 Vorlesen“ – ohne „Nächstes Aufräumen“ und ohne die anderen Knöpfe (auch in der Offline-App)",
-   "New: 🛒 in store mode only “🔊 Read aloud” is left at the bottom – without “Next tidy-up” and the other buttons (also in the offline app)"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -421,6 +383,20 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["👨‍🍳 <b>Neue Kochansicht:</b> Vorher fragt sie „Für wie viele Personen kochst du?“. Danach stehen links die Schritte und rechts die Zutaten (umgerechnet), auf dem Handy im Hochformat der Schritt oben und die Zutaten darunter. Zu lange Texte laufen langsam von selbst (Wischen hält sie an). Schritt und Personenzahl werden beim Neuladen gemerkt.",
+   "👨‍🍳 <b>New cooking view:</b> it first asks “How many people are you cooking for?”. Then the steps are on the left and the ingredients (recalculated) on the right, on a phone in portrait the step on top and the ingredients below. Texts that are too long scroll slowly by themselves (swiping stops them). Step and number of people are remembered when the page reloads."],
+  ["⏲️ <b>Kochtimer pro Schritt:</b> Die Zeit aus dem Text ist schon eingetragen (mit − und + änderbar). Der Timer läuft in Home Assistant weiter, auch wenn du die App wechselst, und am Ende piept und vibriert die Karte. Für Automationen (z. B. Ansage) gibt es das Ereignis <code>einkaufsliste_timer_fertig</code> und den Sensor <code>sensor.einkaufsliste_kochtimer</code>; fertige Dashboard-Karten stehen in der Anleitung.",
+   "⏲️ <b>Cooking timer per step:</b> the time from the text is already filled in (adjustable with − and +). The timer keeps running in Home Assistant even if you switch apps, and at the end the card beeps and vibrates. For automations (e.g. an announcement) there is the event <code>einkaufsliste_timer_fertig</code> and the sensor <code>sensor.einkaufsliste_kochtimer</code>; ready-made dashboard cards are in the guide."],
+  ["✏️ <b>Eigene Notiz auch bei Rezepten:</b> Im Rezept eine Zutat antippen (z. B. „Pfirsich“ → „Dose“) – die Notiz steht dann im Rezept und auf der Liste. Sie gehört zum Produkt, eine Änderung im Katalog wirkt also auch bei Rezept-Artikeln.",
+   "✏️ <b>Own note for recipes too:</b> tap an ingredient in the recipe (e.g. “Peach” → “can”) – the note then shows in the recipe and on the list. It belongs to the product, so a change in the catalogue also applies to recipe items."],
+  ["📅 <b>Essensplan bei den Rezepten:</b> Jedes Rezept lässt sich auf „💭 Wunsch“ oder „📅 Diese Woche“ stellen. „Alle Zutaten auf die Liste“ zeigt jedes eingeplante Rezept nacheinander zum Abwählen. In ⚙️ → Rezepte stellst du ein, an welchem Wochentag „Diese Woche“ zurückgesetzt wird. Abschaltbar unter „👁️ Ansicht“.",
+   "📅 <b>Meal plan for recipes:</b> every recipe can be set to “💭 Wish” or “📅 This week”. “All ingredients to the list” shows each planned recipe one after the other to untick. In ⚙️ → Recipes you choose the weekday when “This week” is reset. Can be switched off under “👁️ View”."],
+  ["🛒 <b>Laden-Modus:</b> Er sperrt die Bildschirmdrehung wie beim Start (nur wenn Handy und Browser es erlauben, auf dem iPhone nicht). Ging er bei einem Geschäft von selbst an, geht er zu Hause auch nach einem Neuladen von selbst aus. Unten steht nur noch „🔊 Vorlesen“.",
+   "🛒 <b>Store mode:</b> it locks the screen rotation as at the start (only if phone and browser allow it, not on the iPhone). If it switched on by itself at a store, it also switches off by itself at home, even after a reload. Only “🔊 Read aloud” is left at the bottom."],
+  ["👋 <b>Gruß und Maskottchen:</b> Oben steht ein Gruß nach Uhrzeit mit deinem Vornamen (abschaltbar unter „👁️ Ansicht“). Das Maskottchen gähnt morgens und schläft abends ab 21 Uhr, der Kürbis steht vom 17.10. bis 7.11. Das offene Schloss blinkt in der letzten Minute rot.",
+   "👋 <b>Greeting and mascot:</b> the top shows a greeting by time of day with your first name (can be switched off under “👁️ View”). The mascot yawns in the morning and sleeps from 9 pm, the pumpkin shows from 17 Oct to 7 Nov. The open lock blinks red in the last minute."],
+  ["🖼️ <b>Bild-Symbol für Fotos:</b> „Hier gibt es Fotos“ zeigt überall ein Bild-Symbol (bei mehreren gestapelte Bilder) statt der Kamera, auch im Katalog mit den Filtern „Mit Foto“ und „Ohne Foto“. Der Mengen-Knopf zeigt die gewählte Zahl in Blau, und beim Tippen steht der genau getippte Name zuerst.",
+   "🖼️ <b>Picture icon for photos:</b> “there are photos” shows a picture icon everywhere (stacked pictures for several) instead of the camera, also in the catalogue with the filters “With photo” and “Without photo”. The quantity button shows the chosen number in blue, and while typing the name exactly as typed comes first."],
   ["🛍️ <b>Für eigene Automationen:</b> Neuer Sensor „Zuletzt gekauft“ (zuletzt abgehakter Artikel) und das Ereignis <code>einkaufsliste_item_bought</code> – es feuert bei jedem Abhaken einzeln, z. B. um den Artikel in ein Inventar zu schreiben. Ein Inventar ist bewusst nicht eingebaut.",
    "🛍️ <b>For your own automations:</b> new “Last bought” sensor (last checked-off item) and the event <code>einkaufsliste_item_bought</code> – it fires once per item when checked off, e.g. to write the item into an inventory. An inventory itself is deliberately not built in."],
   ["🌐 <b>Öffnungszeiten aus dem Netz:</b> Im Editor „Zeiten aus OpenStreetMap“ antippen – Home Assistant sucht das Geschäft und du übernimmst die Zeiten (als Filiale oder fürs Geschäft). Nur auf Knopfdruck.",
