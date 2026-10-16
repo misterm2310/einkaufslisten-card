@@ -168,7 +168,7 @@ On cleanup day everything that has been open for at least 7 days (adjustable) ge
 **🧹 Delete everything (admins only):** under ⚙️ → Cleanup, **“Delete catalogue & list completely”** deletes the shopping list and the whole catalogue with all photos, barcodes, nicknames, own notes, favourites and learned typos. Two safety questions, **cannot be undone** – make a backup first. Stores, categories, people, recipes, loyalty cards and settings stay.
 
 ### 📍 Nearest store first
-Create a **zone** per store (Settings → Areas, labels & zones → Zones) and pick it in ⚙️ → Stores → tap the store → 📍. Several branches? Just pick several zones for the same store. Whoever shares their location via the companion app lands on the right tab in the store.
+Create a **zone** per store (Settings → Areas, labels & zones → Zones) and pick it in ⚙️ → Stores → tap the store → 📍. Several branches? Just pick several zones for the same store. Whoever shares their location via the companion app lands on the right tab in the store. If **⚙️ → Extras → Store mode automatic** is on, store mode switches on by itself in the store and off again when you leave (even after the app was reloaded). Store mode also locks the screen rotation as it was at the start (portrait or landscape), as far as phone and browser allow it (usually full screen or an installed app, not on the iPhone).
 
 ### 🗣️ Alexa & other lists
 The shopping list can **empty another Home Assistant to-do list automatically**: everything that lands there moves over right away and is deleted there.

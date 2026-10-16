@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.12";
+const EL_VERSION = "2.76.16-beta.13";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🛒 Der Laden-Modus sperrt jetzt die Bildschirmdrehung, wie sie beim Start war (Hoch- oder Querformat). Das klappt nur, wenn Handy und Browser es erlauben (meist Vollbild oder installierte App, auf dem iPhone nicht), sonst gibt es einen kurzen Hinweis. Außerdem: Ging der Laden-Modus bei einem Geschäft von selbst an, geht er auch nach einem Neuladen der App zu Hause wieder von selbst aus",
+   "New: 🛒 store mode now locks the screen rotation as it was at the start (portrait or landscape). This only works if phone and browser allow it (usually full screen or an installed app, not on the iPhone), otherwise a short hint appears. Also: if store mode switched on by itself at a store, it now also switches off by itself at home even after the app was reloaded"],
   ["Neu: ⏲️ Der Kochtimer-Sensor nennt jetzt auch das Rezept („Lasagne · Schritt 2“) und das Feld „naechster“. In der Anleitung stehen fertige Dashboard-Karten (Kachel, Liste aller Timer) und eine Beispiel-Automation zum Kopieren",
    "New: ⏲️ the cooking timer sensor now also names the recipe (“Lasagna · Schritt 2”) and has a field “naechster”. The guide has ready-made dashboard cards (tile, list of all timers) and an example automation to copy"],
   ["Neu: 👨‍🍳 Kochansicht überarbeitet: Vorher fragt sie „Für wie viele Personen kochst du?“, danach stehen die Schritte links und die Zutaten (umgerechnet) rechts, auf dem Handy im Hochformat Schritt oben und Zutaten darunter. Ist ein Text zu lang für den Platz, läuft er langsam von selbst (Wischen oder Mausrad hält ihn an). Die Kochansicht merkt sich Schritt und Personenzahl, wenn die Seite neu lädt",
@@ -3640,6 +3642,29 @@ class EinkaufslisteCard extends HTMLElement {
     return best?.id || null;
   }
 
+  // 🔒 Laden-Modus: Bildschirm bleibt im Hoch- oder Querformat, wie beim Start. Der Browser erlaubt das nur teilweise
+  // (meist nur im Vollbild oder als installierte App, auf dem iPhone gar nicht) – dann gibt es einen kurzen Hinweis.
+  async _orient(on, announce = true) {
+    try {
+      const o = window.screen?.orientation;
+      if (!on) {
+        if (this._orientLocked) { this._orientLocked = false; o?.unlock?.(); }
+        return;
+      }
+      if (!o?.lock) throw new Error("keine Drehsperre");
+      const kind = String(o.type).startsWith("landscape") ? "landscape" : "portrait";
+      await o.lock(kind);
+      this._orientLocked = true;
+      if (announce) setTimeout(() => this._toast(kind === "landscape" ? "🔒 Querformat bleibt gesperrt" : "🔒 Hochformat bleibt gesperrt"), 1800);
+    } catch (_) {
+      this._orientLocked = false;
+      if (announce && !this._orientHint) {
+        this._orientHint = true;
+        setTimeout(() => this._toast("🔒 Drehsperre geht hier nicht – bitte die Drehsperre am Handy benutzen"), 1800);
+      }
+    }
+  }
+
   _autoStore() {
     if (!this._config?.auto_store || this._fixedStore || !this._data) return;
     let near = this._nearStore();
@@ -3667,19 +3692,24 @@ class EinkaufslisteCard extends HTMLElement {
         this._shopMode = true;
         this._shopSince = Date.now();
         this._shopAuto = true;
-        try { localStorage.setItem("einkaufsliste_shopmode", "1"); } catch (_) { /* egal */ }
+        try { localStorage.setItem("einkaufsliste_shopmode", "1"); localStorage.setItem("einkaufsliste_shopauto", "1"); } catch (_) { /* egal */ } // 📌 „ging von selbst an“ bleibt auch nach dem Neuladen gemerkt
         this._toast("🛒 Laden-Modus ist an – viel Spaß beim Einkaufen!");
+        this._orient(true);
       }
     } else if (prev && this._tab === prev) {
       this._tab = "all";
     }
-    if (!near && this._shopAuto && this._shopMode) { // Laden verlassen: nur ausschalten, was von selbst anging
+    if (!near && this._shopAuto && this._shopMode && this._hass?.states) { // Laden verlassen: nur ausschalten, was von selbst anging (auch nach dem Neuladen)
       this._shopMode = false;
       this._shopSince = null;
       try { localStorage.setItem("einkaufsliste_shopmode", "0"); } catch (_) { /* egal */ }
       this._toast("✍️ Laden-Modus aus – bis zum nächsten Einkauf");
+      this._orient(false);
     }
-    if (!near) this._shopAuto = false;
+    if (!near && this._hass?.states) {
+      this._shopAuto = false;
+      try { localStorage.setItem("einkaufsliste_shopauto", "0"); } catch (_) { /* egal */ }
+    }
     this._renderAll();
   }
 
@@ -3723,6 +3753,7 @@ class EinkaufslisteCard extends HTMLElement {
     clearInterval(this._clock);
     clearInterval(this._lockClock);
     clearInterval(this._tTick); this._tTick = null;
+    this._orient(false);
     clearTimeout(this._menuTimer);
     clearTimeout(this._nearTimer);
     clearTimeout(this._undoTimer);
@@ -4542,7 +4573,9 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._view !== "list") { this._view = "list"; this._renderAll(); return true; }
     if (this._shopMode) {
       this._shopMode = false;
-      try { localStorage.setItem("einkaufsliste_shopmode", "0"); } catch (_) { /* egal */ }
+      this._shopAuto = false;
+      try { localStorage.setItem("einkaufsliste_shopmode", "0"); localStorage.setItem("einkaufsliste_shopauto", "0"); } catch (_) { /* egal */ }
+      this._orient(false);
       this._renderAll();
       return true;
     }
@@ -4573,6 +4606,8 @@ class EinkaufslisteCard extends HTMLElement {
     queueMicrotask(() => this._emitNav());
     if (this._shopMode === undefined) {
       try { this._shopMode = localStorage.getItem("einkaufsliste_shopmode") === "1"; } catch (_) { this._shopMode = false; }
+      try { this._shopAuto = this._shopMode && localStorage.getItem("einkaufsliste_shopauto") === "1"; } catch (_) { this._shopAuto = false; } // 📌 ging er von selbst an? Dann geht er auch von selbst aus
+      if (this._shopMode) this._orient(true, false); // 🔒 nach dem Neuladen die Drehsperre wieder versuchen (still)
       try { this._dupIgnore = new Set(JSON.parse(localStorage.getItem("einkaufsliste_dup_ignore") || "[]")); } catch (_) { this._dupIgnore = new Set(); }
     }
     const d = this._data;
@@ -10701,7 +10736,8 @@ ${(() => {
         this._shopMode = !this._shopMode;
         this._shopSince = this._shopMode ? Date.now() : null; // 🛍️ „Gerade abgehakt“ zählt ab jetzt
         this._shopAuto = false; // von Hand geschaltet: die Automatik lässt es in Ruhe
-        try { localStorage.setItem("einkaufsliste_shopmode", this._shopMode ? "1" : "0"); } catch (_) { /* egal */ }
+        try { localStorage.setItem("einkaufsliste_shopmode", this._shopMode ? "1" : "0"); localStorage.setItem("einkaufsliste_shopauto", "0"); } catch (_) { /* egal */ }
+        this._orient(this._shopMode);
         this._menuId = null;
         this._toast(this._shopMode ? "🛒 Laden-Modus an – viel Spaß beim Einkaufen!" : "✍️ Laden-Modus aus");
         this._renderAll();

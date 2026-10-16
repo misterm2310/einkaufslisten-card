@@ -166,7 +166,7 @@ Am Aufräum-Tag wird alles **abgehakt**, was mindestens 7 Tage (einstellbar) off
 **🧹 Alles löschen (nur Admins):** Unter ⚙️ → Aufräumen löscht **„Katalog & Liste komplett löschen“** die Einkaufsliste und den ganzen Katalog mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. Zwei Sicherheitsfragen, **nicht rückgängig** – vorher eine Sicherung machen. Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.
 
 ### 📍 Nächstes Geschäft zuerst
-Für jedes Geschäft eine **Zone** anlegen (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen) und sie in ⚙️ → Geschäfte → Geschäft antippen → 📍 auswählen. Mehrere Filialen? Einfach mehrere Zonen beim selben Geschäft wählen. Wer seinen Standort über die Companion-App sendet, landet im Laden automatisch im richtigen Reiter.
+Für jedes Geschäft eine **Zone** anlegen (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen) und sie in ⚙️ → Geschäfte → Geschäft antippen → 📍 auswählen. Mehrere Filialen? Einfach mehrere Zonen beim selben Geschäft wählen. Wer seinen Standort über die Companion-App sendet, landet im Laden automatisch im richtigen Reiter. Ist **⚙️ → Extras → Laden-Modus automatisch** an, geht der Laden-Modus im Geschäft von selbst an und beim Verlassen wieder aus (auch nach einem Neuladen der App). Der Laden-Modus sperrt dabei die Bildschirmdrehung wie beim Start (Hoch- oder Querformat), soweit Handy und Browser das erlauben (meist Vollbild oder installierte App, auf dem iPhone nicht).
 
 ### 🗣️ Alexa & andere Listen
 Die Einkaufsliste kann eine andere To-do-Liste aus Home Assistant **automatisch leer räumen**: Alles, was dort landet, wandert sofort herüber und wird dort gelöscht.
