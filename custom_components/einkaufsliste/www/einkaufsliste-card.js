@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.4";
+const EL_VERSION = "2.76.17-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🖼️ Foto-Seiten (Produkt, Rezept, Kassenbon …) zeigen oben links ein Galerie-Symbol statt des Kamera-Emojis.",
+   "New: 🖼️ photo pages (product, recipe, receipt …) now show a gallery icon at the top left instead of the camera emoji."],
   ["Neu: ⏱️ Auch in den Gar-Zeiten gibt es oben rechts einen Timer-Knopf. Er öffnet das Timer-Fenster (Name optional, 5 Minuten vorgewählt), auch mitten im Kochen.",
    "New: ⏱️ the cooking times page now has a timer button at the top right too. It opens the timer window (name optional, 5 minutes preselected), also while cooking."],
   ["Neu: 🏬 Beim automatischen Aufräumen lassen sich einzelne Geschäfte ausnehmen (⚙️ → Aufräumen → Automatisch aufräumen). Artikel dieser Geschäfte bleiben offen (im Reiter des Geschäfts steht unten auch nicht „Nächstes Aufräumen“); „Alles abhaken“ von Hand nimmt sie weiterhin mit. Außerdem entfällt im Laden-Modus die Bildschirm-Drehsperre – dafür bitte die Sperre am Handy nutzen.",
@@ -4458,7 +4460,8 @@ class EinkaufslisteCard extends HTMLElement {
     const m = /^(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)\s*(.*)$/su.exec(text);
     const h = p.host.querySelector(".pagehost h3"), ic = p.host.querySelector(".pagehost .ic");
     if (h) h.textContent = m ? m[2] || text : text;
-    if (ic && m) ic.innerHTML = `<span style="font-size:20px;line-height:1">${esc(m[1])}</span>`;
+    if (ic && m && m[1].startsWith("📷")) ic.innerHTML = `<ha-icon icon="mdi:image-multiple"></ha-icon>`; // 🖼️ Foto-Seiten: Galerie-Symbol statt Kamera-Emoji
+    else if (ic && m) ic.innerHTML = `<span style="font-size:20px;line-height:1">${esc(m[1])}</span>`;
     else if (ic && text.startsWith("▥")) { ic.innerHTML = `<ha-icon icon="mdi:barcode-scan"></ha-icon>`; if (h) h.textContent = text.replace(/^▥\s*/, ""); }
     return true;
   }
