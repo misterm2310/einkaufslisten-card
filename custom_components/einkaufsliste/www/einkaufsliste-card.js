@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.8";
+const EL_VERSION = "2.76.17-beta.9";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -685,7 +685,7 @@ const EL_EMOJI_ICONS = {
   "📦": "mdi:package-variant-closed", "🔥": "mdi:fire", "🤖": "mdi:robot-happy-outline", "🔠": "mdi:format-size", "⚙": "mdi:cog-outline", "🗂": "mdi:shape-outline",
   "🗺": "mdi:map-outline", "🧠": "mdi:brain", "🗣": "mdi:microphone-outline", "🌐": "mdi:web", "🍽": "mdi:silverware-fork-knife", "📄": "mdi:file-document-outline",
   "🧮": "mdi:calculator-variant-outline", "🔊": "mdi:volume-high", "📳": "mdi:vibrate", "🎌": "mdi:flag-outline", "👋": "mdi:hand-wave-outline", "🔐": "mdi:key-outline",
-  "📏": "mdi:ruler", "✖": "mdi:close", "🗑": "mdi:delete-outline", "🍕": "mdi:pizza", "🍰": "mdi:cake-variant-outline", "🎛": "mdi:tune-variant", "💾": "mdi:content-save-outline", "🩺": "mdi:stethoscope", "📱": "mdi:cellphone", "🧪": "mdi:flask-outline", "👨‍🍳": "mdi:chef-hat", "🛍": "mdi:shopping-outline", "🪟": "mdi:window-open-variant", "✨": "mdi:creation-outline", "👆": "mdi:gesture-tap", "💳": "mdi:credit-card-outline", "🙏": "mdi:hand-heart-outline", "🐙": "mdi:github", "🐞": "mdi:bug-outline", "🔍": "mdi:magnify", "📥": "mdi:tray-arrow-down", "🕘": "mdi:history", "🌓": "mdi:theme-light-dark", "🛡": "mdi:shield-outline",
+  "📏": "mdi:ruler", "✖": "mdi:close", "🗑": "mdi:delete-outline", "▥": "mdi:barcode", "🧩": "mdi:puzzle-outline", "🧰": "mdi:toolbox-outline", "🔢": "mdi:numeric", "🎨": "mdi:palette-outline", "🔀": "mdi:shuffle-variant", "✓": "mdi:check", "🍕": "mdi:pizza", "🍝": "mdi:pasta", "🥔": "mdi:food-variant", "🥚": "mdi:egg-outline", "🥦": "mdi:carrot", "🍗": "mdi:food-drumstick-outline", "🐟": "mdi:fish", "🍲": "mdi:pot-steam-outline", "💨": "mdi:weather-windy", "🍰": "mdi:cake-variant-outline", "🎛": "mdi:tune-variant", "💾": "mdi:content-save-outline", "🩺": "mdi:stethoscope", "📱": "mdi:cellphone", "🧪": "mdi:flask-outline", "👨‍🍳": "mdi:chef-hat", "🛍": "mdi:shopping-outline", "🪟": "mdi:window-open-variant", "✨": "mdi:creation-outline", "👆": "mdi:gesture-tap", "💳": "mdi:credit-card-outline", "🙏": "mdi:hand-heart-outline", "🐙": "mdi:github", "🐞": "mdi:bug-outline", "🔍": "mdi:magnify", "📥": "mdi:tray-arrow-down", "🕘": "mdi:history", "🌓": "mdi:theme-light-dark", "🛡": "mdi:shield-outline",
 };
 // 🎨 Farben zu den Symbolen (damit es nicht trist wird): nur außerhalb von Knöpfen/Links, dort gilt die Schriftfarbe des Knopfes
 const EL_EMOJI_COLORS = {
@@ -697,25 +697,37 @@ const EL_EMOJI_COLORS = {
   "⏳": "#fb8c00", "⌛": "#fb8c00", "↩": "#1e88e5", "⇄": "#1e88e5", "🔠": "#546e7a", "🗂": "#fb8c00", "🗺": "#43a047", "🗣": "#1e88e5", "📦": "#8d6e63",
   "🍽": "#fb8c00", "📄": "#546e7a", "🧮": "#00897b", "📳": "#546e7a", "🎌": "#e53935", "👋": "#fb8c00", "🔐": "#546e7a", "📏": "#546e7a", "🧪": "#8e24aa",
   "👨‍🍳": "#e53935", "🛍": "#43a047", "🪟": "#1e88e5", "✨": "#f9a825", "👆": "#1e88e5", "💳": "#00acc1", "🙏": "#ec407a", "🐞": "#e53935", "🔍": "#546e7a",
-  "📥": "#1e88e5", "🕘": "#546e7a", "🌓": "#546e7a", "🛡": "#455a64", "⌨": "#546e7a", "🖼": "#1e88e5", "⏲": "#ef6c00", "⏱": "#26a69a",
+  "📥": "#1e88e5", "🕘": "#546e7a", "🌓": "#546e7a", "🛡": "#455a64", "⌨": "#546e7a", "🖼": "#1e88e5", "⏲": "#ef6c00", "⏱": "#26a69a", "▥": "#6d4c41", "🍝": "#f9a825", "🥔": "#8d6e63", "🥚": "#fbc02d", "🥦": "#43a047", "🍗": "#bf6b3a", "🐟": "#1e88e5", "🍲": "#ef6c00", "💨": "#546e7a", "🧩": "#8e24aa", "🧰": "#546e7a", "🔢": "#1e88e5", "🎨": "#ec407a", "🔀": "#1e88e5",
 };
 // 🧩 Farben der großen Gruppen-Kästchen in den Einstellungen (Emoji der Gruppe → Farbe)
 const EL_GEM_COLORS = { "📋": "#1e88e5", "🎛": "#8e24aa", "💾": "#43a047", "🩺": "#e53935", "👁": "#00897b", "📱": "#3949ab" };
 const EL_EMOJI_RX = new RegExp("^\\s*(" + Object.keys(EL_EMOJI_ICONS).sort((a, b) => b.length - a.length).join("|") + ")\\uFE0F?(?=\\s|$)\\s*", "u");
 const EL_ICON_PARENTS = "button,h2,h3,h4,summary,legend,label,b,span,li,a,small,p,.lbl";
-const EL_ICON_USER = ".name,.rname,.pname,.delname,.lname,.stitle"; // Namen, die die Leute selbst tippen
+const EL_ICON_USER = ".name,.rname,.pname,.delname > b,.lname,.stitle"; // Namen, die die Leute selbst tippen
 const EL_ICON_SKIP = "option,select,textarea,input,ha-icon,style,script,[data-noicon]";
 const EL_LEADS = new WeakMap(); // Textknoten → das Emoji, das davor stand (für die Übersetzung: die Wörterbuch-Einträge beginnen mit dem Emoji)
 function elIconizeTree(root) {
   if (!root) return;
   const nodes = [];
   if (root.nodeType === 3) nodes.push(root);
-  else if (root.nodeType === 1) { const w = document.createTreeWalker(root, 4 /* Text */); let n; while ((n = w.nextNode())) nodes.push(n); }
+  else if (root.nodeType === 1 || root.nodeType === 11) { const w = document.createTreeWalker(root, 4 /* Text */); let n; while ((n = w.nextNode())) nodes.push(n); }
+  const GEN = /^\s*((?:\p{Extended_Pictographic}|[▥✓])[\uFE0F\u200D\p{Extended_Pictographic}]*)\s+/u;
+  if (EL_LANG === "de") { // Hinweistexte in Eingabefeldern: ohne Emoji (auf Englisch macht das die Übersetzung, nachdem sie den Text gefunden hat)
+    const els = root.nodeType === 1 ? [root, ...root.querySelectorAll("[placeholder]")] : root.nodeType === 11 ? [...root.querySelectorAll("[placeholder]")] : [];
+    for (const e of els) { const v = e.getAttribute?.("placeholder"); const g = v && GEN.exec(v); if (g) e.setAttribute("placeholder", v.slice(g[0].length)); }
+    const tels = root.nodeType === 1 ? [root, ...root.querySelectorAll("[title]")] : root.nodeType === 11 ? [...root.querySelectorAll("[title]")] : []; // Tooltips: auch ohne Emoji vorn
+    for (const e of tels) { const v = e.getAttribute?.("title"); const g = v && GEN.exec(v); if (g) e.setAttribute("title", v.slice(g[0].length)); }
+  }
   for (const t of nodes) {
     const p = t.parentElement;
+    if (p && p.tagName === "OPTION" && !EL_LEADS.has(t)) { // 🔽 Auswahllisten und Eingabefelder können kein Symbol zeigen: das Emoji fällt weg (Text bleibt)
+      const g = GEN.exec(t.data);
+      if (g && !g[1].startsWith("🗑")) { EL_LEADS.set(t, g[1]); t.data = t.data.slice(g[0].length); }
+      continue;
+    }
     if (!p || !p.matches(EL_ICON_PARENTS) || p.closest(EL_ICON_SKIP) || p.closest(EL_ICON_USER)) continue; // eigene Namen/Notizen der Leute bleiben unangetastet
     let first = p.firstChild; // das Emoji muss ganz vorn stehen
-    while (first && first !== t && first.nodeType === 3 && !first.data.trim()) first = first.nextSibling;
+    while (first && first !== t && ((first.nodeType === 3 && !first.data.trim()) || (p.tagName === "LABEL" && first.nodeType === 1 && first.matches("input")))) first = first.nextSibling; // (bei Schaltern steht erst das Kästchen)
     if (first !== t) continue;
     const m = EL_EMOJI_RX.exec(t.data);
     if (!m) continue;
@@ -731,7 +743,10 @@ function elIconizeTree(root) {
     const rest = t.data.slice(m[0].length);
     EL_LEADS.set(t, t.data.slice(0, m[0].length).trim());
     t.data = rest;
-    p.insertBefore(ic, t);
+    if (p.tagName === "LABEL") { // Schalter-Zeile: Symbol und Text bleiben zusammen (sonst verteilt sie das Zeilenlayout)
+      const wrap = document.createElement("span");
+      p.insertBefore(wrap, t); wrap.append(ic, t);
+    } else p.insertBefore(ic, t);
   }
 }
 function elT(text, depth = 0) {
@@ -776,7 +791,11 @@ function elTranslateNode(node) {
   {
     for (const a of EL_ATTRS) {
       const v = node.getAttribute(a);
-      if (v) { const t = elT(v); if (t !== v) node.setAttribute(a, t); }
+      if (v) {
+        let t = elT(v);
+        if (a === "placeholder" || a === "title") t = t.replace(/^\s*(?:\p{Extended_Pictographic}|[▥✓])[\uFE0F\u200D\p{Extended_Pictographic}]*\s+/u, ""); // ohne Emoji
+        if (t !== v) node.setAttribute(a, t);
+      }
     }
   }
 }
@@ -794,7 +813,13 @@ function elWatch(root, keep = true) {
   if (EL_I18N_ROOTS.has(root)) return;
   if (keep) EL_I18N_ROOTS.add(root); // Einblendungen (Anleitung, Kochen …) nicht merken – die verschwinden wieder
   const mo = new MutationObserver((muts) => {
-    for (const mu of muts) if (mu.type === "childList") mu.addedNodes.forEach((x) => elIconizeTree(x)); // 🎛️ Emoji → Symbol (auch auf Deutsch)
+    for (const mu of muts) {
+      if (mu.type === "childList") mu.addedNodes.forEach((x) => elIconizeTree(x)); // 🎛️ Emoji → Symbol (auch auf Deutsch)
+      else if (mu.type === "attributes" && (mu.attributeName === "placeholder" || mu.attributeName === "title") && EL_LANG === "de") { // Hinweistext wurde später gesetzt: Emoji vorn weg
+        const an = mu.attributeName, v = mu.target.getAttribute(an), g = v && /^\s*(?:\p{Extended_Pictographic}|[▥✓])[\uFE0F\u200D\p{Extended_Pictographic}]*\s+/u.exec(v);
+        if (g) mu.target.setAttribute(an, v.slice(g[0].length));
+      }
+    }
     if (EL_LANG === "de" || !EL_DICT) return;
     for (const mu of muts) {
       if (mu.type === "childList") mu.addedNodes.forEach((x) => elTranslateTree(x));
@@ -7710,7 +7735,7 @@ ${(() => {
           <button class="btn rimportbtn" data-act="rimport-toggle"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon>Rezept einfügen</button></h3>
         <div class="rimport" id="rImport" hidden>
           <textarea id="rImportText" rows="6" placeholder="Zutaten-Liste hier einfügen – eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;½ l Milch&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch)."></textarea>
-          <div class="btnrow"><button class="btn" data-act="rimport-photo"><ha-icon icon="mdi:camera-outline"></ha-icon>📷 Aus Foto</button><button class="btn" data-act="rimport-toggle">Abbrechen</button><button class="primary addbtn btn" data-act="rimport-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
+          <div class="btnrow"><button class="btn" data-act="rimport-photo"><ha-icon icon="mdi:camera-outline"></ha-icon>Aus Foto</button><button class="btn" data-act="rimport-toggle">Abbrechen</button><button class="primary addbtn btn" data-act="rimport-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
         </div>
         <div class="redithint" id="rEditHint" hidden>✏️ Du bearbeitest eine Zutat – ✔ speichert sie. <button class="linkbtn" data-act="ritem-edit-cancel">Abbrechen</button></div>
         <div id="rFormSlot"></div>
