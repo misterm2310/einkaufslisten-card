@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.16-beta.9";
+const EL_VERSION = "2.76.16-beta.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.15"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 👨‍🍳 In der Kochansicht stellst du bei den Zutaten (🥕) die Personenzahl mit − und + um, die Mengen werden mitgerechnet. Start ist die Zahl, die du zuletzt beim „Auf die Liste“ gewählt hast, sonst wie im Rezept. Das Rezept selbst bleibt unverändert",
+   "New: 👨‍🍳 in cooking view you change the number of people under the ingredients (🥕) with − and +, the amounts are recalculated. It starts with the number you last chose when putting the recipe on the list, otherwise as in the recipe. The recipe itself stays unchanged"],
   ["Neu: ✏️ Eigene Notiz auch bei Rezepten: im Rezept eine Zutat antippen (z. B. „Pfirsich“ → „Dose“), die Notiz steht dann im Rezept und auf der Liste. Sie gehört zum Produkt, eine Änderung im Katalog wirkt also auch bei Rezept-Artikeln. Beim Bearbeiten eines Rezept-Artikels auf der Liste gibt es das Notizfeld jetzt auch",
    "New: ✏️ own note for recipes too: tap an ingredient in the recipe (e.g. “Peach” → “can”), the note then shows in the recipe and on the list. It belongs to the product, so a change in the catalogue also applies to recipe items. When editing a recipe item on the list the note field is there now as well"],
   ["Neu: 👁️ Den Essensplan bei den Rezepten schaltest du in „👁️ Ansicht“ ab (nur für dich): dann gibt es keinen „Planen“-Knopf und keine Abschnitte",
@@ -9266,7 +9268,20 @@ ${(() => {
     nav.append(bPrev, bNext);
     const ing = document.createElement("div");
     Object.assign(ing.style, { ...wrapW, display: "none", font: "17px/1.6 Roboto,sans-serif", color: "#ddd", marginTop: "22px" });
-    ing.innerHTML = r.items.map((i) => `• ${esc([i.quantity, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:6px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}`).join("<br>");
+    // 👥 Personen umstellen: Mengen werden wie beim „Auf die Liste“ umgerechnet (Start = zuletzt dort gewählt, sonst wie im Rezept)
+    this._cookPers = this._cookPers || {};
+    let pers = r.servings ? (this._cookPers[r.id] || r.servings) : null;
+    const renderIng = () => {
+      const f = pers && r.servings ? pers / r.servings : 1;
+      const bar = r.servings ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font:600 17px Roboto,sans-serif">
+          <button data-d="-1" ${pers <= 1 ? "disabled" : ""} style="width:44px;height:44px;border-radius:12px;border:1px solid #555;background:#222;color:#fff;font-size:22px">−</button>
+          <span>${pers} ${esc(servLabel(r.servings_unit, pers))}</span>
+          <button data-d="1" ${pers >= 99 ? "disabled" : ""} style="width:44px;height:44px;border-radius:12px;border:1px solid #555;background:#222;color:#fff;font-size:22px">+</button>
+          <small style="color:#aaa;font-weight:400">${pers === r.servings ? "wie im Rezept" : `Rezept ist für ${r.servings}`}</small></div>` : "";
+      ing.innerHTML = bar + r.items.map((i) => { const q = scaleQty(i.quantity, f); return `• ${esc([q, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:6px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}`; }).join("<br>");
+      for (const b of ing.querySelectorAll("button[data-d]")) b.onclick = () => { pers = Math.max(1, Math.min(99, pers + Number(b.dataset.d))); this._cookPers[r.id] = pers; renderIng(); };
+    };
+    renderIng();
     // 📱 Quer-Format: nichts wird gequetscht (flex-shrink) und „Zurück/Weiter“ bleibt unten am Rand stehen, auch wenn der Text länger ist als der Bildschirm
     Object.assign(nav.style, { position: "sticky", bottom: "0", zIndex: "2", background: "#111", padding: "10px 0" });
     ov.style.paddingBottom = "calc(env(safe-area-inset-bottom, 0px) + 12px)"; // sonst rutscht „Weiter“ um dieses Polster nach oben
@@ -11912,6 +11927,7 @@ ${(() => {
         const r = this._recipe(this._pickRecipe);
         if (!r?.servings) break;
         this._pickPers = Math.max(1, Math.min(99, (this._pickPers || r.servings) + Number(el.dataset.d)));
+        (this._cookPers = this._cookPers || {})[r.id] = this._pickPers; // 👨‍🍳 Kochansicht startet mit dieser Personenzahl
         this._renderRecipes();
         break;
       }
