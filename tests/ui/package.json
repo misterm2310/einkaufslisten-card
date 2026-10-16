@@ -1,0 +1,8 @@
+{
+  "name": "einkaufsliste-ui-test",
+  "private": true,
+  "type": "module",
+  "description": "Oberflächen-Test der Karte (Browser ohne Home Assistant)",
+  "scripts": { "test": "node ui.test.mjs" },
+  "dependencies": { "playwright": "1.63.0" }
+}

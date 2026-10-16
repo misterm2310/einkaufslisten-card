@@ -29,3 +29,21 @@ jobs:
           python-version: "3.13"
       - run: pip install -r requirements_test.txt
       - run: pytest -q
+
+  oberflaeche:
+    # 🧪 Oberflächen-Test: lädt die Karte in einen echten Browser (ohne Home Assistant) und prüft
+    # Symbole, Seitenköpfe und die Aufräum-Zeile. Fängt Fehler wie „Kopfzeile doppelt“ vor dem Release.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Browser-Test vorbereiten
+        working-directory: tests/ui
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Oberflächen-Test
+        working-directory: tests/ui
+        run: node ui.test.mjs

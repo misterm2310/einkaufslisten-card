@@ -365,4 +365,6 @@ pip install -r requirements_test.txt
 pytest
 ```
 
+Dazu gibt es einen **Oberflächen-Test** im Browser (Symbole, Seitenköpfe, Aufräum-Zeile): `cd tests/ui && npm install && npx playwright install chromium && node ui.test.mjs`. Er läuft bei GitHub bei jeder Änderung automatisch mit.
+
 Lizenz: MIT · Produktdaten: [Open Food Facts](https://world.openfoodfacts.org) (ODbL) · Symbole in der Offline-App: [Material Design Icons](https://pictogrammers.com) (Apache 2.0) · Barcode-Leser in der Offline-App: [ZXing-js](https://github.com/zxing-js/library) (Apache 2.0)

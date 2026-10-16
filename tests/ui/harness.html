@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+body{font-family:Roboto,Arial,sans-serif;margin:0;padding:16px;background:#f4f5f7;--primary-color:#03a9f4;--primary-text-color:#212121;--secondary-text-color:#727272;--card-background-color:#fff;--secondary-background-color:#f0f0f0;--divider-color:#e0e0e0}
+.wrap{width:420px}
+ha-card{display:block;background:var(--card-background-color);border-radius:12px}
+</style></head><body>
+<!-- 🧪 Prüfstand für die Karte: Home Assistant wird nur vorgetäuscht (ha-icon, ha-card, hass). Läuft mit tests/ui/ui.test.mjs -->
+<div class="wrap"><einkaufsliste-card id="c1"></einkaufsliste-card></div>
+<script>
+customElements.define("ha-icon", class extends HTMLElement { // zeigt nur, WELCHES Symbol gemeint ist
+  static get observedAttributes() { return ["icon"]; }
+  set icon(v) { this.setAttribute("icon", v); } get icon() { return this.getAttribute("icon"); }
+});
+customElements.define("ha-card", class extends HTMLElement {});
+</script>
+<script type="module">
+import "/custom_components/einkaufsliste/www/einkaufsliste-card.js";
+const now = Date.now(), D = 86400000, iso = (ms) => new Date(ms).toISOString();
+let n = 0; const id = () => "id" + (n++);
+const stores = [["Netto", "#f5c400"], ["Aldi", "#1f8fd6"]].map(([name, color]) => ({ id: id(), name, color, icon: "mdi:cart" }));
+const cats = [{ id: id(), name: "Sonstiges", icon: "mdi:x" }];
+const mk = (name, st) => ({ id: id(), name, store_id: st, category_id: cats[0].id, quantity: null, note: null, checked: false, added_by: "Marco", added_at: iso(now - 3 * D), checked_by: null, checked_at: null });
+const data = { stores, categories: cats, items: [mk("Milch", stores[1].id), mk("Brot", stores[0].id)], history: [], timers: [], recipes: [], photo_counts: { milch: 3 },
+  settings: { cleanup_on: true, cleanup_weekday: 6, cleanup_time: "03:00", min_age_days: 7, cleanup_skip_stores: [stores[0].id], next_cleanup: "2026-12-27T03:00:00+01:00" } };
+const hass = { states: {}, user: { name: "Marco", id: "u1" }, connection: { subscribeMessage: async (cb) => { cb(structuredClone(data)); return () => {}; } }, callWS: async () => data };
+const c = document.getElementById("c1"); c.setConfig({ title: "Einkaufsliste" }); c.hass = hass;
+window.__data = data; window.__ready = true;
+</script></body></html>

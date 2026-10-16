@@ -370,6 +370,8 @@ pip install -r requirements_test.txt
 pytest
 ```
 
+There is also a **UI test** in a real browser (icons, page headers, cleanup line): `cd tests/ui && npm install && npx playwright install chromium && node ui.test.mjs`. It runs automatically on GitHub for every change.
+
 ---
 
 License: MIT · Product data: [Open Food Facts](https://world.openfoodfacts.org) (ODbL) · Offline app icons: [Material Design Icons](https://pictogrammers.com) (Apache 2.0) · Offline app barcode reader: [ZXing-js](https://github.com/zxing-js/library) (Apache 2.0)

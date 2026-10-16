@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.7";
+const EL_VERSION = "2.76.17-beta.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,12 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: ⏲️ Ein abgelaufener Timer hat jetzt einen „+1 Min“-Knopf. Er startet denselben Timer (gleicher Name) noch einmal für eine Minute, ohne alles neu einzugeben.",
+   "New: ⏲️ a finished timer now has a “+1 min” button. It restarts the same timer (same name) for one more minute without entering everything again."],
+  ["Neu: 🎨 Eine Optik für die ganze Karte: Alle Emojis vorn an Knöpfen, Überschriften, Reitern, Einstellungs-Gruppen, Zeilen-Infos (wer, wann, Aufräum-Datum) und in der Anleitung sind jetzt einheitliche Linien-Symbole, die überall gleich aussehen. Rückfragen („Wirklich löschen?“) öffnen ein Fenster im Stil der Karte statt dem grauen Browser-Fenster (Esc oder Daneben-Tippen = Abbrechen). Ecken und Schriftgrößen sind vereinheitlicht.",
+   "New: 🎨 one look for the whole card: all emojis at the start of buttons, headings, tabs, settings groups, row infos (who, when, cleanup date) and in the guide are now consistent line icons that look the same everywhere. Confirmations (“Really delete?”) open a window in the card’s style instead of the grey browser dialog (Esc or tapping outside = cancel). Corners and font sizes are unified."],
+  ["Neu: ✨ Noch mehr einheitliche Symbole: Rezept-Titel in der Kochansicht, „Gar-Zeiten“ in der Rezeptliste und die Knöpfe in den Foto-, Zuschneide- und Kamera-Fenstern (Foto dazu, Löschen, Hauptfoto, Drehen, Übernehmen …) nutzen jetzt Linien-Symbole statt Emojis.",
+   "New: ✨ even more consistent icons: the recipe title in the cooking view, “Cooking times” in the recipe list and the buttons in the photo, crop and camera windows (add photo, delete, main photo, rotate, accept …) now use line icons instead of emojis."],
   ["Neu: ✨ Einheitliche Symbole: Seitenköpfe (Timer, Gar-Zeiten, Fotos, Foto machen, Einscannen, Zuschneiden), die Knöpfe oben in der Kochansicht, der Timer-Knopf in den Gar-Zeiten und die laufenden Timer nutzen jetzt überall dieselben Linien-Symbole statt Emojis. Timer = Stoppuhr, Gar-Zeiten = Topf, Fotos = Galerie.",
    "New: ✨ consistent icons: page headers (timer, cooking times, photos, take photo, scan, crop), the buttons at the top of the cooking view, the timer button in the cooking times and the running timers now use the same line icons everywhere instead of emojis. Timer = stopwatch, cooking times = pot, photos = gallery."],
   ["Fix: ⏱️ Das Timer-Fenster aus den Gar-Zeiten zeigte oben alles doppelt (zwei Pfeile, zwei „Timer“). Jetzt steht die Kopfzeile nur noch einmal da.",
@@ -662,6 +668,72 @@ function elLoadDict() {
   }
   return EL_DICT_PROMISE || Promise.resolve();
 }
+
+// 🎛️ Ein Symbol-Satz für die ganze Karte: Ein Emoji am Anfang eines Knopfes, einer Überschrift oder eines fetten Wortes wird zum
+// Linien-Symbol aus Home Assistant (Material Design Icons). Emojis sehen auf jedem Gerät anders aus, diese Symbole überall gleich.
+// Neues Emoji? Hier eintragen – ohne VS16-Zeichen (️) hinten. Was nicht in der Liste steht, bleibt wie es ist.
+const EL_EMOJI_ICONS = {
+  "🏷": "mdi:tag-outline", "✏": "mdi:pencil-outline", "✍": "mdi:account-edit-outline", "📷": "mdi:camera-outline", "📖": "mdi:book-open-variant", "➕": "mdi:plus",
+  "📍": "mdi:map-marker-outline", "👁": "mdi:eye-outline", "🛒": "mdi:cart-outline", "✅": "mdi:check-circle-outline", "🔄": "mdi:sync", "🔁": "mdi:repeat",
+  "⚠": "mdi:alert-outline", "📋": "mdi:clipboard-text-outline", "📊": "mdi:chart-bar", "✔": "mdi:check", "🧂": "mdi:shaker-outline", "⏳": "mdi:timer-sand",
+  "⌛": "mdi:timer-sand", "🏪": "mdi:store-outline", "📧": "mdi:email-outline", "↩": "mdi:undo-variant", "⇄": "mdi:swap-horizontal",
+  "🤷": "mdi:map-marker-question-outline", "🕒": "mdi:clock-outline", "💡": "mdi:lightbulb-outline", "🧾": "mdi:receipt-text-outline", "🎉": "mdi:party-popper",
+  "👥": "mdi:account-group-outline", "👪": "mdi:account-multiple-outline", "👤": "mdi:account-outline", "⏲": "mdi:pot-steam-outline", "⏱": "mdi:timer-outline",
+  "🧲": "mdi:magnet", "🗓": "mdi:calendar-month-outline", "📅": "mdi:calendar-outline", "🚫": "mdi:cancel", "🥫": "mdi:food-variant", "📈": "mdi:chart-line",
+  "🧽": "mdi:delete-sweep-outline", "🧹": "mdi:broom", "💣": "mdi:nuke", "🔧": "mdi:wrench-outline", "📝": "mdi:note-text-outline", "⭐": "mdi:star-outline",
+  "⌨": "mdi:keyboard-outline", "🗞": "mdi:newspaper-variant-outline", "🖼": "mdi:image-outline", "🔒": "mdi:lock-outline", "🔓": "mdi:lock-open-variant-outline",
+  "📦": "mdi:package-variant-closed", "🔥": "mdi:fire", "🤖": "mdi:robot-happy-outline", "🔠": "mdi:format-size", "⚙": "mdi:cog-outline", "🗂": "mdi:shape-outline",
+  "🗺": "mdi:map-outline", "🧠": "mdi:brain", "🗣": "mdi:microphone-outline", "🌐": "mdi:web", "🍽": "mdi:silverware-fork-knife", "📄": "mdi:file-document-outline",
+  "🧮": "mdi:calculator-variant-outline", "🔊": "mdi:volume-high", "📳": "mdi:vibrate", "🎌": "mdi:flag-outline", "👋": "mdi:hand-wave-outline", "🔐": "mdi:key-outline",
+  "📏": "mdi:ruler", "✖": "mdi:close", "🗑": "mdi:delete-outline", "🍕": "mdi:pizza", "🍰": "mdi:cake-variant-outline", "🎛": "mdi:tune-variant", "💾": "mdi:content-save-outline", "🩺": "mdi:stethoscope", "📱": "mdi:cellphone", "🧪": "mdi:flask-outline", "👨‍🍳": "mdi:chef-hat", "🛍": "mdi:shopping-outline", "🪟": "mdi:window-open-variant", "✨": "mdi:creation-outline", "👆": "mdi:gesture-tap", "💳": "mdi:credit-card-outline", "🙏": "mdi:hand-heart-outline", "🐙": "mdi:github", "🐞": "mdi:bug-outline", "🔍": "mdi:magnify", "📥": "mdi:tray-arrow-down", "🕘": "mdi:history", "🌓": "mdi:theme-light-dark", "🛡": "mdi:shield-outline",
+};
+// 🎨 Farben zu den Symbolen (damit es nicht trist wird): nur außerhalb von Knöpfen/Links, dort gilt die Schriftfarbe des Knopfes
+const EL_EMOJI_COLORS = {
+  "🧹": "#fb8c00", "✍": "#5c6bc0", "📍": "#e53935", "🏷": "#d81b60", "🛒": "#43a047", "✅": "#43a047", "⚠": "#f9a825", "🔧": "#607d8b", "🥫": "#8d6e63",
+  "🧾": "#3949ab", "📖": "#1e88e5", "⭐": "#f9a825", "🔒": "#546e7a", "🔓": "#546e7a", "📷": "#1e88e5", "📝": "#6d4c41", "✏": "#6d4c41", "💡": "#f9a825",
+  "🎉": "#ab47bc", "🔥": "#ef6c00", "🕒": "#546e7a", "🌐": "#1e88e5", "🔊": "#1e88e5", "📊": "#00897b", "🧂": "#8d6e63", "🏪": "#43a047", "📧": "#1e88e5",
+  "🔄": "#1e88e5", "🔁": "#1e88e5", "📋": "#1e88e5", "🗓": "#43a047", "📅": "#43a047", "👥": "#8e24aa", "👪": "#8e24aa", "👤": "#8e24aa", "🧲": "#e53935",
+  "🚫": "#e53935", "🗑": "#e53935", "💣": "#b71c1c", "🧽": "#fb8c00", "📈": "#00897b", "🗞": "#d81b60", "🤖": "#5e35b1", "🧠": "#5e35b1", "🤷": "#78909c",
+  "⏳": "#fb8c00", "⌛": "#fb8c00", "↩": "#1e88e5", "⇄": "#1e88e5", "🔠": "#546e7a", "🗂": "#fb8c00", "🗺": "#43a047", "🗣": "#1e88e5", "📦": "#8d6e63",
+  "🍽": "#fb8c00", "📄": "#546e7a", "🧮": "#00897b", "📳": "#546e7a", "🎌": "#e53935", "👋": "#fb8c00", "🔐": "#546e7a", "📏": "#546e7a", "🧪": "#8e24aa",
+  "👨‍🍳": "#e53935", "🛍": "#43a047", "🪟": "#1e88e5", "✨": "#f9a825", "👆": "#1e88e5", "💳": "#00acc1", "🙏": "#ec407a", "🐞": "#e53935", "🔍": "#546e7a",
+  "📥": "#1e88e5", "🕘": "#546e7a", "🌓": "#546e7a", "🛡": "#455a64", "⌨": "#546e7a", "🖼": "#1e88e5", "⏲": "#ef6c00", "⏱": "#26a69a",
+};
+// 🧩 Farben der großen Gruppen-Kästchen in den Einstellungen (Emoji der Gruppe → Farbe)
+const EL_GEM_COLORS = { "📋": "#1e88e5", "🎛": "#8e24aa", "💾": "#43a047", "🩺": "#e53935", "👁": "#00897b", "📱": "#3949ab" };
+const EL_EMOJI_RX = new RegExp("^\\s*(" + Object.keys(EL_EMOJI_ICONS).sort((a, b) => b.length - a.length).join("|") + ")\\uFE0F?(?=\\s|$)\\s*", "u");
+const EL_ICON_PARENTS = "button,h2,h3,h4,summary,legend,label,b,span,li,a,small,p,.lbl";
+const EL_ICON_USER = ".name,.rname,.pname,.delname,.lname,.stitle"; // Namen, die die Leute selbst tippen
+const EL_ICON_SKIP = "option,select,textarea,input,ha-icon,style,script,[data-noicon]";
+const EL_LEADS = new WeakMap(); // Textknoten → das Emoji, das davor stand (für die Übersetzung: die Wörterbuch-Einträge beginnen mit dem Emoji)
+function elIconizeTree(root) {
+  if (!root) return;
+  const nodes = [];
+  if (root.nodeType === 3) nodes.push(root);
+  else if (root.nodeType === 1) { const w = document.createTreeWalker(root, 4 /* Text */); let n; while ((n = w.nextNode())) nodes.push(n); }
+  for (const t of nodes) {
+    const p = t.parentElement;
+    if (!p || !p.matches(EL_ICON_PARENTS) || p.closest(EL_ICON_SKIP) || p.closest(EL_ICON_USER)) continue; // eigene Namen/Notizen der Leute bleiben unangetastet
+    let first = p.firstChild; // das Emoji muss ganz vorn stehen
+    while (first && first !== t && first.nodeType === 3 && !first.data.trim()) first = first.nextSibling;
+    if (first !== t) continue;
+    const m = EL_EMOJI_RX.exec(t.data);
+    if (!m) continue;
+    const key = m[1];
+    const ic = document.createElement("ha-icon");
+    ic.setAttribute("icon", EL_EMOJI_ICONS[key]);
+    ic.dataset.eli = "1";
+    const gem = p.classList.contains("gem"); // großes Kästchen in den Einstellungen: farbiger Grund, weißes Symbol
+    const plain = !gem && !p.closest("button,a,.tgl,.swline"); // Knöpfe und Links behalten ihre Schriftfarbe
+    const flex = /flex/.test(getComputedStyle(p).display || "");
+    ic.style.cssText = `--mdc-icon-size:${gem ? "1.25em" : "1.2em"};vertical-align:-.22em;flex:none;${flex || gem ? "" : "margin-right:.3em;"}${plain && EL_EMOJI_COLORS[key] ? `color:${EL_EMOJI_COLORS[key]};` : ""}`;
+    if (gem) { p.style.setProperty("background", p.style.getPropertyValue("--gc") || EL_GEM_COLORS[key] || EL_EMOJI_COLORS[key] || "#607d8b"); p.style.color = "#fff"; }
+    const rest = t.data.slice(m[0].length);
+    EL_LEADS.set(t, t.data.slice(0, m[0].length).trim());
+    t.data = rest;
+    p.insertBefore(ic, t);
+  }
+}
 function elT(text, depth = 0) {
   if (EL_LANG === "de" || !EL_DICT || text == null) return text;
   const raw = String(text);
@@ -690,6 +762,12 @@ function elTranslateNode(node) {
   if (node.nodeType === 3) {
     const p = node.parentElement;
     if (!p || p.closest(EL_SKIP)) return;
+    const lead = EL_LEADS.get(node); // Emoji wurde zum Symbol: für das Wörterbuch kurz wieder davorsetzen
+    if (lead) {
+      const full = `${lead} ${node.data.trim()}`, t = elT(full);
+      if (t !== full && t.startsWith(lead)) node.data = t.slice(lead.length).trimStart();
+      return;
+    }
     const t = elT(node.data);
     if (t !== node.data) node.data = t;
     return;
@@ -716,6 +794,7 @@ function elWatch(root, keep = true) {
   if (EL_I18N_ROOTS.has(root)) return;
   if (keep) EL_I18N_ROOTS.add(root); // Einblendungen (Anleitung, Kochen …) nicht merken – die verschwinden wieder
   const mo = new MutationObserver((muts) => {
+    for (const mu of muts) if (mu.type === "childList") mu.addedNodes.forEach((x) => elIconizeTree(x)); // 🎛️ Emoji → Symbol (auch auf Deutsch)
     if (EL_LANG === "de" || !EL_DICT) return;
     for (const mu of muts) {
       if (mu.type === "childList") mu.addedNodes.forEach((x) => elTranslateTree(x));
@@ -724,6 +803,7 @@ function elWatch(root, keep = true) {
     }
   }).observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: EL_ATTRS });
   if (keep) EL_OBSERVERS.set(root, mo);
+  elIconizeTree(root);
   elTranslateTree(root);
 }
 // 🧹 Karte wird entfernt: Beobachter abmelden und Wurzel vergessen (beim Wiederanhängen meldet sich elWatch neu an)
@@ -738,7 +818,43 @@ function elUseLang(hass, config, root) {
   if (root) elWatch(root);
   if (EL_LANG !== "de") elLoadDict();
 }
-const elConfirm = (msg) => confirm(elT(msg));
+// ❓ Rückfrage im Stil der Karte (statt dem grauen Standard-Fenster des Browsers): gibt ein Versprechen zurück – true = „Ja“, false = „Abbrechen“.
+// Aufrufen mit: if (!await await elConfirm("Wirklich löschen?")) return;
+function elConfirm(msg, opts = {}) {
+  return new Promise((resolve) => {
+    const text = elT(String(msg));
+    const danger = opts.danger ?? /lösch|zurücksetz|ersetzt ALLES|ALLES|nicht rückgängig|entfern|verwerf|Delete|reset|remove|discard/i.test(text);
+    const en = EL_LANG !== "de";
+    const wrap = document.createElement("div");
+    wrap.dataset.elconfirm = "1";
+    wrap.setAttribute("role", "dialog"); wrap.setAttribute("aria-modal", "true");
+    const top = Math.max(10000, ...[...document.querySelectorAll("[data-elov],[data-elconfirm]")].map((o) => parseInt(o.style.zIndex, 10) || 0)) + 1;
+    wrap.style.cssText = `position:fixed;inset:0;z-index:${top};background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font:15px/1.4 Roboto,sans-serif;`;
+    const box = document.createElement("div");
+    box.style.cssText = "width:100%;max-width:420px;max-height:86vh;overflow:auto;box-sizing:border-box;border-radius:16px;padding:20px;background:var(--card-background-color,#fff);color:var(--primary-text-color,#212121);box-shadow:0 12px 40px rgba(0,0,0,.4);";
+    const head = document.createElement("div");
+    head.style.cssText = `display:flex;align-items:center;gap:12px;margin-bottom:12px;`;
+    const ic = document.createElement("span");
+    ic.style.cssText = `width:36px;height:36px;flex:none;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;background:${danger ? "#e53935" : "var(--primary-color,#03a9f4)"};`;
+    const hi = document.createElement("ha-icon"); hi.setAttribute("icon", danger ? "mdi:alert-outline" : "mdi:help-circle-outline"); hi.style.cssText = "--mdc-icon-size:22px;";
+    ic.append(hi);
+    const ti = document.createElement("div"); ti.textContent = opts.title || (en ? "Please confirm" : "Bitte bestätigen"); ti.style.cssText = "font-size:18px;font-weight:600;";
+    head.append(ic, ti);
+    const body = document.createElement("div"); body.textContent = text; body.style.cssText = "white-space:pre-wrap;color:var(--primary-text-color,#212121);margin-bottom:18px;";
+    const row = document.createElement("div"); row.style.cssText = "display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;";
+    const mk = (label, bg, color, border) => { const b = document.createElement("button"); b.type = "button"; b.textContent = label; b.style.cssText = `border:${border || "0"};border-radius:12px;padding:11px 18px;font:600 15px Roboto,sans-serif;cursor:pointer;background:${bg};color:${color};`; return b; };
+    const no = mk(opts.no || (en ? "Cancel" : "Abbrechen"), "transparent", "var(--primary-text-color,#212121)", "1px solid var(--divider-color,rgba(127,127,127,.45))");
+    const yes = mk(opts.yes || (danger ? (en ? "Yes, do it" : "Ja, wirklich") : "OK"), danger ? "#e53935" : "var(--primary-color,#03a9f4)", "#fff");
+    row.append(no, yes); box.append(head, body, row); wrap.append(box);
+    const done = (v) => { document.removeEventListener("keydown", onKey, true); wrap.remove(); resolve(v); };
+    const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); done(false); } else if (e.key === "Enter" && !danger) { e.preventDefault(); e.stopPropagation(); done(true); } };
+    document.addEventListener("keydown", onKey, true);
+    no.onclick = () => done(false); yes.onclick = () => done(true);
+    wrap.addEventListener("pointerdown", (e) => { if (e.target === wrap) done(false); });
+    document.body.append(wrap);
+    (danger ? no : yes).focus();
+  });
+}
 
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -1115,7 +1231,7 @@ function showPhotoOverlay(src, title) {
   const img = document.createElement("img");
   img.src = src;
   img.alt = title;
-  Object.assign(img.style, { maxWidth: "100%", maxHeight: "80vh", borderRadius: "14px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
+  Object.assign(img.style, { maxWidth: "100%", maxHeight: "80vh", borderRadius: "16px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
   const hint = document.createElement("div");
   hint.textContent = elT("Tippen zum Schließen");
   Object.assign(hint.style, { color: "#aaa", font: "13px Roboto, sans-serif", marginTop: "10px" });
@@ -1677,11 +1793,24 @@ function makeOverlay(opts = {}) {
   return ov;
 }
 
+// 🎛️ Knopf-Symbole: ein Emoji vorn (oder hinten) im Knopftext wird zum einheitlichen Linien-Symbol
+const EL_BTN_LEAD = { "📷": "mdi:camera-outline", "➕": "mdi:plus", "🗑️": "mdi:delete-outline", "🗑": "mdi:delete-outline", "⭐": "mdi:star-outline", "🔄": "mdi:camera-flip-outline",
+  "↺": "mdi:rotate-left", "↻": "mdi:rotate-right", "⤢": "mdi:fit-to-screen-outline", "✔": "mdi:check", "✖": "mdi:close", "◀": "mdi:chevron-left" };
+const EL_BTN_TRAIL = { "▶": "mdi:chevron-right", "👨‍🍳": "mdi:chef-hat" };
 function ovButton(label, main = false) {
   const b = document.createElement("button");
   b.type = "button";
-  b.textContent = label;
   b.style.cssText = main ? OV_BTN_MAIN : OV_BTN;
+  const text = typeof elT === "function" ? elT(String(label)) : String(label); // erst übersetzen (Schlüssel enthalten das Emoji), dann das Emoji austauschen
+  const lead = Object.keys(EL_BTN_LEAD).find((k) => text.startsWith(k));
+  const trail = Object.keys(EL_BTN_TRAIL).find((k) => text.endsWith(k));
+  const rest = text.slice(lead ? lead.length : 0, trail ? text.length - trail.length : text.length).trim();
+  if ((!lead && !trail) || (lead && !rest && !trail)) { b.textContent = text; return b; } // nur ein Zeichen: bleibt Text (z. B. „✖“ zum Schließen)
+  const mk = (name) => { const i = document.createElement("ha-icon"); i.setAttribute("icon", name); i.style.cssText = "--mdc-icon-size:20px;display:block;flex:none;"; return i; };
+  b.style.display = "inline-flex"; b.style.alignItems = "center"; b.style.justifyContent = "center"; b.style.gap = "6px";
+  if (lead) b.append(mk(EL_BTN_LEAD[lead]));
+  if (rest) { const sp = document.createElement("span"); sp.textContent = rest; sp.style.lineHeight = "1.2"; b.append(sp); }
+  if (trail) b.append(mk(EL_BTN_TRAIL[trail]));
   return b;
 }
 
@@ -1729,9 +1858,9 @@ function askPhotoDrop(title = "🖼️ Foto hinzufügen") {
   return new Promise((resolve) => {
     const ov = makeOverlay();
     if (!ov.dataset.elpage) ov.style.background = "rgba(0,0,0,.7)";
-    ov.innerHTML = `<div style="width:100%;max-width:460px;background:#222;border-radius:18px;padding:18px;box-shadow:0 4px 24px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:12px">
-      <div style="font:600 17px Roboto,sans-serif;text-align:center">${esc(elT(title))}</div>
-      <div data-zone style="border:2px dashed rgba(255,255,255,.45);border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;line-height:1.5;transition:background .15s">
+    ov.innerHTML = `<div style="width:100%;max-width:460px;background:#222;border-radius:16px;padding:18px;box-shadow:0 4px 24px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 16px Roboto,sans-serif;text-align:center">${esc(elT(title))}</div>
+      <div data-zone style="border:2px dashed rgba(255,255,255,.45);border-radius:16px;padding:34px 16px;text-align:center;cursor:pointer;line-height:1.5;transition:background .15s">
         <div style="font-size:34px">📥</div>
         <div><b>Bild hier reinziehen</b></div>
         <div>oder <b>Strg + V</b> drücken (z. B. Screenshot)</div>
@@ -1786,7 +1915,7 @@ function askPhotoSource(camera = true, heading = "Foto – woher?") {
     ov.style.justifyContent = ov.dataset.elpage ? "flex-start" : "flex-end";
     if (!ov.dataset.elpage) ov.style.background = "rgba(0,0,0,.7)";
     const box = document.createElement("div");
-    box.style.cssText = "width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;padding:16px;margin-bottom:10px;background:#222;border-radius:18px;box-shadow:0 4px 24px rgba(0,0,0,.5)";
+    box.style.cssText = "width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;padding:16px;margin-bottom:10px;background:#222;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.5)";
     const title = document.createElement("div");
     title.textContent = elT(heading);
     title.style.cssText = "font:600 16px Roboto,sans-serif;text-align:center;opacity:.85";
@@ -1851,7 +1980,7 @@ async function elScanLive(hint) {
   try { read = await elLiveReader(); } catch (_) { stream.getTracks().forEach((t) => t.stop()); return undefined; }
   return new Promise((resolve) => {
     const ov = makeOverlay({ title: "📷 Einscannen", dark: true });
-    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { minHeight: "min(72vh, 640px)", borderRadius: "14px" } : {}) });
+    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { minHeight: "min(72vh, 640px)", borderRadius: "16px" } : {}) });
     const video = document.createElement("video");
     Object.assign(video, { playsInline: true, muted: true, autoplay: true, srcObject: stream });
     video.setAttribute("playsinline", "");
@@ -1902,7 +2031,7 @@ async function elCameraShot() {
   }
   return new Promise((resolve) => {
     const ov = makeOverlay({ title: "📷 Foto machen", dark: true });
-    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { minHeight: "min(72vh, 640px)", borderRadius: "14px" } : {}) });
+    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { minHeight: "min(72vh, 640px)", borderRadius: "16px" } : {}) });
     const video = document.createElement("video");
     Object.assign(video, { playsInline: true, muted: true, autoplay: true, srcObject: stream });
     video.setAttribute("playsinline", "");
@@ -1993,7 +2122,7 @@ function askChoice(text, options) {
   return new Promise((resolve) => {
     const ov = makeOverlay();
     const box = document.createElement("div");
-    box.style.cssText = "width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;padding:16px;background:#222;border-radius:18px";
+    box.style.cssText = "width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;padding:16px;background:#222;border-radius:16px";
     const t = document.createElement("div");
     t.textContent = elT(text);
     t.style.cssText = "font:600 16px Roboto,sans-serif;text-align:center;margin-bottom:4px";
@@ -2031,7 +2160,7 @@ function askPin(title = "🔒 PIN eingeben", card = null) {
     else ov = makeOverlay();
     let pin = "";
     ov.innerHTML = `<div style="text-align:center;max-width:300px;width:100%;margin:0 auto">
-      ${asPage ? "" : `<div style="font:600 19px Roboto,sans-serif;margin-bottom:6px">${esc(elT(title))}</div>`}
+      ${asPage ? "" : `<div style="font:600 18px Roboto,sans-serif;margin-bottom:6px">${esc(elT(title))}</div>`}
       <div class="pdots" style="font-size:28px;letter-spacing:10px;min-height:40px;margin:10px 0 16px">&nbsp;</div>
       <div class="ppad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div></div>`;
     const dots = ov.querySelector(".pdots"), pad = ov.querySelector(".ppad");
@@ -2083,7 +2212,7 @@ function askText(title, placeholder = "", value = "") {
     const ov = makeOverlay();
     ov.innerHTML = `<div style="max-width:340px;width:100%">
       <div style="font:600 18px Roboto,sans-serif;margin-bottom:10px">${esc(elT(title))}</div>
-      <input style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:12px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee" placeholder="${esc(elT(placeholder))}">
+      <input style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:12px;border-radius:12px;border:1px solid #555;background:#1e1e1e;color:#eee" placeholder="${esc(elT(placeholder))}">
       <div class="abtn" style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px"></div></div>`;
     const inp = ov.querySelector("input");
     inp.value = value || "";
@@ -2103,7 +2232,7 @@ function askBarcode(title, canScan) {
     ov.innerHTML = `<div style="max-width:340px;width:100%">
       <div style="font:600 18px Roboto,sans-serif;margin-bottom:6px">${esc(elT(title))}</div>
       <div style="opacity:.8;font-size:13px;margin-bottom:10px">${esc(elT("Die Nummer unter dem Strichcode eintippen (8–14 Ziffern)"))}</div>
-      <input inputmode="numeric" autocomplete="off" maxlength="20" placeholder="z. B. 4012345678901" style="width:100%;box-sizing:border-box;font:18px Roboto,sans-serif;letter-spacing:2px;padding:12px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee" placeholder="4006381333931">
+      <input inputmode="numeric" autocomplete="off" maxlength="20" placeholder="z. B. 4012345678901" style="width:100%;box-sizing:border-box;font:18px Roboto,sans-serif;letter-spacing:2px;padding:12px;border-radius:12px;border:1px solid #555;background:#1e1e1e;color:#eee" placeholder="4006381333931">
       <div class="abtn" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px"></div></div>`;
     const inp = ov.querySelector("input");
     const done = (v) => { ov.remove(); resolve(v); };
@@ -2137,7 +2266,7 @@ async function editImage(file, max = 900, quality = 0.8) {
   return new Promise((resolve) => {
     const ov = makeOverlay({ title: "✂️ Foto zuschneiden", dark: true });
     ov.style.background = "#000";
-    if (ov.dataset.elpage) Object.assign(ov.style, { overflow: "hidden", borderRadius: "14px", padding: "16px" }); // der große Schatten des Rahmens soll nicht über die Seite laufen
+    if (ov.dataset.elpage) Object.assign(ov.style, { overflow: "hidden", borderRadius: "16px", padding: "16px" }); // der große Schatten des Rahmens soll nicht über die Seite laufen
     let rot = 0;
     let src = null; // gedrehtes Bild (Arbeitskopie)
     const wrap = document.createElement("div");
@@ -2266,8 +2395,8 @@ button { font:inherit; color:inherit; }
 .syncrow { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:6px 0; border-top:1px solid var(--divider-color,#eee); }
 .syncrow .btn { font-size:.85em; padding:4px 9px; min-height:32px; }
 .updbar b { flex:1; }
-.tipbtn { font:inherit; font-size:.95em; border:0; border-radius:10px; padding:6px 10px; cursor:pointer; background:color-mix(in srgb, var(--primary-color,#03a9f4) 25%, transparent); color:var(--primary-text-color); }
-.wizard { margin:0 2px 10px; padding:12px; border-radius:14px; border:1px solid color-mix(in srgb, var(--primary-color,#03a9f4) 45%, transparent); background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); }
+.tipbtn { font:inherit; font-size:.95em; border:0; border-radius:12px; padding:6px 10px; cursor:pointer; background:color-mix(in srgb, var(--primary-color,#03a9f4) 25%, transparent); color:var(--primary-text-color); }
+.wizard { margin:0 2px 10px; padding:12px; border-radius:16px; border:1px solid color-mix(in srgb, var(--primary-color,#03a9f4) 45%, transparent); background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); }
 .wizard h4 { margin:0 0 4px; font-size:1.05em; }
 .wizard ol { list-style:none; margin:8px 0; padding:0; display:grid; gap:6px; counter-reset:wz; }
 .wizard li { counter-increment:wz; display:flex; align-items:center; gap:8px; }
@@ -2277,7 +2406,7 @@ button { font:inherit; color:inherit; }
 .iconbtn.serase, .iconbtn.rclear, .rclear { color:var(--error-color,#db4437); }
 .lbl { display:none; }
 ha-card.labels .lbl { display:block; font-size:10px; font-weight:500; line-height:1.15; margin-top:3px; white-space:nowrap; }
-ha-card.labels .tool, ha-card.labels .head .iconbtn { flex-direction:column; align-items:center; justify-content:flex-start; border-radius:10px; }
+ha-card.labels .tool, ha-card.labels .head .iconbtn { flex-direction:column; align-items:center; justify-content:flex-start; border-radius:12px; }
 ha-card.labels .head .iconbtn { padding:4px 5px; }
 ha-card.labels form.add .toolbar { flex-wrap:wrap; gap:2px 2px; }
 ha-card.labels .tool { padding:4px 6px; }
@@ -2305,7 +2434,7 @@ ha-card.labels .tool { padding:4px 6px; }
 .tab.active .dot { background:var(--tc, #fff); }
 form.add { display:grid; grid-template-columns: 1fr 48px; gap:6px; margin:2px 2px 6px; }
 form.add .toolbar { grid-column: 1 / -1; display:flex; gap:4px; margin:-2px 0 0; }
-.tool { background:none; border:0; border-radius:10px; padding:6px 10px; cursor:pointer; color:var(--secondary-text-color); display:inline-flex; align-items:center; line-height:0; position:relative; --mdc-icon-size:22px; }
+.tool { background:none; border:0; border-radius:12px; padding:6px 10px; cursor:pointer; color:var(--secondary-text-color); display:inline-flex; align-items:center; line-height:0; position:relative; --mdc-icon-size:22px; }
 .tool:hover { background:var(--secondary-background-color, rgba(127,127,127,.1)); }
 .tool.on { color:var(--primary-color,#03a9f4); background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); }
 .tool.filled::after { content:""; position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%; background:var(--primary-color,#03a9f4); } /* ✏️ 📷 ▥ etwas dran: kleiner blauer Punkt */
@@ -2321,18 +2450,18 @@ form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .favrow input { width:auto; flex:none; }
 /* 🎚️ ⭐ Favorit als Schalter (Bearbeiten + Katalog) – wie in den Einstellungen */
 .favrow:has(.swchk) { justify-content:space-between; box-sizing:border-box; min-height:42px; padding:0 12px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; background:var(--card-background-color, var(--ha-card-background, #fff)); }
-input.swchk { -webkit-appearance:none; appearance:none; order:2; width:40px; height:22px; margin:0; border:0; border-radius:11px; background:#bdbdbd; position:relative; cursor:pointer; transition:background .15s; padding:0; box-shadow:none; }
+input.swchk { -webkit-appearance:none; appearance:none; order:2; width:40px; height:22px; margin:0; border:0; border-radius:12px; background:#bdbdbd; position:relative; cursor:pointer; transition:background .15s; padding:0; box-shadow:none; }
 input.swchk::after { content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.3); transition:left .15s; }
 input.swchk:checked { background:var(--primary-color,#03a9f4); }
 input.swchk:checked::after { left:20px; }
 input.swchk:focus-visible { outline:2px solid var(--primary-color,#03a9f4); outline-offset:2px; }
-.newrec { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 12px; padding:13px 16px; border:0; border-radius:14px; cursor:pointer; font:inherit; font-size:16px; font-weight:600; color:#fff; background:linear-gradient(135deg,#43a047,#2e7d32); box-shadow:0 2px 8px rgba(46,125,50,.35); --mdc-icon-size:24px; transition:transform .1s, box-shadow .1s; }
+.newrec { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 12px; padding:13px 16px; border:0; border-radius:16px; cursor:pointer; font:inherit; font-size:16px; font-weight:600; color:#fff; background:linear-gradient(135deg,#43a047,#2e7d32); box-shadow:0 2px 8px rgba(46,125,50,.35); --mdc-icon-size:24px; transition:transform .1s, box-shadow .1s; }
 .newrec:hover { box-shadow:0 3px 12px rgba(46,125,50,.5); }
 .newrec:active { transform:scale(.98); }
 .tool.tclear { color:var(--error-color,#db4437); }
 #btnScan { position:relative; }
 /* 📝 Notiz am Artikel: dezent hervorgehoben – etwas kräftiger, zarter Farbhauch */
-.item .meta .inote, .pickrow .inote { color:var(--primary-text-color); font-weight:500; background:color-mix(in srgb, #f9a825 16%, transparent); border-radius:6px; padding:0 6px; }
+.item .meta .inote, .pickrow .inote { color:var(--primary-text-color); font-weight:500; background:color-mix(in srgb, #f9a825 16%, transparent); border-radius:8px; padding:0 6px; }
 .item.done .meta .inote { background:none; font-weight:400; color:inherit; }
 #btnScan.instore, .tool.instore { color:var(--success-color,#43a047); background:color-mix(in srgb, var(--success-color,#43a047) 14%, transparent); }
 #btnScan.instore::after, .tool.instore::after { content:"✓"; position:absolute; right:3px; bottom:2px; font-size:10px; font-weight:700; line-height:1; }
@@ -2390,13 +2519,13 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .ghead .gdot ha-icon { --mdc-icon-size:14px; }
 .ghead .n { margin-left:auto; font-weight:500; }
 .subhead { font-size:.72em; padding-left:10px; opacity:.85; }
-.item { display:flex; align-items:center; gap:4px; padding:4px 2px; border-radius:10px; transition: opacity .25s, background .2s; }
+.item { display:flex; align-items:center; gap:4px; padding:4px 2px; border-radius:12px; transition: opacity .25s, background .2s; }
 .item .check { color:var(--primary-color,#03a9f4); }
 .item .txt { flex:1; min-width:0; padding:2px 0; }
 .item .line { display:flex; flex-wrap:wrap; align-items:baseline; gap:0 6px; }
 .item .name { font-weight:500; word-break:break-word; }
-.item .qty { font-size:.85em; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:6px; padding:0 6px; }
-.sqty, .pqty { font-size:.85em; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:6px; padding:0 6px; }
+.item .qty { font-size:.85em; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:8px; padding:0 6px; }
+.sqty, .pqty { font-size:.85em; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:8px; padding:0 6px; }
 .item .who { font-size:.85em; color:var(--secondary-text-color); }
 .item .forwhom.colored { color:var(--pc); background:color-mix(in srgb, var(--pc) 14%, transparent); border:1px solid color-mix(in srgb, var(--pc) 45%, transparent); border-radius:999px; padding:0 8px; font-weight:600; }
 .pchip { border-color:color-mix(in srgb, var(--pc) 55%, transparent) !important; display:inline-flex; align-items:center; gap:6px; }
@@ -2405,13 +2534,13 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .pchip.sel .pdot { background:#fff; }
 .item .meta { font-size:.75em; color:var(--secondary-text-color); display:flex; flex-wrap:wrap; gap:3px 6px; margin-top:2px; }
 /* 🩶 Wer, wann, Aufräum-Tag: leicht grau hinterlegt – gleiche Form wie die Geschäfts-Schildchen, aber ruhig */
-.item .meta > span:not([class]) { background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); border-radius:6px; padding:0 6px; }
+.item .meta > span:not([class]) { background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); border-radius:8px; padding:0 6px; }
 .item.done .meta > span:not([class]) { background:color-mix(in srgb, var(--primary-text-color, #000) 4%, transparent); }
 .chip { --c:#888; display:inline-flex; align-items:center; gap:4px; }
 .chip::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--c); }
 /* 🏪 Unter dem Artikel: Geschäft-Name mit zartem Hintergrund in der Geschäft-Farbe (wie die Notiz),
    statt Punkt davor – spart Platz und ist nicht aufdringlich. */
-.meta .chip, .pmeta .chip { color:var(--primary-text-color); font-weight:500; gap:0; border-radius:6px; padding:0 6px;
+.meta .chip, .pmeta .chip { color:var(--primary-text-color); font-weight:500; gap:0; border-radius:8px; padding:0 6px;
   background:color-mix(in srgb, var(--c) 20%, transparent); }
 .item.done .meta .chip { background:color-mix(in srgb, var(--c) 10%, transparent); font-weight:400; }
 .meta .chip::before, .pmeta .chip::before { display:none; }
@@ -2439,11 +2568,11 @@ ha-card.shop #btnAwake { order:2; } /* 💡 Bildschirm immer an: zwischen 💳 u
 ha-card.shop #btnShop { order:3; }
 #btnAwake.on { color:var(--primary-color,#03a9f4); }
 .calc { max-width:340px; margin:6px auto 12px; }
-.calc .cdisp { background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:14px; padding:10px 14px; text-align:right; margin-bottom:10px; min-height:3.4em; }
+.calc .cdisp { background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:16px; padding:10px 14px; text-align:right; margin-bottom:10px; min-height:3.4em; }
 .calc .cexpr { font-size:.9em; opacity:.65; min-height:1.3em; }
 .calc .cnum { font-size:2.2em; font-weight:600; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .calc .ckeys { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-.calc .ckeys button { height:60px; border-radius:14px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); background:transparent; color:inherit; font:inherit; font-size:1.5em; cursor:pointer; }
+.calc .ckeys button { height:60px; border-radius:16px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); background:transparent; color:inherit; font:inherit; font-size:1.5em; cursor:pointer; }
 .calc .ckeys button:active { background:rgba(127,127,127,.25); }
 .calc .ckeys button.op { color:var(--primary-color,#03a9f4); font-weight:600; }
 .calc .ckeys button.eq { background:var(--primary-color,#03a9f4); color:#fff; border-color:transparent; }
@@ -2510,7 +2639,7 @@ ha-card.compact .group { margin-top:4px; }
 .donebox { margin-top:12px; padding:4px 6px 6px; border-radius:12px; background:color-mix(in srgb, var(--primary-text-color, #000) 3%, transparent); }
 .justbox .jrow { display:flex; align-items:center; gap:6px; }
 .justbox .jmain { flex:1; min-width:0; }
-.justbox .jback { flex:none; min-width:52px; min-height:52px; --mdc-icon-size:28px; border-radius:14px; justify-content:center; }
+.justbox .jback { flex:none; min-width:52px; min-height:52px; --mdc-icon-size:28px; border-radius:16px; justify-content:center; }
 .justbox .ghead { cursor:default; }
 .donebox .item.done .check { color:color-mix(in srgb, var(--success-color, #43a047) 55%, var(--secondary-text-color)); }
 .textbtn { background:none; border:0; cursor:pointer; color:var(--primary-color,#03a9f4); font-size:.85em; padding:6px 4px; }
@@ -2524,7 +2653,7 @@ ha-card.compact .group { margin-top:4px; }
 .editrow .tplchips, .prodedit .tplchips { grid-column: 1 / -1; margin:0; }
 .editrow .btns { grid-column: 1 / span 2; display:flex; justify-content:flex-end; gap:6px; }
 .editrow .btns { margin-top:4px; }
-.error { background: color-mix(in srgb, var(--error-color,#db4437) 15%, transparent); color:var(--primary-text-color); border-radius:10px; padding:10px; margin:4px 2px 8px; font-size:.9em; }
+.error { background: color-mix(in srgb, var(--error-color,#db4437) 15%, transparent); color:var(--primary-text-color); border-radius:12px; padding:10px; margin:4px 2px 8px; font-size:.9em; }
 .sec { margin:4px 2px 16px; }
 .sec h3 { display:flex; align-items:center; gap:6px; font-size:1em; margin:6px 0 8px; }
 .lgbox { margin:10px 0 0; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:12px; overflow:hidden; } /* 🗂️ eine Gruppe = ein Kasten */
@@ -2532,7 +2661,7 @@ ha-card.compact .group { margin-top:4px; }
 .lgroup[aria-expanded="true"] { border-bottom:1px solid var(--divider-color, rgba(127,127,127,.25)); }
 .lgroup b { display:block; font-weight:600; }
 .lgroup small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
-.lgroup .gem { width:36px; height:36px; flex:none; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:19px; background:color-mix(in srgb, var(--primary-text-color, #000) 7%, transparent); }
+.lgroup .gem { width:36px; height:36px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; background:color-mix(in srgb, var(--primary-text-color, #000) 7%, transparent); }
 .lgroup .grow { flex:1 1 auto; min-width:0; }
 .lgroup .chev { flex:none; color:var(--secondary-text-color); }
 .lrow { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; text-align:left; padding:10px 12px; margin:3px 0; border-radius:12px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
@@ -2551,9 +2680,9 @@ ha-card.compact .group { margin-top:4px; }
 .lgbox .lrow:hover { background:color-mix(in srgb, var(--primary-color,#03a9f4) 6%, transparent); }
 .lgbox div.lrow { padding:0 12px 0 0; cursor:default; }
 .lmain { display:flex; align-items:center; gap:12px; flex:1 1 auto; min-width:0; padding:10px 0 10px 12px; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
-.ic { --ic:#607d8b; width:36px; height:36px; flex:none; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--ic); color:#fff; }
+.ic { --ic:#607d8b; width:36px; height:36px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; background:var(--ic); color:#fff; }
 .ic ha-icon { --mdc-icon-size:20px; color:#fff; }
-.tgl { flex:none; width:40px; height:22px; padding:0; border:0; border-radius:11px; background:#bdbdbd; position:relative; cursor:pointer; transition:background .15s; }
+.tgl { flex:none; width:40px; height:22px; padding:0; border:0; border-radius:12px; background:#bdbdbd; position:relative; cursor:pointer; transition:background .15s; }
 .tgl > span { position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.3); transition:left .15s; }
 .tgl[aria-pressed="true"], [aria-pressed="true"] > .tgl { background:var(--primary-color,#03a9f4); }
 .tgl[aria-pressed="true"] > span, [aria-pressed="true"] > .tgl > span { left:20px; }
@@ -2569,12 +2698,12 @@ ha-card.compact .group { margin-top:4px; }
 .lrow b, .swrow b { display:block; font-weight:500; }
 .swrow { display:flex; align-items:center; gap:10px; padding:10px 12px; margin:4px 0; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); }
 .swrow > ha-icon { color:var(--primary-color,#03a9f4); }
-.sw { position:relative; flex:none; width:48px; height:28px; border-radius:14px; border:0; cursor:pointer; background:rgba(127,127,127,.45); transition:background .15s; padding:0; }
+.sw { position:relative; flex:none; width:48px; height:28px; border-radius:16px; border:0; cursor:pointer; background:rgba(127,127,127,.45); transition:background .15s; padding:0; }
 .sw i { position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:left .15s; box-shadow:0 1px 3px rgba(0,0,0,.35); }
 .sw.on { background:var(--primary-color,#03a9f4); }
 .sw.on i { left:23px; }
 .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:8px; }
-.tile { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:12px; border-radius:14px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
+.tile { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:12px; border-radius:16px; cursor:pointer; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; }
 .tile:hover { border-color:var(--primary-color,#03a9f4); }
 .tile ha-icon { color:var(--primary-color,#03a9f4); margin-bottom:4px; }
 .tile small { color:var(--secondary-text-color); font-size:.78em; }
@@ -2596,7 +2725,7 @@ ha-card.compact .group { margin-top:4px; }
 .pill.off { background:color-mix(in srgb, var(--error-color,#db4437) 20%, transparent); }
 .foot { display:flex; justify-content:center; gap:10px; margin:14px 6px 8px; font-size:13px; color:var(--secondary-text-color); } /* wie die Knopfreihe der Offline-App */
 .foot[hidden] { display:none; }
-.foot button { font:inherit; color:inherit; background:none; text-decoration:underline; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; padding:8px 18px; cursor:pointer; }
+.foot button { font:inherit; color:inherit; background:none; text-decoration:underline; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:12px; padding:8px 18px; cursor:pointer; }
 .foot button.on { border-color:var(--primary-color,#03a9f4); color:var(--primary-color,#03a9f4); }
 .myview { margin:6px 10px 2px; padding:8px 10px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); }
 .myview[hidden] { display:none; }
@@ -2623,7 +2752,7 @@ ha-card.compact .group { margin-top:4px; }
 .cc { display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; margin:0; padding:10px 8px 10px 10px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-left:6px solid var(--c,#607d8b); border-radius:12px; cursor:pointer; background:var(--card-background-color, var(--ha-card-background, #fff)); color:var(--primary-text-color); font:inherit; text-align:left; } /* wie die Zeilen in den Einstellungen: Farbe als Streifen links */
 .cc > ha-icon { color:var(--c,#607d8b); flex:0 0 auto; }
 .cc .ci { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; } .cc small { display:block; font-weight:400; font-size:.78em; color:var(--secondary-text-color); }
-.cc .ce { border-radius:10px; font-size:16px; padding:6px 8px; }
+.cc .ce { border-radius:12px; font-size:16px; padding:6px 8px; }
 .cn { color:var(--secondary-text-color); text-align:center; padding:26px 8px; }
 .prodrow { cursor:pointer; }
 .prodrow .pphotos { display:inline-flex; align-items:center; gap:2px; color:var(--primary-color,#03a9f4); font-weight:600; } .prodrow .pphotos ha-icon { --mdc-icon-size:16px; }
@@ -2658,7 +2787,7 @@ ha-card.compact .group { margin-top:4px; }
 @keyframes mwobble { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
 @keyframes mhop { 0% { transform: translateY(0); } 40% { transform: translateY(-6px); } 100% { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .mascot.full, .mascot.hop { animation: none; } }
-.item .meta .iout { color:var(--primary-text-color); font-weight:500; background:color-mix(in srgb, var(--error-color, #db4437) 9%, transparent); border-radius:6px; padding:0 6px; font-weight:400; }
+.item .meta .iout { color:var(--primary-text-color); font-weight:500; background:color-mix(in srgb, var(--error-color, #db4437) 9%, transparent); border-radius:8px; padding:0 6px; font-weight:400; }
 .moverow .outbtn { --c:var(--primary-color,#03a9f4); display:inline-flex; align-items:center; gap:4px; --mdc-icon-size:16px; }
 /* 👨‍🍳 Knöpfe unter der Kochmütze: Foto blau, Kochen rot, Teilen grün (nur das Symbol) */
 .rtools [data-act="photo-view"] ha-icon { color:var(--primary-color,#03a9f4); }
@@ -2674,7 +2803,7 @@ ha-card.compact .group { margin-top:4px; }
 .bclist { display:flex; flex-wrap:wrap; gap:6px; }
 .bcchip { display:inline-flex; align-items:center; gap:2px; font-size:.85em; padding:0 0 0 8px; border:1px solid var(--divider-color, rgba(127,127,127,.35)); border-radius:8px; --mdc-icon-size:18px; }
 .chklist { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
-.chkrow { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; cursor:pointer; }
+.chkrow { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:12px; cursor:pointer; }
 .chkrow input.chk { margin-top:3px; width:18px; height:18px; flex:0 0 auto; }
 .chkrow .ctxt { display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; }
 .chkrow .cwhat { font-weight:500; overflow-wrap:anywhere; }
@@ -2685,7 +2814,7 @@ ha-card.compact .group { margin-top:4px; }
 .subtabs { display:flex; gap:6px; flex-wrap:wrap; margin:2px 0 8px; }
 .subtabs .tab ha-icon { --mdc-icon-size:18px; }
 .xferfmt { margin:4px 0 10px; padding-left:20px; }
-.missed { background:color-mix(in srgb, var(--warning-color,#ffa600) 12%, transparent); border-radius:10px; padding:8px 12px; margin:4px 0 10px; }
+.missed { background:color-mix(in srgb, var(--warning-color,#ffa600) 12%, transparent); border-radius:12px; padding:8px 12px; margin:4px 0 10px; }
 .prodrow.marked { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 10%, transparent); }
 .item.marked, .recipe.marked, .delrow.marked { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 10%, transparent); }
 .item:focus, .recipe:focus, .delrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
@@ -2698,33 +2827,33 @@ ha-card.compact .group { margin-top:4px; }
 .health { display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 10px; padding:10px 12px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-left-width:5px; background:var(--secondary-background-color, rgba(127,127,127,.06)); color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
 .health.ok { border-left-color:#43a047; } .health.warn { border-left-color:#fb8c00; } .health.bad { border-left-color:#e53935; } .health.wait { border-left-color:#9e9e9e; }
 .health small { display:block; color:var(--secondary-text-color); }
-.errrow { padding:6px 8px; border-radius:10px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:4px 0; font-size:.9em; word-break:break-word; }
+.errrow { padding:6px 8px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:4px 0; font-size:.9em; word-break:break-word; }
 .errrow small { color:var(--secondary-text-color); display:block; }
 .strows { display:flex; flex-direction:column; gap:6px; margin:6px 0; }
 .strow { display:flex; flex-wrap:nowrap; align-items:center; gap:6px; padding:4px 6px; border-radius:12px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:var(--card-background-color, var(--ha-card-background, #fff)); }
 .strow .stin { flex:1 1 0; border:0; background:none; box-shadow:none; }
 .strow.dropbefore { box-shadow:0 -3px 0 0 var(--primary-color); } .strow.dropafter { box-shadow:0 3px 0 0 var(--primary-color); }
-.strow.dragging { position:relative; z-index:2; opacity:.7; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:10px; }
+.strow.dragging { position:relative; z-index:2; opacity:.7; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:12px; }
 .sthandle { flex:none; border:none; background:none; color:var(--secondary-text-color); font-size:1.3em; line-height:1; padding:8px 4px; cursor:grab; touch-action:none; user-select:none; }
-.sthandle:focus-visible { outline:2px solid var(--primary-color); border-radius:6px; }
+.sthandle:focus-visible { outline:2px solid var(--primary-color); border-radius:8px; }
 .stbtns { display:flex; gap:4px; flex:none; margin-left:auto; }
 .stbtns .btn { padding:6px 8px; min-height:0; font-size:.8em; }
 .stnum { flex:none; padding-top:0; min-width:1.6em; text-align:right; color:var(--secondary-text-color); font-size:.9em; }
 .stin { flex:1 1 150px; min-width:0; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:10px 12px; resize:none; overflow:hidden; }
 .sprow { display:flex; align-items:center; gap:6px; margin:4px 0; }
 .sprow .sptxt { flex:1; font-size:.9em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pemerge { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; border-radius:10px; border:1px dashed var(--divider-color, rgba(127,127,127,.4)); }
+.pemerge { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; border-radius:12px; border:1px dashed var(--divider-color, rgba(127,127,127,.4)); }
 .pemerge select { flex:1; min-width:140px; }
 .iinstead { opacity:.8; font-style:italic; }
 .offinfo { color:color-mix(in srgb, #e53935 70%, var(--primary-text-color)); font-weight:600; }
 #btnNewBarcode.plus::before { content:"+"; position:absolute; top:1px; right:4px; font:700 13px/1 Roboto,sans-serif; }
 .chip2.offsearch { border-style:dashed; }
-.warnbox { background:color-mix(in srgb, var(--warning-color,#ffa600) 12%, transparent); border-radius:10px; padding:8px 12px; }
+.warnbox { background:color-mix(in srgb, var(--warning-color,#ffa600) 12%, transparent); border-radius:12px; padding:8px 12px; }
 .stats { display:flex; flex-direction:column; gap:2px; }
 .statrow { display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:8px; background:var(--secondary-background-color, rgba(127,127,127,.06)); }
 .statrow .grow { flex:1; min-width:0; }
 .elcredits { text-align:center; } .elcredits p { margin:8px 0; }
-.ellogo { background:#fff; border-radius:14px; padding:10px; display:inline-block; max-width:100%; box-shadow:0 1px 4px rgba(0,0,0,.12); }
+.ellogo { background:#fff; border-radius:16px; padding:10px; display:inline-block; max-width:100%; box-shadow:0 1px 4px rgba(0,0,0,.12); }
 .ellogo img { display:block; max-width:100%; width:280px; height:auto; }
 .elcbtns { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:12px 0; }
 .elcbtn.pp { display:inline-flex; align-items:center; gap:8px; background:#0070BA; color:#fff; border:2px solid #003087; font-weight:700; }
@@ -2742,7 +2871,7 @@ label.catord { cursor:pointer; }
 .missed .mx { flex:none; opacity:.6; --mdc-icon-size:18px; }
 .missed .mn { display:inline-block; min-width:2.2em; font-weight:700; color:var(--warning-color,#ffa600); }
 .xferfmt li { margin:3px 0; }
-.grocylist { max-height:320px; overflow:auto; border:1px solid var(--divider-color,#ddd); border-radius:10px; margin:6px 0; }
+.grocylist { max-height:320px; overflow:auto; border:1px solid var(--divider-color,#ddd); border-radius:12px; margin:6px 0; }
 .grocyrow { display:flex; align-items:center; gap:8px; padding:6px 10px; cursor:pointer; border-bottom:1px solid var(--divider-color,#eee); }
 .grocyrow input { width:auto; flex:none; }
 .grocyrow.have { opacity:.6; }
@@ -2764,7 +2893,7 @@ label.btn { cursor:pointer; }
 .srow .prev { width:24px; flex:0 0 auto; color:var(--secondary-text-color); }
 .srow .primary { width:42px; height:42px; flex:0 0 auto; }
 .srow .iconbtn { padding:4px; }
-.picker { display:grid; grid-template-columns:repeat(auto-fill, minmax(44px, 1fr)); gap:4px; padding:6px; margin:2px 0 8px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; max-height:170px; overflow-y:auto; }
+.picker { display:grid; grid-template-columns:repeat(auto-fill, minmax(44px, 1fr)); gap:4px; padding:6px; margin:2px 0 8px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:12px; max-height:170px; overflow-y:auto; }
 .picker button { background:none; border:1px solid transparent; border-radius:8px; cursor:pointer; padding:6px 0; display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--primary-text-color); }
 .picker button:hover { border-color:var(--primary-color,#03a9f4); }
 .picker button span { font-size:.55em; color:var(--secondary-text-color); max-width:44px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -2801,7 +2930,7 @@ label.btn { cursor:pointer; }
 .hourspop .hbr { display:flex; flex-direction:column; gap:2px; border-top:1px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:6px; margin-top:4px; font-size:.92em; }
 .hint { color:var(--secondary-text-color); font-size:.8em !important; }
 /* 📋 Bericht von „Alles neu holen“: eigener Kasten, ✖ zum Schließen (erst wenn fertig), lange Berichte scrollen */
-.refrep { position:relative; margin:6px 0; padding:8px 10px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:10px; }
+.refrep { position:relative; margin:6px 0; padding:8px 10px; border:1px solid var(--divider-color, rgba(127,127,127,.3)); border-radius:12px; }
 .refrep > .iconbtn { display:none; position:absolute; top:2px; right:2px; }
 .refrep.done > .iconbtn { display:inline-flex; }
 .refrep > .hint { margin:0; white-space:pre-line; overflow-wrap:anywhere; max-height:45vh; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; }
@@ -2853,7 +2982,7 @@ ha-card.labels .viewhead button.btn { flex-direction:column; gap:0; padding:4px 
 .rpick .phead { display:flex; justify-content:space-between; align-items:center; font-weight:600; font-size:.9em; padding:2px 4px 6px; }
 .rpick .phead span { font-weight:400; }
 .linkbtn { background:none; border:0; color:var(--primary-color,#03a9f4); cursor:pointer; font:inherit; padding:2px; }
-.pickrow { display:flex; align-items:center; gap:10px; padding:8px 6px; border-radius:10px; cursor:pointer; }
+.pickrow { display:flex; align-items:center; gap:10px; padding:8px 6px; border-radius:12px; cursor:pointer; }
 .pickrow ha-icon { color:var(--secondary-text-color); flex:0 0 auto; }
 .pickrow.on ha-icon { color:var(--primary-color,#03a9f4); }
 .pickrow:not(.on) .pname { opacity:.55; }
@@ -2876,7 +3005,7 @@ ha-card.labels .viewhead button.btn { flex-direction:column; gap:0; padding:4px 
 .rimport .btnrow { justify-content:flex-end; }
 #rPhotoRow { margin:4px 2px 2px; }
 #rPhotoRow .btn.on { color:var(--primary-color,#03a9f4); }
-.redithint { font-size:.85em; padding:6px 10px; border-radius:10px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); margin:4px 2px; }
+.redithint { font-size:.85em; padding:6px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); margin:4px 2px; }
 .rrow .iconbtn { align-self:center; }
 .rrow.editing { outline:2px solid var(--primary-color,#03a9f4); }
 .storelist { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
@@ -3201,7 +3330,7 @@ function showGarTable(card, tcard = null) {
     .gar { width:100%; max-width:none; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; }
     .gar .gh { display:flex; align-items:center; gap:12px; margin:0 0 12px; }
     .gar .gback { width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
-    .gar .gic { width:36px; height:36px; flex:none; border-radius:10px; display:flex; align-items:center; justify-content:center; background:#ef6c00; color:#fff; --mdc-icon-size:20px; }
+    .gar .gic { width:36px; height:36px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#ef6c00; color:#fff; --mdc-icon-size:20px; }
     .gar .gt { font-size:20px; font-weight:600; min-width:0; }
     .gar h2 { font-size:20px; margin:4px 0 10px; }
     .gar .sub { color:var(--secondary-text-color); font-size:13px; margin:0 0 10px; }
@@ -6320,7 +6449,7 @@ ${(() => {
     const on = (this._accOpen || {})[g] === k;
     const emo = { "mdi:sync": "🔁", "mdi:import": "📥", "mdi:clipboard-text-outline": "📋", "mdi:file-delimited-outline": "📄", "mdi:calendar-sync": "🗓️", "mdi:broom": "🧹", "mdi:delete-sweep-outline": "🧽", "mdi:delete-forever-outline": "🗑️", "mdi:nuke": "💣", "mdi:format-text": "🏷️", "mdi:check": "✔️", "mdi:format-size": "🔠", "mdi:view-dashboard-outline": "🧩", "mdi:eye-outline": "👁️", "mdi:download": "⬇️", "mdi:backup-restore": "♻️", "mdi:cloud-download-outline": "🥫", "mdi:sync-circle": "🔄", "mdi:information-outline": "ℹ️", "mdi:email-edit-outline": "✉️", "mdi:chart-donut": "📊", "mdi:speedometer": "⏱️" }[icon] || "📁";
     // exakt die gleichen Bauteile wie die Hauptgruppen der Einstellungen (lgbox / lgroup / gem) – sieht darum überall genau so aus wie sie
-    return `<div class="lgbox xacc ${on ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="acc-toggle" data-g="${g}" data-k="${k}" aria-expanded="${on}"><span class="gem">${emo}</span><span class="grow"><b>${title}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button><div class="xacc-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
+    return `<div class="lgbox xacc ${on ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="acc-toggle" data-g="${g}" data-k="${k}" aria-expanded="${on}"><span class="gem" style="--gc:${color}">${emo}</span><span class="grow"><b>${title}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button><div class="xacc-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
   }
 
   // 📥 Import & Sicherung: Rezepte aus Datei, andere Apps, Backup
@@ -6491,7 +6620,7 @@ ${(() => {
       const pre = await this._ws({ type: "einkaufsliste/import/catalog", text, preview: true });
       if (!pre.rows) { this._toast("Keine Produkte erkannt – eine Zeile pro Produkt, der Name zuerst"); return; }
       const first = (pre.sample || []).join(", ");
-      if (!elConfirm(`${pre.rows} Produkte erkannt${pre.exists ? ` (${pre.exists} gibt es schon und werden übersprungen)` : ""}: ${first}${pre.rows > 5 ? " …" : ""}. In den Katalog übernehmen?`)) return;
+      if (!await elConfirm(`${pre.rows} Produkte erkannt${pre.exists ? ` (${pre.exists} gibt es schon und werden übersprungen)` : ""}: ${first}${pre.rows > 5 ? " …" : ""}. In den Katalog übernehmen?`)) return;
       const res = await this._ws({ type: "einkaufsliste/import/catalog", text, make_categories: !!this.$("csvCats")?.checked });
       this._toast(`📄 ${res.added} Produkte im Katalog`);
       this._xferResult(`<p class="hint">✅ ${res.added} Produkte übernommen${res.exists ? `, ${res.exists} gab es schon` : ""}${res.codes_added ? ` · Barcodes: ${res.codes_added}` : ""}${res.codes_skipped ? ` (${res.codes_skipped}× gehörte der Barcode schon zu einem anderen Produkt)` : ""}${res.categories_made ? ` · neue Kategorien: ${res.categories_made}` : ""}${res.failed ? ` · ${res.failed} nicht möglich (Name leer oder zu lang)` : ""}.</p>`);
@@ -6801,7 +6930,7 @@ ${(() => {
   }
 
   async _grocySyncClear() {
-    if (!elConfirm("Verbindung zu Grocy entfernen? Der Schlüssel wird gelöscht, der Abgleich stoppt. Deine Liste und Produkte bleiben.")) return;
+    if (!await elConfirm("Verbindung zu Grocy entfernen? Der Schlüssel wird gelöscht, der Abgleich stoppt. Deine Liste und Produkte bleiben.")) return;
     try {
       await this._ws({ type: "einkaufsliste/grocy/clear" });
       this._toast("🔗 Verbindung entfernt");
@@ -6878,7 +7007,7 @@ ${(() => {
   }
 
   async _xferRestore(file) {
-    if (!elConfirm(`„${file.name}“ einspielen?\n\nDas ersetzt ALLES, was jetzt da ist (Liste, Rezepte, Produkte, Fotos …).`)) return;
+    if (!await elConfirm(`„${file.name}“ einspielen?\n\nDas ersetzt ALLES, was jetzt da ist (Liste, Rezepte, Produkte, Fotos …).`)) return;
     this._xferResult(`<p class="hint">⏳ Spiele ein …</p>`);
     try {
       const r = await this._hass.fetchWithAuth("/api/einkaufsliste/sicherung", { method: "POST", body: file, headers: { "Content-Type": "application/zip" } });
@@ -7587,7 +7716,7 @@ ${(() => {
         <div id="rFormSlot"></div>
         <div id="rItems"></div>
         <h3 class="rsub"><ha-icon icon="mdi:stove"></ha-icon>Backofen &amp; Co.
-          <button class="btn rimportbtn" type="button" data-act="gar" title="Gar-Zeiten">⏲️ Gar-Zeiten</button></h3>
+          <button class="btn rimportbtn" type="button" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon>Gar-Zeiten</button></h3>
         <div id="rHeat"></div>
         <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
         <h3 class="rsub"><ha-icon icon="mdi:chef-hat"></ha-icon>Zubereitung</h3>
@@ -8039,7 +8168,7 @@ ${(() => {
       if (i.basic) o.basic = true;
       return o;
     });
-    if (this.$("inName").value.trim() && !elConfirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
+    if (this.$("inName").value.trim() && !await elConfirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
     const heat = (dr.heat || []).filter((h) => h.mode || h.temp || h.minutes || h.note)
       .map((h) => ({ device: h.device || "Backofen", mode: h.mode || null, temp: h.temp ? Number(h.temp) : null,
         minutes: h.minutes ? Number(h.minutes) : null, minutes_to: h.minutes_to ? Number(h.minutes_to) : null, preheat: !!h.preheat, note: h.note || null }));
@@ -8365,10 +8494,10 @@ ${(() => {
       Object.assign(ov.style, { overflowY: "auto", justifyContent: "flex-start", touchAction: "pan-y" });
       const tab = this._activeTab;
       const cur = this._fixedStore || (tab !== "all" && tab !== "none" && this._store(tab) ? tab : "");
-      ov.innerHTML = `<div style="max-width:460px;width:100%"><div style="font:600 19px Roboto,sans-serif;margin-bottom:6px">${esc(elT("🛒 Das habe ich gelesen"))}</div>
+      ov.innerHTML = `<div style="max-width:460px;width:100%"><div style="font:600 18px Roboto,sans-serif;margin-bottom:6px">${esc(elT("🛒 Das habe ich gelesen"))}</div>
         <div style="color:#bbb;font-size:14px;margin-bottom:8px">${esc(elT("Eine Zeile = ein Artikel. Steht eine Zeile wie „Aldi“ oder „Aldi:“ davor, gehören die Artikel darunter zu diesem Geschäft. Bitte kurz prüfen und verbessern – Handschrift ist für die Texterkennung schwer."))}</div>
-        <textarea rows="10" style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee">${esc(text)}</textarea>
-        <select style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:10px;border:1px solid #555;background:#1e1e1e;color:#eee;margin-top:8px">
+        <textarea rows="10" style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:12px;border:1px solid #555;background:#1e1e1e;color:#eee">${esc(text)}</textarea>
+        <select style="width:100%;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px;border-radius:12px;border:1px solid #555;background:#1e1e1e;color:#eee;margin-top:8px">
           <option value="">${esc(elT("🤷 Egal wo"))}</option>${this._data.stores.map((st) => `<option value="${esc(st.id)}" ${st.id === cur ? "selected" : ""}>${esc(st.name)}</option>`).join("")}</select>
         <div class="abtn" style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px"></div></div>`;
       const ta = ov.querySelector("textarea"), sel = ov.querySelector("select");
@@ -8729,7 +8858,7 @@ ${(() => {
     let idx = Math.min(start, count() - 1);
     const ov = makeOverlay({ title: "📷 " + label });
     const img = document.createElement("img");
-    Object.assign(img.style, { maxWidth: "100%", maxHeight: "66vh", borderRadius: "14px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
+    Object.assign(img.style, { maxWidth: "100%", maxHeight: "66vh", borderRadius: "16px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
     const cap = document.createElement("div");
     Object.assign(cap.style, { font: "500 17px Roboto, sans-serif", marginTop: "12px", textAlign: "center" });
     const nav = document.createElement("div");
@@ -8793,7 +8922,7 @@ ${(() => {
     });
     bClose.onclick = close;
     bDel.onclick = async () => {
-      if (!elConfirm("Dieses Foto löschen?")) return;
+      if (!await elConfirm("Dieses Foto löschen?")) return;
       try {
         await this._ws({ type: "einkaufsliste/photo/remove", name: key, index: idx });
         for (const k of [...this._photoCache.keys()]) if (k.startsWith(key + "#")) this._photoCache.delete(k);
@@ -8906,12 +9035,12 @@ ${(() => {
       ov.innerHTML = `<style>
         .sp { width:100%; max-width:${asPage ? "none" : "560px"}; ${asPage ? "--sp-text:var(--primary-text-color); --sp-mute:var(--secondary-text-color); --sp-card:var(--card-background-color, #fff); --sp-line:var(--divider-color, rgba(127,127,127,.35)); --sp-fline:var(--divider-color, rgba(127,127,127,.5)); --sp-bar:rgba(127,127,127,.25); --sp-err:var(--error-color,#db4437);" : "--sp-text:#eee; --sp-mute:#aaa; --sp-card:#1e1e1e; --sp-line:#333; --sp-fline:#444; --sp-bar:#2a2a2a; --sp-err:#ff8a80;"} color:var(--sp-text); font:15px/1.5 Roboto, sans-serif; }
         .sp .sp-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
-        .sp h2 { font-size:21px; margin:6px 0; } .sp h3 { font-size:16px; margin:16px 0 6px; }
+        .sp h2 { font-size:20px; margin:6px 0; } .sp h3 { font-size:16px; margin:16px 0 6px; }
         .sp-tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:8px 0 12px; }
-        .sp-tabs button, .sp-q { background:var(--sp-card); color:var(--sp-text); border:1px solid var(--sp-line); border-radius:10px; padding:10px; font:inherit; cursor:pointer; }
+        .sp-tabs button, .sp-q { background:var(--sp-card); color:var(--sp-text); border:1px solid var(--sp-line); border-radius:12px; padding:10px; font:inherit; cursor:pointer; }
         .sp-tabs button.on, .sp-q.on { background:#1e88e5; border-color:#1e88e5; color:#fff; font-weight:600; }
         .sp-q-row { display:flex; gap:6px; margin-bottom:8px; } .sp-q { flex:1; padding:8px 6px; }
-        .sp select, .sp input { width:100%; box-sizing:border-box; font:inherit; font-size:max(16px,1em); padding:10px 12px; border-radius:10px; border:1px solid var(--sp-fline); background:var(--sp-card); color:var(--sp-text); ${asPage ? "" : "color-scheme:dark;"} }
+        .sp select, .sp input { width:100%; box-sizing:border-box; font:inherit; font-size:max(16px,1em); padding:10px 12px; border-radius:12px; border:1px solid var(--sp-fline); background:var(--sp-card); color:var(--sp-text); ${asPage ? "" : "color-scheme:dark;"} }
         .sp-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
         .sp-l { display:block; margin:10px 0 4px; color:var(--sp-mute); font-size:14px; }
         .sp-hint { color:var(--sp-mute); } .sp small { color:var(--sp-mute); }
@@ -8920,7 +9049,7 @@ ${(() => {
         .sp-total { background:var(--sp-card); border:1px solid var(--sp-line); border-radius:12px; padding:12px 14px; margin:6px 0; display:grid; grid-template-columns:1fr auto; gap:0 10px; }
         .sp-total b { font-size:24px; } .sp-total small { grid-column:1 / -1; }
         .sp-bt { display:flex; justify-content:space-between; gap:10px; }
-        .sp-b { background:var(--sp-bar); border-radius:6px; height:10px; margin:4px 0 2px; overflow:hidden; } .sp-b i { display:block; height:100%; border-radius:6px; }
+        .sp-b { background:var(--sp-bar); border-radius:8px; height:10px; margin:4px 0 2px; overflow:hidden; } .sp-b i { display:block; height:100%; border-radius:8px; }
         .sp-bar, .sp-month { margin:8px 0; }
         .sp-e { display:grid; grid-template-columns:1fr auto auto auto; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--sp-line); }
         .sp-x { background:none; border:0; color:var(--sp-mute); cursor:pointer; font-size:15px; padding:6px; }
@@ -8983,7 +9112,7 @@ ${(() => {
         this._toast("🧾 Eingetragen");
         cur = "stats"; f.quick = "month"; f.who = ""; f.store = ""; loaded = false; draw(); load();
       } else if (act === "del") {
-        if (!elConfirm("Diesen Einkauf aus dem Protokoll löschen?")) return;
+        if (!await elConfirm("Diesen Einkauf aus dem Protokoll löschen?")) return;
         try { await this._ws({ type: "einkaufsliste/purchases/remove", id: b.dataset.id }); } catch (_) { return; }
         entries = entries.filter((e) => e.id !== b.dataset.id);
         draw();
@@ -9040,13 +9169,13 @@ ${(() => {
     ov.innerHTML = `<style>
       .elg { ${asPage ? "--g-text:var(--primary-text-color); --g-strong:var(--primary-text-color); --g-mute:var(--secondary-text-color); --g-card:var(--card-background-color, #fff); --g-line:var(--divider-color, rgba(127,127,127,.3)); --g-key:rgba(127,127,127,.2); --g-field:var(--card-background-color, #fff); --g-fline:var(--divider-color, rgba(127,127,127,.4)); --g-btn:rgba(127,127,127,.18);" : `--g-text:${dk ? "#eee" : "#222"}; --g-strong:${dk ? "#fff" : "#000"}; --g-mute:${dk ? "#aaa" : "#666"}; --g-card:${dk ? "#1e1e1e" : "#fff"}; --g-line:${dk ? "#333" : "#d6d6d6"}; --g-key:${dk ? "#333" : "#e4e4e4"}; --g-field:${dk ? "#111" : "#fff"}; --g-fline:${dk ? "#444" : "#bbb"}; --g-btn:${dk ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)"};`}
         width:100%; max-width:${asPage ? "none" : "640px"}; color:var(--g-text); font:15px/1.5 Roboto, sans-serif; }
-      .elg h2 { font-size:21px; margin:6px 0 4px; display:flex; align-items:center; gap:8px; }
+      .elg h2 { font-size:20px; margin:6px 0 4px; display:flex; align-items:center; gap:8px; }
       .elg .elg-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
       .elg .elg-sub { color:var(--g-mute); margin:0 0 12px; font-size:14px; }
       .elg-sec { border:1px solid var(--g-line); border-radius:12px; margin:10px 0 0; overflow:hidden; } /* wie die Hauptgruppen der Einstellungen */
       .elg-sec summary { cursor:pointer; padding:10px 12px; font-weight:600; font-size:16px; list-style:none; display:flex; align-items:center; gap:12px; background:color-mix(in srgb, var(--g-strong) 3%, transparent); }
       .elg-sec[open] summary { border-bottom:1px solid var(--g-line); }
-      .elg-ic { flex:none; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:19px; background:color-mix(in srgb, var(--g-strong) 7%, transparent); }
+      .elg-ic { flex:none; width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; background:color-mix(in srgb, var(--g-strong) 7%, transparent); }
       .elg-tt { flex:1; min-width:0; } .elg-tt b { display:block; } .elg-tt small { display:block; font-weight:400; font-size:12.5px; color:var(--g-mute); }
       .elg-row { margin:12px 0 2px; }
       .elg-sec summary::-webkit-details-marker { display:none; }
@@ -9054,7 +9183,7 @@ ${(() => {
       .elg-sec[open] summary::after { transform:rotate(225deg); margin-bottom:-4px; }
       .elg-sec > div { padding:8px 12px 12px; }
       .elcredits { text-align:center; } .elcredits p { margin:8px 0; }
-      .ellogo { background:#fff; border-radius:14px; padding:10px; display:inline-block; max-width:100%; }
+      .ellogo { background:#fff; border-radius:16px; padding:10px; display:inline-block; max-width:100%; }
       .ellogo img { display:block; max-width:100%; width:280px; height:auto; }
       .elcbtns { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
       .elcbtn.pp { display:inline-flex; align-items:center; gap:8px; background:#0070BA; color:#fff; border:2px solid #003087; font-weight:700; }
@@ -9064,15 +9193,15 @@ ${(() => {
       .elg-sec ul, .elg-sec ol { margin:4px 0; padding-left:20px; }
       .elg-sec li { margin:4px 0; }
       .elg b { color:var(--g-strong); }
-      .elg .elg-k { display:inline-block; background:var(--g-key); border-radius:6px; padding:0 6px; }
-      .elg .elg-url { width:100%; box-sizing:border-box; font:14px monospace; padding:9px 10px; border-radius:10px; border:1px solid var(--g-fline); background:var(--g-field); color:var(--g-text); margin:6px 0; }
+      .elg .elg-k { display:inline-block; background:var(--g-key); border-radius:8px; padding:0 6px; }
+      .elg .elg-url { width:100%; box-sizing:border-box; font:14px monospace; padding:9px 10px; border-radius:12px; border:1px solid var(--g-fline); background:var(--g-field); color:var(--g-text); margin:6px 0; }
       .elg .elg-search { margin:0 0 10px; display:flex; align-items:center; flex-wrap:wrap; }
       .elg .elg-search .elg-q { flex:1; width:auto; min-width:0; }
       .elg .elg-none { flex-basis:100%; }
       .elg .elg-q { width:100%; box-sizing:border-box; font:16px Roboto, sans-serif; padding:10px 12px; border-radius:12px; border:1px solid var(--g-fline); background:var(--g-card); color:var(--g-text); }
       .elg .elg-none { color:var(--g-mute); margin:8px 2px; }
       .elg-sec[hidden] { display:none; }
-      .elg .elg-copy { font:inherit; font-weight:600; color:#fff; background:#03a9f4; border:0; border-radius:10px; padding:9px 16px; cursor:pointer; }
+      .elg .elg-copy { font:inherit; font-weight:600; color:#fff; background:#03a9f4; border:0; border-radius:12px; padding:9px 16px; cursor:pointer; }
     </style>
     ${kind === "settings" ? this._guideSettings(sec) : this._guideUser(sec, appSec)}`;
     // 📖 Alle Kapitel zu – geht eins auf, klappt das vorige zu (bei der Suche bleiben alle Treffer offen)
@@ -9313,7 +9442,7 @@ ${(() => {
     const head = document.createElement("div");
     Object.assign(head.style, { ...wrapW, display: "flex", alignItems: "center", gap: "10px" });
     const title = document.createElement("div");
-    title.textContent = `👨‍🍳 ${r.name}`;
+    { const ti = document.createElement("ha-icon"); ti.setAttribute("icon", "mdi:chef-hat"); ti.style.cssText = "--mdc-icon-size:24px;flex:none;"; const tn = document.createElement("span"); tn.textContent = r.name; title.append(ti, tn); title.style.display = "flex"; title.style.alignItems = "center"; title.style.gap = "8px"; }
     Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
     const bGar = ovIconButton("mdi:pot-steam-outline"), bClose = ovIconButton("mdi:close"), bPhoto = ovIconButton("mdi:image-multiple-outline"), bTimer = ovIconButton("mdi:timer-outline");
     bTimer.title = elT("Timer"); bTimer.style.marginRight = "14px"; // etwas Luft zum Foto-Symbol
@@ -9324,7 +9453,7 @@ ${(() => {
     head.append(title, bTimer, bPhoto, bGar, bClose);
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
-    heatBox.innerHTML = heat.map((h) => `<div style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 17px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
+    heatBox.innerHTML = heat.map((h) => `<div style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 16px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
     const pos = document.createElement("div");
     Object.assign(pos.style, { color: "#aaa", font: "600 16px Roboto,sans-serif", margin: "6px 0 10px" });
     const text = document.createElement("div");
@@ -9351,8 +9480,8 @@ ${(() => {
     let pers = r.servings ? (this._cookPers[r.id] || r.servings) : null;
     const renderIng = () => {
       const f = pers && r.servings ? pers / r.servings : 1;
-      const bar = r.servings ? `<div style="margin-bottom:10px;font:600 17px Roboto,sans-serif">👥 für ${pers} ${esc(servLabel(r.servings_unit, pers))}${pers === r.servings ? "" : ` <small style="color:#aaa;font-weight:400">(Rezept: ${r.servings})</small>`}</div>` : "";
-      ing.innerHTML = bar + r.items.map((i) => { const q = scaleQty(i.quantity, f); return `• ${esc([q, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:6px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}`; }).join("<br>");
+      const bar = r.servings ? `<div style="margin-bottom:10px;font:600 16px Roboto,sans-serif">👥 für ${pers} ${esc(servLabel(r.servings_unit, pers))}${pers === r.servings ? "" : ` <small style="color:#aaa;font-weight:400">(Rezept: ${r.servings})</small>`}</div>` : "";
+      ing.innerHTML = bar + r.items.map((i) => { const q = scaleQty(i.quantity, f); return `• ${esc([q, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:8px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}`; }).join("<br>");
     };
     renderIng();
     main.append(left, ing);
@@ -9448,7 +9577,7 @@ ${(() => {
           if (at !== idx) return; // inzwischen weitergeblättert
           const img = document.createElement("img");
           img.src = src;
-          Object.assign(img.style, { maxWidth: "100%", maxHeight: "40vh", borderRadius: "14px" });
+          Object.assign(img.style, { maxWidth: "100%", maxHeight: "40vh", borderRadius: "16px" });
           pic.append(img);
           pic.style.display = "block";
         }).catch(() => { /* kein Foto – kein Problem */ });
@@ -9540,7 +9669,7 @@ ${(() => {
       .tmw { width:100%; max-width:560px; margin:0 auto; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; display:flex; flex-direction:column; gap:14px; }
       .tmw .gh { display:flex; align-items:center; gap:12px; margin:0; }
       .tmw .gback { width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
-      .tmw .gic { width:36px; height:36px; flex:none; border-radius:10px; display:flex; align-items:center; justify-content:center; background:#26a69a; color:#fff; --mdc-icon-size:20px; }
+      .tmw .gic { width:36px; height:36px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#26a69a; color:#fff; --mdc-icon-size:20px; }
       .tmw .gt { font-size:20px; font-weight:600; min-width:0; }
       .tmw input[type=text] { width:100%; box-sizing:border-box; padding:14px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.5)); background:var(--card-background-color, #fff); color:var(--primary-text-color); font:500 18px Roboto,sans-serif; }
       .tmw .pre, .tmw .adj { display:flex; flex-wrap:wrap; gap:8px; }
@@ -9608,6 +9737,21 @@ ${(() => {
     x.type = "button"; x.textContent = "✕"; x.title = done ? "Timer wegmachen" : "Timer abbrechen";
     Object.assign(x.style, { border: "none", background: "rgba(255,255,255,.18)", color: "inherit", borderRadius: "999px", width: "26px", height: "26px", cursor: "pointer", font: "14px Roboto,sans-serif" });
     x.onclick = (e) => { e.stopPropagation(); EL_ALARMED.delete(t.id); this._ws({ type: "einkaufsliste/timer/cancel", timer_id: t.id }).catch(() => {}); };
+    if (done) { // ➕ noch eine Minute dranhängen: der fertige Timer geht weg, ein neuer mit 1 Minute (gleicher Name) startet
+      const plus = document.createElement("button");
+      plus.type = "button"; plus.textContent = EL_LANG !== "de" ? "+1 min" : "+1 Min"; plus.title = EL_LANG !== "de" ? "Add one more minute" : "Noch eine Minute";
+      Object.assign(plus.style, { border: "none", background: "rgba(255,255,255,.28)", color: "inherit", borderRadius: "999px", height: "26px", padding: "0 10px", cursor: "pointer", font: "700 13px Roboto,sans-serif" });
+      plus.onclick = async (e) => {
+        e.stopPropagation();
+        this._audioPrime();
+        EL_ALARMED.delete(t.id);
+        try {
+          await this._ws({ type: "einkaufsliste/timer/cancel", timer_id: t.id });
+          await this._ws({ type: "einkaufsliste/timer/start", seconds: 60, label: t.label, ...(t.recipe_id ? { recipe_id: t.recipe_id } : {}), ...(t.step ? { step: t.step } : {}) });
+        } catch (_) { /* Meldung kommt von _ws */ }
+      };
+      chip.append(plus);
+    }
     chip.append(x);
     return chip;
   }
@@ -9723,7 +9867,7 @@ ${(() => {
     const pre = document.createElement("textarea");
     pre.value = text;
     pre.readOnly = true;
-    Object.assign(pre.style, { width: "100%", height: "38vh", boxSizing: "border-box", background: "#111", color: "#eee", border: "1px solid #333", borderRadius: "10px", padding: "10px", font: "14px/1.45 Roboto,sans-serif" });
+    Object.assign(pre.style, { width: "100%", height: "38vh", boxSizing: "border-box", background: "#111", color: "#eee", border: "1px solid #333", borderRadius: "12px", padding: "10px", font: "14px/1.45 Roboto,sans-serif" });
     const row = document.createElement("div");
     Object.assign(row.style, { display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "12px" });
     const wa = document.createElement("a");
@@ -9793,7 +9937,7 @@ ${(() => {
     const day = (iso) => { if (!iso) return ""; const d = new Date(iso); return `${WD_SHORT[pyWd(d)]}. ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`; };
     if (this._openPage) { // 🏷️ als Seite IN der Karte (Pfeil zurück, Farben der Karte)
       this._openPage({ key: "offers", title: "Angebote", icon: "mdi:tag-outline", color: "#d81b60", build: (body) => {
-        body.innerHTML = `<div style="font:600 17px Roboto,sans-serif;margin:2px 0 10px">${titleHtml}</div>
+        body.innerHTML = `<div style="font:600 16px Roboto,sans-serif;margin:2px 0 10px">${titleHtml}</div>
         ${list.map((o, n) => `<div style="padding:10px 0;border-top:1px solid var(--divider-color, rgba(127,127,127,.35))"><div style="display:flex;gap:12px;align-items:center">
           ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
           <div style="flex:1;min-width:0">
@@ -9812,7 +9956,7 @@ ${(() => {
     Object.assign(ov.style, { justifyContent: "flex-start", overflowY: "auto", touchAction: "auto" });
     const card = document.createElement("div");
     Object.assign(card.style, { background: "#1e1e1e", borderRadius: "16px", padding: "18px", maxWidth: "460px", width: "100%", marginTop: "4vh", lineHeight: "1.45" });
-    card.innerHTML = `<div style="font:600 19px Roboto,sans-serif;margin-bottom:10px">${titleHtml}</div>
+    card.innerHTML = `<div style="font:600 18px Roboto,sans-serif;margin-bottom:10px">${titleHtml}</div>
       ${list.map((o, n) => `<div style="padding:10px 0;border-top:1px solid #333"><div style="display:flex;gap:12px;align-items:center">
         ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
         <div style="flex:1;min-width:0">
@@ -9976,14 +10120,14 @@ ${(() => {
     const ns = { A: "#038141", B: "#85bb2f", C: "#fecb02", D: "#ee8100", E: "#e63e11" };
     const list = (arr) => (arr?.length ? arr.map((x) => esc(x)).join(", ") : "–");
     if (!db?.found) {
-      card.innerHTML = `<div style="font:600 17px Roboto,sans-serif">Keine Daten gefunden 🤷</div><div style="color:#bbb;margin-top:6px">Die Produkt-Datenbank kennt Barcode ${esc(code)} (noch) nicht.</div>`;
+      card.innerHTML = `<div style="font:600 16px Roboto,sans-serif">Keine Daten gefunden 🤷</div><div style="color:#bbb;margin-top:6px">Die Produkt-Datenbank kennt Barcode ${esc(code)} (noch) nicht.</div>`;
     } else {
       const low = (x) => String(x || "").trim().toLowerCase();
       const nameDiff = low(own.name) !== low(db.name), noteDiff = low(own.note) !== low(db.note);
       const grid = "display:grid;grid-template-columns:74px 1fr 1fr;gap:8px;margin:4px 0;align-items:start";
       const row = (label, mine, theirs, id, diff) => `<div style="${grid}"><span style="color:#999">${label}</span><span>${esc(mine || "–")}</span><span>${esc(theirs || "–")}${diff ? `<label style="display:block;margin-top:4px;color:#ddd"><input type="checkbox" id="${id}" checked> übernehmen</label>` : `<span style="display:block;color:#888;font-size:12px">stimmt überein ✅</span>`}</span></div>`;
       card.innerHTML = `
-        <div style="font:600 19px Roboto,sans-serif;margin-bottom:10px">🗄️ Daten aus der Datenbank</div>
+        <div style="font:600 18px Roboto,sans-serif;margin-bottom:10px">🗄️ Daten aus der Datenbank</div>
         <div style="${grid};color:#bbb;font-size:13px"><span></span><b>Deine Daten</b><b>Datenbank</b></div>
         ${row("Name", own.name, db.name, "dbName", nameDiff)}${row("Notiz", own.note, db.note, "dbNote", noteDiff)}
         ${ask ? "" : `<div style="${grid}"><span style="color:#999">Foto</span><span style="color:#bbb;font-size:13px">${this._hasPhoto(key) ? "Foto vorhanden" : "noch keins"}</span><span><label style="display:block;color:#ddd"><input type="checkbox" id="dbPhoto" checked> neu holen</label><span style="display:block;color:#888;font-size:12px">Das Datenbank-Foto wird ersetzt, deine eigenen bleiben, nichts kommt doppelt dazu.</span></span></div>`}
@@ -10021,7 +10165,7 @@ ${(() => {
       const card = document.createElement("div");
       Object.assign(card.style, { background: "#1e1e1e", borderRadius: "16px", padding: "18px", maxWidth: "460px", width: "100%", marginTop: "4vh", lineHeight: "1.45" });
       const cb = (id, label, hint, on) => `<label style="display:block;margin:10px 0 2px;color:#eee"><input type="checkbox" id="${id}" ${on ? "checked" : ""}> <b>${label}</b></label><div style="color:#999;font-size:12px;margin-left:24px">${hint}</div>`;
-      card.innerHTML = `<div style="font:600 19px Roboto,sans-serif;margin-bottom:6px">🔄 Alles neu holen</div>
+      card.innerHTML = `<div style="font:600 18px Roboto,sans-serif;margin-bottom:6px">🔄 Alles neu holen</div>
         <div style="color:#bbb">Für alle <b>${n}</b> Produkte mit Barcode – das geht nacheinander und kann etwas dauern. Was soll neu aus der Datenbank kommen?</div>
         ${cb("bkPhoto", "Foto", "Neueres Foto ersetzt das alte Datenbank-Foto. Deine eigenen Fotos bleiben.", true)}
         ${cb("bkName", "Name", "Heißt das Produkt dort anders, wird es umbenannt (kann Produkte zusammenführen).", false)}
@@ -10029,10 +10173,10 @@ ${(() => {
         <div style="margin-top:10px;padding:6px 8px;border-radius:8px;background:color-mix(in srgb, #f9a825 16%, transparent)">✏️ Deine Eigene Notiz bleibt immer, wie sie ist.</div>`;
       const go = ovButton("Los geht’s", true);
       go.style.marginTop = "14px";
-      go.onclick = () => {
+      go.onclick = async () => {
         const sel = { photo: !!card.querySelector("#bkPhoto").checked, name: !!card.querySelector("#bkName").checked, note: !!card.querySelector("#bkNote").checked };
         if (!sel.photo && !sel.name && !sel.note) { this._toast("Bitte mindestens etwas auswählen."); return; }
-        if ((sel.name || sel.note) && !elConfirm(`Wirklich für bis zu ${n} Produkte ${[sel.name ? "den Namen" : "", sel.note ? "die Notiz" : ""].filter(Boolean).join(" und ")} aus der Datenbank übernehmen?\n\nDas ändert Produkte im Katalog und lässt sich nicht automatisch zurücknehmen.`)) return;
+        if ((sel.name || sel.note) && !await elConfirm(`Wirklich für bis zu ${n} Produkte ${[sel.name ? "den Namen" : "", sel.note ? "die Notiz" : ""].filter(Boolean).join(" und ")} aus der Datenbank übernehmen?\n\nDas ändert Produkte im Katalog und lässt sich nicht automatisch zurücknehmen.`)) return;
         ov.remove();
         resolve(sel);
       };
@@ -10063,15 +10207,15 @@ ${(() => {
     const ns = { A: "#038141", B: "#85bb2f", C: "#fecb02", D: "#ee8100", E: "#e63e11" };
     const list = (arr) => (arr?.length ? arr.map((x) => esc(x)).join(", ") : "–");
     card.innerHTML = info.found ? `
-      <div style="font:600 19px Roboto,sans-serif;margin-bottom:2px">${esc(info.name || item.name)}</div>
+      <div style="font:600 18px Roboto,sans-serif;margin-bottom:2px">${esc(info.name || item.name)}</div>
       <div style="color:#bbb;margin-bottom:12px">${esc([info.brand, info.quantity].filter(Boolean).join(" · ") || "")}</div>
-      ${info.nutriscore ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="background:${ns[info.nutriscore]};color:#fff;font:700 22px Roboto,sans-serif;border-radius:10px;padding:4px 14px">${info.nutriscore}</span><span>Nutri-Score</span></div>` : `<div style="color:#bbb;margin-bottom:12px">Kein Nutri-Score bekannt</div>`}
+      ${info.nutriscore ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="background:${ns[info.nutriscore]};color:#fff;font:700 22px Roboto,sans-serif;border-radius:12px;padding:4px 14px">${info.nutriscore}</span><span>Nutri-Score</span></div>` : `<div style="color:#bbb;margin-bottom:12px">Kein Nutri-Score bekannt</div>`}
       <div><b>⚠️ Allergene:</b> ${list(info.allergens)}</div>
       <div><b>Kann Spuren enthalten:</b> ${list(info.traces)}</div>
       ${info.labels?.length ? `<div><b>🏷️</b> ${list(info.labels)}</div>` : ""}
       ${info.ingredients ? `<details style="margin-top:10px"><summary style="cursor:pointer">Zutaten anzeigen</summary><div style="color:#ccc;font-size:13px;margin-top:6px">${esc(info.ingredients)}</div></details>` : ""}
       <div style="color:#888;font-size:12px;margin-top:12px">Quelle: ${esc(info.source)} · Barcode ${esc(info.code)} · Angaben ohne Gewähr</div>`
-      : `<div style="font:600 17px Roboto,sans-serif">Keine Infos gefunden 🤷</div><div style="color:#bbb;margin-top:6px">Die Produkt-Datenbank kennt Barcode ${esc(codes[0])} (noch) nicht.</div>`;
+      : `<div style="font:600 16px Roboto,sans-serif">Keine Infos gefunden 🤷</div><div style="color:#bbb;margin-top:6px">Die Produkt-Datenbank kennt Barcode ${esc(codes[0])} (noch) nicht.</div>`;
     const b = ovButton("Schließen", true);
     b.style.marginTop = "14px";
     b.onclick = () => ov.remove();
@@ -10276,10 +10420,10 @@ ${(() => {
     ov.innerHTML = `<style>
       .cw { width:100%; max-width:520px; font:15px/1.4 Roboto,sans-serif; color:${C.fg}; display:flex; flex-direction:column; gap:10px; }
       .cw h2 { margin:6px 0 0; font-size:20px; }
-      .cw input[type=text], .cw select { width:100%; box-sizing:border-box; padding:12px; border-radius:10px; border:1px solid ${C.inBd}; background:${C.inBg}; color:${C.fg}; font:16px Roboto,sans-serif; }
+      .cw input[type=text], .cw select { width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1px solid ${C.inBd}; background:${C.inBg}; color:${C.fg}; font:16px Roboto,sans-serif; }
       .cw .chips { display:flex; flex-wrap:wrap; gap:6px; } .cw .chips button { border:0; border-radius:999px; padding:6px 12px; background:${C.chip}; color:${C.fg}; font:14px Roboto,sans-serif; cursor:pointer; }
       .cw .chips button.on { background:#43a047; color:#fff; } .cw .sw { width:34px; height:34px; border-radius:50%; padding:0 !important; border:3px solid transparent !important; }
-      .cw .sw.on { border-color:${C.swOn} !important; } .cw .pv { background:#fff; border-radius:10px; padding:6px; display:none; } .cw .pv svg { display:block; margin:0 auto; max-height:130px; width:100%; }
+      .cw .sw.on { border-color:${C.swOn} !important; } .cw .pv { background:#fff; border-radius:12px; padding:6px; display:none; } .cw .pv svg { display:block; margin:0 auto; max-height:130px; width:100%; }
       .cw .row { display:flex; gap:8px; flex-wrap:wrap; } .cw .hint { color:${C.hint}; font-size:13px; margin:0; }
     </style><div class="cw">${asPage ? "" : `<h2>${card ? "✏️ Karte ändern" : "➕ Neue Karte"}</h2>`}
       <div class="row" id="cdTop"></div>
@@ -10349,7 +10493,7 @@ ${(() => {
     if (card) {
       const del = mkBtn("🗑️ Löschen");
       del.onclick = async () => {
-        if (!elConfirm(`Karte „${card.name}“ wirklich löschen?`)) return;
+        if (!await elConfirm(`Karte „${card.name}“ wirklich löschen?`)) return;
         try { await this._ws({ type: "einkaufsliste/card/remove", card_id: card.id }); this._cardPhotoForget(card.id); finish(); } catch (_) { /* Meldung kam schon */ }
       };
       bar.append(del);
@@ -10712,7 +10856,7 @@ ${(() => {
     // 📏 Nur eine Zahl? Selbst gewählte Einheit dran – sonst nimmt Home Assistant die gemerkte Einheit (oder x)
     if (msg.quantity && isBareQty(msg.quantity) && this._qtyUnit) msg.quantity = qtyFmt(msg.quantity, this._qtyUnit);
     // 🤔 Wirklich so viel? (nur bei ungewöhnlich großen Mengen)
-    if (msg.quantity && qtyOdd(msg.name, msg.quantity) && !elConfirm(`Wirklich ${msg.quantity} „${msg.name}“?`)) {
+    if (msg.quantity && qtyOdd(msg.name, msg.quantity) && !await elConfirm(`Wirklich ${msg.quantity} „${msg.name}“?`)) {
       this.$("inQty")?.focus?.();
       return;
     }
@@ -10755,7 +10899,7 @@ ${(() => {
     } catch (_) { /* Meldung kam schon */ }
   }
 
-  _onClick(e) {
+  async _onClick(e) {
     if (this._dragged) { e.stopPropagation(); e.preventDefault(); return; } // war nur Ziehen
     if (this._swiped && Date.now() - this._swiped < 400 && e.target.closest?.("#list")) { e.stopPropagation(); e.preventDefault(); return; } // 👆 gerade gewischt: der Klick danach zählt nicht
     const el = e.target.closest("[data-act]");
@@ -10907,7 +11051,7 @@ ${(() => {
       case "item-delete": {
         const itemId = el.closest(".delrow").dataset.id;
         const item = this._data.items.find((i) => i.id === itemId);
-        if (!item || !elConfirm(`„${item.name}“ endgültig löschen? Dann ist es auch aus „Erledigt“ weg.`)) return;
+        if (!item || !await elConfirm(`„${item.name}“ endgültig löschen? Dann ist es auch aus „Erledigt“ weg.`)) return;
         this._ws({ type: "einkaufsliste/item/remove", item_id: itemId })
           .then(() => { this._toast(`🗑️ „${item.name}“ gelöscht`); setTimeout(() => this._renderDelList(), 50); })
           .catch(() => {});
@@ -11275,7 +11419,7 @@ ${(() => {
           if (owner) {
             const [on, ot = ""] = owner.split("|");
             const label = `${on.replace(/^./, (c) => c.toUpperCase())}${ot ? ` – ${ot.replace(/^./, (c) => c.toUpperCase())}` : ""}`;
-            if (!elConfirm(`Dieser Barcode gehört schon zu „${label}“.\n\nDort wegnehmen und „${item.name}${item.note ? ` – ${item.note}` : ""}“ zuordnen?`)) return;
+            if (!await elConfirm(`Dieser Barcode gehört schon zu „${label}“.\n\nDort wegnehmen und „${item.name}${item.note ? ` – ${item.note}` : ""}“ zuordnen?`)) return;
           }
           // 🔎 Vorher die Produkt-Datenbank fragen (frisch, nicht das Gemerkte) – ohne Netz einfach überspringen
           let db = null;
@@ -11437,7 +11581,7 @@ ${(() => {
         elCopy(this._errorsText(), null).then(() => this._toast("📋 Fehler-Protokoll kopiert"));
         break;
       case "errors-clear":
-        if (!elConfirm("Das Fehler-Protokoll leeren?")) break;
+        if (!await elConfirm("Das Fehler-Protokoll leeren?")) break;
         this._ws({ type: "einkaufsliste/errors/clear" }).then((res) => { this._errData = res; this._loadErrors(); this._toast("🧹 Fehler-Protokoll geleert"); }).catch(() => {});
         break;
       case "app-copy": {
@@ -11492,7 +11636,7 @@ ${(() => {
         this._takePhoto(el.dataset.name, null);
         break;
       case "photo-remove":
-        if (!elConfirm(`Foto von „${this._pkLabel(el.dataset.name)}“ löschen?`)) return;
+        if (!await elConfirm(`Foto von „${this._pkLabel(el.dataset.name)}“ löschen?`)) return;
         this._ws({ type: "einkaufsliste/photo/remove", name: el.dataset.name })
           .then(() => { this._toast("Foto gelöscht 🗑️"); this._editing = null; this._renderList(); }).catch(() => {});
         break;
@@ -11608,7 +11752,7 @@ ${(() => {
       case "prod-old-del": {
         const keys = this._oldKeys || [];
         if (!keys.length) break;
-        if (!elConfirm(`${keys.length} Produkte ganz löschen?\n\nWeg sind dann: Fotos, Barcodes und Vorschläge dieser Produkte. Sie stehen weder auf der Einkaufsliste noch in einem Rezept.`)) break;
+        if (!await elConfirm(`${keys.length} Produkte ganz löschen?\n\nWeg sind dann: Fotos, Barcodes und Vorschläge dieser Produkte. Sie stehen weder auf der Einkaufsliste noch in einem Rezept.`)) break;
         (async () => {
           let n = 0;
           for (const key of keys) {
@@ -11768,7 +11912,7 @@ ${(() => {
           const clash = nk !== key && (this._products || []).find((x) => x.key === nk);
           if (clash) {
             const cn = clash.name + (clash.note ? ` – ${clash.note}` : "");
-            if (!elConfirm(`„${cn}“ gibt es schon.\n\nBeide zusammenführen? Artikel, Rezepte, Fotos und Barcodes ziehen zu „${cn}“ um. Das lässt sich nicht rückgängig machen.`)) break;
+            if (!await elConfirm(`„${cn}“ gibt es schon.\n\nBeide zusammenführen? Artikel, Rezepte, Fotos und Barcodes ziehen zu „${cn}“ um. Das lässt sich nicht rückgängig machen.`)) break;
             this._ws({ type: "einkaufsliste/product/merge", from_key: key, into_key: clash.key })
               .then(() => { this._toast(`🧲 Zusammengeführt mit „${cn}“`); this._prodEdit = null; this._loadProducts(); }).catch(() => {});
             break;
@@ -11790,7 +11934,7 @@ ${(() => {
         const a = (this._products || []).find((x) => x.key === from), b = (this._products || []).find((x) => x.key === into);
         if (!a || !b) break;
         const an = a.name + (a.note ? ` · ${a.note}` : ""), bn = b.name + (b.note ? ` · ${b.note}` : "");
-        if (!elConfirm(`„${an}“ in „${bn}“ aufgehen lassen?\n\nArtikel, Rezepte, Fotos und Barcodes ziehen um. Das lässt sich nicht rückgängig machen.`)) break;
+        if (!await elConfirm(`„${an}“ in „${bn}“ aufgehen lassen?\n\nArtikel, Rezepte, Fotos und Barcodes ziehen um. Das lässt sich nicht rückgängig machen.`)) break;
         this._ws({ type: "einkaufsliste/product/merge", from_key: from, into_key: into })
           .then(() => { this._toast(`🧲 „${an}“ ist jetzt bei „${bn}“`); this._prodMerge = null; this._prodEdit = null; this._loadProducts(); }).catch(() => {});
         break;
@@ -11801,7 +11945,7 @@ ${(() => {
         const label = prod ? prod.name + (prod.note ? ` · ${prod.note}` : "") : key;
         const where = (this._data.recipes || []).filter((r) => r.items.some((ri) => this._pk(ri.name, ri.note) === key)).map((r) => r.name);
         const onList = this._data.items.filter((i) => !i.recipe_id && this._pk(i.name, i.note) === key).length;
-        if (!elConfirm(`„${label}“ ganz löschen?\n\nWeg sind dann: Fotos, Barcodes, Vorschlag${onList ? ` und ${onList}× auf der Einkaufsliste` : ""}.`
+        if (!await elConfirm(`„${label}“ ganz löschen?\n\nWeg sind dann: Fotos, Barcodes, Vorschlag${onList ? ` und ${onList}× auf der Einkaufsliste` : ""}.`
           + (where.length ? `\n\n⚠️ Steht noch in: ${where.join(", ")}. Dort bleibt es stehen, bis du das Rezept änderst.` : ""))) break;
         this._ws({ type: "einkaufsliste/product/remove", key })
           .then(() => { this._toast(`🗑️ „${label}“ gelöscht`); this._prodEdit = null; this._loadProducts(); }).catch(() => {});
@@ -11818,7 +11962,7 @@ ${(() => {
         break;
       case "bc-remove": {
         const code = el.dataset.code;
-        if (!elConfirm(`Barcode ${code} löschen? Das Produkt bleibt.`)) break;
+        if (!await elConfirm(`Barcode ${code} löschen? Das Produkt bleibt.`)) break;
         this._ws({ type: "einkaufsliste/barcode/remove", code })
           .then(() => { this._toast("▥ Barcode gelöscht"); this._loadProducts(); }).catch(() => {});
         break;
@@ -11854,7 +11998,7 @@ ${(() => {
           .catch(() => {});
         break;
       case "log-clear":
-        if (!elConfirm("Den ganzen Verlauf löschen? Das geht nicht rückgängig.")) break;
+        if (!await elConfirm("Den ganzen Verlauf löschen? Das geht nicht rückgängig.")) break;
         this._ws({ type: "einkaufsliste/log/clear" }).then(() => { this._toast("🧽 Verlauf geleert"); this._loadLog(); }).catch(() => {});
         break;
       case "cleanup-now":
@@ -11870,7 +12014,7 @@ ${(() => {
         const n = this._data.items.filter((i) => (scope === "all" || i.checked)
           && (!store || (store === "none" ? !i.store_id : i.store_id === store))).length;
         if (!n) { this._toast("Da ist nichts zu löschen"); return; }
-        if (!elConfirm(`${n} Artikel ${scope === "all" ? "(offene und erledigte)" : "(nur erledigte)"} ${where} von der Liste löschen?\n\nDer Katalog bleibt. Das geht nicht rückgängig.`)) return;
+        if (!await elConfirm(`${n} Artikel ${scope === "all" ? "(offene und erledigte)" : "(nur erledigte)"} ${where} von der Liste löschen?\n\nDer Katalog bleibt. Das geht nicht rückgängig.`)) return;
         const msg = { type: "einkaufsliste/items/purge", scope };
         if (store) msg.store = store;
         this._ws(msg).then((r) => this._toast(`Gelöscht: ${r.removed} Artikel 🧽`)).catch(() => this._toast("Das hat nicht geklappt"));
@@ -11878,20 +12022,20 @@ ${(() => {
       }
       case "catalog-wipe":
         if (!this._hass?.user?.is_admin) return;
-        if (!elConfirm("Wirklich die Einkaufsliste UND den ganzen Katalog löschen – mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern?\n\nDas geht nicht rückgängig. Rezepte, Geschäfte, Kategorien und Einstellungen bleiben.")) return;
-        if (!elConfirm("Letzte Frage: Wirklich ALLES löschen?")) return;
+        if (!await elConfirm("Wirklich die Einkaufsliste UND den ganzen Katalog löschen – mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern?\n\nDas geht nicht rückgängig. Rezepte, Geschäfte, Kategorien und Einstellungen bleiben.")) return;
+        if (!await elConfirm("Letzte Frage: Wirklich ALLES löschen?")) return;
         this._ws({ type: "einkaufsliste/catalog/wipe" })
           .then((r) => this._toast(`Gelöscht: ${r.items} Artikel, ${r.products} Produkte 🧹`)).catch(() => this._toast("Das hat nicht geklappt"));
         break;
       case "factory-reset":
         if (!this._hass?.user?.is_admin) return;
-        if (!elConfirm("Wirklich ALLES zurücksetzen?\n\nEinkaufsliste, Katalog, Fotos, Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten, Grocy- und To-do-Verbindungen und alle Schalter werden gelöscht. Danach ist die Einkaufsliste wie frisch installiert. Nur die PIN bleibt.\n\nDas geht nicht rückgängig.")) return;
-        if (!elConfirm("Letzte Frage: Wirklich ALLES auf Werkseinstellungen setzen?")) return;
+        if (!await elConfirm("Wirklich ALLES zurücksetzen?\n\nEinkaufsliste, Katalog, Fotos, Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten, Grocy- und To-do-Verbindungen und alle Schalter werden gelöscht. Danach ist die Einkaufsliste wie frisch installiert. Nur die PIN bleibt.\n\nDas geht nicht rückgängig.")) return;
+        if (!await elConfirm("Letzte Frage: Wirklich ALLES auf Werkseinstellungen setzen?")) return;
         this._ws({ type: "einkaufsliste/factory_reset" })
           .then((r) => this._toast(`Alles zurückgesetzt: ${r.items} Artikel, ${r.recipes} Rezepte, ${r.files} Fotos 💣`)).catch(() => this._toast("Das hat nicht geklappt"));
         break;
       case "cleanup-all":
-        if (!elConfirm("Wirklich ALLE offenen Artikel abhaken?")) return;
+        if (!await elConfirm("Wirklich ALLE offenen Artikel abhaken?")) return;
         this._ws({ type: "einkaufsliste/cleanup", force: true })
           .then((r) => this._toast(`${r.checked} Artikel abgehakt ✅`)).catch(() => {});
         break;
@@ -11931,7 +12075,7 @@ ${(() => {
           const used = this._data.items.filter((i) => i[field] === entry.id).length;
           if (used) txt += ` ${used} Artikel landen dann bei „${kind === "stores" ? "Egal wo" : "Ohne Kategorie"}“.`;
         }
-        if (!elConfirm(txt)) return;
+        if (!await elConfirm(txt)) return;
         this._ws({ type: "einkaufsliste/group/remove", kind, group_id: entry.id }).then(() => this._renderSettings()).catch(() => {});
         break;
       }
@@ -12013,7 +12157,7 @@ ${(() => {
         const sel = row.querySelector("select");
         const opt = sel?.selectedOptions?.[0];
         if (sel && opt?.dataset.need) { this._toast("Erst oben eine Auswahl treffen 😉"); break; }
-        if (/🗑️|löschen/i.test(opt?.textContent || "") && !elConfirm(`Wirklich so beheben?\n\n${opt.textContent.trim()}`)) break;
+        if (/🗑️|löschen/i.test(opt?.textContent || "") && !await elConfirm(`Wirklich so beheben?\n\n${opt.textContent.trim()}`)) break;
         this._ws({ type: "einkaufsliste/check", fixes: { [row.dataset.id]: sel?.value || "" } }).then((res) => {
           this._toast(res.fixed ? "🛠️ Erledigt" : "Das hatte sich schon erledigt 👍");
           this._runCheck();
@@ -12053,7 +12197,7 @@ ${(() => {
         });
         const n = Object.keys(fixes).length;
         if (!n) { this._toast("Erst anhaken, was repariert werden soll 😉"); break; }
-        if (!elConfirm(`${n} ${n === 1 ? "Sache" : "Sachen"} so reparieren, wie ausgewählt?`)) break;
+        if (!await elConfirm(`${n} ${n === 1 ? "Sache" : "Sachen"} so reparieren, wie ausgewählt?`)) break;
         this._ws({ type: "einkaufsliste/check", fixes }).then((res) => {
           this._toast(`🛠️ ${res.fixed} ${res.fixed === 1 ? "Sache" : "Sachen"} repariert`);
           this._runCheck();
@@ -12142,7 +12286,7 @@ ${(() => {
       case "sync-off": {
         const ent = el.dataset.ent;
         if (!ent) break;
-        if (!elConfirm("Diese Liste nicht mehr automatisch herüberholen?\n\nDie Artikel in deiner Einkaufsliste bleiben.")) break;
+        if (!await elConfirm("Diese Liste nicht mehr automatisch herüberholen?\n\nDie Artikel in deiner Einkaufsliste bleiben.")) break;
         this._ws({ type: "einkaufsliste/todo_sync/remove", entity_id: ent })
           .then(() => { if (this._syncSel === ent) this._syncSel = null; this._toast("🔁 Diese Liste wird nicht mehr herübergeholt"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
         break;
@@ -12254,7 +12398,7 @@ ${(() => {
       }
       case "recipe-unapply": {
         const r = this._recipe(el.closest(".rtools, .recipe").dataset.id);
-        if (!r || !elConfirm(`Alle offenen Zutaten von „${r.name}“ von der Liste nehmen?`)) break;
+        if (!r || !await elConfirm(`Alle offenen Zutaten von „${r.name}“ von der Liste nehmen?`)) break;
         this._ws({ type: "einkaufsliste/recipe/unapply", recipe_id: r.id })
           .then((res) => this._toast(`🧺 ${res.removed} Zutaten von „${r.name}“ von der Liste genommen`))
           .catch(() => {});
@@ -12332,7 +12476,7 @@ ${(() => {
         const rows = this._stepRowsOf(dr), at = rows.findIndex((r) => String(r.k) === el.dataset.k);
         if (at < 0) break;
         const r = rows[at];
-        if (r.o != null && this._hasPhoto(this._stepPhotoKey(dr.id, r.o)) && !elConfirm("Dieser Schritt hat Fotos. Schritt trotzdem löschen? (Die Fotos gehen beim Speichern mit weg.)")) break;
+        if (r.o != null && this._hasPhoto(this._stepPhotoKey(dr.id, r.o)) && !await elConfirm("Dieser Schritt hat Fotos. Schritt trotzdem löschen? (Die Fotos gehen beim Speichern mit weg.)")) break;
         rows.splice(at, 1);
         this._renderSteps();
         break;
@@ -12354,7 +12498,7 @@ ${(() => {
       }
       case "sphoto-newdel": {
         const row = (this._stepRowsOf(this._draft) || []).find((r) => String(r.k) === el.dataset.k);
-        if (row?.np?.length && elConfirm(row.np.length === 1 ? "Das neue Foto wieder entfernen?" : `Die ${row.np.length} neuen Fotos wieder entfernen?`)) {
+        if (row?.np?.length && await elConfirm(row.np.length === 1 ? "Das neue Foto wieder entfernen?" : `Die ${row.np.length} neuen Fotos wieder entfernen?`)) {
           row.np = [];
           this._renderSteps();
         }
@@ -12381,7 +12525,7 @@ ${(() => {
         break;
       }
       case "rphoto-remove":
-        if (!this._draft || !elConfirm("Die neuen, noch nicht gespeicherten Fotos verwerfen?")) break;
+        if (!this._draft || !await elConfirm("Die neuen, noch nicht gespeicherten Fotos verwerfen?")) break;
         this._draft.newPhotos = [];
         this._renderRecipePhoto();
         break;
@@ -12421,7 +12565,7 @@ ${(() => {
         this._saveRecipe();
         break;
       case "recipe-delete": {
-        if (!elConfirm(`Rezept „${this._draft.name}“ wirklich löschen?`)) return;
+        if (!await elConfirm(`Rezept „${this._draft.name}“ wirklich löschen?`)) return;
         this._ws({ type: "einkaufsliste/recipe/remove", recipe_id: this._draft.id })
           .then(() => { this._draft = null; this._view = "settings"; this._renderAll(); }).catch(() => {});
         break;
