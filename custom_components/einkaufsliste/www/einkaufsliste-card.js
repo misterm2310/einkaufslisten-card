@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.3";
+const EL_VERSION = "2.76.17-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,8 +375,10 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
-  ["Neu: 🏬 Beim automatischen Aufräumen lassen sich einzelne Geschäfte ausnehmen (⚙️ → Aufräumen → Automatisch aufräumen). Artikel dieser Geschäfte bleiben offen; „Alles abhaken“ von Hand nimmt sie weiterhin mit. Außerdem entfällt im Laden-Modus die Bildschirm-Drehsperre – dafür bitte die Sperre am Handy nutzen.",
-   "New: 🏬 individual stores can be excluded from automatic cleanup (⚙️ → Cleanup → Clean up automatically). Items of those stores stay open; “Check all” by hand still includes them. Also, store mode no longer locks the screen rotation – please use your phone’s own rotation lock."],
+  ["Neu: ⏱️ Auch in den Gar-Zeiten gibt es oben rechts einen Timer-Knopf. Er öffnet das Timer-Fenster (Name optional, 5 Minuten vorgewählt), auch mitten im Kochen.",
+   "New: ⏱️ the cooking times page now has a timer button at the top right too. It opens the timer window (name optional, 5 minutes preselected), also while cooking."],
+  ["Neu: 🏬 Beim automatischen Aufräumen lassen sich einzelne Geschäfte ausnehmen (⚙️ → Aufräumen → Automatisch aufräumen). Artikel dieser Geschäfte bleiben offen (im Reiter des Geschäfts steht unten auch nicht „Nächstes Aufräumen“); „Alles abhaken“ von Hand nimmt sie weiterhin mit. Außerdem entfällt im Laden-Modus die Bildschirm-Drehsperre – dafür bitte die Sperre am Handy nutzen.",
+   "New: 🏬 individual stores can be excluded from automatic cleanup (⚙️ → Cleanup → Clean up automatically). Items of those stores stay open (and the store’s tab shows no “Next cleanup” line); “Check all” by hand still includes them. Also, store mode no longer locks the screen rotation – please use your phone’s own rotation lock."],
   ["Neu: 📐 In der Kochansicht (breit) sind Schritte und Zutaten im Verhältnis 2 zu 1: die Schritte nehmen zwei Drittel, die Zutaten ein Drittel. Außerdem heißt ein Timer ohne eigenen Namen jetzt „Rezept – Schritt 2“ (mit „–“ statt „·“, auch im Sensor)",
    "New: 📐 in the cooking view (wide) steps and ingredients are in a 2 to 1 ratio: the steps take two thirds, the ingredients one third. Also a timer without its own name is now called “Recipe – Schritt 2” (with “–” instead of “·”, also in the sensor)"],
   ["Neu: ⏱️ In der Kochansicht öffnet das Timer-Symbol oben (links neben 📷) ein Timer-Fenster: Name (optional, leer = „Rezept – Schritt 2“), Schnellwahl (1 Min bis 1 Std), die Zeit aus dem Schritt-Text als Vorgabe, − und +, „Timer starten“ und darunter alle Timer. Die Timer-Zeile unter dem Rezeptschritt ist dafür weggefallen. Der Name steht in den Chips, im Sensor, im Ereignis und im Dashboard",
@@ -3162,7 +3164,7 @@ async function elKeepAwake(ov, noVideo) { // noVideo: in der HA-App bringt der V
 }
 
 // ⏲️ Gar-Zeiten: mit `card` als Seite IN der Karte (wie die anderen Seiten), ohne Karte (Koch-Modus) als Vollbild-Fenster
-function showGarTable(card) {
+function showGarTable(card, tcard = null) {
   const en = EL_LANG !== "de";
   const min = en ? "min" : "Min";
   const asPage = !!(card && card._openPage);
@@ -3176,6 +3178,8 @@ function showGarTable(card) {
     .gar .gt { font-size:20px; font-weight:600; min-width:0; }
     .gar h2 { font-size:20px; margin:4px 0 10px; }
     .gar .sub { color:var(--secondary-text-color); font-size:13px; margin:0 0 10px; }
+    .gar .gtimer { display:flex; justify-content:flex-end; margin:0 0 10px; }
+    .gar .gtimer button { font:inherit; font-size:15px; font-weight:600; cursor:pointer; color:var(--primary-text-color); background:var(--card-background-color, #fff); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:8px 14px; }
     .gar .gsearch { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
     .gar .gsearch input { flex:1; width:auto; min-width:0; margin:0; }
     .gar .gerase { background:none; border:0; cursor:pointer; padding:0 6px; line-height:0; color:var(--error-color,#db4437); --mdc-icon-size:22px; }
@@ -3198,6 +3202,7 @@ function showGarTable(card) {
   </style>
   <div class="gar" translate="no">
     ${asPage || fromPage ? "" : `<div class="gh"><button type="button" class="gback" title="${en ? "Back" : "Zurück"}" aria-label="${en ? "Back" : "Zurück"}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:timer-outline"></ha-icon></span><div class="gt">${en ? "Cooking times" : "Gar-Zeiten"}</div></div>`}
+    <div class="gtimer"><button type="button" class="gtbtn" title="${en ? "Start a timer" : "Timer starten"}" aria-label="${en ? "Start a timer" : "Timer starten"}">⏱️ ${en ? "Timer" : "Timer"}</button></div>
     <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
     <div class="gtabs"></div>
     <p class="sub devhint"></p>
@@ -3260,6 +3265,10 @@ function showGarTable(card) {
     if (ov) ov.scrollTop = 0; else host.scrollIntoView?.({ block: "nearest" });
   });
   inp.addEventListener("input", draw);
+  host.querySelector(".gtbtn").onclick = () => { // ⏱️ Timer direkt aus den Gar-Zeiten (ohne Rezept, 5 Minuten vorgewählt)
+    const tc = (card && card._timerWindow ? card : null) || tcard || elPageCard();
+    if (tc) tc._timerWindow({}, 300, 0);
+  };
   const ge = host.querySelector(".gerase");
   inp.addEventListener("input", () => { ge.hidden = !inp.value; });
   ge.onclick = () => { inp.value = ""; ge.hidden = true; draw(); inp.focus(); };
@@ -5622,7 +5631,8 @@ class EinkaufslisteCard extends HTMLElement {
     }
     if (!s || this._view !== "list") { f.hidden = true; if (this.$("footBtns")) this.$("footBtns").hidden = true; return; }
     const shop = !!this._shopMode; // 🛒 Laden-Modus: unten nichts außer „🔊 Vorlesen“ (kein „Nächstes Aufräumen“, keine Knöpfe)
-    f.hidden = !!this._page || shop; // „Nächstes Aufräumen“ steht nur auf der Einkaufsliste selbst, auf keiner Seite sonst
+    const skipTab = s.cleanup_on !== false && (s.cleanup_skip_stores || []).includes(this._activeTab); // 🏬 Reiter eines vom Aufräumen ausgenommenen Geschäfts: keine Aufräum-Zeile
+    f.hidden = !!this._page || shop || skipTab; // „Nächstes Aufräumen“ steht nur auf der Einkaufsliste selbst, auf keiner Seite sonst
     const next = new Date(s.next_cleanup);
     f.innerHTML = (s.cleanup_on === false ? `<ha-icon icon="mdi:broom"></ha-icon><span>Automatisches Aufräumen ist aus</span>`
       : `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`);
@@ -9281,7 +9291,7 @@ ${(() => {
     bTimer.onclick = () => this._timerWindow(r, elStepSeconds(steps[idx]) || 300, finalStep && idx === steps.length ? 0 : idx + 1);
     bPhoto.title = elT("Foto zu diesem Schritt"); bPhoto.style.display = "none";
     bGar.title = elT("Gar-Zeiten");
-    bGar.onclick = () => showGarTable(); // im Koch-Fenster bleibt es ein Fenster (die Seite läge dahinter)
+    bGar.onclick = () => showGarTable(null, this); // im Koch-Fenster bleibt es ein Fenster (die Seite läge dahinter)
     head.append(title, bTimer, bPhoto, bGar, bClose);
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
