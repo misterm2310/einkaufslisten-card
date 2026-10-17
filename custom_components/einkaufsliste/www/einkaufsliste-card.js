@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.19-beta.1";
+const EL_VERSION = "2.76.19-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.18"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -377,6 +377,10 @@ function elVerCmp(a, b) {
 const EL_BETA_NEWS = [
   ["Neu: 🗂️ ⚙️ → Rezepte besteht jetzt aus aufklappbaren Kästen wie die Einstellungen und die Gar-Zeiten: Neues Rezept, Rezepte, Rezept-Gruppen, Rezepte aus Datei, Wartet auf OK und Wochenplan. Es ist immer nur einer offen, alle starten zu. Der Wochenplan hat einen eigenen Kasten und steht nicht mehr unter „Rezepte“.",
    "New: 🗂️ ⚙️ → Recipes now consists of collapsible boxes like the settings and the cooking times: New recipe, Recipes, Recipe groups, Recipes from file, Waiting for OK and Weekly plan. Only one is open at a time, all start closed. The weekly plan has its own box and is no longer under “Recipes”."],
+  ["Neu: 🔒 Die Karte lässt sich nicht mehr mit zwei Fingern zoomen (auch unten bei „Erledigt“ nicht). Fotos zoomen weiter. Auf der Angebote-Seite öffnet ein Tipp aufs Produktbild es einfach groß.",
+   "New: 🔒 the card can no longer be pinch-zoomed (not even down at “Done”). Photos still zoom. On the offers page a tap on the product picture simply opens it large."],
+  ["Neu: 📍 „Laden verlassen“ kommt schneller: Die Pause dauert nur noch 2 Minuten statt 3, und sie zählt ab dem Moment, in dem Home Assistant dich als „weg“ gemeldet hat. Hat die Karte im Hintergrund geschlafen, schaltet sie beim Öffnen sofort um (Reiter „Alle“, von selbst eingeschalteter Laden-Modus aus).",
+   "New: 📍 “leaving the store” is detected faster: the pause is only 2 minutes instead of 3 and counts from the moment Home Assistant reported you as “away”. If the card slept in the background it switches right away when opened (tab “All”, store mode that switched on by itself goes off)."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -1302,7 +1306,7 @@ function elZoomable(img, onSwipe) {
   return box;
 }
 
-function showPhotoOverlay(src, title) {
+function showPhotoOverlay(src, title, plain = false) { // plain = nur groß ansehen, ohne Zoom (Tipp irgendwo schließt)
   const ov = makeOverlay();
   ov.style.cursor = "zoom-out";
   const cap = document.createElement("div");
@@ -1313,9 +1317,10 @@ function showPhotoOverlay(src, title) {
   img.src = src;
   img.alt = title;
   Object.assign(img.style, { maxWidth: "100%", maxHeight: "80vh" });
-  const zbox = elZoomable(img);
+  const zbox = plain ? img : elZoomable(img);
+  if (plain) Object.assign(img.style, { borderRadius: "16px", boxShadow: "0 10px 40px rgba(0,0,0,.6)", background: "#fff", objectFit: "contain" });
   const hint = document.createElement("div");
-  hint.textContent = elT("Zoomen: zwei Finger oder doppelt tippen · daneben tippen = schließen");
+  hint.textContent = elT(plain ? "Tippen zum Schließen" : "Zoomen: zwei Finger oder doppelt tippen · daneben tippen = schließen");
   Object.assign(hint.style, { color: "#aaa", font: "13px Roboto, sans-serif", marginTop: "10px" });
   if (ov.dataset.elpage) ov.append(cap, zbox, hint);
   else { Object.assign(cap.style, { color: "#fff", marginTop: "14px", marginBottom: "0" }); ov.append(zbox, cap, hint); }
@@ -2499,10 +2504,10 @@ async function editImage(file, max = 900, quality = 0.8) {
 }
 
 const STYLE = `
-:host { display:block; }
+:host { display:block; touch-action:pan-x pan-y; } /* 🔒 kein Zwei-Finger-Zoomen der Seite (Fotos haben ihren eigenen Zoom) */
 :host([dark]) { color-scheme:dark; }
 :host([dark]) option, :host([dark]) optgroup { background-color:var(--card-background-color, #1c1c1c); color:var(--primary-text-color, #e1e1e1); }
-ha-card { display:block; padding:12px 12px 8px; overflow:hidden; }
+ha-card { display:block; padding:12px 12px 8px; overflow:hidden; touch-action:pan-x pan-y; }
 /* 🔠 Schriftgröße (👁️ Ansicht) und ausgeblendete Bereiche */
 ha-card.f-s { zoom:.88; } ha-card.f-l { zoom:1.16; }
 ha-card.no-tabs #tabs { display:none; }
@@ -3963,12 +3968,14 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 📍 Nächstes Geschäft: springt auf den Reiter des Geschäfts, bei dem DU gerade bist
+  _myPerson() { // 👤 die Person in Home Assistant, die zu diesem Benutzer gehört
+    const uid = this._hass?.user?.id;
+    return Object.values(this._hass?.states || {}).find((st) => st.entity_id.startsWith("person.") && st.attributes.user_id === uid) || null;
+  }
+
   _nearStore() {
     if (!this._hass || !this._data) return null;
-    const uid = this._hass.user?.id;
-    const person = Object.values(this._hass.states || {}).find(
-      (st) => st.entity_id.startsWith("person.") && st.attributes.user_id === uid
-    );
+    const person = this._myPerson();
     if (!person) return null;
     const { latitude: lat, longitude: lon } = person.attributes;
     let best = null;
@@ -3994,12 +4001,18 @@ class EinkaufslisteCard extends HTMLElement {
     let near = this._nearStore();
     // 📡 Das Handy meldet den Standort nach dem Entsperren oft kurz „weg“ und gleich wieder „im Laden“.
     // Ohne Pause sprang die Liste dabei zurück nach oben (Reiter „Alle“, dann wieder der Laden) –
-    // jetzt zählt „Laden verlassen“ erst, wenn der Standort 3 Minuten lang weg war.
+    // jetzt zählt „Laden verlassen“ erst, wenn der Standort 2 Minuten lang weg war.
+    // ⏱️ Die 2 Minuten laufen ab dem Moment, an dem Home Assistant dich wirklich als „weg“ gemeldet hat – nicht erst ab dem
+    // Moment, in dem die Karte es bemerkt (war sie im Hintergrund eingeschlafen, wartete sie sonst nach dem Öffnen nochmal).
     if (this._lastNear && !near) {
-      this._nearLostAt ||= Date.now();
-      if (Date.now() - this._nearLostAt < 180000) {
+      if (!this._nearLostAt) {
+        const since = Date.parse(this._myPerson()?.last_changed || "");
+        this._nearLostAt = since && since < Date.now() ? since : Date.now();
+      }
+      const lostFor = Date.now() - this._nearLostAt;
+      if (lostFor < 120000) {
         clearTimeout(this._nearTimer);
-        this._nearTimer = setTimeout(() => this._autoStore(), 185000 - (Date.now() - this._nearLostAt));
+        this._nearTimer = setTimeout(() => this._autoStore(), 125000 - lostFor);
         near = this._lastNear;
       }
     } else {
@@ -10366,7 +10379,7 @@ ${(() => {
       this._openPage({ key: "offers", title: "Angebote", icon: "mdi:tag-outline", color: "#d81b60", build: (body) => {
         body.innerHTML = `<div style="font:600 16px Roboto,sans-serif;margin:2px 0 10px">${titleHtml}</div>
         ${list.map((o, n) => `<div style="padding:10px 0;border-top:1px solid var(--divider-color, rgba(127,127,127,.35))"><div style="display:flex;gap:12px;align-items:center">
-          ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
+          ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" data-big="${n}" title="Antippen = groß" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none;cursor:zoom-in" onerror="this.remove()">` : ""}
           <div style="flex:1;min-width:0">
             <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span data-ecolor="#f9a825" style="font-size:12px;color:#fb8c00">🔀 <span>Ähnlich</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
             <div style="color:var(--secondary-text-color);font-size:13px" translate="no">${esc(o.d || "")}${o.q ? ` · ${esc(o.q)}` : ""}</div>
@@ -10376,6 +10389,7 @@ ${(() => {
         </div><div style="text-align:right;margin-top:6px"><button type="button" class="btn primary" data-take="${n}">${esc(elT(btnLabel))}</button></div></div>`).join("")}
         <div style="color:var(--secondary-text-color);font-size:12px;margin-top:10px">Quelle: Marktguru (inoffiziell) · Angaben ohne Gewähr · kann jederzeit aufhören zu funktionieren</div>`;
         body.querySelectorAll("[data-take]").forEach((b) => { b.onclick = () => onTake(list[Number(b.dataset.take)], () => this._closePage()); });
+        body.querySelectorAll("img[data-big]").forEach((im) => { im.onclick = () => { const o = list[Number(im.dataset.big)]; showPhotoOverlay(im.src, o?.d || o?.r || "", true); }; }); // 🖼️ Bild antippen = einfach groß
       } });
       return;
     }
@@ -10385,7 +10399,7 @@ ${(() => {
     Object.assign(card.style, { background: "#1e1e1e", borderRadius: "16px", padding: "18px", maxWidth: "460px", width: "100%", marginTop: "4vh", lineHeight: "1.45" });
     card.innerHTML = `<div style="font:600 18px Roboto,sans-serif;margin-bottom:10px">${titleHtml}</div>
       ${list.map((o, n) => `<div style="padding:10px 0;border-top:1px solid #333"><div style="display:flex;gap:12px;align-items:center">
-        ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
+        ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" data-big="${n}" title="Antippen = groß" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none;cursor:zoom-in" onerror="this.remove()">` : ""}
         <div style="flex:1;min-width:0">
           <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span data-ecolor="#f9a825" style="font-size:12px;color:#ffb74d">🔀 <span>Ähnlich</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
           <div style="color:#ccc;font-size:13px" translate="no">${esc(o.d || "")}${o.q ? ` · ${esc(o.q)}` : ""}</div>
@@ -10396,6 +10410,7 @@ ${(() => {
       <div style="color:#888;font-size:12px;margin-top:10px">Quelle: Marktguru (inoffiziell) · Angaben ohne Gewähr · kann jederzeit aufhören zu funktionieren</div>`;
     const close = () => ov.remove();
     card.querySelectorAll("[data-take]").forEach((b) => { b.onclick = () => onTake(list[Number(b.dataset.take)], close); });
+    card.querySelectorAll("img[data-big]").forEach((im) => { im.onclick = () => { const o = list[Number(im.dataset.big)]; showPhotoOverlay(im.src, o?.d || o?.r || "", true); }; }); // 🖼️ Bild antippen = einfach groß
     const b = ovButton("Schließen", true);
     b.style.marginTop = "14px";
     b.onclick = close;
