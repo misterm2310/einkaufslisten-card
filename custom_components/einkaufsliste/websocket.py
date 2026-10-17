@@ -44,6 +44,9 @@ def async_register(hass: HomeAssistant) -> None:
         ws_recipe_apply,
         ws_recipe_unapply,
         ws_recipe_import,
+        ws_proposal_add,
+        ws_proposal_accept,
+        ws_proposal_reject,
         ws_photo_set,
         ws_photo_get,
         ws_photo_remove,
@@ -480,7 +483,7 @@ RECIPE_ITEM = vol.Schema(
         vol.Optional("steps"): OPT_STR,
         vol.Optional("heat"): [HEAT_ROW],
         vol.Optional("servings"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=99))),
-        vol.Optional("servings_unit"): vol.In(["persons", "trays"]),
+        vol.Optional("servings_unit"): vol.In(["persons", "trays", "forms"]),
         vol.Optional("group"): vol.Any(None, str),
         vol.Optional("ai"): bool,
     }
@@ -488,6 +491,33 @@ RECIPE_ITEM = vol.Schema(
 @callback
 def ws_recipe_add(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.add_recipe(msg["name"], msg["items"], msg.get("icon"), msg.get("steps"), msg.get("heat"), msg.get("servings"), msg.get("servings_unit"), msg.get("group"), bool(msg.get("ai"))))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/proposal/add",
+        vol.Required("name"): str,
+        vol.Required("text"): str,
+        vol.Optional("by"): OPT_STR,
+    }
+)
+@callback
+def ws_proposal_add(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.add_proposal(msg["name"], msg["text"], msg.get("by")))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/proposal/accept", vol.Required("proposal_id"): str, vol.Optional("recipe_id"): OPT_STR}
+)
+@callback
+def ws_proposal_accept(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.accept_proposal(msg["proposal_id"], msg.get("recipe_id")))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/proposal/reject", vol.Required("proposal_id"): str})
+@websocket_api.async_response
+async def ws_proposal_reject(hass, connection, msg):
+    await _run_async(hass, connection, msg, lambda m: m.async_reject_proposal(msg["proposal_id"]))
 
 
 @websocket_api.websocket_command(
@@ -500,7 +530,7 @@ def ws_recipe_add(hass, connection, msg):
         vol.Optional("steps"): OPT_STR,
         vol.Optional("heat"): [HEAT_ROW],
         vol.Optional("servings"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=99))),
-        vol.Optional("servings_unit"): vol.In(["persons", "trays"]),
+        vol.Optional("servings_unit"): vol.In(["persons", "trays", "forms"]),
         vol.Optional("group"): vol.Any(None, str),
         vol.Optional("step_map"): [vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=999)))],
         vol.Optional("plan"): vol.In(["", "wish", "week"]),

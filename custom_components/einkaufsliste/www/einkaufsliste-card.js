@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.17";
+const EL_VERSION = "2.76.17-beta.18";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -1057,7 +1057,7 @@ function scaleQty(qty, factor) {
 }
 
 // 👥 Personen oder 🍰 Bleche: richtige Wörter für die Anzeige
-const servLabel = (unit, n) => (unit === "trays" ? (n === 1 ? "Blech" : "Bleche") : (n === 1 ? "Person" : "Personen"));
+const servLabel = (unit, n) => (unit === "trays" ? (n === 1 ? "Blech" : "Bleche") : unit === "forms" ? (n === 1 ? "Form" : "Formen") : (n === 1 ? "Person" : "Personen"));
 
 // 🔤 Zutaten A–Z (Ä wie A, groß/klein egal) – genau wie im Backend
 const abcSort = (list) => list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "de", { sensitivity: "base" })
@@ -2176,6 +2176,23 @@ async function elClipboardImage() {
 
 // 🔒 PIN-Eingabe wie am Handy: gibt die getippte PIN zurück (oder null bei „Abbrechen“)
 // card gegeben = als Seite IN der Karte (wie Gar-Zeiten, ← = Abbrechen); sonst altes Vollbild-Fenster
+// ✂️ Vorgeschlagener Rezepttext -> Zutaten (eine pro Zeile) und Schritte. Mit Überschrift „Zubereitung/Schritte/Anleitung“ ist es eindeutig,
+// sonst gelten lange Zeilen und Zeilen mit „1.“ vorn als Schritte, kurze als Zutaten.
+function elSplitRecipeText(text) {
+  const lines = String(text || "").split(/\r?\n/).map((x) => x.replace(/[\u200B-\u200D\uFEFF]/g, "").trim()).filter(Boolean);
+  const isStepHead = (l) => /^(zubereitung|schritte|anleitung|so geht'?s|arbeitsschritte|method|directions|instructions|steps)\s*:?$/i.test(l);
+  const isIngHead = (l) => /^(zutaten|einkaufen|ingredients)\s*:?$/i.test(l);
+  const cut = lines.findIndex(isStepHead);
+  const stepLine = (l) => l.replace(/^\s*(?:\d+[.)]|[-•*])\s+/, "").trim();
+  if (cut >= 0) return { ingredients: lines.slice(0, cut).filter((l) => !isIngHead(l)).join("\n"), steps: lines.slice(cut + 1).map(stepLine).join("\n") };
+  const ing = [], st = [];
+  for (const l of lines) {
+    if (isIngHead(l)) continue;
+    (/^\d+[.)]\s/.test(l) || l.length > 55 || (l.split(/\s+/).length >= 7 && /[.!]$/.test(l)) ? st : ing).push(l);
+  }
+  return { ingredients: ing.join("\n"), steps: st.map(stepLine).join("\n") };
+}
+
 function askPin(title = "🔒 PIN eingeben", card = null) {
   return new Promise((resolve) => {
     const asPage = typeof card?._openPage === "function";
@@ -2514,6 +2531,19 @@ input[hidden] + .tplchips { display:none; }
 @keyframes pulse { 50% { opacity:.3; } }
 #btnLock.expiring { color:#e53935; animation: lockblink 1s steps(2, start) infinite; } #btnLock.expiring ha-icon { color:#e53935; }
 @keyframes lockblink { 50% { opacity:.2; } }
+.gearbtn ha-icon { color:#9e9e9e !important; } .gearbtn.open ha-icon { color:#43a047 !important; } .gearbtn.expiring ha-icon { color:#e53935 !important; animation: lockblink 1s steps(2, start) infinite; } /* ⚙️ Zahnrad in der Kochmütze: grau = gesperrt, grün = per PIN offen, rot blinkend = letzte Minute */
+@media (prefers-reduced-motion: reduce) { .gearbtn.expiring ha-icon { animation:none; } }
+button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:lightbulb-on-outline"] { color:#f9a825; } /* 💡 Rezept vorschlagen */
+.propbox { display:flex; flex-direction:column; gap:6px; margin:8px 0 4px; }
+.propbox[hidden] { display:none; }
+.prop { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:color-mix(in srgb, var(--primary-text-color, #000) 3%, transparent); }
+.prop > ha-icon { flex:none; }
+.prop .pn { flex:1 1 auto; min-width:0; } .prop .pn b { display:block; font-weight:600; } .prop .pn small { display:block; color:var(--secondary-text-color); font-size:.8em; }
+.prop.wait > ha-icon { color:#fb8c00; } .prop.rej > ha-icon { color:#e53935; } .prop.rej { opacity:.75; }
+.prop.rej .pn b { text-decoration:line-through; }
+.prop .pbtns { display:flex; gap:6px; flex:none; flex-wrap:wrap; justify-content:flex-end; }
+.prop .ptxt { color:var(--secondary-text-color); font-size:.85em; white-space:pre-wrap; max-height:3.6em; overflow:hidden; }
+.tab .tbadge { display:inline-block; min-width:1.4em; margin-left:6px; padding:0 6px; border-radius:10px; background:#fb8c00; color:#fff; font-size:.8em; line-height:1.5; text-align:center; }
 @media (prefers-reduced-motion: reduce) { #btnLock.expiring { animation:none; } }
 
 .photobtn .pcount { font-size:10px; font-weight:700; margin-left:1px; }
@@ -2862,13 +2892,13 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .errrow { padding:6px 8px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.07)); margin:4px 0; font-size:.9em; word-break:break-word; }
 .errrow small { color:var(--secondary-text-color); display:block; }
 .strows { display:flex; flex-direction:column; gap:6px; margin:6px 0; }
-.strow { display:flex; flex-wrap:nowrap; align-items:center; gap:6px; padding:4px 6px; border-radius:12px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:var(--card-background-color, var(--ha-card-background, #fff)); }
+.strow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:4px 6px; border-radius:12px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:var(--card-background-color, var(--ha-card-background, #fff)); }
 .strow .stin { flex:1 1 0; border:0; background:none; box-shadow:none; }
 .strow.dropbefore { box-shadow:0 -3px 0 0 var(--primary-color); } .strow.dropafter { box-shadow:0 3px 0 0 var(--primary-color); }
 .strow.dragging { position:relative; z-index:2; opacity:.7; background:var(--secondary-background-color, rgba(127,127,127,.12)); border-radius:12px; }
 .sthandle { flex:none; border:none; background:none; color:var(--secondary-text-color); font-size:1.3em; line-height:1; padding:8px 4px; cursor:grab; touch-action:none; user-select:none; }
 .sthandle:focus-visible { outline:2px solid var(--primary-color); border-radius:8px; }
-.stbtns { display:flex; gap:4px; flex:none; margin-left:auto; }
+.stbtns { display:flex; gap:6px; flex:1 1 100%; justify-content:flex-end; margin-left:0; } /* Symbole unter der Zeile, Text bekommt die volle Breite */
 .stbtns .btn { padding:6px 8px; min-height:0; font-size:.8em; }
 .stnum { flex:none; padding-top:0; min-width:1.6em; text-align:right; color:var(--secondary-text-color); font-size:.9em; }
 .stin { flex:1 1 150px; min-width:0; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:10px 12px; resize:none; overflow:hidden; }
@@ -3039,6 +3069,7 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .rsec > .lgroup > .chev { transition:transform .2s; }
 .rsec.open > .lgroup > .chev { transform:rotate(180deg); }
 .rsec > .lgroup .rimportbtn { margin-left:0; flex:none; }
+.rsec:not(.open) > .lgroup .rimportbtn { display:none; } /* Symbole im Kopf nur, wenn der Kasten offen ist */
 .rsec-b { padding:4px 12px 12px; margin-left:16px; border-left:2px solid color-mix(in srgb, var(--primary-color,#03a9f4) 28%, transparent); }
 .rsec-b[hidden] { display:none; }
 .rimportbtn { margin-left:auto; padding:5px 10px; font-size:.8em; font-weight:400; }
@@ -6048,13 +6079,14 @@ class EinkaufslisteCard extends HTMLElement {
         <p class="hint">⌃⌄ = Reihenfolge der Kategorien. Kategorie antippen = Name, Farbe und Icon ändern. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>`;
       } },
       { key: "recipes", icon: "mdi:chef-hat", title: "Rezepte", info: `${recipes.length ? (recipes.length === 1 ? "1 Rezept" : `${recipes.length} Rezepte`) : "noch keine"} · ${(d.recipe_groups || []).length} Gruppen`, html: () => `
-        ${this._recTab === "groups" || this._recTab === "file" ? "" : `<button class="newrec" type="button" data-act="recipe-new"><ha-icon icon="mdi:chef-hat"></ha-icon><span>Neues Rezept</span><ha-icon icon="mdi:plus-circle-outline"></ha-icon></button>`}
+        ${this._recTab === "groups" || this._recTab === "file" || this._recTab === "wait" ? "" : `<button class="newrec" type="button" data-act="recipe-new"><ha-icon icon="mdi:chef-hat"></ha-icon><span>Neues Rezept</span><ha-icon icon="mdi:plus-circle-outline"></ha-icon></button>`}
         <div class="subtabs">
           <button class="tab ${(this._recTab || "recipes") === "recipes" ? "active" : ""}" data-act="rec-tab" data-tab="recipes"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</button>
           <button class="tab ${this._recTab === "groups" ? "active" : ""}" data-act="rec-tab" data-tab="groups"><ha-icon icon="mdi:tag-multiple-outline"></ha-icon>Rezept-Gruppen</button>
           <button class="tab ${this._recTab === "file" ? "active" : ""}" data-act="rec-tab" data-tab="file"><ha-icon icon="mdi:file-document-outline"></ha-icon>Rezepte aus Datei</button>
+          <button class="tab ${this._recTab === "wait" ? "active" : ""}" data-act="rec-tab" data-tab="wait"><ha-icon icon="mdi:timer-sand"></ha-icon>Wartet auf OK${(d.proposals || []).filter((x) => x.status !== "rejected").length ? `<span class="tbadge">${(d.proposals || []).filter((x) => x.status !== "rejected").length}</span>` : ""}</button>
         </div>
-        ${this._recTab === "file" ? this._recFileHtml() : this._recTab === "groups" ? `
+        ${this._recTab === "wait" ? this._recWaitHtml() : this._recTab === "file" ? this._recFileHtml() : this._recTab === "groups" ? `
 ${(() => {
           // 🏷️ wie bei den Kategorien: erst die Liste, antippen = nur diese Gruppe einstellen
           const gs = d.recipe_groups || [];
@@ -6298,7 +6330,7 @@ ${(() => {
     if (cur.key === "stats") this._loadStats();
     if (cur.key === "errors") this._loadErrors();
     if (cur.key === "products" && this._prodTab !== "delete") { this._renderProducts(); this._loadProducts(); }
-    if (cur.key === "recipes" && this._recTab !== "groups" && this._recTab !== "file") this._renderSetRecipeList();
+    if (cur.key === "recipes" && this._recTab !== "groups" && this._recTab !== "file" && this._recTab !== "wait") this._renderSetRecipeList();
     if (cur.key === "transfer" && this._xferTabNow() === "apps") this._loadTodoLists();
     if (cur.key === "transfer" && this._xferTabNow() === "mail") this._loadMailSources();
     this._renderDelList();
@@ -6462,6 +6494,16 @@ ${(() => {
     const soon = !btn.hidden && pinLeft() <= 60000; // 🔴 die letzte Minute: das offene Schloss blinkt rot – antippen sperrt weiter sofort
     btn.classList.toggle("expiring", soon);
     btn.title = soon ? "Gleich wieder gesperrt – antippen sperrt sofort" : "Einstellungen jetzt sperren";
+    this._updateGearBtn();
+  }
+
+  // ⚙️ Zahnrad der Rezepte-Ansicht: grau (gesperrt / keine PIN), grün (per PIN offen), rot blinkend (letzte Minute)
+  _updateGearBtn() {
+    const open = !!(this._data?.settings?.pin && pinUnlocked());
+    this.shadowRoot?.querySelectorAll(".gearbtn").forEach((g) => {
+      g.classList.toggle("open", open);
+      g.classList.toggle("expiring", open && pinLeft() <= 60000);
+    });
   }
 
   _lockNow() {
@@ -7579,10 +7621,100 @@ ${(() => {
     // Suchfeld nur einmal bauen – sonst springt beim Tippen der Cursor raus
     const aiOn = !!this._data.settings?.ai_on && !this._privacyOn();
     if (!ov.querySelector("#recipeList") || !!ov.querySelector("#recipeSearch") !== count > 0 || !!ov.querySelector('[data-act="ai-cook"]') !== aiOn) {
-      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon><span class="lbl">Was kann ich kochen?</span></button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button><button class="btn" data-act="recipe-settings" title="Einstellungen der Rezepte"><ha-icon icon="mdi:cog-outline" style="color:${SET_COLORS.recipes}"></ha-icon><span class="lbl">Einstellungen</span></button></h3>${
-        count ? this._recipeSearchHtml("recipeSearch") : ""}<div id="recipeList"></div></div>`;
+      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span><button class="btn" data-act="prop-new" title="Rezept vorschlagen" aria-label="Rezept vorschlagen"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><span class="lbl">Rezept vorschlagen</span></button>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon><span class="lbl">Was kann ich kochen?</span></button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button><button class="btn gearbtn" data-act="recipe-settings" title="Einstellungen der Rezepte"><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Einstellungen</span></button></h3>${
+        count ? this._recipeSearchHtml("recipeSearch") : ""}<div id="propBox" class="propbox" hidden></div><div id="recipeList"></div></div>`;
     }
     this._renderRecipeList();
+    this._renderPropBox();
+    this._updateGearBtn();
+  }
+
+  // 📝 Rezept-Vorschläge: Wartende (⏳) und abgelehnte (✖, einen Tag lang) stehen für alle sichtbar über der Rezeptliste
+  _renderPropBox() {
+    const box = this.$("propBox");
+    if (!box) return;
+    const list = (this._data?.proposals || []).filter((p) => p.status !== "rejected" || Date.now() - Date.parse(p.rejected_at || 0) < 864e5);
+    box.hidden = !list.length;
+    box.innerHTML = list.map((p) => p.status === "rejected"
+      ? `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""}</small></span></div>`
+      : `<div class="prop wait"><ha-icon icon="mdi:timer-sand"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>wartet auf OK${p.by ? ` · von ${esc(p.by)}` : ""}</small></span></div>`).join("");
+  }
+
+  // 💡 „Rezept vorschlagen“: Name, Rezept als Text oder Link, dein Name, Foto (alles bis auf Name + Rezept ist freiwillig)
+  _proposeRecipe() {
+    if (this._hass?.connected === false) { this._toast("📴 Vorschlagen geht nur mit Netz"); return; }
+    this._propPhoto = null;
+    let ov = null;
+    this._openPage({ key: "prop", title: "Rezept vorschlagen", icon: "mdi:lightbulb-on-outline", color: "#f9a825", build: (body) => {
+      ov = body;
+      body.innerHTML = `<div class="pgcol">
+        <div class="pgsmall">Schreib dein Rezept einfach auf – als Text oder als Link. Es landet auf der Warteliste und wird erst nach einem OK ins Rezeptbuch übernommen.</div>
+        <input data-pn maxlength="60" placeholder="Name des Rezepts, z. B. Omas Apfelkuchen">
+        <textarea data-pt rows="9" placeholder="Zutaten (eine pro Zeile), danach die Zubereitung&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch)"></textarea>
+        <input data-pb maxlength="40" placeholder="Von wem? (dein Name)">
+        <div class="btnrow" data-ph style="justify-content:flex-start"><button type="button" class="btn" data-pphoto title="Foto vom Rezept oder Produkt" aria-label="Foto vom Rezept oder Produkt"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto vom Rezept oder Produkt</span></button><span class="hint" data-pphint></span></div>
+        <div class="btnrow" style="justify-content:flex-end"><button type="button" class="btn" data-pcancel>Abbrechen</button><button type="button" class="btn primary" data-psend><ha-icon icon="mdi:send-outline"></ha-icon>Vorschlagen</button></div></div>`;
+    } });
+    if (!ov) return;
+    const $ = (sel) => ov.querySelector(sel);
+    $("[data-pb]").value = this._myName() || "";
+    $("[data-pphoto]").onclick = () => { this._photoTarget = { proposalDraft: true, onData: (d) => { this._propPhoto = d; $("[data-pphint]").textContent = "📷 Foto ist dabei"; } }; this._pickFile("photoFile", "📷 Foto zum Vorschlag"); };
+    $("[data-pcancel]").onclick = () => this._closePage();
+    $("[data-psend]").onclick = async () => {
+      const name = $("[data-pn]").value.trim(), text = $("[data-pt]").value.trim(), by = $("[data-pb]").value.trim();
+      if (!name) { $("[data-pn]").classList.add("shake"); return; }
+      if (!text) { $("[data-pt]").classList.add("shake"); return; }
+      const btn = $("[data-psend]"); btn.disabled = true;
+      try {
+        const res = await this._ws({ type: "einkaufsliste/proposal/add", name, text, by: by || null });
+        if (res?.id && this._propPhoto) await this._ws({ type: "einkaufsliste/photo/set", name: `vorschlag#${res.id}`, data: this._propPhoto, add: false }).catch(() => this._toast("📷 Das Foto konnte nicht gespeichert werden"));
+        this._propPhoto = null;
+        this._toast("💡 Danke! Dein Vorschlag wartet jetzt auf ein OK 👍");
+        this._closePage();
+      } catch (_) { btn.disabled = false; /* Meldung kam schon */ }
+    };
+  }
+
+  // 📝 Warteliste in den Rezept-Einstellungen
+  _recWaitHtml() {
+    const list = this._data?.proposals || [];
+    if (!list.length) return `<p class="hint">Im Moment wartet nichts auf ein OK. 🎉 Vorschläge entstehen in der Kochmütze mit dem 💡-Knopf.</p>`;
+    return `<div class="propbox">${list.map((p) => {
+      if (p.status === "rejected") return `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""} · verschwindet nach einem Tag</small></span></div>`;
+      const key = `vorschlag#${p.id}`;
+      return `<div class="prop wait" style="flex-wrap:wrap"><ha-icon icon="mdi:timer-sand"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>wartet auf OK${p.by ? ` · von ${esc(p.by)}` : ""}</small><div class="ptxt" translate="no">${esc(String(p.text || "").slice(0, 200))}</div></span>
+        <span class="pbtns">${this._hasPhoto(key) ? `<button type="button" class="btn" data-act="prop-photo" data-id="${esc(p.id)}" title="Foto ansehen" aria-label="Foto ansehen"><ha-icon icon="mdi:image-outline"></ha-icon></button>` : ""}<button type="button" class="btn" data-act="prop-reject" data-id="${esc(p.id)}" title="Ablehnen" aria-label="Ablehnen"><ha-icon icon="mdi:close" style="color:#e53935"></ha-icon><span class="lbl">Ablehnen</span></button><button type="button" class="btn primary" data-act="prop-check" data-id="${esc(p.id)}" title="Prüfen und freigeben" aria-label="Prüfen und freigeben"><ha-icon icon="mdi:check-bold"></ha-icon><span class="lbl">Prüfen</span></button></span></div>`;
+    }).join("")}</div>`;
+  }
+
+  // ✅ „Prüfen“: den Vorschlag im Rezept-Editor öffnen (Text/Link wird in Zutaten und Schritte zerlegt). Speichern = freigeben.
+  async _checkProposal(id) {
+    const pr = (this._data?.proposals || []).find((x) => x.id === id && x.status !== "rejected");
+    if (!pr) { this._toast("Diesen Vorschlag gibt es nicht mehr."); return; }
+    this._toast("📝 Vorschlag wird vorbereitet …");
+    const text = String(pr.text || "").trim();
+    let items = [], steps = "", image = null;
+    const call = async (t) => { try { return await this._ws({ type: "einkaufsliste/recipe/import", text: t }); } catch (_) { return null; } };
+    if (/^https?:\/\/\S+$/i.test(text)) {
+      const res = await call(text);
+      if (res) { items = res.items || []; steps = res.steps || ""; image = res.image || null; }
+      else this._toast("Der Link ließ sich nicht lesen – bitte Zutaten und Schritte von Hand eintragen.");
+    } else {
+      const sp = elSplitRecipeText(text);
+      steps = sp.steps;
+      if (sp.ingredients) { const res = await call(sp.ingredients); if (res) items = res.items || []; }
+    }
+    this._openRecipe(null);
+    const dr = this._draft;
+    dr.name = pr.name;
+    dr.proposalId = pr.id;
+    dr.items = abcSort(items.map((it) => ({ name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null, store_id: it.store_id || null, category_id: it.category_id || null })));
+    dr.stepRows = this._stepLines(steps).map((t) => ({ k: ++this._stepSeq, t, o: null }));
+    if (this._hasPhoto(`vorschlag#${pr.id}`)) { try { dr.newPhotos = [await this._photoData(`vorschlag#${pr.id}`, 0)]; } catch (_) { /* ohne Foto weiter */ } }
+    else if (image) dr.newPhotos = [image];
+    this._draftRendered = false;
+    this._renderAll();
+    this._toast(`📝 Vorschlag${pr.by ? ` von ${pr.by}` : ""}: kurz prüfen, dann Speichern = freigeben`);
   }
 
   _renderRecipeList() {
@@ -7718,7 +7850,7 @@ ${(() => {
         </select></div>` : ""}`;
     }).join("");
     const pers = r.servings ? `<div class="ppers">
-        <span>${r.servings_unit === "trays" ? "🍕🍰 Wie viele Bleche?" : "👥 Für wie viele Personen?"}</span>
+        <span>${r.servings_unit === "trays" ? "🍕🍰 Wie viele Bleche?" : r.servings_unit === "forms" ? "🥧 Wie viele Formen?" : "👥 Für wie viele Personen?"}</span>
         <button class="iconbtn" data-act="pick-pers" data-d="-1" ${this._pickPers <= 1 ? "disabled" : ""} title="Weniger"><ha-icon icon="mdi:minus"></ha-icon></button>
         <b>${this._pickPers}</b>
         <button class="iconbtn" data-act="pick-pers" data-d="1" ${this._pickPers >= 99 ? "disabled" : ""} title="Mehr"><ha-icon icon="mdi:plus"></ha-icon></button>
@@ -7757,7 +7889,7 @@ ${(() => {
 
   _renderRecipeEditor() {
     const dr = this._draft;
-    if (!this._draftRendered || !this._rsecClosed) this._rsecClosed = new Set(); // neues Rezept: alles aufgeklappt
+    if (!this._draftRendered || !this._rsecClosed) this._rsecClosed = dr.proposalId ? new Set() : new Set(["zut", "ofen", "zub"]); // Start: nur „Eingaben“ offen (beim Prüfen eines Vorschlags alles offen, damit man alles sieht)
     this._draftRendered = true;
     this._parkForm();
     this.$("otherView").innerHTML = `
@@ -7779,12 +7911,13 @@ ${(() => {
         </div>
         <div class="picker" hidden></div>
         <div class="srow rserv">
-          <ha-icon class="prev" icon="${dr.servings_unit === "trays" ? "mdi:tray" : "mdi:account-group-outline"}"></ha-icon>
+          <ha-icon class="prev" icon="${dr.servings_unit === "trays" ? "mdi:tray" : dr.servings_unit === "forms" ? "mdi:cake-variant-outline" : "mdi:account-group-outline"}"></ha-icon>
           <span class="grow">Mengen für</span>
           <input id="rServings" type="number" inputmode="numeric" min="1" max="99" value="${dr.servings || ""}" placeholder="z. B. 4">
           <select id="rServUnit">
-            <option value="persons" ${dr.servings_unit !== "trays" ? "selected" : ""}>👥 Personen</option>
+            <option value="persons" ${dr.servings_unit !== "trays" && dr.servings_unit !== "forms" ? "selected" : ""}>👥 Personen</option>
             <option value="trays" ${dr.servings_unit === "trays" ? "selected" : ""}>🍕🍰 Bleche</option>
+            <option value="forms" ${dr.servings_unit === "forms" ? "selected" : ""}>🥧 Formen</option>
           </select>
         </div>
         <div class="photorow" id="rPhotoRow"></div>
@@ -7821,6 +7954,15 @@ ${(() => {
     this.$("otherView").querySelectorAll(".rsec-h").forEach((h) => h.addEventListener("keydown", (e) => {
       if ((e.key === "Enter" || e.key === " ") && e.target === h) { e.preventDefault(); h.click(); }
     }));
+    { // 🔗 Link vormerken: ein Rezept-Link bei „Zutaten“ steht gleich auch bei „Schritte“ (und umgekehrt) – geladen wird aber getrennt, mit je eigenem „Übernehmen“
+      const isUrl = (v) => /^https?:\/\/\S+$/i.test(String(v || "").trim());
+      const a = this.$("rImportText"), b = this.$("rStepImportText");
+      const mirror = (from, to) => from?.addEventListener("input", () => {
+        const v = from.value.trim();
+        if (isUrl(v) && (!to.value.trim() || isUrl(to.value))) to.value = v; // nur in ein leeres oder nur-Link-Feld, eigener Text bleibt unberührt
+      });
+      if (a && b) { mirror(a, b); mirror(b, a); }
+    }
     this._enterRecipeForm();
     this._renderRecipeItems();
     this._renderHeat();
@@ -8261,7 +8403,7 @@ ${(() => {
     if (this.$("rGroup")) dr.group = this.$("rGroup").value || null;
     dr.steps = this._stepRowsOf(dr).map((r) => r.t.replace(/\s*\n+\s*/g, " ").trim()).filter(Boolean).join("\n");
     if (this.$("rServings")) { const n = parseInt(this.$("rServings").value, 10); dr.servings = n >= 1 && n <= 99 ? n : null; }
-    if (this.$("rServUnit")) dr.servings_unit = this.$("rServUnit").value === "trays" ? "trays" : "persons";
+    if (this.$("rServUnit")) dr.servings_unit = ["trays", "forms"].includes(this.$("rServUnit").value) ? this.$("rServUnit").value : "persons";
     this._readHeat();
   }
 
@@ -8318,7 +8460,8 @@ ${(() => {
         }
         if (failed) this._toast(`📷 ${failed} Schritt-Foto(s) konnten nicht gespeichert werden – bitte nochmal am Schritt hinzufügen`);
       }
-      this._toast(`Rezept „${msg.name}“ gespeichert 👨‍🍳`);
+      if (dr.proposalId && rid) await this._ws({ type: "einkaufsliste/proposal/accept", proposal_id: dr.proposalId, recipe_id: rid }).catch(() => {}); // ✅ freigegeben: weg von der Warteliste
+      this._toast(`Rezept „${msg.name}“ gespeichert 👨‍🍳${dr.proposalId ? " – Vorschlag freigegeben ✅" : ""}`);
       this._draft = null;
       this._view = "settings";
       this._renderAll();
@@ -8899,6 +9042,7 @@ ${(() => {
     }
     if (!data) return; // abgebrochen
     if (target.ocr) { this._photoTarget = null; target.ocr(data); return; } // 🔎 „Text aus Foto“: das Foto geht an die Texterkennung
+    if (target.proposalDraft) { this._photoTarget = null; target.onData(data); this._toast("📷 Foto dazu – geht mit dem Vorschlag mit"); return; }
     if (target.stepRow && this._draft) { // Foto zu einem neuen Schritt: wird beim Speichern mitgespeichert
       (target.stepRow.np ||= []).push(data);
       this._photoTarget = null;
@@ -9664,7 +9808,9 @@ ${(() => {
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => { layout(); autoL.start(); autoR.start(); }) : null;
     ro?.observe(ov);
     layout();
-    grip.addEventListener("pointerdown", (e) => { dragging = true; try { grip.setPointerCapture(e.pointerId); } catch (_) { /* egal */ } e.preventDefault(); });
+    // 🎯 Nur am Griff-Knubbel selbst (plus etwas Rand) ziehen = Größe ändern; der Rest des Strichs zählt als normale Fläche (Wischen geht dort)
+    const inGripZone = (x, y) => { const r = pill.getBoundingClientRect(), m = 28; return x >= r.left - m && x <= r.right + m && y >= r.top - m && y <= r.bottom + m; };
+    grip.addEventListener("pointerdown", (e) => { if (!inGripZone(e.clientX, e.clientY)) return; dragging = true; try { grip.setPointerCapture(e.pointerId); } catch (_) { /* egal */ } e.preventDefault(); });
     grip.addEventListener("pointermove", (e) => {
       if (!dragging) return;
       const rc = main.getBoundingClientRect(), wide = ov.clientWidth >= 640;
@@ -9753,9 +9899,10 @@ ${(() => {
     bClose.onclick = close;
     { // 👆 Wischen: nach links = weiter, nach rechts = zurück (nur deutlich waagerecht; beim letzten Schritt beendet nur der Knopf)
       let sx = 0, sy = 0, st = 0, ok = false;
-      ov.addEventListener("touchstart", (e) => { const t = e.touches[0]; ok = e.touches.length === 1 && !!t && !e.target.closest?.("input,textarea,select,button,[data-elgrip]"); sx = t?.clientX || 0; sy = t?.clientY || 0; st = Date.now(); }, { passive: true });
+      ov.addEventListener("touchstart", (e) => { const t = e.touches[0]; ok = e.touches.length === 1 && !!t && !e.target.closest?.("input,textarea,select,button") && !(grip.style.display !== "none" && inGripZone(t.clientX, t.clientY)); sx = t?.clientX || 0; sy = t?.clientY || 0; st = Date.now(); }, { passive: true });
       ov.addEventListener("touchend", (e) => {
         if (!ok) return; ok = false;
+        if (dragging) return; // am Griff gezogen: nie weiterblättern
         if (document.querySelector("[data-eltimer]") || ov.querySelector("[data-elintro]")) return;
         const t = e.changedTouches[0]; if (!t) return;
         const dx = t.clientX - sx, dy = t.clientY - sy;
@@ -9771,7 +9918,7 @@ ${(() => {
       Object.assign(intro.style, { ...wrapW, flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "18px", textAlign: "center" });
       const q = document.createElement("div");
       q.className = "ic";
-      q.textContent = r.servings_unit === "trays" ? "🍰 Wie viele Bleche backst du?" : "👥 Für wie viele Personen kochst du?";
+      q.textContent = r.servings_unit === "trays" ? "🍰 Wie viele Bleche backst du?" : r.servings_unit === "forms" ? "🥧 Wie viele Formen backst du?" : "👥 Für wie viele Personen kochst du?";
       Object.assign(q.style, { font: "600 clamp(22px, 5vw, 30px) Roboto,sans-serif" });
       const pr = document.createElement("div");
       Object.assign(pr.style, { display: "flex", alignItems: "center", gap: "18px" });
@@ -12262,6 +12409,23 @@ ${(() => {
           this._view = "settings"; this._setSec = "stores"; this._renderAll();
         }
         break;
+      case "prop-new":
+        this._proposeRecipe();
+        break;
+      case "prop-check":
+        await this._checkProposal(el.dataset.id);
+        break;
+      case "prop-photo": {
+        const pr = (this._data?.proposals || []).find((x) => x.id === el.dataset.id);
+        if (pr) this._openPhoto(`vorschlag#${pr.id}`, pr.name);
+        break;
+      }
+      case "prop-reject": {
+        const pr = (this._data?.proposals || []).find((x) => x.id === el.dataset.id);
+        if (!pr || !await elConfirm(`Den Vorschlag „${pr.name}“ wirklich ablehnen? Er steht dann noch einen Tag als abgelehnt da und verschwindet danach.`)) break;
+        try { await this._ws({ type: "einkaufsliste/proposal/reject", proposal_id: pr.id }); this._toast("✖ Abgelehnt"); } catch (_) { /* Meldung kam schon */ }
+        break;
+      }
       case "recipe-settings": // ⚙️ direkt in die Rezept-Einstellungen (mit PIN, wenn eine gesetzt ist)
         if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); break; }
         if (this._data?.settings?.pin && !pinUnlocked()) { this._unlockSettings("recipes"); break; }
@@ -12785,7 +12949,7 @@ ${(() => {
       return;
     }
     if (t.id === "rServUnit") {
-      t.closest(".srow")?.querySelector(".prev")?.setAttribute("icon", t.value === "trays" ? "mdi:tray" : "mdi:account-group-outline");
+      t.closest(".srow")?.querySelector(".prev")?.setAttribute("icon", t.value === "trays" ? "mdi:tray" : t.value === "forms" ? "mdi:cake-variant-outline" : "mdi:account-group-outline");
       return;
     }
     if (t.dataset?.act === "pick-store") {

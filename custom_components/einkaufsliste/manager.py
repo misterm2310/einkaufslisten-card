@@ -130,8 +130,8 @@ def _servings(value: Any) -> int | None:
 
 
 def _servings_unit(value: Any) -> str:
-    """👥 Personen oder 🍰 Bleche (z. B. beim Kuchen)."""
-    return "trays" if value == "trays" else "persons"
+    """👥 Personen, 🍰 Bleche oder 🥧 Formen (z. B. beim Kuchen)."""
+    return value if value in ("trays", "forms") else "persons"
 
 
 def _default_recipe_groups(english: bool = False) -> list[dict[str, Any]]:
@@ -237,6 +237,14 @@ def recipe_step_count(recipe: dict[str, Any]) -> int:
 def recipe_photo_key(recipe_id: str) -> str:
     """Rezept-Fotos liegen bei den Produkt-Fotos, aber mit eigenem Schlüssel."""
     return f"rezept#{recipe_id}".lower()
+
+
+def proposal_photo_key(proposal_id: str) -> str:
+    """📝 Foto zu einem Rezept-Vorschlag (liegt bei den Produkt-Fotos); wandert bei „Freigeben“ ans Rezept."""
+    return f"vorschlag#{proposal_id}".lower()
+
+
+MAX_PROPOSALS = 50
 
 
 def _key(
@@ -391,6 +399,7 @@ class EinkaufslisteManager:
         self.categories: list[dict[str, Any]] = []
         self.items: list[dict[str, Any]] = []
         self.recipes: list[dict[str, Any]] = []
+        self.proposals: list[dict[str, Any]] = []  # 📝 Rezept-Vorschläge, die auf ein OK warten
         self.persons: list[dict[str, Any]] = []
         self.recipe_groups: list[dict[str, Any]] = []  # 🏷️ Fisch, Fleisch, Gebäck … (mit Icon)
         self.photos: dict[str, dict[str, Any]] = {}  # Produktname (klein) -> Foto
@@ -577,6 +586,7 @@ class EinkaufslisteManager:
         self.categories = data.get("categories", [])
         self.items = data.get("items", [])
         self.recipes = data.get("recipes", [])
+        self.proposals = [p for p in data.get("proposals", []) if isinstance(p, dict) and p.get("id")]
         self.history = data.get("history", {})
         self.last_cleanup = data.get("last_cleanup")
         cc = data.get("cleanup")
@@ -692,6 +702,7 @@ class EinkaufslisteManager:
             "categories": self.categories,
             "items": self.items,
             "recipes": self.recipes,
+            "proposals": self.proposals,
             "persons": self.persons,
             "recipe_groups": self.recipe_groups,
             "photos": self.photos,
@@ -778,6 +789,7 @@ class EinkaufslisteManager:
             "categories": self.categories,
             "items": self.items,
             "recipes": self.recipes,
+            "proposals": self._visible_proposals(),
             "timers": self.timers,  # ⏲️ laufende/fertige Kochtimer
             "server_now": int(dt_util.utcnow().timestamp() * 1000),  # für die Uhr-Abweichung der Karte
             "persons": self.persons,
@@ -3840,6 +3852,71 @@ class EinkaufslisteManager:
         self.recipes.append(recipe)
         self._changed()
         return recipe
+
+    # ------------------------------------------------------------------ Rezept-Vorschläge
+    def proposal_by_id(self, proposal_id: str | None) -> dict[str, Any] | None:
+        return next((p for p in self.proposals if p["id"] == proposal_id), None)
+
+    @callback
+    def add_proposal(self, name: str, text: str, by: str | None = None) -> dict[str, Any]:
+        """📝 Jemand schlägt ein Rezept vor (Text oder Link). Es landet auf der Warteliste, bis es freigegeben wird."""
+        name = (_nice(name) or "")[:60]
+        text = str(text or "").strip()[:8000]
+        if not name:
+            raise ValueError("Der Vorschlag braucht einen Namen.")
+        if not text:
+            raise ValueError("Schreib bitte das Rezept (Zutaten und Schritte) oder füge einen Link ein.")
+        if len([p for p in self.proposals if p.get("status") != "rejected"]) >= MAX_PROPOSALS:
+            raise ValueError("Es warten schon viele Vorschläge – sie müssen erst freigegeben oder abgelehnt werden.")
+        self._prune_proposals()
+        proposal = {"id": _new_id(), "name": name, "text": text, "by": (_clean(by) or "")[:40], "created": _now_iso()}
+        self.proposals.append(proposal)
+        self._changed()
+        return proposal
+
+    @callback
+    def accept_proposal(self, proposal_id: str, recipe_id: str | None = None) -> None:
+        """✅ Freigegeben: der Vorschlag verschwindet von der Warteliste, sein Foto geht ans fertige Rezept."""
+        proposal = self.proposal_by_id(proposal_id)
+        if proposal is None or proposal.get("status") == "rejected":
+            raise ValueError("Diesen Vorschlag gibt es nicht (mehr).")
+        old, new = proposal_photo_key(proposal_id), recipe_photo_key(recipe_id) if recipe_id else ""
+        if new and old in self.photos and self.recipe_by_id(recipe_id) is not None:
+            if new not in self.photos:
+                self.photos[new] = self.photos.pop(old)
+            else:  # das Rezept hat schon ein Foto: das Vorschlags-Foto wird nicht mehr gebraucht
+                self.hass.async_create_task(self.async_remove_photo(old))
+        self.proposals.remove(proposal)
+        self._changed()
+
+    async def async_reject_proposal(self, proposal_id: str) -> None:
+        """❌ Abgelehnt: das Foto wird gelöscht, der Vorschlag bleibt einen Tag lang als „abgelehnt“ (✖) sichtbar und verschwindet dann."""
+        proposal = self.proposal_by_id(proposal_id)
+        if proposal is None:
+            raise ValueError("Diesen Vorschlag gibt es nicht (mehr).")
+        proposal["status"] = "rejected"
+        proposal["rejected_at"] = _now_iso()
+        proposal["text"] = ""  # der Inhalt wird nicht mehr gebraucht
+        await self.async_remove_photo(proposal_photo_key(proposal_id))
+        self._changed()
+
+    def _visible_proposals(self) -> list[dict[str, Any]]:
+        self._prune_proposals()
+        return self.proposals
+
+    def _prune_proposals(self) -> None:
+        """Abgelehnte Vorschläge sind nach 24 Stunden weg."""
+        now = dt_util.utcnow()
+        keep = []
+        for p in self.proposals:
+            if p.get("status") == "rejected":
+                at = dt_util.parse_datetime(str(p.get("rejected_at") or ""))
+                if at is None or (now - dt_util.as_utc(at)).total_seconds() > 86400:
+                    continue
+            keep.append(p)
+        if len(keep) != len(self.proposals):
+            self.proposals = keep
+            self._schedule_save()
 
     @callback
     def update_recipe(self, recipe_id: str, **fields: Any) -> dict[str, Any]:
