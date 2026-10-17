@@ -2234,5 +2234,18 @@
 "Was hier an ist, wird beim automatischen Aufräumen übersprungen und bleibt offen.": "Whatever is on here is skipped by automatic cleanup and stays open.",
 "nicht aufräumen": "don't clean up",
 "🧹 Wird wieder mit aufgeräumt": "🧹 Will be cleaned up again",
-"🏬 Wird beim Aufräumen übersprungen": "🏬 Skipped when cleaning up"
+"🏬 Wird beim Aufräumen übersprungen": "🏬 Skipped when cleaning up",
+"Liste drucken": "Print list",
+"Ohne Geschäft": "No store",
+"Nichts offen.": "Nothing open.",
+"Welches Geschäft?": "Which store?",
+"Drucken / als PDF": "Print / save as PDF",
+"Anderes Geschäft": "Other store",
+"Drucken geht hier nicht – mach ein Bildschirmfoto der Vorschau.": "Printing does not work here – take a screenshot of the preview.",
+"Sonstiges – noch etwas?": "Other – anything else?",
+"Erstellt mit Einkaufsliste": "Made with Shopping list",
+"Seite": "Page",
+"von": "of",
+"Ausgedruckt": "Printed",
+"am": "on"
 }

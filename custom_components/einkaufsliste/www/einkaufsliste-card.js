@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.19-beta.4";
+const EL_VERSION = "2.76.19-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.18"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🖨️ „Liste drucken“ steht unter der Einkaufsliste. Geschäft wählen, Vorschau ansehen, dann als Papier oder PDF ausgeben: mit Kästchen zum Abhaken, nach Geschäft und Kategorie sortiert, mit Datum, Uhrzeit und wer es ausgedruckt hat. Es passt möglichst auf eine A4-Seite (ab 20 Artikeln in zwei Spalten, bei sehr langen Listen etwas enger).",
+   "New: 🖨️ “Print list” sits below the shopping list. Choose a store, check the preview, then print it or save it as PDF: with tick boxes, sorted by store and category, with date, time and who printed it. It tries to fit on one A4 page (two columns from 20 items, a bit tighter for very long lists)."],
   ["Behoben: ✏️ Eine „Eigene Notiz“, die du im Rezept-Editor bei einer Zutat einträgst, wird jetzt mit dem Rezept gespeichert (vorher ging sie beim Speichern verloren).",
    "Fixed: ✏️ an “own note” you enter on an ingredient in the recipe editor is now saved with the recipe (before, it got lost on saving)."],
   ["Neu: 🗂️ ⚙️ → Rezepte besteht jetzt aus aufklappbaren Kästen wie die Einstellungen und die Gar-Zeiten: Neues Rezept, Rezepte, Rezept-Gruppen, Rezepte aus Datei, Wartet auf OK und Wochenplan. Es ist immer nur einer offen, alle starten zu. Der Wochenplan hat einen eigenen Kasten und steht nicht mehr unter „Rezepte“.",
@@ -2790,6 +2792,11 @@ ha-card.compact .group { margin-top:4px; }
 .donehead.closed ha-icon.chev { transform: rotate(-90deg); }
 .donehint { font-size:.75em; color:var(--secondary-text-color); padding:0 4px 4px; }
 /* ✔ „Erledigt – schon mal gekauft“: eigener, blasser Kasten – das ist das Archiv, nicht „noch kaufen“ */
+.printrow { margin-top:14px; text-align:center; }
+.prchoice { display:flex; flex-direction:column; gap:8px; margin:8px 0; }
+.prchoice .btn { justify-content:flex-start; min-height:48px; font-size:1em; }
+.prchoice .btn .n { margin-left:auto; opacity:.7; }
+.prsheet { background:#fff; color:#000; border-radius:10px; padding:14px 16px; margin:10px 0; font:14px/1.35 Roboto,Arial,sans-serif; box-shadow:0 1px 6px rgba(0,0,0,.25); }
 .donebox { margin-top:12px; padding:4px 6px 6px; border-radius:12px; background:color-mix(in srgb, var(--primary-text-color, #000) 3%, transparent); }
 .justbox .jrow { display:flex; align-items:center; gap:6px; }
 .justbox .jmain { flex:1; min-width:0; }
@@ -5729,8 +5736,125 @@ class EinkaufslisteCard extends HTMLElement {
           done.length ? this._groupedHtml(done, row, byName, true, !!filter) : `<div class="donehint">Nichts gefunden zu „${esc(filter)}“.</div>`}` : ""}
       </div>`);
     }
+    if (open.length && !filter && !this._shopMode) { // 🖨️ Liste drucken (unter der Liste, damit oben nichts voller wird)
+      html.push(`<div class="printrow"><button type="button" class="btn" data-act="print-list"><ha-icon icon="mdi:printer-outline"></ha-icon>Liste drucken</button></div>`);
+    }
     list.innerHTML = html.join("");
     if (this._editing) this.$("edName")?.focus(); else this._knRestore();
+  }
+
+  // 🖨️ Liste drucken: erst Geschäft wählen, dann Druckvorschau mit Kästchen zum Abhaken mit dem Stift
+  // 🖨️ Gemeinsames Aussehen (Vorschau und Druck): scope = Vorschau ".prsheet" bzw. "body" im Druckdokument
+  _printCss(scope, forPrint, by = "") {
+    const S = (x) => `${scope} ${x}`;
+    return `${forPrint ? `@page{size:A4;margin:16mm 14mm 18mm;@bottom-left{content:"${[by, elT("Erstellt mit Einkaufsliste")].filter(Boolean).join(" · ").replace(/["\\]/g, "")}";font:9px Arial,sans-serif;color:#777}@bottom-right{content:"${elT("Seite")} " counter(page) " ${elT("von")} " counter(pages);font:9px Arial,sans-serif;color:#777}}
+html,body{margin:0}body{font:13px/1.4 "Helvetica Neue",Arial,sans-serif;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}` : ""}
+${S(".ph")}{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+${S(".pt")}{font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+${S(".ps")}{font-size:12px;color:#555;margin-top:3px}
+${S(".pn")}{flex:none;min-width:34px;height:34px;border-radius:17px;background:#111;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0 8px;box-sizing:border-box}
+${S(".pbar")}{height:4px;border-radius:2px;margin:10px 0 6px}
+${S(".pst")}{margin-top:14px}
+${S(".psh")}{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:#f2f2f2;border-left:6px solid var(--sc,#888);break-after:avoid}
+${S(".psh h2")}{font-size:16px;margin:0;font-weight:700;flex:1}
+${S(".psh .pc")}{font-size:11px;color:#555}
+${S(".pcat")}{margin-top:8px;break-inside:avoid}
+${S(".pcat h3")}{display:flex;align-items:center;gap:8px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#555;margin:0 0 2px;padding-bottom:3px;border-bottom:1px solid #ccc}
+${S(".pcat h3 span")}{margin-left:auto;font-weight:400;letter-spacing:0}
+${S(".pr")}{display:flex;align-items:flex-start;gap:10px;padding:5px 6px;border-radius:4px;break-inside:avoid}
+${S(".pst .pcat .pr:nth-of-type(even)")}{background:#f7f7f7}
+${S(".bx")}{flex:none;width:16px;height:16px;border:1.8px solid #111;border-radius:4px;margin-top:1px;background:#fff;box-sizing:border-box}
+${S(".pq")}{font-weight:700;margin-right:5px}
+${S(".pm")}{flex:1;display:flex;flex-direction:column}
+${S(".pnt")}{font-size:11px;color:#666}
+${S(".pmisc")}{margin-top:18px;break-inside:avoid}
+${S(".pmisc .pline")}{flex:1;border-bottom:1px solid #bbb;height:18px}
+${S(".pf")}{margin-top:16px;font-size:10px;color:#888;text-align:center}
+${S(".pw:not(.l0) .pbody")}{column-count:2;column-gap:22px}
+${S(".pw:not(.l0) .pst")}{margin-top:0;margin-bottom:10px}
+${S(".pw:not(.l0) .pmisc")}{margin-top:8px}
+${S(".pw.l2 .pr")}{padding:3px 6px}${S(".pw.l2 .pm")}{font-size:12px}${S(".pw.l2 .bx")}{width:14px;height:14px}${S(".pw.l2 .pcat")}{margin-top:5px}${S(".pw.l2 .psh")}{padding:4px 8px}${S(".pw.l2 .pmisc .pr:nth-of-type(n+3)")}{display:none}
+${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px}${S(".pw.l3 .bx")}{width:12px;height:12px}${S(".pw.l3 .pcat")}{margin-top:3px}${S(".pw.l3 .pcat h3")}{font-size:9.5px}${S(".pw.l3 .psh")}{padding:3px 8px}${S(".pw.l3 .psh h2")}{font-size:13px}${S(".pw.l3 .pnt")}{font-size:9.5px}${S(".pw.l3 .pmisc")}{display:none}${S(".pw.l3 .pt")}{font-size:22px}${S(".pw.l3 .pf")}{margin-top:6px}${forPrint ? ".pf{display:none}" : ""}`;
+  }
+
+  // 📄 Läuft im Druckdokument: probiert die Stufen l0–l3 (Luft → zwei Spalten → enger → ganz eng), bis alles auf eine A4-Seite passt
+  _printFit() {
+    return `(function(){var r=document.querySelector(".pw");if(!r)return;var p=document.createElement("div");p.style.cssText="position:absolute;visibility:hidden;height:262mm;width:1px";document.body.appendChild(p);var max=p.getBoundingClientRect().height;p.remove();var m=r.className.match(/l(\\d)/);var lv=m?parseInt(m[1],10):0;for(;lv<=3;lv++){r.className="pw l"+lv;if(r.getBoundingClientRect().height<=max)break;}if(lv>3)r.className="pw l3";})();`;
+  }
+
+  _printSheet(sel) {
+    const d = this._data;
+    const open = d.items.filter((i) => !i.checked);
+    const groups = [];
+    for (const st of (d.stores || []).filter((x) => sel === "all" || sel === x.id)) groups.push({ store: st, items: open.filter((i) => i.store_id === st.id) });
+    if (sel === "all" || sel === "none") groups.push({ store: null, items: open.filter((i) => !i.store_id || !this._store(i.store_id)) });
+    const day = new Date().toLocaleDateString(EL_LANG === "en" ? "en-GB" : "de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+    const unit = (n) => `${n} ${elT("Artikel")}`;
+    let count = 0, html = "";
+    for (const g of groups) {
+      if (!g.items.length) continue;
+      count += g.items.length;
+      const cats = g.store ? this._storeCats(g.store.id) : d.categories;
+      const byCat = new Map(cats.map((c) => [c.id, []]));
+      byCat.set(null, []);
+      for (const i of g.items) (byCat.has(i.category_id) ? byCat.get(i.category_id) : byCat.get(null)).push(i);
+      html += `<section class="pst" style="--sc:${esc(g.store?.color || "#888")}"><div class="psh"><h2>${esc(g.store?.name || elT("Ohne Geschäft"))}</h2><span class="pc">${esc(unit(g.items.length))}</span></div>`;
+      for (const [cid, arr] of byCat) {
+        if (!arr.length) continue;
+        arr.sort((x, y) => String(x.name).localeCompare(String(y.name), "de"));
+        html += `<div class="pcat"><h3>${esc(this._cat(cid)?.name || elT("Ohne Kategorie"))}<span>${arr.length}</span></h3>`;
+        for (const i of arr) {
+          const own = i.own_note || this._ownNote(i.name, i.note) || "";
+          const extra = [i.note, own, i.for_whom ? `${elT("für")} ${i.for_whom}` : ""].filter(Boolean).map((x) => esc(x)).join(" · ");
+          html += `<div class="pr"><span class="bx"></span><span class="pm"><span>${i.quantity ? `<span class="pq">${esc(i.quantity)}</span>` : ""}${esc(i.name)}</span>${extra ? `<span class="pnt">${extra}</span>` : ""}</span></div>`;
+        }
+        html += `</div>`;
+      }
+      html += `</section>`;
+    }
+    if (!count) html = `<p>${esc(elT("Nichts offen."))}</p>`;
+    else html += `<section class="pmisc"><div class="pcat"><h3>${esc(elT("Sonstiges – noch etwas?"))}</h3>${'<div class="pr"><span class="bx"></span><span class="pline"></span></div>'.repeat(4)}</div></section>`;
+    const label = sel === "all" ? elT("Alle Geschäfte") : sel === "none" ? elT("Ohne Geschäft") : (this._store(sel)?.name || "");
+    const bar = sel !== "all" && sel !== "none" ? (this._store(sel)?.color || "#546e7a") : "#546e7a";
+    const first = String(this._hass?.user?.name || "").trim().split(/\s+/)[0];
+    const now = new Date();
+    const stamp = `${now.toLocaleDateString(EL_LANG === "en" ? "en-GB" : "de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })} ${EL_LANG === "en" ? "at" : "um"} ${now.toLocaleTimeString(EL_LANG === "en" ? "en-GB" : "de-DE", { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}`;
+    const by = `${elT("Ausgedruckt")}${first ? ` ${elT("von")} ${first}` : ""} ${elT("am")} ${stamp}`;
+    const head = `<div class="ph"><div><div class="pt">${esc(elT("Einkaufsliste"))}</div><div class="ps">${esc(day)} · ${esc(label)} · ${esc(unit(count))}</div><div class="ps">${esc(by)}</div></div><div class="pn">${count}</div></div><div class="pbar" style="background:${esc(bar)}"></div>`;
+    const lv = count >= 60 ? 3 : count >= 40 ? 2 : count >= 20 ? 1 : 0; // 📄 ab 20 Artikeln zwei Spalten, bei mehr wird es enger – möglichst eine Seite
+    return { count, by, html: `<div class="pw l${lv}">${head}<div class="pbody">${html}</div><div class="pf">${esc(elT("Erstellt mit Einkaufsliste"))}</div></div>` };
+  }
+
+  _printPage() {
+    const d = this._data;
+    const open = d.items.filter((i) => !i.checked);
+    this._openPage({ key: "print", title: "Liste drucken", icon: "mdi:printer-outline", color: "#546e7a", build: (body) => {
+      const choose = () => {
+        const rows = [{ id: "all", name: elT("Alle Geschäfte"), n: open.length, color: "#546e7a" }];
+        for (const st of d.stores || []) { const n = open.filter((i) => i.store_id === st.id).length; if (n) rows.push({ id: st.id, name: st.name, n, color: st.color || "#888" }); }
+        const loose = open.filter((i) => !i.store_id || !this._store(i.store_id)).length;
+        if (loose) rows.push({ id: "none", name: elT("Ohne Geschäft"), n: loose, color: "#888" });
+        body.innerHTML = `<div style="font:600 16px Roboto,sans-serif;margin:2px 0 6px">${esc(elT("Welches Geschäft?"))}</div>
+          <div class="prchoice">${rows.map((r) => `<button type="button" class="btn" data-pr="${esc(r.id)}"><span style="width:10px;height:10px;border-radius:50%;background:${esc(r.color)};flex:none"></span><span translate="no">${esc(r.name)}</span><span class="n">${r.n}</span></button>`).join("")}</div>`;
+        body.querySelectorAll("[data-pr]").forEach((b) => { b.onclick = () => show(b.dataset.pr); });
+      };
+      const show = (sel) => {
+        const { html, by } = this._printSheet(sel);
+        body.innerHTML = `<style>${this._printCss(".prsheet", false)}</style><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" data-prgo><ha-icon icon="mdi:printer-outline"></ha-icon>${esc(elT("Drucken / als PDF"))}</button><button type="button" class="btn" data-prback>${esc(elT("Anderes Geschäft"))}</button></div><div class="prsheet">${html}</div>`;
+        body.querySelector("[data-prback]").onclick = choose;
+        body.querySelector("[data-prgo]").onclick = () => {
+          const fr = document.createElement("iframe");
+          fr.style.cssText = "position:fixed;left:-10000px;top:0;width:182mm;height:263mm;border:0;visibility:hidden;"; // so breit wie die Druckfläche (A4 ohne Rand): nur so kann das Blatt ausmessen, ob es auf eine Seite passt
+          fr.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(elT("Einkaufsliste"))}</title><style>${this._printCss("body", true, by)}</style></head><body>${html}<script>${this._printFit()}</script></body></html>`;
+          fr.onload = () => {
+            try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (_) { this._toast(elT("Drucken geht hier nicht – mach ein Bildschirmfoto der Vorschau.")); }
+            setTimeout(() => fr.remove(), 60000);
+          };
+          document.body.append(fr);
+        };
+      };
+      choose();
+    } });
   }
 
   // 🔍 Doppelt-Finder: „Tomate“ + „Tomaten“, „Klopapier“ + „Toilettenpapier“ …
@@ -12122,6 +12246,9 @@ ${(() => {
         inp.focus();
         break;
       }
+      case "print-list":
+        this._printPage();
+        break;
       case "toggle-done":
         this._doneOpen = !this._doneOpen;
         this._renderList();
