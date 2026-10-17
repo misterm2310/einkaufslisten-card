@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.16";
+const EL_VERSION = "2.76.17-beta.17";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -9606,8 +9606,9 @@ ${(() => {
     // ↔ Griff zwischen Schritt-Text und Zutaten: ziehen = Größe ändern, Doppeltippen = zurück auf 2 : 1. Gilt nur, solange die Kochansicht offen ist.
     const FRAC0 = 2 / 3; let frac = FRAC0, dragging = false;
     const grip = document.createElement("div"); grip.dataset.elgrip = "1"; grip.title = elT("Ziehen: Größe ändern · Doppeltippen: zurück auf 2 : 1");
-    Object.assign(grip.style, { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", userSelect: "none" });
-    const pill = document.createElement("div"); Object.assign(pill.style, { background: "#666", borderRadius: "3px" }); grip.append(pill);
+    Object.assign(grip.style, { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", userSelect: "none", position: "relative" });
+    const line = document.createElement("div"); Object.assign(line.style, { position: "absolute", background: "#8a8a8a", borderRadius: "1px", pointerEvents: "none" }); // durchgehender Strich über die ganze Länge
+    const pill = document.createElement("div"); Object.assign(pill.style, { background: "#6e6e6e", borderRadius: "3px", position: "relative", boxShadow: "0 0 0 1px rgba(255,255,255,.25)" }); grip.append(line, pill);
     main.append(left, grip, ing);
     // 📜 Zu lang für den Platz? Dann läuft der Text von selbst: kurze Pause, langsam bis zum Ende, Pause, zurück nach oben …
     // Fasst man den Text an (wischen, Mausrad, Taste), hört das für diesen Bereich auf.
@@ -9649,7 +9650,8 @@ ${(() => {
       ing.style.display = ingOn ? "block" : "none";
       grip.style.display = ingOn ? "flex" : "none";
       Object.assign(grip.style, wide ? { width: "18px", height: "auto", cursor: "col-resize" } : { width: "100%", height: "18px", cursor: "row-resize" });
-      Object.assign(pill.style, wide ? { width: "4px", height: "48px" } : { width: "48px", height: "4px" });
+      Object.assign(pill.style, wide ? { width: "5px", height: "48px" } : { width: "48px", height: "5px" });
+      Object.assign(line.style, wide ? { width: "2px", height: "100%", left: "calc(50% - 1px)", top: "0" } : { height: "2px", width: "100%", top: "calc(50% - 1px)", left: "0" });
       Object.assign(ing.style, { flex: `${Math.round((1 - frac) * 1000)} 1 0`, boxSizing: "border-box", border: "none", padding: "0" }); // Zutaten: 1 Teil
       left.style.flex = !ingOn ? "1 1 100%" : `${Math.round(frac * 1000)} 1 0`; // Schritte: 2 Teile (Standard)
       left.style.maxHeight = "none";
