@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.21";
+const EL_VERSION = "2.76.17-beta.22";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -738,7 +738,7 @@ function elIconizeTree(root) {
     const gem = p.classList.contains("gem"); // großes Kästchen in den Einstellungen: farbiger Grund, weißes Symbol
     const plain = !gem && !p.closest("button,a,.tgl,.swline"); // Knöpfe und Links behalten ihre Schriftfarbe
     const flex = /flex/.test(getComputedStyle(p).display || "");
-    ic.style.cssText = `--mdc-icon-size:${gem ? "1.25em" : "1.2em"};vertical-align:-.22em;flex:none;${flex || gem ? "" : "margin-right:.3em;"}${plain && EL_EMOJI_COLORS[key] ? `color:${EL_EMOJI_COLORS[key]};` : ""}`;
+    ic.style.cssText = `--mdc-icon-size:${gem ? "1.25em" : "1.2em"};vertical-align:-.22em;flex:none;${flex || gem ? "" : "margin-right:.3em;"}${plain && (p.dataset.ecolor || EL_EMOJI_COLORS[key]) ? `color:${p.dataset.ecolor || EL_EMOJI_COLORS[key]};` : ""}`;
     if (gem) { p.style.setProperty("background", p.style.getPropertyValue("--gc") || EL_GEM_COLORS[key] || EL_EMOJI_COLORS[key] || "#607d8b"); p.style.color = "#fff"; }
     const rest = t.data.slice(m[0].length);
     EL_LEADS.set(t, t.data.slice(0, m[0].length).trim());
@@ -1245,6 +1245,67 @@ function distance(lat1, lon1, lat2, lon2) {
 }
 
 // Großes Foto anzeigen (als Seite in der Karte; Titel steht oben neben dem Pfeil)
+// 🔍 Foto zoomen: zwei Finger (oder Mausrad), Doppeltipp, im Zoom mit einem Finger verschieben; ungezoomt wischen = nächstes Foto
+function elZoomable(img, onSwipe) {
+  const box = document.createElement("div");
+  Object.assign(box.style, { overflow: "hidden", borderRadius: "16px", boxShadow: "0 10px 40px rgba(0,0,0,.6)", touchAction: "none", maxWidth: "100%", lineHeight: "0", position: "relative", cursor: "zoom-in" });
+  Object.assign(img.style, { display: "block", transformOrigin: "50% 50%", userSelect: "none", webkitUserSelect: "none", touchAction: "none", borderRadius: "0", boxShadow: "none" });
+  img.draggable = false;
+  box.append(img);
+  let s = 1, x = 0, y = 0;
+  const pts = new Map();
+  let pinch = null, tap = null, start = null;
+  const apply = () => {
+    const mx = Math.max(0, (img.clientWidth * s - box.clientWidth) / 2), my = Math.max(0, (img.clientHeight * s - box.clientHeight) / 2);
+    x = Math.max(-mx, Math.min(mx, x)); y = Math.max(-my, Math.min(my, y));
+    if (s <= 1.001) { s = 1; x = 0; y = 0; }
+    img.style.transform = s === 1 ? "" : `translate(${x}px, ${y}px) scale(${s})`;
+    box.style.cursor = s > 1 ? "grab" : "zoom-in";
+    box.dataset.zoomed = s > 1 ? "1" : "";
+  };
+  const zoomAt = (ns, cx, cy) => { // Zoom um einen Punkt (cx, cy relativ zur Bildmitte)
+    ns = Math.max(1, Math.min(6, ns));
+    x = cx - (cx - x) * (ns / s); y = cy - (cy - y) * (ns / s); s = ns; apply();
+  };
+  const rel = (e) => { const r = box.getBoundingClientRect(); return [e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2]; };
+  box.addEventListener("pointerdown", (e) => {
+    try { box.setPointerCapture(e.pointerId); } catch (_) { /* egal */ }
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, s }; start = null; }
+    else if (pts.size === 1) start = { x: e.clientX, y: e.clientY, t: Date.now(), moved: false };
+  });
+  box.addEventListener("pointermove", (e) => {
+    if (!pts.has(e.pointerId)) return;
+    const old = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2 && pinch) {
+      const [a, b] = [...pts.values()];
+      const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], r = box.getBoundingClientRect();
+      zoomAt(pinch.s * (Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d), mid[0] - r.left - r.width / 2, mid[1] - r.top - r.height / 2);
+    } else if (pts.size === 1) {
+      if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) start.moved = true;
+      if (s > 1) { x += e.clientX - old[0]; y += e.clientY - old[1]; apply(); }
+    }
+  });
+  const up = (e) => {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (!start || pts.size) return;
+    const dx = e.clientX - start.x, st = start; start = null;
+    if (!st.moved) { // Tipp: zweimal schnell = rein/raus
+      const now = Date.now();
+      if (tap && now - tap < 320) { tap = null; if (s > 1) { s = 1; apply(); } else zoomAt(2.5, ...rel(e)); }
+      else tap = now;
+    } else if (s === 1 && Math.abs(dx) > 40 && onSwipe) onSwipe(dx < 0 ? 1 : -1);
+  };
+  box.addEventListener("pointerup", up);
+  box.addEventListener("pointercancel", (e) => { pts.delete(e.pointerId); pinch = null; start = null; });
+  box.addEventListener("wheel", (e) => { e.preventDefault(); zoomAt(s * Math.exp(-e.deltaY * 0.002), ...rel(e)); }, { passive: false });
+  box.addEventListener("click", (e) => e.stopPropagation()); // Tipp aufs Bild schließt das Fenster nicht
+  box.reset = () => { s = 1; x = 0; y = 0; apply(); };
+  return box;
+}
+
 function showPhotoOverlay(src, title) {
   const ov = makeOverlay();
   ov.style.cursor = "zoom-out";
@@ -1255,12 +1316,13 @@ function showPhotoOverlay(src, title) {
   const img = document.createElement("img");
   img.src = src;
   img.alt = title;
-  Object.assign(img.style, { maxWidth: "100%", maxHeight: "80vh", borderRadius: "16px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
+  Object.assign(img.style, { maxWidth: "100%", maxHeight: "80vh" });
+  const zbox = elZoomable(img);
   const hint = document.createElement("div");
-  hint.textContent = elT("Tippen zum Schließen");
+  hint.textContent = elT("Zoomen: zwei Finger oder doppelt tippen · daneben tippen = schließen");
   Object.assign(hint.style, { color: "#aaa", font: "13px Roboto, sans-serif", marginTop: "10px" });
-  if (ov.dataset.elpage) ov.append(cap, img, hint);
-  else { Object.assign(cap.style, { color: "#fff", marginTop: "14px", marginBottom: "0" }); ov.append(img, cap, hint); }
+  if (ov.dataset.elpage) ov.append(cap, zbox, hint);
+  else { Object.assign(cap.style, { color: "#fff", marginTop: "14px", marginBottom: "0" }); ov.append(zbox, cap, hint); }
   const onKey = (e) => { if (e.key === "Escape") ov.remove(); };
   const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
   ov.addEventListener("click", close);
@@ -2946,7 +3008,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .iinstead { opacity:.8; font-style:italic; }
 .offinfo { color:color-mix(in srgb, #e53935 70%, var(--primary-text-color)); font-weight:600; }
 #btnNewBarcode.plus::before { content:"+"; position:absolute; top:1px; right:4px; font:700 13px/1 Roboto,sans-serif; }
-.chip2.offsearch { border-style:dashed; }
+.chip2.offsearch { border-style:dashed; } .chip2.offsearch ha-icon { color:#f9a825; }
 .warnbox { background:color-mix(in srgb, var(--warning-color,#ffa600) 12%, transparent); border-radius:12px; padding:8px 12px; }
 .stats { display:flex; flex-direction:column; gap:2px; }
 .statrow { display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:8px; background:var(--secondary-background-color, rgba(127,127,127,.06)); }
@@ -5289,7 +5351,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (v.barcode && codes.length && !this._shopMode) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥</span>`);
     const off = item.offer;
     let offBtn = "";
-    if (!v.offer) { /* 🏷️ Angebote ausgeblendet */ } else if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
+    if (!v.offer) { /* 🏷️ Angebote ausgeblendet */ } else if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" data-ecolor="#f9a825" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
     else if (!item.checked && !this._shopMode && this._offersFor(item).length) { // 🏷️ im Laden-Modus ausgeblendet; sonst eigener Knopf ganz rechts (weit weg von der Menge, größer zu treffen)
       const alt = this._offersFor(item).every((o) => o.alt);
       offBtn = `<button class="iconbtn offtag" data-act="offers-show" data-id="${item.id}" title="${alt ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}"><span class="oi">${alt ? "🔀" : "🏷️"}</span></button>`;
@@ -5345,7 +5407,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(pk) ? "Fotos" : "Foto", this._hasPhoto(pk) ? "#00897b" : "")}
         ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", codes ? "Barcode ✓" : "Barcode", codes ? "#8e24aa" : "") : ""}
         ${codes ? b("menu-info", "mdi:information-outline", "Infos", "#00acc1") : ""}
-        ${this._offersFor(item).length ? b("menu-offers", "mdi:tag-outline", "Angebote", "#e53935") : ""}
+        ${this._offersFor(item).length ? b("menu-offers", "mdi:tag-outline", "Angebote", "#f9a825") : ""}
         <button class="iconbtn" data-act="menu-close" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></span>
       </div>`;
   }
@@ -9183,7 +9245,8 @@ ${(() => {
     let idx = Math.min(start, count() - 1);
     const ov = makeOverlay({ title: "📷 " + label });
     const img = document.createElement("img");
-    Object.assign(img.style, { maxWidth: "100%", maxHeight: "66vh", borderRadius: "16px", boxShadow: "0 10px 40px rgba(0,0,0,.6)" });
+    Object.assign(img.style, { maxWidth: "100%", maxHeight: "66vh" });
+    const zbox = elZoomable(img, (dir) => { if (count() > 1) { idx = (idx + dir + count()) % count(); show(); } }); // 🔍 zoomen; ungezoomt wischen = blättern
     const cap = document.createElement("div");
     Object.assign(cap.style, { font: "500 17px Roboto, sans-serif", marginTop: "12px", textAlign: "center" });
     const nav = document.createElement("div");
@@ -9205,9 +9268,9 @@ ${(() => {
     Object.assign(full.style, { color: "#ffcc80", fontSize: "14px", margin: "0 0 8px", textAlign: "center" });
     row.append(bAdd, ...(canDelete ? [bDel] : []), bClose);
     const hint = document.createElement("div"); // 💡 Hinweis über den Knöpfen
-    hint.textContent = "💡 Kein Foto zu sehen? Schließen und das Foto nochmal antippen.";
+    hint.textContent = "💡 Kein Foto zu sehen? Schließen und das Foto nochmal antippen. · 🔍 Zoomen: zwei Finger oder doppelt tippen.";
     Object.assign(hint.style, { font: "400 13px Roboto, sans-serif", opacity: ".75", margin: "0 0 10px", textAlign: "center" });
-    ov.append(img, cap, nav, full, sort, hint, row);
+    ov.append(zbox, cap, nav, full, sort, hint, row);
     let seq = 0;
     const show = async () => {
       const n = count();
@@ -9225,7 +9288,7 @@ ${(() => {
       bMain.style.display = idx > 0 ? "" : "none";
       bRight.style.display = idx < n - 1 ? "" : "none";
       const mine = ++seq; // schnell durchgewischt? Nur das zuletzt gewünschte Foto darf angezeigt werden
-      try { const src = await this._photoData(key, idx); if (mine === seq) img.src = src; } catch (_) { if (mine === seq) close(); }
+      try { const src = await this._photoData(key, idx); if (mine === seq) { zbox.reset(); img.src = src; } } catch (_) { if (mine === seq) close(); }
     };
     const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); onClose?.(); };
     ov._elClose = close; // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
@@ -9237,14 +9300,6 @@ ${(() => {
     document.addEventListener("keydown", onKey);
     prev.onclick = () => { idx = (idx - 1 + count()) % count(); show(); };
     next.onclick = () => { idx = (idx + 1) % count(); show(); };
-    // wischen zum Blättern
-    let sx = null;
-    img.addEventListener("pointerdown", (e) => { sx = e.clientX; });
-    img.addEventListener("pointerup", (e) => {
-      if (sx == null) return;
-      const dx = e.clientX - sx; sx = null;
-      if (Math.abs(dx) > 40 && count() > 1) { idx += dx < 0 ? 1 : -1; idx = (idx + count()) % count(); show(); }
-    });
     bClose.onclick = close;
     bDel.onclick = async () => {
       if (!await elConfirm("Dieses Foto löschen?")) return;
@@ -10279,7 +10334,7 @@ ${(() => {
   _showOffers(item) {
     const list = this._offersFor(item);
     if (!list.length) return;
-    this._offersOverlay(`🏷️ <span translate="no">${esc(item.name)}</span> <span>im Angebot</span>`, list, "🛒 Hier kaufen",
+    this._offersOverlay(`<span data-ecolor="#f9a825">🏷️</span> <span translate="no">${esc(item.name)}</span> <span>im Angebot</span>`, list, "🛒 Hier kaufen",
       (o, close) => this._takeOffer(o, { item }).then((ok) => ok && close()));
   }
 
@@ -10289,7 +10344,7 @@ ${(() => {
     let list;
     try { list = await this._ws({ type: "einkaufsliste/offers/search", q }); } catch (_) { return; }
     if (!list?.length) { this._toast(`🏷️ Gerade keine Angebote für „${q}“ gefunden`); return; }
-    this._offersOverlay(`🏷️ <span>Angebote für</span> „<span translate="no">${esc(q)}</span>“`, list, "➕ Auf die Liste",
+    this._offersOverlay(`<span data-ecolor="#f9a825">🏷️</span> <span>Angebote für</span> „<span translate="no">${esc(q)}</span>“`, list, "➕ Auf die Liste",
       (o, close) => this._takeOffer(o, { name: q }).then((ok) => {
         if (!ok) return;
         close();
@@ -10307,7 +10362,7 @@ ${(() => {
         ${list.map((o, n) => `<div style="padding:10px 0;border-top:1px solid var(--divider-color, rgba(127,127,127,.35))"><div style="display:flex;gap:12px;align-items:center">
           ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
           <div style="flex:1;min-width:0">
-            <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span style="font-size:12px;color:#fb8c00">🔀 <span>Ähnlich</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
+            <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span data-ecolor="#f9a825" style="font-size:12px;color:#fb8c00">🔀 <span>Ähnlich</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
             <div style="color:var(--secondary-text-color);font-size:13px" translate="no">${esc(o.d || "")}${o.q ? ` · ${esc(o.q)}` : ""}</div>
             <div style="font-size:13px;color:var(--secondary-text-color)">${o.from ? `<span>ab</span> ${esc(day(o.from))} ` : ""}${o.to ? `<span>bis</span> ${esc(day(o.to))}` : ""}</div>
           </div>
@@ -10326,7 +10381,7 @@ ${(() => {
       ${list.map((o, n) => `<div style="padding:10px 0;border-top:1px solid #333"><div style="display:flex;gap:12px;align-items:center">
         ${o.img ? `<img src="${esc(o.img)}" alt="" loading="lazy" style="width:64px;height:64px;object-fit:contain;background:#fff;border-radius:8px;flex:none" onerror="this.remove()">` : ""}
         <div style="flex:1;min-width:0">
-          <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span style="font-size:12px;color:#ffb74d">🔀 <span>Ähnlich</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
+          <div><b translate="no">${esc(o.r)}</b>${o.alt ? ` <span data-ecolor="#f9a825" style="font-size:12px;color:#ffb74d">🔀 <span>Ähnlich</span> · <span translate="no">${esc(o.alt)}</span></span>` : ""}</div>
           <div style="color:#ccc;font-size:13px" translate="no">${esc(o.d || "")}${o.q ? ` · ${esc(o.q)}` : ""}</div>
           <div style="font-size:13px;color:#aaa">${o.from ? `<span>ab</span> ${esc(day(o.from))} ` : ""}${o.to ? `<span>bis</span> ${esc(day(o.to))}` : ""}</div>
         </div>
