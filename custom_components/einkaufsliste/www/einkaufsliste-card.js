@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.14";
+const EL_VERSION = "2.76.17-beta.15";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -6462,7 +6462,7 @@ ${(() => {
     this._renderAll();
   }
 
-  async _unlockSettings() {
+  async _unlockSettings(sec = null) {
     if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); return; }
     const pin = await askPin(undefined, this);
     if (pin == null) return;
@@ -6471,7 +6471,8 @@ ${(() => {
     if (!res?.ok) { this._toast("🔒 Falsche PIN"); return; }
     pinRemember();
     this._view = "settings";
-    this._setSec = null;
+    this._setSec = sec; // z. B. "recipes": gleich in die Rezept-Einstellungen
+    if (sec) this._setOpen = "📋 Meine Liste";
     this._draft = null;
     this._renderAll();
   }
@@ -7569,7 +7570,7 @@ ${(() => {
     // Suchfeld nur einmal bauen – sonst springt beim Tippen der Cursor raus
     const aiOn = !!this._data.settings?.ai_on && !this._privacyOn();
     if (!ov.querySelector("#recipeList") || !!ov.querySelector("#recipeSearch") !== count > 0 || !!ov.querySelector('[data-act="ai-cook"]') !== aiOn) {
-      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon><span class="lbl">Was kann ich kochen?</span></button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button></h3>${
+      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon><span class="lbl">Was kann ich kochen?</span></button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button><button class="btn" data-act="recipe-settings" title="Einstellungen der Rezepte"><ha-icon icon="mdi:cog-outline" style="color:${SET_COLORS.recipes}"></ha-icon><span class="lbl">Einstellungen</span></button></h3>${
         count ? this._recipeSearchHtml("recipeSearch") : ""}<div id="recipeList"></div></div>`;
     }
     this._renderRecipeList();
@@ -12218,6 +12219,12 @@ ${(() => {
           if (this._data?.settings?.pin && !pinUnlocked()) { this._unlockSettings(); break; } // 🔒 erst die PIN
           this._view = "settings"; this._setSec = "stores"; this._renderAll();
         }
+        break;
+      case "recipe-settings": // ⚙️ direkt in die Rezept-Einstellungen (mit PIN, wenn eine gesetzt ist)
+        if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); break; }
+        if (this._data?.settings?.pin && !pinUnlocked()) { this._unlockSettings("recipes"); break; }
+        this._closePage(true);
+        this._view = "settings"; this._setOpen = "📋 Meine Liste"; this._setSec = "recipes"; this._draft = null; this._renderAll();
         break;
       case "speak": // 🔊 Liste vorlesen
         this.toggleSpeak();
