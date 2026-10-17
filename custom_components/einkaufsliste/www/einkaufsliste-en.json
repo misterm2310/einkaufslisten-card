@@ -1780,6 +1780,8 @@
 "In den Katalog": "Into the catalogue",
 "🔒 Die Namen der Zutaten gehen an den Assistenten „{}“ in Home Assistant. Antworten einer KI können falsch sein – bitte kurz prüfen.": "🔒 The names of the ingredients go to the assistant “{0}” in Home Assistant. AI answers can be wrong – please check briefly.",
 "Eigene Notiz": "Own note",
+"Produkt per Barcode": "Product by barcode",
+"Grundvorrat": "Staple",
 "Assistent speichern": "Save assistant",
 "Assistent wählen …": "Choose assistant …",
 "Bitte erst einen Assistenten wählen.": "Please choose an assistant first.",

@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.19-beta.2";
+const EL_VERSION = "2.76.19-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.18"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -379,6 +379,8 @@ const EL_BETA_NEWS = [
    "New: 🗂️ ⚙️ → Recipes now consists of collapsible boxes like the settings and the cooking times: New recipe, Recipes, Recipe groups, Recipes from file, Waiting for OK and Weekly plan. Only one is open at a time, all start closed. The weekly plan has its own box and is no longer under “Recipes”."],
   ["Neu: 🔒 Die Karte lässt sich nicht mehr mit zwei Fingern zoomen (auch unten bei „Erledigt“ nicht). Fotos zoomen weiter. Auf der Angebote-Seite öffnet ein Tipp aufs Produktbild es einfach groß.",
    "New: 🔒 the card can no longer be pinch-zoomed (not even down at “Done”). Photos still zoom. On the offers page a tap on the product picture simply opens it large."],
+  ["Neu: 👆 Lange auf einen Knopf ohne Text drücken zeigt seinen kurzen Namen (zum Beispiel „Gar-Zeiten“, „Zutaten einfügen“, „Timer starten“) – jetzt bei allen Symbol-Knöpfen der Karte, auch im Rezept-Editor.",
+   "New: 👆 pressing and holding a button without text shows its short name (for example “Cooking times”, “Paste ingredients”, “Start timer”) – now on all icon buttons of the card, also in the recipe editor."],
   ["Neu: 📍 „Laden verlassen“ kommt schneller: Die Pause dauert nur noch 2 Minuten statt 3, und sie zählt ab dem Moment, in dem Home Assistant dich als „weg“ gemeldet hat. Hat die Karte im Hintergrund geschlafen, schaltet sie beim Öffnen sofort um (Reiter „Alle“, von selbst eingeschalteter Laden-Modus aus).",
    "New: 📍 “leaving the store” is detected faster: the pause is only 2 minutes instead of 3 and counts from the moment Home Assistant reported you as “away”. If the card slept in the background it switches right away when opened (tab “All”, store mode that switched on by itself goes off)."],
 ];
@@ -4404,11 +4406,11 @@ class EinkaufslisteCard extends HTMLElement {
             <div class="sugg" id="sugg" hidden></div>
             <div class="toolbar">
               <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon><span class="lbl">Menge</span></button>
-              <button class="tool" id="tOwn" type="button" data-act="tool" data-field="inOwn" title="✏️ Eigene Notiz – bleibt beim Produkt, wird nie überschrieben"><ha-icon icon="mdi:pencil-outline"></ha-icon><span class="lbl">Notiz</span></button>
+              <button class="tool" id="tOwn" type="button" data-act="tool" data-field="inOwn" title="✏️ Eigene Notiz"><ha-icon icon="mdi:pencil-outline"></ha-icon><span class="lbl">Notiz</span></button>
               <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon><span class="lbl">Für wen</span></button>
               <button class="tool plus" id="btnNewBarcode" type="button" data-act="new-barcode" title="Barcode zum neuen Produkt" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon><span class="lbl">Barcode</span></button>
               <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto</span></button>
-              <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat – haben wir immer (z. B. Salz, Öl)" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon><span class="lbl">Vorrat</span></button>
+              <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon><span class="lbl">Vorrat</span></button>
               <button class="tool" id="btnFavAll" type="button" data-act="fav-all" title="⭐ Alle Favoriten auf die Liste"><ha-icon icon="mdi:star-outline"></ha-icon><span class="lbl">Favoriten</span></button>
               <button class="tool" id="btnOcrList" type="button" data-act="ocr-list" title="Liste aus Foto einlesen"><ha-icon icon="mdi:camera-outline"></ha-icon><span class="lbl">Aus Foto</span></button>
               <button class="tool tclear" id="tClear" type="button" data-act="clear-form" title="Alles leeren" hidden><ha-icon icon="mdi:eraser"></ha-icon><span class="lbl">Leeren</span></button>
@@ -4450,9 +4452,16 @@ class EinkaufslisteCard extends HTMLElement {
     let lpTimer = null, lpFired = false;
     const lpSel = "button.tool, button.iconbtn, button.addbtn, .rtools button.btn, .viewhead button.btn, .pagetools button.btn";
     root.addEventListener("pointerdown", () => { EL_ACTIVE = this; }, true);
+    // 👆 jeder Knopf ohne sichtbaren Text (nur Symbol) zeigt beim langen Drücken seinen kurzen Namen – nicht nur die Liste oben
+    const lpBtn = (t) => {
+      const b = t?.closest?.(lpSel);
+      if (b) return b;
+      const g = t?.closest?.("button");
+      return g && !g.classList.contains("sthandle") && !(g.innerText || "").trim() ? g : null;
+    };
     root.addEventListener("pointerdown", (e) => {
-      const b = e.target.closest?.(lpSel);
-      const text = b && !b.closest(".item") ? b.getAttribute("title") : "";
+      const b = lpBtn(e.target);
+      const text = b && !b.closest(".item") ? (b.getAttribute("title") || b.getAttribute("aria-label") || "") : "";
       clearTimeout(lpTimer);
       lpFired = false;
       const tb = e.target.closest?.('.tab[data-act="tab"]'); // 🕒 Geschäftsname gedrückt halten = Öffnungszeiten
@@ -4466,7 +4475,7 @@ class EinkaufslisteCard extends HTMLElement {
     }, true);
     for (const ev of ["pointerup", "pointercancel", "pointerleave"]) root.addEventListener(ev, () => clearTimeout(lpTimer), true);
     root.addEventListener("click", (e) => { if (lpFired) { lpFired = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true); // der Druck war nur zum Nachlesen
-    root.addEventListener("contextmenu", (e) => { if (e.target.closest?.(lpSel) || e.target.closest?.('.tab[data-act="tab"]')) e.preventDefault(); }, true);
+    root.addEventListener("contextmenu", (e) => { if (lpBtn(e.target) || e.target.closest?.('.tab[data-act="tab"]')) e.preventDefault(); }, true);
     this.$("addForm").addEventListener("submit", (e) => this._onAdd(e));
     this.$("newPhotoFile").addEventListener("change", (e) => this._onNewPhotoFile(e));
     this.$("inCat").addEventListener("change", () => { this._catManual = !!this.$("inCat").value; this._updateTools(); });
@@ -4962,7 +4971,7 @@ class EinkaufslisteCard extends HTMLElement {
     const btnShop = this.$("btnShop");
     btnShop.hidden = !d || this._view !== "list" || !!this._page;
     btnShop.classList.toggle("on", shop);
-    btnShop.title = shop ? "Laden-Modus beenden" : "Laden-Modus (große Zeilen, nur Abhaken)";
+    btnShop.title = shop ? "Laden-Modus beenden" : "Laden-Modus";
     btnShop.querySelector("ha-icon").setAttribute("icon", shop ? "mdi:storefront-remove-outline" : "mdi:storefront-outline"); // 🏪 eigenes Bild – der Wagen links heißt „zur Liste“
     this.$("title").textContent = ""; // Titel-Text ist weg – der Einkaufswagen reicht
     this.$("titleIcon").hidden = c.show_title === false || !!d?.settings?.mascot;
@@ -6254,8 +6263,8 @@ ${(() => {
         <div class="srow"><ha-icon class="prev" icon="mdi:magnify"></ha-icon><input class="grow" id="prodSearch" placeholder="Produkt suchen, z. B. Milch" value="${esc(this._prodFilter || "")}"><button class="iconbtn serase" type="button" data-act="search-erase" data-for="prodSearch" ${this._prodFilter ? "" : "hidden"} title="Suchtext löschen" aria-label="Suchtext löschen"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
         ${this._prodTab === "scanned" ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:filter-variant"></ha-icon><select class="grow" id="prodFilterSel" title="Filter">${this._prodFilterOptions()}</select>
           <button class="btn" data-act="prod-add" title="Neues Produkt in den Katalog" aria-label="Neues Produkt in den Katalog"><ha-icon icon="mdi:plus"></ha-icon></button>
-          <button class="btn" data-act="prod-add-bc" title="Neues Produkt per Barcode in den Katalog" aria-label="Neues Produkt per Barcode in den Katalog"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
-          <button class="btn" data-act="prod-refresh-all" title="Alles neu holen (Name, Notiz, Foto) – für alle Produkte mit Barcode, mit Auswahl" aria-label="Alles neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon></button></div>
+          <button class="btn" data-act="prod-add-bc" title="Produkt per Barcode" aria-label="Produkt per Barcode"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
+          <button class="btn" data-act="prod-refresh-all" title="Alles neu holen" aria-label="Alles neu holen"><ha-icon icon="mdi:cloud-download-outline"></ha-icon></button></div>
         <div class="refrep${this._refreshNone ? " done" : ""}" id="prodRefreshBox" ${this._refreshNone ? "" : "hidden"}>
           <button type="button" class="iconbtn" data-act="prod-refresh-close" title="Bericht schließen" aria-label="Bericht schließen"><ha-icon icon="mdi:close"></ha-icon></button>
           <p class="hint" id="prodRefreshMsg" tabindex="0">${esc(this._refreshNone ? elT(this._refreshNone) : "")}</p>
