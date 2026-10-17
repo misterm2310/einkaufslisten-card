@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.13";
+const EL_VERSION = "2.76.17-beta.14";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -236,10 +236,10 @@ const EL_HELP = {
   ]],
   recipes: ["list", [
     "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
-    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Rezept einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
+    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
   ], [
     "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; a list like the categories: tap a group = change name, colour and icon, ⌃⌄ = order; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
-    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste recipe”</b> (ingredient text, recipe link or “📷 From photo”), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
+    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text, recipe link or “📷 From photo”), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
   ]],
   listview: ["view", [
     "Was beim Artikel zu sehen ist, die Leiste und die Eingabefelder oben sowie die <b>Schriftgröße</b> – das hier ist der Standard <b>für alle</b>. Jeder kann es für sich selbst anders einstellen: ganz unten unter der Liste mit <b>👁️ Ansicht</b>, ohne PIN. Die Seite besteht aus <b>Kästen zum Aufklappen</b> (Schriftgröße, Oben &amp; beim Eintragen, Beim Artikel) – immer nur einer ist offen.",
@@ -7771,7 +7771,7 @@ ${(() => {
         </div>
         <div class="photorow" id="rPhotoRow"></div>
         <h3 class="rsub"><ha-icon icon="mdi:food-apple-outline"></ha-icon>Zutaten
-          <button class="btn rimportbtn" data-act="rimport-toggle"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon>Rezept einfügen</button></h3>
+          <button class="btn rimportbtn" data-act="rimport-toggle"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon>Zutaten einfügen</button></h3>
         <div class="rimport" id="rImport" hidden>
           <textarea id="rImportText" rows="6" placeholder="Zutaten-Liste hier einfügen – eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;½ l Milch&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch)."></textarea>
           <div class="btnrow"><button class="btn" data-act="rimport-photo"><ha-icon icon="mdi:camera-outline"></ha-icon>Aus Foto</button><button class="btn" data-act="rimport-toggle">Abbrechen</button><button class="primary addbtn btn" data-act="rimport-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
@@ -7783,7 +7783,12 @@ ${(() => {
           <button class="btn rimportbtn" type="button" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon>Gar-Zeiten</button></h3>
         <div id="rHeat"></div>
         <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
-        <h3 class="rsub"><ha-icon icon="mdi:chef-hat"></ha-icon>Zubereitung</h3>
+        <h3 class="rsub"><ha-icon icon="mdi:chef-hat"></ha-icon>Zubereitung
+          <button class="btn rimportbtn" type="button" data-act="steps-import-toggle" title="Schritte einfügen"><ha-icon icon="mdi:format-list-numbered"></ha-icon>Schritte einfügen</button></h3>
+        <div class="rimport" id="rStepImport" hidden>
+          <textarea id="rStepImportText" rows="6" placeholder="Schritte hier einfügen – ein Schritt pro Zeile"></textarea>
+          <div class="btnrow"><button type="button" class="btn" data-act="steps-import-toggle">Abbrechen</button><button type="button" class="primary addbtn btn" data-act="steps-import-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
+        </div>
         <div id="rStepRows" class="strows"></div>
         <div class="btnrow"><button type="button" class="btn" data-act="step-add"><ha-icon icon="mdi:plus"></ha-icon>Schritt</button></div>
         <div id="rStepPhotos"></div>
@@ -7857,6 +7862,8 @@ ${(() => {
   _fitStep(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + 2 + "px"; }
 
   _wireStepInput(ta) {
+    if (ta.__elStepWired) return; // nur einmal anschließen – sonst wird eine Einfügung mehrfach verarbeitet
+    ta.__elStepWired = true;
     requestAnimationFrame(() => this._fitStep(ta));
     const rows = () => this._draft.stepRows;
     const row = () => rows().find((r) => String(r.k) === ta.dataset.k);
@@ -7864,8 +7871,9 @@ ${(() => {
       const r = row();
       if (!r) return;
       if (/\n/.test(ta.value)) { // mehrere Zeilen eingefügt (oder Enter): jede Zeile wird ein eigener Schritt
-        const parts = ta.value.split(/\n+/).map((x) => x.trim());
+        const parts = ta.value.split(/\n+/).map((x) => x.replace(/[\u200B-\u200D\uFEFF]/g, "").trim());
         r.t = parts.shift() || "";
+        ta.value = r.t; // sofort bereinigen: dieselbe Einfügung darf nicht ein zweites Mal aufgeteilt werden
         const at = rows().indexOf(r);
         const fresh = parts.filter(Boolean).map((t) => ({ k: ++this._stepSeq, t, o: null }));
         if (!fresh.length) fresh.push({ k: ++this._stepSeq, t: "", o: null }); // Enter am Ende: neuer leerer Schritt
@@ -12638,6 +12646,24 @@ ${(() => {
       case "rimport-go":
         this._importRecipe();
         break;
+      case "steps-import-toggle": {
+        const box = this.$("rStepImport");
+        box.hidden = !box.hidden;
+        if (!box.hidden) this.$("rStepImportText").focus();
+        break;
+      }
+      case "steps-import-go": { // 📝 Text einfügen: jede Zeile genau einmal als Schritt (Nummern/Aufzählungszeichen vorn fallen weg)
+        const ta = this.$("rStepImportText");
+        const lines = String(ta.value || "").split(/\r?\n/).map((x) => x.replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/^\s*(?:\d+[.)]|[-•*])\s+/, "").trim()).filter(Boolean);
+        if (!lines.length) { this._toast("Da steht noch nichts drin"); break; }
+        const rows = this._stepRowsOf(this._draft);
+        while (rows.length && !String(rows[rows.length - 1].t || "").trim()) rows.pop(); // leere Schlussschritte weg
+        for (const t of lines) rows.push({ k: ++this._stepSeq, t, o: null });
+        ta.value = ""; this.$("rStepImport").hidden = true;
+        this._renderSteps();
+        this._toast(EL_LANG === "de" ? `${lines.length} ${lines.length === 1 ? "Schritt" : "Schritte"} übernommen` : `${lines.length} ${lines.length === 1 ? "step" : "steps"} added`);
+        break;
+      }
       case "ritem-edit":
         this._editRecipeIngredient(Number(el.closest(".rrow").dataset.n));
         break;
