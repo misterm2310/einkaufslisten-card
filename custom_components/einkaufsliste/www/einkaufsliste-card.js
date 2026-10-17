@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.15";
+const EL_VERSION = "2.76.17-beta.16";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -2995,6 +2995,7 @@ ha-card.labels .rtools .btn { flex-direction:column; gap:0; padding:4px 2px; }
 ha-card.labels .rtools .lbl { overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 ha-card.labels .pagetools button.btn { flex-direction:column; gap:0; padding:4px 8px; } ha-card.labels .pagetools .lbl { margin-top:0; }
 ha-card.labels .viewhead button.btn { flex-direction:column; gap:0; padding:4px 8px; } ha-card.labels .viewhead .lbl { margin-top:0; }
+ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labels .photorow button.btn:has(.lbl) { flex-direction:column; gap:0; padding:4px 8px; } ha-card.labels .rsub .lbl, ha-card.labels .rsec-h .lbl, ha-card.labels .photorow .lbl { margin-top:0; }
 .rtools .rheat { flex:1; align-self:center; font-size:.78em; color:var(--secondary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .heatrow { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; border-radius:12px; background:color-mix(in srgb, #ff7043 10%, transparent); border:1px solid color-mix(in srgb, #ff7043 35%, transparent); margin:6px 0; }
 .heatrow .hnums { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
@@ -3032,6 +3033,14 @@ ha-card.labels .viewhead button.btn { flex-direction:column; gap:0; padding:4px 
 .rfoot .primary { flex:2; }
 .rfoot .btn.danger { flex:none; padding:8px 12px; }
 .rsteps { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; resize:vertical; }
+.rsec { margin:10px 0 0; }
+.rsec > .lgroup { cursor:pointer; }
+.rsec .lgroup .gem { background:var(--gc); color:#fff; --mdc-icon-size:20px; }
+.rsec > .lgroup > .chev { transition:transform .2s; }
+.rsec.open > .lgroup > .chev { transform:rotate(180deg); }
+.rsec > .lgroup .rimportbtn { margin-left:0; flex:none; }
+.rsec-b { padding:4px 12px 12px; margin-left:16px; border-left:2px solid color-mix(in srgb, var(--primary-color,#03a9f4) 28%, transparent); }
+.rsec-b[hidden] { display:none; }
 .rimportbtn { margin-left:auto; padding:5px 10px; font-size:.8em; font-weight:400; }
 .rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; resize:vertical; }
 .rimport .btnrow { justify-content:flex-end; }
@@ -7740,13 +7749,21 @@ ${(() => {
     this._renderAll();
   }
 
+  // 🗂️ Kasten im Rezept-Editor (wie Einstellungen / Gar-Zeiten): Kopf zum Auf-/Zuklappen, alle starten offen
+  _rsec(k, icon, color, title, sub, btn, inner) {
+    const on = !(this._rsecClosed || new Set()).has(k);
+    return `<div class="lgbox rsec ${on ? "open" : ""}" data-k="${k}"><div class="lgroup rsec-h" data-act="rsec-toggle" data-k="${k}" role="button" tabindex="0" aria-expanded="${on}"><span class="gem" style="--gc:${color}"><ha-icon icon="${icon}"></ha-icon></span><span class="grow"><b>${title}</b><small>${sub}</small></span>${btn || ""}<ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></div><div class="rsec-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
+  }
+
   _renderRecipeEditor() {
     const dr = this._draft;
+    if (!this._draftRendered || !this._rsecClosed) this._rsecClosed = new Set(); // neues Rezept: alles aufgeklappt
     this._draftRendered = true;
     this._parkForm();
     this.$("otherView").innerHTML = `
       <div class="sec">
         <h3><ha-icon icon="mdi:chef-hat"></ha-icon>${dr.id ? "Rezept bearbeiten" : "Neues Rezept"}</h3>
+        ${this._rsec("in", "mdi:pencil-outline", "#546e7a", "Eingaben", "Name, Gruppe, Mengen, Foto", "", `
         <div class="srow recipehead">
           <ha-icon class="prev" id="rIconPrev" icon="${esc(this._recipeIcon(dr))}"></ha-icon>
           <input class="grow" id="rName" value="${esc(dr.name)}" placeholder="Name, z. B. Freitags Fisch">
@@ -7771,28 +7788,29 @@ ${(() => {
           </select>
         </div>
         <div class="photorow" id="rPhotoRow"></div>
-        <h3 class="rsub"><ha-icon icon="mdi:food-apple-outline"></ha-icon>Zutaten
-          <button class="btn rimportbtn" data-act="rimport-toggle"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon>Zutaten einfügen</button></h3>
+        `)}
+        ${this._rsec("zut", "mdi:food-apple-outline", "#43a047", "Zutaten", "Was kommt rein?", `<button class="btn rimportbtn" type="button" data-act="rimport-toggle" title="Zutaten einfügen" aria-label="Zutaten einfügen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon><span class="lbl">Zutaten einfügen</span></button>`, `
         <div class="rimport" id="rImport" hidden>
-          <textarea id="rImportText" rows="6" placeholder="Zutaten-Liste hier einfügen – eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;½ l Milch&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch)."></textarea>
+          <textarea id="rImportText" rows="6" placeholder="Zutaten-Liste hier einfügen – eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;½ l Milch&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch) – bei einem Link werden nur die Zutaten geladen. Die Schritte holst du unten bei „Zubereitung“."></textarea>
           <div class="btnrow"><button class="btn" data-act="rimport-photo"><ha-icon icon="mdi:camera-outline"></ha-icon>Aus Foto</button><button class="btn" data-act="rimport-toggle">Abbrechen</button><button class="primary addbtn btn" data-act="rimport-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
         </div>
         <div class="redithint" id="rEditHint" hidden>✏️ Du bearbeitest eine Zutat – ✔ speichert sie. <button class="linkbtn" data-act="ritem-edit-cancel">Abbrechen</button></div>
         <div id="rFormSlot"></div>
         <div id="rItems"></div>
-        <h3 class="rsub"><ha-icon icon="mdi:stove"></ha-icon>Backofen &amp; Co.
-          <button class="btn rimportbtn" type="button" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon>Gar-Zeiten</button></h3>
+        `)}
+        ${this._rsec("ofen", "mdi:stove", "#ef6c00", "Backofen &amp; Co.", "Grad, Minuten, Modus", `<button class="btn rimportbtn" type="button" data-act="gar" title="Gar-Zeiten" aria-label="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button>`, `
         <div id="rHeat"></div>
         <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
-        <h3 class="rsub"><ha-icon icon="mdi:chef-hat"></ha-icon>Zubereitung
-          <button class="btn rimportbtn" type="button" data-act="steps-import-toggle" title="Schritte einfügen"><ha-icon icon="mdi:format-list-numbered"></ha-icon>Schritte einfügen</button></h3>
+        `)}
+        ${this._rsec("zub", "mdi:chef-hat", "#e53935", "Zubereitung", "Die Schritte", `<button class="btn rimportbtn" type="button" data-act="steps-import-toggle" title="Schritte einfügen" aria-label="Schritte einfügen"><ha-icon icon="mdi:format-list-numbered"></ha-icon><span class="lbl">Schritte einfügen</span></button>`, `
         <div class="rimport" id="rStepImport" hidden>
-          <textarea id="rStepImportText" rows="6" placeholder="Schritte hier einfügen – ein Schritt pro Zeile"></textarea>
+          <textarea id="rStepImportText" rows="6" placeholder="Schritte hier einfügen – ein Schritt pro Zeile, z. B.&#10;Zwiebeln schneiden&#10;Fleisch anbraten&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch) – bei einem Link werden nur die Schritte geladen."></textarea>
           <div class="btnrow"><button type="button" class="btn" data-act="steps-import-toggle">Abbrechen</button><button type="button" class="primary addbtn btn" data-act="steps-import-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
         </div>
         <div id="rStepRows" class="strows"></div>
         <div class="btnrow"><button type="button" class="btn" data-act="step-add"><ha-icon icon="mdi:plus"></ha-icon>Schritt</button></div>
         <div id="rStepPhotos"></div>
+        `)}
         <p class="hint rhint">Eintragen geht wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode – dann ✔. „Wie zuletzt“ = Geschäft &amp; Kategorie vom letzten Mal.</p>
         <div class="rfoot">
           ${dr.id ? `<button class="btn danger" data-act="recipe-delete" title="Rezept löschen" aria-label="Rezept löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>` : ""}
@@ -7800,6 +7818,9 @@ ${(() => {
           <button class="btn primary" data-act="recipe-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
         </div>
       </div>`;
+    this.$("otherView").querySelectorAll(".rsec-h").forEach((h) => h.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && e.target === h) { e.preventDefault(); h.click(); }
+    }));
     this._enterRecipeForm();
     this._renderRecipeItems();
     this._renderHeat();
@@ -7992,11 +8013,31 @@ ${(() => {
     const fresh = (dr.newPhotos || []).length;
     const total = saved + fresh;
     box.innerHTML = `
-      <button type="button" class="btn ${total ? "on" : ""}" data-act="rphoto-take" ${total >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${total ? "Foto dazu" : "Rezept-Foto"}</button>
+      <button type="button" class="btn ${total ? "on" : ""}" data-act="rphoto-take" title="Foto zum Rezept" aria-label="Foto zum Rezept" ${total >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto zum Rezept</span></button>
       ${saved ? `<button type="button" class="btn" data-act="rphoto-view"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Ansehen (${saved})</button>` : ""}
       ${fresh ? `<button type="button" class="btn" data-act="rphoto-view-new"><ha-icon icon="mdi:image-outline"></ha-icon>${fresh} neu</button>
       <button type="button" class="btn danger" data-act="rphoto-remove"><ha-icon icon="mdi:image-remove-outline"></ha-icon>Neue verwerfen</button>` : ""}
       ${total ? `<span class="hint">${total} / 6 Fotos${fresh ? " · neue werden beim Speichern gespeichert" : ""}${saved ? " · löschen geht beim Ansehen" : ""}</span>` : ""}`;
+  }
+
+  async _importStepsFromLink(url) { // 🔗 nur die Schritte von einem Rezept-Link holen (Zutaten bleiben unberührt)
+    const ta = this.$("rStepImportText");
+    const btn = this.shadowRoot.querySelector('[data-act="steps-import-go"]');
+    btn?.classList.add("busy");
+    try {
+      const res = await this._ws({ type: "einkaufsliste/recipe/import", text: url });
+      const lines = this._stepLines(res.steps || "").map((x) => x.replace(/^\s*(?:\d+[.)]|[-•*])\s+/, "").trim()).filter(Boolean);
+      if (!lines.length) { this._toast(EL_LANG === "de" ? "Auf der Seite habe ich keine Schritte gefunden 🤷" : "I found no steps on that page 🤷"); }
+      else {
+        const rows = this._stepRowsOf(this._draft);
+        while (rows.length && !String(rows[rows.length - 1].t || "").trim()) rows.pop();
+        for (const t of lines) rows.push({ k: ++this._stepSeq, t, o: null });
+        ta.value = ""; this.$("rStepImport").hidden = true;
+        this._renderSteps();
+        this._toast(EL_LANG === "de" ? `${lines.length} ${lines.length === 1 ? "Schritt" : "Schritte"} geladen` : `${lines.length} ${lines.length === 1 ? "step" : "steps"} loaded`);
+      }
+    } catch (_) { /* Meldung kam schon */ }
+    btn?.classList.remove("busy");
   }
 
   async _importRecipe() {
@@ -8019,7 +8060,6 @@ ${(() => {
       abcSort(dr.items);
       const nameEl = this.$("rName");
       if (res.name && !nameEl.value.trim()) { nameEl.value = res.name; this._autoGroup(); }
-      if (res.steps && !this._stepLines(dr.stepRows ? dr.stepRows.map((r) => r.t).join("\n") : dr.steps).length) this._setStepsText(res.steps);
       const hasPhoto = (dr.newPhotos || []).length || this._recipeSavedPhotos();
       if (res.image && !hasPhoto) dr.newPhotos = [res.image];
       ta.value = "";
@@ -12646,6 +12686,7 @@ ${(() => {
         break;
       case "rimport-toggle": {
         const box = this.$("rImport");
+        const h1 = box.closest(".rsec")?.querySelector(":scope > .rsec-h"); if (h1 && h1.getAttribute("aria-expanded") === "false") h1.click(); // zugeklappt: erst aufklappen
         box.hidden = !box.hidden;
         if (!box.hidden) this.$("rImportText").focus();
         break;
@@ -12655,12 +12696,27 @@ ${(() => {
         break;
       case "steps-import-toggle": {
         const box = this.$("rStepImport");
+        const h2 = box.closest(".rsec")?.querySelector(":scope > .rsec-h"); if (h2 && h2.getAttribute("aria-expanded") === "false") h2.click();
         box.hidden = !box.hidden;
         if (!box.hidden) this.$("rStepImportText").focus();
         break;
       }
-      case "steps-import-go": { // 📝 Text einfügen: jede Zeile genau einmal als Schritt (Nummern/Aufzählungszeichen vorn fallen weg)
+      case "rsec-toggle": { // Kasten auf-/zuklappen (ohne neu zu zeichnen, Eingaben bleiben)
+        const k = el.dataset.k;
+        this._rsecClosed = this._rsecClosed || new Set();
+        const on = this._rsecClosed.has(k); // war zu -> jetzt auf
+        on ? this._rsecClosed.delete(k) : this._rsecClosed.add(k);
+        const box = el.closest(".rsec");
+        box.classList.toggle("open", on);
+        el.setAttribute("aria-expanded", String(on));
+        const body = box.querySelector(":scope > .rsec-b");
+        if (body) body.hidden = !on;
+        break;
+      }
+      case "steps-import-go": { // 📝 Text oder Link einfügen: jede Zeile genau einmal als Schritt (Nummern/Aufzählungszeichen vorn fallen weg)
         const ta = this.$("rStepImportText");
+        const raw = String(ta.value || "").trim();
+        if (/^https?:\/\/\S+$/i.test(raw)) { await this._importStepsFromLink(raw); break; }
         const lines = String(ta.value || "").split(/\r?\n/).map((x) => x.replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/^\s*(?:\d+[.)]|[-•*])\s+/, "").trim()).filter(Boolean);
         if (!lines.length) { this._toast("Da steht noch nichts drin"); break; }
         const rows = this._stepRowsOf(this._draft);
