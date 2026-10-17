@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17";
+const EL_VERSION = "2.76.18";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.18"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -374,32 +374,7 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [
-  ["Neu: ⏲️ Ein abgelaufener Timer hat jetzt einen „+1 Min“-Knopf. Er startet denselben Timer (gleicher Name) noch einmal für eine Minute, ohne alles neu einzugeben.",
-   "New: ⏲️ a finished timer now has a “+1 min” button. It restarts the same timer (same name) for one more minute without entering everything again."],
-  ["Neu: 🎨 Eine Optik für die ganze Karte: Alle Emojis vorn an Knöpfen, Überschriften, Reitern, Einstellungs-Gruppen, Zeilen-Infos (wer, wann, Aufräum-Datum) und in der Anleitung sind jetzt einheitliche Linien-Symbole, die überall gleich aussehen. Rückfragen („Wirklich löschen?“) öffnen ein Fenster im Stil der Karte statt dem grauen Browser-Fenster (Esc oder Daneben-Tippen = Abbrechen). Ecken und Schriftgrößen sind vereinheitlicht.",
-   "New: 🎨 one look for the whole card: all emojis at the start of buttons, headings, tabs, settings groups, row infos (who, when, cleanup date) and in the guide are now consistent line icons that look the same everywhere. Confirmations (“Really delete?”) open a window in the card’s style instead of the grey browser dialog (Esc or tapping outside = cancel). Corners and font sizes are unified."],
-  ["Neu: ✨ Noch mehr einheitliche Symbole: Rezept-Titel in der Kochansicht, „Gar-Zeiten“ in der Rezeptliste und die Knöpfe in den Foto-, Zuschneide- und Kamera-Fenstern (Foto dazu, Löschen, Hauptfoto, Drehen, Übernehmen …) nutzen jetzt Linien-Symbole statt Emojis.",
-   "New: ✨ even more consistent icons: the recipe title in the cooking view, “Cooking times” in the recipe list and the buttons in the photo, crop and camera windows (add photo, delete, main photo, rotate, accept …) now use line icons instead of emojis."],
-  ["Neu: ✨ Einheitliche Symbole: Seitenköpfe (Timer, Gar-Zeiten, Fotos, Foto machen, Einscannen, Zuschneiden), die Knöpfe oben in der Kochansicht, der Timer-Knopf in den Gar-Zeiten und die laufenden Timer nutzen jetzt überall dieselben Linien-Symbole statt Emojis. Timer = Stoppuhr, Gar-Zeiten = Topf, Fotos = Galerie.",
-   "New: ✨ consistent icons: page headers (timer, cooking times, photos, take photo, scan, crop), the buttons at the top of the cooking view, the timer button in the cooking times and the running timers now use the same line icons everywhere instead of emojis. Timer = stopwatch, cooking times = pot, photos = gallery."],
-  ["Fix: ⏱️ Das Timer-Fenster aus den Gar-Zeiten zeigte oben alles doppelt (zwei Pfeile, zwei „Timer“). Jetzt steht die Kopfzeile nur noch einmal da.",
-   "Fix: ⏱️ the timer window opened from the cooking times showed everything twice at the top (two arrows, two “Timer”). The header now appears only once."],
-  ["Neu: 🖼️ Foto-Seiten (Produkt, Rezept, Kassenbon …) zeigen oben links ein Galerie-Symbol statt des Kamera-Emojis.",
-   "New: 🖼️ photo pages (product, recipe, receipt …) now show a gallery icon at the top left instead of the camera emoji."],
-  ["Neu: ⏱️ Auch in den Gar-Zeiten gibt es oben rechts einen Timer-Knopf. Er öffnet das Timer-Fenster (Name optional, 5 Minuten vorgewählt), auch mitten im Kochen.",
-   "New: ⏱️ the cooking times page now has a timer button at the top right too. It opens the timer window (name optional, 5 minutes preselected), also while cooking."],
-  ["Neu: 🏬 Beim automatischen Aufräumen lassen sich einzelne Geschäfte ausnehmen (⚙️ → Aufräumen → Automatisch aufräumen). Artikel dieser Geschäfte bleiben offen (im Reiter des Geschäfts steht unten auch nicht „Nächstes Aufräumen“); „Alles abhaken“ von Hand nimmt sie weiterhin mit. Außerdem entfällt im Laden-Modus die Bildschirm-Drehsperre – dafür bitte die Sperre am Handy nutzen.",
-   "New: 🏬 individual stores can be excluded from automatic cleanup (⚙️ → Cleanup → Clean up automatically). Items of those stores stay open (and the store’s tab shows no “Next cleanup” line); “Check all” by hand still includes them. Also, store mode no longer locks the screen rotation – please use your phone’s own rotation lock."],
-  ["Neu: 📐 In der Kochansicht (breit) sind Schritte und Zutaten im Verhältnis 2 zu 1: die Schritte nehmen zwei Drittel, die Zutaten ein Drittel. Außerdem heißt ein Timer ohne eigenen Namen jetzt „Rezept – Schritt 2“ (mit „–“ statt „·“, auch im Sensor)",
-   "New: 📐 in the cooking view (wide) steps and ingredients are in a 2 to 1 ratio: the steps take two thirds, the ingredients one third. Also a timer without its own name is now called “Recipe – Schritt 2” (with “–” instead of “·”, also in the sensor)"],
-  ["Neu: ⏱️ In der Kochansicht öffnet das Timer-Symbol oben (links neben 📷) ein Timer-Fenster: Name (optional, leer = „Rezept – Schritt 2“), Schnellwahl (1 Min bis 1 Std), die Zeit aus dem Schritt-Text als Vorgabe, − und +, „Timer starten“ und darunter alle Timer. Die Timer-Zeile unter dem Rezeptschritt ist dafür weggefallen. Der Name steht in den Chips, im Sensor, im Ereignis und im Dashboard",
-   "New: ⏱️ in the cooking view the timer symbol at the top (left of 📷) opens a timer window: name (optional, empty = “Recipe – Schritt 2”), quick choices (1 min to 1 h), the time from the step text as a default, − and +, “Start timer” and all timers below. The timer row under the recipe step is gone for this. The name shows in the chips, the sensor, the event and the dashboard"],
-  ["Neu: ⏲️ Der Kochtimer-Sensor bleibt gesetzt, solange ein abgelaufener Timer noch nicht weggedrückt ist (höchstens 1 Stunde). So kann eine Dashboard-Zeile „FERTIG“ stehen bleiben; wie viele laufen, steht in „laufend“",
-   "New: ⏲️ the cooking timer sensor stays set as long as a finished timer has not been dismissed (1 hour at most). So a dashboard line “DONE” can stay; how many are running is in “laufend”"],
-  ["Neu: 🔔 Piepen, Vibration und Meldung bei einem abgelaufenen Kochtimer bekommt nur, wer ihn gestartet hat. Die Timer-Chips sehen weiter alle",
-   "New: 🔔 the beep, vibration and message for a finished cooking timer only go to the person who started it. Everyone still sees the timer chips"],
-];
+const EL_BETA_NEWS = [];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -407,6 +382,24 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["💡 <b>Rezept vorschlagen:</b> In der Kochmütze steht neben „KI kochen“ eine Glühbirne. Jeder kann dort Name, Zutaten, Backofen &amp; Co., Zubereitung und ein Foto eintippen. Der Vorschlag wartet in ⚙️ → Rezepte → „Wartet auf OK“. Wer die PIN kennt, übernimmt oder lehnt ab (✖ löscht abgelehnte sofort, sonst nach einem Tag). Das Zahnrad in der Kochmütze ist grau, solange gesperrt, grün nach der PIN und blinkt eine Minute vor dem Sperren rot.",
+   "💡 <b>Suggest a recipe:</b> in the chef-hat view there is a light bulb next to “AI cooking”. Anyone can type in name, ingredients, oven &amp; co., steps and a photo. The suggestion waits in ⚙️ → Recipes → “Waiting for OK”. Whoever knows the PIN accepts or rejects it (✖ deletes rejected ones right away, otherwise after a day). The gear in the chef-hat view is grey while locked, green after the PIN and blinks red one minute before it locks again."],
+  ["📝 <b>Rezept-Editor in klappbaren Kästen:</b> Eingaben, Zutaten, Backofen und Zubereitung lassen sich auf- und zuklappen. Zutaten und Schritte werden getrennt eingefügt, die Schritte auch per Link. Die Symbole zu den Schritten stehen unter dem Text.",
+   "📝 <b>Recipe editor in collapsible boxes:</b> inputs, ingredients, oven and steps can be opened and closed. Ingredients and steps are pasted separately, the steps also by link. The step icons sit below the text."],
+  ["🎂 <b>Formen als Einheit:</b> Im Rezept-Editor gibt es neben Personen und Blech jetzt auch Formen. Ein Link, den du bei den Zutaten oder bei der Zubereitung einträgst, wird für das andere Feld vorgemerkt – ausgewählt wird getrennt.",
+   "🎂 <b>Forms as a unit:</b> besides persons and trays the recipe editor now has forms. A link you enter for the ingredients or for the steps is remembered for the other field – you still choose them separately."],
+  ["🔍 <b>Fotos zoomen:</b> Zwei Finger (am PC das Mausrad) oder doppelt tippen, im Zoom mit einem Finger verschieben. Ungezoomt blätterst du wie bisher mit Wischen. Zum Schließen neben das Bild tippen.",
+   "🔍 <b>Zoom photos:</b> two fingers (mouse wheel on a PC) or double-tap, then drag with one finger. Not zoomed, you still swipe to flip. Tap beside the photo to close it."],
+  ["🏷️ <b>Angebots-Zeichen in Gelb:</b> Im Angebot, ähnliche Angebote und der Preis in der Zeile sind jetzt gelb, die Angebote-Seite hat Linien-Symbole statt bunter Emojis.",
+   "🏷️ <b>Offer icons in yellow:</b> on offer, similar offers and the price in the row are now yellow, the offers page has line icons instead of colourful emojis."],
+  ["⏱️ <b>Timer-Fenster:</b> In der Kochansicht und in den Gar-Zeiten gibt es oben einen Timer-Knopf mit Name (optional), Schnellwahl und allen laufenden Timern. Ein abgelaufener Timer hat einen „+1 Min“-Knopf. Piepen und Meldung bekommt nur, wer den Timer gestartet hat.",
+   "⏱️ <b>Timer window:</b> the cooking view and the cooking times have a timer button at the top with a name (optional), quick choices and all running timers. A finished timer has a “+1 min” button. The beep and message only go to the person who started the timer."],
+  ["👨‍🍳 <b>Kochansicht:</b> Schritte und Zutaten stehen im Verhältnis 2 zu 1, ein Griff in der Mitte verschiebt die Trennlinie, Wischen blättert durch die Schritte.",
+   "👨‍🍳 <b>Cooking view:</b> steps and ingredients are in a 2 to 1 ratio, a grip in the middle moves the divider, swiping flips through the steps."],
+  ["🏬 <b>Aufräumen mit Ausnahmen:</b> Einzelne Geschäfte lassen sich vom automatischen Aufräumen ausnehmen (⚙️ → Aufräumen). Die Bildschirm-Drehsperre im Laden-Modus ist weggefallen, bitte die Sperre am Handy nutzen.",
+   "🏬 <b>Cleanup with exceptions:</b> individual stores can be excluded from automatic cleanup (⚙️ → Cleanup). The screen rotation lock in store mode is gone, please use your phone’s own lock."],
+  ["🎨 <b>Einheitliche Symbole:</b> Fast alle Emojis sind jetzt Linien-Symbole in festen Farben. Rückfragen („Wirklich löschen?“) öffnen ein Fenster im Stil der Karte.",
+   "🎨 <b>Consistent icons:</b> almost all emojis are now line icons in fixed colours. Confirmations (“Really delete?”) open a window in the card’s style."],
   ["👨‍🍳 <b>Neue Kochansicht:</b> Vorher fragt sie „Für wie viele Personen kochst du?“. Danach stehen links die Schritte und rechts die Zutaten (umgerechnet), auf dem Handy im Hochformat der Schritt oben und die Zutaten darunter. Zu lange Texte laufen langsam von selbst (Wischen hält sie an). Schritt und Personenzahl werden beim Neuladen gemerkt.",
    "👨‍🍳 <b>New cooking view:</b> it first asks “How many people are you cooking for?”. Then the steps are on the left and the ingredients (recalculated) on the right, on a phone in portrait the step on top and the ingredients below. Texts that are too long scroll slowly by themselves (swiping stops them). Step and number of people are remembered when the page reloads."],
   ["⏲️ <b>Kochtimer pro Schritt:</b> Die Zeit aus dem Text ist schon eingetragen (mit − und + änderbar). Der Timer läuft in Home Assistant weiter, auch wenn du die App wechselst, und am Ende piept und vibriert die Karte. Für Automationen (z. B. Ansage) gibt es das Ereignis <code>einkaufsliste_timer_fertig</code> und den Sensor <code>sensor.einkaufsliste_kochtimer</code>; fertige Dashboard-Karten stehen in der Anleitung.",
