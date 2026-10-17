@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.20";
+const EL_VERSION = "2.76.17-beta.21";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -2918,6 +2918,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .item:focus, .recipe:focus, .delrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
+.item .acts .offtag .oi ha-icon { color:#f9a825 !important; } /* 🏷️ Angebot und 🔀 Ähnliches: beide gelb */
 .item .acts .shopphoto { color:var(--primary-color,#03a9f4); } .item .acts .shopphoto ha-icon { --mdc-icon-size:22px; display:flex; } /* 📷 so groß wie das Angebotszeichen */
 .item .acts .offtag .oi { font-size:calc(var(--mdc-icon-size, 24px) * .6); width:var(--mdc-icon-size, 24px); height:var(--mdc-icon-size, 24px); display:flex; align-items:center; justify-content:center; line-height:1; } /* 🏷️ bunt, aber klein und dezent */
 .broomred ha-icon { --mdc-icon-size:15px; color:#e53935; vertical-align:-0.2em; }
