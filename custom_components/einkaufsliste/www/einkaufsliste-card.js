@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.18";
+const EL_VERSION = "2.76.19-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.18"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -374,7 +374,10 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [];
+const EL_BETA_NEWS = [
+  ["Neu: 🗂️ ⚙️ → Rezepte besteht jetzt aus aufklappbaren Kästen wie die Einstellungen und die Gar-Zeiten: Neues Rezept, Rezepte, Rezept-Gruppen, Rezepte aus Datei, Wartet auf OK und Wochenplan. Es ist immer nur einer offen, alle starten zu. Der Wochenplan hat einen eigenen Kasten und steht nicht mehr unter „Rezepte“.",
+   "New: 🗂️ ⚙️ → Recipes now consists of collapsible boxes like the settings and the cooking times: New recipe, Recipes, Recipe groups, Recipes from file, Waiting for OK and Weekly plan. Only one is open at a time, all start closed. The weekly plan has its own box and is no longer under “Recipes”."],
+];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -2584,9 +2587,6 @@ input.swchk::after { content:""; position:absolute; top:2px; left:2px; width:18p
 input.swchk:checked { background:var(--primary-color,#03a9f4); }
 input.swchk:checked::after { left:20px; }
 input.swchk:focus-visible { outline:2px solid var(--primary-color,#03a9f4); outline-offset:2px; }
-.newrec { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; box-sizing:border-box; margin:0 0 12px; padding:13px 16px; border:0; border-radius:16px; cursor:pointer; font:inherit; font-size:16px; font-weight:600; color:#fff; background:linear-gradient(135deg,#43a047,#2e7d32); box-shadow:0 2px 8px rgba(46,125,50,.35); --mdc-icon-size:24px; transition:transform .1s, box-shadow .1s; }
-.newrec:hover { box-shadow:0 3px 12px rgba(46,125,50,.5); }
-.newrec:active { transform:scale(.98); }
 .tool.tclear { color:var(--error-color,#db4437); }
 #btnScan { position:relative; }
 /* 📝 Notiz am Artikel: dezent hervorgehoben – etwas kräftiger, zarter Farbhauch */
@@ -6170,15 +6170,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="picker" hidden></div>
         <p class="hint">⌃⌄ = Reihenfolge der Kategorien. Kategorie antippen = Name, Farbe und Icon ändern. Icon: einfach den Namen tippen (z. B. <b>hund</b>, <b>dog</b> oder <b>fish</b>) und aus der Vorschau antippen.</p>`;
       } },
-      { key: "recipes", icon: "mdi:chef-hat", title: "Rezepte", info: `${recipes.length ? (recipes.length === 1 ? "1 Rezept" : `${recipes.length} Rezepte`) : "noch keine"} · ${(d.recipe_groups || []).length} Gruppen`, html: () => `
-        ${this._recTab === "groups" || this._recTab === "file" || this._recTab === "wait" ? "" : `<button class="newrec" type="button" data-act="recipe-new"><ha-icon icon="mdi:chef-hat"></ha-icon><span>Neues Rezept</span><ha-icon icon="mdi:plus-circle-outline"></ha-icon></button>`}
-        <div class="subtabs">
-          <button class="tab ${(this._recTab || "recipes") === "recipes" ? "active" : ""}" data-act="rec-tab" data-tab="recipes"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte</button>
-          <button class="tab ${this._recTab === "groups" ? "active" : ""}" data-act="rec-tab" data-tab="groups"><ha-icon icon="mdi:tag-multiple-outline"></ha-icon>Rezept-Gruppen</button>
-          <button class="tab ${this._recTab === "file" ? "active" : ""}" data-act="rec-tab" data-tab="file"><ha-icon icon="mdi:file-document-outline"></ha-icon>Rezepte aus Datei</button>
-          <button class="tab ${this._recTab === "wait" ? "active" : ""}" data-act="rec-tab" data-tab="wait"><ha-icon icon="mdi:timer-sand"></ha-icon>Wartet auf OK${(d.proposals || []).filter((x) => x.status !== "rejected").length ? `<span class="tbadge">${(d.proposals || []).filter((x) => x.status !== "rejected").length}</span>` : ""}</button>
-        </div>
-        ${this._recTab === "wait" ? this._recWaitHtml() : this._recTab === "file" ? this._recFileHtml() : this._recTab === "groups" ? `
+      { key: "recipes", icon: "mdi:chef-hat", title: "Rezepte", info: `${recipes.length ? (recipes.length === 1 ? "1 Rezept" : `${recipes.length} Rezepte`) : "noch keine"} · ${(d.recipe_groups || []).length} Gruppen`, html: () => this._recBoxes(`${this._recTab === "wait" ? this._recWaitHtml() : this._recTab === "file" ? this._recFileHtml() : this._recTab === "groups" ? `
 ${(() => {
           // 🏷️ wie bei den Kategorien: erst die Liste, antippen = nur diese Gruppe einstellen
           const gs = d.recipe_groups || [];
@@ -6207,13 +6199,8 @@ ${(() => {
         <div class="picker" hidden></div>
         <p class="hint">⌃⌄ = Reihenfolge der Gruppen. Gruppe antippen = Name, Farbe und Icon ändern. Das Icon der Gruppe bekommen automatisch alle Rezepte dieser Gruppe. Icon: einfach den Namen tippen (z. B. <b>fish</b>, <b>pizza</b> oder <b>cake</b>) und aus der Vorschau antippen.</p>`;
         })()}` : `
-        <div class="planset"><b>📅 Wochenplan</b>
-          ${this._swHtml("plan-reset-toggle", d.settings?.plan_reset_on !== false, "Eingeplante Rezepte automatisch zurücksetzen")}
-          ${d.settings?.plan_reset_on === false ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:calendar-week"></ha-icon><select class="grow" id="planDaySel" title="Zurücksetzen am">${WD_LONG.map((w, i) => `<option value="${i}" ${i === (d.settings?.plan_reset_day ?? 0) ? "selected" : ""}>${w}</option>`).join("")}</select></div>
-          <p class="hint">Jeden ${WD_LONG[d.settings?.plan_reset_day ?? 0]} um 03:30 Uhr gehen alle „📅 Diese Woche“-Rezepte zurück auf „nichts“. 💭 Essenswünsche bleiben stehen. Gilt für alle.</p>`}
-        </div>
         ${recipes.length ? this._recipeSearchHtml("recipeSearchS") : ""}
-        <div id="setRecipeList"></div>`}` },
+        <div id="setRecipeList"></div>`}`) },
       { key: "recipe_groups", parent: "recipes", alias: true },
       { key: "persons", icon: "mdi:account-group-outline", title: "Personen", info: persons.length ? `${persons.length} für „Für wen?“` : "noch keine", html: () => {
         const k = persons.findIndex((x) => x.id === this._perSel);
@@ -6422,7 +6409,7 @@ ${(() => {
     if (cur.key === "stats") this._loadStats();
     if (cur.key === "errors") this._loadErrors();
     if (cur.key === "products" && this._prodTab !== "delete") { this._renderProducts(); this._loadProducts(); }
-    if (cur.key === "recipes" && this._recTab !== "groups" && this._recTab !== "file" && this._recTab !== "wait") this._renderSetRecipeList();
+    if (cur.key === "recipes" && this._recTab === "recipes") this._renderSetRecipeList();
     if (cur.key === "transfer" && this._xferTabNow() === "apps") this._loadTodoLists();
     if (cur.key === "transfer" && this._xferTabNow() === "mail") this._loadMailSources();
     this._renderDelList();
@@ -6734,6 +6721,32 @@ ${(() => {
     // 🗂️ die Reiter oben sind jetzt Kästen wie die Hauptgruppen: nur der offene zeigt seinen Inhalt, nochmal antippen klappt ihn zu
     const tabs = [["apps", "🔁", "Aus anderen Apps", "Alexa-/To-do-Listen, Text, CSV-Katalog"], ["grocy", "🥫", "Grocy", "Produkte in den Katalog holen"], ["mail", "📧", "E-Mail", "Artikel per Mail aufs Postfach"], ["backup", "💾", "Sicherung", "Alles als .zip herunterladen oder einspielen"]];
     return `<div class="xaccs">${tabs.map(([k, emo, label, sub]) => `<div class="lgbox xacc ${tab === k ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="xfer-tab" data-tab="${k}" aria-expanded="${tab === k}"><span class="gem">${emo}</span><span class="grow"><b>${label}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>${tab === k ? `<div class="xacc-b">${body}</div>` : ""}</div>`).join("")}</div>`;
+  }
+
+  // 📅 Wochenplan-Einstellung (eigener Kasten in ⚙️ → Rezepte)
+  _planSetHtml() {
+    const d = this._data || {};
+    return `
+        <div>
+          ${this._swHtml("plan-reset-toggle", d.settings?.plan_reset_on !== false, "Eingeplante Rezepte automatisch zurücksetzen")}
+          ${d.settings?.plan_reset_on === false ? "" : `<div class="srow"><ha-icon class="prev" icon="mdi:calendar-week"></ha-icon><select class="grow" id="planDaySel" title="Zurücksetzen am">${WD_LONG.map((w, i) => `<option value="${i}" ${i === (d.settings?.plan_reset_day ?? 0) ? "selected" : ""}>${w}</option>`).join("")}</select></div>
+          <p class="hint">Jeden ${WD_LONG[d.settings?.plan_reset_day ?? 0]} um 03:30 Uhr gehen alle „📅 Diese Woche“-Rezepte zurück auf „nichts“. 💭 Essenswünsche bleiben stehen. Gilt für alle.</p>`}
+        </div>`;
+  }
+
+  // 🗂️ ⚙️ → Rezepte: aufklappbare Kästen wie in den Einstellungen und bei den Gar-Zeiten (nur einer offen, alle starten zu)
+  _recBoxes(body) {
+    const d = this._data || {}, cur = this._recTab || "none";
+    const nr = (d.recipes || []).length, ng = (d.recipe_groups || []).length, nw = (d.proposals || []).filter((x) => x.status !== "rejected").length;
+    const box = (act, k, icon, color, title, sub, open, own) => `<div class="lgbox xacc ${open ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="${act}" ${act === "rec-tab" ? `data-tab="${k}" aria-expanded="${open}"` : ""}><span class="gem" style="background:${color};color:#fff"><ha-icon icon="${icon}" style="color:#fff"></ha-icon></span><span class="grow"><b>${title}</b><small>${sub}</small></span>${act === "rec-tab" ? `<ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>` : `<ha-icon class="chev" icon="mdi:plus-circle-outline"></ha-icon>`}</button>${open ? `<div class="xacc-b">${own ?? body}</div>` : ""}</div>`;
+    return `<div class="xaccs">${[
+      box("recipe-new", "new", "mdi:plus", "#43a047", "Neues Rezept", "Ein eigenes Rezept anlegen", false),
+      box("rec-tab", "recipes", "mdi:chef-hat", "#e53935", "Rezepte", nr ? (nr === 1 ? "1 Rezept" : `${nr} Rezepte`) : "noch keine", cur === "recipes"),
+      box("rec-tab", "groups", "mdi:tag-multiple-outline", "#8e24aa", "Rezept-Gruppen", ng ? (ng === 1 ? "1 Gruppe" : `${ng} Gruppen`) : "noch keine", cur === "groups"),
+      box("rec-tab", "file", "mdi:file-document-outline", "#546e7a", "Rezepte aus Datei", "Aus einer Datei einlesen", cur === "file"),
+      box("rec-tab", "wait", "mdi:timer-sand", "#fb8c00", "Wartet auf OK", nw ? (nw === 1 ? "1 Vorschlag wartet" : `${nw} Vorschläge warten`) : "nichts offen", cur === "wait"),
+      box("rec-tab", "plan", "mdi:calendar-week", "#43a047", "Wochenplan", d.settings?.plan_reset_on === false ? "Zurücksetzen aus" : `Zurücksetzen jeden ${WD_LONG[d.settings?.plan_reset_day ?? 0]}`, cur === "plan", this._planSetHtml()),
+    ].join("")}</div>`;
   }
 
   // 📥 Rezepte aus Datei einlesen (⚙️ → Rezepte, dritter Reiter)
@@ -12108,7 +12121,7 @@ ${(() => {
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
         break;
       case "rec-tab":
-        this._recTab = el.dataset.tab; this._rgSel = null;
+        this._recTab = (this._recTab || "none") === el.dataset.tab ? "none" : el.dataset.tab; this._rgSel = null; // den offenen nochmal antippen = zu
         this._renderSettings();
         break;
       case "set-grp": // 🗂️ eine Überschrift auf = die vorherige zu
