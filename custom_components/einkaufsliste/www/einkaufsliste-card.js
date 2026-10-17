@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.9";
+const EL_VERSION = "2.76.17-beta.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -702,7 +702,7 @@ const EL_EMOJI_COLORS = {
 // 🧩 Farben der großen Gruppen-Kästchen in den Einstellungen (Emoji der Gruppe → Farbe)
 const EL_GEM_COLORS = { "📋": "#1e88e5", "🎛": "#8e24aa", "💾": "#43a047", "🩺": "#e53935", "👁": "#00897b", "📱": "#3949ab" };
 const EL_EMOJI_RX = new RegExp("^\\s*(" + Object.keys(EL_EMOJI_ICONS).sort((a, b) => b.length - a.length).join("|") + ")\\uFE0F?(?=\\s|$)\\s*", "u");
-const EL_ICON_PARENTS = "button,h2,h3,h4,summary,legend,label,b,span,li,a,small,p,.lbl";
+const EL_ICON_PARENTS = "button,h2,h3,h4,summary,legend,label,b,span,li,a,small,p,.lbl,.ic";
 const EL_ICON_USER = ".name,.rname,.pname,.delname > b,.lname,.stitle"; // Namen, die die Leute selbst tippen
 const EL_ICON_SKIP = "option,select,textarea,input,ha-icon,style,script,[data-noicon]";
 const EL_LEADS = new WeakMap(); // Textknoten → das Emoji, das davor stand (für die Übersetzung: die Wörterbuch-Einträge beginnen mit dem Emoji)
@@ -809,7 +809,6 @@ function elTranslateTree(root) {
 }
 // Einmal pro Karte: alles Neue im Schatten-DOM gleich übersetzen
 function elWatch(root, keep = true) {
-  if (EL_LANG === "de" && !keep) return;
   if (EL_I18N_ROOTS.has(root)) return;
   if (keep) EL_I18N_ROOTS.add(root); // Einblendungen (Anleitung, Kochen …) nicht merken – die verschwinden wieder
   const mo = new MutationObserver((muts) => {
@@ -4180,7 +4179,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _toast(message) {
-    this.dispatchEvent(new CustomEvent("hass-notification", { detail: { message: elT(message) }, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent("hass-notification", { detail: { message: elT(message).replace(/^\s*(?:\p{Extended_Pictographic}|[▥✓])[\uFE0F\u200D\p{Extended_Pictographic}]*\s*/u, "") }, bubbles: true, composed: true }));
   }
 
   $(id) { return this.shadowRoot.getElementById(id); }
@@ -9478,7 +9477,7 @@ ${(() => {
     head.append(title, bTimer, bPhoto, bGar, bClose);
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
-    heatBox.innerHTML = heat.map((h) => `<div style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 16px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
+    heatBox.innerHTML = heat.map((h) => `<div class="ic" style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 16px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
     const pos = document.createElement("div");
     Object.assign(pos.style, { color: "#aaa", font: "600 16px Roboto,sans-serif", margin: "6px 0 10px" });
     const text = document.createElement("div");
@@ -9505,7 +9504,7 @@ ${(() => {
     let pers = r.servings ? (this._cookPers[r.id] || r.servings) : null;
     const renderIng = () => {
       const f = pers && r.servings ? pers / r.servings : 1;
-      const bar = r.servings ? `<div style="margin-bottom:10px;font:600 16px Roboto,sans-serif">👥 für ${pers} ${esc(servLabel(r.servings_unit, pers))}${pers === r.servings ? "" : ` <small style="color:#aaa;font-weight:400">(Rezept: ${r.servings})</small>`}</div>` : "";
+      const bar = r.servings ? `<div class="ic" style="margin-bottom:10px;font:600 16px Roboto,sans-serif">👥 für ${pers} ${esc(servLabel(r.servings_unit, pers))}${pers === r.servings ? "" : ` <small style="color:#aaa;font-weight:400">(Rezept: ${r.servings})</small>`}</div>` : "";
       ing.innerHTML = bar + r.items.map((i) => { const q = scaleQty(i.quantity, f); return `• ${esc([q, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:8px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}`; }).join("<br>");
     };
     renderIng();
@@ -9645,6 +9644,7 @@ ${(() => {
       intro.dataset.elintro = "1";
       Object.assign(intro.style, { ...wrapW, flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "18px", textAlign: "center" });
       const q = document.createElement("div");
+      q.className = "ic";
       q.textContent = r.servings_unit === "trays" ? "🍰 Wie viele Bleche backst du?" : "👥 Für wie viele Personen kochst du?";
       Object.assign(q.style, { font: "600 clamp(22px, 5vw, 30px) Roboto,sans-serif" });
       const pr = document.createElement("div");

@@ -43,7 +43,7 @@ body { padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset
 .foot { display:flex; justify-content:center; gap:10px; margin:28px 6px 8px; font-size:13px; color:var(--secondary-text-color); }
 .foot button.on { border-color:var(--primary-color); color:var(--primary-color); }
 .foot button[hidden] { display:none; }
-.foot button { font:inherit; color:inherit; background:none; text-decoration:underline; border:1px solid var(--divider-color); border-radius:10px; padding:8px 18px; cursor:pointer; }
+.foot button { display:inline-flex; align-items:center; gap:6px; --mdc-icon-size:18px; font:inherit; color:inherit; background:none; text-decoration:underline; border:1px solid var(--divider-color); border-radius:10px; padding:8px 18px; cursor:pointer; }
 .login { max-width:420px; margin:16vh auto 0; text-align:center; padding:0 20px; }
 .login img { width:96px; height:96px; border-radius:22px; }
 .big { font:inherit; border:0; background:var(--primary-color); color:#fff; border-radius:12px; padding:13px 22px; font-size:17px; font-weight:600; margin-top:16px; cursor:pointer; }
@@ -60,7 +60,7 @@ body { padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset
 .scan .msg { position:absolute; left:50%; top:63%; transform:translateX(-50%); background:rgba(30,30,30,.92); border-radius:12px; padding:9px 14px; font-size:15px; max-width:88vw; text-align:center; }
 .scan .msg:empty { display:none; }
 .scan .btns { position:absolute; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 22px); display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding:0 16px; }
-.scan .btns button { font:inherit; font-size:16px; font-weight:600; border:0; border-radius:12px; padding:13px 18px; cursor:pointer; background:rgba(255,255,255,.18); color:#fff; }
+.scan .btns button { display:inline-flex; align-items:center; justify-content:center; gap:6px; --mdc-icon-size:20px; font:inherit; font-size:16px; font-weight:600; border:0; border-radius:12px; padding:13px 18px; cursor:pointer; background:rgba(255,255,255,.18); color:#fff; }
 .scan .btns button.main { background:var(--primary-color); }
 .scan ~ .toast { bottom:calc(env(safe-area-inset-bottom) + 96px); }
 .toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 20px); transform:translateX(-50%); background:#323232; color:#fff;
@@ -389,7 +389,7 @@ async function scanOpen(p) {
   el.className = "scan";
   el.innerHTML = `<video playsinline muted autoplay></video><div class="shade"></div>
     <div class="top"><h2></h2><p></p></div><div class="msg"></div>
-    <div class="btns">${p.alternative_option_label ? `<button class="main" data-b="alt"></button>` : ""}<button data-b="flip" title="${T("Kamera wechseln", "Switch camera")}">🔄</button><button data-b="x">✕ ${T("Schließen", "Close")}</button></div>`;
+    <div class="btns">${p.alternative_option_label ? `<button class="main" data-b="alt"></button>` : ""}<button data-b="flip" title="${T("Kamera wechseln", "Switch camera")}">${ib("camera-flip-outline", "")}</button><button data-b="x">${ib("close", T("Schließen", "Close"))}</button></div>`;
   el.querySelector("h2").textContent = p.title || T("Barcode scannen", "Scan barcode");
   el.querySelector(".top p").textContent = p.description || "";
   const alt = el.querySelector('[data-b="alt"]');
@@ -469,6 +469,7 @@ async function scanOpen(p) {
 function scanNote(text, stay = false) {
   if (!scan) return;
   const m = scan.el.querySelector(".msg");
+  text = noLead(text);
   m.textContent = text;
   clearTimeout(scan.noteTimer);
   if (!stay) scan.noteTimer = setTimeout(() => { if (m.textContent === text) m.textContent = ""; }, 3000);
@@ -554,7 +555,11 @@ function makeHass() {
 
 // ---------------------------------------------------------------- 🖼️ Seite
 let card = null;
+const LEAD_EMOJI = /^\s*(?:\p{Extended_Pictographic}|[▥✓])[\uFE0F\u200D\p{Extended_Pictographic}]*\s*/u; // Emoji vorn weg (Meldungen haben kein Symbol-Platz)
+const noLead = (t) => String(t || "").replace(LEAD_EMOJI, "");
+const ib = (icon, text) => `<ha-icon icon="mdi:${icon}"></ha-icon><span>${text}</span>`; // Symbol + Text für Knöpfe
 function toast(msg) {
+  msg = noLead(msg);
   document.querySelectorAll("body > .toast").forEach((t) => t.remove());
   const el = document.createElement("div"); el.className = "toast"; el.textContent = msg;
   document.body.append(el); setTimeout(() => el.remove(), 3500);
@@ -584,7 +589,7 @@ function update() {
     // 🚪 Abmelden ganz unten – damit man beim Abhaken nicht aus Versehen draufkommt
     const foot = document.createElement("div");
     foot.className = "foot";
-    foot.innerHTML = `<button id="viewBtn" title="${T("👁️ Meine Ansicht – was ich beim Artikel sehe", "👁️ My view – what I see on items")}">${T("👁️ Ansicht", "👁️ View")}</button><button id="speakBtn" title="${T("Die offenen Artikel vorlesen (nochmal antippen = Stopp)", "Read the open items aloud (tap again = stop)")}">${T("🔊 Vorlesen", "🔊 Read aloud")}</button><button id="guideBtn">${T("📖 Anleitung", "📖 Guide")}</button><button id="logoutBtn">${T("Abmelden", "Log out")}</button>`;
+    foot.innerHTML = `<button id="viewBtn" title="${T("Meine Ansicht – was ich beim Artikel sehe", "My view – what I see on items")}">${ib("eye-outline", T("Ansicht", "View"))}</button><button id="speakBtn" title="${T("Die offenen Artikel vorlesen (nochmal antippen = Stopp)", "Read the open items aloud (tap again = stop)")}">${ib("volume-high", T("Vorlesen", "Read aloud"))}</button><button id="guideBtn">${ib("book-open-page-variant-outline", T("Anleitung", "Guide"))}</button><button id="logoutBtn">${T("Abmelden", "Log out")}</button>`;
     wrap.append(foot);
     // 🚪 Abmelden nur unten in der Einkaufsliste und auf der ersten Seite der Einstellungen
     const showFoot = () => {
@@ -598,8 +603,8 @@ function update() {
     window.addEventListener("einkaufsliste-nav", () => setTimeout(showFoot, 0));
     showFoot();
     document.getElementById("guideBtn").addEventListener("click", () => card._showGuide?.());
-    document.getElementById("speakBtn").addEventListener("click", (e) => { const on = !!card.toggleSpeak?.(); e.currentTarget.classList.toggle("on", on); e.currentTarget.textContent = on ? T("⏹ Stopp", "⏹ Stop") : T("🔊 Vorlesen", "🔊 Read aloud"); });
-    window.addEventListener("einkaufsliste-speak-end", () => { const b = document.getElementById("speakBtn"); if (b) { b.classList.remove("on"); b.textContent = T("🔊 Vorlesen", "🔊 Read aloud"); } });
+    document.getElementById("speakBtn").addEventListener("click", (e) => { const on = !!card.toggleSpeak?.(); e.currentTarget.classList.toggle("on", on); e.currentTarget.innerHTML = on ? ib("stop", T("Stopp", "Stop")) : ib("volume-high", T("Vorlesen", "Read aloud")); });
+    window.addEventListener("einkaufsliste-speak-end", () => { const b = document.getElementById("speakBtn"); if (b) { b.classList.remove("on"); b.innerHTML = ib("volume-high", T("Vorlesen", "Read aloud")); } });
     document.getElementById("viewBtn").addEventListener("click", (e) => e.currentTarget.classList.toggle("on", !!card.toggleMyView?.()));
     document.getElementById("logoutBtn").addEventListener("click", () => {
       if (confirm(T("Abmelden? Noch nicht gesendete Änderungen gehen verloren.", "Log out? Changes not sent yet will be lost."))) logout(false);
