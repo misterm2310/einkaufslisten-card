@@ -34,7 +34,8 @@ MAX_IMAGE = 3 * 1024 * 1024
 UNITS = tuple(u for u in UNIT_WORDS if u not in ("x", "×", "mal"))
 _NUM = NUM
 _UNIT = "|".join(sorted((re.escape(u) for u in UNITS), key=len, reverse=True))
-_LINE = re.compile(rf"^(?P<qty>{_NUM})\s*(?P<unit>(?:{_UNIT})\.?(?=\s|$))?\s*(?P<rest>.*)$", re.IGNORECASE)
+# „1x Milch“ / „2 x Eier“: das x gehört zur Menge (sonst bleibt es im Namen hängen: „X Milch“)
+_LINE = re.compile(rf"^(?P<qty>{_NUM})\s*(?P<unit>(?:{_UNIT})\.?(?=\s|$)|[x×](?=\s|$))?\s*(?P<rest>.*)$", re.IGNORECASE)
 _BULLET = re.compile(r"^\s*(?:[-–•*·▪►✓✔☐□]+|\d+[.)](?=\s))\s*")
 _SKIP = re.compile(
     r"^(zutaten|zubereitung|anleitung|für\s+\d+|für den|für die|portionen?|zeit|dauer|schwierigkeit)\b",

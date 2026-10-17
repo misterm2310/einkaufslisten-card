@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.19";
+const EL_VERSION = "2.76.17-beta.20";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -1997,6 +1997,13 @@ async function elLiveReader() {
     } catch (_) { return null; } finally { reader.reset(); }
   };
 }
+// 📐 Kamera/Scanner als Seite in der Karte: genau so hoch wie der Bildschirm (Auslöser und Knöpfe immer sichtbar, kein Scrollen nötig)
+function elFitPage(ov) {
+  if (!ov.dataset.elpage) return;
+  const vh = window.CSS?.supports?.("height", "100dvh") ? "100dvh" : "100vh";
+  Object.assign(ov.style, { height: `calc(${vh} - 170px)`, minHeight: "300px", maxHeight: "none" });
+  requestAnimationFrame(() => ov.scrollIntoView?.({ block: "nearest" }));
+}
 async function elScanLive(hint) {
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) return undefined;
   let stream, read;
@@ -2004,11 +2011,12 @@ async function elScanLive(hint) {
   try { read = await elLiveReader(); } catch (_) { stream.getTracks().forEach((t) => t.stop()); return undefined; }
   return new Promise((resolve) => {
     const ov = makeOverlay({ title: "📷 Einscannen", dark: true });
-    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { minHeight: "min(72vh, 640px)", borderRadius: "16px" } : {}) });
+    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { borderRadius: "16px" } : {}) });
+    elFitPage(ov);
     const video = document.createElement("video");
     Object.assign(video, { playsInline: true, muted: true, autoplay: true, srcObject: stream });
     video.setAttribute("playsinline", "");
-    video.style.cssText = "flex:1;width:100%;min-height:0;object-fit:contain;background:#000";
+    video.style.cssText = "flex:1 1 0;width:100%;height:0;min-height:0;object-fit:contain;background:#000";
     const msg = document.createElement("div");
     msg.textContent = hint || "Halte den Code der Karte ins Bild.";
     msg.style.cssText = "width:100%;text-align:center;padding:10px 16px;box-sizing:border-box;color:#fff;font-size:15px";
@@ -2055,11 +2063,12 @@ async function elCameraShot() {
   }
   return new Promise((resolve) => {
     const ov = makeOverlay({ title: "📷 Foto machen", dark: true });
-    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { minHeight: "min(72vh, 640px)", borderRadius: "16px" } : {}) });
+    Object.assign(ov.style, { background: "#000", padding: "0", justifyContent: "space-between", ...(ov.dataset.elpage ? { borderRadius: "16px" } : {}) });
+    elFitPage(ov);
     const video = document.createElement("video");
     Object.assign(video, { playsInline: true, muted: true, autoplay: true, srcObject: stream });
     video.setAttribute("playsinline", "");
-    video.style.cssText = "flex:1;width:100%;min-height:0;object-fit:contain;background:#000";
+    video.style.cssText = "flex:1 1 0;width:100%;height:0;min-height:0;object-fit:contain;background:#000";
     const bar = document.createElement("div");
     bar.style.cssText = "width:100%;display:flex;align-items:center;justify-content:space-around;padding:18px 16px calc(22px + env(safe-area-inset-bottom));box-sizing:border-box";
     const cancel = ovButton("✖");
@@ -2355,6 +2364,8 @@ async function editImage(file, max = 900, quality = 0.8) {
     Object.assign(row.style, { display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" });
     const bL = ovButton("↺ Drehen"), bR = ovButton("↻ Drehen"), bFull = ovButton("⤢ Ganzes Bild");
     const bCancel = ovButton("Abbrechen"), bOk = ovButton("✔ Übernehmen", true);
+    for (const b of [bL, bR, bFull, bCancel, bOk]) Object.assign(b.style, { padding: "9px 12px", fontSize: "14px" });
+    requestAnimationFrame(() => ov.scrollIntoView?.({ block: "nearest" }));
     row.append(bL, bR, bFull, bCancel, bOk);
     ov.append(wrap, hint, row);
     let crop = { x: 0, y: 0, w: 0, h: 0 };
@@ -2371,7 +2382,7 @@ async function editImage(file, max = 900, quality = 0.8) {
       c.translate(src.width / 2, src.height / 2);
       c.rotate((rot * Math.PI) / 2);
       c.drawImage(img, -sw / 2, -sh / 2, sw, sh);
-      const maxW = Math.min(window.innerWidth - 32, 700), maxH = window.innerHeight * 0.62;
+      const maxW = Math.min(window.innerWidth - 32, 700), maxH = Math.max(150, Math.min(window.innerHeight * 0.62, window.innerHeight - (ov.dataset.elpage ? 400 : 300))); // Platz für Titel, Hinweis und zwei Knopfzeilen lassen
       const k = Math.min(maxW / src.width, maxH / src.height, 1);
       canvas.width = Math.round(src.width * k);
       canvas.height = Math.round(src.height * k);
@@ -2563,6 +2574,9 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .prop .pn { flex:1 1 auto; min-width:0; } .prop .pn b { display:block; font-weight:600; } .prop .pn small { display:block; color:var(--secondary-text-color); font-size:.8em; }
 .prop.wait > ha-icon { color:#fb8c00; } .prop.rej > ha-icon { color:#e53935; } .prop.rej { opacity:.75; }
 .prop.rej .pn b { text-decoration:line-through; } .prop.rej .btn { opacity:1; }
+.pinbox { margin:6px 0 0; padding:8px 10px; border-radius:10px; background:color-mix(in srgb, var(--primary-text-color, #000) 5%, transparent); }
+.pinh { font-size:.75em; font-weight:600; color:var(--secondary-text-color); text-transform:uppercase; letter-spacing:.04em; margin-top:6px; } .pinh:first-child { margin-top:0; }
+.pint { white-space:pre-wrap; word-break:break-word; }
 .prop .pbtns { display:flex; gap:6px; flex:none; flex-wrap:wrap; justify-content:flex-end; }
 .prop .ptxt { color:var(--secondary-text-color); font-size:.85em; white-space:pre-wrap; max-height:3.6em; overflow:hidden; }
 .tab .tbadge { display:inline-block; min-width:1.4em; margin-left:6px; padding:0 6px; border-radius:10px; background:#fb8c00; color:#fff; font-size:.8em; line-height:1.5; text-align:center; }
@@ -7658,7 +7672,7 @@ ${(() => {
     const list = (this._data?.proposals || []).filter((p) => p.status !== "rejected" || Date.now() - Date.parse(p.rejected_at || 0) < 864e5);
     box.hidden = !list.length;
     box.innerHTML = list.map((p) => p.status === "rejected"
-      ? `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""}</small></span><button type="button" class="btn" data-act="prop-del" data-id="${esc(p.id)}" title="Jetzt löschen" aria-label="Jetzt löschen" style="margin-left:auto"><ha-icon icon="mdi:close" style="color:#e53935"></ha-icon></button></div>`
+      ? `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""}</small></span></div>`
       : `<div class="prop wait"><ha-icon icon="mdi:timer-sand"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>wartet auf OK${p.by ? ` · von ${esc(p.by)}` : ""}</small></span></div>`).join("");
   }
 
@@ -7711,14 +7725,21 @@ ${(() => {
     };
   }
 
+  // 🔎 genau das, was beim Vorschlagen eingetippt wurde (so wie es ankam)
+  _propInputHtml(p) {
+    const part = (title, text) => String(text || "").trim() ? `<div class="pinh">${title}</div><div class="pint" translate="no">${esc(String(text).trim())}</div>` : "";
+    return `<div class="pinbox">${part("Name", p.name)}${part("Von", p.by)}${part("Zutaten", p.ingredients)}${part("Backofen & Co.", p.heat)}${part("Zubereitung", p.steps)}${part("Text", p.text)}${this._hasPhoto(`vorschlag#${p.id}`) ? `<div class="pinh">Foto</div><div class="pint">📷 dabei (Knopf „Foto ansehen“)</div>` : ""}</div>`;
+  }
+
   // 📝 Warteliste in den Rezept-Einstellungen
   _recWaitHtml() {
     const list = this._data?.proposals || [];
     if (!list.length) return `<p class="hint">Im Moment wartet nichts auf ein OK. 🎉 Vorschläge entstehen in der Kochmütze mit dem 💡-Knopf.</p>`;
     return `<div class="propbox">${list.map((p) => {
       if (p.status === "rejected") return `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""} · verschwindet nach einem Tag</small></span><button type="button" class="btn" data-act="prop-del" data-id="${esc(p.id)}" title="Jetzt löschen" aria-label="Jetzt löschen" style="margin-left:auto"><ha-icon icon="mdi:close" style="color:#e53935"></ha-icon></button></div>`;
-      const key = `vorschlag#${p.id}`;
-      return `<div class="prop wait" style="flex-wrap:wrap"><ha-icon icon="mdi:timer-sand"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>wartet auf OK${p.by ? ` · von ${esc(p.by)}` : ""}</small><div class="ptxt" translate="no">${esc(String(p.text || "").slice(0, 200))}</div></span>
+      const key = `vorschlag#${p.id}`, open = !!this._propOpen?.has(p.id);
+      return `<div class="prop wait" style="flex-wrap:wrap"><ha-icon icon="mdi:timer-sand"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>wartet auf OK${p.by ? ` · von ${esc(p.by)}` : ""}</small></span>
+        <div class="pin" style="flex:1 1 100%"><button type="button" class="btn" data-act="prop-view" data-id="${esc(p.id)}" aria-expanded="${open}" title="Zeigen, was eingegeben wurde"><ha-icon icon="mdi:text-box-search-outline"></ha-icon><span style="margin-left:6px">Eingegeben</span><ha-icon icon="mdi:chevron-${open ? "up" : "down"}"></ha-icon></button>${open ? this._propInputHtml(p) : ""}</div>
         <span class="pbtns">${this._hasPhoto(key) ? `<button type="button" class="btn" data-act="prop-photo" data-id="${esc(p.id)}" title="Foto ansehen" aria-label="Foto ansehen"><ha-icon icon="mdi:image-outline"></ha-icon></button>` : ""}<button type="button" class="btn" data-act="prop-reject" data-id="${esc(p.id)}" title="Ablehnen" aria-label="Ablehnen"><ha-icon icon="mdi:close" style="color:#e53935"></ha-icon><span class="lbl">Ablehnen</span></button><button type="button" class="btn primary" data-act="prop-check" data-id="${esc(p.id)}" title="Prüfen und freigeben" aria-label="Prüfen und freigeben"><ha-icon icon="mdi:check-bold"></ha-icon><span class="lbl">Prüfen</span></button></span></div>`;
     }).join("")}</div>`;
   }
@@ -12464,6 +12485,12 @@ ${(() => {
         el.setAttribute("aria-expanded", String(on));
         const body = box.querySelector(":scope > .rsec-b");
         if (body) body.hidden = !on;
+        break;
+      }
+      case "prop-view": { // „Eingegeben“ auf-/zuklappen (Zustand bleibt beim Neuzeichnen)
+        this._propOpen = this._propOpen || new Set();
+        this._propOpen.has(el.dataset.id) ? this._propOpen.delete(el.dataset.id) : this._propOpen.add(el.dataset.id);
+        this._renderSettings();
         break;
       }
       case "prop-del":

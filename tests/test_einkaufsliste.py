@@ -1701,6 +1701,36 @@ def test_convert_foreign_units():
     assert convert_temps("Bake at 350°F, then 425 degrees F.") == "Bake at 175 °C, then 220 °C."
 
 
+def test_import_x_multiplier():
+    """„1x Milch“ / „2 x Eier“: das x gehört zur Menge und bleibt nicht als „X Milch“ im Namen hängen."""
+    from custom_components.einkaufsliste.recipe_import import parse_line
+
+    assert parse_line("1x Milch") == {"name": "Milch", "quantity": "1x", "note": None}
+    assert parse_line("2 x Eier")["name"] == "Eier"
+    assert parse_line("3× Tomaten")["quantity"] == "3x"
+    assert parse_line("200 g Mehl")["quantity"] == "200 g"
+    assert parse_line("Xylit 100 g")["name"] == "Xylit 100 g"
+
+
+async def test_recipe_proposals(hass, setup):
+    """💡 Rezept-Vorschläge: vorschlagen, ablehnen (bleibt als ✖), sofort löschen, freigeben."""
+    m = mgr(hass)
+    p = m.add_proposal("Omas Kuchen", None, "Sandra", "1x Milch\n200 g Mehl", "Umluft 180 °C, 25 Min", "Alles verrühren.")
+    assert [x["name"] for x in m.proposals] == ["Omas Kuchen"] and p["ingredients"].startswith("1x Milch")
+    with pytest.raises(ValueError):
+        m.add_proposal("Leer", None, None, "", "", "")  # ohne Zutaten und Zubereitung geht es nicht
+    with pytest.raises(ValueError):
+        m.delete_proposal(p["id"])  # wartende Vorschläge löscht man nicht einfach weg
+    await m.async_reject_proposal(p["id"])
+    assert m.proposals[0]["status"] == "rejected" and m.proposals[0]["ingredients"] == ""
+    m.delete_proposal(p["id"])
+    assert m.proposals == []
+    q = m.add_proposal("Pizza", "200 g Mehl\nZubereitung\nBacken.", "Jamila")
+    r = m.add_recipe("Pizza", [{"name": "Mehl", "quantity": "200 g"}])
+    m.accept_proposal(q["id"], r["id"])
+    assert m.proposals == []
+
+
 async def test_backup_roundtrip(hass, setup, hass_client):
     """💾 Sicherung herunterladen und wieder einspielen – samt Fotos."""
     import base64
