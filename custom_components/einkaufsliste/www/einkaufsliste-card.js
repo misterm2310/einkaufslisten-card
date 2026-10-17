@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.11";
+const EL_VERSION = "2.76.17-beta.12";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -2697,10 +2697,9 @@ ha-card.compact .group { margin-top:4px; }
 button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:pot-steam-outline"] { color:#ef6c00; }
 button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:robot-happy-outline"] { color:#5e35b1; }
 button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:camera-outline"] { color:#1e88e5; }
-button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:barcode-scan"] { color:#43a047; }
 button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:timer-outline"] { color:#26a69a; }
 button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:cart-plus"] { color:#43a047; }
-.xacc-b { padding:4px 4px 12px 14px; margin:0 0 0 16px; border-left:2px solid color-mix(in srgb, var(--primary-color,#03a9f4) 28%, transparent); } /* aufgeklappt: leicht eingerückt, mit feiner Linie */
+.xacc-b { padding:4px 12px 12px; }
 .xacc-b[hidden] { display:none; }
 .lrow > ha-icon:first-child { color:var(--primary-color,#03a9f4); }
 .lrow small, .swrow small, .swline small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
@@ -2708,6 +2707,8 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .lrow .chev { opacity:.5; flex:none; }
 .lgbox .lrow { margin:0; border:0; border-radius:0; border-top:1px solid var(--divider-color, rgba(127,127,127,.25)); background:none; }
 .lgbox .lgroup + .lrow { border-top:0; }
+.lgbox .lgroup ~ .lrow { margin-left:16px; width:calc(100% - 16px); box-sizing:border-box; border-left:2px solid color-mix(in srgb, var(--primary-color,#03a9f4) 28%, transparent); } /* aufgeklappt: Zeilen leicht eingerückt */
+.gem ha-icon, .gic ha-icon, .ic ha-icon { color:inherit !important; } /* Symbole in bunten Feldern bleiben weiß */
 .lgbox .lrow:hover { background:color-mix(in srgb, var(--primary-color,#03a9f4) 6%, transparent); }
 .lgbox div.lrow { padding:0 12px 0 0; cursor:default; }
 .lmain { display:flex; align-items:center; gap:12px; flex:1 1 auto; min-width:0; padding:10px 0 10px 12px; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
@@ -3404,7 +3405,7 @@ function showGarTable(card, tcard = null) {
   </style>
   <div class="gar" translate="no">
     ${asPage || fromPage ? "" : `<div class="gh"><button type="button" class="gback" title="${en ? "Back" : "Zurück"}" aria-label="${en ? "Back" : "Zurück"}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:pot-steam-outline"></ha-icon></span><div class="gt">${en ? "Cooking times" : "Gar-Zeiten"}</div></div>`}
-    <div class="gtimer"><button type="button" class="gtbtn" title="${en ? "Start a timer" : "Timer starten"}" aria-label="${en ? "Start a timer" : "Timer starten"}"><ha-icon icon="mdi:timer-outline"></ha-icon>Timer</button></div>
+    <div class="gtimer"><button type="button" class="gtbtn" title="${en ? "Start a timer" : "Timer starten"}" aria-label="${en ? "Start a timer" : "Timer starten"}"><ha-icon icon="mdi:timer-outline"></ha-icon></button></div>
     <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
     <div class="gtabs"></div>
     <p class="sub devhint"></p>
@@ -9504,10 +9505,11 @@ ${(() => {
     const head = document.createElement("div");
     Object.assign(head.style, { ...wrapW, display: "flex", alignItems: "center", gap: "10px" });
     const title = document.createElement("div");
-    { const ti = document.createElement("ha-icon"); ti.setAttribute("icon", "mdi:chef-hat"); ti.style.cssText = "--mdc-icon-size:24px;flex:none;"; const tn = document.createElement("span"); tn.textContent = r.name; title.append(ti, tn); title.style.display = "flex"; title.style.alignItems = "center"; title.style.gap = "8px"; }
+    { const ti = document.createElement("ha-icon"); ti.setAttribute("icon", "mdi:chef-hat"); ti.style.cssText = `--mdc-icon-size:24px;flex:none;color:${SET_COLORS.recipes};`; const tn = document.createElement("span"); tn.textContent = r.name; title.append(ti, tn); title.style.display = "flex"; title.style.alignItems = "center"; title.style.gap = "8px"; }
     Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
     const bGar = ovIconButton("mdi:pot-steam-outline"), bClose = ovIconButton("mdi:close"), bPhoto = ovIconButton("mdi:image-multiple-outline"), bTimer = ovIconButton("mdi:timer-outline");
-    bTimer.title = elT("Timer"); bTimer.style.marginRight = "14px"; // etwas Luft zum Foto-Symbol
+    bTimer.title = elT("Timer"); bTimer.querySelector("ha-icon").style.color = "#26a69a"; bPhoto.querySelector("ha-icon").style.color = "#1e88e5"; bGar.querySelector("ha-icon").style.color = "#ef6c00"; // 🎨 wie überall: Timer türkis, Fotos blau, Gar-Zeiten orange
+     bTimer.style.marginRight = "14px"; // etwas Luft zum Foto-Symbol
     bTimer.onclick = () => this._timerWindow(r, elStepSeconds(steps[idx]) || 300, finalStep && idx === steps.length ? 0 : idx + 1);
     bPhoto.title = elT("Foto zu diesem Schritt"); bPhoto.style.display = "none";
     bGar.title = elT("Gar-Zeiten");
