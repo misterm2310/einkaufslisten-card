@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.10";
+const EL_VERSION = "2.76.17-beta.11";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -2693,7 +2693,14 @@ ha-card.compact .group { margin-top:4px; }
 .xaccs { display:flex; flex-direction:column; }
 .xacc > .lgroup > .chev { transition:transform .2s; }
 .xacc.open > .lgroup > .chev { transform:rotate(180deg); }
-.xacc-b { padding:4px 12px 12px; }
+/* 🎨 Eine Funktion = ein Symbol = eine Farbe (in Knöpfen; gefüllte/aktive Knöpfe behalten ihre Schriftfarbe) */
+button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:pot-steam-outline"] { color:#ef6c00; }
+button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:robot-happy-outline"] { color:#5e35b1; }
+button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:camera-outline"] { color:#1e88e5; }
+button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:barcode-scan"] { color:#43a047; }
+button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:timer-outline"] { color:#26a69a; }
+button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:cart-plus"] { color:#43a047; }
+.xacc-b { padding:4px 4px 12px 14px; margin:0 0 0 16px; border-left:2px solid color-mix(in srgb, var(--primary-color,#03a9f4) 28%, transparent); } /* aufgeklappt: leicht eingerückt, mit feiner Linie */
 .xacc-b[hidden] { display:none; }
 .lrow > ha-icon:first-child { color:var(--primary-color,#03a9f4); }
 .lrow small, .swrow small, .swline small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
@@ -3344,6 +3351,8 @@ async function elKeepAwake(ov, noVideo) { // noVideo: in der HA-App bringt der V
 }
 
 // ⏲️ Gar-Zeiten: mit `card` als Seite IN der Karte (wie die anderen Seiten), ohne Karte (Koch-Modus) als Vollbild-Fenster
+const GAR_DEV_ICO = { "🍲": ["pot-steam-outline", "#ef6c00"], "🔥": ["fire", "#e64a19"], "💨": ["weather-windy", "#546e7a"] }; // Geräte-Reiter: Symbol + Farbe
+const GAR_GRP_ICO = { "🍝": ["pasta", "#f9a825"], "🥔": ["food-variant", "#8d6e63"], "🥚": ["egg-outline", "#fbc02d"], "🥦": ["carrot", "#43a047"], "🍗": ["food-drumstick-outline", "#bf6b3a"], "🐟": ["fish", "#1e88e5"], "🍕": ["pizza", "#e53935"] };
 function showGarTable(card, tcard = null) {
   const en = EL_LANG !== "de";
   const min = en ? "min" : "Min";
@@ -3378,7 +3387,20 @@ function showGarTable(card, tcard = null) {
     .gar .note { color:var(--secondary-text-color); font-size:13px; margin-top:1px; }
     .gar .t { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:6px; font-size:15px; }
     .gar .t span { white-space:nowrap; }
-    .gar h3 { display:block; font-size:13px; color:var(--secondary-text-color); margin:12px 0 5px; font-weight:600; }
+    .gar .gtbtn ha-icon { color:#26a69a; }
+    .gar .gtabs button b ha-icon { --mdc-icon-size:26px; }
+    .gar .gtabs button.on b ha-icon { color:inherit !important; }
+    .gar .gbox { margin:10px 0 0; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:12px; overflow:hidden; }
+    .gar h3 { display:flex; align-items:center; gap:12px; margin:0; padding:10px 12px; font-size:1em; font-weight:400; cursor:pointer; user-select:none; color:var(--primary-text-color); background:color-mix(in srgb, var(--primary-text-color, #000) 3%, transparent); }
+    .gar h3.on { border-bottom:1px solid var(--divider-color, rgba(127,127,127,.25)); }
+    .gar h3 .gem { width:36px; height:36px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; background:var(--gc); color:#fff; --mdc-icon-size:20px; }
+    .gar h3 .gn { flex:1; min-width:0; }
+    .gar h3 .gn b { display:block; font-weight:600; }
+    .gar h3 .gn small { display:block; color:var(--secondary-text-color); font-size:.8em; }
+    .gar h3 .gchev { flex:none; transition:transform .2s; color:var(--secondary-text-color); }
+    .gar h3.on .gchev { transform:rotate(180deg); }
+    .gar .gb { padding:8px 10px 2px; }
+    .gar .gb[hidden] { display:none; }
   </style>
   <div class="gar" translate="no">
     ${asPage || fromPage ? "" : `<div class="gh"><button type="button" class="gback" title="${en ? "Back" : "Zurück"}" aria-label="${en ? "Back" : "Zurück"}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:pot-steam-outline"></ha-icon></span><div class="gt">${en ? "Cooking times" : "Gar-Zeiten"}</div></div>`}
@@ -3420,22 +3442,27 @@ function showGarTable(card, tcard = null) {
     const note = en ? r[6] : r[5];
     return `<div class="row"><div class="n">${name(r)}</div>${note ? `<div class="note">${esc(note)}</div>` : ""}<div class="t">${t}</div></div>`;
   };
+  const openG = new Set(); // aufgeklappte Gruppen (bleiben beim Wechsel des Geräts offen)
+  const grp = (icon, gde, gen, key, rowsHtml, n, forceOpen) => {
+    const gi = GAR_GRP_ICO[icon] || ["silverware-fork-knife", "#8d6e63"], on = forceOpen || openG.has(key);
+    return `<div class="gbox"><h3 class="${on ? "on" : ""}" data-g="${key}" role="button" tabindex="0" aria-expanded="${on}"><span class="gem" style="--gc:${gi[1]}"><ha-icon icon="mdi:${gi[0]}"></ha-icon></span><span class="gn"><b>${esc(en ? gen : gde)}</b><small>${n} ${en ? (n === 1 ? "entry" : "entries") : (n === 1 ? "Eintrag" : "Einträge")}</small></span><ha-icon class="gchev" icon="mdi:chevron-down"></ha-icon></h3><div class="gb" ${on ? "" : "hidden"}>${rowsHtml}</div></div>`;
+  };
   const draw = () => {
     const q = inp.value.trim().toLowerCase();
     tabs.hidden = hint.hidden = !!q;
-    tabs.innerHTML = GAR_DEV.map((d, i) => `<button class="${i === dev ? "on" : ""}" data-d="${i}"><b>${d.icon}</b>${en ? d.en : d.de}</button>`).join("");
+    tabs.innerHTML = GAR_DEV.map((d, i) => { const gi = GAR_DEV_ICO[d.icon] || ["pot-steam-outline", "#ef6c00"]; return `<button class="${i === dev ? "on" : ""}" data-d="${i}"><b><ha-icon icon="mdi:${gi[0]}" style="color:${gi[1]}"></ha-icon></b>${en ? d.en : d.de}</button>`; }).join("");
     if (!q) {
       const d = GAR_DEV[dev];
       hint.textContent = en ? d.hintEn : d.hintDe;
-      list.innerHTML = GAR.map(([icon, gde, gen, rows]) => {
+      list.innerHTML = GAR.map(([icon, gde, gen, rows], gi) => {
         const hit = rows.filter((r) => r[d.col]);
-        return hit.length ? `<h3>${icon} ${esc(en ? gen : gde)}</h3>${hit.map((r) => devRow(r, d.col)).join("")}` : "";
+        return hit.length ? grp(icon, gde, gen, gi, hit.map((r) => devRow(r, d.col)).join(""), hit.length, false) : "";
       }).join("");
       return;
     }
-    list.innerHTML = GAR.map(([icon, gde, gen, rows]) => {
+    list.innerHTML = GAR.map(([icon, gde, gen, rows], gi) => {
       const hit = rows.filter((r) => r[0].toLowerCase().includes(q) || r[1].toLowerCase().includes(q) || gde.toLowerCase().includes(q) || gen.toLowerCase().includes(q));
-      return hit.length ? `<h3>${icon} ${esc(en ? gen : gde)}</h3>${hit.map(fullRow).join("")}` : "";
+      return hit.length ? grp(icon, gde, gen, gi, hit.map(fullRow).join(""), hit.length, true) : "";
     }).join("") || `<p class="sub">${en ? "Nothing found." : "Nichts gefunden."}</p>`;
   };
   tabs.addEventListener("click", (e) => {
@@ -3445,6 +3472,17 @@ function showGarTable(card, tcard = null) {
     if (ov) ov.scrollTop = 0; else host.scrollIntoView?.({ block: "nearest" });
   });
   inp.addEventListener("input", draw);
+  const toggleG = (e) => { // Überschrift antippen = Gruppe auf/zu (bei der Suche sind alle offen)
+    const h = e.target.closest("h3[data-g]");
+    if (!h || inp.value.trim()) return;
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    const k = Number(h.dataset.g), on = !openG.has(k);
+    on ? openG.add(k) : openG.delete(k);
+    h.classList.toggle("on", on); h.setAttribute("aria-expanded", String(on));
+    if (h.nextElementSibling) h.nextElementSibling.hidden = !on;
+  };
+  list.addEventListener("click", toggleG); list.addEventListener("keydown", toggleG);
   host.querySelector(".gtbtn").onclick = () => { // ⏱️ Timer direkt aus den Gar-Zeiten (ohne Rezept, 5 Minuten vorgewählt)
     const tc = (card && card._timerWindow ? card : null) || tcard || elPageCard();
     if (tc) tc._timerWindow({}, 300, 0);
@@ -4225,7 +4263,7 @@ class EinkaufslisteCard extends HTMLElement {
               <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto</span></button>
               <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat – haben wir immer (z. B. Salz, Öl)" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon><span class="lbl">Vorrat</span></button>
               <button class="tool" id="btnFavAll" type="button" data-act="fav-all" title="⭐ Alle Favoriten auf die Liste"><ha-icon icon="mdi:star-outline"></ha-icon><span class="lbl">Favoriten</span></button>
-              <button class="tool" id="btnOcrList" type="button" data-act="ocr-list" title="Liste aus Foto einlesen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon><span class="lbl">Aus Foto</span></button>
+              <button class="tool" id="btnOcrList" type="button" data-act="ocr-list" title="Liste aus Foto einlesen"><ha-icon icon="mdi:camera-outline"></ha-icon><span class="lbl">Aus Foto</span></button>
               <button class="tool tclear" id="tClear" type="button" data-act="clear-form" title="Alles leeren" hidden><ha-icon icon="mdi:eraser"></ha-icon><span class="lbl">Leeren</span></button>
             </div>
             <div class="extras">
@@ -6518,7 +6556,7 @@ ${(() => {
         <p class="hint" style="margin-top:14px"><b>Text einfügen</b>: In Bring!, Google Keep & Co. die Liste „teilen“ oder kopieren und hier einfügen – ein Artikel pro Zeile. Aufzählungszeichen und Häkchen stören nicht, schon abgehakte (☑, [x]) bleiben draußen.</p>
         <textarea id="xferText" rows="6" placeholder="Milch&#10;2 Äpfel&#10;- Brot&#10;☐ Butter"></textarea>
         <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="xferTextStore">${stores}</select></div>
-        <div class="btnrow"><button class="btn primary" data-act="xfer-text"><ha-icon icon="mdi:playlist-plus"></ha-icon>Auf die Liste</button></div>`;
+        <div class="btnrow"><button class="btn primary" data-act="xfer-text"><ha-icon icon="mdi:cart-plus"></ha-icon>Auf die Liste</button></div>`;
       const csvInner = `<p class="hint" style="margin-top:14px"><b>📄 Katalog aus CSV oder Liste</b>: Eine Datei (CSV/Text) oder eingefügte Zeilen als <b>Produkte in den Katalog</b> – nicht auf die Einkaufsliste. Eine Zeile pro Produkt. Mit Kopfzeile (<code>Name; Kategorie; Barcode; Notiz</code>, Reihenfolge egal) oder ohne – dann gilt genau diese Reihenfolge. Trenner <code>;</code> , oder Tab. Was es schon gibt, wird nicht überschrieben.</p>
         <textarea id="csvText" rows="5" placeholder="Name;Kategorie;Barcode;Notiz&#10;Milch;Milchprodukte;4006381333931;Bio&#10;Brot"></textarea>
         <div class="btnrow"><label class="btn"><ha-icon icon="mdi:file-delimited-outline"></ha-icon>Datei wählen …<input type="file" id="csvFile" accept=".csv,.txt,text/csv,text/plain" hidden></label></div>
@@ -7529,7 +7567,7 @@ ${(() => {
     // Suchfeld nur einmal bauen – sonst springt beim Tippen der Cursor raus
     const aiOn = !!this._data.settings?.ai_on && !this._privacyOn();
     if (!ov.querySelector("#recipeList") || !!ov.querySelector("#recipeSearch") !== count > 0 || !!ov.querySelector('[data-act="ai-cook"]') !== aiOn) {
-      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon><span class="lbl">Was kann ich kochen?</span></button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:timer-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button></h3>${
+      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon><span class="lbl">Was kann ich kochen?</span></button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button></h3>${
         count ? this._recipeSearchHtml("recipeSearch") : ""}<div id="recipeList"></div></div>`;
     }
     this._renderRecipeList();
