@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.12";
+const EL_VERSION = "2.76.17-beta.13";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -3381,7 +3381,7 @@ function showGarTable(card, tcard = null) {
     .gar .gtabs button { font:inherit; font-size:14px; hyphens:manual; overflow-wrap:anywhere; color:var(--primary-text-color); background:var(--card-background-color, #fff); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:8px 4px; cursor:pointer; line-height:1.2; }
     .gar .gtabs button b { display:block; font-size:22px; margin-bottom:2px; }
     .gar .gtabs button.on { background:var(--primary-color,#03a9f4); border-color:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); }
-    .gar .row { background:var(--card-background-color, #fff); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 12px; margin:0 0 6px; }
+    .gar .row { background:none; border:0; border-radius:0; padding:10px 12px; margin:0; }
     .gar .top { display:flex; align-items:baseline; gap:10px; }
     .gar .n { font-weight:600; font-size:16px; flex:1; }
     .gar .v { font-weight:700; white-space:nowrap; color:var(--primary-text-color); }
@@ -3400,7 +3400,8 @@ function showGarTable(card, tcard = null) {
     .gar h3 .gn small { display:block; color:var(--secondary-text-color); font-size:.8em; }
     .gar h3 .gchev { flex:none; transition:transform .2s; color:var(--secondary-text-color); }
     .gar h3.on .gchev { transform:rotate(180deg); }
-    .gar .gb { padding:8px 10px 2px; }
+    .gar .gb { padding:0; margin-left:16px; border-left:2px solid color-mix(in srgb, var(--primary-color,#03a9f4) 28%, transparent); }
+    .gar .gb .row + .row { border-top:1px solid var(--divider-color, rgba(127,127,127,.25)); }
     .gar .gb[hidden] { display:none; }
   </style>
   <div class="gar" translate="no">
@@ -4238,7 +4239,7 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="tstrip" id="timerStrip" hidden></div>
       <ha-card>
         <div class="head">
-          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="home" title="🏠 Zurück zur Einkaufsliste"></ha-icon><span id="mascot" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="badge" id="count" data-act="home" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
+          <div class="title"><ha-icon id="titleIcon" icon="mdi:cart-variant" data-act="home" title="🏠 Zurück zur Einkaufsliste"></ha-icon><span id="mascot" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="badge" id="count" data-act="home" title="🏠 Zurück zur Einkaufsliste" hidden></span><span class="t" id="title" hidden></span><button class="iconbtn" id="btnScan" type="button" data-act="scan" title="Barcode scannen" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon></button><button class="iconbtn" id="btnSpend" type="button" data-act="spend" title="Einkaufs-Protokoll" hidden><ha-icon icon="mdi:receipt-text-outline"></ha-icon></button></div>
           <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon><span class="lbl">Bildschirm</span></button>
           <button class="iconbtn" id="btnCalc" data-act="calc" title="Rechner" hidden><ha-icon icon="mdi:calculator-variant-outline"></ha-icon><span class="lbl">Rechner</span></button>
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
@@ -9507,12 +9508,12 @@ ${(() => {
     const title = document.createElement("div");
     { const ti = document.createElement("ha-icon"); ti.setAttribute("icon", "mdi:chef-hat"); ti.style.cssText = `--mdc-icon-size:24px;flex:none;color:${SET_COLORS.recipes};`; const tn = document.createElement("span"); tn.textContent = r.name; title.append(ti, tn); title.style.display = "flex"; title.style.alignItems = "center"; title.style.gap = "8px"; }
     Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
-    const bGar = ovIconButton("mdi:pot-steam-outline"), bClose = ovIconButton("mdi:close"), bPhoto = ovIconButton("mdi:image-multiple-outline"), bTimer = ovIconButton("mdi:timer-outline");
+    const bGar = ovIconButton("mdi:pot-steam-outline"), bClose = ovIconButton("mdi:close"), bPhoto = ovIconButton("mdi:camera-plus-outline"), bTimer = ovIconButton("mdi:timer-outline");
     bTimer.title = elT("Timer"); bTimer.querySelector("ha-icon").style.color = "#26a69a"; bPhoto.querySelector("ha-icon").style.color = "#1e88e5"; bGar.querySelector("ha-icon").style.color = "#ef6c00"; // 🎨 wie überall: Timer türkis, Fotos blau, Gar-Zeiten orange
      bTimer.style.marginRight = "14px"; // etwas Luft zum Foto-Symbol
-    bTimer.onclick = () => this._timerWindow(r, elStepSeconds(steps[idx]) || 300, finalStep && idx === steps.length ? 0 : idx + 1);
+    bTimer.onclick = () => this._timerWindow(r, (() => { const hm = (r.heat || []).map((h) => Number(h.minutes)).find((m) => m > 0); return hm ? Math.round(hm * 60) : (elStepSeconds(steps[idx]) || 300); })(), finalStep && idx === steps.length ? 0 : idx + 1);
     bPhoto.title = elT("Foto zu diesem Schritt"); bPhoto.style.display = "none";
-    bGar.title = elT("Gar-Zeiten");
+    bGar.title = elT("Gar-Zeiten"); bClose.title = elT("Schließen"); bPhoto.title = bPhoto.title || elT("Fotos");
     bGar.onclick = () => showGarTable(null, this); // im Koch-Fenster bleibt es ein Fenster (die Seite läge dahinter)
     head.append(title, bTimer, bPhoto, bGar, bClose);
     const heatBox = document.createElement("div");
@@ -9527,6 +9528,11 @@ ${(() => {
     const nav = document.createElement("div");
     Object.assign(nav.style, { ...wrapW, display: "flex", gap: "10px", marginTop: "12px", padding: "6px 0 0" });
     const bPrev = ovButton("‹ Zurück"), bNext = ovButton("Weiter ›", true);
+    for (const b of [bPrev, bNext]) { // 🫧 etwas durchsichtig; beim Antippen kurz voll sichtbar
+      b.style.opacity = ".72"; b.style.transition = "opacity .15s";
+      b.addEventListener("pointerdown", () => { b.style.opacity = "1"; }, { passive: true });
+      for (const ev of ["pointerup", "pointercancel", "pointerleave"]) b.addEventListener(ev, () => { b.style.opacity = ".72"; }, { passive: true });
+    }
     for (const b of [bPrev, bNext]) Object.assign(b.style, { flex: "1", padding: "16px", fontSize: "18px" });
     nav.append(bPrev, bNext);
     const timerBar = document.createElement("div"); // ⏲️ laufende Timer (aller Rezepte)
@@ -9548,7 +9554,12 @@ ${(() => {
       ing.innerHTML = bar + r.items.map((i) => { const q = scaleQty(i.quantity, f); return `• ${esc([q, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:8px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}`; }).join("<br>");
     };
     renderIng();
-    main.append(left, ing);
+    // ↔ Griff zwischen Schritt-Text und Zutaten: ziehen = Größe ändern, Doppeltippen = zurück auf 2 : 1. Gilt nur, solange die Kochansicht offen ist.
+    const FRAC0 = 2 / 3; let frac = FRAC0, dragging = false;
+    const grip = document.createElement("div"); grip.dataset.elgrip = "1"; grip.title = elT("Ziehen: Größe ändern · Doppeltippen: zurück auf 2 : 1");
+    Object.assign(grip.style, { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", userSelect: "none" });
+    const pill = document.createElement("div"); Object.assign(pill.style, { background: "#666", borderRadius: "3px" }); grip.append(pill);
+    main.append(left, grip, ing);
     // 📜 Zu lang für den Platz? Dann läuft der Text von selbst: kurze Pause, langsam bis zum Ende, Pause, zurück nach oben …
     // Fasst man den Text an (wischen, Mausrad, Taste), hört das für diesen Bereich auf.
     const autoScroll = (el) => {
@@ -9585,12 +9596,14 @@ ${(() => {
     const layout = () => {
       const wide = ov.clientWidth >= 640;
       main.style.flexDirection = wide ? "row" : "column";
+      main.style.gap = "2px";
       ing.style.display = ingOn ? "block" : "none";
-      Object.assign(ing.style, wide
-        ? { flex: "0 0 calc((100% - 16px) / 3)", boxSizing: "border-box", borderLeft: "1px solid #333", borderTop: "none", paddingLeft: "16px", paddingTop: "0" }
-        : { flex: "1 1 0", borderLeft: "none", borderTop: "1px solid #333", paddingLeft: "0", paddingTop: "8px" });
-      left.style.flex = !ingOn ? "1 1 100%" : wide ? "1 1 0" : "0 1 auto"; // 📐 breit: Schritte 2 Teile, Zutaten 1 Teil // Hochformat: Schritt so hoch wie nötig (höchstens die halbe Höhe), der Rest gehört den Zutaten
-      left.style.maxHeight = ingOn && !wide ? "52%" : "none";
+      grip.style.display = ingOn ? "flex" : "none";
+      Object.assign(grip.style, wide ? { width: "18px", height: "auto", cursor: "col-resize" } : { width: "100%", height: "18px", cursor: "row-resize" });
+      Object.assign(pill.style, wide ? { width: "4px", height: "48px" } : { width: "48px", height: "4px" });
+      Object.assign(ing.style, { flex: `${Math.round((1 - frac) * 1000)} 1 0`, boxSizing: "border-box", border: "none", padding: "0" }); // Zutaten: 1 Teil
+      left.style.flex = !ingOn ? "1 1 100%" : `${Math.round(frac * 1000)} 1 0`; // Schritte: 2 Teile (Standard)
+      left.style.maxHeight = "none";
       text.style.font = wide ? "500 clamp(20px, 2.6vw, 32px)/1.35 Roboto,sans-serif" : "500 clamp(20px, 5.4vw, 30px)/1.35 Roboto,sans-serif";
     };
     ov.style.paddingBottom = "calc(env(safe-area-inset-bottom, 0px) + 12px)"; // sonst rutscht „Weiter“ um dieses Polster nach oben
@@ -9600,6 +9613,15 @@ ${(() => {
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => { layout(); autoL.start(); autoR.start(); }) : null;
     ro?.observe(ov);
     layout();
+    grip.addEventListener("pointerdown", (e) => { dragging = true; try { grip.setPointerCapture(e.pointerId); } catch (_) { /* egal */ } e.preventDefault(); });
+    grip.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const rc = main.getBoundingClientRect(), wide = ov.clientWidth >= 640;
+      frac = Math.min(0.8, Math.max(0.2, wide ? (e.clientX - rc.left) / rc.width : (e.clientY - rc.top) / rc.height));
+      layout();
+    });
+    for (const ev of ["pointerup", "pointercancel"]) grip.addEventListener(ev, () => { dragging = false; });
+    grip.addEventListener("dblclick", () => { frac = FRAC0; layout(); });
     // ⏲️ Zeit aus dem Schritt-Text („30 Minuten“, „1,5 Std“, „45 Sek“); sonst 5 Minuten
     // ⏱️ Der Timer lebt im Fenster oben (⏱️ neben 📷): Name optional, Schnellwahl, Zeit aus dem Schritt-Text als Vorgabe
     const renderTimers = () => {
@@ -9678,6 +9700,19 @@ ${(() => {
     bPrev.onclick = () => { if (idx) { idx--; show(); } };
     bNext.onclick = () => { if (idx < total - 1) { idx++; show(); } else close(); };
     bClose.onclick = close;
+    { // 👆 Wischen: nach links = weiter, nach rechts = zurück (nur deutlich waagerecht; beim letzten Schritt beendet nur der Knopf)
+      let sx = 0, sy = 0, st = 0, ok = false;
+      ov.addEventListener("touchstart", (e) => { const t = e.touches[0]; ok = e.touches.length === 1 && !!t && !e.target.closest?.("input,textarea,select,button,[data-elgrip]"); sx = t?.clientX || 0; sy = t?.clientY || 0; st = Date.now(); }, { passive: true });
+      ov.addEventListener("touchend", (e) => {
+        if (!ok) return; ok = false;
+        if (document.querySelector("[data-eltimer]") || ov.querySelector("[data-elintro]")) return;
+        const t = e.changedTouches[0]; if (!t) return;
+        const dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Date.now() - st > 800 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        if (dx < 0 && idx < total - 1) { idx++; show(); }
+        else if (dx > 0 && idx) { idx--; show(); }
+      }, { passive: true });
+    }
     this._renderTimerStrip();
     if (ask && r.servings) { // 👥 Vor dem Start: für wie viele Personen wird gekocht? (die Zutaten rechnen sich danach um)
       const intro = document.createElement("div");
