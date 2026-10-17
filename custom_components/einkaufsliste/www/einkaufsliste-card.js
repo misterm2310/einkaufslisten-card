@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.19-beta.3";
+const EL_VERSION = "2.76.19-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.18"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Behoben: ✏️ Eine „Eigene Notiz“, die du im Rezept-Editor bei einer Zutat einträgst, wird jetzt mit dem Rezept gespeichert (vorher ging sie beim Speichern verloren).",
+   "Fixed: ✏️ an “own note” you enter on an ingredient in the recipe editor is now saved with the recipe (before, it got lost on saving)."],
   ["Neu: 🗂️ ⚙️ → Rezepte besteht jetzt aus aufklappbaren Kästen wie die Einstellungen und die Gar-Zeiten: Neues Rezept, Rezepte, Rezept-Gruppen, Rezepte aus Datei, Wartet auf OK und Wochenplan. Es ist immer nur einer offen, alle starten zu. Der Wochenplan hat einen eigenen Kasten und steht nicht mehr unter „Rezepte“.",
    "New: 🗂️ ⚙️ → Recipes now consists of collapsible boxes like the settings and the cooking times: New recipe, Recipes, Recipe groups, Recipes from file, Waiting for OK and Weekly plan. Only one is open at a time, all start closed. The weekly plan has its own box and is no longer under “Recipes”."],
   ["Neu: 🔒 Die Karte lässt sich nicht mehr mit zwei Fingern zoomen (auch unten bei „Erledigt“ nicht). Fotos zoomen weiter. Auf der Angebote-Seite öffnet ein Tipp aufs Produktbild es einfach groß.",
@@ -8578,6 +8580,7 @@ ${(() => {
     const items = dr.items.filter((i) => i.name).map((i) => {
       const o = { name: i.name };
       for (const k of ["quantity", "note", "for_whom", "store_id", "category_id", "barcode"]) if (i[k]) o[k] = i[k];
+      if (i.own_note != null) o.own_note = i.own_note; // ✏️ Eigene Notiz mitschicken (auch leer = löschen)
       if (i.basic) o.basic = true;
       return o;
     });
