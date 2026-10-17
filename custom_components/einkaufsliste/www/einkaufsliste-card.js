@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.19-beta.5";
+const EL_VERSION = "2.76.19-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.18"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -117,7 +117,7 @@ const EL_GUIDE = [
       "<b>Zu Hause:</b> Die Liste schaut in der Produkt-Datenbank nach und <b>füllt das Eingabefeld</b> aus: Name, Marke als Notiz, Kategorie und bei Eigenmarken das Geschäft. Mit dem grünen Haken kommt es auf die Liste. Das Foto aus der Datenbank wird automatisch geholt, wenn du noch keins hast.",
       "<b>Noch unbekannt?</b> Das Feld bleibt leer: Namen tippen, ✅ – die Liste merkt sich den Barcode. Ein neues Produkt mit eigenem Namen legst du mit dem <b>▥ mit Plus</b> an.",
       "<b>📦 Mehrere scannen:</b> Der Scanner bleibt offen, <b>jede Packung kommt sofort auf die Liste</b>. Mit „✔ Fertig“ beendest du; „↩️ Rückgängig“ gilt kurz für die zuletzt gescannte Packung.",
-      "<b>✅ Im Laden:</b> Zeigt dein Standort ein Geschäft, hakt ▥ ab: Packung scannen, steht sie offen auf der Liste, ist sie abgehakt.",
+      "<b>✅ Im Laden:</b> Zeigt dein Standort ein Geschäft, hakt ▥ ab: Packung scannen, steht sie offen auf der Liste, ist sie abgehakt. Im <b>Laden-Modus</b> geht das auch ohne Standort: dann gilt der gewählte Geschäft-Reiter (und „Egal wo“), unter „Alle“ die ganze Liste. Steht eine Packung bei mehreren Geschäften, hakt die Liste sie nicht auf Verdacht ab.",
       "<b>Nachträglich zuordnen:</b> Artikel lange drücken → <b>Barcode</b>. Heißt das Produkt in der Datenbank anders, wählst du einzeln, ob Name und/oder Notiz übernommen werden.",
       "<b>Datenschutz:</b> Beim Scannen geht nur die Nummer an Open Food Facts. Ohne Netz kennt die Liste nur schon gespeicherte Barcodes. Ist 🔒 Datenschutz an, gibt es keinen Scanner (Nummer nur von Hand).",
     ],
@@ -126,7 +126,7 @@ const EL_GUIDE = [
       "<b>At home:</b> the list looks it up in the product database and <b>fills the input field</b>: name, brand as note, category and, for store brands, the store. The green tick puts it on the list. The database photo is fetched automatically if you have none yet.",
       "<b>Still unknown?</b> The field stays empty: type the name, ✅ – the list remembers the barcode. A new product with your own name you create with the <b>▥ with plus</b>.",
       "<b>📦 Scan several:</b> the scanner stays open, <b>every pack goes onto the list at once</b>. “✔ Done” ends it; “↩️ Undo” applies briefly to the last pack.",
-      "<b>✅ In the store:</b> if your location shows a store, ▥ checks off: scan the pack, if it is open on the list it is checked off.",
+      "<b>✅ In the store:</b> if your location shows a store, ▥ checks off: scan the pack, if it is open on the list it is checked off. In <b>store mode</b> this also works without a location: the chosen store tab (and “anywhere”) counts, under “All” the whole list. If a pack is on the list for several stores, it is not checked off on a guess.",
       "<b>Assign later:</b> press and hold an item → <b>Barcode</b>. If the product has another name in the database, you choose separately whether name and/or note are taken over.",
       "<b>Privacy:</b> when scanning only the number goes to Open Food Facts. Offline the list only knows barcodes it has stored. If 🔒 Privacy is on there is no scanner (type the number by hand).",
     ] },
@@ -375,6 +375,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: ▥ Scannen & Abhaken geht im Laden-Modus jetzt auch ohne Standortzone. Es gilt der gewählte Geschäft-Reiter (und „Egal wo“), unter „Alle“ die ganze Liste. Steht eine Packung bei mehreren Geschäften auf der Liste, wird sie nicht auf Verdacht abgehakt. Der Knopf „Liste drucken“ ist außerdem viel kleiner geworden.",
+   "New: ▥ Scan & check off now also works in store mode without a location zone. The chosen store tab (and “anywhere”) counts, under “All” the whole list. If a pack is on the list for several stores it is not checked off on a guess. The “Print list” button is also much smaller now."],
   ["Neu: 🖨️ „Liste drucken“ steht unter der Einkaufsliste. Geschäft wählen, Vorschau ansehen, dann als Papier oder PDF ausgeben: mit Kästchen zum Abhaken, nach Geschäft und Kategorie sortiert, mit Datum, Uhrzeit und wer es ausgedruckt hat. Es passt möglichst auf eine A4-Seite (ab 20 Artikeln in zwei Spalten, bei sehr langen Listen etwas enger).",
    "New: 🖨️ “Print list” sits below the shopping list. Choose a store, check the preview, then print it or save it as PDF: with tick boxes, sorted by store and category, with date, time and who printed it. It tries to fit on one A4 page (two columns from 20 items, a bit tighter for very long lists)."],
   ["Behoben: ✏️ Eine „Eigene Notiz“, die du im Rezept-Editor bei einer Zutat einträgst, wird jetzt mit dem Rezept gespeichert (vorher ging sie beim Speichern verloren).",
@@ -2792,7 +2794,9 @@ ha-card.compact .group { margin-top:4px; }
 .donehead.closed ha-icon.chev { transform: rotate(-90deg); }
 .donehint { font-size:.75em; color:var(--secondary-text-color); padding:0 4px 4px; }
 /* ✔ „Erledigt – schon mal gekauft“: eigener, blasser Kasten – das ist das Archiv, nicht „noch kaufen“ */
-.printrow { margin-top:14px; text-align:center; }
+.printrow { margin-top:6px; text-align:center; }
+.prlink { background:none; border:0; color:var(--secondary-text-color); font:inherit; font-size:12px; cursor:pointer; padding:4px 8px; display:inline-flex; align-items:center; gap:4px; text-decoration:underline; }
+.prlink ha-icon { --mdc-icon-size:14px; }
 .prchoice { display:flex; flex-direction:column; gap:8px; margin:8px 0; }
 .prchoice .btn { justify-content:flex-start; min-height:48px; font-size:1em; }
 .prchoice .btn .n { margin-left:auto; opacity:.7; }
@@ -5737,7 +5741,7 @@ class EinkaufslisteCard extends HTMLElement {
       </div>`);
     }
     if (open.length && !filter && !this._shopMode) { // 🖨️ Liste drucken (unter der Liste, damit oben nichts voller wird)
-      html.push(`<div class="printrow"><button type="button" class="btn" data-act="print-list"><ha-icon icon="mdi:printer-outline"></ha-icon>Liste drucken</button></div>`);
+      html.push(`<div class="printrow"><button type="button" class="prlink" data-act="print-list"><ha-icon icon="mdi:printer-outline"></ha-icon>Liste drucken</button></div>`);
     }
     list.innerHTML = html.join("");
     if (this._editing) this.$("edName")?.focus(); else this._knRestore();
@@ -11167,6 +11171,10 @@ ${(() => {
   _scanButton() {
     const near = this._formMode !== "recipe" && this._lastNear && this._store(this._lastNear);
     if (near) return this._scanCheckOff(near);
+    if (this._shopMode && this._formMode !== "recipe") { // 🛍️ Laden-Modus ohne Standortzone: es gilt der gewählte Reiter („Alle“ = ganze Liste)
+      const tab = this._fixedStore || (this._activeTab !== "all" && this._activeTab !== "none" ? this._activeTab : null);
+      return this._scanCheckOff(tab ? this._store(tab) : null, true);
+    }
     this._appScan({
       title: "🛒 Barcode scannen",
       altLabel: "📦 Mehrere scannen",
@@ -11272,10 +11280,10 @@ ${(() => {
   }
 
   // ✅ Im Laden: gescannte Packung wird auf der Liste abgehakt
-  _scanCheckOff(store) {
+  _scanCheckOff(store, manual = false) { // manual = Laden-Modus ohne Standortzone (store = Reiter oder null)
     const stats = { checked: 0, log: [] };
     this._appScan({
-      title: `✅ Scannen & abhaken · ${store.name}`,
+      title: store ? `✅ Scannen & abhaken · ${store.name}` : "✅ Scannen & abhaken",
       description: "Packung scannen, bevor sie in den Wagen kommt.",
       altLabel: "✔ Fertig",
       series: true,
@@ -11285,10 +11293,17 @@ ${(() => {
         const want = this._pk(res.name, res.note);
         let open = this._data.items.filter((i) => !i.checked && this._pk(i.name, i.note) === want);
         if (!open.length && !res.note) open = this._data.items.filter((i) => !i.checked && i.name.toLowerCase() === res.name.toLowerCase());
-        const item = open.find((i) => i.store_id === store.id) || open[0];
+        let pool = open;
+        if (manual && store) { // Reiter: dieses Geschäft und „Egal wo“
+          pool = open.filter((i) => !i.store_id || i.store_id === store.id);
+          if (open.length && !pool.length) return `ℹ️ ${res.name} steht nur bei einem anderen Geschäft auf der Liste`;
+        } else if (manual && open.length > 1 && new Set(open.map((i) => i.store_id || "")).size > 1) {
+          return `❓ ${res.name} steht bei mehreren Geschäften – bitte im Reiter des Geschäfts scannen`; // nicht auf Verdacht abhaken
+        }
+        const item = (store && pool.find((i) => i.store_id === store.id)) || pool[0];
         if (!item) return `ℹ️ ${res.name} steht nicht auf der Liste`;
         try {
-          await this._ws({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: true, via: "scan", ...(!item.store_id ? { store_id: store.id } : {}) });
+          await this._ws({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: true, via: "scan", ...(!item.store_id && store ? { store_id: store.id } : {}) });
           stats.checked++;
           stats.log.push({ text: `✅ ${item.name}`, btn: "↩️ Wieder offen", undo: () => this._ws({ type: "einkaufsliste/item/toggle", item_id: item.id, checked: false, undo: true }) });
           return `✅ ${item.name} abgehakt`;
