@@ -3858,18 +3858,29 @@ class EinkaufslisteManager:
         return next((p for p in self.proposals if p["id"] == proposal_id), None)
 
     @callback
-    def add_proposal(self, name: str, text: str, by: str | None = None) -> dict[str, Any]:
-        """📝 Jemand schlägt ein Rezept vor (Text oder Link). Es landet auf der Warteliste, bis es freigegeben wird."""
+    def add_proposal(
+        self,
+        name: str,
+        text: str | None = None,
+        by: str | None = None,
+        ingredients: str | None = None,
+        heat: str | None = None,
+        steps: str | None = None,
+    ) -> dict[str, Any]:
+        """📝 Jemand schlägt ein Rezept vor (Zutaten, Backofen & Co., Zubereitung – als Text oder Link). Es landet auf der Warteliste, bis es freigegeben wird."""
         name = (_nice(name) or "")[:60]
-        text = str(text or "").strip()[:8000]
+        text = str(text or "").strip()[:8000]  # ältere Vorschläge: alles in einem Feld
+        ingredients = str(ingredients or "").strip()[:8000]
+        heat = str(heat or "").strip()[:2000]
+        steps = str(steps or "").strip()[:8000]
         if not name:
             raise ValueError("Der Vorschlag braucht einen Namen.")
-        if not text:
-            raise ValueError("Schreib bitte das Rezept (Zutaten und Schritte) oder füge einen Link ein.")
+        if not (text or ingredients or steps):
+            raise ValueError("Schreib bitte mindestens die Zutaten oder die Zubereitung auf – oder füge einen Link ein.")
         if len([p for p in self.proposals if p.get("status") != "rejected"]) >= MAX_PROPOSALS:
             raise ValueError("Es warten schon viele Vorschläge – sie müssen erst freigegeben oder abgelehnt werden.")
         self._prune_proposals()
-        proposal = {"id": _new_id(), "name": name, "text": text, "by": (_clean(by) or "")[:40], "created": _now_iso()}
+        proposal = {"id": _new_id(), "name": name, "text": text, "ingredients": ingredients, "heat": heat, "steps": steps, "by": (_clean(by) or "")[:40], "created": _now_iso()}
         self.proposals.append(proposal)
         self._changed()
         return proposal
@@ -3896,8 +3907,20 @@ class EinkaufslisteManager:
             raise ValueError("Diesen Vorschlag gibt es nicht (mehr).")
         proposal["status"] = "rejected"
         proposal["rejected_at"] = _now_iso()
-        proposal["text"] = ""  # der Inhalt wird nicht mehr gebraucht
+        for k in ("text", "ingredients", "heat", "steps"):  # der Inhalt wird nicht mehr gebraucht
+            proposal[k] = ""
         await self.async_remove_photo(proposal_photo_key(proposal_id))
+        self._changed()
+
+    @callback
+    def delete_proposal(self, proposal_id: str) -> None:
+        """🗑️ Einen abgelehnten Vorschlag sofort löschen (ohne die 24 Stunden abzuwarten). Wartende gehen so nicht weg."""
+        proposal = self.proposal_by_id(proposal_id)
+        if proposal is None:
+            return
+        if proposal.get("status") != "rejected":
+            raise ValueError("Nur abgelehnte Vorschläge lassen sich so löschen.")
+        self.proposals.remove(proposal)
         self._changed()
 
     def _visible_proposals(self) -> list[dict[str, Any]]:

@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.17-beta.18";
+const EL_VERSION = "2.76.17-beta.19";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.16"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -2176,6 +2176,28 @@ async function elClipboardImage() {
 
 // 🔒 PIN-Eingabe wie am Handy: gibt die getippte PIN zurück (oder null bei „Abbrechen“)
 // card gegeben = als Seite IN der Karte (wie Gar-Zeiten, ← = Abbrechen); sonst altes Vollbild-Fenster
+// 🔥 Backofen-Text eines Vorschlags („Umluft 180 °C, 25 Min“) -> Einstellungen (Gerät, Modus, Grad, Minuten); Rest kommt als Hinweis dazu
+function elParseHeat(text) {
+  const rows = [];
+  for (const line of String(text || "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean).slice(0, 6)) {
+    let rest = line;
+    const row = { device: "Backofen", mode: null, temp: null, minutes: null, minutes_to: null, preheat: false, note: null };
+    const t = rest.match(/(\d{2,3})\s*(?:°\s*c?|grad)/i);
+    if (t) { row.temp = Number(t[1]); rest = rest.replace(t[0], " "); }
+    const m = rest.match(/(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?\s*(?:min\.?|minuten)/i);
+    if (m) { row.minutes = Number(m[1]); if (m[2]) row.minutes_to = Number(m[2]); rest = rest.replace(m[0], " "); }
+    for (const dev of Object.keys(HEAT_DEVICES)) { const re = new RegExp(dev, "i"); if (re.test(rest)) { row.device = dev; rest = rest.replace(re, " "); break; } }
+    const esc2 = (x) => x.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+    const md = (HEAT_DEVICES[row.device]?.modes || []).slice().sort((a, b) => b.length - a.length).find((x) => rest.toLowerCase().includes(x.toLowerCase()));
+    if (md) { row.mode = md; rest = rest.replace(new RegExp(esc2(md), "i"), " "); }
+    if (/vorheiz|vorgeheizt/i.test(rest)) { row.preheat = true; rest = rest.replace(/vorgeheizt\w*|vorheiz\w*/i, " "); }
+    rest = rest.replace(/[,;:·|]+/g, " ").replace(/\s+/g, " ").trim();
+    row.note = rest.length > 1 ? rest.slice(0, 60) : null;
+    rows.push(row);
+  }
+  return rows;
+}
+
 // ✂️ Vorgeschlagener Rezepttext -> Zutaten (eine pro Zeile) und Schritte. Mit Überschrift „Zubereitung/Schritte/Anleitung“ ist es eindeutig,
 // sonst gelten lange Zeilen und Zeilen mit „1.“ vorn als Schritte, kurze als Zutaten.
 function elSplitRecipeText(text) {
@@ -2540,7 +2562,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .prop > ha-icon { flex:none; }
 .prop .pn { flex:1 1 auto; min-width:0; } .prop .pn b { display:block; font-weight:600; } .prop .pn small { display:block; color:var(--secondary-text-color); font-size:.8em; }
 .prop.wait > ha-icon { color:#fb8c00; } .prop.rej > ha-icon { color:#e53935; } .prop.rej { opacity:.75; }
-.prop.rej .pn b { text-decoration:line-through; }
+.prop.rej .pn b { text-decoration:line-through; } .prop.rej .btn { opacity:1; }
 .prop .pbtns { display:flex; gap:6px; flex:none; flex-wrap:wrap; justify-content:flex-end; }
 .prop .ptxt { color:var(--secondary-text-color); font-size:.85em; white-space:pre-wrap; max-height:3.6em; overflow:hidden; }
 .tab .tbadge { display:inline-block; min-width:1.4em; margin-left:6px; padding:0 6px; border-radius:10px; background:#fb8c00; color:#fff; font-size:.8em; line-height:1.5; text-align:center; }
@@ -7636,37 +7658,51 @@ ${(() => {
     const list = (this._data?.proposals || []).filter((p) => p.status !== "rejected" || Date.now() - Date.parse(p.rejected_at || 0) < 864e5);
     box.hidden = !list.length;
     box.innerHTML = list.map((p) => p.status === "rejected"
-      ? `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""}</small></span></div>`
+      ? `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""}</small></span><button type="button" class="btn" data-act="prop-del" data-id="${esc(p.id)}" title="Jetzt löschen" aria-label="Jetzt löschen" style="margin-left:auto"><ha-icon icon="mdi:close" style="color:#e53935"></ha-icon></button></div>`
       : `<div class="prop wait"><ha-icon icon="mdi:timer-sand"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>wartet auf OK${p.by ? ` · von ${esc(p.by)}` : ""}</small></span></div>`).join("");
   }
 
-  // 💡 „Rezept vorschlagen“: Name, Rezept als Text oder Link, dein Name, Foto (alles bis auf Name + Rezept ist freiwillig)
+  // 💡 „Rezept vorschlagen“: klappbare Kästen wie im Editor (nur „Eingaben“ startet offen), überall nur Tippfelder
   _proposeRecipe() {
     if (this._hass?.connected === false) { this._toast("📴 Vorschlagen geht nur mit Netz"); return; }
     this._propPhoto = null;
     let ov = null;
+    const closed = new Set(["zut", "ofen", "zub"]);
+    const sec = (k, icon, color, title, sub, inner) => this._rsec(k, icon, color, title, sub, "", inner, closed, "psec-toggle");
     this._openPage({ key: "prop", title: "Rezept vorschlagen", icon: "mdi:lightbulb-on-outline", color: "#f9a825", build: (body) => {
       ov = body;
       body.innerHTML = `<div class="pgcol">
-        <div class="pgsmall">Schreib dein Rezept einfach auf – als Text oder als Link. Es landet auf der Warteliste und wird erst nach einem OK ins Rezeptbuch übernommen.</div>
-        <input data-pn maxlength="60" placeholder="Name des Rezepts, z. B. Omas Apfelkuchen">
-        <textarea data-pt rows="9" placeholder="Zutaten (eine pro Zeile), danach die Zubereitung&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch)"></textarea>
-        <input data-pb maxlength="40" placeholder="Von wem? (dein Name)">
-        <div class="btnrow" data-ph style="justify-content:flex-start"><button type="button" class="btn" data-pphoto title="Foto vom Rezept oder Produkt" aria-label="Foto vom Rezept oder Produkt"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto vom Rezept oder Produkt</span></button><span class="hint" data-pphint></span></div>
+        <div class="pgsmall">Schreib dein Rezept einfach auf. Es landet auf der Warteliste und wird erst nach einem OK ins Rezeptbuch übernommen. Zutaten und Zubereitung gehen auch als Link (z. B. von Chefkoch).</div>
+        ${sec("in", "mdi:pencil-outline", "#546e7a", "Eingaben", "Name, von wem, Foto", `
+          <input data-pn maxlength="60" placeholder="Name des Rezepts, z. B. Omas Apfelkuchen">
+          <input data-pb maxlength="40" placeholder="Von wem? (dein Name)">
+          <div class="btnrow" style="justify-content:flex-start"><button type="button" class="btn" data-pphoto title="Foto vom Rezept oder Produkt" aria-label="Foto vom Rezept oder Produkt"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto vom Rezept oder Produkt</span></button><span class="hint" data-pphint></span></div>`)}
+        ${sec("zut", "mdi:food-apple-outline", "#43a047", "Zutaten", "Was kommt rein?", `<textarea data-pi rows="6" placeholder="Eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;&#10;…oder einfach einen Rezept-Link"></textarea>`)}
+        ${sec("ofen", "mdi:stove", "#ef6c00", "Backofen &amp; Co.", "Grad, Minuten, Modus", `<textarea data-ph rows="2" placeholder="z. B. Umluft 180 °C, 25 Min"></textarea>`)}
+        ${sec("zub", "mdi:chef-hat", "#e53935", "Zubereitung", "Die Schritte", `<textarea data-ps rows="6" placeholder="Ein Schritt pro Zeile, z. B.&#10;Zwiebeln schneiden&#10;Fleisch anbraten&#10;&#10;…oder einfach einen Rezept-Link"></textarea>`)}
         <div class="btnrow" style="justify-content:flex-end"><button type="button" class="btn" data-pcancel>Abbrechen</button><button type="button" class="btn primary" data-psend><ha-icon icon="mdi:send-outline"></ha-icon>Vorschlagen</button></div></div>`;
     } });
     if (!ov) return;
     const $ = (sel) => ov.querySelector(sel);
+    const isUrl = (v) => /^https?:\/\/\S+$/i.test(String(v || "").trim());
+    const mirror = (from, to) => from.addEventListener("input", () => { const v = from.value.trim(); if (isUrl(v) && (!to.value.trim() || isUrl(to.value))) to.value = v; }); // Link nur einmal tippen
+    mirror($("[data-pi]"), $("[data-ps]")); mirror($("[data-ps]"), $("[data-pi]"));
     $("[data-pb]").value = this._myName() || "";
     $("[data-pphoto]").onclick = () => { this._photoTarget = { proposalDraft: true, onData: (d) => { this._propPhoto = d; $("[data-pphint]").textContent = "📷 Foto ist dabei"; } }; this._pickFile("photoFile", "📷 Foto zum Vorschlag"); };
     $("[data-pcancel]").onclick = () => this._closePage();
     $("[data-psend]").onclick = async () => {
-      const name = $("[data-pn]").value.trim(), text = $("[data-pt]").value.trim(), by = $("[data-pb]").value.trim();
-      if (!name) { $("[data-pn]").classList.add("shake"); return; }
-      if (!text) { $("[data-pt]").classList.add("shake"); return; }
+      const name = $("[data-pn]").value.trim(), by = $("[data-pb]").value.trim();
+      const ingredients = $("[data-pi]").value.trim(), heat = $("[data-ph]").value.trim(), steps = $("[data-ps]").value.trim();
+      if (!name) { const h = $('.rsec[data-k="in"] .rsec-h'); if (h?.getAttribute("aria-expanded") === "false") h.click(); $("[data-pn]").classList.add("shake"); return; }
+      if (!ingredients && !steps) {
+        this._toast("Schreib bitte mindestens die Zutaten oder die Zubereitung auf – oder füge einen Link ein.");
+        const k = ingredients ? "zub" : "zut", h = $(`.rsec[data-k="${k}"] .rsec-h`); if (h?.getAttribute("aria-expanded") === "false") h.click();
+        $(k === "zut" ? "[data-pi]" : "[data-ps]").classList.add("shake");
+        return;
+      }
       const btn = $("[data-psend]"); btn.disabled = true;
       try {
-        const res = await this._ws({ type: "einkaufsliste/proposal/add", name, text, by: by || null });
+        const res = await this._ws({ type: "einkaufsliste/proposal/add", name, by: by || null, ingredients: ingredients || null, heat: heat || null, steps: steps || null });
         if (res?.id && this._propPhoto) await this._ws({ type: "einkaufsliste/photo/set", name: `vorschlag#${res.id}`, data: this._propPhoto, add: false }).catch(() => this._toast("📷 Das Foto konnte nicht gespeichert werden"));
         this._propPhoto = null;
         this._toast("💡 Danke! Dein Vorschlag wartet jetzt auf ein OK 👍");
@@ -7680,7 +7716,7 @@ ${(() => {
     const list = this._data?.proposals || [];
     if (!list.length) return `<p class="hint">Im Moment wartet nichts auf ein OK. 🎉 Vorschläge entstehen in der Kochmütze mit dem 💡-Knopf.</p>`;
     return `<div class="propbox">${list.map((p) => {
-      if (p.status === "rejected") return `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""} · verschwindet nach einem Tag</small></span></div>`;
+      if (p.status === "rejected") return `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""} · verschwindet nach einem Tag</small></span><button type="button" class="btn" data-act="prop-del" data-id="${esc(p.id)}" title="Jetzt löschen" aria-label="Jetzt löschen" style="margin-left:auto"><ha-icon icon="mdi:close" style="color:#e53935"></ha-icon></button></div>`;
       const key = `vorschlag#${p.id}`;
       return `<div class="prop wait" style="flex-wrap:wrap"><ha-icon icon="mdi:timer-sand"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>wartet auf OK${p.by ? ` · von ${esc(p.by)}` : ""}</small><div class="ptxt" translate="no">${esc(String(p.text || "").slice(0, 200))}</div></span>
         <span class="pbtns">${this._hasPhoto(key) ? `<button type="button" class="btn" data-act="prop-photo" data-id="${esc(p.id)}" title="Foto ansehen" aria-label="Foto ansehen"><ha-icon icon="mdi:image-outline"></ha-icon></button>` : ""}<button type="button" class="btn" data-act="prop-reject" data-id="${esc(p.id)}" title="Ablehnen" aria-label="Ablehnen"><ha-icon icon="mdi:close" style="color:#e53935"></ha-icon><span class="lbl">Ablehnen</span></button><button type="button" class="btn primary" data-act="prop-check" data-id="${esc(p.id)}" title="Prüfen und freigeben" aria-label="Prüfen und freigeben"><ha-icon icon="mdi:check-bold"></ha-icon><span class="lbl">Prüfen</span></button></span></div>`;
@@ -7692,24 +7728,34 @@ ${(() => {
     const pr = (this._data?.proposals || []).find((x) => x.id === id && x.status !== "rejected");
     if (!pr) { this._toast("Diesen Vorschlag gibt es nicht mehr."); return; }
     this._toast("📝 Vorschlag wird vorbereitet …");
-    const text = String(pr.text || "").trim();
-    let items = [], steps = "", image = null;
-    const call = async (t) => { try { return await this._ws({ type: "einkaufsliste/recipe/import", text: t }); } catch (_) { return null; } };
-    if (/^https?:\/\/\S+$/i.test(text)) {
-      const res = await call(text);
-      if (res) { items = res.items || []; steps = res.steps || ""; image = res.image || null; }
-      else this._toast("Der Link ließ sich nicht lesen – bitte Zutaten und Schritte von Hand eintragen.");
+    const isUrl = (v) => /^https?:\/\/\S+$/i.test(String(v || "").trim());
+    const cache = new Map();
+    const call = async (t) => { if (!cache.has(t)) { try { cache.set(t, await this._ws({ type: "einkaufsliste/recipe/import", text: t })); } catch (_) { cache.set(t, null); } } return cache.get(t); };
+    const ingT = String(pr.ingredients || "").trim(), stT = String(pr.steps || "").trim(), legacy = String(pr.text || "").trim();
+    let items = [], steps = "", image = null, heat = [], linkFail = false;
+    if (ingT || stT) {
+      if (ingT) { const res = await call(ingT); if (res) { items = res.items || []; image = res.image || null; } else if (isUrl(ingT)) linkFail = true; }
+      if (stT) {
+        if (isUrl(stT)) { const res = await call(stT); if (res) { steps = res.steps || ""; image = image || res.image || null; } else linkFail = true; }
+        else steps = stT;
+      }
+      heat = elParseHeat(pr.heat);
+    } else if (/^https?:\/\/\S+$/i.test(legacy)) { // älterer Vorschlag mit einem einzigen Textfeld
+      const res = await call(legacy);
+      if (res) { items = res.items || []; steps = res.steps || ""; image = res.image || null; } else linkFail = true;
     } else {
-      const sp = elSplitRecipeText(text);
+      const sp = elSplitRecipeText(legacy);
       steps = sp.steps;
       if (sp.ingredients) { const res = await call(sp.ingredients); if (res) items = res.items || []; }
     }
+    if (linkFail) this._toast("Ein Link ließ sich nicht lesen – bitte das Fehlende von Hand eintragen.");
     this._openRecipe(null);
     const dr = this._draft;
     dr.name = pr.name;
     dr.proposalId = pr.id;
     dr.items = abcSort(items.map((it) => ({ name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null, store_id: it.store_id || null, category_id: it.category_id || null })));
     dr.stepRows = this._stepLines(steps).map((t) => ({ k: ++this._stepSeq, t, o: null }));
+    dr.heat = heat;
     if (this._hasPhoto(`vorschlag#${pr.id}`)) { try { dr.newPhotos = [await this._photoData(`vorschlag#${pr.id}`, 0)]; } catch (_) { /* ohne Foto weiter */ } }
     else if (image) dr.newPhotos = [image];
     this._draftRendered = false;
@@ -7882,9 +7928,9 @@ ${(() => {
   }
 
   // 🗂️ Kasten im Rezept-Editor (wie Einstellungen / Gar-Zeiten): Kopf zum Auf-/Zuklappen, alle starten offen
-  _rsec(k, icon, color, title, sub, btn, inner) {
-    const on = !(this._rsecClosed || new Set()).has(k);
-    return `<div class="lgbox rsec ${on ? "open" : ""}" data-k="${k}"><div class="lgroup rsec-h" data-act="rsec-toggle" data-k="${k}" role="button" tabindex="0" aria-expanded="${on}"><span class="gem" style="--gc:${color}"><ha-icon icon="${icon}"></ha-icon></span><span class="grow"><b>${title}</b><small>${sub}</small></span>${btn || ""}<ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></div><div class="rsec-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
+  _rsec(k, icon, color, title, sub, btn, inner, closed = this._rsecClosed, act = "rsec-toggle") {
+    const on = !(closed || new Set()).has(k);
+    return `<div class="lgbox rsec ${on ? "open" : ""}" data-k="${k}"><div class="lgroup rsec-h" data-act="${act}" data-k="${k}" role="button" tabindex="0" aria-expanded="${on}"><span class="gem" style="--gc:${color}"><ha-icon icon="${icon}"></ha-icon></span><span class="grow"><b>${title}</b><small>${sub}</small></span>${btn || ""}<ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></div><div class="rsec-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
   }
 
   _renderRecipeEditor() {
@@ -12411,6 +12457,17 @@ ${(() => {
         break;
       case "prop-new":
         this._proposeRecipe();
+        break;
+      case "psec-toggle": { // Kasten im Vorschlags-Formular auf-/zuklappen
+        const box = el.closest(".rsec"), on = !box.classList.contains("open");
+        box.classList.toggle("open", on);
+        el.setAttribute("aria-expanded", String(on));
+        const body = box.querySelector(":scope > .rsec-b");
+        if (body) body.hidden = !on;
+        break;
+      }
+      case "prop-del":
+        try { await this._ws({ type: "einkaufsliste/proposal/delete", proposal_id: el.dataset.id }); } catch (_) { /* Meldung kam schon */ }
         break;
       case "prop-check":
         await this._checkProposal(el.dataset.id);

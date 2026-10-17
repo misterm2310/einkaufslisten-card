@@ -47,6 +47,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_proposal_add,
         ws_proposal_accept,
         ws_proposal_reject,
+        ws_proposal_delete,
         ws_photo_set,
         ws_photo_get,
         ws_photo_remove,
@@ -497,13 +498,16 @@ def ws_recipe_add(hass, connection, msg):
     {
         vol.Required("type"): "einkaufsliste/proposal/add",
         vol.Required("name"): str,
-        vol.Required("text"): str,
+        vol.Optional("text"): OPT_STR,
+        vol.Optional("ingredients"): OPT_STR,
+        vol.Optional("heat"): OPT_STR,
+        vol.Optional("steps"): OPT_STR,
         vol.Optional("by"): OPT_STR,
     }
 )
 @callback
 def ws_proposal_add(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: m.add_proposal(msg["name"], msg["text"], msg.get("by")))
+    _run(hass, connection, msg, lambda m: m.add_proposal(msg["name"], msg.get("text"), msg.get("by"), msg.get("ingredients"), msg.get("heat"), msg.get("steps")))
 
 
 @websocket_api.websocket_command(
@@ -512,6 +516,12 @@ def ws_proposal_add(hass, connection, msg):
 @callback
 def ws_proposal_accept(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.accept_proposal(msg["proposal_id"], msg.get("recipe_id")))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/proposal/delete", vol.Required("proposal_id"): str})
+@callback
+def ws_proposal_delete(hass, connection, msg):
+    _run(hass, connection, msg, lambda m: m.delete_proposal(msg["proposal_id"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/proposal/reject", vol.Required("proposal_id"): str})
