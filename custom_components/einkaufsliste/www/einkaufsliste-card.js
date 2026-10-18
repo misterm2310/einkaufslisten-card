@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.7";
+const EL_VERSION = "2.76.21-beta.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -393,6 +393,8 @@ const EL_BETA_NEWS = [
    "New: ✏️ Cook mode has a symbol next to the recipe name for change requests: free text for the current step in its own window. The request goes to “waiting for OK”; checking it opens the recipe."],
   ["Geändert: ✏️ Das Änderungswunsch-Symbol im Kochmodus erscheint erst bei den Schritten, nicht mehr bei der Personen-Auswahl.",
    "Changed: ✏️ The change-request symbol in cook mode now only appears during the steps, no longer on the person selection."],
+  ["Geändert: 📐 Aufgeklappte Felder haben keinen Strich am Rand mehr und sind nur noch ganz leicht eingerückt – so bleibt mehr Platz.",
+   "Changed: 📐 Expanded boxes no longer have a line at the edge and are only slightly indented – more room on the screen."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -2857,7 +2859,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:camera-outline"] { color:#1e88e5; }
 button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:timer-outline"] { color:#26a69a; }
 button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:cart-plus"] { color:#43a047; }
-.xacc-b { padding:4px 12px 12px; }
+.xacc-b { padding:4px 6px 10px; }
 .xacc-b[hidden] { display:none; }
 .lrow > ha-icon:first-child { color:var(--primary-color,#03a9f4); }
 .lrow small, .swrow small, .swline small { display:block; color:var(--secondary-text-color); font-size:.8em; font-weight:400; }
@@ -2865,7 +2867,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .lrow .chev { opacity:.5; flex:none; }
 .lgbox .lrow { margin:0; border:0; border-radius:0; border-top:1px solid var(--divider-color, rgba(127,127,127,.25)); background:none; }
 .lgbox .lgroup + .lrow { border-top:0; }
-.lgbox .lgroup ~ .lrow { margin-left:16px; width:calc(100% - 16px); box-sizing:border-box; border-left:2px solid color-mix(in srgb, var(--primary-color,#03a9f4) 28%, transparent); } /* aufgeklappt: Zeilen leicht eingerückt */
+.lgbox .lgroup ~ .lrow { margin-left:4px; width:calc(100% - 4px); box-sizing:border-box; } /* aufgeklappt: Zeilen leicht eingerückt */
 .gem ha-icon, .gic ha-icon, .ic ha-icon { color:inherit !important; } /* Symbole in bunten Feldern bleiben weiß */
 .lgbox .lrow:hover { background:color-mix(in srgb, var(--primary-color,#03a9f4) 6%, transparent); }
 .lgbox div.lrow { padding:0 12px 0 0; cursor:default; }
@@ -3212,7 +3214,7 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .rsec.open > .lgroup > .chev { transform:rotate(180deg); }
 .rsec > .lgroup .rimportbtn { margin-left:0; flex:none; }
 .rsec:not(.open) > .lgroup .rimportbtn { display:none; } /* Symbole im Kopf nur, wenn der Kasten offen ist */
-.rsec-b { padding:4px 12px 12px; margin-left:16px; border-left:2px solid color-mix(in srgb, var(--primary-color,#03a9f4) 28%, transparent); }
+.rsec-b { padding:4px 6px 10px; margin-left:4px; }
 .rsec-b[hidden] { display:none; }
 .rimportbtn { margin-left:auto; padding:5px 10px; font-size:.8em; font-weight:400; }
 .rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; resize:vertical; }
@@ -3582,7 +3584,7 @@ function showGarTable(card, tcard = null) {
     .gar h3 .gn small { display:block; color:var(--secondary-text-color); font-size:.8em; }
     .gar h3 .gchev { flex:none; transition:transform .2s; color:var(--secondary-text-color); }
     .gar h3.on .gchev { transform:rotate(180deg); }
-    .gar .gb { padding:0; margin-left:16px; border-left:2px solid color-mix(in srgb, var(--primary-color,#03a9f4) 28%, transparent); }
+    .gar .gb { padding:0; margin-left:4px; }
     .gar .gb .row + .row { border-top:1px solid var(--divider-color, rgba(127,127,127,.25)); }
     .gar .gb[hidden] { display:none; }
   </style>
