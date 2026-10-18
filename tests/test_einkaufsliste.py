@@ -1319,6 +1319,8 @@ async def test_recipe_heat(hass, setup, hass_ws_client):
     assert heat == [{"device": "Backofen", "mode": "Ober-/Unterhitze", "temp": 220, "minutes": 12, "minutes_to": None, "preheat": True, "note": None}]
     r2 = m.add_recipe("Pommes", heat=[{"device": "Heißluftfritteuse", "minutes": 15, "minutes_to": 20}, {"minutes": 10, "minutes_to": 5}])
     assert r2["heat"][0]["minutes_to"] == 20 and r2["heat"][1]["minutes_to"] is None
+    r3 = m.add_recipe("Gratin", heat=[{"device": "Backofen", "minutes": 30, "steps": [5, "3", 3, 0, 500]}, {"device": "Herd", "minutes": 5, "steps": []}, {"device": "Grill", "minutes": 2, "steps": [500]}, {"device": "Mikrowelle", "minutes": 1, "steps": 4}])
+    assert r3["heat"][0]["steps"] == [3, 5] and "steps" not in r3["heat"][1] and "steps" not in r3["heat"][2] and r3["heat"][3]["steps"] == [4]
     rid = res["result"]["id"]
     await client.send_json({"id": 2, "type": "einkaufsliste/recipe/update", "recipe_id": rid, "heat": []})
     assert (await client.receive_json())["success"]

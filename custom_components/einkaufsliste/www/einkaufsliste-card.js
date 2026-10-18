@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.1";
+const EL_VERSION = "2.76.21-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -379,6 +379,10 @@ const EL_BETA_NEWS = [
    "New: 🏷️ The per-store sensor (e.g. sensor.einkaufsliste_kaufland) now has the attribute “angebote”: price, valid from/to and retailer for every item with a current offer. The “artikel” attribute stays unchanged – meant for your own scripts and automations. Nothing changes in the list itself."],
   ["Neu: 👆 Im Kochmodus zeigen blasse Pfeile am Rand, dass man zwischen den Schritten wischen kann (Antippen geht auch).",
    "New: 👆 In cook mode, pale arrows at the edge show that you can swipe between steps (tapping works too)."],
+  ["Neu: 🔥 Backofen & Co. steht im Rezept-Editor jetzt unter „Zubereitung“. Jeder Eintrag kann bei bestimmten Schritten erscheinen (Schritt-Zahlen zum Antippen, mehrere möglich) – im Kochmodus steht die orange Info dann nur bei diesen Schritten. Ohne Auswahl wie bisher bei allen.",
+   "New: 🔥 Oven & Co. is now below “Preparation” in the recipe editor. Each entry can show at certain steps only (tap the step numbers, several possible) – in cook mode the orange info then appears only at those steps. With nothing chosen it shows at all steps as before."],
+  ["Neu: 🍳 Kochmodus: Gibt es mehrere Geräte ohne Schritt-Zahl, kannst du beim Start einklappbar wählen, womit gegart wird (mehrere möglich). Wird das Rezept während des Kochens geändert, zieht der Kochmodus sofort nach.",
+   "New: 🍳 Cook mode: with several appliances without a step number you can choose at the start (collapsible) what you cook with (several possible). If the recipe is changed while cooking, cook mode updates right away."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -3150,6 +3154,9 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .heatrow .hmin { display:flex; align-items:center; gap:4px; }
 .heatrow .hmin input { flex:1; min-width:0; }
 .heatrow .hmin span { opacity:.6; }
+.heatrow .hsteps { grid-column:1/-1; display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:.85em; }
+.heatrow .hsteps button { min-width:34px; padding:6px 8px; border-radius:10px; border:1px solid var(--divider-color); background:transparent; color:inherit; font:inherit; cursor:pointer; }
+.heatrow .hsteps button[aria-pressed=true] { background:#ef6c00; border-color:#ef6c00; color:#fff; font-weight:600; }
 .heatrow label { display:flex; align-items:center; gap:4px; font-size:.85em; white-space:nowrap; }
 .pickrow.basic .pname { font-size:.85em; }
 .pickrow .pbasic { font-size:.72em; color:var(--secondary-text-color); white-space:nowrap; }
@@ -4149,6 +4156,7 @@ class EinkaufslisteCard extends HTMLElement {
           this._renderAll();
           this._autoStore();
           this._cookResume(); // 📌 Kochmodus nach dem Neuladen wieder öffnen
+          document.querySelector("[data-elcook]")?._elRefresh?.(); // 🔄 Rezept geändert? Kochmodus zieht nach
         },
         { type: "einkaufsliste/subscribe" }
       );
@@ -8221,10 +8229,6 @@ ${(() => {
         <div id="rFormSlot"></div>
         <div id="rItems"></div>
         `)}
-        ${this._rsec("ofen", "mdi:stove", "#ef6c00", "Backofen &amp; Co.", "Grad, Minuten, Modus", `<button class="btn rimportbtn" type="button" data-act="gar" title="Gar-Zeiten" aria-label="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button>`, `
-        <div id="rHeat"></div>
-        <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
-        `)}
         ${this._rsec("zub", "mdi:chef-hat", "#e53935", "Zubereitung", "Die Schritte", `<button class="btn rimportbtn" type="button" data-act="steps-import-toggle" title="Schritte einfügen" aria-label="Schritte einfügen"><ha-icon icon="mdi:format-list-numbered"></ha-icon><span class="lbl">Schritte einfügen</span></button>`, `
         <div class="rimport" id="rStepImport" hidden>
           <textarea id="rStepImportText" rows="6" placeholder="Schritte hier einfügen – ein Schritt pro Zeile, z. B.&#10;Zwiebeln schneiden&#10;Fleisch anbraten&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch) – bei einem Link werden nur die Schritte geladen."></textarea>
@@ -8233,6 +8237,10 @@ ${(() => {
         <div id="rStepRows" class="strows"></div>
         <div class="btnrow"><button type="button" class="btn" data-act="step-add"><ha-icon icon="mdi:plus"></ha-icon>Schritt</button></div>
         <div id="rStepPhotos"></div>
+        `)}
+        ${this._rsec("ofen", "mdi:stove", "#ef6c00", "Backofen &amp; Co.", "Grad, Minuten, Modus", `<button class="btn rimportbtn" type="button" data-act="gar" title="Gar-Zeiten" aria-label="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button>`, `
+        <div id="rHeat"></div>
+        <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
         `)}
         <p class="hint rhint">Eintragen geht wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode – dann ✔. „Wie zuletzt“ = Geschäft &amp; Kategorie vom letzten Mal.</p>
         <div class="rfoot">
@@ -8290,6 +8298,7 @@ ${(() => {
     const dr = this._draft;
     if (!box || !dr) return;
     const rows = this._stepRowsOf(dr);
+    this._refreshHeatChips();
     box.innerHTML = rows.map((r, n) => {
       const key = dr.id && r.o != null ? this._stepPhotoKey(dr.id, r.o) : "";
       const has = key && this._hasPhoto(key);
@@ -8521,6 +8530,7 @@ ${(() => {
           <span class="hmin"><input data-hf="minutes" type="number" inputmode="numeric" min="0" value="${esc(h.minutes ?? "")}" placeholder="Min"><span>–</span><input data-hf="minutes_to" type="number" inputmode="numeric" min="0" value="${esc(h.minutes_to ?? "")}" placeholder="bis"></span>
         </div>
         <label><input data-hf="preheat" type="checkbox" ${h.preheat ? "checked" : ""}> vorheizen</label>
+        <div class="hsteps" title="Nur bei diesen Schritten erscheint die Info im Kochmodus. Nichts gewählt = bei allen Schritten">${this._heatStepChips(h.steps)}</div>
         <div class="hfoot">
           <input data-hf="note" type="text" value="${esc(h.note || "")}" placeholder="Hinweis, z. B. mittlere Schiene">
           <button class="iconbtn" data-act="heat-remove" title="Entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
@@ -8529,13 +8539,29 @@ ${(() => {
     }).join("") || `<p class="hint">Noch nichts – z. B. Backofen · Ober-/Unterhitze · 200 °C · 25 Min.</p>`;
   }
 
+  // 🔢 Schritte des Rezepts zum Antippen (mehrere möglich); nichts gewählt = bei allen Schritten
+  _heatStepChips(sel) {
+    const chosen = (sel || []).map(Number);
+    const n = Math.max(this._draft ? this._stepRowsOf(this._draft).length : 0, ...chosen, 0);
+    return `<span>Bei Schritt:</span>` + Array.from({ length: n }, (_, k) => k + 1).map((k) => `<button type="button" data-act="heat-step" data-s="${k}" aria-pressed="${chosen.includes(k)}">${k}</button>`).join("") + (n ? "" : `<span style="opacity:.6">erst Schritte eintragen</span>`);
+  }
+
+  _refreshHeatChips() { // Schritte wurden mehr/weniger/umsortiert: Antipp-Zahlen neu zeichnen, Auswahl bleibt
+    const box = this.$("rHeat");
+    if (!box) return;
+    box.querySelectorAll(".hsteps").forEach((d) => {
+      const sel = [...d.querySelectorAll("button[aria-pressed=true]")].map((b) => Number(b.dataset.s));
+      d.innerHTML = this._heatStepChips(sel);
+    });
+  }
+
   _readHeat() {
     const box = this.$("rHeat");
     if (!box || !this._draft) return;
     this._draft.heat = [...box.querySelectorAll(".heatrow")].map((row) => {
       const v = (f) => row.querySelector(`[data-hf=${f}]`);
       return { device: v("device").value, mode: v("mode").value || null, temp: v("temp").value || null,
-        minutes: v("minutes").value || null, minutes_to: v("minutes_to").value || null, preheat: v("preheat").checked, note: v("note").value.trim() || null };
+        minutes: v("minutes").value || null, minutes_to: v("minutes_to").value || null, preheat: v("preheat").checked, steps: [...row.querySelectorAll(".hsteps button[aria-pressed=true]")].map((b) => Number(b.dataset.s)), note: v("note").value.trim() || null };
     });
   }
 
@@ -8717,7 +8743,7 @@ ${(() => {
     if (this.$("inName").value.trim() && !await elConfirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
     const heat = (dr.heat || []).filter((h) => h.mode || h.temp || h.minutes || h.note)
       .map((h) => ({ device: h.device || "Backofen", mode: h.mode || null, temp: h.temp ? Number(h.temp) : null,
-        minutes: h.minutes ? Number(h.minutes) : null, minutes_to: h.minutes_to ? Number(h.minutes_to) : null, preheat: !!h.preheat, note: h.note || null }));
+        minutes: h.minutes ? Number(h.minutes) : null, minutes_to: h.minutes_to ? Number(h.minutes_to) : null, preheat: !!h.preheat, steps: (h.steps || []).map(Number).filter((n) => n > 0), note: h.note || null }));
     const msg = { name: dr.name.trim(), group: dr.group || null, items, steps: (dr.steps || "").trim() || null, heat, servings: dr.servings || null, servings_unit: dr.servings_unit || "persons" };
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {
@@ -9968,14 +9994,25 @@ ${(() => {
 
   // 👨‍🍳 Koch-Modus: Schritt für Schritt, groß, Bildschirm bleibt an
   async _cookMode(r, startIdx = 0, ask = true) {  // 👨‍🍳 bleibt Vollbild (große Schritte)
-    const steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
-    const heat = r.heat || [];
+    let steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
+    let heat = r.heat || [];
+    // 🔥 Mehrere Geräte bei „Backofen & Co.“: beim Start wählbar (mehrere möglich), oben stehen nur die gewählten. Vorgabe: alle
+    this._cookHeat = this._cookHeat || {};
+    // 🔢 Einträge mit Schritt-Nummern erscheinen nur bei diesen Schritten; nur die ohne Nummer (bei allen Schritten) sind wählbar
+    const freeIdx = () => heat.map((h, n) => ((h.steps || []).length ? -1 : n)).filter((n) => n >= 0);
+    const normSel = (sel) => { const f = freeIdx(); const k = (Array.isArray(sel) ? sel : []).filter((n) => f.includes(n)); return k.length ? k : f; };
+    let heatSel = normSel(this._cookHeat[r.id]);
+    let idx = 0; // wird unten gesetzt
+    let nSteps = 0;
+    const stepHeat = (i) => heat.filter((h, n) => ((h.steps || []).length ? h.steps.some((s) => Math.min(s, nSteps) - 1 === i) : heatSel.includes(n)));
+    const chosenHeat = () => stepHeat(idx);
     if (!steps.length && !heat.length) return;
     if (!steps.length) steps.push("Alles bereit? Dann los! 👨‍🍳");
     // 📸 Letzter Schritt „Foto vom fertigen Gericht“ – nur wenn das Rezept noch kein Foto in den Rezept-Fotos hat
-    const finalStep = !!r.id && !this._privacyOn() && !this._hasPhoto(this._recipePhotoKey(r.id));
-    const total = steps.length + (finalStep ? 1 : 0);
-    let idx = Math.max(0, Math.min(Number(startIdx) | 0, total - 1));
+    let finalStep = !!r.id && !this._privacyOn() && !this._hasPhoto(this._recipePhotoKey(r.id));
+    let total = steps.length + (finalStep ? 1 : 0);
+    nSteps = steps.length;
+    idx = Math.max(0, Math.min(Number(startIdx) | 0, total - 1));
     const ov = makeOverlay({ full: true });
     ov.dataset.elcook = "1";
     Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflow: "hidden", touchAction: "pan-y",
@@ -9984,19 +10021,24 @@ ${(() => {
     const head = document.createElement("div");
     Object.assign(head.style, { ...wrapW, display: "flex", alignItems: "center", gap: "10px" });
     const title = document.createElement("div");
-    { const ti = document.createElement("ha-icon"); ti.setAttribute("icon", "mdi:chef-hat"); ti.style.cssText = `--mdc-icon-size:24px;flex:none;color:${SET_COLORS.recipes};`; const tn = document.createElement("span"); tn.textContent = r.name; title.append(ti, tn); title.style.display = "flex"; title.style.alignItems = "center"; title.style.gap = "8px"; }
+    { const ti = document.createElement("ha-icon"); ti.setAttribute("icon", "mdi:chef-hat"); ti.style.cssText = `--mdc-icon-size:24px;flex:none;color:${SET_COLORS.recipes};`; const tn = document.createElement("span"); tn.dataset.eltitle = "1"; tn.textContent = r.name; title.append(ti, tn); title.style.display = "flex"; title.style.alignItems = "center"; title.style.gap = "8px"; }
     Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
     const bGar = ovIconButton("mdi:pot-steam-outline"), bClose = ovIconButton("mdi:close"), bPhoto = ovIconButton("mdi:camera-plus-outline"), bTimer = ovIconButton("mdi:timer-outline");
     bTimer.title = elT("Timer"); bTimer.querySelector("ha-icon").style.color = "#26a69a"; bPhoto.querySelector("ha-icon").style.color = "#1e88e5"; bGar.querySelector("ha-icon").style.color = "#ef6c00"; // 🎨 wie überall: Timer türkis, Fotos blau, Gar-Zeiten orange
      bTimer.style.marginRight = "14px"; // etwas Luft zum Foto-Symbol
-    bTimer.onclick = () => this._timerWindow(r, (() => { const hm = (r.heat || []).map((h) => Number(h.minutes)).find((m) => m > 0); return hm ? Math.round(hm * 60) : (elStepSeconds(steps[idx]) || 300); })(), finalStep && idx === steps.length ? 0 : idx + 1);
+    bTimer.onclick = () => this._timerWindow(r, (() => { const hm = chosenHeat().map((h) => Number(h.minutes)).find((m) => m > 0); return hm ? Math.round(hm * 60) : (elStepSeconds(steps[idx]) || 300); })(), finalStep && idx === steps.length ? 0 : idx + 1);
     bPhoto.title = elT("Foto zu diesem Schritt"); bPhoto.style.display = "none";
     bGar.title = elT("Gar-Zeiten"); bClose.title = elT("Schließen"); bPhoto.title = bPhoto.title || elT("Fotos");
     bGar.onclick = () => showGarTable(null, this); // im Koch-Fenster bleibt es ein Fenster (die Seite läge dahinter)
     head.append(title, bTimer, bPhoto, bGar, bClose);
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
-    heatBox.innerHTML = heat.map((h) => `<div class="ic" style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 16px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
+    const renderHeat = () => {
+      const ch = chosenHeat();
+      heatBox.style.display = ch.length ? "flex" : "none";
+      heatBox.innerHTML = ch.map((h) => `<div class="ic" style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 16px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
+    };
+    renderHeat();
     const pos = document.createElement("div");
     Object.assign(pos.style, { color: "#aaa", font: "600 16px Roboto,sans-serif", margin: "6px 0 10px" });
     const text = document.createElement("div");
@@ -10135,8 +10177,9 @@ ${(() => {
       const rkey = r.id ? this._recipePhotoKey(r.id) : "";
       const last = finalStep && idx === steps.length; // 📸 letzter Schritt: Foto vom fertigen Gericht
       pos.textContent = `Schritt ${idx + 1} von ${total}`;
+      renderHeat(); // 🔢 orange Info passend zum Schritt
       autoL.start(); // 📜 neuer Schritt: Text beginnt oben, läuft bei Überlänge von selbst
-      if (r.id) { try { localStorage.setItem("einkaufsliste_cook", JSON.stringify({ rid: r.id, idx, pers, t: Date.now() })); } catch (_) { /* geht auch ohne */ } } // 📌 nach Neuladen geht es hier weiter
+      if (r.id) { try { localStorage.setItem("einkaufsliste_cook", JSON.stringify({ rid: r.id, idx, pers, hs: heatSel, t: Date.now() })); } catch (_) { /* geht auch ohne */ } } // 📌 nach Neuladen geht es hier weiter
       text.textContent = last ? "📸 Foto vom fertigen Gericht – es kommt in die Rezept-Fotos. Guten Appetit! 😋" : steps[idx];
       pic.style.display = "none";
       pic.innerHTML = "";
@@ -10219,7 +10262,31 @@ ${(() => {
       }, { passive: true });
     }
     this._renderTimerStrip();
-    if (ask && r.servings) { // 👥 Vor dem Start: für wie viele Personen wird gekocht? (die Zutaten rechnen sich danach um)
+    // 🔄 Wird das Rezept während des Kochens geändert (Schritte, Zutaten, Garzeiten, Name), zieht der Kochmodus sofort nach
+    let lastSig = JSON.stringify([r.name, r.steps, r.heat, r.items, r.servings, r.servings_unit]);
+    const refresh = () => {
+      const nr = r.id ? this._recipe(r.id) : null;
+      if (!nr || ov.querySelector("[data-elintro]")) return; // vor dem Start wird es mit „Los geht’s“ nachgeholt
+      const sig = JSON.stringify([nr.name, nr.steps, nr.heat, nr.items, nr.servings, nr.servings_unit]);
+      if (sig === lastSig) return;
+      lastSig = sig;
+      r = nr;
+      steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
+      heat = r.heat || [];
+      heatSel = normSel(Array.isArray(this._cookHeat[r.id]) ? this._cookHeat[r.id] : heatSel);
+      this._cookHeat[r.id] = heatSel;
+      if (!steps.length) steps.push("Alles bereit? Dann los! 👨‍🍳");
+      nSteps = steps.length;
+      finalStep = !!r.id && !this._privacyOn() && !this._hasPhoto(this._recipePhotoKey(r.id));
+      total = steps.length + (finalStep ? 1 : 0);
+      idx = Math.max(0, Math.min(idx, total - 1));
+      pers = r.servings ? (this._cookPers[r.id] || r.servings) : null;
+      const tn = title.querySelector("[data-eltitle]"); if (tn) tn.textContent = r.name;
+      renderHeat(); renderIng(); show();
+      this._toast("🔄 Rezept wurde geändert – Kochmodus ist aktuell");
+    };
+    ov._elRefresh = refresh;
+    if (ask && (r.servings || freeIdx().length > 1)) { // 👥 Vor dem Start: für wie viele Personen wird gekocht? (die Zutaten rechnen sich danach um) · 🔥 und womit gegart wird
       const intro = document.createElement("div");
       intro.dataset.elintro = "1";
       Object.assign(intro.style, { ...wrapW, flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "18px", textAlign: "center" });
@@ -10244,9 +10311,57 @@ ${(() => {
       bm.onclick = () => step(-1); bp.onclick = () => step(1);
       const go = ovButton("Los geht’s 👨‍🍳", true);
       Object.assign(go.style, { padding: "16px 28px", fontSize: "20px", marginTop: "6px" });
-      go.onclick = () => { intro.remove(); main.style.display = "flex"; nav.style.display = "flex"; layout(); show(); autoR.start(); };
+      go.onclick = () => { intro.remove(); main.style.display = "flex"; nav.style.display = "flex"; refresh(); renderIng(); layout(); show(); autoR.start(); };
       pr.append(bm, num, bp);
-      intro.append(q, pr, hint, go);
+      if (r.servings) intro.append(q, pr, hint);
+      if (freeIdx().length > 1) { // 🔥 Geräte wählen (mehrere möglich); mindestens eins bleibt an
+        const hq = document.createElement("details"); // ▾ zum Einklappen – wie die Gruppen in den Einstellungen
+        hq.className = "elhsec";
+        const hs = document.createElement("summary");
+        const hsT = document.createElement("b"); hsT.textContent = "🔥 Womit wird gegart?";
+        const hsC = document.createElement("small");
+        hs.append(hsT, hsC);
+        hq.append(hs);
+        const hst = document.createElement("style");
+        hst.textContent = ".elhsec{width:100%;max-width:560px;border:1px solid rgba(255,255,255,.25);border-radius:12px;overflow:hidden;text-align:left;background:rgba(255,255,255,.05)}.elhsec summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:12px 14px;font:600 17px Roboto,sans-serif}.elhsec summary::-webkit-details-marker{display:none}.elhsec summary small{color:#aaa;font-weight:400;font-size:14px;margin-left:auto}.elhsec summary::after{content:\"\";flex:none;width:8px;height:8px;margin:0 4px 4px 6px;border-right:2px solid #aaa;border-bottom:2px solid #aaa;transform:rotate(45deg);transition:transform .2s}.elhsec[open] summary::after{transform:rotate(225deg);margin-bottom:-4px}.elhsec[open] summary{border-bottom:1px solid rgba(255,255,255,.25)}.elhsec>div{padding:10px 12px 12px}";
+        hq.append(hst);
+        const hl = document.createElement("div");
+        Object.assign(hl.style, { display: "flex", flexDirection: "column", gap: "8px" });
+        const hh = document.createElement("div");
+        hh.textContent = "Mehrere möglich – oben stehen nur die gewählten";
+        Object.assign(hh.style, { color: "#aaa", font: "15px Roboto,sans-serif", marginTop: "8px" });
+        const free = freeIdx();
+        const btns = free.map((n) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          Object.assign(b.style, { color: "#ffd7b5", borderRadius: "12px", padding: "12px 14px", font: "600 16px Roboto,sans-serif", cursor: "pointer", textAlign: "left" });
+          b.dataset.elheat = String(n);
+          b.onclick = () => {
+            if (heatSel.includes(n)) { if (heatSel.length > 1) heatSel = heatSel.filter((x) => x !== n); }
+            else heatSel = [...heatSel, n].sort((x, y) => x - y);
+            this._cookHeat[r.id] = heatSel;
+            paintHeat();
+            renderHeat();
+          };
+          return b;
+        });
+        const paintHeat = () => {
+          btns.forEach((b, k) => {
+            const n = free[k], on = heatSel.includes(n);
+            b.textContent = `${on ? "✔ " : "○ "}${heatText(heat[n])}`;
+            b.setAttribute("aria-pressed", on ? "true" : "false");
+            b.style.background = on ? "#3a1f0f" : "rgba(255,255,255,.08)";
+            b.style.border = on ? "2px solid #ef6c00" : "2px solid transparent";
+          });
+          hsC.textContent = heatSel.length === free.length ? "alle" : `${heatSel.length} von ${free.length}`;
+        };
+        paintHeat();
+        hl.append(...btns, hh);
+        const hbody = document.createElement("div"); hbody.append(hl);
+        hq.append(hbody);
+        intro.append(hq);
+      }
+      intro.append(go);
       main.style.display = "none"; nav.style.display = "none";
       ov.insertBefore(intro, main);
       upd();
@@ -10439,6 +10554,7 @@ ${(() => {
     const r = this._recipe(s.rid);
     if (!r) { try { localStorage.removeItem("einkaufsliste_cook"); } catch (_) { /* egal */ } return; }
     if (s.pers) (this._cookPers = this._cookPers || {})[r.id] = s.pers;
+    if (Array.isArray(s.hs)) (this._cookHeat = this._cookHeat || {})[r.id] = s.hs;
     this._cookMode(r, s.idx || 0, false);
   }
 
@@ -11932,6 +12048,10 @@ ${(() => {
         this._clearForm();
         this._toast("🧽 Alles geleert");
         this.$("inName").focus();
+        break;
+      case "heat-step":
+        el.setAttribute("aria-pressed", el.getAttribute("aria-pressed") === "true" ? "false" : "true");
+        this._readHeat();
         break;
       case "heat-add":
         this._readHeat();

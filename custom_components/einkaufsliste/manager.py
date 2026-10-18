@@ -186,7 +186,7 @@ def _clean_steps(text: Any) -> str | None:
 
 
 def _clean_heat(rows: Any) -> list[dict[str, Any]]:
-    """🔥 Backofen & Co.: Gerät, Modus, Grad, Minuten, Vorheizen, Hinweis – höchstens 6 Zeilen."""
+    """🔥 Backofen & Co.: Gerät, Modus, Grad, Minuten, Vorheizen, Hinweis, Schritt-Nummer – höchstens 6 Zeilen."""
     out: list[dict[str, Any]] = []
     for raw in rows or []:
         if not isinstance(raw, dict):
@@ -210,6 +210,13 @@ def _clean_heat(rows: Any) -> list[dict[str, Any]]:
         }
         if row["minutes_to"] and (not row["minutes"] or row["minutes_to"] <= row["minutes"]):
             row["minutes_to"] = None
+        # 🔢 gehört zu diesen Zubereitungs-Schritten (ohne Nummern: für alle Schritte)
+        raw_steps = raw.get("steps")
+        if not isinstance(raw_steps, (list, tuple)):
+            raw_steps = [raw_steps]
+        nums = sorted({n for n in (num(x, 99) for x in raw_steps[:30]) if n})
+        if nums:
+            row["steps"] = nums
         if row["mode"] or row["temp"] or row["minutes"] or row["note"]:
             out.append(row)
     return out[:6]
