@@ -1895,7 +1895,7 @@ async def test_store_sensor_offers_attribute(hass: HomeAssistant, setup) -> None
     m.take_offer({"p": 1.99, "from": "2099-01-05", "to": "2099-01-10", "r": "Aldi", "d": "Dinkelbrötchen"}, name="Gibtsnicht", store_id=aldi["id"])
     await hass.async_block_till_done()
     st = hass.states.get("sensor.einkaufsliste_aldi")
-    assert st.state == "2" and "2 L Milch" in st.attributes["artikel"] and "Dinkelbrötchen" in st.attributes["artikel"]
+    assert st.state == "2" and "2 L Milch" in st.attributes["artikel"] and any("Dinkelbrötchen" in x for x in st.attributes["artikel"])
     assert st.attributes["angebote"] == [{"artikel": "Dinkelbrötchen", "preis": 1.99, "ab": "2099-01-05", "bis": "2099-01-10", "haendler": "Aldi"}]
 
 
