@@ -257,7 +257,7 @@ Everything works in the visual editor. For YAML fans:
 | Entity | What it shows |
 |---|---|
 | `sensor.einkaufsliste_offene_artikel` | all open items (attributes per store, items, checked, next cleanup) |
-| `sensor.einkaufsliste_<store>` | one sensor **per store**: open items there, attribute `artikel` |
+| `sensor.einkaufsliste_<store>` | one sensor **per store**: open items there, attribute `artikel` (text) and `angebote` (only items with a current offer: `artikel`, `preis`, `ab`, `bis`, `haendler` – handy for your own scripts) |
 | `binary_sensor.einkaufsliste_etwas_zu_kaufen` (English HA: `…_something_to_buy`) | on as soon as anything is open |
 | `sensor.einkaufsliste_zuletzt_eingetragen` (English HA: `…_last_added`) | last added item with `von` (who), `wann` (when), `geschaeft` (store) |
 | `sensor.einkaufsliste_zuletzt_gekauft` (English HA: `…_last_bought`) | last checked-off item with `von`, `wann`, `geschaeft`, `menge` (tidy-up does not count as a purchase) |

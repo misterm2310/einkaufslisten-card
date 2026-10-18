@@ -1887,6 +1887,18 @@ async def test_more_sensors(hass: HomeAssistant, setup) -> None:
     assert hass.states.get("sensor.einkaufsliste_kaufland") is None
 
 
+async def test_store_sensor_offers_attribute(hass: HomeAssistant, setup) -> None:
+    """🏷️ Geschäfts-Sensor: Attribut „angebote“ mit Preis/ab/bis/Händler, „artikel“ bleibt unverändert."""
+    m = mgr(hass)
+    aldi = next(s for s in m.stores if s["name"] == "Aldi")
+    m.add_item("Milch", store_id=aldi["id"], quantity="2 L")
+    m.take_offer({"p": 1.99, "from": "2099-01-05", "to": "2099-01-10", "r": "Aldi", "d": "Dinkelbrötchen"}, name="Gibtsnicht", store_id=aldi["id"])
+    await hass.async_block_till_done()
+    st = hass.states.get("sensor.einkaufsliste_aldi")
+    assert st.state == "2" and "2 L Milch" in st.attributes["artikel"] and "Dinkelbrötchen" in st.attributes["artikel"]
+    assert st.attributes["angebote"] == [{"artikel": "Dinkelbrötchen", "preis": 1.99, "ab": "2099-01-05", "bis": "2099-01-10", "haendler": "Aldi"}]
+
+
 async def test_pin_typos_and_brackets(hass: HomeAssistant, setup, hass_ws_client) -> None:
     """🔒 PIN, 🧠 Tippfehler lernen, „Milch (2)“ erkennen."""
     m = mgr(hass)

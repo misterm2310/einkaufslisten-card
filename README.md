@@ -256,7 +256,7 @@ Alles geht im visuellen Editor. Für YAML-Fans:
 | Sensor | Was zeigt er? |
 |---|---|
 | `sensor.einkaufsliste_offene_artikel` | alle offenen Artikel (Attribute `pro_geschaeft`, `artikel`, `abgehakt`, `naechstes_aufraeumen`) |
-| `sensor.einkaufsliste_<geschäft>` | **pro Geschäft** die offenen Artikel, Attribut `artikel` |
+| `sensor.einkaufsliste_<geschäft>` | **pro Geschäft** die offenen Artikel, Attribut `artikel` (Text) und `angebote` (nur Artikel mit laufendem Angebot: `artikel`, `preis`, `ab`, `bis`, `haendler` – z. B. für eigene Skripte) |
 | `binary_sensor.einkaufsliste_etwas_zu_kaufen` | an, sobald etwas offen ist |
 | `sensor.einkaufsliste_zuletzt_eingetragen` | letzter Artikel mit `von`, `wann`, `geschaeft` |
 | `sensor.einkaufsliste_zuletzt_gekauft` | zuletzt abgehakter Artikel mit `von`, `wann`, `geschaeft`, `menge` (Aufräumen zählt nicht als Einkauf) |

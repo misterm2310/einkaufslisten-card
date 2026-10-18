@@ -117,6 +117,18 @@ class GeschaeftSensor(_Base):
                 (f"{i['quantity']} " if i.get("quantity") else "") + i["name"] + (f" · {i['note']}" if i.get("note") else "")
                 for i in self._open()
             ],
+            # 🏷️ Nur Artikel mit laufendem Angebot (Preis, ab/bis, Händler) – "artikel" oben bleibt unverändert
+            "angebote": [
+                {
+                    "artikel": i["name"],
+                    "preis": i["offer"].get("p"),
+                    "ab": i["offer"].get("from"),
+                    "bis": i["offer"].get("to"),
+                    "haendler": i["offer"].get("r"),
+                }
+                for i in self._open()
+                if (i.get("offer") or {}).get("p") is not None and not i["offer"].get("expired")
+            ],
         }
 
 

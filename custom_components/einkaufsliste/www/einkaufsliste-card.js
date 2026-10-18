@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.20";
+const EL_VERSION = "2.76.21-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -374,7 +374,12 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [];
+const EL_BETA_NEWS = [
+  ["Neu: 🏷️ Der Sensor pro Geschäft (z. B. sensor.einkaufsliste_kaufland) hat jetzt das Attribut „angebote“: für jeden Artikel mit laufendem Angebot Preis, gültig ab/bis und Händler. Das Attribut „artikel“ bleibt unverändert – gedacht für eigene Skripte und Automationen. In der Liste selbst ändert sich nichts.",
+   "New: 🏷️ The per-store sensor (e.g. sensor.einkaufsliste_kaufland) now has the attribute “angebote”: price, valid from/to and retailer for every item with a current offer. The “artikel” attribute stays unchanged – meant for your own scripts and automations. Nothing changes in the list itself."],
+  ["Neu: 👆 Im Kochmodus zeigen blasse Pfeile am Rand, dass man zwischen den Schritten wischen kann (Antippen geht auch).",
+   "New: 👆 In cook mode, pale arrows at the edge show that you can swipe between steps (tapping works too)."],
+];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -9974,7 +9979,7 @@ ${(() => {
     const ov = makeOverlay({ full: true });
     ov.dataset.elcook = "1";
     Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflow: "hidden", touchAction: "pan-y",
-      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 90px)" });
+      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 90px)", paddingLeft: "34px", paddingRight: "34px" }); // Platz für die Wisch-Pfeile am Rand
     const wrapW = { width: "100%", maxWidth: "1100px" };
     const head = document.createElement("div");
     Object.assign(head.style, { ...wrapW, display: "flex", alignItems: "center", gap: "10px" });
@@ -10008,6 +10013,24 @@ ${(() => {
     }
     for (const b of [bPrev, bNext]) Object.assign(b.style, { flex: "1", padding: "16px", fontSize: "18px" });
     nav.append(bPrev, bNext);
+    // 👆 Wisch-Pfeile am Rand: zeigen, dass man wischen kann (sanft wippend, Antippen blättert auch)
+    const swStyle = document.createElement("style");
+    swStyle.textContent = "@keyframes elswL{0%,100%{transform:translateX(0)}50%{transform:translateX(-5px)}}@keyframes elswR{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}@media (prefers-reduced-motion:reduce){.elsw{animation:none!important}}";
+    const mkSw = (dir) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "elsw";
+      b.setAttribute("aria-label", elT(dir < 0 ? "Zurück" : "Weiter"));
+      const ic = document.createElement("ha-icon");
+      ic.setAttribute("icon", dir < 0 ? "mdi:chevron-left" : "mdi:chevron-right");
+      ic.style.cssText = "--mdc-icon-size:44px;color:#fff;pointer-events:none;";
+      b.append(ic);
+      Object.assign(b.style, { position: "absolute", top: "44%", [dir < 0 ? "left" : "right"]: "1px", width: "32px", height: "96px", border: "0", borderRadius: "16px", overflow: "visible",
+        background: "transparent", opacity: ".38", padding: "0", cursor: "pointer", display: "none", alignItems: "center", justifyContent: "center",
+        animation: `${dir < 0 ? "elswL" : "elswR"} 2.4s ease-in-out infinite`, zIndex: "1", touchAction: "manipulation" });
+      return b;
+    };
+    const swL = mkSw(-1), swR = mkSw(1);
+    ov.append(swStyle, swL, swR);
     const timerBar = document.createElement("div"); // ⏲️ laufende Timer (aller Rezepte)
     Object.assign(timerBar.style, { ...wrapW, display: "none", flexWrap: "wrap", gap: "6px", marginTop: "10px" });
     const main = document.createElement("div"); // links die Schritte, rechts die Zutaten – jede Seite scrollt für sich
@@ -10154,6 +10177,8 @@ ${(() => {
         };
       }
       bPrev.style.visibility = idx ? "visible" : "hidden";
+      swL.style.display = idx ? "flex" : "none";
+      swR.style.display = idx < total - 1 ? "flex" : "none";
       bNext.textContent = idx < total - 1 ? "Weiter ›" : "✔ Fertig – guten Appetit!";
     };
     let awake = null;
@@ -10177,6 +10202,8 @@ ${(() => {
     bPrev.onclick = () => { if (idx) { idx--; show(); } };
     bNext.onclick = () => { if (idx < total - 1) { idx++; show(); } else close(); };
     bClose.onclick = close;
+    swL.onclick = () => bPrev.click();
+    swR.onclick = () => bNext.click();
     { // 👆 Wischen: nach links = weiter, nach rechts = zurück (nur deutlich waagerecht; beim letzten Schritt beendet nur der Knopf)
       let sx = 0, sy = 0, st = 0, ok = false;
       ov.addEventListener("touchstart", (e) => { const t = e.touches[0]; ok = e.touches.length === 1 && !!t && !e.target.closest?.("input,textarea,select,button") && !(grip.style.display !== "none" && inGripZone(t.clientX, t.clientY)); sx = t?.clientX || 0; sy = t?.clientY || 0; st = Date.now(); }, { passive: true });
