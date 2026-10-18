@@ -341,6 +341,8 @@ Der Sensor hat außerdem die Felder `naechster` (z. B. „Lasagne – Schritt 2"
 
 **Die Karte sagt „Integration nicht eingerichtet“.** Dann fehlt Schritt 4 der Installation.
 
+**Wann kommen neue Versionen?** Offizielle Versionen immer **sonntags**. An den anderen Tagen gibt es nur **Test-Versionen (Beta)**. Die siehst du in HACS, wenn du bei der Einkaufsliste ⋮ → „Neu herunterladen“ wählst und **„Beta-Versionen anzeigen“** einschaltest. Eine Beta kann noch Ecken und Kanten haben; die Version steht unter ⚙️ → Credits.
+
 ---
 
 ## 💙 Gefällt dir die Einkaufsliste?

@@ -346,6 +346,8 @@ The sensor also has the fields `naechster` (e.g. “Lasagna – Schritt 2”), `
 
 **Can I add store brands or category words for my country?** Yes, without programming: both live in their own files under `custom_components/einkaufsliste/data/` – `eigenmarken.json` (country as set in HA → chain → brands; unknown country = all combined) and `kategorien.json` (keywords in the category name + products per language, e.g. `de`, `en`, `nl`). Add yours and send a pull request 🙏
 
+**When do new versions come out?** Official versions always on **Sundays**. On the other days there are only **test versions (beta)**. You see them in HACS by choosing ⋮ → “Redownload” on the shopping list and switching on **“Show beta versions”**. A beta can still have rough edges; the version is shown under ⚙️ → Credits.
+
 ---
 
 ## 💙 Do you like the shopping list?
