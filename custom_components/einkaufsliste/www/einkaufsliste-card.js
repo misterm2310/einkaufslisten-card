@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.6";
+const EL_VERSION = "2.76.21-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -391,6 +391,8 @@ const EL_BETA_NEWS = [
    "New: 🔥 Recipe editor: Oven & Co. entries can be duplicated (copy right below)."],
   ["Neu: ✏️ Im Kochmodus gibt es neben dem Rezeptnamen ein Symbol für Änderungswünsche: freier Text zum aktuellen Schritt, in einem eigenen Fenster. Der Wunsch landet bei „Wartet auf OK“; beim Prüfen öffnet sich das Rezept.",
    "New: ✏️ Cook mode has a symbol next to the recipe name for change requests: free text for the current step in its own window. The request goes to “waiting for OK”; checking it opens the recipe."],
+  ["Geändert: ✏️ Das Änderungswunsch-Symbol im Kochmodus erscheint erst bei den Schritten, nicht mehr bei der Personen-Auswahl.",
+   "Changed: ✏️ The change-request symbol in cook mode now only appears during the steps, no longer on the person selection."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -10419,6 +10421,7 @@ ${(() => {
     if (ask && (r.servings || freeIdx().length > 1)) { // 👥 Vor dem Start: für wie viele Personen wird gekocht? (die Zutaten rechnen sich danach um) · 🔥 und womit gegart wird
       const intro = document.createElement("div");
       intro.dataset.elintro = "1";
+      bWish.style.display = "none"; // ✏️ Änderungswunsch gibt es erst bei den Schritten, nicht bei der Personen-/Geräte-Auswahl
       Object.assign(intro.style, { ...wrapW, flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "18px", textAlign: "center" });
       const q = document.createElement("div");
       q.className = "ic";
@@ -10441,7 +10444,7 @@ ${(() => {
       bm.onclick = () => step(-1); bp.onclick = () => step(1);
       const go = ovButton("Los geht’s 👨‍🍳", true);
       Object.assign(go.style, { padding: "16px 28px", fontSize: "20px", marginTop: "6px" });
-      go.onclick = () => { intro.remove(); main.style.display = "flex"; nav.style.display = "flex"; refresh(); renderIng(); layout(); show(); autoR.start(); };
+      go.onclick = () => { intro.remove(); bWish.style.display = ""; main.style.display = "flex"; nav.style.display = "flex"; refresh(); renderIng(); layout(); show(); autoR.start(); };
       pr.append(bm, num, bp);
       if (r.servings) intro.append(q, pr, hint);
       if (freeIdx().length > 1) { // 🔥 Geräte wählen (mehrere möglich); mindestens eins bleibt an
