@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.10";
+const EL_VERSION = "2.76.21-beta.11";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -405,6 +405,12 @@ const EL_BETA_NEWS = [
    "New: 👨‍🍳 The chef hat stays visible in the settings too – you can always jump straight to the recipes from there."],
   ["Neu: 🍳 Beim Herd gibt es jetzt auch den Modus „Braten“ (neben „Köcheln“).",
    "New: 🍳 The hob now also has the mode “Fry” (next to “Simmer”)."],
+  ["Neu: 🧊 Bei Backofen & Co. gibt es auch „Kühlschrank“ und „Tiefkühler“ (z. B. 4 Std. im Kühlschrank ruhen lassen).",
+   "New: 🧊 Oven & Co. now also has “Fridge” and “Freezer” (e.g. rest 4 h in the fridge)."],
+  ["Neu: 📍 Nach dem Rezept-Editor ist das Rezept in der Liste mit dem blauen Rahmen markiert.",
+   "New: 📍 After the recipe editor the recipe is highlighted in the list with the blue frame."],
+  ["Geändert: 👨‍🍳 Die Kochmütze in den Einstellungen erscheint nur im Bereich „Rezepte“.",
+   "Changed: 👨‍🍳 The chef hat in the settings only appears in the “Recipes” area."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -1374,6 +1380,8 @@ const HEAT_DEVICES = {
   "Herd": { icon: "🍳", modes: ["Stufe niedrig", "Stufe mittel", "Stufe hoch", "Köcheln", "Braten"], unit: "" },
   "Grill": { icon: "🥩", modes: ["Direkt", "Indirekt"], unit: "°C" },
   "Dampfgarer": { icon: "♨️", modes: ["Dampf", "Kombi"], unit: "°C" },
+  "Kühlschrank": { icon: "🧊", modes: ["Kühlen", "Ruhen lassen"], unit: "" }, // z. B. „4 Std. im Kühlschrank ruhen lassen“
+  "Tiefkühler": { icon: "❄️", modes: ["Einfrieren", "Auftauen"], unit: "" },
 };
 
 function heatText(h) {
@@ -5052,7 +5060,7 @@ class EinkaufslisteCard extends HTMLElement {
     const btnR = this.$("btnRecipes");
     btnS.hidden = !c.show_settings || !d;
     const inSettings = this._view === "settings" || this._view === "recipe";
-    btnR.hidden = !c.show_recipes || !d || !!this._page || this._view === "recipe"; // 👨‍🍳 Kochmütze: nicht auf Seiten und im Rezept-Editor (sonst ginge der Entwurf verloren); in den Einstellungen bleibt sie, damit man immer zu den Rezepten kommt (in „Rezepte“ selbst ist sie das ✕)
+    btnR.hidden = !c.show_recipes || !d || !!this._page || this._view === "recipe" || (this._view === "settings" && this._setSec !== "recipes"); // 👨‍🍳 Kochmütze: nicht auf Seiten und im Rezept-Editor (sonst ginge der Entwurf verloren); in den Einstellungen nur im Bereich „Rezepte“, damit man von dort direkt zu den Rezepten kommt (in „Rezepte“ selbst ist sie das ✕)
     btnS.classList.toggle("on", inSettings);
     btnR.classList.toggle("on", this._view === "recipes");
     btnS.querySelector("ha-icon").setAttribute("icon", inSettings ? "mdi:close" : "mdi:cog-outline");
@@ -8217,7 +8225,8 @@ ${(() => {
     const snap = this._recipeSnap; this._recipeSnap = null;
     const go = () => {
       const row = id ? this.shadowRoot.querySelector(`#setRecipeList .recipe[data-id="${id}"]`) : null;
-      if (row) row.scrollIntoView({ block: "center", behavior: "instant" }); else if (snap) this._scrollRestore(snap);
+      if (row) { row.scrollIntoView({ block: "center", behavior: "instant" }); this._knMark(row); } // blauer Rahmen: hier warst du gerade
+      else if (snap) this._scrollRestore(snap);
     };
     requestAnimationFrame(() => { go(); requestAnimationFrame(go); });
     setTimeout(go, 300); // die Liste baut sich erst nach dem Neuzeichnen fertig auf
