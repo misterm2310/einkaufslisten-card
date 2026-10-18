@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.9";
+const EL_VERSION = "2.76.21-beta.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -399,6 +399,12 @@ const EL_BETA_NEWS = [
    "Fixed: 📍 After the recipe editor the recipe list no longer jumps around – it scrolls to the edited recipe or back to where you were."],
   ["Neu: 🔗 Die Schritt-Auswahl bei Backofen & Co. hängt am Schritt selbst: Löschen, Verschieben oder Einfügen von Schritten verschiebt sie nicht mehr auf einen anderen Schritt.",
    "New: 🔗 The step choice for Oven & Co. is tied to the step itself: deleting, moving or inserting steps no longer shifts it to a different step."],
+  ["Neu: 🍳 Beim Teilen eines Rezepts stehen die Zeiten und Einstellungen von Backofen & Co. direkt bei dem Zubereitungs-Schritt, zu dem sie gehören. Einträge ohne Schritt bleiben oben bei „Garen“.",
+   "New: 🍳 When sharing a recipe, the times and settings from Oven & Co. now appear right at the preparation step they belong to. Entries without a step stay at the top under “Cooking”."],
+  ["Neu: 👨‍🍳 Die Kochmütze bleibt auch in den Einstellungen sichtbar – so kommst du von dort immer direkt zu den Rezepten.",
+   "New: 👨‍🍳 The chef hat stays visible in the settings too – you can always jump straight to the recipes from there."],
+  ["Neu: 🍳 Beim Herd gibt es jetzt auch den Modus „Braten“ (neben „Köcheln“).",
+   "New: 🍳 The hob now also has the mode “Fry” (next to “Simmer”)."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -1365,7 +1371,7 @@ const HEAT_DEVICES = {
   "Backofen": { icon: "🔥", modes: ["Ober-/Unterhitze", "Umluft", "Heißluft", "Grill", "Umluft + Grill", "Unterhitze", "Pizzastufe"], unit: "°C" },
   "Heißluftfritteuse": { icon: "🍟", modes: ["Heißluft", "Backen", "Grillen", "Aufwärmen"], unit: "°C" },
   "Mikrowelle": { icon: "📡", modes: ["Mikrowelle", "Mikrowelle + Grill", "Auftauen"], unit: "W" },
-  "Herd": { icon: "🍳", modes: ["Stufe niedrig", "Stufe mittel", "Stufe hoch", "Köcheln"], unit: "" },
+  "Herd": { icon: "🍳", modes: ["Stufe niedrig", "Stufe mittel", "Stufe hoch", "Köcheln", "Braten"], unit: "" },
   "Grill": { icon: "🥩", modes: ["Direkt", "Indirekt"], unit: "°C" },
   "Dampfgarer": { icon: "♨️", modes: ["Dampf", "Kombi"], unit: "°C" },
 };
@@ -5046,7 +5052,7 @@ class EinkaufslisteCard extends HTMLElement {
     const btnR = this.$("btnRecipes");
     btnS.hidden = !c.show_settings || !d;
     const inSettings = this._view === "settings" || this._view === "recipe";
-    btnR.hidden = !c.show_recipes || !d || !!this._page || inSettings; // 👨‍🍳 Kochmütze: nicht auf Seiten und in den Einstellungen (in „Rezepte“ selbst ist sie das ✕)
+    btnR.hidden = !c.show_recipes || !d || !!this._page || this._view === "recipe"; // 👨‍🍳 Kochmütze: nicht auf Seiten und im Rezept-Editor (sonst ginge der Entwurf verloren); in den Einstellungen bleibt sie, damit man immer zu den Rezepten kommt (in „Rezepte“ selbst ist sie das ✕)
     btnS.classList.toggle("on", inSettings);
     btnR.classList.toggle("on", this._view === "recipes");
     btnS.querySelector("ha-icon").setAttribute("icon", inSettings ? "mdi:close" : "mdi:cog-outline");
@@ -10799,14 +10805,20 @@ ${(() => {
     for (const i of r.items) {
       lines.push(`• ${[i.quantity, i.name].filter(Boolean).join(" ")}${i.note ? ` (${i.note})` : ""}`);
     }
-    if ((r.heat || []).length) {
-      lines.push("", "Garen:");
-      for (const h of r.heat) lines.push(`• ${heatText(h)}`);
-    }
     const steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
+    const stepsOf = (h) => (Array.isArray(h.steps) ? h.steps : []).map(Number).filter((n) => n > 0);
+    const free = (r.heat || []).filter((h) => !stepsOf(h).length || !steps.length); // ohne Schritt-Nummer: oben bei „Garen“
+    if (free.length) {
+      lines.push("", "Garen:");
+      for (const h of free) lines.push(`• ${heatText(h)}`);
+    }
     if (steps.length) {
       lines.push("", "Zubereitung:");
-      steps.forEach((st, n) => lines.push(`${n + 1}. ${st}`));
+      steps.forEach((st, n) => {
+        lines.push(`${n + 1}. ${st}`);
+        // 🔥 Zeiten/Einstellungen, die zu diesem Schritt gehören (Nummer größer als die Schrittzahl = letzter Schritt)
+        for (const h of (r.heat || [])) if (stepsOf(h).some((s) => Math.min(s, steps.length) - 1 === n)) lines.push(`   ↳ ${heatText(h)}`);
+      });
     }
     return lines.join("\n");
   }
