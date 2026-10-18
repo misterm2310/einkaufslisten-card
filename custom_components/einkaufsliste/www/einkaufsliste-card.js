@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.3";
+const EL_VERSION = "2.76.21-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -385,6 +385,8 @@ const EL_BETA_NEWS = [
    "New: 🍳 Cook mode: with several appliances without a step number you can choose at the start (collapsible) what you cook with (several possible). If the recipe is changed while cooking, cook mode updates right away."],
   ["Neu: 🔥 Im Rezept-Editor zeigt ein Ofen-Knopf links bei den Foto-Knöpfen, bei welchen Zubereitungs-Schritten ein Eintrag aus Backofen & Co. gilt (Antippen zeigt, welcher).",
    "New: 🔥 In the recipe editor an oven button next to the photo buttons shows which preparation steps have an Oven & Co. entry (tap to see which)."],
+  ["Neu: 🔥 Rezept-Editor: Die Einträge von Backofen & Co. lassen sich einklappen (Kurz-Zeile bleibt sichtbar) und per Ziehen am ⠿ verschieben. Außerdem werden lange Schritte bei „Zubereitung“ nicht mehr abgeschnitten.",
+   "New: 🔥 Recipe editor: the Oven & Co. entries can be collapsed (a short line stays visible) and moved by dragging the ⠿. Long steps under “Preparation” are also no longer cut off."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -3156,6 +3158,16 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .heatrow .hmin { display:flex; align-items:center; gap:4px; }
 .heatrow .hmin input { flex:1; min-width:0; }
 .heatrow .hmin span { opacity:.6; }
+.heatrow .hhead { grid-column:1/-1; display:flex; align-items:center; gap:6px; }
+.heatrow .hhandle { flex:none; border:0; background:none; color:var(--secondary-text-color); font-size:20px; line-height:1; padding:4px 6px; cursor:grab; touch-action:none; }
+.heatrow .hsum { flex:1; min-width:0; display:flex; align-items:center; gap:6px; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; padding:6px 0; }
+.heatrow .hsum .ht { flex:1; min-width:0; font-weight:600; font-size:.92em; overflow-wrap:anywhere; }
+.heatrow .hsum ha-icon { --mdc-icon-size:20px; flex:none; transition:transform .2s; }
+.heatrow[data-open="1"] .hsum ha-icon { transform:rotate(180deg); }
+.heatrow .hbody { grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.heatrow .hbody[hidden] { display:none; }
+.heatrow.dragging { position:relative; z-index:2; opacity:.75; }
+.heatrow.dropbefore { box-shadow:0 -3px 0 0 var(--primary-color); } .heatrow.dropafter { box-shadow:0 3px 0 0 var(--primary-color); }
 .heatrow .hsteps { grid-column:1/-1; display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:.85em; }
 .heatrow .hsteps button { min-width:34px; padding:6px 8px; border-radius:10px; border:1px solid var(--divider-color); background:transparent; color:inherit; font:inherit; cursor:pointer; }
 .heatrow .hsteps button[aria-pressed=true] { background:#ef6c00; border-color:#ef6c00; color:#fff; font-weight:600; }
@@ -8340,12 +8352,19 @@ ${(() => {
     });
   }
 
-  _fitStep(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + 2 + "px"; }
+  _fitStep(ta) {
+    if (!ta.offsetParent && !ta.getClientRects().length) return; // zugeklappter Kasten: Höhe ist da 0 – später (beim Aufklappen) neu messen
+    ta.style.height = "auto"; ta.style.height = ta.scrollHeight + 2 + "px";
+  }
 
   _wireStepInput(ta) {
     if (ta.__elStepWired) return; // nur einmal anschließen – sonst wird eine Einfügung mehrfach verarbeitet
     ta.__elStepWired = true;
     requestAnimationFrame(() => this._fitStep(ta));
+    if (typeof ResizeObserver === "function") { // Kasten wird aufgeklappt oder die Breite ändert sich (Drehen): Höhe neu anpassen, damit nichts abgeschnitten ist
+      let lastW = -1;
+      new ResizeObserver(() => { const w = ta.clientWidth; if (w && w !== lastW) { lastW = w; this._fitStep(ta); } }).observe(ta);
+    }
     const rows = () => this._draft.stepRows;
     const row = () => rows().find((r) => String(r.k) === ta.dataset.k);
     ta.addEventListener("input", () => {
@@ -8540,7 +8559,14 @@ ${(() => {
       const dev = HEAT_DEVICES[h.device] || HEAT_DEVICES.Backofen;
       const modes = [...dev.modes];
       if (h.mode && !modes.includes(h.mode)) modes.push(h.mode);
-      return `<div class="heatrow" data-n="${n}">
+      const open = !!h._open;
+      return `<div class="heatrow" data-n="${n}" data-open="${open ? 1 : 0}">
+        <div class="hhead">
+          <button type="button" class="hhandle" title="Zum Verschieben ziehen (oder ↑ ↓ drücken)" aria-label="Eintrag verschieben">⠿</button>
+          <button type="button" class="hsum" data-act="heat-fold" aria-expanded="${open}"><span class="ht">${esc(this._heatSummary(h))}</span><ha-icon icon="mdi:chevron-down"></ha-icon></button>
+          <button class="iconbtn" data-act="heat-remove" title="Entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
+        </div>
+        <div class="hbody" ${open ? "" : "hidden"}>
         <select data-hf="device">${Object.keys(HEAT_DEVICES).map((d) => `<option value="${d}" ${d === (h.device || "Backofen") ? "selected" : ""}>${HEAT_DEVICES[d].icon} ${d}</option>`).join("")}</select>
         <select data-hf="mode"><option value="">– Modus –</option>${modes.map((m) => opt(m, h.mode)).join("")}</select>
         <div class="hnums">
@@ -8551,11 +8577,72 @@ ${(() => {
         <div class="hsteps" title="Nur bei diesen Schritten erscheint die Info im Kochmodus. Nichts gewählt = bei allen Schritten">${this._heatStepChips(h.steps)}</div>
         <div class="hfoot">
           <input data-hf="note" type="text" value="${esc(h.note || "")}" placeholder="Hinweis, z. B. mittlere Schiene">
-          <button class="iconbtn" data-act="heat-remove" title="Entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
+        </div>
         </div>
       </div>`;
     }).join("") || `<p class="hint">Noch nichts – z. B. Backofen · Ober-/Unterhitze · 200 °C · 25 Min.</p>`;
+    box.querySelectorAll(".hhandle").forEach((h) => this._wireHeatHandle(h));
+    if (!box.__elHeatWired) { // beim Tippen/Ändern: Draft und Kurz-Zeile aktuell halten
+      box.__elHeatWired = true;
+      const sync = () => this._readHeat();
+      box.addEventListener("input", sync);
+      box.addEventListener("change", sync);
+    }
     this._stepHeatIcons();
+  }
+
+  // 🔥 Kurz-Zeile eines Eintrags (bleibt sichtbar, auch wenn er eingeklappt ist)
+  _heatSummary(h) {
+    const t = heatText({ ...h, temp: h.temp || null, minutes: h.minutes || null, minutes_to: h.minutes_to || null });
+    const st = (h.steps || []).map(Number).filter((x) => x > 0).sort((a, b) => a - b);
+    return t + (st.length ? ` · Schritt ${st.join(", ")}` : "");
+  }
+
+  _wireHeatHandle(h) { // ↕️ Eintrag verschieben (Ziehen oder ↑ ↓)
+    const box = this.$("rHeat");
+    const reorder = (from, to) => {
+      this._readHeat();
+      const rows = this._draft.heat;
+      if (to < 0 || to >= rows.length || from === to) return false;
+      const [x] = rows.splice(from, 1);
+      rows.splice(to, 0, x);
+      this._renderHeat();
+      return true;
+    };
+    h.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      e.preventDefault();
+      const from = Number(h.closest(".heatrow").dataset.n), to = from + (e.key === "ArrowUp" ? -1 : 1);
+      if (reorder(from, to)) box.querySelector(`.heatrow[data-n="${to}"] .hhandle`)?.focus();
+    });
+    h.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      const rowEl = h.closest(".heatrow"), startY = e.clientY, from = Number(rowEl.dataset.n);
+      let idx = null;
+      try { h.setPointerCapture(e.pointerId); } catch (_) { /* geht auch ohne */ }
+      rowEl.classList.add("dragging");
+      const others = () => [...box.querySelectorAll(".heatrow")].filter((x) => x !== rowEl);
+      const onMove = (ev) => {
+        const list = others();
+        rowEl.style.transform = `translateY(${ev.clientY - startY}px)`;
+        idx = list.filter((x) => { const b = x.getBoundingClientRect(); return b.top + b.height / 2 < ev.clientY; }).length;
+        list.forEach((x) => x.classList.remove("dropbefore", "dropafter"));
+        if (list[idx]) list[idx].classList.add("dropbefore"); else list[list.length - 1]?.classList.add("dropafter");
+      };
+      const done = () => {
+        h.removeEventListener("pointermove", onMove);
+        h.removeEventListener("pointerup", done);
+        h.removeEventListener("pointercancel", done);
+        rowEl.style.transform = "";
+        rowEl.classList.remove("dragging");
+        others().forEach((x) => x.classList.remove("dropbefore", "dropafter"));
+        if (idx != null) reorder(from, idx); // idx = Platz unter den anderen Zeilen = neuer Index
+        else this._renderHeat();
+      };
+      h.addEventListener("pointermove", onMove);
+      h.addEventListener("pointerup", done);
+      h.addEventListener("pointercancel", done);
+    });
   }
 
   // 🔢 Schritte des Rezepts zum Antippen (mehrere möglich); nichts gewählt = bei allen Schritten
@@ -8580,8 +8667,9 @@ ${(() => {
     this._draft.heat = [...box.querySelectorAll(".heatrow")].map((row) => {
       const v = (f) => row.querySelector(`[data-hf=${f}]`);
       return { device: v("device").value, mode: v("mode").value || null, temp: v("temp").value || null,
-        minutes: v("minutes").value || null, minutes_to: v("minutes_to").value || null, preheat: v("preheat").checked, steps: [...row.querySelectorAll(".hsteps button[aria-pressed=true]")].map((b) => Number(b.dataset.s)), note: v("note").value.trim() || null };
+        minutes: v("minutes").value || null, minutes_to: v("minutes_to").value || null, preheat: v("preheat").checked, steps: [...row.querySelectorAll(".hsteps button[aria-pressed=true]")].map((b) => Number(b.dataset.s)), note: v("note").value.trim() || null, _open: row.dataset.open === "1" };
     });
+    box.querySelectorAll(".heatrow").forEach((row, n) => { const t = row.querySelector(".hsum .ht"); if (t) t.textContent = this._heatSummary(this._draft.heat[n]); });
     this._stepHeatIcons();
   }
 
@@ -12078,9 +12166,17 @@ ${(() => {
         break;
       case "heat-add":
         this._readHeat();
-        (this._draft.heat ||= []).push({ device: "Backofen", mode: "Ober-/Unterhitze", temp: null, minutes: null, preheat: false, note: null });
+        (this._draft.heat ||= []).push({ device: "Backofen", mode: "Ober-/Unterhitze", temp: null, minutes: null, preheat: false, note: null, _open: true });
         this._renderHeat();
         break;
+      case "heat-fold": { // Eintrag ein-/ausklappen
+        const row = el.closest(".heatrow");
+        const on = row.dataset.open !== "1";
+        row.dataset.open = on ? "1" : "0";
+        el.setAttribute("aria-expanded", String(on));
+        row.querySelector(".hbody").hidden = !on;
+        break;
+      }
       case "heat-remove":
         this._readHeat();
         this._draft.heat.splice(Number(el.closest(".heatrow").dataset.n), 1);
