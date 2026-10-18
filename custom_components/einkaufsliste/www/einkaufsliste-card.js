@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.2";
+const EL_VERSION = "2.76.21-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -383,6 +383,8 @@ const EL_BETA_NEWS = [
    "New: 🔥 Oven & Co. is now below “Preparation” in the recipe editor. Each entry can show at certain steps only (tap the step numbers, several possible) – in cook mode the orange info then appears only at those steps. With nothing chosen it shows at all steps as before."],
   ["Neu: 🍳 Kochmodus: Gibt es mehrere Geräte ohne Schritt-Zahl, kannst du beim Start einklappbar wählen, womit gegart wird (mehrere möglich). Wird das Rezept während des Kochens geändert, zieht der Kochmodus sofort nach.",
    "New: 🍳 Cook mode: with several appliances without a step number you can choose at the start (collapsible) what you cook with (several possible). If the recipe is changed while cooking, cook mode updates right away."],
+  ["Neu: 🔥 Im Rezept-Editor zeigt ein Ofen-Knopf links bei den Foto-Knöpfen, bei welchen Zubereitungs-Schritten ein Eintrag aus Backofen & Co. gilt (Antippen zeigt, welcher).",
+   "New: 🔥 In the recipe editor an oven button next to the photo buttons shows which preparation steps have an Oven & Co. entry (tap to see which)."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -8307,7 +8309,7 @@ ${(() => {
         <button type="button" class="sthandle" title="Zum Verschieben ziehen (oder ↑ ↓ drücken)" aria-label="Schritt verschieben">⠿</button>
         <span class="stnum" translate="no">${n + 1}.</span>
         <textarea class="stin" rows="1" data-k="${r.k}" placeholder="z. B. Nudeln 10 Minuten kochen">${esc(r.t)}</textarea>
-        <span class="stbtns">${key ? `${has ? `<button type="button" class="btn" data-act="sphoto-view" data-n="${r.o}" data-pos="${n}"><ha-icon icon="mdi:image-outline"></ha-icon>${cnt}</button>` : ""}
+        <span class="stbtns"><span class="sthi" data-s="${n + 1}"></span>${key ? `${has ? `<button type="button" class="btn" data-act="sphoto-view" data-n="${r.o}" data-pos="${n}"><ha-icon icon="mdi:image-outline"></ha-icon>${cnt}</button>` : ""}
         <button type="button" class="btn" data-act="sphoto-take" data-n="${r.o}" ${cnt >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${has ? "Dazu" : "Foto"}</button>`
         : `${(r.np || []).length ? `<button type="button" class="btn" data-act="sphoto-newdel" data-k="${r.k}" title="Neue Fotos wieder entfernen"><ha-icon icon="mdi:image-outline"></ha-icon>${r.np.length}</button>` : ""}
         <button type="button" class="btn" data-act="sphoto-new" data-k="${r.k}" data-pos="${n}" ${(r.np || []).length >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${(r.np || []).length ? "Dazu" : "Foto"}</button>`}
@@ -8317,9 +8319,25 @@ ${(() => {
     const hint = this.$("rStepPhotos");
     if (hint) hint.innerHTML = rows.some((r) => r.t.trim() && r.o == null)
       ? `<p class="hint">📷 Fotos zu neuen Schritten werden beim Speichern mitgespeichert. Verschieben: am ⠿ ziehen (oder ⠿ antippen und ↑ ↓ drücken) – die Fotos wandern mit.</p>` : "";
+    this._stepHeatIcons();
     box.querySelectorAll(".stin").forEach((ta) => this._wireStepInput(ta));
     box.querySelectorAll(".sthandle").forEach((h) => this._wireStepHandle(h));
     if (focusK != null) box.querySelector(`.stin[data-k="${focusK}"]`)?.focus();
+  }
+
+  // 🔥 Zu diesem Schritt gehört ein Backofen-&-Co.-Eintrag: kleines Icon links neben den Foto-Knöpfen (Antippen zeigt, was)
+  _stepHeatIcons() {
+    const box = this.$("rStepRows");
+    if (!box || !this._draft) return;
+    const heat = this._draft.heat || [];
+    box.querySelectorAll(".sthi").forEach((sp) => {
+      const k = Number(sp.dataset.s);
+      const hs = heat.filter((h) => (h.steps || []).map(Number).includes(k));
+      const txt = hs.map((h) => heatText(h)).join("\n");
+      sp.innerHTML = hs.length ? `<button type="button" class="btn" data-act="heat-info" title="${esc(txt)}" aria-label="Backofen &amp; Co. bei diesem Schritt"><ha-icon icon="mdi:stove" style="color:#ef6c00"></ha-icon></button>` : "";
+      sp.dataset.txt = txt;
+      sp.style.display = hs.length ? "inline-flex" : "none";
+    });
   }
 
   _fitStep(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + 2 + "px"; }
@@ -8537,6 +8555,7 @@ ${(() => {
         </div>
       </div>`;
     }).join("") || `<p class="hint">Noch nichts – z. B. Backofen · Ober-/Unterhitze · 200 °C · 25 Min.</p>`;
+    this._stepHeatIcons();
   }
 
   // 🔢 Schritte des Rezepts zum Antippen (mehrere möglich); nichts gewählt = bei allen Schritten
@@ -8563,6 +8582,7 @@ ${(() => {
       return { device: v("device").value, mode: v("mode").value || null, temp: v("temp").value || null,
         minutes: v("minutes").value || null, minutes_to: v("minutes_to").value || null, preheat: v("preheat").checked, steps: [...row.querySelectorAll(".hsteps button[aria-pressed=true]")].map((b) => Number(b.dataset.s)), note: v("note").value.trim() || null };
     });
+    this._stepHeatIcons();
   }
 
   // Das Eingabe-Formular der Liste wandert in den Rezept-Editor – so ist alles genau gleich
@@ -12048,6 +12068,9 @@ ${(() => {
         this._clearForm();
         this._toast("🧽 Alles geleert");
         this.$("inName").focus();
+        break;
+      case "heat-info":
+        this._toast("🔥 " + (el.closest(".sthi")?.dataset.txt || "").replace(/\n/g, " · "));
         break;
       case "heat-step":
         el.setAttribute("aria-pressed", el.getAttribute("aria-pressed") === "true" ? "false" : "true");
