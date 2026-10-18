@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.8";
+const EL_VERSION = "2.76.21-beta.9";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -395,6 +395,10 @@ const EL_BETA_NEWS = [
    "Changed: ✏️ The change-request symbol in cook mode now only appears during the steps, no longer on the person selection."],
   ["Geändert: 📐 Aufgeklappte Felder haben keinen Strich am Rand mehr und sind nur noch ganz leicht eingerückt – so bleibt mehr Platz.",
    "Changed: 📐 Expanded boxes no longer have a line at the edge and are only slightly indented – more room on the screen."],
+  ["Behoben: 📍 Nach dem Rezept-Editor springt die Rezeptliste nicht mehr wahllos – sie scrollt zum bearbeiteten Rezept bzw. zurück an die alte Stelle.",
+   "Fixed: 📍 After the recipe editor the recipe list no longer jumps around – it scrolls to the edited recipe or back to where you were."],
+  ["Neu: 🔗 Die Schritt-Auswahl bei Backofen & Co. hängt am Schritt selbst: Löschen, Verschieben oder Einfügen von Schritten verschiebt sie nicht mehr auf einen anderen Schritt.",
+   "New: 🔗 The step choice for Oven & Co. is tied to the step itself: deleting, moving or inserting steps no longer shifts it to a different step."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -4950,7 +4954,7 @@ class EinkaufslisteCard extends HTMLElement {
       this._emitNav();
       return true;
     }
-    if (this._view === "recipe") { this._draft = null; this._view = "settings"; this._renderAll(); return true; }
+    if (this._view === "recipe") { const rid = this._draft?.id; this._draft = null; this._view = "settings"; this._renderAll(); this._afterRecipeEditor(rid); return true; }
     if (this._view === "settings") {
       if (this._storeSel) { this._storeSel = null; this._hoursOpenFor = null; }
       else if (this._catSel) this._catSel = null;
@@ -8202,7 +8206,19 @@ ${(() => {
     </div>`;
   }
 
+  // 📍 Rezept-Editor zu: die Rezeptliste (Einstellungen) soll nicht „irgendwohin springen“ – sie scrollt zum bearbeiteten Rezept, sonst dorthin zurück, wo man war
+  _afterRecipeEditor(id) {
+    const snap = this._recipeSnap; this._recipeSnap = null;
+    const go = () => {
+      const row = id ? this.shadowRoot.querySelector(`#setRecipeList .recipe[data-id="${id}"]`) : null;
+      if (row) row.scrollIntoView({ block: "center", behavior: "instant" }); else if (snap) this._scrollRestore(snap);
+    };
+    requestAnimationFrame(() => { go(); requestAnimationFrame(go); });
+    setTimeout(go, 300); // die Liste baut sich erst nach dem Neuzeichnen fertig auf
+  }
+
   _openRecipe(recipe) {
+    if (this._view === "settings") this._recipeSnap = this._scrollSnap(); // merken, wie weit die Rezeptliste gescrollt war
     this._draft = recipe
       ? { id: recipe.id, name: recipe.name, group: recipe.group || null, steps: recipe.steps || "", stepRows: this._stepLines(recipe.steps).map((t, i) => ({ k: ++this._stepSeq, t, o: i })), servings: recipe.servings || null, servings_unit: recipe.servings_unit || "persons", heat: (recipe.heat || []).map((h) => ({ ...h })), items: abcSort(recipe.items.map((i) => ({ ...i }))) }
       : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [], heat: [], stepRows: [] };
@@ -8362,7 +8378,7 @@ ${(() => {
     const heat = this._draft.heat || [];
     box.querySelectorAll(".sthi").forEach((sp) => {
       const k = Number(sp.dataset.s);
-      const hs = heat.filter((h) => (h.steps || []).map(Number).includes(k));
+      const hs = heat.filter((h) => this._heatPos(h).includes(k));
       const txt = hs.map((h) => heatText(h)).join("\n");
       sp.innerHTML = hs.length ? `<button type="button" class="btn" data-act="heat-info" title="${esc(txt)}" aria-label="Backofen &amp; Co. bei diesem Schritt"><ha-icon icon="mdi:stove" style="color:#ef6c00"></ha-icon></button>` : "";
       sp.dataset.txt = txt;
@@ -8571,6 +8587,7 @@ ${(() => {
   _renderHeat() {
     const box = this.$("rHeat");
     if (!box) return;
+    this._ensureHeatKeys();
     const rows = this._draft.heat || [];
     const opt = (v, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(v)}</option>`;
     box.innerHTML = rows.map((h, n) => {
@@ -8593,7 +8610,7 @@ ${(() => {
           <span class="hmin"><input data-hf="minutes" type="number" inputmode="numeric" min="0" value="${esc(h.minutes ?? "")}" placeholder="Min"><span>–</span><input data-hf="minutes_to" type="number" inputmode="numeric" min="0" value="${esc(h.minutes_to ?? "")}" placeholder="bis"></span>
         </div>
         <label><input data-hf="preheat" type="checkbox" ${h.preheat ? "checked" : ""}> vorheizen</label>
-        <div class="hsteps" title="Nur bei diesen Schritten erscheint die Info im Kochmodus. Nichts gewählt = bei allen Schritten">${this._heatStepChips(h.steps)}</div>
+        <div class="hsteps" title="Nur bei diesen Schritten erscheint die Info im Kochmodus. Nichts gewählt = bei allen Schritten">${this._heatStepChips(this._heatPos(h))}</div>
         <div class="hfoot">
           <input data-hf="note" type="text" value="${esc(h.note || "")}" placeholder="Hinweis, z. B. mittlere Schiene">
         </div>
@@ -8613,7 +8630,7 @@ ${(() => {
   // 🔥 Kurz-Zeile eines Eintrags (bleibt sichtbar, auch wenn er eingeklappt ist)
   _heatSummary(h) {
     const t = heatText({ ...h, temp: h.temp || null, minutes: h.minutes || null, minutes_to: h.minutes_to || null });
-    const st = (h.steps || []).map(Number).filter((x) => x > 0).sort((a, b) => a - b);
+    const st = this._heatPos(h).sort((a, b) => a - b);
     return t + (st.length ? ` · Schritt ${st.join(", ")}` : "");
   }
 
@@ -8664,6 +8681,22 @@ ${(() => {
     });
   }
 
+  // 🔗 Die Schritt-Auswahl hängt am Schritt selbst (über seine Zeilen-Kennung k), nicht an der Nummer:
+  // Schritt löschen = seine Auswahl verschwindet mit; Schritte verschieben/einfügen = die Auswahl wandert mit ihrem Schritt.
+  _ensureHeatKeys() {
+    const dr = this._draft;
+    if (!dr) return;
+    const rows = this._stepRowsOf(dr);
+    for (const h of dr.heat || []) if (!h._sk) h._sk = (h.steps || []).map(Number).map((n) => rows[n - 1]?.k).filter((k) => k != null);
+  }
+
+  _heatPos(h) { // aktuelle Schritt-Nummern (1, 2, 3 …) dieses Eintrags
+    const dr = this._draft;
+    if (!h) return [];
+    if (!dr || !h._sk) return (h.steps || []).map(Number).filter((n) => n > 0);
+    return this._stepRowsOf(dr).map((r, i) => (h._sk.includes(r.k) ? i + 1 : 0)).filter(Boolean);
+  }
+
   // 🔢 Schritte des Rezepts zum Antippen (mehrere möglich); nichts gewählt = bei allen Schritten
   _heatStepChips(sel) {
     const chosen = (sel || []).map(Number);
@@ -8674,19 +8707,27 @@ ${(() => {
   _refreshHeatChips() { // Schritte wurden mehr/weniger/umsortiert: Antipp-Zahlen neu zeichnen, Auswahl bleibt
     const box = this.$("rHeat");
     if (!box) return;
-    box.querySelectorAll(".hsteps").forEach((d) => {
-      const sel = [...d.querySelectorAll("button[aria-pressed=true]")].map((b) => Number(b.dataset.s));
-      d.innerHTML = this._heatStepChips(sel);
+    this._ensureHeatKeys();
+    box.querySelectorAll(".heatrow").forEach((row) => {
+      const h = this._draft.heat?.[Number(row.dataset.n)];
+      const d = row.querySelector(".hsteps");
+      if (!h || !d) return;
+      h.steps = this._heatPos(h);
+      d.innerHTML = this._heatStepChips(h.steps);
+      const t = row.querySelector(".hsum .ht"); if (t) t.textContent = this._heatSummary(h);
     });
   }
 
   _readHeat() {
     const box = this.$("rHeat");
     if (!box || !this._draft) return;
+    this._ensureHeatKeys();
+    const old = this._draft.heat || [];
     this._draft.heat = [...box.querySelectorAll(".heatrow")].map((row) => {
       const v = (f) => row.querySelector(`[data-hf=${f}]`);
+      const sk = old[Number(row.dataset.n)]?._sk || [];
       return { device: v("device").value, mode: v("mode").value || null, temp: v("temp").value || null,
-        minutes: v("minutes").value || null, minutes_to: v("minutes_to").value || null, preheat: v("preheat").checked, steps: [...row.querySelectorAll(".hsteps button[aria-pressed=true]")].map((b) => Number(b.dataset.s)), note: v("note").value.trim() || null, _open: row.dataset.open === "1" };
+        minutes: v("minutes").value || null, minutes_to: v("minutes_to").value || null, preheat: v("preheat").checked, _sk: sk, steps: this._heatPos({ _sk: sk }), note: v("note").value.trim() || null, _open: row.dataset.open === "1" };
     });
     box.querySelectorAll(".heatrow").forEach((row, n) => { const t = row.querySelector(".hsum .ht"); if (t) t.textContent = this._heatSummary(this._draft.heat[n]); });
     this._stepHeatIcons();
@@ -8868,9 +8909,10 @@ ${(() => {
       return o;
     });
     if (this.$("inName").value.trim() && !await elConfirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
+    const sr = this._stepRowsOf(dr).filter((r) => r.t.replace(/\s+/g, "").length); // gespeicherte Schritte (ohne leere Zeilen)
     const heat = (dr.heat || []).filter((h) => h.mode || h.temp || h.minutes || h.note)
       .map((h) => ({ device: h.device || "Backofen", mode: h.mode || null, temp: h.temp ? Number(h.temp) : null,
-        minutes: h.minutes ? Number(h.minutes) : null, minutes_to: h.minutes_to ? Number(h.minutes_to) : null, preheat: !!h.preheat, steps: (h.steps || []).map(Number).filter((n) => n > 0), note: h.note || null }));
+        minutes: h.minutes ? Number(h.minutes) : null, minutes_to: h.minutes_to ? Number(h.minutes_to) : null, preheat: !!h.preheat, steps: h._sk ? sr.map((r, i) => (h._sk.includes(r.k) ? i + 1 : 0)).filter(Boolean) : (h.steps || []).map(Number).filter((n) => n > 0), note: h.note || null }));
     const msg = { name: dr.name.trim(), group: dr.group || null, items, steps: (dr.steps || "").trim() || null, heat, servings: dr.servings || null, servings_unit: dr.servings_unit || "persons" };
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {
@@ -8909,6 +8951,7 @@ ${(() => {
       this._draft = null;
       this._view = "settings";
       this._renderAll();
+      this._afterRecipeEditor(rid || dr.id);
     } catch (_) { /* Meldung kam schon */ }
   }
 
@@ -12245,10 +12288,15 @@ ${(() => {
       case "heat-info":
         this._toast("🔥 " + (el.closest(".sthi")?.dataset.txt || "").replace(/\n/g, " · "));
         break;
-      case "heat-step":
-        el.setAttribute("aria-pressed", el.getAttribute("aria-pressed") === "true" ? "false" : "true");
+      case "heat-step": { // Schritt an-/abwählen: gemerkt wird der Schritt selbst (nicht seine Nummer)
         this._readHeat();
+        const h = this._draft.heat?.[Number(el.closest(".heatrow").dataset.n)];
+        const key = this._stepRowsOf(this._draft)[Number(el.dataset.s) - 1]?.k;
+        if (h && key != null) { const sk = new Set(h._sk || []); if (sk.has(key)) sk.delete(key); else sk.add(key); h._sk = [...sk]; }
+        this._refreshHeatChips();
+        this._stepHeatIcons();
         break;
+      }
       case "heat-add":
         this._readHeat();
         (this._draft.heat ||= []).push({ device: "Backofen", mode: "Ober-/Unterhitze", temp: null, minutes: null, preheat: false, note: null, _open: true });
@@ -12266,7 +12314,7 @@ ${(() => {
         this._readHeat();
         const rows = this._draft.heat, at = Number(el.closest(".heatrow").dataset.n);
         if (rows.length >= 6) { this._toast("🔥 Mehr als 6 Einträge gehen nicht"); break; }
-        rows.splice(at + 1, 0, { ...rows[at], steps: [...(rows[at].steps || [])], _open: true });
+        rows.splice(at + 1, 0, { ...rows[at], steps: [...(rows[at].steps || [])], _sk: [...(rows[at]._sk || [])], _open: true });
         this._renderHeat();
         break;
       }
@@ -13583,11 +13631,14 @@ ${(() => {
         this._renderRecipeItems();
         break;
       }
-      case "recipe-cancel":
+      case "recipe-cancel": {
+        const rid = this._draft?.id;
         this._draft = null;
         this._view = "settings";
         this._renderAll();
+        this._afterRecipeEditor(rid);
         break;
+      }
       case "recipe-save":
         this._saveRecipe();
         break;
