@@ -202,6 +202,8 @@ For this the API key is kept on the server (never on phones, never in backups). 
 
 **💡 Suggest a recipe:** In the chef-hat view there is a light-bulb button next to “AI cooking”. Anyone in the family can suggest a recipe there (name, ingredients, oven & co., steps, photo). Suggestions wait in ⚙️ → Recipes → “Waiting for OK”; whoever knows the PIN looks at them and accepts or rejects. Rejected suggestions disappear after a day or via ✖ in the settings. **🔍 Zoom photos:** two fingers or double-tap, then drag with one finger.
 
+**🖨️ Print list:** Below the list there is a small line “Print list”. Choose a store, check the preview and print it or save it as PDF: with tick boxes, sorted by store and category, with date, time and name. It tries to fit on one A4 page (two columns from 20 items). **▥ Scanning in the store:** In store mode the scanner also checks off without a location zone (chosen tab and “anywhere”, under “All” the whole list; ambiguous hits are not checked off on a guess).
+
 ### 📝 Note templates
 **⚙️ → Extras → Note templates**: small buttons under the ✏️ Own note field (“Organic”, “lactose-free”, “large pack” …). They only appear once you type the first letter and show only the matching ones; a tap replaces what you typed with the template. You maintain the texts yourself, for all devices.
 

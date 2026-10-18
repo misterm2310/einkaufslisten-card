@@ -201,6 +201,8 @@ Dafür liegt der API-Schlüssel auf dem Server (nie auf Handys, nie in Sicherung
 
 **💡 Rezept vorschlagen:** In der Kochmütze steht neben „KI kochen“ ein Knopf mit der Glühbirne. Jeder in der Familie kann dort ein Rezept vorschlagen (Name, Zutaten, Backofen & Co., Zubereitung, Foto). Vorgeschlagene Rezepte landen in ⚙️ → Rezepte → „Wartet auf OK“; wer die PIN kennt, schaut sie an und übernimmt oder lehnt ab. Abgelehnte Vorschläge verschwinden nach einem Tag oder per ✖ in den Einstellungen. **🔍 Fotos zoomen:** Zwei Finger oder doppelt tippen, im Zoom mit einem Finger verschieben.
 
+**🖨️ Liste drucken:** Unter der Liste steht die kleine Zeile „Liste drucken“. Du wählst das Geschäft, siehst die Vorschau und gibst sie als Papier oder PDF aus: mit Kästchen zum Abhaken, nach Geschäft und Kategorie sortiert, mit Datum, Uhrzeit und Namen. Sie passt möglichst auf eine A4-Seite (ab 20 Artikeln in zwei Spalten). **▥ Scannen im Laden:** Im Laden-Modus hakt der Scanner auch ohne Standortzone ab (gewählter Reiter und „Egal wo“, unter „Alle“ die ganze Liste; mehrdeutige Treffer nicht auf Verdacht).
+
 ### 📝 Notiz-Vorlagen
 **⚙️ → Extras → Notiz-Vorlagen**: kleine Knöpfe unter dem ✏️ Eigene-Notiz-Feld („Bio“, „ohne Laktose“, „große Packung“ …). Sie erscheinen erst mit dem ersten getippten Buchstaben und zeigen nur die passenden; ein Tipp ersetzt das Angetippte durch die Vorlage. Die Texte pflegst du selbst, für alle Geräte.
 

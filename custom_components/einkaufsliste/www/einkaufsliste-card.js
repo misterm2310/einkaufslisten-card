@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.19-beta.6";
+const EL_VERSION = "2.76.19";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.18"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -374,22 +374,7 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [
-  ["Neu: ▥ Scannen & Abhaken geht im Laden-Modus jetzt auch ohne Standortzone. Es gilt der gewählte Geschäft-Reiter (und „Egal wo“), unter „Alle“ die ganze Liste. Steht eine Packung bei mehreren Geschäften auf der Liste, wird sie nicht auf Verdacht abgehakt. Der Knopf „Liste drucken“ ist außerdem viel kleiner geworden.",
-   "New: ▥ Scan & check off now also works in store mode without a location zone. The chosen store tab (and “anywhere”) counts, under “All” the whole list. If a pack is on the list for several stores it is not checked off on a guess. The “Print list” button is also much smaller now."],
-  ["Neu: 🖨️ „Liste drucken“ steht unter der Einkaufsliste. Geschäft wählen, Vorschau ansehen, dann als Papier oder PDF ausgeben: mit Kästchen zum Abhaken, nach Geschäft und Kategorie sortiert, mit Datum, Uhrzeit und wer es ausgedruckt hat. Es passt möglichst auf eine A4-Seite (ab 20 Artikeln in zwei Spalten, bei sehr langen Listen etwas enger).",
-   "New: 🖨️ “Print list” sits below the shopping list. Choose a store, check the preview, then print it or save it as PDF: with tick boxes, sorted by store and category, with date, time and who printed it. It tries to fit on one A4 page (two columns from 20 items, a bit tighter for very long lists)."],
-  ["Behoben: ✏️ Eine „Eigene Notiz“, die du im Rezept-Editor bei einer Zutat einträgst, wird jetzt mit dem Rezept gespeichert (vorher ging sie beim Speichern verloren).",
-   "Fixed: ✏️ an “own note” you enter on an ingredient in the recipe editor is now saved with the recipe (before, it got lost on saving)."],
-  ["Neu: 🗂️ ⚙️ → Rezepte besteht jetzt aus aufklappbaren Kästen wie die Einstellungen und die Gar-Zeiten: Neues Rezept, Rezepte, Rezept-Gruppen, Rezepte aus Datei, Wartet auf OK und Wochenplan. Es ist immer nur einer offen, alle starten zu. Der Wochenplan hat einen eigenen Kasten und steht nicht mehr unter „Rezepte“.",
-   "New: 🗂️ ⚙️ → Recipes now consists of collapsible boxes like the settings and the cooking times: New recipe, Recipes, Recipe groups, Recipes from file, Waiting for OK and Weekly plan. Only one is open at a time, all start closed. The weekly plan has its own box and is no longer under “Recipes”."],
-  ["Neu: 🔒 Die Karte lässt sich nicht mehr mit zwei Fingern zoomen (auch unten bei „Erledigt“ nicht). Fotos zoomen weiter. Auf der Angebote-Seite öffnet ein Tipp aufs Produktbild es einfach groß.",
-   "New: 🔒 the card can no longer be pinch-zoomed (not even down at “Done”). Photos still zoom. On the offers page a tap on the product picture simply opens it large."],
-  ["Neu: 👆 Lange auf einen Knopf ohne Text drücken zeigt seinen kurzen Namen (zum Beispiel „Gar-Zeiten“, „Zutaten einfügen“, „Timer starten“) – jetzt bei allen Symbol-Knöpfen der Karte, auch im Rezept-Editor.",
-   "New: 👆 pressing and holding a button without text shows its short name (for example “Cooking times”, “Paste ingredients”, “Start timer”) – now on all icon buttons of the card, also in the recipe editor."],
-  ["Neu: 📍 „Laden verlassen“ kommt schneller: Die Pause dauert nur noch 2 Minuten statt 3, und sie zählt ab dem Moment, in dem Home Assistant dich als „weg“ gemeldet hat. Hat die Karte im Hintergrund geschlafen, schaltet sie beim Öffnen sofort um (Reiter „Alle“, von selbst eingeschalteter Laden-Modus aus).",
-   "New: 📍 “leaving the store” is detected faster: the pause is only 2 minutes instead of 3 and counts from the moment Home Assistant reported you as “away”. If the card slept in the background it switches right away when opened (tab “All”, store mode that switched on by itself goes off)."],
-];
+const EL_BETA_NEWS = [];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -397,6 +382,18 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🖨️ <b>Liste drucken:</b> Unter der Liste steht eine kleine Zeile „Liste drucken“. Geschäft wählen, Vorschau ansehen, dann als Papier oder PDF ausgeben: mit Kästchen zum Abhaken, nach Geschäft und Kategorie sortiert, mit Datum, Uhrzeit und wer es ausgedruckt hat. Es passt möglichst auf eine A4-Seite (ab 20 Artikeln in zwei Spalten, bei sehr langen Listen etwas enger).",
+   "🖨️ <b>Print list:</b> below the list there is a small line “Print list”. Choose a store, check the preview, then print it or save it as PDF: with tick boxes, sorted by store and category, with date, time and who printed it. It tries to fit on one A4 page (two columns from 20 items, a bit tighter for very long lists)."],
+  ["▥ <b>Scannen &amp; Abhaken im Laden:</b> Im Laden-Modus geht es jetzt auch ohne Standortzone. Es gilt der gewählte Geschäft-Reiter (und „Egal wo“), unter „Alle“ die ganze Liste. Steht eine Packung bei mehreren Geschäften auf der Liste, wird sie nicht auf Verdacht abgehakt.",
+   "▥ <b>Scan &amp; check off in the store:</b> in store mode it now also works without a location zone. The chosen store tab (and “anywhere”) counts, under “All” the whole list. If a pack is on the list for several stores it is not checked off on a guess."],
+  ["🗂️ <b>Rezepte in aufklappbaren Kästen:</b> ⚙️ → Rezepte besteht aus Kästen wie die Einstellungen: Neues Rezept, Rezepte, Rezept-Gruppen, Rezepte aus Datei, Wartet auf OK und Wochenplan (eigener Kasten). Immer nur einer ist offen.",
+   "🗂️ <b>Recipes in collapsible boxes:</b> ⚙️ → Recipes consists of boxes like the settings: New recipe, Recipes, Recipe groups, Recipes from file, Waiting for OK and Weekly plan (its own box). Only one is open at a time."],
+  ["🔒 <b>Kein Zoomen der Karte:</b> Die Karte lässt sich nicht mehr mit zwei Fingern zoomen. Fotos zoomen weiter. Auf der Angebote-Seite öffnet ein Tipp aufs Produktbild es einfach groß.",
+   "🔒 <b>No zooming of the card:</b> the card can no longer be pinch-zoomed. Photos still zoom. On the offers page a tap on the product picture simply opens it large."],
+  ["👆 <b>Lange drücken zeigt den Namen:</b> Lange auf einen Knopf ohne Text drücken zeigt seinen kurzen Namen (zum Beispiel „Gar-Zeiten“, „Zutaten einfügen“, „Timer starten“) – bei allen Symbol-Knöpfen, auch im Rezept-Editor.",
+   "👆 <b>Press and hold shows the name:</b> pressing and holding a button without text shows its short name (for example “Cooking times”, “Paste ingredients”, “Start timer”) – on all icon buttons, also in the recipe editor."],
+  ["📍 <b>„Laden verlassen“ schneller:</b> Die Pause dauert nur noch 2 Minuten statt 3 und zählt ab dem Moment, in dem Home Assistant dich als „weg“ gemeldet hat. Hat die Karte im Hintergrund geschlafen, schaltet sie beim Öffnen sofort um.",
+   "📍 <b>“Leaving the store” faster:</b> the pause is only 2 minutes instead of 3 and counts from the moment Home Assistant reported you as “away”. If the card slept in the background it switches right away when opened."],
   ["💡 <b>Rezept vorschlagen:</b> In der Kochmütze steht neben „KI kochen“ eine Glühbirne. Jeder kann dort Name, Zutaten, Backofen &amp; Co., Zubereitung und ein Foto eintippen. Der Vorschlag wartet in ⚙️ → Rezepte → „Wartet auf OK“. Wer die PIN kennt, übernimmt oder lehnt ab (✖ löscht abgelehnte sofort, sonst nach einem Tag). Das Zahnrad in der Kochmütze ist grau, solange gesperrt, grün nach der PIN und blinkt eine Minute vor dem Sperren rot.",
    "💡 <b>Suggest a recipe:</b> in the chef-hat view there is a light bulb next to “AI cooking”. Anyone can type in name, ingredients, oven &amp; co., steps and a photo. The suggestion waits in ⚙️ → Recipes → “Waiting for OK”. Whoever knows the PIN accepts or rejects it (✖ deletes rejected ones right away, otherwise after a day). The gear in the chef-hat view is grey while locked, green after the PIN and blinks red one minute before it locks again."],
   ["📝 <b>Rezept-Editor in klappbaren Kästen:</b> Eingaben, Zutaten, Backofen und Zubereitung lassen sich auf- und zuklappen. Zutaten und Schritte werden getrennt eingefügt, die Schritte auch per Link. Die Symbole zu den Schritten stehen unter dem Text.",
