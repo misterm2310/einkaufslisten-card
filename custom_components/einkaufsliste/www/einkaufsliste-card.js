@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.4";
+const EL_VERSION = "2.76.21-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -387,6 +387,8 @@ const EL_BETA_NEWS = [
    "New: 🔥 In the recipe editor an oven button next to the photo buttons shows which preparation steps have an Oven & Co. entry (tap to see which)."],
   ["Neu: 🔥 Rezept-Editor: Die Einträge von Backofen & Co. lassen sich einklappen (Kurz-Zeile bleibt sichtbar) und per Ziehen am ⠿ verschieben. Außerdem werden lange Schritte bei „Zubereitung“ nicht mehr abgeschnitten.",
    "New: 🔥 Recipe editor: the Oven & Co. entries can be collapsed (a short line stays visible) and moved by dragging the ⠿. Long steps under “Preparation” are also no longer cut off."],
+  ["Neu: 🔥 Rezept-Editor: Einträge von Backofen & Co. lassen sich duplizieren (Kopie direkt darunter).",
+   "New: 🔥 Recipe editor: Oven & Co. entries can be duplicated (copy right below)."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -8564,6 +8566,7 @@ ${(() => {
         <div class="hhead">
           <button type="button" class="hhandle" title="Zum Verschieben ziehen (oder ↑ ↓ drücken)" aria-label="Eintrag verschieben">⠿</button>
           <button type="button" class="hsum" data-act="heat-fold" aria-expanded="${open}"><span class="ht">${esc(this._heatSummary(h))}</span><ha-icon icon="mdi:chevron-down"></ha-icon></button>
+          <button class="iconbtn" data-act="heat-dup" title="Duplizieren" aria-label="Eintrag duplizieren"><ha-icon icon="mdi:content-copy"></ha-icon></button>
           <button class="iconbtn" data-act="heat-remove" title="Entfernen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
         </div>
         <div class="hbody" ${open ? "" : "hidden"}>
@@ -12175,6 +12178,14 @@ ${(() => {
         row.dataset.open = on ? "1" : "0";
         el.setAttribute("aria-expanded", String(on));
         row.querySelector(".hbody").hidden = !on;
+        break;
+      }
+      case "heat-dup": { // Kopie direkt darunter (geöffnet, damit man gleich ändern kann)
+        this._readHeat();
+        const rows = this._draft.heat, at = Number(el.closest(".heatrow").dataset.n);
+        if (rows.length >= 6) { this._toast("🔥 Mehr als 6 Einträge gehen nicht"); break; }
+        rows.splice(at + 1, 0, { ...rows[at], steps: [...(rows[at].steps || [])], _open: true });
+        this._renderHeat();
         break;
       }
       case "heat-remove":
