@@ -504,11 +504,13 @@ def ws_recipe_add(hass, connection, msg):
         vol.Optional("heat"): OPT_STR,
         vol.Optional("steps"): OPT_STR,
         vol.Optional("by"): OPT_STR,
+        vol.Optional("recipe_id"): OPT_STR,
+        vol.Optional("step"): vol.Any(None, vol.Coerce(int)),
     }
 )
 @callback
 def ws_proposal_add(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: m.add_proposal(msg["name"], msg.get("text"), msg.get("by"), msg.get("ingredients"), msg.get("heat"), msg.get("steps")))
+    _run(hass, connection, msg, lambda m: m.add_proposal(msg["name"], msg.get("text"), msg.get("by"), msg.get("ingredients"), msg.get("heat"), msg.get("steps"), msg.get("recipe_id"), msg.get("step")))
 
 
 @websocket_api.websocket_command(

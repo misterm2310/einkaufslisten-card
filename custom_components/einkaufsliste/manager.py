@@ -3873,6 +3873,8 @@ class EinkaufslisteManager:
         ingredients: str | None = None,
         heat: str | None = None,
         steps: str | None = None,
+        recipe_id: str | None = None,
+        step: int | None = None,
     ) -> dict[str, Any]:
         """📝 Jemand schlägt ein Rezept vor (Zutaten, Backofen & Co., Zubereitung – als Text oder Link). Es landet auf der Warteliste, bis es freigegeben wird."""
         name = (_nice(name) or "")[:60]
@@ -3888,6 +3890,13 @@ class EinkaufslisteManager:
             raise ValueError("Es warten schon viele Vorschläge – sie müssen erst freigegeben oder abgelehnt werden.")
         self._prune_proposals()
         proposal = {"id": _new_id(), "name": name, "text": text, "ingredients": ingredients, "heat": heat, "steps": steps, "by": (_clean(by) or "")[:40], "created": _now_iso()}
+        if recipe_id and self.recipe_by_id(str(recipe_id)) is not None:  # ✏️ Änderungswunsch zu einem bestehenden Rezept (und Schritt)
+            proposal["recipe_id"] = str(recipe_id)
+            try:
+                if step and 0 < int(step) <= 99:
+                    proposal["step"] = int(step)
+            except (TypeError, ValueError):
+                pass
         self.proposals.append(proposal)
         self._changed()
         return proposal

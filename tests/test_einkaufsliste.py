@@ -1307,6 +1307,15 @@ def test_steps_from_schema():
     assert parse_html(page)["steps"] == "Ei kochen.\nSchälen."
 
 
+async def test_proposal_change_wish(hass, setup):
+    m = mgr(hass)
+    rid = m.add_recipe("Lasagne")["id"]
+    p = m.add_proposal("Änderung: Lasagne", text="Schritt 2: weniger Salz", by="Marco", recipe_id=rid, step="2")
+    assert p["recipe_id"] == rid and p["step"] == 2
+    q = m.add_proposal("Änderung: Nix", text="egal", recipe_id="gibtsnicht", step=500)
+    assert "recipe_id" not in q and "step" not in q
+
+
 async def test_recipe_heat(hass, setup, hass_ws_client):
     client = await hass_ws_client(hass)
     m = mgr(hass)

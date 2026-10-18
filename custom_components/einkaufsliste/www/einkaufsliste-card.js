@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.5";
+const EL_VERSION = "2.76.21-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -389,6 +389,8 @@ const EL_BETA_NEWS = [
    "New: 🔥 Recipe editor: the Oven & Co. entries can be collapsed (a short line stays visible) and moved by dragging the ⠿. Long steps under “Preparation” are also no longer cut off."],
   ["Neu: 🔥 Rezept-Editor: Einträge von Backofen & Co. lassen sich duplizieren (Kopie direkt darunter).",
    "New: 🔥 Recipe editor: Oven & Co. entries can be duplicated (copy right below)."],
+  ["Neu: ✏️ Im Kochmodus gibt es neben dem Rezeptnamen ein Symbol für Änderungswünsche: freier Text zum aktuellen Schritt, in einem eigenen Fenster. Der Wunsch landet bei „Wartet auf OK“; beim Prüfen öffnet sich das Rezept.",
+   "New: ✏️ Cook mode has a symbol next to the recipe name for change requests: free text for the current step in its own window. The request goes to “waiting for OK”; checking it opens the recipe."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -1936,6 +1938,7 @@ function ovIconButton(icon, title = "") {
 const EL_PAGE_ICONS = [
   [/^⏱️?/u, "mdi:timer-outline", "#26a69a"], // Timer
   [/^⏲️?/u, "mdi:pot-steam-outline", "#ef6c00"], // Gar-Zeiten
+  [/^✏️?\s*Änderungswunsch/u, "mdi:message-draw", "#f9a825"], // Änderungswunsch im Kochmodus
   [/^📷\s*Einscannen/u, "mdi:barcode-scan", "#43a047"],
   [/^📷\s*Foto machen/u, "mdi:camera-outline", "#1e88e5"],
   [/^📷/u, "mdi:image-multiple-outline", "#1e88e5"], // Foto-Seiten (Galerie)
@@ -7996,6 +7999,15 @@ ${(() => {
     const pr = (this._data?.proposals || []).find((x) => x.id === id && x.status !== "rejected");
     if (!pr) { this._toast("Diesen Vorschlag gibt es nicht mehr."); return; }
     this._toast("📝 Vorschlag wird vorbereitet …");
+    const wishRec = pr.recipe_id ? this._recipe(pr.recipe_id) : null;
+    if (wishRec) { // ✏️ Änderungswunsch: das Rezept selbst öffnen; Speichern = erledigt
+      this._openRecipe(wishRec);
+      this._draft.proposalId = pr.id;
+      this._draftRendered = false;
+      this._renderAll();
+      this._toast(`✏️ Wunsch${pr.by ? ` von ${pr.by}` : ""}${pr.step ? ` zu Schritt ${pr.step}` : ""}: ${String(pr.text || "").replace(/^[\s\S]*?Wunsch:\s*/, "").slice(0, 200)}`);
+      return;
+    }
     const isUrl = (v) => /^https?:\/\/\S+$/i.test(String(v || "").trim());
     const cache = new Map();
     const call = async (t) => { if (!cache.has(t)) { try { cache.set(t, await this._ws({ type: "einkaufsliste/recipe/import", text: t })); } catch (_) { cache.set(t, null); } } return cache.get(t); };
@@ -10130,10 +10142,14 @@ ${(() => {
       paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 90px)", paddingLeft: "34px", paddingRight: "34px" }); // Platz für die Wisch-Pfeile am Rand
     const wrapW = { width: "100%", maxWidth: "1100px" };
     const head = document.createElement("div");
-    Object.assign(head.style, { ...wrapW, display: "flex", alignItems: "center", gap: "10px" });
+    Object.assign(head.style, { ...wrapW, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" });
     const title = document.createElement("div");
-    { const ti = document.createElement("ha-icon"); ti.setAttribute("icon", "mdi:chef-hat"); ti.style.cssText = `--mdc-icon-size:24px;flex:none;color:${SET_COLORS.recipes};`; const tn = document.createElement("span"); tn.dataset.eltitle = "1"; tn.textContent = r.name; title.append(ti, tn); title.style.display = "flex"; title.style.alignItems = "center"; title.style.gap = "8px"; }
-    Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1" });
+    { const ti = document.createElement("ha-icon"); ti.setAttribute("icon", "mdi:chef-hat"); ti.style.cssText = `--mdc-icon-size:24px;flex:none;color:${SET_COLORS.recipes};`; const tn = document.createElement("span"); tn.dataset.eltitle = "1"; tn.textContent = r.name; Object.assign(tn.style, { minWidth: "0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }); title.append(ti, tn); title.style.display = "flex"; title.style.alignItems = "center"; title.style.gap = "8px"; }
+    Object.assign(title.style, { font: "600 18px Roboto,sans-serif", flex: "1 1 210px", minWidth: "0" }); // Name schrumpft mit …; ist es zu eng, rutschen die Knöpfe in eine zweite Zeile
+    const bWish = ovIconButton("mdi:message-draw", elT("Änderungswunsch"));
+    Object.assign(bWish.style, { flex: "none", marginLeft: "6px" }); bWish.querySelector("ha-icon").style.color = "#f9a825";
+    bWish.onclick = () => this._wishWindow(r, idx < steps.length ? idx + 1 : 0, idx < steps.length ? steps[idx] : "");
+    title.append(bWish); // ✏️ Änderungswunsch: rechts neben dem Rezeptnamen
     const bGar = ovIconButton("mdi:pot-steam-outline"), bClose = ovIconButton("mdi:close"), bPhoto = ovIconButton("mdi:camera-plus-outline"), bTimer = ovIconButton("mdi:timer-outline");
     bTimer.title = elT("Timer"); bTimer.querySelector("ha-icon").style.color = "#26a69a"; bPhoto.querySelector("ha-icon").style.color = "#1e88e5"; bGar.querySelector("ha-icon").style.color = "#ef6c00"; // 🎨 wie überall: Timer türkis, Fotos blau, Gar-Zeiten orange
      bTimer.style.marginRight = "14px"; // etwas Luft zum Foto-Symbol
@@ -10141,7 +10157,10 @@ ${(() => {
     bPhoto.title = elT("Foto zu diesem Schritt"); bPhoto.style.display = "none";
     bGar.title = elT("Gar-Zeiten"); bClose.title = elT("Schließen"); bPhoto.title = bPhoto.title || elT("Fotos");
     bGar.onclick = () => showGarTable(null, this); // im Koch-Fenster bleibt es ein Fenster (die Seite läge dahinter)
-    head.append(title, bTimer, bPhoto, bGar, bClose);
+    const hbtns = document.createElement("div"); // die rechten Knöpfe bleiben beisammen (zu eng: ganze Gruppe rutscht rechtsbündig in die zweite Zeile)
+    Object.assign(hbtns.style, { display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto", flex: "none" });
+    hbtns.append(bTimer, bPhoto, bGar, bClose);
+    head.append(title, hbtns);
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
     const renderHeat = () => {
@@ -10484,6 +10503,64 @@ ${(() => {
 
 
   // ⏱️ Timer-Fenster (im Look der Seiten, über der Kochansicht): Name optional, Schnellwahl, − und +, Liste aller Timer
+  // ✏️ Änderungswunsch zu einem Schritt (Kochmodus): freier Text in einem Fenster wie die anderen; landet unter „Wartet auf OK“
+  _wishWindow(r, stepNo = 0, stepText = "") {
+    if (this._hass?.connected === false) { this._toast("📴 Wünschen geht nur mit Netz"); return; }
+    const en = EL_LANG !== "de";
+    const T = (de, eng) => (en ? eng : de);
+    const ov = makeOverlay({ title: "✏️ Änderungswunsch" });
+    ov.dataset.elwish = "1";
+    const asPage = !!ov.dataset.elpage;
+    ov.dataset.elthemed = "1";
+    if (!asPage) {
+      Object.assign(ov.style, { background: "var(--primary-background-color, #fafafa)", color: "var(--primary-text-color, #212121)", colorScheme: "", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
+    }
+    ov.innerHTML = `<style>
+      .wsw { width:100%; max-width:560px; margin:0 auto; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; display:flex; flex-direction:column; gap:14px; }
+      .wsw .gh { display:flex; align-items:center; gap:12px; margin:0; }
+      .wsw .gback { width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
+      .wsw .gic { width:36px; height:36px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#f9a825; color:#fff; --mdc-icon-size:20px; }
+      .wsw .gt { font-size:20px; font-weight:600; min-width:0; }
+      .wsw textarea, .wsw input { width:100%; box-sizing:border-box; padding:14px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.5)); background:var(--card-background-color, #fff); color:var(--primary-text-color); font:500 16px Roboto,sans-serif; }
+      .wsw textarea { min-height:140px; resize:vertical; }
+      .wsw .ctx { border-radius:12px; padding:10px 12px; background:var(--secondary-background-color, rgba(127,127,127,.15)); font-size:14px; }
+      .wsw .ctx b { display:block; margin-bottom:2px; }
+      .wsw .sub { color:var(--secondary-text-color); font-size:13px; margin:0; }
+      .wsw .row { display:flex; gap:10px; justify-content:flex-end; }
+      .wsw button.b { border:0; border-radius:12px; padding:12px 16px; cursor:pointer; background:var(--secondary-background-color, rgba(127,127,127,.18)); color:var(--primary-text-color); font:600 16px Roboto,sans-serif; }
+      .wsw button.go { background:#43a047; color:#fff; }
+    </style>
+    <div class="wsw" translate="no">
+      ${asPage ? "" : `<div class="gh"><button type="button" class="gback" title="${T("Zurück", "Back")}" aria-label="${T("Zurück", "Back")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:message-draw"></ha-icon></span><span class="gt">${T("Änderungswunsch", "Change request")}</span></div>`}
+      <div class="ctx"><b>${esc(r.name)}${stepNo ? ` – ${T("Schritt", "Step")} ${stepNo}` : ""}</b>${stepText ? esc(stepText) : ""}</div>
+      <textarea maxlength="1500" placeholder="${T("Was soll anders sein? z. B. „Nur 10 Minuten backen“ oder „Salz weglassen“", "What should be different? e.g. “Bake only 10 minutes” or “leave out the salt”")}" aria-label="${T("Änderungswunsch", "Change request")}"></textarea>
+      <input type="text" maxlength="40" autocomplete="off" placeholder="${T("Von wem? (dein Name)", "From whom? (your name)")}" aria-label="${T("Von wem?", "From whom?")}">
+      <p class="sub">${T("Der Wunsch landet bei „Wartet auf OK“. Das Rezept ändert sich erst, wenn jemand ihn freigibt.", "The request goes to “waiting for OK”. The recipe only changes once someone approves it.")}</p>
+      <div class="row"><button type="button" class="b cancel">${T("Abbrechen", "Cancel")}</button><button type="button" class="b go"><ha-icon icon="mdi:send-outline" style="--mdc-icon-size:20px;vertical-align:middle"></ha-icon> ${T("Wunsch senden", "Send request")}</button></div>
+    </div>`;
+    const q = (sel) => ov.querySelector(sel);
+    const ta = q("textarea"), by = q("input");
+    by.value = this._myName() || "";
+    const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+    const onKey = (e) => { if (e.key === "Escape" && !document.querySelector("[data-eltimer]")) close(); };
+    document.addEventListener("keydown", onKey);
+    ov._elClose = close;
+    if (!asPage) q(".gback").onclick = close;
+    q(".cancel").onclick = close;
+    q(".go").onclick = async () => {
+      const wish = ta.value.trim();
+      if (!wish) { ta.classList.add("shake"); ta.focus(); return; }
+      const text = `${stepNo ? `Schritt ${stepNo}${stepText ? `: „${stepText.slice(0, 300)}“` : ""}\n\n` : ""}Wunsch: ${wish}`;
+      try {
+        await this._ws({ type: "einkaufsliste/proposal/add", name: `Änderung: ${r.name}`.slice(0, 60), by: by.value.trim() || null, text, recipe_id: r.id || null, step: stepNo || null });
+        this._toast("✏️ Danke! Dein Wunsch wartet jetzt auf ein OK 👍");
+        close();
+      } catch (_) { /* Meldung kommt von _ws */ }
+    };
+    setTimeout(() => ta.focus(), 50);
+  }
+
   _timerWindow(r, preset = 300, stepNo = 0) {
     const en = EL_LANG !== "de";
     const T = (de, eng) => (en ? eng : de);

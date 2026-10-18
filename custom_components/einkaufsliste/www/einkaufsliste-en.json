@@ -2230,6 +2230,8 @@
 "Duplizieren": "Duplicate",
 "Eintrag duplizieren": "Duplicate entry",
 "Mehr als 6 Einträge gehen nicht": "No more than 6 entries",
+"Änderungswunsch": "Change request",
+"✏️ Änderungswunsch": "✏️ Change request",
 "Bei Schritt:": "At step:",
 "erst Schritte eintragen": "add steps first",
 "Nur bei diesen Schritten erscheint die Info im Kochmodus. Nichts gewählt = bei allen Schritten": "The info only shows at these steps in cook mode. None chosen = at all steps",
