@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.11";
+const EL_VERSION = "2.76.21-beta.12";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -411,6 +411,8 @@ const EL_BETA_NEWS = [
    "New: 📍 After the recipe editor the recipe is highlighted in the list with the blue frame."],
   ["Geändert: 👨‍🍳 Die Kochmütze in den Einstellungen erscheint nur im Bereich „Rezepte“.",
    "Changed: 👨‍🍳 The chef hat in the settings only appears in the “Recipes” area."],
+  ["Geändert: 👨‍🍳 Die Kochmütze bleibt jetzt auch im Rezept-Editor sichtbar, wenn du über Einstellungen → Rezepte gekommen bist (mit Rückfrage, damit kein Entwurf still verloren geht).",
+   "Changed: 👨‍🍳 The chef hat now also stays visible in the recipe editor when you came via Settings → Recipes (with a confirmation so no draft is lost silently)."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -5060,7 +5062,8 @@ class EinkaufslisteCard extends HTMLElement {
     const btnR = this.$("btnRecipes");
     btnS.hidden = !c.show_settings || !d;
     const inSettings = this._view === "settings" || this._view === "recipe";
-    btnR.hidden = !c.show_recipes || !d || !!this._page || this._view === "recipe" || (this._view === "settings" && this._setSec !== "recipes"); // 👨‍🍳 Kochmütze: nicht auf Seiten und im Rezept-Editor (sonst ginge der Entwurf verloren); in den Einstellungen nur im Bereich „Rezepte“, damit man von dort direkt zu den Rezepten kommt (in „Rezepte“ selbst ist sie das ✕)
+    if (this._view === "settings") this._recSetNav = this._setSec === "recipes"; else if (this._view !== "recipe") this._recSetNav = false; // 👨‍🍳 merkt sich: man kam über Einstellungen → Rezepte (gilt dann auch im Rezept-Editor)
+    btnR.hidden = !c.show_recipes || !d || !!this._page || (this._view === "settings" && this._setSec !== "recipes") || (this._view === "recipe" && !this._recSetNav); // 👨‍🍳 Kochmütze: in den Einstellungen nur im Bereich „Rezepte“ und von dort auch im Rezept-Editor
     btnS.classList.toggle("on", inSettings);
     btnR.classList.toggle("on", this._view === "recipes");
     btnS.querySelector("ha-icon").setAttribute("icon", inSettings ? "mdi:close" : "mdi:cog-outline");
@@ -11952,6 +11955,7 @@ ${(() => {
           this._unlockSettings(); // 🔒 erst die PIN, dann das Zahnrad
           break;
         }
+        if (this._view === "recipe" && v === "recipes" && !window.confirm(elT("Änderungen am Rezept verwerfen?"))) break; // 👨‍🍳 im Editor: Entwurf nicht still verlieren
         this._closePage(true);
         this._view = current === v ? "list" : v;
         if (this._view === "settings" && current !== "settings") this._setSec = null;
