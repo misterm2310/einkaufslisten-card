@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.12";
+const EL_VERSION = "2.76.21-beta.13";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -413,6 +413,8 @@ const EL_BETA_NEWS = [
    "Changed: 👨‍🍳 The chef hat in the settings only appears in the “Recipes” area."],
   ["Geändert: 👨‍🍳 Die Kochmütze bleibt jetzt auch im Rezept-Editor sichtbar, wenn du über Einstellungen → Rezepte gekommen bist (mit Rückfrage, damit kein Entwurf still verloren geht).",
    "Changed: 👨‍🍳 The chef hat now also stays visible in the recipe editor when you came via Settings → Recipes (with a confirmation so no draft is lost silently)."],
+  ["Behoben: 👨‍🍳 Die Kochmütze erschien nicht, wenn man in den Einstellungen auf „Rezepte“ getippt hat – jetzt sofort.",
+   "Fixed: 👨‍🍳 The chef hat did not appear after tapping “Recipes” in the settings – now it shows immediately."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -5062,8 +5064,7 @@ class EinkaufslisteCard extends HTMLElement {
     const btnR = this.$("btnRecipes");
     btnS.hidden = !c.show_settings || !d;
     const inSettings = this._view === "settings" || this._view === "recipe";
-    if (this._view === "settings") this._recSetNav = this._setSec === "recipes"; else if (this._view !== "recipe") this._recSetNav = false; // 👨‍🍳 merkt sich: man kam über Einstellungen → Rezepte (gilt dann auch im Rezept-Editor)
-    btnR.hidden = !c.show_recipes || !d || !!this._page || (this._view === "settings" && this._setSec !== "recipes") || (this._view === "recipe" && !this._recSetNav); // 👨‍🍳 Kochmütze: in den Einstellungen nur im Bereich „Rezepte“ und von dort auch im Rezept-Editor
+    this._syncRecipesBtn();
     btnS.classList.toggle("on", inSettings);
     btnR.classList.toggle("on", this._view === "recipes");
     btnS.querySelector("ha-icon").setAttribute("icon", inSettings ? "mdi:close" : "mdi:cog-outline");
@@ -6258,7 +6259,14 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
   }
 
   // ---------------------------------------------------------------- Einstellungen
+  _syncRecipesBtn() { // 👨‍🍳 Kochmütze ein-/ausblenden (auch beim Wechsel zwischen Einstellungs-Bereichen, ohne die ganze Kopfzeile neu zu bauen)
+    const c = this._config || {}, d = this._data, btnR = this.$("btnRecipes");
+    if (!btnR) return;
+    if (this._view === "settings") this._recSetNav = this._setSec === "recipes"; else if (this._view !== "recipe") this._recSetNav = false; // 👨‍🍳 merkt sich: man kam über Einstellungen → Rezepte (gilt dann auch im Rezept-Editor)
+    btnR.hidden = !c.show_recipes || !d || !!this._page || (this._view === "settings" && this._setSec !== "recipes") || (this._view === "recipe" && !this._recSetNav); // 👨‍🍳 Kochmütze: in den Einstellungen nur im Bereich „Rezepte“ und von dort auch im Rezept-Editor
+  }
   _renderSettings() {
+    this._syncRecipesBtn();
     queueMicrotask(() => this._emitNav());
     if (this._lastSetSec !== undefined && this._lastSetSec !== this._setSec) { // 🗂️ einen Bereich verlassen (zurück, anderer Bereich): seine Aufklapper und Reiter sind danach wieder zu
       this._accOpen = { stats: "" }; this._xferTab = "none"; this._recTab = null; this._prodTab = null;
