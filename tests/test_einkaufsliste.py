@@ -47,21 +47,19 @@ def tz():
 
 
 async def _setup_shopping_list(hass: HomeAssistant) -> None:
-    """🛒 Eingebaute HA-Einkaufsliste einrichten – stabil: alte Datei weg, bei Fehlstart bis zu 3 Versuche, sonst mit Grund melden."""
-    import asyncio
+    """🛒 Eingebaute HA-Einkaufsliste einrichten. Ihre Web-Adresse (register_view) wird abgeschaltet: Ist der Test-Webserver schon
+    gestartet, ist der Router „eingefroren“ und die Einrichtung schlug je nach Zeitpunkt fehl. Die Tests brauchen nur die To-do-Liste."""
     import os
+    from unittest.mock import patch
     path = hass.config.path(".shopping_list.json")
+    if os.path.exists(path):  # Reste aus früheren Testläufen weg
+        os.remove(path)
     sl = MockConfigEntry(domain="shopping_list")
     sl.add_to_hass(hass)
-    for versuch in range(3):
-        if os.path.exists(path):  # Reste aus früheren Testläufen (oder ein noch ausstehendes Schreiben) weg
-            os.remove(path)
-        ok = await hass.config_entries.async_setup(sl.entry_id) if versuch == 0 else await hass.config_entries.async_reload(sl.entry_id)
+    with patch.object(hass.http, "register_view"):
+        ok = await hass.config_entries.async_setup(sl.entry_id)
         await hass.async_block_till_done()
-        if ok and hass.states.get("todo.einkaufsliste") is not None:
-            return
-        await asyncio.sleep(0.5)
-    raise AssertionError(f"HA-Einkaufsliste startet nicht: Zustand={sl.state}, Grund={sl.reason}")
+    assert ok, f"HA-Einkaufsliste startet nicht: Zustand={sl.state}, Grund={sl.reason}"
 
 async def test_defaults(hass, setup):
     m = mgr(hass)
