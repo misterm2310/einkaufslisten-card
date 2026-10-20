@@ -1188,7 +1188,7 @@ async def ws_offers_search(hass, connection, msg):
 
 
 OFFER = vol.Schema({vol.Required("p"): vol.Coerce(float), vol.Optional("to"): OPT_STR, vol.Optional("from"): OPT_STR, vol.Optional("r"): OPT_STR,
-                    vol.Optional("d"): OPT_STR}, extra=vol.REMOVE_EXTRA)
+                    vol.Optional("d"): OPT_STR, vol.Optional("img"): OPT_STR}, extra=vol.REMOVE_EXTRA)
 
 
 @websocket_api.websocket_command(
@@ -1196,13 +1196,27 @@ OFFER = vol.Schema({vol.Required("p"): vol.Coerce(float), vol.Optional("to"): OP
      vol.Optional("name"): OPT_STR, vol.Optional("store_id"): OPT_STR, vol.Optional("via"): vol.In(VIA),
      vol.Optional("extra"): bool}
 )
-@callback
-def ws_offers_take(hass, connection, msg):
-    """🛒 Angebot übernehmen („Hier kaufen“ / „Auf die Liste“)."""
+@websocket_api.async_response
+async def ws_offers_take(hass, connection, msg):
+    """🛒 Angebot übernehmen („Hier kaufen“ / „Auf die Liste“) – das Foto des Angebots kommt mit, wenn der Artikel noch keins hat."""
     who = _user_name(hass, connection)
     uid = connection.user.id if connection.user else None
-    _run(hass, connection, msg, lambda m: m.take_offer(msg["offer"], msg.get("item_id") or None, msg.get("name") or None,
-                                                       msg.get("store_id") or None, who, uid, bool(msg.get("extra"))))
+
+    async def _take(m):
+        item = m.take_offer(msg["offer"], msg.get("item_id") or None, msg.get("name") or None,
+                            msg.get("store_id") or None, who, uid, bool(msg.get("extra")))
+        img = (msg["offer"] or {}).get("img")
+        if img and item:
+            from .manager import product_key
+            from .offers import async_offer_photo
+
+            try:
+                await async_offer_photo(hass, m, img, product_key(item.get("name"), item.get("note")))
+            except Exception:  # noqa: BLE001 – das Foto ist nur ein Extra, das Angebot ist schon übernommen
+                _LOGGER.debug("Angebotsfoto ging schief", exc_info=True)
+        return item
+
+    await _run_async(hass, connection, msg, _take)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/stats"})

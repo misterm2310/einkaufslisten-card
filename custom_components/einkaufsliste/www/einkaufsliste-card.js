@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.13";
+const EL_VERSION = "2.76.21-beta.14";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -376,45 +376,47 @@ function elVerCmp(a, b) {
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
   ["Neu: 🏷️ Der Sensor pro Geschäft (z. B. sensor.einkaufsliste_kaufland) hat jetzt das Attribut „angebote“: für jeden Artikel mit laufendem Angebot Preis, gültig ab/bis und Händler. Das Attribut „artikel“ bleibt unverändert – gedacht für eigene Skripte und Automationen. In der Liste selbst ändert sich nichts.",
-   "New: 🏷️ The per-store sensor (e.g. sensor.einkaufsliste_kaufland) now has the attribute “angebote”: price, valid from/to and retailer for every item with a current offer. The “artikel” attribute stays unchanged – meant for your own scripts and automations. Nothing changes in the list itself."],
+   "New: 🏷️ The per-store sensor (e.g. sensor.einkaufsliste_kaufland) now has the attribute “angebote”: price, valid from/to and retailer for every item with a current offer. The “artikel” attribute stays unchanged – meant for your own scripts and automations. Nothing changes in the list itself.", "beta.1"],
   ["Neu: 👆 Im Kochmodus zeigen blasse Pfeile am Rand, dass man zwischen den Schritten wischen kann (Antippen geht auch).",
-   "New: 👆 In cook mode, pale arrows at the edge show that you can swipe between steps (tapping works too)."],
+   "New: 👆 In cook mode, pale arrows at the edge show that you can swipe between steps (tapping works too).", "beta.1"],
   ["Neu: 🔥 Backofen & Co. steht im Rezept-Editor jetzt unter „Zubereitung“. Jeder Eintrag kann bei bestimmten Schritten erscheinen (Schritt-Zahlen zum Antippen, mehrere möglich) – im Kochmodus steht die orange Info dann nur bei diesen Schritten. Ohne Auswahl wie bisher bei allen.",
-   "New: 🔥 Oven & Co. is now below “Preparation” in the recipe editor. Each entry can show at certain steps only (tap the step numbers, several possible) – in cook mode the orange info then appears only at those steps. With nothing chosen it shows at all steps as before."],
+   "New: 🔥 Oven & Co. is now below “Preparation” in the recipe editor. Each entry can show at certain steps only (tap the step numbers, several possible) – in cook mode the orange info then appears only at those steps. With nothing chosen it shows at all steps as before.", "beta.2"],
   ["Neu: 🍳 Kochmodus: Gibt es mehrere Geräte ohne Schritt-Zahl, kannst du beim Start einklappbar wählen, womit gegart wird (mehrere möglich). Wird das Rezept während des Kochens geändert, zieht der Kochmodus sofort nach.",
-   "New: 🍳 Cook mode: with several appliances without a step number you can choose at the start (collapsible) what you cook with (several possible). If the recipe is changed while cooking, cook mode updates right away."],
+   "New: 🍳 Cook mode: with several appliances without a step number you can choose at the start (collapsible) what you cook with (several possible). If the recipe is changed while cooking, cook mode updates right away.", "beta.2"],
   ["Neu: 🔥 Im Rezept-Editor zeigt ein Ofen-Knopf links bei den Foto-Knöpfen, bei welchen Zubereitungs-Schritten ein Eintrag aus Backofen & Co. gilt (Antippen zeigt, welcher).",
-   "New: 🔥 In the recipe editor an oven button next to the photo buttons shows which preparation steps have an Oven & Co. entry (tap to see which)."],
+   "New: 🔥 In the recipe editor an oven button next to the photo buttons shows which preparation steps have an Oven & Co. entry (tap to see which).", "beta.3"],
   ["Neu: 🔥 Rezept-Editor: Die Einträge von Backofen & Co. lassen sich einklappen (Kurz-Zeile bleibt sichtbar) und per Ziehen am ⠿ verschieben. Außerdem werden lange Schritte bei „Zubereitung“ nicht mehr abgeschnitten.",
-   "New: 🔥 Recipe editor: the Oven & Co. entries can be collapsed (a short line stays visible) and moved by dragging the ⠿. Long steps under “Preparation” are also no longer cut off."],
+   "New: 🔥 Recipe editor: the Oven & Co. entries can be collapsed (a short line stays visible) and moved by dragging the ⠿. Long steps under “Preparation” are also no longer cut off.", "beta.4"],
   ["Neu: 🔥 Rezept-Editor: Einträge von Backofen & Co. lassen sich duplizieren (Kopie direkt darunter).",
-   "New: 🔥 Recipe editor: Oven & Co. entries can be duplicated (copy right below)."],
+   "New: 🔥 Recipe editor: Oven & Co. entries can be duplicated (copy right below).", "beta.5"],
   ["Neu: ✏️ Im Kochmodus gibt es neben dem Rezeptnamen ein Symbol für Änderungswünsche: freier Text zum aktuellen Schritt, in einem eigenen Fenster. Der Wunsch landet bei „Wartet auf OK“; beim Prüfen öffnet sich das Rezept.",
-   "New: ✏️ Cook mode has a symbol next to the recipe name for change requests: free text for the current step in its own window. The request goes to “waiting for OK”; checking it opens the recipe."],
+   "New: ✏️ Cook mode has a symbol next to the recipe name for change requests: free text for the current step in its own window. The request goes to “waiting for OK”; checking it opens the recipe.", "beta.6"],
   ["Geändert: ✏️ Das Änderungswunsch-Symbol im Kochmodus erscheint erst bei den Schritten, nicht mehr bei der Personen-Auswahl.",
-   "Changed: ✏️ The change-request symbol in cook mode now only appears during the steps, no longer on the person selection."],
+   "Changed: ✏️ The change-request symbol in cook mode now only appears during the steps, no longer on the person selection.", "beta.7"],
   ["Geändert: 📐 Aufgeklappte Felder haben keinen Strich am Rand mehr und sind nur noch ganz leicht eingerückt – so bleibt mehr Platz.",
-   "Changed: 📐 Expanded boxes no longer have a line at the edge and are only slightly indented – more room on the screen."],
+   "Changed: 📐 Expanded boxes no longer have a line at the edge and are only slightly indented – more room on the screen.", "beta.8"],
   ["Behoben: 📍 Nach dem Rezept-Editor springt die Rezeptliste nicht mehr wahllos – sie scrollt zum bearbeiteten Rezept bzw. zurück an die alte Stelle.",
-   "Fixed: 📍 After the recipe editor the recipe list no longer jumps around – it scrolls to the edited recipe or back to where you were."],
+   "Fixed: 📍 After the recipe editor the recipe list no longer jumps around – it scrolls to the edited recipe or back to where you were.", "beta.9"],
   ["Neu: 🔗 Die Schritt-Auswahl bei Backofen & Co. hängt am Schritt selbst: Löschen, Verschieben oder Einfügen von Schritten verschiebt sie nicht mehr auf einen anderen Schritt.",
-   "New: 🔗 The step choice for Oven & Co. is tied to the step itself: deleting, moving or inserting steps no longer shifts it to a different step."],
+   "New: 🔗 The step choice for Oven & Co. is tied to the step itself: deleting, moving or inserting steps no longer shifts it to a different step.", "beta.9"],
   ["Neu: 🍳 Beim Teilen eines Rezepts stehen die Zeiten und Einstellungen von Backofen & Co. direkt bei dem Zubereitungs-Schritt, zu dem sie gehören. Einträge ohne Schritt bleiben oben bei „Garen“.",
-   "New: 🍳 When sharing a recipe, the times and settings from Oven & Co. now appear right at the preparation step they belong to. Entries without a step stay at the top under “Cooking”."],
+   "New: 🍳 When sharing a recipe, the times and settings from Oven & Co. now appear right at the preparation step they belong to. Entries without a step stay at the top under “Cooking”.", "beta.10"],
   ["Neu: 👨‍🍳 Die Kochmütze bleibt auch in den Einstellungen sichtbar – so kommst du von dort immer direkt zu den Rezepten.",
-   "New: 👨‍🍳 The chef hat stays visible in the settings too – you can always jump straight to the recipes from there."],
+   "New: 👨‍🍳 The chef hat stays visible in the settings too – you can always jump straight to the recipes from there.", "beta.10"],
   ["Neu: 🍳 Beim Herd gibt es jetzt auch den Modus „Braten“ (neben „Köcheln“).",
-   "New: 🍳 The hob now also has the mode “Fry” (next to “Simmer”)."],
+   "New: 🍳 The hob now also has the mode “Fry” (next to “Simmer”).", "beta.10"],
   ["Neu: 🧊 Bei Backofen & Co. gibt es auch „Kühlschrank“ und „Tiefkühler“ (z. B. 4 Std. im Kühlschrank ruhen lassen).",
-   "New: 🧊 Oven & Co. now also has “Fridge” and “Freezer” (e.g. rest 4 h in the fridge)."],
+   "New: 🧊 Oven & Co. now also has “Fridge” and “Freezer” (e.g. rest 4 h in the fridge).", "beta.11"],
   ["Neu: 📍 Nach dem Rezept-Editor ist das Rezept in der Liste mit dem blauen Rahmen markiert.",
-   "New: 📍 After the recipe editor the recipe is highlighted in the list with the blue frame."],
+   "New: 📍 After the recipe editor the recipe is highlighted in the list with the blue frame.", "beta.11"],
   ["Geändert: 👨‍🍳 Die Kochmütze in den Einstellungen erscheint nur im Bereich „Rezepte“.",
-   "Changed: 👨‍🍳 The chef hat in the settings only appears in the “Recipes” area."],
+   "Changed: 👨‍🍳 The chef hat in the settings only appears in the “Recipes” area.", "beta.11"],
   ["Geändert: 👨‍🍳 Die Kochmütze bleibt jetzt auch im Rezept-Editor sichtbar, wenn du über Einstellungen → Rezepte gekommen bist (mit Rückfrage, damit kein Entwurf still verloren geht).",
-   "Changed: 👨‍🍳 The chef hat now also stays visible in the recipe editor when you came via Settings → Recipes (with a confirmation so no draft is lost silently)."],
+   "Changed: 👨‍🍳 The chef hat now also stays visible in the recipe editor when you came via Settings → Recipes (with a confirmation so no draft is lost silently).", "beta.12"],
   ["Behoben: 👨‍🍳 Die Kochmütze erschien nicht, wenn man in den Einstellungen auf „Rezepte“ getippt hat – jetzt sofort.",
-   "Fixed: 👨‍🍳 The chef hat did not appear after tapping “Recipes” in the settings – now it shows immediately."],
+   "Fixed: 👨‍🍳 The chef hat did not appear after tapping “Recipes” in the settings – now it shows immediately.", "beta.13"],
+  ["Neu: ✕ In den Einstellungen gibt es oben rechts ein ✕ wie bei den Rezepten; in einem Bereich (z. B. Geschäfte, Rezept-Editor, Seiten) steht dort stattdessen ←. Der Pfeil neben dem Namen ist weg. · 🆕 „Was ist neu“ zeigt vor jedem Beta-Eintrag die Beta-Nummer. · 🖨️ Rezept: im Teilen-Fenster gibt es „Drucken / als PDF“ mit Vorschau. · 📸 Wird ein Angebot übernommen, kommt das Foto des Angebots mit (wenn der Artikel noch kein eigenes hat).",
+   "New: ✕ In the settings there is a ✕ at the top right like in recipes; inside an area (e.g. stores, recipe editor, pages) it shows ← instead. The arrow next to the name is gone. · 🆕 “What’s new” shows the beta number in front of every beta entry. · 🖨️ Recipe: the share window has “Print / save as PDF” with a preview. · 📸 When you take an offer, the offer’s photo comes along (if the item has no photo of its own).", "beta.14"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -4460,6 +4462,7 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
           <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon><span class="lbl">Rezepte</span></button>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:storefront-outline"></ha-icon><span class="lbl">Laden</span></button>
+          <button class="iconbtn on" id="btnBack" data-act="nav-back" title="Zurück" aria-label="Zurück" hidden><ha-icon icon="mdi:close"></ha-icon></button>
         </div>
         <div class="error" id="error" hidden></div>
         <div class="updbar" id="updBar" hidden></div>
@@ -4832,7 +4835,6 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._page) this._closePage(true);
     const host = this.$("pageHost");
     host.innerHTML = `<div class="sec pagehost"><div class="sechead">
-      <button class="iconbtn back" type="button" data-act="page-back" title="Zurück" aria-label="Zurück"><ha-icon icon="mdi:arrow-left"></ha-icon></button>
       <span class="ic" style="--ic:${esc(color || "#607d8b")}"><ha-icon icon="${esc(icon || "mdi:file-outline")}"></ha-icon></span><h3>${esc(title)}</h3>
       <span class="pagetools"></span></div><div class="pagebody"></div></div>`;
     const body = host.querySelector(".pagebody"), tools = host.querySelector(".pagetools");
@@ -4858,7 +4860,6 @@ class EinkaufslisteCard extends HTMLElement {
     if (prev) { document.removeEventListener("keydown", prev.page.onKey); host.replaceChildren(); }
     host.hidden = false;
     host.innerHTML = `<div class="sec pagehost"><div class="sechead">
-      <button class="iconbtn back" type="button" data-act="page-back" title="Zurück" aria-label="Zurück"><ha-icon icon="mdi:arrow-left"></ha-icon></button>
       <span class="ic" style="--ic:${esc(opts.color || "#607d8b")}"><ha-icon icon="${esc(opts.icon || "mdi:information-outline")}"></ha-icon></span><h3></h3>
       <span class="pagetools"></span></div><div class="pagebody"></div></div>`;
     const body = host.querySelector(".pagebody"), tools = host.querySelector(".pagetools");
@@ -5062,9 +5063,16 @@ class EinkaufslisteCard extends HTMLElement {
     err.textContent = this._error || "";
     const btnS = this.$("btnSettings");
     const btnR = this.$("btnRecipes");
-    btnS.hidden = !c.show_settings || !d;
     const inSettings = this._view === "settings" || this._view === "recipe";
+    btnS.hidden = !c.show_settings || !d || inSettings;
     this._syncRecipesBtn();
+    const btnB = this.$("btnBack"); // ✕ / ← oben rechts (wie bei Rezepte): ← wenn es eine Ebene zurückgeht, sonst ✕
+    const deeper = !!this._page || this._view === "recipe" || (this._view === "settings" && !!(this._setSec || this._storeSel || this._catSel || this._rgSel || this._perSel));
+    if (btnB) {
+      btnB.hidden = !d || !(this._view === "settings" || this._view === "recipe" || !!this._page);
+      btnB.querySelector("ha-icon").setAttribute("icon", deeper ? "mdi:arrow-left" : "mdi:close");
+      btnB.title = btnB.ariaLabel = deeper ? "Zurück" : "Schließen";
+    }
     btnS.classList.toggle("on", inSettings);
     btnR.classList.toggle("on", this._view === "recipes");
     btnS.querySelector("ha-icon").setAttribute("icon", inSettings ? "mdi:close" : "mdi:cog-outline");
@@ -6601,19 +6609,9 @@ ${(() => {
     const catOpen = cur.key === "categories" && d.categories.some((x) => x.id === this._catSel);
     const rgOpen = cur.key === "recipes" && this._recTab === "groups" && (d.recipe_groups || []).some((x) => x.id === this._rgSel);
     const perOpen = cur.key === "persons" && (d.persons || []).some((x) => x.id === this._perSel);
-    const back = storeOpen
-      ? `<button class="iconbtn back" data-act="store-sel" data-id="" title="Alle Geschäfte" aria-label="Alle Geschäfte"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
-      : catOpen
-      ? `<button class="iconbtn back" data-act="cat-sel" data-id="" title="Alle Kategorien" aria-label="Alle Kategorien"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
-      : rgOpen
-      ? `<button class="iconbtn back" data-act="rg-sel" data-id="" title="Alle Gruppen" aria-label="Alle Gruppen"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
-      : perOpen
-      ? `<button class="iconbtn back" data-act="per-sel" data-id="" title="Alle Personen" aria-label="Alle Personen"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`
-      : `<button class="iconbtn back" data-act="set-sec" data-sec="" title="Übersicht" aria-label="Übersicht"><ha-icon icon="mdi:arrow-left"></ha-icon></button>`;
     this.$("otherView").innerHTML = `
       <div class="sec">
         <div class="sechead">
-          ${back}
           <span class="ic" style="--ic:${SET_COLORS[cur.key] || "#607d8b"}"><ha-icon icon="${cur.icon}"></ha-icon></span><h3>${cur.title}</h3>
         </div>
         ${this._hintsBottom(cur.html())}
@@ -10103,7 +10101,7 @@ ${(() => {
     // 🆕 höchstens 15 Neuerungen – das Neueste oben, Älteres fällt hinten raus
     const items = EL_NEWS.flatMap((n) => (en ? n[1] : n[0]).split(" · ")).slice(0, EL_NEWS_MAX);
     const beta = /-beta/i.test(EL_VERSION) && EL_BETA_NEWS.length
-      ? `<div style="border:1px solid #fb8c00;border-radius:12px;padding:10px 12px;margin:0 0 12px;background:rgba(251,140,0,.1)"><b>🧪 ${en ? "You are in the beta" : "Du bist in der Beta"} ${esc(EL_VERSION)}</b><p class="hint" style="margin:4px 0 2px">${en ? "New in this beta:" : "Neu in dieser Beta:"}</p><ul style="margin:0">${EL_BETA_NEWS.map((n) => `<li>${en ? n[1] : n[0]}</li>`).join("")}</ul></div>` : "";
+      ? `<div style="border:1px solid #fb8c00;border-radius:12px;padding:10px 12px;margin:0 0 12px;background:rgba(251,140,0,.1)"><b>🧪 ${en ? "You are in the beta" : "Du bist in der Beta"} ${esc(EL_VERSION)}</b><p class="hint" style="margin:4px 0 2px">${en ? "New in this beta:" : "Neu in dieser Beta:"}</p><ul style="margin:0">${EL_BETA_NEWS.slice().reverse().map((n) => `<li><b>${esc(n[2] || "")}</b> · ${en ? n[1] : n[0]}</li>`).join("")}</ul></div>` : "";
     return `<div ${en ? 'translate="no"' : ""}>${beta}<p class="hint">${en ? "The latest new features up to version" : "Die letzten Neuerungen bis Version"} <b>${EL_NEWS_VERSION}</b> – ${en ? "the newest is at the top" : "das Neueste steht oben"}</p><ul>${items.map((x) => `<li>${x}</li>`).join("")}</ul></div>`;
   }
 
@@ -10843,6 +10841,55 @@ ${(() => {
     return lines.join("\n");
   }
 
+  // 🖨️ Rezept als Blatt (Vorschau und Druck/PDF) – gleiche Optik wie „Liste drucken“
+  _recipeSheet(r) {
+    const steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
+    const stepsOf = (h) => (Array.isArray(h.steps) ? h.steps : []).map(Number).filter((n) => n > 0);
+    const free = (r.heat || []).filter((h) => !stepsOf(h).length || !steps.length);
+    const sub = r.servings ? `${r.servings} ${esc(elT(servLabel(r.servings_unit, r.servings)))}` : "";
+    let html = `<div class="ph"><div><div class="pt">${esc(r.name)}</div>${sub ? `<div class="ps">${sub}</div>` : ""}</div></div><div class="pbar" style="background:#e65100"></div>`;
+    if (r.items?.length) {
+      html += `<section class="rzs"><h3>${esc(elT("Zutaten"))}</h3>${r.items.map((i) => `<div class="rzi"><span class="pq">${esc(i.quantity || "")}</span><span>${esc(i.name)}${i.note ? ` <span class="pnt">(${esc(i.note)})</span>` : ""}</span></div>`).join("")}</section>`;
+    }
+    if (free.length) html += `<section class="rzs"><h3>${esc(elT("Garen"))}</h3>${free.map((h) => `<div class="rzi rzh"><span>${esc(heatText(h))}</span></div>`).join("")}</section>`;
+    if (steps.length) {
+      html += `<section class="rzs"><h3>${esc(elT("Zubereitung"))}</h3>${steps.map((st, n) => {
+        const hs = (r.heat || []).filter((h) => stepsOf(h).some((x) => Math.min(x, steps.length) - 1 === n));
+        return `<div class="rzp"><span class="rzn">${n + 1}</span><div>${esc(st)}${hs.map((h) => `<div class="rzh">${esc(heatText(h))}</div>`).join("")}</div></div>`;
+      }).join("")}</section>`;
+    }
+    const first = String(this._hass?.user?.name || "").trim().split(/\s+/)[0];
+    const now = new Date();
+    const stamp = `${now.toLocaleDateString(EL_LANG === "en" ? "en-GB" : "de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
+    const by = `${elT("Ausgedruckt")}${first ? ` ${elT("von")} ${first}` : ""} ${elT("am")} ${stamp}`;
+    return { by, html: `<div class="pw l0 rz">${html}<div class="pf">${esc(elT("Erstellt mit Einkaufsliste"))}</div></div>` };
+  }
+
+  _recipeCss(scope) {
+    const S = (x) => `${scope} ${x}`;
+    return `${S(".rzs")}{margin-top:14px}${S(".rzs h3")}{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#555;margin:0 0 4px;padding-bottom:3px;border-bottom:1px solid #ccc}
+${S(".rzi")}{display:flex;gap:8px;padding:3px 4px;break-inside:avoid}${S(".rzi .pq")}{min-width:64px;text-align:right}
+${S(".rzp")}{display:flex;gap:10px;padding:5px 4px;break-inside:avoid}${S(".rzn")}{flex:none;width:22px;height:22px;border-radius:50%;background:#111;color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
+  }
+
+  _printRecipePage(r) {
+    this._openPage({ key: "print", title: elT("Rezept drucken"), icon: "mdi:printer-outline", color: "#e65100", build: (body) => {
+      const { html, by } = this._recipeSheet(r);
+      body.innerHTML = `<style>${this._printCss(".prsheet", false)}${this._recipeCss(".prsheet")}</style><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" data-prgo><ha-icon icon="mdi:printer-outline"></ha-icon>${esc(elT("Drucken / als PDF"))}</button></div><div class="prsheet">${html}</div>`;
+      body.querySelector("[data-prgo]").onclick = () => {
+        const fr = document.createElement("iframe");
+        fr.style.cssText = "position:fixed;left:-10000px;top:0;width:182mm;height:263mm;border:0;visibility:hidden;";
+        fr.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(r.name)}</title><style>${this._printCss("body", true, by)}${this._recipeCss("body")}</style></head><body>${html}</body></html>`;
+        fr.onload = () => {
+          try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (_) { this._toast(elT("Drucken geht hier nicht – mach ein Bildschirmfoto der Vorschau.")); }
+          setTimeout(() => fr.remove(), 60000);
+        };
+        document.body.append(fr);
+      };
+    } });
+  }
+
   // 📤 Rezept weitergeben: WhatsApp, Teilen-Menü des Handys oder kopieren
   _shareRecipe(r) {
     const text = this._recipeText(r);
@@ -10865,7 +10912,8 @@ ${(() => {
     wa.rel = "noopener";
     wa.textContent = "WhatsApp";
     wa.style.cssText = OV_BTN_MAIN + "text-decoration:none;display:inline-block;";
-    const bShare = ovButton("Teilen …"), bCopy = ovButton("Kopieren"), bClose = ovButton("Schließen");
+    const bPdf = ovButton("🖨️ Drucken / als PDF"), bShare = ovButton("Teilen …"), bCopy = ovButton("Kopieren"), bClose = ovButton("Schließen");
+    bPdf.onclick = () => { ov.remove(); this._printRecipePage(r); }; // 🖨️ wie „Liste drucken“: Vorschau, dann Drucken / als PDF
     if (!navigator.share) bShare.style.display = "none";
     bShare.onclick = () => navigator.share({ title: r.name, text }).catch(() => {});
     bCopy.onclick = async () => {
@@ -10877,7 +10925,7 @@ ${(() => {
       this._toast(ok ? "📋 Rezept kopiert – jetzt einfach einfügen" : "Kopieren ging nicht – bitte Text markieren und kopieren");
     };
     bClose.onclick = () => ov.remove();
-    row.append(wa, bShare, bCopy, bClose);
+    row.append(wa, bPdf, bShare, bCopy, bClose);
     card.append(h, pre, row);
     ov.appendChild(card);
     ov.addEventListener("click", (e) => { if (e.target === ov) ov.remove(); });
@@ -10996,7 +11044,7 @@ ${(() => {
       }
     }
     try {
-      const res = await this._ws({ type: "einkaufsliste/offers/take", offer: { p: o.p, to: o.to || null, from: o.from || null, r: o.r, d: o.d || null },
+      const res = await this._ws({ type: "einkaufsliste/offers/take", offer: { p: o.p, to: o.to || null, from: o.from || null, r: o.r, d: o.d || null, img: o.img || null }, // 📸 Foto des Angebots kommt mit
         ...(item ? { item_id: item.id } : { name }), store_id: store?.id || null, ...(extra ? { extra: true } : {}) });
       this._toast(`🛒 ${res?.name || item?.name || name}: ${store ? store.name : "Egal wo"} · ${Number(o.p).toFixed(2).replace(".", ",")} €`);
       return true;
@@ -11952,6 +12000,9 @@ ${(() => {
         this._renderList();
         break;
       }
+      case "nav-back": // ✕ / ← oben rechts
+        this.einkaufslisteBack();
+        break;
       case "page-back":
         this._pageBack();
         break;

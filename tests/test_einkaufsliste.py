@@ -2425,6 +2425,25 @@ async def test_offers_marktguru(hass: HomeAssistant, setup, aioclient_mock) -> N
     assert m.as_dict()["offers"] == {} and not m.as_dict()["settings"]["offers"]["enabled"]
 
 
+async def test_offer_photo_is_taken_along(hass: HomeAssistant, setup, aioclient_mock) -> None:
+    """📸 Angebot übernehmen: das Foto des Angebots wird Produktfoto – nur von Marktguru, nie über ein eigenes Foto drüber."""
+    from custom_components.einkaufsliste.offers import async_offer_photo
+    m = mgr(hass)
+    raw = b"RIFF" + (24).to_bytes(4, "little") + b"WEBP" + b"VP8 " + b"\x00" * 16
+    url = "https://cdn.marktguru.de/api/v1/offers/7/images/default/0/medium.webp"
+    aioclient_mock.get(url, content=raw)
+    # fremde Adresse: nichts wird geladen
+    assert not await async_offer_photo(hass, m, "https://evil.example/x.webp", "butter")
+    assert not m.photos.get("butter")
+    # Marktguru-Adresse: Foto wird gespeichert
+    assert await async_offer_photo(hass, m, url, "butter")
+    assert m.photos["butter"]["id"]
+    # eigenes Foto bleibt: zweites Angebotsfoto ersetzt nichts
+    first = m.photos["butter"]["id"]
+    assert not await async_offer_photo(hass, m, url, "butter")
+    assert m.photos["butter"]["id"] == first
+
+
 async def test_offer_take_and_expire(hass: HomeAssistant, setup) -> None:
     """🛒 Angebot: eigener Artikel mit Angebots-Feld, Original abgehakt; abgelaufen -> Artikel weg, Original zurück."""
     from datetime import timedelta as td

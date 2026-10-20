@@ -415,3 +415,33 @@ class Offers:
         m._changed()
         return {"ok": True, "items": len(found), "offers": cfg["count"]}
 
+
+async def async_offer_photo(hass: HomeAssistant, manager: Any, url: str | None, key: str | None) -> bool:
+    """📸 Foto des Angebots als Produktfoto übernehmen – nur von Marktguru, nur wenn es noch kein eigenes Foto gibt."""
+    import base64
+
+    from .netutil import photo_complete, read_limited
+
+    key = (key or "").strip().lower()
+    if not url or not key or getattr(manager, "privacy", False) or manager.photos.get(key):
+        return False
+    if not trusted_url(url, domain(getattr(hass.config, "country", None))):
+        return False
+    session = async_get_clientsession(hass)
+    try:
+        async with asyncio.timeout(20):
+            resp = await session.get(url, headers=_BROWSER)
+            if resp.status != 200:
+                return False
+            raw = await read_limited(resp.content, 3 * 1024 * 1024)
+    except (TimeoutError, aiohttp.ClientError) as err:
+        _LOGGER.debug("Angebotsfoto nicht ladbar: %s", err)
+        return False
+    if not raw or not photo_complete(raw) or manager.photos.get(key):
+        return False
+    try:
+        await manager.async_set_photo(key, base64.b64encode(raw).decode(), db=True)
+    except ValueError as err:
+        _LOGGER.debug("Angebotsfoto abgelehnt: %s", err)
+        return False
+    return True
