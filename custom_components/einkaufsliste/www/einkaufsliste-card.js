@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.22-beta.3";
+const EL_VERSION = "2.76.22-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.21"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -378,6 +378,9 @@ const EL_BETA_NEWS = [
   ["⏲️ <b>Timer-Laufband:</b> Neue Dashboard-Karte „Einkaufsliste – Timer-Laufband“. Ein Band läuft in Endlosschleife durch und zeigt alle Kochtimer („fertig um 18:30 Uhr“, am Ende FERTIG!). Das Band ist aus, wenn kein Timer läuft; fertige Timer wegdrücken per Antippen ist ein Schalter (aus). · 🔙 In „Meine Karten“ zeigt eine einzelne Karte oben jetzt den Pfeil ← statt ✕.",
    "⏲️ <b>Timer ticker:</b> New dashboard card “Shopping list – timer ticker”. A band runs in an endless loop and shows all cooking timers (“done at 6:30 pm”, DONE! at the end). It is hidden when no timer runs; dismissing finished timers by tapping is a switch (off). · 🔙 In “My cards” a single card now shows the ← arrow instead of ✕ at the top.",
    "beta.1"],
+  ["⏲️ <b>Timer-Laufband:</b> Das Tempo wird jetzt aus der echten Textbreite berechnet (Pixel pro Sekunde) – jeder Text läuft gleich schnell, auch beim Airfryer-Control-Laufband.",
+   "⏲️ <b>Timer ticker:</b> The speed is now calculated from the real text width (pixels per second) – every text runs at the same speed, also in the Airfryer Control ticker.",
+   "beta.4"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -14031,16 +14034,32 @@ class EinkaufslisteTimerTicker extends HTMLElement {
     const basis = empty ? `👨‍🍳 ${esc(elT("Kein Kochtimer aktiv"))}` : teile.join(" +++ ");
     const plain = (empty ? 40 : (basis.replace(/<[^>]+>/g, "").length)) + 6;
     const stueck = `+++ ${basis} `;
-    const n = Math.max(5, Math.ceil(260 / plain));
+    const n = Math.max(5, Math.ceil(320 / plain));
     const html = stueck.repeat(n);
     const dauer = Math.max(8, Math.round((plain * n * 11) / 100 * (60 / (Number(this._config.speed) || 60))));
-    const sig = `${html}|${dauer}|${fertige.length > 0}`;
-    if (sig === this._sig) return;
+    const sig = `${html}|${dauer}|${fertige.length > 0}|${Number(this._config.speed) || 60}`;
+    if (sig === this._sig) { this._measure(); return; }
     this._sig = sig;
     root.querySelector(".box").classList.toggle("fertig", fertige.length > 0);
     const wrap = root.querySelector(".wrap");
     wrap.style.setProperty("--gd", `${dauer}s`);
     wrap.innerHTML = `<span class="tx">${html}</span><span class="tx">${html}</span>`;
+    this._measured = false;
+    this._tries = 0;
+    this._measure();
+  }
+  // Dauer aus der echten Textbreite: Breite ÷ Tempo (Pixel pro Sekunde) – jeder Text läuft gleich schnell (wie beim Airfryer-Laufband)
+  _measure() {
+    if (this._measured || !this.shadowRoot) return;
+    const wrap = this.shadowRoot.querySelector(".wrap");
+    const w = wrap?.firstElementChild ? wrap.firstElementChild.getBoundingClientRect().width : 0;
+    if (w > 0) {
+      const speed = Math.min(200, Math.max(20, Number(this._config?.speed) || 60));
+      wrap.style.setProperty("--gd", `${Math.max(8, Math.round(w / speed))}s`);
+      this._measured = true;
+    } else if (!this._retry && (this._tries = (this._tries || 0) + 1) <= 5) { // nur kurz erneut versuchen (versteckte Karte hat Breite 0) – danach beim nächsten Update
+      this._retry = requestAnimationFrame(() => { this._retry = 0; this._measure(); });
+    }
   }
 }
 class EinkaufslisteTimerTickerEditor extends HTMLElement {
