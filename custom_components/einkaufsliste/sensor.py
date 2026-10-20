@@ -322,6 +322,7 @@ class KochtimerSensor(_Base):
             "naechster": self._name(running[0]) if running else None,  # z. B. für eine Ansage
             "timer": [
                 {
+                    "id": t["id"],  # damit eine Karte (Laufband) den Timer wegdrücken kann
                     "name": self._name(t),
                     "rezept": (self._m.recipe_by_id(t.get("recipe_id")) or {}).get("name"),
                     "label": t["label"],

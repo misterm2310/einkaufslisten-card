@@ -206,6 +206,9 @@ For this the API key is kept on the server (never on phones, never in backups). 
 
 **🖨️ Recipe as PDF:** the share window of a recipe has “Print / save as PDF” – with a preview like “Print list”. When sharing, the times of Oven & Co. appear right at the step they belong to.
 
+### ⏲️ Timer ticker (own card)
+The integration brings a second, small card: **`custom:einkaufsliste-timer-ticker`**. It shows the running cooking timers as an endless ticker (“+++ ⏲️ Lasagne: done at 7:42 pm +++ …”), for example on a kitchen dashboard, with a coloured frame (teal) and a chef hat on each side. When a timer is finished it says “⏰ … DONE!”, the frame and chef hats turn red and pulse – until the timer is dismissed in the app (otherwise it disappears by itself after 1 hour). Without a timer the card is invisible. The card editor offers: sensor (default `sensor.einkaufsliste_kochtimer`), “Hide when no timer”, speed, language and “Dismiss finished timers by tapping” (off by default).
+
 ### 📝 Note templates
 **⚙️ → Extras → Note templates**: small buttons under the ✏️ Own note field (“Organic”, “lactose-free”, “large pack” …). They only appear once you type the first letter and show only the matching ones; a tap replaces what you typed with the template. You maintain the texts yourself, for all devices.
 

@@ -205,6 +205,9 @@ Dafür liegt der API-Schlüssel auf dem Server (nie auf Handys, nie in Sicherung
 
 **🖨️ Rezept als PDF:** Im Teilen-Fenster eines Rezepts steht „Drucken / als PDF“ – mit Vorschau wie bei „Liste drucken“. Beim Teilen stehen die Zeiten von Backofen & Co. direkt bei dem Schritt, zu dem sie gehören.
 
+### ⏲️ Timer-Laufband (eigene Karte)
+Die Integration bringt eine zweite, kleine Karte mit: **`custom:einkaufsliste-timer-ticker`**. Sie zeigt die laufenden Kochtimer als Endlos-Laufband („+++ ⏲️ Lasagne: fertig um 19:42 Uhr +++ …“), zum Beispiel auf einem Küchen-Dashboard, mit farbigem Rahmen (türkis) und einer Kochmütze links und rechts. Ist ein Timer fertig, steht „⏰ … FERTIG!“, Rahmen und Kochmützen werden rot und pulsieren – bis der Timer in der App weggedrückt wird (sonst verschwindet er nach 1 Stunde von selbst). Ohne Timer ist die Karte unsichtbar. Im Karten-Editor gibt es: Sensor (Standard `sensor.einkaufsliste_kochtimer`), „Ohne Timer ausblenden“, Tempo, Sprache und „Fertige Timer per Antippen wegdrücken“ (Standard aus).
+
 ### 📝 Notiz-Vorlagen
 **⚙️ → Extras → Notiz-Vorlagen**: kleine Knöpfe unter dem ✏️ Eigene-Notiz-Feld („Bio“, „ohne Laktose“, „große Packung“ …). Sie erscheinen erst mit dem ersten getippten Buchstaben und zeigen nur die passenden; ein Tipp ersetzt das Angetippte durch die Vorlage. Die Texte pflegst du selbst, für alle Geräte.
 

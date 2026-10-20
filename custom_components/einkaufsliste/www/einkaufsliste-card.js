@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21";
+const EL_VERSION = "2.76.22-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.21"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -374,7 +374,11 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [];
+const EL_BETA_NEWS = [
+  ["⏲️ <b>Timer-Laufband:</b> Neue Dashboard-Karte „Einkaufsliste – Timer-Laufband“. Ein Band läuft in Endlosschleife durch und zeigt alle Kochtimer („fertig um 18:30 Uhr“, am Ende FERTIG!). Das Band ist aus, wenn kein Timer läuft; fertige Timer wegdrücken per Antippen ist ein Schalter (aus). · 🔙 In „Meine Karten“ zeigt eine einzelne Karte oben jetzt den Pfeil ← statt ✕.",
+   "⏲️ <b>Timer ticker:</b> New dashboard card “Shopping list – timer ticker”. A band runs in an endless loop and shows all cooking timers (“done at 6:30 pm”, DONE! at the end). It is hidden when no timer runs; dismissing finished timers by tapping is a switch (off). · 🔙 In “My cards” a single card now shows the ← arrow instead of ✕ at the top.",
+   "beta.1"],
+];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -4964,6 +4968,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _emitNav() {
+    try { this._syncRecipesBtn(); } catch (_) { /* egal */ } // ✕/← oben rechts auch dann nachziehen, wenn eine Seite über eine andere gelegt wird (Meine Karten → Karte)
     try { window.dispatchEvent(new CustomEvent("einkaufsliste-nav")); } catch (_) { /* egal */ }
   }
 
@@ -13964,12 +13969,124 @@ function elPushGuard(state) {
   new MutationObserver(schedule).observe(document.body, { childList: true });
 })();
 
+
+// ⏲️ Laufband für die Kochtimer: eine zweite Karte, die die Integration mitbringt (custom:einkaufsliste-timer-ticker).
+// Sieht aus wie das Laufband auf Marcos Küchen-Dashboard: farbiger Rahmen (türkis, bei „fertig“ rot), pulsierende Kochmützen links und rechts,
+// Text „+++ ⏲️ Lasagne: fertig um 19:42 Uhr +++ …“ in einer Endlos-Schleife (läuft immer durch, auch bei kurzem Text).
+// Liest sensor.einkaufsliste_kochtimer (Attribut „timer“). Ein fertiger Timer bleibt als „⏰ … FERTIG!“ stehen, bis er in der App weggedrückt wird
+// (sonst verschwindet er nach 1 Stunde von selbst). Antippen auf dem Band löscht nur, wenn „tap_dismiss: true“ gesetzt ist (Standard aus).
+const EL_TICKER_CSS = `
+  :host { display:block; }
+  ha-card { display:block; height:40px; padding:0; background:var(--card-background-color); border-radius:8px; border:none; box-shadow:0 5px 3px rgba(0,0,0,.1); overflow:hidden; }
+  .box { display:flex; align-items:center; width:100%; height:100%; border:2px solid var(--tc,#26a69a); border-radius:8px; box-sizing:border-box; }
+  .box.fertig { --tc:#e53935; }
+  .box ha-icon { flex:none; --mdc-icon-size:22px; margin:0 10px; color:var(--tc,#26a69a); }
+  .box.fertig ha-icon { animation:tkpulse 1s ease-in-out infinite; } .box.fertig ha-icon + .win + ha-icon { animation-delay:.5s; }
+  .win { flex:1; min-width:0; overflow:hidden; display:flex; align-items:center; }
+  .wrap { white-space:nowrap; display:flex; animation:tkrun var(--gd,60s) linear infinite; }
+  .tx { font-family:Roboto,sans-serif; font-size:16px; font-weight:500; color:var(--primary-text-color); line-height:20px; padding-right:20px; }
+  .it.done.tap { cursor:pointer; }
+  @keyframes tkpulse { 0% { opacity:1; } 50% { opacity:.3; } 100% { opacity:1; } }
+  @keyframes tkrun { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .wrap { animation:none; } .box.fertig ha-icon { animation:none; } }
+`;
+class EinkaufslisteTimerTicker extends HTMLElement {
+  static getStubConfig() { return { entity: "sensor.einkaufsliste_kochtimer" }; }
+  static getConfigElement() { return document.createElement("einkaufsliste-timer-ticker-editor"); }
+  setConfig(config) {
+    this._config = { entity: "sensor.einkaufsliste_kochtimer", hide_when_empty: true, speed: 60, ...config };
+    if (!this.shadowRoot) {
+      this.attachShadow({ mode: "open" });
+      this.shadowRoot.innerHTML = `<style>${EL_TICKER_CSS}</style><ha-card><div class="box"><ha-icon icon="mdi:chef-hat"></ha-icon><div class="win"><div class="wrap"></div></div><ha-icon icon="mdi:chef-hat"></ha-icon></div></ha-card>`;
+      this.shadowRoot.querySelector(".wrap").addEventListener("click", (e) => {
+        const el = e.target.closest?.(".it.done");
+        if (this._config?.tap_dismiss === true && el?.dataset.id && this._hass) this._hass.callWS({ type: "einkaufsliste/timer/cancel", timer_id: el.dataset.id }).catch(() => {});
+      });
+    }
+    this._sig = null;
+    this._update();
+  }
+  set hass(hass) { this._hass = hass; this._update(); }
+  getCardSize() { return 1; }
+  connectedCallback() { this._update(); }
+  _update() {
+    const root = this.shadowRoot;
+    if (!root || !this._config) return;
+    const st = this._hass?.states?.[this._config.entity];
+    const list = Array.isArray(st?.attributes?.timer) ? st.attributes.timer : [];
+    if (this._hass) elUseLang(this._hass, this._config, null);
+    const lang = this._hass?.locale?.language || EL_LANG || "de";
+    const tap = this._config.tap_dismiss === true;
+    const fertige = list.filter((t) => t.fertig);
+    const laufende = list.filter((t) => !t.fertig).sort((a, b) => Date.parse(a.ende) - Date.parse(b.ende));
+    const teile = [];
+    for (const t of fertige) teile.push(`<span class="it done${tap ? " tap" : ""}" data-id="${esc(t.id || "")}"${tap ? ` title="${esc(elT("Antippen = wegdrücken"))}"` : ""}>⏰ ${esc(t.name)}: ${esc(elT("FERTIG!"))}</span>`);
+    for (const t of laufende) {
+      const end = Date.parse(t.ende);
+      const uhr = Number.isFinite(end) ? `${new Date(end).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}` : "";
+      teile.push(`<span class="it">⏲️ ${esc(t.name)}: ${esc(elT("fertig um"))} ${esc(uhr)}</span>`);
+    }
+    const empty = !teile.length;
+    root.querySelector("ha-card").style.display = empty && this._config.hide_when_empty !== false ? "none" : "";
+    const basis = empty ? `👨‍🍳 ${esc(elT("Kein Kochtimer aktiv"))}` : teile.join(" +++ ");
+    const plain = (empty ? 40 : (basis.replace(/<[^>]+>/g, "").length)) + 6;
+    const stueck = `+++ ${basis} `;
+    const n = Math.max(5, Math.ceil(260 / plain));
+    const html = stueck.repeat(n);
+    const dauer = Math.max(8, Math.round((plain * n * 11) / 100 * (60 / (Number(this._config.speed) || 60))));
+    const sig = `${html}|${dauer}|${fertige.length > 0}`;
+    if (sig === this._sig) return;
+    this._sig = sig;
+    root.querySelector(".box").classList.toggle("fertig", fertige.length > 0);
+    const wrap = root.querySelector(".wrap");
+    wrap.style.setProperty("--gd", `${dauer}s`);
+    wrap.innerHTML = `<span class="tx">${html}</span><span class="tx">${html}</span>`;
+  }
+}
+class EinkaufslisteTimerTickerEditor extends HTMLElement {
+  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochtimer", hide_when_empty: true, speed: 60, ...config }; this._render(); }
+  set hass(hass) { this._hass = hass; elUseLang(hass, this._config, null); this._render(); }
+  _render() {
+    if (!this._hass || !this._config) return;
+    if (!this._form) {
+      this._form = document.createElement("ha-form");
+      this._form.computeLabel = (s) => elT({ entity: "Sensor der Kochtimer", hide_when_empty: "Ohne Timer ausblenden", tap_dismiss: "Fertige Timer per Antippen wegdrücken", speed: "Tempo (Pixel pro Sekunde)", language: "Sprache" }[s.name] || s.name);
+      this._form.addEventListener("value-changed", (ev) => {
+        this._config = ev.detail.value;
+        this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
+      });
+      this.appendChild(this._form);
+    }
+    this._form.hass = this._hass;
+    this._form.data = this._config;
+    this._form.schema = [
+      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "hide_when_empty", selector: { boolean: {} } },
+      { name: "tap_dismiss", selector: { boolean: {} } },
+      { name: "speed", selector: { number: { min: 20, max: 200, step: 5, mode: "box" } } },
+      { name: "language", selector: { select: { mode: "dropdown", options: [{ value: "auto", label: elT("Automatisch") + " (Home Assistant)" }, { value: "de", label: "Deutsch" }, { value: "en", label: "English" }] } } },
+    ];
+  }
+}
+if (!customElements.get("einkaufsliste-timer-ticker")) customElements.define("einkaufsliste-timer-ticker", EinkaufslisteTimerTicker);
+if (!customElements.get("einkaufsliste-timer-ticker-editor")) customElements.define("einkaufsliste-timer-ticker-editor", EinkaufslisteTimerTickerEditor);
+
 window.customCards = window.customCards || [];
 if (!window.customCards.some((c) => c.type === "einkaufsliste-card")) {
   window.customCards.push({
     type: "einkaufsliste-card",
     name: "Einkaufsliste",
     description: "Familien-Einkaufsliste mit Geschäften, Kategorien, Rezepten und Live-Sync.",
+    preview: false,
+    documentationURL: "https://github.com/misterm2310/einkaufslisten-card",
+  });
+}
+
+if (!window.customCards.some((c) => c.type === "einkaufsliste-timer-ticker")) {
+  window.customCards.push({
+    type: "einkaufsliste-timer-ticker",
+    name: "Einkaufsliste – Timer-Laufband",
+    description: "Laufband mit den laufenden Kochtimern aus der Einkaufsliste (fertige bleiben stehen, bis man sie in der App wegdrückt).",
     preview: false,
     documentationURL: "https://github.com/misterm2310/einkaufslisten-card",
   });

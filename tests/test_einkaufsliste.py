@@ -4428,6 +4428,7 @@ async def test_kochtimer(hass, setup, freezer) -> None:
     assert st is not None and st.attributes["laufend"] == 1 and st.state != "unknown"
     assert st.attributes["naechster"] == "Lasagne – Backen"
     assert st.attributes["timer"][0]["name"] == "Lasagne – Backen" and st.attributes["timer"][0]["rezept"] == "Lasagne"
+    assert st.attributes["timer"][0]["id"]  # 🏃 das Laufband braucht die ID zum Wegdrücken
     # 🖼️ Die Markdown-Karte aus der Anleitung muss mit diesen Attributen wirklich funktionieren
     from homeassistant.helpers.template import Template
     card = (
