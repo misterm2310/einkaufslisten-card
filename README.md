@@ -203,6 +203,8 @@ Dafür liegt der API-Schlüssel auf dem Server (nie auf Handys, nie in Sicherung
 
 **🖨️ Liste drucken:** Unter der Liste steht die kleine Zeile „Liste drucken“. Du wählst das Geschäft, siehst die Vorschau und gibst sie als Papier oder PDF aus: mit Kästchen zum Abhaken, nach Geschäft und Kategorie sortiert, mit Datum, Uhrzeit und Namen. Sie passt möglichst auf eine A4-Seite (ab 20 Artikeln in zwei Spalten). **▥ Scannen im Laden:** Im Laden-Modus hakt der Scanner auch ohne Standortzone ab (gewählter Reiter und „Egal wo“, unter „Alle“ die ganze Liste; mehrdeutige Treffer nicht auf Verdacht).
 
+**🖨️ Rezept als PDF:** Im Teilen-Fenster eines Rezepts steht „Drucken / als PDF“ – mit Vorschau wie bei „Liste drucken“. Beim Teilen stehen die Zeiten von Backofen & Co. direkt bei dem Schritt, zu dem sie gehören.
+
 ### 📝 Notiz-Vorlagen
 **⚙️ → Extras → Notiz-Vorlagen**: kleine Knöpfe unter dem ✏️ Eigene-Notiz-Feld („Bio“, „ohne Laktose“, „große Packung“ …). Sie erscheinen erst mit dem ersten getippten Buchstaben und zeigen nur die passenden; ein Tipp ersetzt das Angetippte durch die Vorlage. Die Texte pflegst du selbst, für alle Geräte.
 

@@ -22,7 +22,7 @@ APP_URL = "/einkaufsliste/app/"
 _TYPES = {
     "index.html": "text/html; charset=utf-8",
     "sw.js": "text/javascript; charset=utf-8",
-    "manifest.json": "application/manifest+json",
+    "manifest.webmanifest": "application/manifest+json",
     "icon-192.png": "image/png",
     "icon-512.png": "image/png",
     "icons.json": "application/json",  # Material Design Icons (Apache 2.0), liegt gepackt als icons.json.gz
@@ -55,7 +55,7 @@ class AppView(HomeAssistantView):
                                 headers={"Content-Encoding": "gzip", "Cache-Control": "public, max-age=604800"})
         if file in ("index.html", "sw.js"):
             body = body.replace(b"__EL_VERSION__", VERSION.encode())
-        if file == "manifest.json" and not str(getattr(hass.config, "language", "de") or "de").lower().startswith("de"):
+        if file == "manifest.webmanifest" and not str(getattr(hass.config, "language", "de") or "de").lower().startswith("de"):
             for de, en in _MANIFEST_EN.items():  # 🌍 Schnellmenü am App-Symbol auf Englisch
                 body = body.replace(de.encode(), en.encode())
         headers = {"Cache-Control": "no-cache"}

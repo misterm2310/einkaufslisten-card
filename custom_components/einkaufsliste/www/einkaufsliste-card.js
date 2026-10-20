@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.21-beta.14";
+const EL_VERSION = "2.76.21";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.19"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.21"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -374,50 +374,7 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [
-  ["Neu: 🏷️ Der Sensor pro Geschäft (z. B. sensor.einkaufsliste_kaufland) hat jetzt das Attribut „angebote“: für jeden Artikel mit laufendem Angebot Preis, gültig ab/bis und Händler. Das Attribut „artikel“ bleibt unverändert – gedacht für eigene Skripte und Automationen. In der Liste selbst ändert sich nichts.",
-   "New: 🏷️ The per-store sensor (e.g. sensor.einkaufsliste_kaufland) now has the attribute “angebote”: price, valid from/to and retailer for every item with a current offer. The “artikel” attribute stays unchanged – meant for your own scripts and automations. Nothing changes in the list itself.", "beta.1"],
-  ["Neu: 👆 Im Kochmodus zeigen blasse Pfeile am Rand, dass man zwischen den Schritten wischen kann (Antippen geht auch).",
-   "New: 👆 In cook mode, pale arrows at the edge show that you can swipe between steps (tapping works too).", "beta.1"],
-  ["Neu: 🔥 Backofen & Co. steht im Rezept-Editor jetzt unter „Zubereitung“. Jeder Eintrag kann bei bestimmten Schritten erscheinen (Schritt-Zahlen zum Antippen, mehrere möglich) – im Kochmodus steht die orange Info dann nur bei diesen Schritten. Ohne Auswahl wie bisher bei allen.",
-   "New: 🔥 Oven & Co. is now below “Preparation” in the recipe editor. Each entry can show at certain steps only (tap the step numbers, several possible) – in cook mode the orange info then appears only at those steps. With nothing chosen it shows at all steps as before.", "beta.2"],
-  ["Neu: 🍳 Kochmodus: Gibt es mehrere Geräte ohne Schritt-Zahl, kannst du beim Start einklappbar wählen, womit gegart wird (mehrere möglich). Wird das Rezept während des Kochens geändert, zieht der Kochmodus sofort nach.",
-   "New: 🍳 Cook mode: with several appliances without a step number you can choose at the start (collapsible) what you cook with (several possible). If the recipe is changed while cooking, cook mode updates right away.", "beta.2"],
-  ["Neu: 🔥 Im Rezept-Editor zeigt ein Ofen-Knopf links bei den Foto-Knöpfen, bei welchen Zubereitungs-Schritten ein Eintrag aus Backofen & Co. gilt (Antippen zeigt, welcher).",
-   "New: 🔥 In the recipe editor an oven button next to the photo buttons shows which preparation steps have an Oven & Co. entry (tap to see which).", "beta.3"],
-  ["Neu: 🔥 Rezept-Editor: Die Einträge von Backofen & Co. lassen sich einklappen (Kurz-Zeile bleibt sichtbar) und per Ziehen am ⠿ verschieben. Außerdem werden lange Schritte bei „Zubereitung“ nicht mehr abgeschnitten.",
-   "New: 🔥 Recipe editor: the Oven & Co. entries can be collapsed (a short line stays visible) and moved by dragging the ⠿. Long steps under “Preparation” are also no longer cut off.", "beta.4"],
-  ["Neu: 🔥 Rezept-Editor: Einträge von Backofen & Co. lassen sich duplizieren (Kopie direkt darunter).",
-   "New: 🔥 Recipe editor: Oven & Co. entries can be duplicated (copy right below).", "beta.5"],
-  ["Neu: ✏️ Im Kochmodus gibt es neben dem Rezeptnamen ein Symbol für Änderungswünsche: freier Text zum aktuellen Schritt, in einem eigenen Fenster. Der Wunsch landet bei „Wartet auf OK“; beim Prüfen öffnet sich das Rezept.",
-   "New: ✏️ Cook mode has a symbol next to the recipe name for change requests: free text for the current step in its own window. The request goes to “waiting for OK”; checking it opens the recipe.", "beta.6"],
-  ["Geändert: ✏️ Das Änderungswunsch-Symbol im Kochmodus erscheint erst bei den Schritten, nicht mehr bei der Personen-Auswahl.",
-   "Changed: ✏️ The change-request symbol in cook mode now only appears during the steps, no longer on the person selection.", "beta.7"],
-  ["Geändert: 📐 Aufgeklappte Felder haben keinen Strich am Rand mehr und sind nur noch ganz leicht eingerückt – so bleibt mehr Platz.",
-   "Changed: 📐 Expanded boxes no longer have a line at the edge and are only slightly indented – more room on the screen.", "beta.8"],
-  ["Behoben: 📍 Nach dem Rezept-Editor springt die Rezeptliste nicht mehr wahllos – sie scrollt zum bearbeiteten Rezept bzw. zurück an die alte Stelle.",
-   "Fixed: 📍 After the recipe editor the recipe list no longer jumps around – it scrolls to the edited recipe or back to where you were.", "beta.9"],
-  ["Neu: 🔗 Die Schritt-Auswahl bei Backofen & Co. hängt am Schritt selbst: Löschen, Verschieben oder Einfügen von Schritten verschiebt sie nicht mehr auf einen anderen Schritt.",
-   "New: 🔗 The step choice for Oven & Co. is tied to the step itself: deleting, moving or inserting steps no longer shifts it to a different step.", "beta.9"],
-  ["Neu: 🍳 Beim Teilen eines Rezepts stehen die Zeiten und Einstellungen von Backofen & Co. direkt bei dem Zubereitungs-Schritt, zu dem sie gehören. Einträge ohne Schritt bleiben oben bei „Garen“.",
-   "New: 🍳 When sharing a recipe, the times and settings from Oven & Co. now appear right at the preparation step they belong to. Entries without a step stay at the top under “Cooking”.", "beta.10"],
-  ["Neu: 👨‍🍳 Die Kochmütze bleibt auch in den Einstellungen sichtbar – so kommst du von dort immer direkt zu den Rezepten.",
-   "New: 👨‍🍳 The chef hat stays visible in the settings too – you can always jump straight to the recipes from there.", "beta.10"],
-  ["Neu: 🍳 Beim Herd gibt es jetzt auch den Modus „Braten“ (neben „Köcheln“).",
-   "New: 🍳 The hob now also has the mode “Fry” (next to “Simmer”).", "beta.10"],
-  ["Neu: 🧊 Bei Backofen & Co. gibt es auch „Kühlschrank“ und „Tiefkühler“ (z. B. 4 Std. im Kühlschrank ruhen lassen).",
-   "New: 🧊 Oven & Co. now also has “Fridge” and “Freezer” (e.g. rest 4 h in the fridge).", "beta.11"],
-  ["Neu: 📍 Nach dem Rezept-Editor ist das Rezept in der Liste mit dem blauen Rahmen markiert.",
-   "New: 📍 After the recipe editor the recipe is highlighted in the list with the blue frame.", "beta.11"],
-  ["Geändert: 👨‍🍳 Die Kochmütze in den Einstellungen erscheint nur im Bereich „Rezepte“.",
-   "Changed: 👨‍🍳 The chef hat in the settings only appears in the “Recipes” area.", "beta.11"],
-  ["Geändert: 👨‍🍳 Die Kochmütze bleibt jetzt auch im Rezept-Editor sichtbar, wenn du über Einstellungen → Rezepte gekommen bist (mit Rückfrage, damit kein Entwurf still verloren geht).",
-   "Changed: 👨‍🍳 The chef hat now also stays visible in the recipe editor when you came via Settings → Recipes (with a confirmation so no draft is lost silently).", "beta.12"],
-  ["Behoben: 👨‍🍳 Die Kochmütze erschien nicht, wenn man in den Einstellungen auf „Rezepte“ getippt hat – jetzt sofort.",
-   "Fixed: 👨‍🍳 The chef hat did not appear after tapping “Recipes” in the settings – now it shows immediately.", "beta.13"],
-  ["Neu: ✕ In den Einstellungen gibt es oben rechts ein ✕ wie bei den Rezepten; in einem Bereich (z. B. Geschäfte, Rezept-Editor, Seiten) steht dort stattdessen ←. Der Pfeil neben dem Namen ist weg. · 🆕 „Was ist neu“ zeigt vor jedem Beta-Eintrag die Beta-Nummer. · 🖨️ Rezept: im Teilen-Fenster gibt es „Drucken / als PDF“ mit Vorschau. · 📸 Wird ein Angebot übernommen, kommt das Foto des Angebots mit (wenn der Artikel noch kein eigenes hat).",
-   "New: ✕ In the settings there is a ✕ at the top right like in recipes; inside an area (e.g. stores, recipe editor, pages) it shows ← instead. The arrow next to the name is gone. · 🆕 “What’s new” shows the beta number in front of every beta entry. · 🖨️ Recipe: the share window has “Print / save as PDF” with a preview. · 📸 When you take an offer, the offer’s photo comes along (if the item has no photo of its own).", "beta.14"],
-];
+const EL_BETA_NEWS = [];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -425,6 +382,16 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🔥 <b>Backofen &amp; Co. beim Schritt:</b> Im Rezept-Editor steht Backofen &amp; Co. unter „Zubereitung“. Jeder Eintrag (auch Kühlschrank 🧊, Tiefkühler ❄️ und Herd-Modus „Braten“) kann bei bestimmten Schritten erscheinen, ist einklappbar, verschiebbar und lässt sich duplizieren. Im Kochmodus steht die orange Info nur beim richtigen Schritt, bei mehreren Geräten wählst du am Start, womit gegart wird, und ändert sich das Rezept beim Kochen, zieht der Kochmodus sofort nach.",
+   "🔥 <b>Oven &amp; Co. per step:</b> in the recipe editor Oven &amp; Co. is now under “Preparation”. Each entry (also fridge 🧊, freezer ❄️ and the stove mode “Fry”) can show at certain steps, can be folded, moved and duplicated. In cook mode the orange info only shows at the right step, with several devices you choose at the start what you cook with, and if the recipe changes while cooking, cook mode follows at once."],
+  ["✏️ <b>Änderungswunsch im Kochmodus:</b> Oben neben dem Rezeptnamen (bei den Schritten) steht ein Symbol. Dort schreibst du frei, was anders sein soll; der Wunsch landet bei „Wartet auf OK“ und das Rezept ändert sich erst, wenn jemand ihn freigibt.",
+   "✏️ <b>Change request in cook mode:</b> at the top next to the recipe name (at the steps) there is a symbol. Write freely what should be different; the request goes to “waiting for OK” and the recipe only changes once someone approves it."],
+  ["🖨️ <b>Rezept als PDF:</b> Im Teilen-Fenster eines Rezepts gibt es „Drucken / als PDF“ mit Vorschau wie bei „Liste drucken“. Beim Teilen stehen die Zeiten von Backofen &amp; Co. direkt bei dem Schritt, zu dem sie gehören.",
+   "🖨️ <b>Recipe as PDF:</b> the share window of a recipe has “Print / save as PDF” with a preview like “Print list”. When sharing, the times of Oven &amp; Co. appear right at the step they belong to."],
+  ["✕ <b>Einheitlich zurück:</b> In den Einstellungen, in Bereichen, im Rezept-Editor, auf Seiten und in den Fenstern steht der Zurück-Knopf oben rechts: ✕, wenn es zur Einkaufsliste zurückgeht, sonst ←. Die Kochmütze bleibt in den Einstellungen im Bereich „Rezepte“ (und im Rezept-Editor) sichtbar; nach dem Editor ist das Rezept in der Liste blau markiert.",
+   "✕ <b>Back, the same everywhere:</b> in the settings, areas, the recipe editor, pages and windows the back button is at the top right: ✕ when it goes back to the shopping list, otherwise ←. The chef hat stays visible in the settings area “Recipes” (and in the recipe editor); after the editor the recipe is marked blue in the list."],
+  ["📸 <b>Angebotsfoto:</b> Wird ein Angebot übernommen, kommt das Foto des Angebots als Produktfoto mit (nur wenn der Artikel noch keins hat; bei Datenschutz an wird nichts geladen). Der Sensor pro Geschäft hat das Attribut „angebote“ mit Preis, gültig ab/bis und Händler.",
+   "📸 <b>Offer photo:</b> when you take an offer, the offer’s photo comes along as the product photo (only if the item has none; with privacy on nothing is loaded). The per-store sensor has the attribute “angebote” with price, valid from/to and retailer."],
   ["🖨️ <b>Liste drucken:</b> Unter der Liste steht eine kleine Zeile „Liste drucken“. Geschäft wählen, Vorschau ansehen, dann als Papier oder PDF ausgeben: mit Kästchen zum Abhaken, nach Geschäft und Kategorie sortiert, mit Datum, Uhrzeit und wer es ausgedruckt hat. Es passt möglichst auf eine A4-Seite (ab 20 Artikeln in zwei Spalten, bei sehr langen Listen etwas enger).",
    "🖨️ <b>Print list:</b> below the list there is a small line “Print list”. Choose a store, check the preview, then print it or save it as PDF: with tick boxes, sorted by store and category, with date, time and who printed it. It tries to fit on one A4 page (two columns from 20 items, a bit tighter for very long lists)."],
   ["▥ <b>Scannen &amp; Abhaken im Laden:</b> Im Laden-Modus geht es jetzt auch ohne Standortzone. Es gilt der gewählte Geschäft-Reiter (und „Egal wo“), unter „Alle“ die ganze Liste. Steht eine Packung bei mehreren Geschäften auf der Liste, wird sie nicht auf Verdacht abgehakt.",
@@ -3571,7 +3538,7 @@ function showGarTable(card, tcard = null) {
   const html = `<style>
     .gar { width:100%; max-width:none; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; }
     .gar .gh { display:flex; align-items:center; gap:12px; margin:0 0 12px; }
-    .gar .gback { width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
+    .gar .gback { margin-left:auto; width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
     .gar .gic { width:36px; height:36px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#ef6c00; color:#fff; --mdc-icon-size:20px; }
     .gar .gt { font-size:20px; font-weight:600; min-width:0; }
     .gar h2 { font-size:20px; margin:4px 0 10px; }
@@ -3613,7 +3580,7 @@ function showGarTable(card, tcard = null) {
     .gar .gb[hidden] { display:none; }
   </style>
   <div class="gar" translate="no">
-    ${asPage || fromPage ? "" : `<div class="gh"><button type="button" class="gback" title="${en ? "Back" : "Zurück"}" aria-label="${en ? "Back" : "Zurück"}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:pot-steam-outline"></ha-icon></span><div class="gt">${en ? "Cooking times" : "Gar-Zeiten"}</div></div>`}
+    ${asPage || fromPage ? "" : `<div class="gh"><span class="gic"><ha-icon icon="mdi:pot-steam-outline"></ha-icon></span><div class="gt">${en ? "Cooking times" : "Gar-Zeiten"}</div><button type="button" class="gback" title="${en ? "Back" : "Zurück"}" aria-label="${en ? "Back" : "Zurück"}"><ha-icon icon="mdi:arrow-left"></ha-icon></button></div>`}
     <div class="gtimer"><button type="button" class="gtbtn" title="${en ? "Start a timer" : "Timer starten"}" aria-label="${en ? "Start a timer" : "Timer starten"}"><ha-icon icon="mdi:timer-outline"></ha-icon></button></div>
     <div class="gsearch"><input type="search" placeholder="${en ? "Search, e.g. egg" : "Suchen, z. B. Ei"}"><button type="button" class="gerase" hidden title="${en ? "Clear search" : "Suchtext löschen"}" aria-label="${en ? "Clear search" : "Suchtext löschen"}"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
     <div class="gtabs"></div>
@@ -5066,13 +5033,6 @@ class EinkaufslisteCard extends HTMLElement {
     const inSettings = this._view === "settings" || this._view === "recipe";
     btnS.hidden = !c.show_settings || !d || inSettings;
     this._syncRecipesBtn();
-    const btnB = this.$("btnBack"); // ✕ / ← oben rechts (wie bei Rezepte): ← wenn es eine Ebene zurückgeht, sonst ✕
-    const deeper = !!this._page || this._view === "recipe" || (this._view === "settings" && !!(this._setSec || this._storeSel || this._catSel || this._rgSel || this._perSel));
-    if (btnB) {
-      btnB.hidden = !d || !(this._view === "settings" || this._view === "recipe" || !!this._page);
-      btnB.querySelector("ha-icon").setAttribute("icon", deeper ? "mdi:arrow-left" : "mdi:close");
-      btnB.title = btnB.ariaLabel = deeper ? "Zurück" : "Schließen";
-    }
     btnS.classList.toggle("on", inSettings);
     btnR.classList.toggle("on", this._view === "recipes");
     btnS.querySelector("ha-icon").setAttribute("icon", inSettings ? "mdi:close" : "mdi:cog-outline");
@@ -6272,9 +6232,19 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
     if (!btnR) return;
     if (this._view === "settings") this._recSetNav = this._setSec === "recipes"; else if (this._view !== "recipe") this._recSetNav = false; // 👨‍🍳 merkt sich: man kam über Einstellungen → Rezepte (gilt dann auch im Rezept-Editor)
     btnR.hidden = !c.show_recipes || !d || !!this._page || (this._view === "settings" && this._setSec !== "recipes") || (this._view === "recipe" && !this._recSetNav); // 👨‍🍳 Kochmütze: in den Einstellungen nur im Bereich „Rezepte“ und von dort auch im Rezept-Editor
+    const btnB = this.$("btnBack"); // ✕ / ← oben rechts: ✕ nur, wenn der nächste Schritt zurück die Einkaufsliste ist, sonst ←
+    if (btnB) {
+      const sel = this._storeSel || this._catSel || this._rgSel || this._perSel;
+      const deeper = this._page ? !!(this._page.prev || this._view !== "list") : this._view === "recipe" || (this._view === "settings" && !!(this._setSec || sel));
+      btnB.hidden = !d || !(this._view === "settings" || this._view === "recipe" || !!this._page);
+      btnB.querySelector("ha-icon").setAttribute("icon", deeper ? "mdi:arrow-left" : "mdi:close");
+      btnB.title = btnB.ariaLabel = deeper ? "Zurück" : "Schließen";
+    }
   }
-  _renderSettings() {
-    this._syncRecipesBtn();
+  _renderSettings() { // danach Kopfzeile (🧑‍🍳, ✕/←) nachziehen – beim Antippen eines Bereichs wird nur dieser Teil neu gebaut
+    try { return this._renderSettingsInner(); } finally { this._syncRecipesBtn(); }
+  }
+  _renderSettingsInner() {
     queueMicrotask(() => this._emitNav());
     if (this._lastSetSec !== undefined && this._lastSetSec !== this._setSec) { // 🗂️ einen Bereich verlassen (zurück, anderer Bereich): seine Aufklapper und Reiter sind danach wieder zu
       this._accOpen = { stats: "" }; this._xferTab = "none"; this._recTab = null; this._prodTab = null;
@@ -10591,7 +10561,7 @@ ${(() => {
     ov.innerHTML = `<style>
       .wsw { width:100%; max-width:560px; margin:0 auto; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; display:flex; flex-direction:column; gap:14px; }
       .wsw .gh { display:flex; align-items:center; gap:12px; margin:0; }
-      .wsw .gback { width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
+      .wsw .gback { margin-left:auto; width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
       .wsw .gic { width:36px; height:36px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#f9a825; color:#fff; --mdc-icon-size:20px; }
       .wsw .gt { font-size:20px; font-weight:600; min-width:0; }
       .wsw textarea, .wsw input { width:100%; box-sizing:border-box; padding:14px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.5)); background:var(--card-background-color, #fff); color:var(--primary-text-color); font:500 16px Roboto,sans-serif; }
@@ -10604,7 +10574,7 @@ ${(() => {
       .wsw button.go { background:#43a047; color:#fff; }
     </style>
     <div class="wsw" translate="no">
-      ${asPage ? "" : `<div class="gh"><button type="button" class="gback" title="${T("Zurück", "Back")}" aria-label="${T("Zurück", "Back")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:message-draw"></ha-icon></span><span class="gt">${T("Änderungswunsch", "Change request")}</span></div>`}
+      ${asPage ? "" : `<div class="gh"><span class="gic"><ha-icon icon="mdi:message-draw"></ha-icon></span><span class="gt">${T("Änderungswunsch", "Change request")}</span><button type="button" class="gback" title="${T("Zurück", "Back")}" aria-label="${T("Zurück", "Back")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button></div>`}
       <div class="ctx"><b>${esc(r.name)}${stepNo ? ` – ${T("Schritt", "Step")} ${stepNo}` : ""}</b>${stepText ? esc(stepText) : ""}</div>
       <textarea maxlength="1500" placeholder="${T("Was soll anders sein? z. B. „Nur 10 Minuten backen“ oder „Salz weglassen“", "What should be different? e.g. “Bake only 10 minutes” or “leave out the salt”")}" aria-label="${T("Änderungswunsch", "Change request")}"></textarea>
       <input type="text" maxlength="40" autocomplete="off" placeholder="${T("Von wem? (dein Name)", "From whom? (your name)")}" aria-label="${T("Von wem?", "From whom?")}">
@@ -10648,7 +10618,7 @@ ${(() => {
     ov.innerHTML = `<style>
       .tmw { width:100%; max-width:560px; margin:0 auto; color:var(--primary-text-color); font:15px/1.4 Roboto,sans-serif; display:flex; flex-direction:column; gap:14px; }
       .tmw .gh { display:flex; align-items:center; gap:12px; margin:0; }
-      .tmw .gback { width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
+      .tmw .gback { margin-left:auto; width:36px; height:36px; border-radius:50%; border:0; background:none; cursor:pointer; color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
       .tmw .gic { width:36px; height:36px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#26a69a; color:#fff; --mdc-icon-size:20px; }
       .tmw .gt { font-size:20px; font-weight:600; min-width:0; }
       .tmw input[type=text] { width:100%; box-sizing:border-box; padding:14px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.5)); background:var(--card-background-color, #fff); color:var(--primary-text-color); font:500 18px Roboto,sans-serif; }
@@ -10662,7 +10632,7 @@ ${(() => {
       .tmw .sub { color:var(--secondary-text-color); font-size:13px; margin:0; }
     </style>
     <div class="tmw" translate="no">
-      ${asPage ? "" : `<div class="gh"><button type="button" class="gback" title="${T("Zurück", "Back")}" aria-label="${T("Zurück", "Back")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button><span class="gic"><ha-icon icon="mdi:timer-outline"></ha-icon></span><span class="gt">${T("Timer", "Timer")}</span></div>`}
+      ${asPage ? "" : `<div class="gh"><span class="gic"><ha-icon icon="mdi:timer-outline"></ha-icon></span><span class="gt">${T("Timer", "Timer")}</span><button type="button" class="gback" title="${T("Zurück", "Back")}" aria-label="${T("Zurück", "Back")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button></div>`}
       <input type="text" maxlength="40" autocomplete="off" placeholder="${T("Name (optional)", "Name (optional)")}" aria-label="${T("Name (optional)", "Name (optional)")}">
       <div class="pre"></div>
       <div class="adj"><button type="button" class="b m">−</button><span class="lbl"></span><button type="button" class="b p">+</button></div>

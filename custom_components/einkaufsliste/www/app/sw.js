@@ -1,7 +1,7 @@
 // 📱 Einkaufsliste – Offline-Speicher für die App (nur Programm + Symbole, die Daten merkt sich die Seite selbst)
 const CACHE = "einkaufsliste-app-__EL_VERSION__";
 const FILES = [
-  "./", "manifest.json", "icon-192.png", "icon-512.png", "icons.json", "zxing.min.js?v=__EL_VERSION__",
+  "./", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icons.json", "zxing.min.js?v=__EL_VERSION__",
   "/einkaufsliste_files/einkaufsliste-card.js?v=__EL_VERSION__",
   "/einkaufsliste_files/einkaufsliste-en.json?v=__EL_VERSION__",
   "/einkaufsliste_files/einkaufsliste-start.json?v=__EL_VERSION__",

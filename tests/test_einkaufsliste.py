@@ -1955,7 +1955,7 @@ async def test_offline_app_pages(hass: HomeAssistant, setup, hass_client_no_auth
     r = await client.get("/einkaufsliste/app/sw.js")
     assert r.status == 200 and r.headers.get("Service-Worker-Allowed") == "/einkaufsliste/app/"
     assert "el-queue" in await r.text()  # 🔄 im Hintergrund nachschicken
-    r = await client.get("/einkaufsliste/app/manifest.json")
+    r = await client.get("/einkaufsliste/app/manifest.webmanifest")
     man = await r.json()
     assert r.status == 200 and man["start_url"] == "/einkaufsliste/app/"
     assert [x["url"].split("=")[-1] for x in man["shortcuts"]] == ["add", "shop", "scan"]  # 📱 Schnellmenü

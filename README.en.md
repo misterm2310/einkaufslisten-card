@@ -204,6 +204,8 @@ For this the API key is kept on the server (never on phones, never in backups). 
 
 **🖨️ Print list:** Below the list there is a small line “Print list”. Choose a store, check the preview and print it or save it as PDF: with tick boxes, sorted by store and category, with date, time and name. It tries to fit on one A4 page (two columns from 20 items). **▥ Scanning in the store:** In store mode the scanner also checks off without a location zone (chosen tab and “anywhere”, under “All” the whole list; ambiguous hits are not checked off on a guess).
 
+**🖨️ Recipe as PDF:** the share window of a recipe has “Print / save as PDF” – with a preview like “Print list”. When sharing, the times of Oven & Co. appear right at the step they belong to.
+
 ### 📝 Note templates
 **⚙️ → Extras → Note templates**: small buttons under the ✏️ Own note field (“Organic”, “lactose-free”, “large pack” …). They only appear once you type the first letter and show only the matching ones; a tap replaces what you typed with the template. You maintain the texts yourself, for all devices.
 
