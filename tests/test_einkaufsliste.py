@@ -45,6 +45,24 @@ def tz():
     return dt_util.get_time_zone(TZ)
 
 
+
+async def _setup_shopping_list(hass: HomeAssistant) -> None:
+    """🛒 Eingebaute HA-Einkaufsliste einrichten – stabil: alte Datei weg, bei Fehlstart bis zu 3 Versuche, sonst mit Grund melden."""
+    import asyncio
+    import os
+    path = hass.config.path(".shopping_list.json")
+    sl = MockConfigEntry(domain="shopping_list")
+    sl.add_to_hass(hass)
+    for versuch in range(3):
+        if os.path.exists(path):  # Reste aus früheren Testläufen (oder ein noch ausstehendes Schreiben) weg
+            os.remove(path)
+        ok = await hass.config_entries.async_setup(sl.entry_id) if versuch == 0 else await hass.config_entries.async_reload(sl.entry_id)
+        await hass.async_block_till_done()
+        if ok and hass.states.get("todo.einkaufsliste") is not None:
+            return
+        await asyncio.sleep(0.5)
+    raise AssertionError(f"HA-Einkaufsliste startet nicht: Zustand={sl.state}, Grund={sl.reason}")
+
 async def test_defaults(hass, setup):
     m = mgr(hass)
     assert [s["name"] for s in m.stores][:3] == ["Netto", "Aldi", "Lidl"]
@@ -1823,13 +1841,7 @@ async def test_import_from_other_apps(hass, setup, hass_ws_client):
     assert {(i["name"], i["quantity"], i["store_id"]) for i in m.items} == {("Milch", "1x", aldi), ("Äpfel", "2x", aldi), ("Butter", "1x", aldi)}
 
     # HA-To-do-Liste (hier die eingebaute HA-Einkaufsliste)
-    import os
-    if os.path.exists(hass.config.path(".shopping_list.json")):  # Reste aus früheren Testläufen weg
-        os.remove(hass.config.path(".shopping_list.json"))
-    sl = MockConfigEntry(domain="shopping_list")
-    sl.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(sl.entry_id)
-    await hass.async_block_till_done()
+    await _setup_shopping_list(hass)
     await hass.services.async_call("todo", "add_item", {"entity_id": "todo.einkaufsliste", "item": "Kaffee"}, blocking=True)
     await hass.services.async_call("todo", "add_item", {"entity_id": "todo.einkaufsliste", "item": "3 Joghurt"}, blocking=True)
     await client.send_json({"id": 2, "type": "einkaufsliste/import/todo_lists"})
@@ -2044,13 +2056,7 @@ async def test_zones_mascot_todo_sync(hass: HomeAssistant, setup, hass_ws_client
     assert m.as_dict()["settings"]["mascot"] is True
 
     # 🔁 To-do-Liste (hier die eingebaute HA-Einkaufsliste)
-    import os
-    if os.path.exists(hass.config.path(".shopping_list.json")):
-        os.remove(hass.config.path(".shopping_list.json"))
-    sl = MockConfigEntry(domain="shopping_list")
-    sl.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(sl.entry_id)
-    await hass.async_block_till_done()
+    await _setup_shopping_list(hass)
     await hass.services.async_call("todo", "add_item", {"entity_id": "todo.einkaufsliste", "item": "Kaffee"}, blocking=True)
     netto = next(s for s in m.stores if s["name"] == "Netto")
     await client.send_json({"id": 2, "type": "einkaufsliste/todo_sync/set", "entity_id": "todo.einkaufsliste", "store_id": netto["id"]})
@@ -2166,12 +2172,7 @@ async def test_todo_sync_keep_and_full(hass: HomeAssistant, setup) -> None:
     from pytest_homeassistant_custom_component.common import async_fire_time_changed
     from homeassistant.util import dt as dt_util
     m = mgr(hass)
-    if os.path.exists(hass.config.path(".shopping_list.json")):
-        os.remove(hass.config.path(".shopping_list.json"))
-    sl = MockConfigEntry(domain="shopping_list")
-    sl.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(sl.entry_id)
-    await hass.async_block_till_done()
+    await _setup_shopping_list(hass)
     ent = "todo.einkaufsliste"
 
     async def todo():
