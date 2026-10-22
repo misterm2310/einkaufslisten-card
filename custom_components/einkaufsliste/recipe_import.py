@@ -260,7 +260,7 @@ async def async_import(hass: HomeAssistant, manager: Any, text: str) -> dict[str
         info = parse_html(page)
         if not info["items"]:
             raise ValueError("Auf der Seite habe ich keine Zutaten-Liste gefunden. Kopier sie lieber als Text rein.")
-        result.update(source="link", name=info["name"], items=info["items"], steps=info.get("steps"))
+        result.update(source="link", name=info["name"], items=info["items"], steps=info.get("steps"), source_url=first[:500])
         img_url = info.get("image_url")
         if isinstance(img_url, str) and img_url.startswith("http"):
             img = await _download(hass, session, img_url, MAX_IMAGE)

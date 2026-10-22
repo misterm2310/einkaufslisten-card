@@ -395,6 +395,42 @@ def _clean_hours(value: Any) -> list[Any] | None:
     return None if all(d is None for d in out) else out
 
 
+def _clean_source(value: Any) -> str | None:
+    """🔗 Nur echte http(s)-Links (höchstens 500 Zeichen) als Rezept-Quelle zulassen."""
+    text = str(value or "").strip()
+    if len(text) > 500 or not re.match(r"^https?://[^\s<>\"']+$", text, re.IGNORECASE):
+        return None
+    return text
+
+
+def _clean_year_stats(raw: Any) -> dict[str, dict[str, Any]]:
+    """🎁 Zähler aus dem Speicher prüfen: nur Zahlen und Namen, nichts anderes."""
+    out: dict[str, dict[str, Any]] = {}
+    if not isinstance(raw, dict):
+        return out
+
+    def counts(d: Any, limit: int) -> dict[str, int]:
+        if not isinstance(d, dict):
+            return {}
+        return {str(k)[:80]: int(v) for k, v in list(d.items())[:limit] if isinstance(v, (int, float)) and v >= 0}
+
+    for y, s in raw.items():
+        if not (isinstance(y, str) and y.isdigit() and isinstance(s, dict)):
+            continue
+        months = s.get("months")
+        if not (isinstance(months, list) and len(months) == 12 and all(isinstance(v, (int, float)) for v in months)):
+            months = [0] * 12
+        out[y] = {
+            "added": int(s.get("added") or 0),
+            "bought": int(s.get("bought") or 0),
+            "who": counts(s.get("who"), 30),
+            "items": counts(s.get("items"), 400),
+            "stores": counts(s.get("stores"), 60),
+            "months": [int(v) for v in months],
+        }
+    return out
+
+
 class EinkaufslisteManager:
     """Verwaltet alle Daten der Einkaufsliste."""
 
@@ -437,6 +473,9 @@ class EinkaufslisteManager:
         self.auto_shop: bool = False  # 📍 Laden-Modus geht in der Zone von selbst an – ein Schalter für alle Geräte
         self.view_prefs: dict[str, dict[str, bool]] = {}  # 👁️ Listenansicht: "_all" = für alle, sonst Benutzer-ID -> {Schlüssel: an/aus}
         self.spend_auto: bool = False  # 🧾 Protokoll von selbst anbieten, wenn alles abgehakt ist (Option, standardmäßig aus)
+        self.year_on: bool = True  # 🎁 Jahresrückblick zählt mit (nur Zähler, keine Einzelheiten) – für alle an/aus
+        self.year_stats: dict[str, dict[str, Any]] = {}  # 🎁 Zähler pro Jahr: eingetragen, gekauft, Produkte, Personen, Geschäfte, Monate
+        self.year_since: str | None = None  # 🎁 seit wann gezählt wird (Datum)
         self.stat_start = _monotonic()  # 📊 Zähler für die Diagnose (Änderungen / gesendete Pakete seit dem Start)
         self.stat_changes = 0
         self.stat_pushes = 0
@@ -655,6 +694,10 @@ class EinkaufslisteManager:
         self.privacy = bool(data.get("privacy", False))
         self.spend = bool(data.get("spend", False))
         self.spend_auto = bool(data.get("spend_auto", False))
+        self.year_on = bool(data.get("year_on", True))
+        self.year_stats = _clean_year_stats(data.get("year_stats"))
+        ys = data.get("year_since")
+        self.year_since = ys if isinstance(ys, str) and len(ys) <= 10 else None
         self.auto_shop = bool(data.get("auto_shop", False))
         self.view_prefs = {
             str(u): _clean_view(p)
@@ -738,6 +781,9 @@ class EinkaufslisteManager:
             "privacy": self.privacy,
             "spend": self.spend,
             "spend_auto": self.spend_auto,
+            "year_on": self.year_on,
+            "year_stats": self.year_stats,
+            "year_since": self.year_since,
             "auto_shop": self.auto_shop,
             "cleanup": self.cleanup_cfg,
             "view_prefs": self.view_prefs,
@@ -840,6 +886,7 @@ class EinkaufslisteManager:
                 "cards_on": self.cards_on,
                 "spend": self.spend,
                 "spend_auto": self.spend_auto,
+                "year_on": self.year_on,
                 "auto_shop": self.auto_shop,
                 "todo_syncs": [self._todo_sync_info(c) for c in self.todo_syncs],
                 "mail_import": self._mail_import_info(),
@@ -1308,6 +1355,7 @@ class EinkaufslisteManager:
                     "id": c["id"], "name": c["name"], "code": c["code"], "fmt": c.get("fmt", "auto"),
                     "color": c.get("color"), "shared": c.get("owner") is None,
                     "owner_name": c.get("owner_name"), "has_photo": bool(c.get("photo")),
+                    "store_id": c["store_id"] if c.get("store_id") and self.store_by_id(c.get("store_id")) else None,  # 🏪 Nr. „Kundenkarte am Geschäft“
                 })
         return sorted(out, key=lambda c: (c["shared"], c["name"].lower()))  # erst die eigenen, dann die für alle
 
@@ -1341,8 +1389,17 @@ class EinkaufslisteManager:
             raise ValueError("Das sind schon sehr viele Kartenfotos – bitte erst bei einer Karte eins löschen.")
         return text
 
+    def _card_store(self, store_id: Any) -> str | None:
+        """🏪 Geschäft einer Karte prüfen (leer = keins)."""
+        sid = str(store_id or "").strip()
+        if not sid:
+            return None
+        if self.store_by_id(sid) is None:
+            raise ValueError("Dieses Geschäft gibt es nicht (mehr).")
+        return sid
+
     def add_card(self, name: Any, code: Any, fmt: Any, color: Any, shared: bool, user_id: str | None, user_name: str | None,
-                 photo: Any = None) -> dict[str, Any]:
+                 photo: Any = None, store_id: Any = None) -> dict[str, Any]:
         """💳 Neue Karte: „für alle“ oder nur für den, der sie anlegt. Mit Foto geht sie auch ohne lesbaren Code."""
         fields = self._card_checked(name, code, fmt, color, bool(photo))
         if len(self.cards) >= 80:
@@ -1352,6 +1409,9 @@ class EinkaufslisteManager:
         if any(c["name"].lower() == fields["name"].lower() and (c.get("owner") is None or c.get("owner") == user_id) for c in self.cards):
             raise ValueError(f"Die Karte „{fields['name']}“ gibt es schon.")
         card = {"id": _new_id(), **fields, "owner": None if shared else user_id, "owner_name": None if shared else user_name}
+        sid = self._card_store(store_id)
+        if sid:
+            card["store_id"] = sid
         if photo:
             card["photo"] = self._card_photo_checked(photo)
         self.cards.append(card)
@@ -1375,6 +1435,12 @@ class EinkaufslisteManager:
                for c in self.cards):
             raise ValueError(f"Die Karte „{new['name']}“ gibt es schon.")
         card.update(new)
+        if "store_id" in fields:
+            sid = self._card_store(fields["store_id"])
+            if sid:
+                card["store_id"] = sid
+            else:
+                card.pop("store_id", None)
         if photo:
             card["photo"] = photo
         else:
@@ -2438,7 +2504,76 @@ class EinkaufslisteManager:
             for k, _ in oldest[: len(self.history) - HISTORY_LIMIT]:
                 self.history.pop(k, None)
 
+    def _year_count(self, kind: str, item: dict[str, Any], who: str | None) -> None:
+        """🎁 Jahresrückblick: nur zählen (Anzahl pro Produkt, Person, Geschäft und Monat) – keine Einzelheiten, bleibt in Home Assistant."""
+        if not self.year_on:
+            return
+        now = dt_util.now()
+        s = self.year_stats.setdefault(
+            str(now.year), {"added": 0, "bought": 0, "who": {}, "items": {}, "stores": {}, "months": [0] * 12}
+        )
+        if self.year_since is None:
+            self.year_since = now.date().isoformat()
+        name = str(item.get("name") or "").strip()
+        if kind == "add":
+            s["added"] += 1
+            if who and len(s["who"]) < 30:
+                s["who"][who] = s["who"].get(who, 0) + 1
+            elif who in s["who"]:
+                s["who"][who] += 1
+            return
+        s["bought"] += 1
+        s["months"][now.month - 1] += 1
+        if name:
+            s["items"][name] = s["items"].get(name, 0) + 1
+            if len(s["items"]) > 400:  # klein halten: die seltensten Produkte fallen raus
+                keep = sorted(s["items"].items(), key=lambda kv: -kv[1])[:300]
+                s["items"] = dict(keep)
+        sid = item.get("store_id")
+        if sid:
+            s["stores"][sid] = s["stores"].get(sid, 0) + 1
+
+    def year_summary(self, year: int | None = None) -> dict[str, Any]:
+        """🎁 Jahresrückblick für die Karte: Gesamtzahlen und Bestenlisten (höchstens 5 Produkte)."""
+        years = sorted(self.year_stats)
+        y = str(year) if year and str(year) in self.year_stats else (years[-1] if years else str(dt_util.now().year))
+        s = self.year_stats.get(y) or {"added": 0, "bought": 0, "who": {}, "items": {}, "stores": {}, "months": [0] * 12}
+        top = lambda d, n: [[k, v] for k, v in sorted(d.items(), key=lambda kv: (-kv[1], kv[0]))[:n]]  # noqa: E731
+        stores = []
+        for sid, n in top(s["stores"], 3):
+            st = self.store_by_id(sid)
+            if st:
+                stores.append([st["name"], n])
+        months = list(s["months"])
+        best = max(range(12), key=lambda i: months[i]) if any(months) else None
+        return {
+            "on": self.year_on,
+            "year": int(y),
+            "years": [int(v) for v in years],
+            "since": self.year_since,
+            "added": s["added"],
+            "bought": s["bought"],
+            "items": top(s["items"], 5),
+            "who": top(s["who"], 3),
+            "stores": stores,
+            "months": months,
+            "best_month": best,
+        }
+
+    def set_year_on(self, on: bool) -> None:
+        """🎁 Jahresrückblick für alle an/aus (gezählte Werte bleiben erhalten)."""
+        self.year_on = bool(on)
+        self._changed()
+
+    def reset_year(self) -> None:
+        """🎁 Alle Zähler des Jahresrückblicks löschen."""
+        self.year_stats = {}
+        self.year_since = None
+        self._changed()
+
     def _fire_added(self, item: dict[str, Any], readded: bool) -> None:
+        if not readded:
+            self._year_count("add", item, item.get("added_by"))
         store = self.store_by_id(item["store_id"])
         cat = self.category_by_id(item["category_id"])
         recipe = self.recipe_by_id(item.get("recipe_id"))
@@ -2460,6 +2595,7 @@ class EinkaufslisteManager:
 
     def _fire_bought(self, item: dict[str, Any], by: str | None) -> None:
         """🛍️ Ein Artikel wurde abgehakt (= gekauft) – für eigene Automationen, z. B. Inventar."""
+        self._year_count("bought", item, by)
         store = self.store_by_id(item.get("store_id"))
         cat = self.category_by_id(item.get("category_id"))
         recipe = self.recipe_by_id(item.get("recipe_id"))
@@ -3841,6 +3977,7 @@ class EinkaufslisteManager:
         servings_unit: str | None = None,
         group: str | None = None,
         ai: bool = False,
+        source: str | None = None,
     ) -> dict[str, Any]:
         recipe = {
             "id": _new_id(),
@@ -3854,6 +3991,9 @@ class EinkaufslisteManager:
             "group": self._group(group),
             "plan": "",
         }
+        src = _clean_source(source)
+        if src:  # 🔗 Woher das Rezept kommt (Link) – für „Original öffnen“
+            recipe["source"] = src
         if ai:  # 🤖 von der KI vorgeschlagen – bleibt für immer dran, auch nach dem Bearbeiten
             recipe["ai"] = True
         self.recipes.append(recipe)
@@ -3985,6 +4125,12 @@ class EinkaufslisteManager:
             recipe["group"] = self._group(fields["group"])
         if "plan" in fields:
             recipe["plan"] = _plan(fields["plan"])
+        if "source" in fields:
+            src = _clean_source(fields["source"])
+            if src:
+                recipe["source"] = src
+            else:
+                recipe.pop("source", None)
         self._changed()
         return recipe
 

@@ -314,7 +314,7 @@ document.addEventListener("visibilitychange", async () => {
 });
 
 // ---------------------------------------------------------------- 🗄️ Ohne Netz: gemerkte Antworten (Fotos, Produkte, Verlauf …)
-const READ_CACHE = new Set(["einkaufsliste/photo/get", "einkaufsliste/products", "einkaufsliste/log/get", "einkaufsliste/barcode/info", "einkaufsliste/import/todo_lists"]);
+const READ_CACHE = new Set(["einkaufsliste/photo/get", "einkaufsliste/products", "einkaufsliste/log/get", "einkaufsliste/year/get", "einkaufsliste/barcode/info", "einkaufsliste/import/todo_lists"]);
 const cacheKey = (msg) => BASE + "__ws/" + encodeURIComponent(JSON.stringify(msg));
 async function cachePut(msg, res) { try { const c = await caches.open("einkaufsliste-daten"); await c.put(cacheKey(msg), new Response(JSON.stringify(res), { headers: { "Content-Type": "application/json" } })); } catch (_) { /* egal */ } }
 async function cacheGet(msg) { try { const c = await caches.open("einkaufsliste-daten"); const r = await c.match(cacheKey(msg)); return r ? r.json() : undefined; } catch (_) { return undefined; } }

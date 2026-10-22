@@ -106,6 +106,9 @@ def async_register(hass: HomeAssistant) -> None:
         ws_spend_set,
         ws_auto_shop_set,
         ws_spend_auto_set,
+        ws_year_get,
+        ws_year_set,
+        ws_year_reset,
         ws_cleanup_settings,
         ws_view_set,
         ws_purchases_get,
@@ -488,11 +491,12 @@ RECIPE_ITEM = vol.Schema(
         vol.Optional("servings_unit"): vol.In(["persons", "trays", "forms"]),
         vol.Optional("group"): vol.Any(None, str),
         vol.Optional("ai"): bool,
+        vol.Optional("source"): OPT_STR,
     }
 )
 @callback
 def ws_recipe_add(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: m.add_recipe(msg["name"], msg["items"], msg.get("icon"), msg.get("steps"), msg.get("heat"), msg.get("servings"), msg.get("servings_unit"), msg.get("group"), bool(msg.get("ai"))))
+    _run(hass, connection, msg, lambda m: m.add_recipe(msg["name"], msg["items"], msg.get("icon"), msg.get("steps"), msg.get("heat"), msg.get("servings"), msg.get("servings_unit"), msg.get("group"), bool(msg.get("ai")), msg.get("source")))
 
 
 @websocket_api.websocket_command(
@@ -547,11 +551,12 @@ async def ws_proposal_reject(hass, connection, msg):
         vol.Optional("group"): vol.Any(None, str),
         vol.Optional("step_map"): [vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=999)))],
         vol.Optional("plan"): vol.In(["", "wish", "week"]),
+        vol.Optional("source"): OPT_STR,
     }
 )
 @callback
 def ws_recipe_update(hass, connection, msg):
-    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan")
+    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan", "source")
     _run(hass, connection, msg, lambda m: m.update_recipe(msg["recipe_id"], **fields))
 
 
@@ -875,6 +880,29 @@ def ws_mascot(hass, connection, msg):
 def ws_spend_set(hass, connection, msg):
     """🧾 Einkaufs-Protokoll für alle an/aus."""
     _run(hass, connection, msg, lambda m: m.set_spend(msg["on"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/year/get", vol.Optional("year"): vol.Coerce(int)})
+@callback
+def ws_year_get(hass, connection, msg):
+    """🎁 Jahresrückblick lesen (nur Zahlen und Bestenlisten)."""
+    _run(hass, connection, msg, lambda m: m.year_summary(msg.get("year")))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/year/set", vol.Required("on"): bool})
+@websocket_api.require_admin
+@callback
+def ws_year_set(hass, connection, msg):
+    """🎁 Jahresrückblick für alle an/aus (nur Admins)."""
+    _run(hass, connection, msg, lambda m: m.set_year_on(msg["on"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/year/reset"})
+@websocket_api.require_admin
+@callback
+def ws_year_reset(hass, connection, msg):
+    """🎁 Alle Zähler des Jahresrückblicks löschen (nur Admins)."""
+    _run(hass, connection, msg, lambda m: m.reset_year())
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/spend/auto", vol.Required("on"): bool})
@@ -1328,6 +1356,7 @@ CARD_FIELDS = {
     vol.Optional("fmt"): str,
     vol.Optional("color"): OPT_STR,
     vol.Optional("photo"): str,
+    vol.Optional("store_id"): OPT_STR,  # 🏪 Kundenkarte am Geschäft
 }
 
 
@@ -1340,7 +1369,7 @@ def ws_card_add(hass, connection, msg):
     _run(
         hass, connection, msg,
         lambda m: m.add_card(msg["name"], msg["code"], msg.get("fmt"), msg.get("color"), msg["shared"],
-                             _uid(connection), _user_name(hass, connection), msg.get("photo")),
+                             _uid(connection), _user_name(hass, connection), msg.get("photo"), msg.get("store_id")),
     )
 
 
@@ -1353,12 +1382,13 @@ def ws_card_add(hass, connection, msg):
         vol.Optional("fmt"): str,
         vol.Optional("color"): OPT_STR,
         vol.Optional("photo"): str,
+        vol.Optional("store_id"): OPT_STR,
     }
 )
 @callback
 def ws_card_update(hass, connection, msg):
     """💳 Karte ändern."""
-    fields = _pick(msg, "name", "code", "fmt", "color", "photo")
+    fields = _pick(msg, "name", "code", "fmt", "color", "photo", "store_id")
     _run(hass, connection, msg, lambda m: m.update_card(msg["card_id"], _uid(connection), **fields))
 
 

@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.22-beta.5";
+const EL_VERSION = "2.76.22-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.21"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -237,9 +237,13 @@ const EL_HELP = {
   recipes: ["list", [
     "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
     "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
+    "<b>🔗 Quelle &amp; Original:</b> Beim Import per Link merkt sich das Rezept die Adresse (im Editor unter dem Namen änderbar, auch von Hand eintragbar). In der Rezeptliste öffnet „Original öffnen“ die Seite. <b>👨‍🍳 Kochmodus:</b> Er merkt sich pro Rezept den Schritt und fragt beim nächsten Start, ob du dort weitermachen willst.",
+    "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (nur für Admins) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
   ], [
     "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; a list like the categories: tap a group = change name, colour and icon, ⌃⌄ = order; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
     "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text, recipe link or “📷 From photo”), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
+    "<b>🔗 Source &amp; original:</b> when importing by link the recipe remembers the address (editable under the name in the editor, can also be typed in). In the recipe list “Open original” opens the page. <b>👨‍🍳 Cook mode:</b> it remembers the step per recipe and asks at the next start whether you want to continue there.",
+    "<b>🍟 Air fryer:</b> if a step has “Heißluftfritteuse” with a mode (air fry, bake, grill or reheat), temperature and minutes and <b>Airfryer Control</b> is installed, cook mode shows the button “Send to Airfryer Control” (admins only). You pick the basket (it always asks); the fryer is prepared, <b>you press Start on the device</b>.",
   ]],
   listview: ["view", [
     "Was beim Artikel zu sehen ist, die Leiste und die Eingabefelder oben sowie die <b>Schriftgröße</b> – das hier ist der Standard <b>für alle</b>. Jeder kann es für sich selbst anders einstellen: ganz unten unter der Liste mit <b>👁️ Ansicht</b>, ohne PIN. Die Seite besteht aus <b>Kästen zum Aufklappen</b> (Schriftgröße, Oben &amp; beim Eintragen, Beim Artikel) – immer nur einer ist offen.",
@@ -258,8 +262,10 @@ const EL_HELP = {
   ]],
   cards: ["extras", [
     "Der Schalter gilt für alle. Ob eine Karte „für alle“ oder „nur ich“ ist, wählst du beim Anlegen der Karte. „Meine Karten“ und „Karte ändern“ sind Seiten in der Karte: ← oben links geht zurück.",
+    "<b>🏪 Karte am Geschäft:</b> Beim Bearbeiten einer Karte kannst du ein Geschäft wählen. Im Laden-Modus an diesem Geschäft steht die Karte in „Meine Karten“ ganz oben (markiert mit 📍) – alle anderen Karten bleiben darunter.",
   ], [
     "The switch applies to everyone. Whether a card is “for everyone” or “only me” you choose when creating the card. “My cards” and “Edit card” are pages inside the card: ← at the top left goes back.",
+    "<b>🏪 Card at a store:</b> when editing a card you can pick a store. In shopping mode at that store the card is at the very top of “My cards” (marked with 📍) – all other cards stay below.",
   ]],
   notetpl: ["extras", [
     "Kleine Knöpfe unter dem ✏️ Eigene-Notiz-Feld (beim Eintragen, Bearbeiten und im Katalog). Ein Text pro Zeile, gilt für alle Geräte.",
@@ -339,6 +345,11 @@ const EL_HELP = {
   ], [
     "With a PIN the ⚙️ only opens after entering it (4–8 digits, remembered for 10 minutes on this device). The 🔓 in the bar at the top locks at once. Forgot it? An admin resets it: Settings → Devices &amp; services → Shopping list → Configure. The list itself stays open for everyone.",
   ]],
+  year: ["app", [
+    "Euer Rückblick aufs Jahr: wie viele Artikel gekauft und eingetragen wurden, die 5 häufigsten Produkte, wer am meisten einträgt, das Lieblingsgeschäft und der stärkste Monat. Es wird <b>nur gezählt</b> (Anzahl pro Produkt, Person, Geschäft und Monat) und bleibt in deinem Home Assistant. Gezählt wird ab dem Tag, an dem es eingebaut wurde – für früher gibt es keine Zahlen. Ein Admin kann es für alle ausschalten und die Zähler löschen.",
+  ], [
+    "Your look back at the year: how many items were bought and added, the 5 most frequent products, who adds the most, the favourite store and the busiest month. It only <b>counts</b> (number per product, person, store and month) and stays in your Home Assistant. Counting starts the day it was added – there are no numbers for earlier. An admin can switch it off for everyone and delete the counters.",
+  ]],
   privacy: ["app", [
     "Zeigt in einfachen Worten, was in deinem Home Assistant bleibt und was ins Internet geht. Dort schaltet ein Admin auch <b>„Datenschutz an“</b> für alle Geräte: keine Kamera, keine Fotos, kein Barcode-Scanner, kein KI-Kochen.",
   ], [
@@ -351,7 +362,7 @@ const EL_HELP_GROUPS = [ // Kapitel der Einstellungs-Anleitung: [Schlüssel, Ico
   ["data", "💾", "Daten", "Data", ["transfer", "log", "cleanup"], "#1e88e5"],
   ["health", "🩺", "Gesundheit", "Health", ["check", "errors", "stats"], "#00897b"],
   ["view", "👁️", "Ansicht", "View", ["listview", "labels", "theme"], "#1e88e5"],
-  ["app", "📱", "App & Info", "App & info", ["app", "pin", "privacy"], "#3949ab"],
+  ["app", "📱", "App & Info", "App & info", ["app", "pin", "privacy", "year"], "#3949ab"],
 ];
 
 const EL_HELP_TITLES = { // [Titel de, Titel en, Icon]
@@ -359,7 +370,7 @@ const EL_HELP_TITLES = { // [Titel de, Titel en, Icon]
   offers: ["Angebote", "Offers", "🏷️"], spend: ["Einkaufs-Protokoll", "Purchase log", "🧾"], cards: ["Kundenkarten", "Loyalty cards", "💳"], notetpl: ["Notiz-Vorlagen", "Note templates", "📝"], aicook: ["KI-Kochen", "AI cooking", "🤖"], autoshop: ["Laden-Modus automatisch", "Store mode automatic", "📍"], mascot: ["Maskottchen", "Mascot", "🛒"], labels: ["Beschriftungen", "Labels", "🏷️"],
   transfer: ["Import & Sicherung", "Import & backup", "📥"], log: ["Verlauf", "History", "🕘"], cleanup: ["Aufräumen", "Tidy up", "🧹"],
   check: ["Alles ok?", "All OK?", "✅"], errors: ["Fehler-Protokoll", "Error log", "🐞"], stats: ["Ressourcen", "Resources", "📊"],
-  listview: ["Listenansicht – für alle", "List view – for everyone", "👁️"], app: ["Offline-App", "Offline app", "📱"], theme: ["Hell / Dunkel", "Light / dark", "🌓"], pin: ["Schutz (PIN)", "Protection (PIN)", "🔒"], privacy: ["Datenschutz", "Privacy", "🛡️"],
+  listview: ["Listenansicht – für alle", "List view – for everyone", "👁️"], app: ["Offline-App", "Offline app", "📱"], theme: ["Hell / Dunkel", "Light / dark", "🌓"], pin: ["Schutz (PIN)", "Protection (PIN)", "🔒"], privacy: ["Datenschutz", "Privacy", "🛡️"], year: ["Euer Jahr in Einkäufen", "Your year in shopping", "🎁"],
 };
 const EL_NEWS_MAX = 15;
 // 🔢 Versionen vergleichen, auch Testversionen: 2.76.15-beta.5 ist neuer als 2.76.14, aber älter als 2.76.15. > 0 = a neuer, < 0 = b neuer
@@ -384,12 +395,15 @@ const EL_BETA_NEWS = [
   ["🍳 <b>Timer-Laufband:</b> Vor jedem Timer steht jetzt ein eigenes Symbol (Kochmütze mit Wecker, in den Farben der Einkaufsliste) statt ⏲️ und ⏰.",
    "🍳 <b>Timer ticker:</b> Every timer now starts with its own icon (chef hat with a clock, in the shopping list colours) instead of ⏲️ and ⏰.",
    "beta.5"],
+  ["🎁 <b>Euer Jahr in Einkäufen</b> (⚙️ → App &amp; Info): Rückblick mit Top-Produkten, Wer trägt am meisten ein, Lieblingsgeschäft und stärkstem Monat – es zählt ab jetzt, nur Zahlen. 💳 <b>Kundenkarte am Geschäft:</b> im Laden-Modus steht sie oben (📍). ▥ Scan sagt „steht schon drauf“. 👨‍🍳 Kochmodus merkt sich den Schritt pro Rezept. 🔗 Rezept merkt sich die Quelle (<b>Original öffnen</b>). Airfryer-Control-Symbol im Kochmodus: Werte an die Fritteuse schicken (nur Admins, nur mit Airfryer Control).",
+   "🎁 <b>Your year in shopping</b> (⚙️ → App &amp; info): look back with top products, who adds the most, favourite store and busiest month – counts from now on, numbers only. 💳 <b>Card at a store:</b> in shopping mode it is at the top (📍). ▥ Scan says “already on it”. 👨‍🍳 Cook mode remembers the step per recipe. 🔗 Recipes remember their source (<b>Open original</b>). Airfryer Control icon in cook mode: send the values to the fryer (admins only, only with Airfryer Control).",
+   "beta.6"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
   transfer: "#1e88e5", log: "#757575", cleanup: "#8d6e63", check: "#43a047", errors: "#e53935", stats: "#00897b",
-  listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", credits: "#ec407a",
+  listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", year: "#e91e63", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
   ["🔥 <b>Backofen &amp; Co. beim Schritt:</b> Im Rezept-Editor steht Backofen &amp; Co. unter „Zubereitung“. Jeder Eintrag (auch Kühlschrank 🧊, Tiefkühler ❄️ und Herd-Modus „Braten“) kann bei bestimmten Schritten erscheinen, ist einklappbar, verschiebbar und lässt sich duplizieren. Im Kochmodus steht die orange Info nur beim richtigen Schritt, bei mehreren Geräten wählst du am Start, womit gegart wird, und ändert sich das Rezept beim Kochen, zieht der Kochmodus sofort nach.",
@@ -1356,6 +1370,8 @@ function showPhotoOverlay(src, title, plain = false) { // plain = nur groß anse
 }
 
 // 🔥 Backofen & Co.
+// 🍟 Einkaufsliste-Programm → Airfryer-Control-Programm
+const EL_FRYER_MODES = { "Heißluft": "airfry", "Backen": "bake", "Grillen": "grill", "Aufwärmen": "reheat" };
 const HEAT_DEVICES = {
   "Backofen": { icon: "🔥", modes: ["Ober-/Unterhitze", "Umluft", "Heißluft", "Grill", "Umluft + Grill", "Unterhitze", "Pizzastufe"], unit: "°C" },
   "Heißluftfritteuse": { icon: "🍟", modes: ["Heißluft", "Backen", "Grillen", "Aufwärmen"], unit: "°C" },
@@ -3129,6 +3145,23 @@ label.btn { cursor:pointer; }
 .refrep.done > .iconbtn { display:inline-flex; }
 .refrep > .hint { margin:0; white-space:pre-line; overflow-wrap:anywhere; max-height:45vh; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; }
 .refrep.done { padding-right:42px; } /* Platz für das ✖ – so liegt es weder über dem Text noch über dem Scrollbalken */
+.yearbox { margin:6px 0; }
+.yearbox .yrtop { display:flex; gap:8px; margin:6px 0; }
+.yearbox .yrbig { flex:1; padding:10px; border-radius:12px; background:var(--secondary-background-color, rgba(127,127,127,.12)); text-align:center; }
+.yearbox .yrbig b { display:block; font-size:1.8em; line-height:1.1; }
+.yearbox .yrbig small { color:var(--secondary-text-color); }
+.yearbox h4 { margin:12px 0 4px; font-size:1em; }
+.yearbox .yrrow { display:flex; align-items:center; gap:8px; margin:3px 0; }
+.yearbox .yrrow .nm { flex:0 0 38%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.yearbox .yrrow .bar { flex:1; height:10px; border-radius:5px; background:var(--divider-color, rgba(127,127,127,.2)); overflow:hidden; }
+.yearbox .yrrow .bar i { display:block; height:100%; border-radius:5px; background:var(--primary-color,#03a9f4); }
+.yearbox .yrrow .grow { flex:1; }
+.yearbox .yrrow .n { flex:0 0 auto; min-width:2.2em; text-align:right; color:var(--secondary-text-color); }
+.yearbox .yrmonths { display:flex; align-items:flex-end; gap:3px; height:64px; margin:6px 0 2px; }
+.yearbox .yrmonths span { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; font-size:.65em; color:var(--secondary-text-color); }
+.yearbox .yrmonths span i { display:block; width:100%; min-height:2px; border-radius:3px 3px 0 0; background:var(--primary-color,#03a9f4); opacity:.55; }
+.yearbox .yrmonths span.best i { opacity:1; background:#e91e63; }
+.yearbox .yrchips { display:flex; gap:6px; margin:6px 0; }
 .btnrow { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 /* 🔘 Knöpfe überall gleich: Hauptsache = blau gefüllt · Nebensache = umrandet · Gefahr = rot umrandet – Ecken und Höhe wie die Eingabefelder */
 .btn { box-sizing:border-box; min-height:40px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); background:transparent; color:var(--primary-text-color); border-radius:12px; padding:8px 14px; cursor:pointer; font:inherit; font-size:.9em; font-weight:500; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:background .15s, border-color .15s; }
@@ -3865,7 +3898,7 @@ function applyQueued(data, list, hass) {
         break;
       case "einkaufsliste/recipe/update": {
         const r = (data.recipes || []).find((x) => x.id === m.recipe_id);
-        if (r) { for (const k of ["name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "plan"]) if (k in m) r[k] = m[k]; r._queued = true; }
+        if (r) { for (const k of ["name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "plan", "source"]) if (k in m) r[k] = m[k]; r._queued = true; }
         break;
       }
       case "einkaufsliste/recipe/remove":
@@ -6452,6 +6485,11 @@ ${(() => {
         </div>
         ${elIsPc() ? `<p class="hint">⌨️ Klick = markieren · Doppelklick oder Enter = bearbeiten · ↑↓ = blättern · Esc = zurück</p>` : ""}`}
         <div id="prodList"><p class="hint">Lade Produkte …</p></div>`}` },
+      { key: "year", icon: "mdi:gift-outline", title: "Euer Jahr in Einkäufen", info: this._data.settings?.year_on === false ? "aus" : "Rückblick", html: () => `
+        ${this._swHtml("year-toggle", this._data.settings?.year_on !== false, "Jahresrückblick zählen")}
+        <div id="yearBox" class="yearbox"><p class="hint">…</p></div>
+        <div class="btnrow"><button class="btn" data-act="year-reset"><ha-icon icon="mdi:delete-sweep-outline"></ha-icon>Zähler löschen</button></div>
+        <p class="hint">Es wird nur gezählt (Anzahl pro Produkt, Person, Geschäft und Monat) und bleibt in deinem Home Assistant. Der Schalter und „Zähler löschen“ gelten für alle – nur Admins dürfen sie benutzen.</p>` },
       { key: "news", icon: "mdi:new-box", title: "Was ist neu", info: `Version ${EL_NEWS_VERSION}`, html: () => this._newsHtml() },
       { key: "privacy", icon: "mdi:shield-lock-outline", title: "Datenschutz", info: this._privacyOn() ? "an – keine Kamera/Fotos" : "aus", html: () => this._privacyHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
@@ -6598,6 +6636,7 @@ ${(() => {
         ${this._hintsBottom(cur.html())}
       </div>`;
     if (cur.key === "log") { this._renderLogList(); this._loadLog(); }
+    if (cur.key === "year") this._loadYear();
     clearTimeout(this._catTimer); // kein automatisches Zuklappen mehr bei den Kategorien
     if (cur.key === "stats") this._loadStats();
     if (cur.key === "errors") this._loadErrors();
@@ -6644,7 +6683,7 @@ ${(() => {
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
       ["👁️ Ansicht", ["listview", "labels", "theme"]],
-      ["📱 App & Info", ["app", "pin", "privacy", "news", "credits"]],
+      ["📱 App & Info", ["app", "pin", "privacy", "year", "news", "credits"]],
     ];
     const kw = {
       stores: "laden markt zone standort icon eigenmarken", categories: "kategorie farbe reihenfolge", persons: "für wen namen familie",
@@ -6653,13 +6692,13 @@ ${(() => {
       notetpl: "notiz vorlagen eigene notiz bio laktose chips", aicook: "ki kochen assistent chatgpt openai gemini ollama rezept idee",
       autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
       log: "verlauf wer wann", listview: "ansicht anzeigen ausblenden einblenden menge notiz foto stern datum wer liste", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel sensor", errors: "fehler protokoll kopieren",
-      stats: "ressourcen speicher verbrauch last auslastung", app: "offline app startbildschirm", theme: "hell dunkel", labels: "beschriftungen text icons beschriften", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr kamera foto scanner sperre", news: "neu version", credits: "über danke lizenz github",
+      year: "jahr rückblick statistik top produkte lieblingsgeschäft monat zählen", stats: "ressourcen speicher verbrauch last auslastung", app: "offline app startbildschirm", theme: "hell dunkel", labels: "beschriftungen text icons beschriften", pin: "pin schutz sperre", privacy: "datenschutz daten internet open food facts marktguru ocr kamera foto scanner sperre", news: "neu version", credits: "über danke lizenz github",
     };
     const q = (this._setQ || "").trim().toLowerCase();
     const byKey = Object.fromEntries(sections.map((x) => [x.key, x]));
     const st = this._data?.settings || {};
     // 🎚️ Einfache An/Aus-Sachen: Schalter gleich in der Zeile (Antippen der Zeile öffnet trotzdem die Erklärung)
-    const sw = { mascot: ["mascot-toggle", !!st.mascot], cards: ["cards-toggle", !!st.cards_on], autoshop: ["autoshop-toggle", !!st.auto_shop], spend: ["spend-toggle", !!st.spend], labels: ["labels-toggle", !!st.labels] };
+    const sw = { mascot: ["mascot-toggle", !!st.mascot], cards: ["cards-toggle", !!st.cards_on], autoshop: ["autoshop-toggle", !!st.auto_shop], spend: ["spend-toggle", !!st.spend], year: ["year-toggle", st.year_on !== false], labels: ["labels-toggle", !!st.labels] };
     const isOn = { offers: !!st.offers?.enabled, aicook: !!st.ai_on, ...Object.fromEntries(Object.entries(sw).map(([k, v]) => [k, v[1]])) };
     const out = groups.map(([title, keys]) => {
       const all = keys.map((k) => byKey[k]).filter(Boolean);
@@ -7529,6 +7568,38 @@ ${(() => {
       <p class="hint">Zeichen: ✍️ in der Karte · ▥ gescannt · 🍳 Rezept · 🔗 zusammengelegt · 🧹 automatisch aufgeräumt · 🔁 von einer anderen Liste geholt · 📧 per E-Mail · 🤖 Automation/Dienst</p>`;
   }
 
+  // 🎁 Euer Jahr in Einkäufen: Zahlen holen und als Karten, Balken und Monats-Säulen zeigen
+  async _loadYear() {
+    let r = null;
+    try { r = await this._ws({ type: "einkaufsliste/year/get", ...(this._yearPick ? { year: this._yearPick } : {}) }); } catch (_) { /* Meldung kam schon */ }
+    if (this._view !== "settings" || this._setSec !== "year") return;
+    const box = this.$("yearBox");
+    if (box && r) box.innerHTML = this._yearHtml(r);
+  }
+
+  _yearHtml(r) {
+    const en = EL_LANG !== "de";
+    const T = (de, e) => (en ? e : de);
+    const MON = en ? ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] : ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+    const MS = en ? ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"] : ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+    const chips = (r.years || []).length > 1 ? `<div class="yrchips">${r.years.map((y) => `<button class="btn ${y === r.year ? "primary" : ""}" data-act="year-pick" data-y="${y}">${y}</button>`).join("")}</div>` : "";
+    const since = r.since ? new Date(r.since + "T12:00:00").toLocaleDateString(en ? "en-GB" : "de-DE") : "";
+    if (!r.on && !r.added && !r.bought) return `<p class="hint">${T("Der Jahresrückblick ist aus – es wird nichts gezählt.", "The yearly look back is off – nothing is counted.")}</p>`;
+    if (!r.added && !r.bought) return `<p class="hint">${T("Noch nichts gezählt – ab jetzt zählt es mit. Schau in ein paar Wochen wieder rein! 🎁", "Nothing counted yet – it counts from now on. Check back in a few weeks! 🎁")}</p>`;
+    const bar = (rows) => { const max = Math.max(1, ...rows.map((x) => x[1])); return rows.map(([nm, n]) => `<div class="yrrow"><span class="nm">${esc(nm)}</span><span class="bar"><i style="width:${Math.round((n / max) * 100)}%"></i></span><span class="n">${n}×</span></div>`).join(""); };
+    const medals = ["🥇", "🥈", "🥉"];
+    const best = r.best_month != null ? MON[r.best_month] : "";
+    const mmax = Math.max(1, ...r.months);
+    const months = `<div class="yrmonths">${r.months.map((n, i) => `<span class="${i === r.best_month ? "best" : ""}" title="${esc(MON[i])}: ${n}"><i style="height:${Math.round((n / mmax) * 100)}%"></i>${MS[i]}</span>`).join("")}</div>`;
+    return `${chips}
+      <div class="yrtop"><div class="yrbig"><b>${r.bought}</b><small>${T("Artikel gekauft", "items bought")}</small></div><div class="yrbig"><b>${r.added}</b><small>${T("Artikel eingetragen", "items added")}</small></div></div>
+      ${r.items.length ? `<h4>🏆 ${T("Eure Top-Produkte", "Your top products")}</h4>${bar(r.items)}` : ""}
+      ${r.who.length ? `<h4>✍️ ${T("Wer trägt am meisten ein?", "Who adds the most?")}</h4>${r.who.map(([nm, n], i) => `<div class="yrrow"><span class="nm">${medals[i] || ""} ${esc(nm)}</span><span class="grow"></span><span class="n">${n}×</span></div>`).join("")}` : ""}
+      ${r.stores.length ? `<h4>🏪 ${T("Lieblingsgeschäft", "Favourite store")}</h4>${bar(r.stores)}` : ""}
+      ${best ? `<h4>📅 ${T("Stärkster Monat", "Busiest month")}: ${esc(best)}</h4>${months}` : ""}
+      <p class="hint">${T("Gezählt wird seit", "Counting since")} ${since || "–"}${T(" – die Zahlen sind ungefähr (Rückgängig und Löschen zählen nicht zurück).", " – numbers are approximate (undo and delete do not count back).")}</p>`;
+  }
+
   async _loadLog() {
     if (this._logLoading) return;
     this._logLoading = true;
@@ -8085,6 +8156,7 @@ ${(() => {
           ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Von der Liste – alle offenen Zutaten dieses Rezepts (${onList(r)}) von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon><span class="lbl">Von Liste (${onList(r)})</span></button>` : ""}
           ${this._recipePhotoToolBtn(r)}
           ${(r.steps || "").trim() ? `<button class="btn" data-act="recipe-cook" title="Kochen"><ha-icon icon="mdi:fire"></ha-icon><span class="lbl">Kochen</span></button>` : ""}
+          ${r.source ? `<button class="btn" data-act="recipe-source" title="Original-Rezept im Browser öffnen"><ha-icon icon="mdi:open-in-new"></ha-icon><span class="lbl">Original öffnen</span></button>` : ""}
           <button class="btn" data-act="recipe-share" title="Teilen"><ha-icon icon="mdi:share-variant-outline"></ha-icon><span class="lbl">Teilen</span></button>
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`;
     };
@@ -8225,7 +8297,7 @@ ${(() => {
   _openRecipe(recipe) {
     if (this._view === "settings") this._recipeSnap = this._scrollSnap(); // merken, wie weit die Rezeptliste gescrollt war
     this._draft = recipe
-      ? { id: recipe.id, name: recipe.name, group: recipe.group || null, steps: recipe.steps || "", stepRows: this._stepLines(recipe.steps).map((t, i) => ({ k: ++this._stepSeq, t, o: i })), servings: recipe.servings || null, servings_unit: recipe.servings_unit || "persons", heat: (recipe.heat || []).map((h) => ({ ...h })), items: abcSort(recipe.items.map((i) => ({ ...i }))) }
+      ? { id: recipe.id, name: recipe.name, group: recipe.group || null, steps: recipe.steps || "", stepRows: this._stepLines(recipe.steps).map((t, i) => ({ k: ++this._stepSeq, t, o: i })), servings: recipe.servings || null, servings_unit: recipe.servings_unit || "persons", source: recipe.source || "", heat: (recipe.heat || []).map((h) => ({ ...h })), items: abcSort(recipe.items.map((i) => ({ ...i }))) }
       : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [], heat: [], stepRows: [] };
     this._view = "recipe";
     this._draftRendered = false;
@@ -8250,6 +8322,10 @@ ${(() => {
         <div class="srow recipehead">
           <ha-icon class="prev" id="rIconPrev" icon="${esc(this._recipeIcon(dr))}"></ha-icon>
           <input class="grow" id="rName" value="${esc(dr.name)}" placeholder="Name, z. B. Freitags Fisch">
+        </div>
+        <div class="srow">
+          <ha-icon class="prev" icon="mdi:link-variant"></ha-icon>
+          <input class="grow" id="rSource" type="url" inputmode="url" value="${esc(dr.source || "")}" placeholder="Quelle (Link zum Originalrezept, kann leer bleiben)">
         </div>
         <div class="srow rgrouprow">
           <ha-icon class="prev" icon="mdi:tag-outline"></ha-icon>
@@ -8543,6 +8619,7 @@ ${(() => {
     btn?.classList.add("busy");
     try {
       const res = await this._ws({ type: "einkaufsliste/recipe/import", text: url });
+      if (res.source_url && this._draft && !this._draft.source) { this._draft.source = res.source_url; const se = this.$("rSource"); if (se) se.value = res.source_url; }
       const lines = this._stepLines(res.steps || "").map((x) => x.replace(/^\s*(?:\d+[.)]|[-•*])\s+/, "").trim()).filter(Boolean);
       if (!lines.length) { this._toast(EL_LANG === "de" ? "Auf der Seite habe ich keine Schritte gefunden 🤷" : "I found no steps on that page 🤷"); }
       else {
@@ -8566,6 +8643,7 @@ ${(() => {
     try {
       const res = await this._ws({ type: "einkaufsliste/recipe/import", text });
       const dr = this._draft;
+      if (res.source_url && !dr.source) { dr.source = res.source_url; const se = this.$("rSource"); if (se) se.value = res.source_url; } // 🔗 Nr. 33: Herkunft merken
       let added = 0;
       for (const it of res.items) {
         const ing = { name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null,
@@ -8889,6 +8967,7 @@ ${(() => {
   _readDraft() {
     const dr = this._draft;
     dr.name = this.$("rName").value;
+    if (this.$("rSource")) dr.source = this.$("rSource").value.trim();
     if (this.$("rGroup")) dr.group = this.$("rGroup").value || null;
     dr.steps = this._stepRowsOf(dr).map((r) => r.t.replace(/\s*\n+\s*/g, " ").trim()).filter(Boolean).join("\n");
     if (this.$("rServings")) { const n = parseInt(this.$("rServings").value, 10); dr.servings = n >= 1 && n <= 99 ? n : null; }
@@ -8918,7 +8997,7 @@ ${(() => {
     const heat = (dr.heat || []).filter((h) => h.mode || h.temp || h.minutes || h.note)
       .map((h) => ({ device: h.device || "Backofen", mode: h.mode || null, temp: h.temp ? Number(h.temp) : null,
         minutes: h.minutes ? Number(h.minutes) : null, minutes_to: h.minutes_to ? Number(h.minutes_to) : null, preheat: !!h.preheat, steps: h._sk ? sr.map((r, i) => (h._sk.includes(r.k) ? i + 1 : 0)).filter(Boolean) : (h.steps || []).map(Number).filter((n) => n > 0), note: h.note || null }));
-    const msg = { name: dr.name.trim(), group: dr.group || null, items, steps: (dr.steps || "").trim() || null, heat, servings: dr.servings || null, servings_unit: dr.servings_unit || "persons" };
+    const msg = { name: dr.name.trim(), group: dr.group || null, items, steps: (dr.steps || "").trim() || null, heat, servings: dr.servings || null, servings_unit: dr.servings_unit || "persons", source: /^https?:\/\/\S+$/i.test(dr.source || "") ? dr.source : null };
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {
       if (dr.id) { // ↕️ Fotos wandern mit den Schritten
@@ -10187,6 +10266,14 @@ ${(() => {
     let finalStep = !!r.id && !this._privacyOn() && !this._hasPhoto(this._recipePhotoKey(r.id));
     let total = steps.length + (finalStep ? 1 : 0);
     nSteps = steps.length;
+    // 📌 Nr. 31: pro Rezept merken, bei welchem Schritt man war – beim nächsten Start Weitermachen anbieten (30 Tage)
+    const memGet = () => { try { const m = (JSON.parse(localStorage.getItem("einkaufsliste_cookstep") || "{}") || {})[r.id]; return m && Date.now() - (m.t || 0) < 30 * 864e5 ? Number(m.idx) | 0 : 0; } catch (_) { return 0; } };
+    const memSet = (n) => { if (!r.id) return; try { const all = JSON.parse(localStorage.getItem("einkaufsliste_cookstep") || "{}") || {}; if (n > 0) all[r.id] = { idx: n, t: Date.now() }; else delete all[r.id]; const keep = Object.entries(all).sort((a, b) => b[1].t - a[1].t).slice(0, 40); localStorage.setItem("einkaufsliste_cookstep", JSON.stringify(Object.fromEntries(keep))); } catch (_) { /* geht auch ohne */ } };
+    if (ask && !startIdx && r.id) {
+      const m = memGet();
+      if (m > 0 && m < steps.length && await elConfirm(EL_LANG === "de" ? `Beim letzten Mal warst du bei Schritt ${m + 1} von ${total}. Dort weitermachen?` : `Last time you were at step ${m + 1} of ${total}. Continue there?`, { danger: false, yes: elT("Weitermachen"), no: elT("Von vorn") })) startIdx = m;
+      else memSet(0);
+    }
     idx = Math.max(0, Math.min(Number(startIdx) | 0, total - 1));
     const ov = makeOverlay({ full: true });
     ov.dataset.elcook = "1";
@@ -10219,6 +10306,24 @@ ${(() => {
       const ch = chosenHeat();
       heatBox.style.display = ch.length ? "flex" : "none";
       heatBox.innerHTML = ch.map((h) => `<div class="ic" style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 16px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
+      // 🍟 Nr. 100: bei „Heißluftfritteuse“ (nur Admins, nur mit Temperatur und Minuten, nur wenn Airfryer Control installiert ist) steht neben der Anzeige das Symbol zum Schicken – der Start bleibt am Gerät
+      if (this._hass?.user?.is_admin) {
+        const rows = ch.map((h, n) => [h, heatBox.children[n]]).filter(([h, el]) => el && this._fryerOk(h));
+        if (rows.length) this._fryerDevices().then((devs) => {
+          if (!devs.length) return;
+          for (const [h, el] of rows) {
+            if (!el.isConnected || el.querySelector("button")) continue;
+            const fb = document.createElement("button");
+            fb.type = "button";
+            fb.title = elT("An Airfryer Control schicken"); fb.setAttribute("aria-label", fb.title);
+            fb.style.cssText = "flex:none;margin-left:auto;padding:4px;border-radius:10px;border:1px solid #a64b12;background:rgba(255,255,255,.08);cursor:pointer;line-height:0";
+            fb.innerHTML = `<img src="${EL_FRYER_ICON}" alt="" style="width:30px;height:30px">`;
+            fb.onclick = () => this._sendToFryer(h, fb);
+            el.style.display = "flex"; el.style.alignItems = "center"; el.style.gap = "10px";
+            el.append(fb);
+          }
+        });
+      }
     };
     renderHeat();
     const pos = document.createElement("div");
@@ -10361,6 +10466,7 @@ ${(() => {
       pos.textContent = `Schritt ${idx + 1} von ${total}`;
       renderHeat(); // 🔢 orange Info passend zum Schritt
       autoL.start(); // 📜 neuer Schritt: Text beginnt oben, läuft bei Überlänge von selbst
+      memSet(idx < steps.length - 1 ? idx : 0); // 📌 letzter Schritt erreicht = fast fertig → nicht mehr merken
       if (r.id) { try { localStorage.setItem("einkaufsliste_cook", JSON.stringify({ rid: r.id, idx, pers, hs: heatSel, t: Date.now() })); } catch (_) { /* geht auch ohne */ } } // 📌 nach Neuladen geht es hier weiter
       text.textContent = last ? "📸 Foto vom fertigen Gericht – es kommt in die Rezept-Fotos. Guten Appetit! 😋" : steps[idx];
       pic.style.display = "none";
@@ -10785,6 +10891,48 @@ ${(() => {
   }
 
   // 📌 Kochmodus war offen und die Seite wurde neu geladen: beim letzten Schritt weitermachen (höchstens 6 Stunden alt)
+  // 🍟 Airfryer Control: Garwerte an die Fritteuse schicken (bereitstellen, Start drückt man am Gerät)
+  _fryerOk(h) {
+    return h && h.device === "Heißluftfritteuse" && EL_FRYER_MODES[h.mode] && Number(h.temp) > 0 && Number(h.minutes) > 0;
+  }
+
+  // Gibt es Airfryer Control? (Geräteliste, nur für Admins; Ergebnis kurz gemerkt)
+  _fryerDevices() {
+    if (!this._fryerP || Date.now() - (this._fryerT || 0) > 60000) {
+      this._fryerT = Date.now();
+      this._fryerP = this._hass.callWS({ type: "config/device_registry/list" })
+        .then((l) => l.filter((d) => (d.identifiers || []).some((x) => x[0] === "airfryer_control")))
+        .catch(() => []);
+    }
+    return this._fryerP;
+  }
+
+  async _sendToFryer(h, btn) {
+    try {
+      btn.disabled = true;
+      const devs = await this._fryerDevices();
+      if (!devs.length) { this._toast(elT("Airfryer Control nicht gefunden – ist die Integration installiert?")); return; }
+      let dev = devs[0];
+      if (devs.length > 1) {
+        const id = await askChoice("Welche Fritteuse?", devs.map((d) => [d.id, d.name_by_user || d.name || d.id]));
+        if (!id) return;
+        dev = devs.find((d) => d.id === id);
+      }
+      const zone = await askChoice("Welcher Korb?", [["1", elT("Korb 1")], ["2", elT("Korb 2")], ["3", elT("Grandzone (ganze Schublade)")]]);
+      if (!zone) return;
+      const res = await this._hass.callWS({
+        type: "call_service", domain: "airfryer_control", service: "senden_testen", return_response: true,
+        service_data: { geraet: dev.id, zone: Number(zone), temperatur: Math.round(Number(h.temp)), minuten: Math.round(Number(h.minutes)), programm: EL_FRYER_MODES[h.mode] },
+      });
+      const r = res?.response || {};
+      this._toast(r.ok ? elT("✅ Fritteuse ist vorbereitet – jetzt am Gerät auf Start drücken") : `⚠️ ${r.fehler || elT("Hat nicht geklappt")}`);
+    } catch (err) {
+      this._toast(`⚠️ ${err?.message || elT("Hat nicht geklappt")}`);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   _cookResume() {
     if (window.__elCookResumed || !this._data) return;
     let s = null;
@@ -11299,9 +11447,13 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     if (!this._data?.settings?.cards_on) return;
     // 📄 Seite IN der Karte (wie die anderen Seiten): ← und Zurück-Taste führen zur Liste; _showCard/_editCard bleiben Vollbild-Fenster darüber
     let cards = this._cardsCached(), offline = false, body = null, tools = null;
+    // 🏪 Im Laden-Modus an einem Geschäft: Karten, die zu diesem Geschäft gehören, stehen ganz oben (die anderen bleiben darunter)
+    const hereStore = () => { if (!this._shopMode) return null; const t = this._tab && this._tab !== "all" && this._store(this._tab) ? this._tab : this._lastNear; return t && this._store(t) ? t : null; };
     const draw = () => {
       if (!body?.isConnected) return;
-      body.innerHTML = `<div class="cardlist">${cards.map((c) => `<button type="button" class="cc" data-id="${esc(c.id)}" style="${c.color ? `--c:${esc(c.color)}` : ""}"><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="ci"><span translate="no">${esc(c.name)}</span><small>${c.shared ? "👪 für alle" : "👤 nur ich"}${c.has_photo ? " · 📷" : ""}</small></span><span class="ce" data-edit="${esc(c.id)}" title="Bearbeiten">✏️</span></button>`).join("")
+      const here = hereStore();
+      if (here) cards = [...cards].sort((a, b) => (b.store_id === here) - (a.store_id === here));
+      body.innerHTML = `<div class="cardlist">${cards.map((c) => `<button type="button" class="cc" data-id="${esc(c.id)}" style="${c.color ? `--c:${esc(c.color)};` : ""}${here && c.store_id === here ? "outline:2px solid var(--primary-color,#03a9f4);outline-offset:-2px;" : ""}"><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="ci"><span translate="no">${esc(c.name)}</span><small>${here && c.store_id === here ? "📍 Hier im Laden · " : ""}${c.store_id && this._store(c.store_id) ? `🏪 ${esc(this._store(c.store_id).name)} · ` : ""}${c.shared ? "👪 für alle" : "👤 nur ich"}${c.has_photo ? " · 📷" : ""}</small></span><span class="ce" data-edit="${esc(c.id)}" title="Bearbeiten">✏️</span></button>`).join("")
           || `<div class="cn">Noch keine Karte. Tipp auf „➕ Karte“ – dann scannen oder die Nummer eintippen.</div>`}
         ${offline ? `<div class="cn">📴 Kein Netz – das sind die zuletzt gemerkten Karten.</div>` : ""}</div>`;
       body.querySelectorAll(".cc").forEach((b) => {
@@ -11456,6 +11608,8 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         : `<p class="hint">🔒 Datenschutz ist an – Kamera, Fotos und Scanner sind aus. Nummer eintippen geht.</p>`}
       ${card ? `<p class="hint">${card.shared ? "👪 Diese Karte sehen alle in der Familie." : "👤 Diese Karte siehst nur du."}</p>`
         : `<div class="chips" id="cdWho"><button type="button" data-v="1" class="on">👪 Für alle</button><button type="button" data-v="0">👤 Nur für mich</button></div>`}
+      ${(this._data?.stores || []).length ? `<p class="hint">🏪 Gehört zu einem Geschäft? Dann steht die Karte im Laden-Modus dort ganz oben.</p>
+      <select id="cdStore"><option value="">– kein bestimmtes Geschäft –</option>${(this._data.stores || []).map((x) => `<option value="${esc(x.id)}" ${card?.store_id === x.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>` : ""}
       <div class="chips" id="cdCol"><button type="button" class="sw ${st.color ? "" : "on"}" data-c="" style="background:${C.sw0}" title="Grau"></button>${COLORS.map((c) => `<button type="button" class="sw ${st.color === c ? "on" : ""}" data-c="${c}" style="background:${c}"></button>`).join("")}</div>
       <div class="row" id="cdBtns"></div></div>`;
     const $ = (sel) => ov.querySelector(sel);
@@ -11523,6 +11677,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       if (!name) { $("#cdName").focus(); return this._toast("Gib der Karte einen Namen, z. B. Payback"); }
       if (!code && !st.hasPhoto) { $("#cdCode").focus(); return this._toast("Nummer oder Code fehlt – einscannen, eintippen oder fotografieren"); }
       const body = { name, code, fmt: st.fmt, color: st.color || "" };
+      if ($("#cdStore")) body.store_id = $("#cdStore").value || ""; // 🏪 Kundenkarte am Geschäft
       if (st.photo !== undefined) body.photo = st.photo;
       try {
         const res = await this._ws(card ? { type: "einkaufsliste/card/update", card_id: card.id, ...body } : { type: "einkaufsliste/card/add", ...body, shared: st.shared });
@@ -11702,6 +11857,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           else if (before?.checked && added?.id) stats.log.push({ text: `➕ ${name}`, btn: "↩️ Wieder erledigt", undo: () => this._ws({ type: "einkaufsliste/item/toggle", item_id: added.id, checked: true }) });
           else stats.log.push({ text: `ℹ️ ${name} (stand schon drauf)`, undo: null });
           stats.added++;
+          if (before && !before.checked) return `ℹ️ ${name} steht schon drauf`;
           return res.found ? `✅ ${name} ist drauf${res.private_label ? ` · 🏷️ Eigenmarke von ${res.private_label}` : ""}` : `❓ Unbekannt – später umbenennen`;
         } catch (err) {
           return `⚠️ ${err?.message || "Hat nicht geklappt"}`;
@@ -11768,6 +11924,12 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         if (res.category_id && this._cat(res.category_id)) this.$("inCat").value = res.category_id;
         else this._onNameInput();
         if (res.store_id && !this._fixedStore && (this._activeTab === "all" || res.private_label) && this._store(res.store_id)) this.$("inStore").value = res.store_id;
+        // 🔁 Nr. 13: steht der Artikel schon offen auf der Liste? Dann gleich sagen (statt ihn blind doppelt zu wollen)
+        const dupKey = this._pk(res.name, res.note || null);
+        const dup = (this._data?.items || []).find((i) => !i.checked && this._pk(i.name, i.note) === dupKey);
+        if (dup) {
+          this._toast(`ℹ️ „${res.name}“ steht schon auf der Liste${dup.store_id && this._store(dup.store_id) ? ` (${this._store(dup.store_id).name})` : ""} – nochmal tippen erhöht die Menge`);
+        } else
         this._toast(res.source === "gemerkt"
           ? `🔍 Kenn ich: „${res.name}${res.note ? ` · ${res.note}` : ""}“ – tippe ✅ zum Hinzufügen`
           : `🔍 Gefunden: „${res.name}“ – Name passt? Dann ✅ tippen${res.private_label ? ` · 🏷️ Eigenmarke von ${res.private_label}` : ""}`);
@@ -12392,6 +12554,11 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._setBasic(!this._rBasic);
         this._toast(this._rBasic ? "🧂 Grundvorrat: wird bei „Auf die Liste“ nicht vorausgewählt" : "🧂 Kein Grundvorrat");
         break;
+      case "recipe-source": {
+        const r = this._recipe(el.closest(".rtools").dataset.id);
+        if (r?.source && /^https?:\/\//i.test(r.source)) window.open(r.source, "_blank", "noopener,noreferrer");
+        break;
+      }
       case "recipe-cook": {
         const r = this._recipe(el.closest(".rtools").dataset.id);
         if (r) this._cookMode(r);
@@ -13062,6 +13229,18 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._ws({ type: "einkaufsliste/missed/hide", name: el.dataset.name, store_id: el.dataset.store })
           .then(() => { this._toast("✖ Ausgeblendet – kommt nur wieder, wenn es erneut fehlt"); setTimeout(() => this._renderMissed(), 150); })
           .catch(() => {});
+        break;
+      case "year-toggle":
+        this._ws({ type: "einkaufsliste/year/set", on: this._data.settings?.year_on === false })
+          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
+        break;
+      case "year-reset":
+        if (!await elConfirm("Alle Zähler vom Jahresrückblick löschen? Das geht nicht rückgängig.")) break;
+        this._ws({ type: "einkaufsliste/year/reset" }).then(() => { this._toast("🧽 Zähler gelöscht"); this._loadYear(); }).catch(() => {});
+        break;
+      case "year-pick":
+        this._yearPick = Number(el.dataset.y) || null;
+        this._loadYear();
         break;
       case "log-clear":
         if (!await elConfirm("Den ganzen Verlauf löschen? Das geht nicht rückgängig.")) break;
@@ -13997,6 +14176,8 @@ const EL_TICKER_CSS = `
   @keyframes tkrun { from { transform:translateX(0); } to { transform:translateX(-50%); } }
   @media (prefers-reduced-motion: reduce) { .wrap { animation:none; } .box.fertig ha-icon { animation:none; } }
 `;
+// 🍟→ Symbol von Airfryer Control (Knopf „An Airfryer Control schicken“)
+const EL_FRYER_ICON = "data:image/png;base64,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";
 const EL_TICKER_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAAUWklEQVR42uWce5RcVZXGf/vcW7eququ7K51OJ52EdAh5KHkMIUgCOGCQgArOOAaiS10qoqizEJ0BUVFXcJYZHyCIOoguZ1hLGZc0vgVFHiaABpE3hBAgCSHkQZN0J/2q6qq69+z541ZXV3VVdVclEDIzd63qVX3uPVX3fOfbe397n1MX6jlUhfXrXdaq4X/bsXatYf16F1Wpp5vUDMytGNZIMNLUuf6FabmBzEII5onQge8nUBQD2PAaC6BVPtOWN9iK7fmzFdqNLb686B9VwThDjuPujUfM80k3sfmxd3XuKVzapQ4XYBHRwwdI1SBiAWbd9uIkPH+1DfwLCILl4notRCLhx2jRd2kRLlraoGNBK2rQsvaRW9CyNjR/veQ75t87+dOBQiYXkMlk0FxmIOo6DzVEvZ/PSUR+/pd3zN+nAF1dDmvWBIcOUJc6rJFgZtfGuGluu1TVXiJebCZBgB1Oo0FgAVs6mMqDL2CkZRNQBbQx4JS1l86GYyAIlIFMDj+wRI1ldlOc2U0xY0XMc0MBezNKOpV52RpzwxktsevuX7No0ObHWD9A+Y7H/H7Tm3G8/5BIbImmBlE/F+QHZBCkbFZLBjIRc8I3Wg84Y9hpUEA5kM7SZJTTpyV4W2c7J0ybwoJmh+aIBVT3ZRz73IEMf+3uce7oTrPxpZ5nUgeHPmUuP/Oe1V1dzq1VmFQZoPXrXVau9I+5/ZlP4DjfBVw7nPZDBhcZ7rhmNXr+0MApZV/ZV6riAMO+Tzab4z3HJvn0ifNY0uqF54c2QXQm1k0igGReBM1AbL4CwfpXsu41D23V32/uvpwrzrz2jPXr3XtXrvQnBigPzozfPXWl09i8zg70KagFcUpB0NeROYojMJjJ0ubCd958HOcdOwVyu7Fbb8Tu+inm4HakKYkk3wRq0X33YHOgrSfgdF6IzPmIhQQ3PH/QXHnHY1/ru/TMKyuB5JSaVZfDeecFM27b9HEn0XydHej3807aTAgO5YM9dOZUaC9646AMZnJ0xoTbzl3MKR1J/O3fgQdXY3bejYlkkc41yPT3wqQ3QdNCpPU0jBfH9N6H7LiDYM/PhIZZnNy5NDh5TscZGzrPTD35njP/fMbate6L995rywHKe/QZv9+8wjjuL3Q4rVjrICJHjjkTmRUYLJmcT6ux/OGdi5k7qQH/0Q/jbvoG4kVg2fdgyY3QvAxsCjKvgAbQMBeO+RDMuwJijZi9v0F23iI5x5W5s84MFnW0nHN764oHnl/7z8+fXgSSW9ANoDM37ozT0/9fGNch8C1i5LVmjhEwCFYVSxjRDGCMYK1ilbLYnh3O8IO3v4E5yQT+ox/Eff4nMONUOOnnMLAZ/vYu6N0I/hgnEjHQ/k44/t+h493w4HlEnvyy+MY1q+Z9nm++66QffPT2i5ZtWLiwT1QFkYIiDrVO78AlJtH8Rk2nfcSYmpijxaKkdnAMITiDOcu+4Rz9uYCcVfxAGchZ9qd9BnIWkfBaVHGB3qFhPjB3Eqs62/G3XY+79Scw4zQ47X7Y/m247yzo2QiOQNwNbcQFYg6IhT2/gXsWQv8TcMYj0NyB89QXDPv/5F+46JjZH/7shZ+VNWuC9Rs2OKGTziPV+avHkoET2YIx7QS+opjXKlq5CAO5AAVObmtk1fRmlk5uYGo8ggDdaZ8nelLctaePB7oHsao0RxxyOR/NpNj4nuXMje1H73ojxnhw9nZ47qvw9DXQ4ObluIZqsfMiSO+E7rvANaOidtjCqT+Dxrlw90n4yTeo+9bHuXvnUN+qS9ct0V9fu0tQDBtCPxR40fNNY2Iqfs7WDk79zHEQejI+Syc38IuVc7nrnAVcsbiDVdNbWDKpgcWTGjhrejOXLZ7GHecs4Ner5rGiPcHBjM9QJsOqGU3Ma4mh276DGRyExddC3xPwzDXQEAn9jdoQiACYeyV0nB++x4TnJc+oh98PsZkw/xM4+7cIe39lz5jVmvzH1e94nwh68Q8fcQ1vyWcw1r6XIFAt1n4TMoe6wenN+HxswRTuOHsBZ01vRgFflUBDf2MVAlX8vMJe2dHMH962gEuPbyc1lObcOR0oOexLP4ZkK3Sshk2fAldGmVN85HrBHxzjKy2IgB/Ali/CcZ9DXLA7fkQE9PS5M1YD7g8u3m4NInbqH7e2Y+1yOzwskPdLh2FWAmV5oJsH5+MLpnD9ybPwjBBOB7giOCKhwxZwRHBFEEKwHOBry2fxr4vbmd/WhqSewfR3w/R3Q2o7HHgy9DMalMs8cUBMueTTACICe7rAbYS2hdievxhIybGTp/wdp1w815U1gQFwfX+RRBsSGvghtIfgkI0ITv4mstaS9pVsmJTgiTDoW05tT3D1m47BasgsRybOlZ1QZZDJZPny0g6WtEXgwCZMINB6Ohx8CAIpk3SFSdQg/9IQrLEhdHgAUjug9QxMelgYfiGYNW2y55yybHHASIAIgvlhVo6tN5SPzPpANqA3m0NR2mMRjmuKMi0eQRT2D/uk/ICvnjgDNz9gU0dVRgBrLbkgwBNCbSMKsQ5Ivxi+L+lgILDQciy0LIWp54LnQSYTmlZxLFWB4T0QnxVaaKZHWxqgMdkyt6CDROgIvXsRE2sQgY4I6cCSC5TTpyZY3TmJ5W0JpscjxF1DOrB0p3Pc3z3IjoEMK6YkUGpjTikRdPQFyEh/1bz5VOuYg6Gt0DAHznoOnv4c7LolJFvxPYgZdexiRqon00eFYmAb62WOK8LBnM+cxijrls7k3JktZffnGYeWiMP85lihb33QFI1B8sIRMNGO/My/FA5+bJFQbWgbqV1w3wngToE5l8Kym+G4y+CvZ4PfF+oioxCbAd2/Qx2F2BQOpCAVmLiMmFhJua4Gn+OIcDDrc2pbgjtXzefcmS2F6GN1tKtCUbseFjj5jAffB5oXQkRh/z2QXA6uVi5FGgE7HAL5xGdh/Rvg5V+CHcrbrUJ8MsRnQ8+f0IYEeLPZtn+QIGNDMVuQtUWFuYl8zpAfsCjZwC2nH0d7LIKvWog+RvJRLP8abT9UePJjNWHOnBnqh8YFkJwNe34b+qG20yA31gkXcdZIqHsGt8GWr4emZxzIKsz8EGRfgZ5tyOS3AlE27tgNjqej0Ngx2macaGUVImK4cUUnLZ6Dr4p7mIOvhUHGGCIRj6HBPhAXjrkIBgbhpf+ExTeEN1aYlrEg5aOZY8BzQiD9AGIJWPAVeO6q0CrnXMywhbu378NLxDUY5U5tiacrQl824P3HtrJkUvyIgFMMUjQaJecHpIezcOwnINkGT30RvFY44VpI+6HzFaeyt1MNz9sAfIUVt8GBjbDtFoJpJyNT3s4vn9zBlgMZWhobRhlka0wfAqs0OIYPzZ2cJ++RAWcEoEgkQjQao3f/Xoi0oYu+DZk0bFwFsy6CZd+FnIVskFesTsg2cfORSmHYB9MEf38nRNvhwdWo5yFLvk/aV75+7ybi8TiBKfY+OvHqgwHSgWV+c5SFyXjBvxypwxiD4zg0NDaQyQYcONCDzHw/uvBy2L8FNiyDtpVw5lMwcw1IQwjUsA8ZH7IWIpNh3qfgrc+GJrfhJMgO4p9wI07yRL5y56M8tT9DY0MDgYTpqFupclUxfZBQIc9riuFKWL8xcgQRyoPkRTyam5vZv68HLxKh8firURxk8zfgnkWw4Iuw8Juw6FoY2gaZPSF7YrOgYTbkeuCZz8O2H6MRg3/ij4h0Xsh/P/Ic12zcTrJ1Er44BWjcMl8m1ZdgAgttMbfg14/08qoxBtd1icfj5Jqa2LV7LzOmQ+L4r0PyJPTpK5An18Gz62DKqdB6WggMFnrvh/0boGcTGkAwdQXukuuITFrBzQ8/y0d/8xiNzUnUjSLiFFyYS5VlrPKsPOzh50t8wutzOI6D53k0NTVhreWlXbtpm5xmyvTzkY5z4cWfoLtuhp77kT0bCw5WHbCxGEw/F2f2R3A73k3awr/d/iBX/2U7DS1JTDSOiluist0ycKRKyULCisLuVC4P0OsDkYjguuFtt7S04DgOPb0H6Os7SFv7dFpmX4zMvhj8/TC0A7L7QQwSnYbTdBzQyJCFXz2ylW/dt4nHX0mTbG1FvRhqImBMyfjdSqZUqZ5jVYkaw5a+NIO+JeGaw0odXi2QRqJbf38/u3ftpHuv0JhoorGplWjsJJxEOJxsVrnrqV3cu/UJ7tm6l829w3jxRia3t+M7ETBuxbKIW7aRoEqxSxVijuGFgQz3vzzA22a2YFXrTjzHc+4jSr5adCzuOwLSSHTzPI/h4WHS6TRDQyn6+vpQa7EoTRGH+3b38+E7toHnEYvHaW1rRt0IvnFDOWDyInOMIHSrpMEVl2ZGGPP9Ld28fWYLeiiOdhxARcZn5Ni+IoLjOAWwPM+joaEB3/fxfZ8gCMgFAcmoy62PDuC1TaUl7uGrEJh8IU3MqM/R8oVLUxrFdNx1q8CGxfO79/Rz87YeXBFytnaYclZ5rHuw4OjHfsXO/gzbDg5TbdfM491DpH1bVSN5nkcsFqOxsZGmpiYampqZ0dHOb/fm+GN3jkQiQc7xUNcDxw3zsXHAKQUovyY1/nJwmJU3uQ6X/20nD7wySMSEII2H08ipgxmfi+/YylDOlrQH+c43P/0K33tkb0nbqHnBJ+/cyq7+bOH/Shm/4zgYx0Ecl0Q8xsPdaT79513Eox5qHDAGLfY1WgUcWwKQHcdRU+aLHBOy4YI/beW2lw4SMVKTqhagIWKqmlHECN44HxR3DbW4PCNCxDH88cWD/MPvtjDkWyJmZB+IVC3KVRp7IRebiDmMyeg9IwwHlvet38alD7zI9oFM8WSM46THZ5oeYt9iL7GjP8Nn7n2Bf7ptCwPZgJhjwjo4laoW1cEpLXfUs5EgvzzjitDkGr771F6+8NBL+c1eyut1WFVE4MsP7OT6h3bT6Bo8Qzk4NTDHlvugiZkzdiPBSI044bkcTbs6BXCjTmEi62WOapkPqp05lU4EIzN0FB0jTr5e5ozywlbWQRPuCaywRaXaTbzeR7XcsqrP0fJGU7qzRGtnztEOjtYPjlZY0jGlKmgC5ujhgzOeHJAxy1X19C0Dh/LEu15wRsN8pSimtZtVuJKhNVE+lbNVr8xaJetX/5xUzlJrkDQiNTvkiuBUzOa1VGDWCk4qF5SlD2OZAZCMutx4zlwaI6ak3clT4wML28kFtqStmD03nH0cM5u9CdlkVbHZAOM5BLX6nDHttmqyqvWB05/1WTm9mXUnz8Jq0bJwFaW8bFqiKoCdzdGytuLjxAp9x7LGKnzllFm8MpTjvt19NEYcAh3Pr2oVc6ukg+pgTmiaStwx/PD0OcxvidVUabTj2MiIbjmUvsXfPTcZ46Zz5tHsOfhBPrmokTlaORerz+eEHZVMoMxs9OhMRPPsOfxyh5FD61v8GVZhRlOEzqYomcCWTNp4PqeUHHYUIGPr1DlF62aat1fzehWpq0Q7O84y+sTgKCWr8rZSulgDOCPtRxE2peamVNipXws4VepBE+89rCzfj0KdWHbbdYFTJhStnVgEVgFnpPSkRxk4kvdZWpdZlV/mTpzDVF6O1ny5Y/+wz2AuoDXqkrP6uvsiq6GcSPnKK6kcrpFQB9UBjlSMYsVUrFKwH6sjPAPd6SxfevAlMoElYsLdqq/na6QEfOX9O9g1kCHqSFl1YlzmjMnh3MrZenXmFF/j5+vTN23Zx8P7hnhjMlYhAaouwiru9dNxcqsx91el+sKzvWke7R4k4ZnS2nYt4Iw58qtvJlVpE+e4JYP8pyrQ5Dls7k3x+L6hUkFXlYk6PkOLzmtxClR4r+X1WS1V7E2eg60HnLJJsUNFAMne0lJhbeAUK+oG19DoSs2/MS278fGYWwEcLWsvrnJq/eCMnRxx9hYAEszz6ucAa0Z2jNYKTnEhv1CmrSOU1hQti+WZrVA4zr/XQ41WpSUd0SBADc8XnLRGzCabSQ1hHFPIfesAZzRNqe/mapUSh1zPqRccrGKMo8NDWSv6RAjQWjX71ix6WZSHxIupqti6wOHQRdhRA86oerLqxhTVJzKfWfEiqmJ4y4Z8qJcuHFew+v+POVp4sIGKGxGM24WIctUGp/CDuuauTa1eOvssxkzGzxWKn+OCM1Eor2XmqvmcWhcR6gWn6lMfVHFcVauDEncWpC5Z/nLIIBGlS53+NYt6Eble4glBw5+fTWxWrwE4NaywcJjpQxk44Z9Aoglj1H4/dcnyl+nqchAZCVkqXIVMPe7leKAvPy6uO9dm0rbklyL6Ktv8kWZO2fcUPy9ELa4nBMHuiBtf3Hfw1/1cdZWO/qhXRFl4q3R/sGMIx1ykoBjHFu7yMBzyUcOc6uAoYqyYiKB8rO9flh5k80IZ+UVgaWqZf15H600Pf8Y0tlynAwd9VMf8dv7/EHNUFRFfGpIRTR38UuqKN69jzMNOSmvSayRg7Xq398KTvq1DA1+VRNLFiKJqX9NQfiSYQwWzEmOlIRmxw4PfSl3x5nWsXe+OfRJM5eJEHsXJNz16GU7kGtSi2WGf/MNNXlWzOmIisChaKQERzxUTQf3cl1KXL1+Xf/JE2a+CK2/KWCMBXV1Oz4Unfkv93NkqPBeyyRUUHyXQSiOuOusTpA+vNjhaQSGjVhUf44g0Jl0wL2jOnpe6fPk6Lig8aEmrrZQwHpNar/9rs7bELxP0kxKJTVE/h2aHIbABUkEOVXWIR1rnaLilzIijbgxxI2h2uFfE/NCx2av7Lzu1l0N+wFIBpNHHWE25adO0AH2vtbnzxdplEo3HME7hzrRkG60WK9T6wanEzLrNGtQGaCadAfMYjvNLtc5P05ct3T12bIcO0IhOGvOQt+TNT3eSyS0WDeZrEExHSKBGUSuF9J7xll6omJXb0j8l/WzZRab8c0QUVVG1QxJx91hxn7PibMpcesILJZZR40Pe6qyGq7C2/kftHTUrQWvXu6xdW9dmuP8BQlYGakeaZQEAAAAASUVORK5CYII="; // 🍳 Rezepte-Symbol (Mütze mit Wecker), klein eingebettet – steht im Laufband vor jedem Timer
 class EinkaufslisteTimerTicker extends HTMLElement {
   static getStubConfig() { return { entity: "sensor.einkaufsliste_kochtimer" }; }

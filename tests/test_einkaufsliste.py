@@ -4484,3 +4484,54 @@ async def test_view_prefs_essensplan_pro_benutzer(hass, setup, hass_ws_client) -
         assert res["success"], res
         assert res["result"] == {"plan": val}
 
+
+
+async def test_jahresrueckblick_zaehler(hass, setup, hass_ws_client) -> None:
+    """🎁 Euer Jahr in Einkäufen: zählt Eintragen und Abhaken, Schalter und Löschen gehen."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    for i, name in enumerate(("Milch", "Milch", "Brot"), start=1):
+        await client.send_json({"id": i, "type": "einkaufsliste/item/add", "name": name, "store_id": aldi})
+        item = (await client.receive_json())["result"]
+        await client.send_json({"id": 10 + i, "type": "einkaufsliste/item/toggle", "item_id": item["id"]})
+        assert (await client.receive_json())["success"]
+    await client.send_json({"id": 30, "type": "einkaufsliste/year/get"})
+    res = (await client.receive_json())["result"]
+    assert res["on"] is True
+    assert res["added"] >= 2 and res["bought"] >= 2
+    assert res["items"][0][0] == "Milch"
+    assert sum(res["months"]) == res["bought"]
+    assert res["best_month"] is not None
+    # Ausschalten: es wird nichts mehr gezählt
+    await client.send_json({"id": 31, "type": "einkaufsliste/year/set", "on": False})
+    assert (await client.receive_json())["success"]
+    before = m.year_summary()["bought"]
+    await client.send_json({"id": 32, "type": "einkaufsliste/item/add", "name": "Käse"})
+    item = (await client.receive_json())["result"]
+    await client.send_json({"id": 33, "type": "einkaufsliste/item/toggle", "item_id": item["id"]})
+    assert (await client.receive_json())["success"]
+    assert m.year_summary()["bought"] == before
+    # Zähler löschen
+    await client.send_json({"id": 34, "type": "einkaufsliste/year/reset"})
+    assert (await client.receive_json())["success"]
+    assert m.year_summary()["bought"] == 0
+
+
+async def test_rezept_quelle_und_karte_am_geschaeft(hass, setup, hass_ws_client) -> None:
+    """🔗 Rezept-Quelle (nur http/https) und 💳 Kundenkarte am Geschäft."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/add", "name": "Pfannkuchen", "items": [], "source": "https://example.com/pfannkuchen"})
+    rec = (await client.receive_json())["result"]
+    assert rec["source"] == "https://example.com/pfannkuchen"
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/update", "recipe_id": rec["id"], "source": "javascript:alert(1)"})
+    assert (await client.receive_json())["result"].get("source") is None
+    aldi = m.find_store("Aldi")
+    await client.send_json({"id": 3, "type": "einkaufsliste/card/add", "name": "Aldi Card", "code": "12345", "store_id": aldi})
+    card = (await client.receive_json())["result"]
+    assert card["store_id"] == aldi
+    await client.send_json({"id": 4, "type": "einkaufsliste/card/update", "card_id": card["id"], "store_id": ""})
+    assert (await client.receive_json())["result"]["store_id"] is None
+    await client.send_json({"id": 5, "type": "einkaufsliste/card/update", "card_id": card["id"], "store_id": "gibtsnicht"})
+    assert (await client.receive_json())["success"] is False
