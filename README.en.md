@@ -79,7 +79,7 @@ Copy `custom_components/einkaufsliste` to `/config/custom_components/einkaufslis
 - 👆 **Swipe** (on the phone): swipe a row **to the left** = check off ✔, swipe a done row **to the right** = back on the list ↩.
 - ↩️ **Checked off by accident?** “Undo” shows at the bottom for 3 seconds (only for whoever checked it off). After “Scan several” / “Scan & check off” “Undo” shows for 5 seconds for the item scanned last.
 - ⇄ = was out (stays open marked “was out”, or moves to another store).
-- 🤷 **“Anywhere”** = items without a fixed store. They show up in **every** store tab (tagged “🤷 Anywhere”) – wherever you happen to be. Check off = gone everywhere. Moving one to a store with ⇄ simply relocates it, nothing is left under “Done”. The other way round works too: ⇄ → **🤷 Anywhere**. Checked off in a store tab, it belongs to that store from then on (there under “Done”, gone from the others) – and comes back there next time.
+- 🤷 **“Anywhere”** = items without a fixed store. They show up in **every** store tab (tagged “🤷 Anywhere”) – wherever you happen to be. Check off = gone everywhere. If a store does not sell such a product (e.g. cola at a drugstore), switch on **“Do not show Anywhere items here”** in that store’s settings. Moving one to a store with ⇄ simply relocates it, nothing is left under “Done”. The other way round works too: ⇄ → **🤷 Anywhere**. Checked off in a store tab, it belongs to that store from then on (there under “Done”, gone from the others) – and comes back there next time.
 - **Long-press** = menu: edit, move, quantity, category, photo, barcode, info.
 - **Tap the quantity** = [−] 2x [＋].
 - ✨ = new since you last looked; the red number on a tab shows how much is new there.

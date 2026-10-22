@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.22-beta.7";
+const EL_VERSION = "2.76.22-beta.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.21"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -49,14 +49,14 @@ const EL_GUIDE = [
       "Oben die Reiter: <b>Alle</b>, Aldi, Netto … Die Zahl zeigt, wie viel dort offen ist. Die <b>rote Blase</b> heißt: Da ist etwas Neues dazugekommen, seit du zuletzt geschaut hast. <b>✨</b> am Artikel = neu von jemand anderem (bis du abhakst oder es antippst, höchstens 24 Stunden).",
       "<b>⇄ war aus:</b> <b>„Nächstes Mal wieder hier“</b> (bleibt offen, alle sehen 3 Tage lang „⇄ war aus“) oder gleich in ein anderes Geschäft schieben. Den Knopf gibt es nur mit mehr als einem Geschäft. War ein Produkt schon 3-mal aus, warnt die Liste beim Eintragen („lieber woanders?“).",
       "<b>📍 Automatisch zum Geschäft:</b> Bist du in der Zone eines Geschäfts, springt die Liste auf dessen Reiter. Das lässt sich in den Karten-Optionen ausschalten.",
-      "<b>🤷 „Egal wo“</b> = kein festes Geschäft: steht in jedem Reiter mit drin. Mit ⇄ in ein Geschäft schieben = zieht einfach um.",
+      "<b>🤷 „Egal wo“</b> = kein festes Geschäft: steht in jedem Reiter mit drin. Mit ⇄ in ein Geschäft schieben = zieht einfach um. Bei einem Geschäft, wo es das nicht gibt (z. B. Cola bei dm), schaltest du in dessen Einstellungen <b>„Egal wo“-Artikel hier nicht zeigen</b> ein.",
       "Kein Netz im Laden? Einfach weiter abhaken. Oben in der Leiste steht dann <b>⏳ orange</b>, alles wird nachgeschickt, sobald wieder Netz da ist.",
     ],
     en: [
       "Tabs at the top: <b>All</b>, Aldi, Netto … The number shows what is open there. The <b>red bubble</b> means something new arrived since you last looked. <b>✨</b> on an item = new from someone else (until you check it off or tap it, 24 hours at most).",
       "<b>⇄ was out:</b> <b>“Here again next time”</b> (stays open, everyone sees “⇄ was out” for 3 days) or move it straight to another store. The button only exists with more than one store. If a product was already out 3 times, the list warns you when adding (“better elsewhere?”).",
       "<b>📍 Automatically to the store:</b> When you are in a store's zone, the list jumps to its tab. You can switch this off in the card options.",
-      "<b>🤷 “Anywhere”</b> = no fixed store: appears in every tab. Moving it with ⇄ into a store simply moves it.",
+      "<b>🤷 “Anywhere”</b> = no fixed store: appears in every tab. Moving it with ⇄ into a store simply moves it. At a store that does not sell it (e.g. cola at a drugstore) switch on <b>“Do not show Anywhere items here”</b> in its settings.",
       "No signal in the store? Keep checking off. The bar at the top shows <b>⏳ orange</b>, and everything is sent as soon as the network is back.",
     ] },
   { id: "edit", icon: "👆", c: "#5e35b1", t: ["Ändern & lange drücken", "Editing & long-press"], s: ["Menü, Notizen, Spitznamen, ⭐", "Menu, notes, nicknames, ⭐"],
@@ -401,6 +401,9 @@ const EL_BETA_NEWS = [
   ["🍟 <b>Fritteuse für alle:</b> Die Werte aus dem Kochmodus an die Fritteuse schicken darf jetzt jeder, nicht nur Admins (braucht Airfryer Control ab Beta 17). Es wird nur bereitgestellt – gestartet wird am Gerät.",
    "🍟 <b>Air fryer for everyone:</b> Anyone can now send the values from cook mode to the air fryer, not only admins (needs Airfryer Control from beta 17). It only prepares – you start it on the device.",
    "beta.7"],
+  ["🤷 <b>„Egal wo“ pro Geschäft abschalten:</b> In den Einstellungen eines Geschäfts gibt es den Schalter „Egal wo“-Artikel hier nicht zeigen. Dann steht z. B. Cola bei dm nicht im Reiter und im Laden-Modus (unter „Alle“ und „Egal wo“ siehst du es weiter).",
+   "🤷 <b>Switch off “Anywhere” per store:</b> a store’s settings now have the switch “Do not show Anywhere items here”. Then e.g. cola does not appear in that store’s tab and in shopping mode (you still see it under “All” and “Anywhere”).",
+   "beta.8"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -4766,7 +4769,7 @@ class EinkaufslisteCard extends HTMLElement {
     const t = this._activeTab;
     if (t === "all") return true;
     if (t === "none") return !item.store_id;
-    return item.store_id === t || !item.store_id; // 🤷 „Egal wo“ gibt es in jedem Geschäft
+    return item.store_id === t || (!item.store_id && !this._store(t)?.no_any); // 🤷 „Egal wo“ gibt es in jedem Geschäft (außer dort, wo es abgeschaltet ist)
   }
   _autoCheckDate(item) {
     const s = this._data?.settings;
@@ -5086,7 +5089,7 @@ class EinkaufslisteCard extends HTMLElement {
     btnR.querySelector("ha-icon").setAttribute("icon", this._view === "recipes" ? "mdi:close" : "mdi:chef-hat");
     if (!d) { this.$("listView").hidden = true; this.$("footer").hidden = true; return; }
 
-    const open = d.items.filter((i) => !i.checked && (this._fixedStore ? i.store_id === this._fixedStore || !i.store_id : true));
+    const open = d.items.filter((i) => !i.checked && (this._fixedStore ? i.store_id === this._fixedStore || (!i.store_id && !this._store(this._fixedStore)?.no_any) : true));
     const cnt = this.$("count");
     cnt.hidden = open.length === 0;
     cnt.textContent = open.length;
@@ -5138,7 +5141,7 @@ class EinkaufslisteCard extends HTMLElement {
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
     for (const s of d.stores) {
       const closed = elStoreClosed(s);
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || !i.store_id)}</span>${bubble((i) => i.store_id === s.id || !i.store_id, active === s.id)}</button>`);
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || (!i.store_id && !s.no_any))}</span>${bubble((i) => i.store_id === s.id || (!i.store_id && !s.no_any), active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
@@ -6357,6 +6360,7 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
         <div class="picker" hidden></div>
         ${this._catSetHtml(e)}
         ${this._catOrderHtml(e)}
+        <button class="swline" data-act="store-noany" data-id="${e.id}" aria-pressed="${!!e.no_any}" title="Artikel ohne festes Geschäft („Egal wo“) stehen dann in diesem Reiter nicht mit drin – z. B. Cola bei dm"><span class="grow"><b>„Egal wo“-Artikel hier nicht zeigen</b><small>Gilt für den Reiter und den Laden-Modus dieses Geschäfts. Unter „Alle“ und „Egal wo“ siehst du sie weiter.</small></span><span class="tgl"><span></span></span></button>
         ${this._hoursEditHtml(e)}
         <b class="shead">🗞️ Prospekt-Link</b>
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:newspaper-variant-outline"></ha-icon><input class="grow" type="url" inputmode="url" data-field="flyer" value="${esc(e.flyer || "")}" placeholder="🗞️ Prospekt-Link (https://…)" title="Adresse des Prospekts. Wird nur beim Antippen geöffnet."></div>
@@ -9134,7 +9138,7 @@ ${(() => {
     // 🔴 Blase: nur der Reiter, der gerade offen ist (nicht „Alle“)
     if (tab !== "all" && this._newCount(fn)) sendSeen("b:" + tab);
     // 🤷 „Egal wo“ steht in jedem Geschäft mit drin – also dort auch gleich als gesehen merken
-    if (tab !== "all" && tab !== "none") {
+    if (tab !== "all" && tab !== "none" && !this._store(tab)?.no_any) {
       const none = (i) => !i.store_id;
       if (this._data.items.some((i) => none(i) && this._isNewFor(i, seen))) sendSeen("none");
       if (this._newCount(none)) sendSeen("b:none");
@@ -11892,7 +11896,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         if (!open.length && !res.note) open = this._data.items.filter((i) => !i.checked && i.name.toLowerCase() === res.name.toLowerCase());
         let pool = open;
         if (manual && store) { // Reiter: dieses Geschäft und „Egal wo“
-          pool = open.filter((i) => !i.store_id || i.store_id === store.id);
+          pool = open.filter((i) => (!i.store_id && !store.no_any) || i.store_id === store.id);
           if (open.length && !pool.length) return `ℹ️ ${res.name} steht nur bei einem anderen Geschäft auf der Liste`;
         } else if (manual && open.length > 1 && new Set(open.map((i) => i.store_id || "")).size > 1) {
           return `❓ ${res.name} steht bei mehreren Geschäften – bitte im Reiter des Geschäfts scannen`; // nicht auf Verdacht abhaken
@@ -13233,6 +13237,12 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           .then(() => { this._toast("✖ Ausgeblendet – kommt nur wieder, wenn es erneut fehlt"); setTimeout(() => this._renderMissed(), 150); })
           .catch(() => {});
         break;
+      case "store-noany": {
+        const st = this._store(el.dataset.id);
+        this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: el.dataset.id, no_any: !st?.no_any })
+          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
+        break;
+      }
       case "year-toggle":
         this._ws({ type: "einkaufsliste/year/set", on: this._data.settings?.year_on === false })
           .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});

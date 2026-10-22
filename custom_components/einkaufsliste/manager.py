@@ -4355,6 +4355,11 @@ class EinkaufslisteManager:
             if code and code not in HOLIDAY_STATES:
                 raise ValueError("Das Bundesland kenne ich nicht.")
             entry["holiday_state"] = code or None
+        if "no_any" in fields and kind == "stores":  # 🤷 „Egal wo“-Artikel hier nicht zeigen (z. B. Cola bei dm)
+            if fields["no_any"]:
+                entry["no_any"] = True
+            else:
+                entry.pop("no_any", None)
         if "hours" in fields and kind == "stores":  # 🕒 Öffnungszeiten (7 Tage Mo..So; None = zu; sonst ["08:00","20:00"])
             entry["hours"] = _clean_hours(fields["hours"])
         self._changed()

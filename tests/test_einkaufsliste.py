@@ -4539,3 +4539,18 @@ async def test_rezept_quelle_und_karte_am_geschaeft(hass, setup, hass_ws_client)
     assert (await client.receive_json())["result"]["store_id"] is None
     await client.send_json({"id": 5, "type": "einkaufsliste/card/update", "card_id": card["id"], "store_id": "gibtsnicht"})
     assert (await client.receive_json())["success"] is False
+
+
+async def test_geschaeft_egal_wo_abschalten(hass, setup, hass_ws_client) -> None:
+    """🤷 Pro Geschäft lassen sich „Egal wo“-Artikel abschalten (Schalter no_any)."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    await client.send_json({"id": 1, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "no_any": True})
+    res = await client.receive_json()
+    assert res["success"], res
+    assert m.store_by_id(aldi).get("no_any") is True
+    assert any(s["id"] == aldi and s.get("no_any") for s in m.as_dict()["stores"])
+    await client.send_json({"id": 2, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "no_any": False})
+    assert (await client.receive_json())["success"]
+    assert "no_any" not in m.store_by_id(aldi)
