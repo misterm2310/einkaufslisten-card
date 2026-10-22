@@ -4491,30 +4491,34 @@ async def test_jahresrueckblick_zaehler(hass, setup, hass_ws_client) -> None:
     client = await hass_ws_client(hass)
     m = mgr(hass)
     aldi = m.find_store("Aldi")
-    for i, name in enumerate(("Milch", "Milch", "Brot"), start=1):
-        await client.send_json({"id": i, "type": "einkaufsliste/item/add", "name": name, "store_id": aldi})
-        item = (await client.receive_json())["result"]
-        await client.send_json({"id": 10 + i, "type": "einkaufsliste/item/toggle", "item_id": item["id"]})
-        assert (await client.receive_json())["success"]
-    await client.send_json({"id": 30, "type": "einkaufsliste/year/get"})
-    res = (await client.receive_json())["result"]
+    nid = 0
+
+    async def ws(**msg):
+        nonlocal nid
+        nid += 1
+        await client.send_json({"id": nid, **msg})
+        res = await client.receive_json()
+        assert res["success"], res
+        return res["result"]
+
+    milch = await ws(type="einkaufsliste/item/add", name="Milch", store_id=aldi)
+    brot = await ws(type="einkaufsliste/item/add", name="Brot", store_id=aldi)
+    for item_id, checked in ((milch["id"], True), (milch["id"], False), (milch["id"], True), (brot["id"], True)):
+        await ws(type="einkaufsliste/item/toggle", item_id=item_id, checked=checked)
+    res = await ws(type="einkaufsliste/year/get")
     assert res["on"] is True
-    assert res["added"] >= 2 and res["bought"] >= 2
-    assert res["items"][0][0] == "Milch"
-    assert sum(res["months"]) == res["bought"]
+    assert res["added"] >= 2
+    assert res["bought"] == 3
+    assert res["items"][0] == ["Milch", 2]
+    assert sum(res["months"]) == 3
     assert res["best_month"] is not None
     # Ausschalten: es wird nichts mehr gezählt
-    await client.send_json({"id": 31, "type": "einkaufsliste/year/set", "on": False})
-    assert (await client.receive_json())["success"]
-    before = m.year_summary()["bought"]
-    await client.send_json({"id": 32, "type": "einkaufsliste/item/add", "name": "Käse"})
-    item = (await client.receive_json())["result"]
-    await client.send_json({"id": 33, "type": "einkaufsliste/item/toggle", "item_id": item["id"]})
-    assert (await client.receive_json())["success"]
-    assert m.year_summary()["bought"] == before
+    await ws(type="einkaufsliste/year/set", on=False)
+    kaese = await ws(type="einkaufsliste/item/add", name="Käse")
+    await ws(type="einkaufsliste/item/toggle", item_id=kaese["id"], checked=True)
+    assert m.year_summary()["bought"] == 3
     # Zähler löschen
-    await client.send_json({"id": 34, "type": "einkaufsliste/year/reset"})
-    assert (await client.receive_json())["success"]
+    await ws(type="einkaufsliste/year/reset")
     assert m.year_summary()["bought"] == 0
 
 
