@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.22-beta.6";
+const EL_VERSION = "2.76.22-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.21"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -238,12 +238,12 @@ const EL_HELP = {
     "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
     "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
     "<b>🔗 Quelle &amp; Original:</b> Beim Import per Link merkt sich das Rezept die Adresse (im Editor unter dem Namen änderbar, auch von Hand eintragbar). In der Rezeptliste öffnet „Original öffnen“ die Seite. <b>👨‍🍳 Kochmodus:</b> Er merkt sich pro Rezept den Schritt und fragt beim nächsten Start, ob du dort weitermachen willst.",
-    "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (nur für Admins) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
+    "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (für alle, mit Airfryer Control ab Beta 17) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
   ], [
     "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; a list like the categories: tap a group = change name, colour and icon, ⌃⌄ = order; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
     "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text, recipe link or “📷 From photo”), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
     "<b>🔗 Source &amp; original:</b> when importing by link the recipe remembers the address (editable under the name in the editor, can also be typed in). In the recipe list “Open original” opens the page. <b>👨‍🍳 Cook mode:</b> it remembers the step per recipe and asks at the next start whether you want to continue there.",
-    "<b>🍟 Air fryer:</b> if a step has “Heißluftfritteuse” with a mode (air fry, bake, grill or reheat), temperature and minutes and <b>Airfryer Control</b> is installed, cook mode shows the button “Send to Airfryer Control” (admins only). You pick the basket (it always asks); the fryer is prepared, <b>you press Start on the device</b>.",
+    "<b>🍟 Air fryer:</b> if a step has “Heißluftfritteuse” with a mode (air fry, bake, grill or reheat), temperature and minutes and <b>Airfryer Control</b> is installed, cook mode shows the button “Send to Airfryer Control” (for everyone, with Airfryer Control from beta 17). You pick the basket (it always asks); the fryer is prepared, <b>you press Start on the device</b>.",
   ]],
   listview: ["view", [
     "Was beim Artikel zu sehen ist, die Leiste und die Eingabefelder oben sowie die <b>Schriftgröße</b> – das hier ist der Standard <b>für alle</b>. Jeder kann es für sich selbst anders einstellen: ganz unten unter der Liste mit <b>👁️ Ansicht</b>, ohne PIN. Die Seite besteht aus <b>Kästen zum Aufklappen</b> (Schriftgröße, Oben &amp; beim Eintragen, Beim Artikel) – immer nur einer ist offen.",
@@ -398,6 +398,9 @@ const EL_BETA_NEWS = [
   ["🎁 <b>Euer Jahr in Einkäufen</b> (⚙️ → App &amp; Info): Rückblick mit Top-Produkten, Wer trägt am meisten ein, Lieblingsgeschäft und stärkstem Monat – es zählt ab jetzt, nur Zahlen. 💳 <b>Kundenkarte am Geschäft:</b> im Laden-Modus steht sie oben (📍). ▥ Scan sagt „steht schon drauf“. 👨‍🍳 Kochmodus merkt sich den Schritt pro Rezept. 🔗 Rezept merkt sich die Quelle (<b>Original öffnen</b>). Airfryer-Control-Symbol im Kochmodus: Werte an die Fritteuse schicken (nur Admins, nur mit Airfryer Control).",
    "🎁 <b>Your year in shopping</b> (⚙️ → App &amp; info): look back with top products, who adds the most, favourite store and busiest month – counts from now on, numbers only. 💳 <b>Card at a store:</b> in shopping mode it is at the top (📍). ▥ Scan says “already on it”. 👨‍🍳 Cook mode remembers the step per recipe. 🔗 Recipes remember their source (<b>Open original</b>). Airfryer Control icon in cook mode: send the values to the fryer (admins only, only with Airfryer Control).",
    "beta.6"],
+  ["🍟 <b>Fritteuse für alle:</b> Die Werte aus dem Kochmodus an die Fritteuse schicken darf jetzt jeder, nicht nur Admins (braucht Airfryer Control ab Beta 17). Es wird nur bereitgestellt – gestartet wird am Gerät.",
+   "🍟 <b>Air fryer for everyone:</b> Anyone can now send the values from cook mode to the air fryer, not only admins (needs Airfryer Control from beta 17). It only prepares – you start it on the device.",
+   "beta.7"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -10306,11 +10309,11 @@ ${(() => {
       const ch = chosenHeat();
       heatBox.style.display = ch.length ? "flex" : "none";
       heatBox.innerHTML = ch.map((h) => `<div class="ic" style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 16px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
-      // 🍟 Nr. 100: bei „Heißluftfritteuse“ (nur Admins, nur mit Temperatur und Minuten, nur wenn Airfryer Control installiert ist) steht neben der Anzeige das Symbol zum Schicken – der Start bleibt am Gerät
-      if (this._hass?.user?.is_admin) {
+      // 🍟 Nr. 100: bei „Heißluftfritteuse“ (für alle, nur mit Temperatur und Minuten, nur wenn Airfryer Control mit dem Dienst programm_senden installiert ist) steht neben der Anzeige das Symbol zum Schicken – der Start bleibt am Gerät
+      if (this._hass?.services?.airfryer_control?.programm_senden) {
         const rows = ch.map((h, n) => [h, heatBox.children[n]]).filter(([h, el]) => el && this._fryerOk(h));
         if (rows.length) this._fryerDevices().then((devs) => {
-          if (!devs.length) return;
+          if (devs && !devs.length) return; // Admin ohne Fritteuse; Nicht-Admins (devs = null) sehen den Knopf trotzdem
           for (const [h, el] of rows) {
             if (!el.isConnected || el.querySelector("button")) continue;
             const fb = document.createElement("button");
@@ -10896,13 +10899,13 @@ ${(() => {
     return h && h.device === "Heißluftfritteuse" && EL_FRYER_MODES[h.mode] && Number(h.temp) > 0 && Number(h.minutes) > 0;
   }
 
-  // Gibt es Airfryer Control? (Geräteliste, nur für Admins; Ergebnis kurz gemerkt)
+  // Gibt es Airfryer Control? (Geräteliste geht nur für Admins; Ergebnis kurz gemerkt. Bei Nicht-Admins: null = „unbekannt“, der Dienst nimmt dann die einzige Fritteuse)
   _fryerDevices() {
     if (!this._fryerP || Date.now() - (this._fryerT || 0) > 60000) {
       this._fryerT = Date.now();
       this._fryerP = this._hass.callWS({ type: "config/device_registry/list" })
         .then((l) => l.filter((d) => (d.identifiers || []).some((x) => x[0] === "airfryer_control")))
-        .catch(() => []);
+        .catch(() => null);
     }
     return this._fryerP;
   }
@@ -10911,9 +10914,9 @@ ${(() => {
     try {
       btn.disabled = true;
       const devs = await this._fryerDevices();
-      if (!devs.length) { this._toast(elT("Airfryer Control nicht gefunden – ist die Integration installiert?")); return; }
-      let dev = devs[0];
-      if (devs.length > 1) {
+      if (devs && !devs.length) { this._toast(elT("Airfryer Control nicht gefunden – ist die Integration installiert?")); return; }
+      let dev = devs ? devs[0] : null; // null (kein Admin): ohne Geräte-Angabe, Airfryer Control nimmt die einzige Fritteuse
+      if (devs && devs.length > 1) {
         const id = await askChoice("Welche Fritteuse?", devs.map((d) => [d.id, d.name_by_user || d.name || d.id]));
         if (!id) return;
         dev = devs.find((d) => d.id === id);
@@ -10921,8 +10924,8 @@ ${(() => {
       const zone = await askChoice("Welcher Korb?", [["1", elT("Korb 1")], ["2", elT("Korb 2")], ["3", elT("Grandzone (ganze Schublade)")]]);
       if (!zone) return;
       const res = await this._hass.callWS({
-        type: "call_service", domain: "airfryer_control", service: "senden_testen", return_response: true,
-        service_data: { geraet: dev.id, zone: Number(zone), temperatur: Math.round(Number(h.temp)), minuten: Math.round(Number(h.minutes)), programm: EL_FRYER_MODES[h.mode] },
+        type: "call_service", domain: "airfryer_control", service: "programm_senden", return_response: true,
+        service_data: { ...(dev ? { geraet: dev.id } : {}), zone: Number(zone), temperatur: Math.round(Number(h.temp)), minuten: Math.round(Number(h.minutes)), programm: EL_FRYER_MODES[h.mode] },
       });
       const r = res?.response || {};
       this._toast(r.ok ? elT("✅ Fritteuse ist vorbereitet – jetzt am Gerät auf Start drücken") : `⚠️ ${r.fehler || elT("Hat nicht geklappt")}`);
