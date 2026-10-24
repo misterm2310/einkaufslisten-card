@@ -50,11 +50,10 @@ Empty input fields show an example (for the quantity one that fits the product, 
 
 ## 📦 Installation
 
-1. Open **HACS** → top right **⋮ → Custom repositories**.
-2. Add `https://github.com/misterm2310/einkaufslisten-card`, type **Integration**.
-3. Search for **Einkaufsliste**, **Download**, **restart Home Assistant**.
-4. **Settings → Devices & services → Add integration → Einkaufsliste** → Submit, done. 🎉 (Cleanup day and time are set later in the card: ⚙️ → Cleanup.)
-5. Dashboard → **Edit → Add card → Einkaufsliste**.
+1. Open **HACS** and search for **Einkaufsliste**.
+2. **Download**, then **restart Home Assistant**.
+3. **Settings → Devices & services → Add integration → Einkaufsliste** → Submit, done. 🎉 (Cleanup day and time are set later in the card: ⚙️ → Cleanup.)
+4. Dashboard → **Edit → Add card → Einkaufsliste**.
 
 ```yaml
 type: custom:einkaufsliste-card
@@ -62,6 +61,11 @@ type: custom:einkaufsliste-card
 
 > 🙌 No need to add a resource by hand – the integration does it.
 > Card looks odd after an update? Pull down to refresh in the app or press Ctrl+F5 in the browser.
+
+<details><summary>HACS doesn't find Einkaufsliste? (as a custom repository)</summary>
+
+In HACS open **⋮ → Custom repositories** at the top right, add `https://github.com/misterm2310/einkaufslisten-card`, type **Integration**, **Add**. Then continue with step 1.
+</details>
 
 <details><summary>Without HACS (manually)</summary>
 
@@ -88,7 +92,7 @@ Copy `custom_components/einkaufsliste` to `/config/custom_components/einkaufslis
 
 **In the store:** the **🏪 store** at the top right switches on **shop mode**. No connection? Keep checking off, the bar at the top shows ⏳ in orange and everything is sent later. The **🧮 calculator** (left of 💳, only in shop mode) is there for quick sums: + − × ÷ and %, keys vibrate briefly, ← takes you back to your place in the list. The Below the list, **🔊 Read aloud** reads out the open items. Set the **vibration** under 👁️ View (Off/Low/Normal/Strong). Enter **🕒 opening hours** in ⚙️ → Stores (optional, also several time slots a day, copyable to other days, with “＋ Branch” its own times for each branch, e.g. 3× K&K, with “🌐 Times from OpenStreetMap” fetched from the web on tap (Home Assistant asks, the times come from volunteers) and with “🎌 Closed on holidays” by your state): when a store is closed its tab turns grey, and pressing and holding the name shows the hours. **🗞️ Flyer link** per store (⚙️ → Stores): press and hold the name, then “Open flyer”. Only the address is stored, the card never fetches anything itself, and the page does not learn where you came from. **💡 icon** (between 💳 and the 🏪 store) keeps the screen on in shop mode – it switches off by itself when you leave. **In the HA app** this only works with its own setting: *Settings → Companion App → “Keep screen On”*. In store mode only **🔊 Read aloud** is left at the bottom (no “Next tidy-up”, no other buttons). While typing, the name exactly as typed comes first (“Pear” before “Pears”). When adding, the quantity button shows the chosen number in blue instead of “123”. “There are photos” shows a picture icon (stacked pictures for several); in store mode it sits on the right, where the offer sign used to be; the catalogue shows this icon for photos too.
 
-**Recipes:** create them in ⚙️ → Recipes (ingredients just like on the list, or paste an ingredient list or a recipe link). The **chef's hat** at the top: **Add to list** → tick what's missing → done. Also 👥 people or 🍕 trays scaling, **🔥 Cook** (step by step), **Share** (e.g. WhatsApp) and **⏲️ cooking times**. **🔗 Open original:** when importing by link the recipe remembers the source. Cook mode remembers the step per recipe and asks whether you want to continue there. **💳 Card at a store:** when editing a card pick a store – in shopping mode there it is at the very top of “My cards” (📍), the others stay below. **🍟 Air fryer:** if a step has “Heißluftfritteuse” with mode, temperature and minutes and Airfryer Control is installed, the button in cook mode (admins only) sends the values to the fryer – you start it on the device. **▥ Scan:** if a scanned item is already on the list, the list says “already on it”. Checked recipe ingredients disappear completely. The buttons are icons only; ⚙️ → Extras → **Labels** or a long press shows the text.
+**Recipes:** create them in ⚙️ → Recipes (ingredients just like on the list, or paste an ingredient list or a recipe link). The **chef's hat** at the top: **Add to list** → tick what's missing → done. Also 👥 people or 🍕 trays scaling, **🔥 Cook** (step by step), **Share** (e.g. WhatsApp) and **⏲️ cooking times**. **🔗 Open original:** when importing by link the recipe remembers the source. Cook mode remembers the step per recipe and asks whether you want to continue there. **💳 Card at a store:** when editing a card pick a store – in shopping mode there it is at the very top of “My cards” (📍), the others stay below. **🍟 Air fryer:** if a step has “Heißluftfritteuse” with mode, temperature and minutes and Airfryer Control is installed, the button in cook mode (for everyone, needs a current Airfryer Control) sends the values to the fryer – you start it on the device. **▥ Scan:** if a scanned item is already on the list, the list says “already on it”. Checked recipe ingredients disappear completely. The buttons are icons only; ⚙️ → Extras → **Labels** or a long press shows the text.
 
 ---
 
@@ -348,7 +352,7 @@ The sensor also has the fields `naechster` (e.g. “Lasagna – Schritt 2”), `
 
 **Where is the data stored?** Locally in Home Assistant (`/config/.storage/einkaufsliste.data`, photos in `/config/einkaufsliste_fotos`). No cloud. Your HA backups include it; ⚙️ → Data → Import & backup gives you an extra .zip.
 
-**The card says “Integration not set up”.** Then step 4 of the installation is missing.
+**The card says “Integration not set up”.** Then step 3 of the installation is missing.
 
 **Why are my categories German?** The integration was set up while Home Assistant was in German. Just rename them in ⚙️ → Categories – the guessing works by keywords in the category name (e.g. “Dairy”, “Frozen”, “Drinks”).
 

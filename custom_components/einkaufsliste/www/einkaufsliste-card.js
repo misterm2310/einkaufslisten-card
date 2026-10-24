@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.22-beta.8";
+const EL_VERSION = "2.76.22";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.21"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.22"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -385,26 +385,7 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [
-  ["⏲️ <b>Timer-Laufband:</b> Neue Dashboard-Karte „Einkaufsliste – Timer-Laufband“. Ein Band läuft in Endlosschleife durch und zeigt alle Kochtimer („fertig um 18:30 Uhr“, am Ende FERTIG!). Das Band ist aus, wenn kein Timer läuft; fertige Timer wegdrücken per Antippen ist ein Schalter (aus). · 🔙 In „Meine Karten“ zeigt eine einzelne Karte oben jetzt den Pfeil ← statt ✕.",
-   "⏲️ <b>Timer ticker:</b> New dashboard card “Shopping list – timer ticker”. A band runs in an endless loop and shows all cooking timers (“done at 6:30 pm”, DONE! at the end). It is hidden when no timer runs; dismissing finished timers by tapping is a switch (off). · 🔙 In “My cards” a single card now shows the ← arrow instead of ✕ at the top.",
-   "beta.1"],
-  ["⏲️ <b>Timer-Laufband:</b> Das Tempo wird jetzt aus der echten Textbreite berechnet (Pixel pro Sekunde) – jeder Text läuft gleich schnell, auch beim Airfryer-Control-Laufband.",
-   "⏲️ <b>Timer ticker:</b> The speed is now calculated from the real text width (pixels per second) – every text runs at the same speed, also in the Airfryer Control ticker.",
-   "beta.4"],
-  ["🍳 <b>Timer-Laufband:</b> Vor jedem Timer steht jetzt ein eigenes Symbol (Kochmütze mit Wecker, in den Farben der Einkaufsliste) statt ⏲️ und ⏰.",
-   "🍳 <b>Timer ticker:</b> Every timer now starts with its own icon (chef hat with a clock, in the shopping list colours) instead of ⏲️ and ⏰.",
-   "beta.5"],
-  ["🎁 <b>Euer Jahr in Einkäufen</b> (⚙️ → App &amp; Info): Rückblick mit Top-Produkten, Wer trägt am meisten ein, Lieblingsgeschäft und stärkstem Monat – es zählt ab jetzt, nur Zahlen. 💳 <b>Kundenkarte am Geschäft:</b> im Laden-Modus steht sie oben (📍). ▥ Scan sagt „steht schon drauf“. 👨‍🍳 Kochmodus merkt sich den Schritt pro Rezept. 🔗 Rezept merkt sich die Quelle (<b>Original öffnen</b>). Airfryer-Control-Symbol im Kochmodus: Werte an die Fritteuse schicken (nur Admins, nur mit Airfryer Control).",
-   "🎁 <b>Your year in shopping</b> (⚙️ → App &amp; info): look back with top products, who adds the most, favourite store and busiest month – counts from now on, numbers only. 💳 <b>Card at a store:</b> in shopping mode it is at the top (📍). ▥ Scan says “already on it”. 👨‍🍳 Cook mode remembers the step per recipe. 🔗 Recipes remember their source (<b>Open original</b>). Airfryer Control icon in cook mode: send the values to the fryer (admins only, only with Airfryer Control).",
-   "beta.6"],
-  ["🍟 <b>Fritteuse für alle:</b> Die Werte aus dem Kochmodus an die Fritteuse schicken darf jetzt jeder, nicht nur Admins (braucht Airfryer Control ab Beta 17). Es wird nur bereitgestellt – gestartet wird am Gerät.",
-   "🍟 <b>Air fryer for everyone:</b> Anyone can now send the values from cook mode to the air fryer, not only admins (needs Airfryer Control from beta 17). It only prepares – you start it on the device.",
-   "beta.7"],
-  ["🤷 <b>„Egal wo“ pro Geschäft abschalten:</b> In den Einstellungen eines Geschäfts gibt es den Schalter „Egal wo“-Artikel hier nicht zeigen. Dann steht z. B. Cola bei dm nicht im Reiter und im Laden-Modus (unter „Alle“ und „Egal wo“ siehst du es weiter).",
-   "🤷 <b>Switch off “Anywhere” per store:</b> a store’s settings now have the switch “Do not show Anywhere items here”. Then e.g. cola does not appear in that store’s tab and in shopping mode (you still see it under “All” and “Anywhere”).",
-   "beta.8"],
-];
+const EL_BETA_NEWS = [];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -412,6 +393,18 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", year: "#e91e63", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["⏲️ <b>Timer-Laufband:</b> Neue Dashboard-Karte „Einkaufsliste – Timer-Laufband“. Ein Band läuft endlos durch und zeigt alle Kochtimer mit eigenem Symbol (Kochmütze mit Wecker) und „fertig um 18:30 Uhr“, am Ende FERTIG!. Jeder Text läuft gleich schnell. Läuft kein Timer, ist das Band aus.",
+   "⏲️ <b>Timer ticker:</b> new dashboard card “Shopping list – timer ticker”. A band runs in an endless loop and shows all cooking timers with their own icon (chef hat with a clock) and “done at 6:30 pm”, DONE! at the end. Every text runs at the same speed. With no timer running the band is hidden."],
+  ["🎁 <b>Euer Jahr in Einkäufen</b> (⚙️ → App &amp; Info): Rückblick mit Top-Produkten, wer am meisten einträgt, Lieblingsgeschäft und stärkstem Monat – es zählt ab jetzt, nur Zahlen.",
+   "🎁 <b>Your year in shopping</b> (⚙️ → App &amp; info): a look back with top products, who adds the most, favourite store and busiest month – it counts from now on, numbers only."],
+  ["💳 <b>Kundenkarte am Geschäft:</b> Beim Bearbeiten einer Karte ein Geschäft wählen – im Laden-Modus steht sie dort ganz oben (📍). ▥ Beim Scannen sagt die Liste „steht schon drauf“, wenn der Artikel schon draufsteht.",
+   "💳 <b>Card at a store:</b> choose a store when editing a card – in shopping mode it is at the very top there (📍). ▥ When scanning, the list says “already on it” if the item is already there."],
+  ["👨‍🍳 <b>Kochmodus merkt sich den Schritt</b> pro Rezept und fragt, ob du dort weitermachen willst. 🔗 Beim Import per Link merkt sich das Rezept die Quelle: <b>Original öffnen</b>.",
+   "👨‍🍳 <b>Cook mode remembers the step</b> per recipe and asks whether you want to continue there. 🔗 When imported from a link, the recipe remembers its source: <b>Open original</b>."],
+  ["🍟 <b>Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm, Temperatur und Minuten, schickt das Airfryer-Control-Symbol im Kochmodus die Werte an die Fritteuse – für alle, nicht nur Admins (braucht eine aktuelle Airfryer Control). Gestartet wird am Gerät.",
+   "🍟 <b>Air fryer:</b> if a step has “Heißluftfritteuse” with mode, temperature and minutes, the Airfryer Control icon in cook mode sends the values to the fryer – for everyone, not only admins (needs a current Airfryer Control). You start it on the device."],
+  ["🤷 <b>„Egal wo“ pro Geschäft abschalten:</b> In den Einstellungen eines Geschäfts gibt es den Schalter „Egal wo“-Artikel hier nicht zeigen – dann steht z. B. Cola bei dm nicht im Reiter und im Laden-Modus.",
+   "🤷 <b>Switch off “Anywhere” per store:</b> a store’s settings have the switch “Do not show Anywhere items here” – then e.g. cola does not show in that store’s tab and in shopping mode."],
   ["🔥 <b>Backofen &amp; Co. beim Schritt:</b> Im Rezept-Editor steht Backofen &amp; Co. unter „Zubereitung“. Jeder Eintrag (auch Kühlschrank 🧊, Tiefkühler ❄️ und Herd-Modus „Braten“) kann bei bestimmten Schritten erscheinen, ist einklappbar, verschiebbar und lässt sich duplizieren. Im Kochmodus steht die orange Info nur beim richtigen Schritt, bei mehreren Geräten wählst du am Start, womit gegart wird, und ändert sich das Rezept beim Kochen, zieht der Kochmodus sofort nach.",
    "🔥 <b>Oven &amp; Co. per step:</b> in the recipe editor Oven &amp; Co. is now under “Preparation”. Each entry (also fridge 🧊, freezer ❄️ and the stove mode “Fry”) can show at certain steps, can be folded, moved and duplicated. In cook mode the orange info only shows at the right step, with several devices you choose at the start what you cook with, and if the recipe changes while cooking, cook mode follows at once."],
   ["✏️ <b>Änderungswunsch im Kochmodus:</b> Oben neben dem Rezeptnamen (bei den Schritten) steht ein Symbol. Dort schreibst du frei, was anders sein soll; der Wunsch landet bei „Wartet auf OK“ und das Rezept ändert sich erst, wenn jemand ihn freigibt.",
@@ -10761,7 +10754,7 @@ ${(() => {
       <div class="pre"></div>
       <div class="adj"><button type="button" class="b m">−</button><span class="lbl"></span><button type="button" class="b p">+</button></div>
       <button type="button" class="b go">⏲️ ${T("Timer starten", "Start timer")}</button>
-      <p class="sub">${stepNo ? T(`Ohne Namen heißt der Timer „${r.name} – Schritt ${stepNo}“.`, `Without a name the timer is called “${r.name} – Schritt ${stepNo}”.`) : T("Ohne Namen heißt der Timer „Timer“.", "Without a name the timer is called “Timer”.")}</p>
+      <p class="sub">${stepNo ? T(`Ohne Namen heißt der Timer „${esc(r.name)} – Schritt ${stepNo}“.`, `Without a name the timer is called “${esc(r.name)} – Schritt ${stepNo}”.`) : T("Ohne Namen heißt der Timer „Timer“.", "Without a name the timer is called “Timer”.")}</p>
       <div class="list"></div>
     </div>`;
     const q = (sel) => ov.querySelector(sel);
