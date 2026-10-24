@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.22";
+const EL_VERSION = "2.76.23-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.22"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -255,6 +255,11 @@ const EL_HELP = {
   ], [
     "Needs a <b>postcode</b> (admins only). Also: “Only these stores” (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b>, <b>Switch off</b>. The status line shows the count and the last check. The offers come unofficially from Marktguru and can stop at any time.",
   ]],
+  recalls: ["extras", [
+    "<b>Einschalten</b> (nur Admins). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was in den letzten 30 Tagen abgehakt wurde. Treffer kommen als Meldung in Home Assistant, stehen hier mit Link und lassen sich mit ✔ wegklicken. Der Abgleich geht nur über den Namen – im Link prüfen, ob eure Packung betroffen ist.",
+  ], [
+    "<b>Turn on</b> (admins only). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything checked off in the last 30 days. Matches arrive as a Home Assistant notification, are listed here with a link and can be dismissed with ✔. Matching is by name only – check the link to see whether your pack is affected.",
+  ]],
   spend: ["extras", [
     "Eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist). Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert. Gilt für alle Geräte.",
   ], [
@@ -358,7 +363,7 @@ const EL_HELP = {
 };
 const EL_HELP_GROUPS = [ // Kapitel der Einstellungs-Anleitung: [Schlüssel, Icon, Titel de, Titel en, [Zeilen], Farbe]
   ["list", "📋", "Meine Liste", "My list", ["stores", "categories", "persons", "products", "recipes"], "#43a047"],
-  ["extras", "🎛️", "Extras", "Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"], "#f9a825"],
+  ["extras", "🎛️", "Extras", "Extras", ["offers", "recalls", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"], "#f9a825"],
   ["data", "💾", "Daten", "Data", ["transfer", "log", "cleanup"], "#1e88e5"],
   ["health", "🩺", "Gesundheit", "Health", ["check", "errors", "stats"], "#00897b"],
   ["view", "👁️", "Ansicht", "View", ["listview", "labels", "theme"], "#1e88e5"],
@@ -367,7 +372,7 @@ const EL_HELP_GROUPS = [ // Kapitel der Einstellungs-Anleitung: [Schlüssel, Ico
 
 const EL_HELP_TITLES = { // [Titel de, Titel en, Icon]
   stores: ["Geschäfte", "Stores", "🏪"], categories: ["Kategorien", "Categories", "🗂️"], persons: ["Personen", "People", "👤"], products: ["Produkte/Katalog", "Products/catalog", "📦"], recipes: ["Rezepte", "Recipes", "👨‍🍳"],
-  offers: ["Angebote", "Offers", "🏷️"], spend: ["Einkaufs-Protokoll", "Purchase log", "🧾"], cards: ["Kundenkarten", "Loyalty cards", "💳"], notetpl: ["Notiz-Vorlagen", "Note templates", "📝"], aicook: ["KI-Kochen", "AI cooking", "🤖"], autoshop: ["Laden-Modus automatisch", "Store mode automatic", "📍"], mascot: ["Maskottchen", "Mascot", "🛒"], labels: ["Beschriftungen", "Labels", "🏷️"],
+  offers: ["Angebote", "Offers", "🏷️"], recalls: ["Rückruf-Warnung", "Recall warning", "⚠️"], spend: ["Einkaufs-Protokoll", "Purchase log", "🧾"], cards: ["Kundenkarten", "Loyalty cards", "💳"], notetpl: ["Notiz-Vorlagen", "Note templates", "📝"], aicook: ["KI-Kochen", "AI cooking", "🤖"], autoshop: ["Laden-Modus automatisch", "Store mode automatic", "📍"], mascot: ["Maskottchen", "Mascot", "🛒"], labels: ["Beschriftungen", "Labels", "🏷️"],
   transfer: ["Import & Sicherung", "Import & backup", "📥"], log: ["Verlauf", "History", "🕘"], cleanup: ["Aufräumen", "Tidy up", "🧹"],
   check: ["Alles ok?", "All OK?", "✅"], errors: ["Fehler-Protokoll", "Error log", "🐞"], stats: ["Ressourcen", "Resources", "📊"],
   listview: ["Listenansicht – für alle", "List view – for everyone", "👁️"], app: ["Offline-App", "Offline app", "📱"], theme: ["Hell / Dunkel", "Light / dark", "🌓"], pin: ["Schutz (PIN)", "Protection (PIN)", "🔒"], privacy: ["Datenschutz", "Privacy", "🛡️"], year: ["Euer Jahr in Einkäufen", "Your year in shopping", "🎁"],
@@ -385,10 +390,14 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [];
+const EL_BETA_NEWS = [
+  ["⚠️ <b>Rückruf-Warnung:</b> Neu in ⚙️ → Extras (standardmäßig aus). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was ihr in den letzten 30 Tagen abgehakt habt. Treffer kommen als Meldung in Home Assistant und als Ereignis „einkaufsliste_rueckruf“. Von euch geht nichts raus; mit Datenschutz an wird nichts abgefragt.",
+   "⚠️ <b>Recall warning:</b> new in ⚙️ → Extras (off by default). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything you checked off in the last 30 days. Matches arrive as a Home Assistant notification and as the event “einkaufsliste_rueckruf”. Nothing of yours is sent; with privacy on nothing is fetched.",
+   "beta.1"],
+];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
-  offers: "#d81b60", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
+  offers: "#d81b60", recalls: "#e65100", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
   transfer: "#1e88e5", log: "#757575", cleanup: "#8d6e63", check: "#43a047", errors: "#e53935", stats: "#00897b",
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", year: "#e91e63", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
@@ -3057,6 +3066,9 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .offinfo { color:color-mix(in srgb, #e53935 70%, var(--primary-text-color)); font-weight:600; }
 #btnNewBarcode.plus::before { content:"+"; position:absolute; top:1px; right:4px; font:700 13px/1 Roboto,sans-serif; }
 .chip2.offsearch { border-style:dashed; } .chip2.offsearch ha-icon { color:#f9a825; }
+.recallhits { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
+.recallhit { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--error-color,#db4437) 10%, transparent); }
+.recallhit a { color:var(--primary-color); word-break:break-word; }
 .warnbox { background:color-mix(in srgb, var(--warning-color,#ffa600) 12%, transparent); border-radius:12px; padding:8px 12px; }
 .stats { display:flex; flex-direction:column; gap:2px; }
 .statrow { display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:8px; background:var(--secondary-background-color, rgba(127,127,127,.06)); }
@@ -6494,6 +6506,7 @@ ${(() => {
       { key: "privacy", icon: "mdi:shield-lock-outline", title: "Datenschutz", info: this._privacyOn() ? "an – keine Kamera/Fotos" : "aus", html: () => this._privacyHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
       { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
+      { key: "recalls", icon: "mdi:alert-octagon-outline", title: "Rückruf-Warnung", info: this._data.settings?.recalls?.enabled ? (this._data.settings.recalls.ok === false ? "⚠️ gerade nicht erreichbar" : `an · ${(this._data.settings.recalls.hits || []).length} Treffer`) : "aus", html: () => this._recallsHtml() },
       { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher, Umfang & Last", html: () => {
         this._accOpen = this._accOpen || {};
         if (this._accOpen.stats === undefined) this._accOpen.stats = "space"; // beim ersten Öffnen steht der Speicher gleich offen
@@ -6679,7 +6692,7 @@ ${(() => {
   _settingsListHtml(sections) {
     const groups = [
       ["📋 Meine Liste", ["stores", "categories", "persons", "products", "recipes"]],
-      ["🎛️ Extras", ["offers", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"]],
+      ["🎛️ Extras", ["offers", "recalls", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"]],
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
       ["👁️ Ansicht", ["listview", "labels", "theme"]],
@@ -10186,6 +10199,9 @@ ${(() => {
       <p class="hint">🏷️ <b>${t("Angebote", "Offers")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
         "Es gehen die Namen offener Artikel und deine Postleitzahl an Marktguru. Sonst nichts – keine Namen von Personen, keine Fotos. Inoffiziell, kann jederzeit aufhören zu funktionieren.",
         "The names of open items and your postcode go to Marktguru. Nothing else – no names of people, no photos. Unofficial, can stop working at any time.")}</p>
+      <p class="hint">⚠️ <b>${t("Rückruf-Warnung", "Recall warning")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
+        "Dein Home Assistant holt nur die öffentliche Warnliste von lebensmittelwarnung.de – wie ein Browser, der die Seite öffnet. Von euch geht nichts hin: keine Artikel, keine Namen, keine Postleitzahl. Der Abgleich mit euren Einkäufen passiert zu Hause. Die Meldung bei einem Treffer sehen alle Home-Assistant-Benutzer. Mit Datenschutz an wird nichts abgefragt.",
+        "Your Home Assistant only fetches the public warning list from lebensmittelwarnung.de – like a browser opening the page. Nothing of yours goes there: no items, no names, no postcode. The comparison with your purchases happens at home. The notification for a match is visible to all Home Assistant users. With privacy on nothing is fetched.")}</p>
       <p class="hint">🤖 <b>${t("KI-Kochen", "AI cooking")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
         "Es gehen die Namen der Zutaten (und auf Wunsch die offenen Artikel der Liste und deine Wünsche) an den KI-Assistenten, den ein Admin gewählt hat. Bei einem Cloud-Assistenten geht das ins Internet, bei einem lokalen (z. B. Ollama) bleibt es zu Hause. Dazu gehören auch die Listen „Immer im Haus“ und „Das nie vorschlagen“ aus den Einstellungen. Keine Fotos, keine Namen von Personen. Bei „Datenschutz an“ geht nichts raus.",
         "The names of the ingredients (and, if you wish, the open items of the list and your wishes) go to the AI assistant an admin has chosen. With a cloud assistant that goes over the internet, with a local one (e.g. Ollama) it stays at home. This includes the lists “Always at home” and “Never suggest” from the settings. No photos, no names of people. With “Privacy on” nothing is sent.")}</p>
@@ -11201,6 +11217,35 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       <div class="btnrow">
         <button class="btn primary" data-act="${on ? "offers-save" : "offers-on"}"><ha-icon icon="mdi:tag-outline"></ha-icon>${on ? "Speichern" : "Einschalten"}</button>
         ${on ? `<button class="btn" data-act="offers-refresh"><ha-icon icon="mdi:refresh"></ha-icon>Jetzt nachschauen</button><button class="btn" data-act="offers-off"><ha-icon icon="mdi:close"></ha-icon>Ausschalten</button>` : ""}
+      </div>` : `<p class="hint">🔒 Einschalten oder ändern kann das nur ein Admin.</p>`}`;
+  }
+
+  // ⚠️ Rückruf-Warnung: offizielle Warnungen (lebensmittelwarnung.de) gegen die Einkäufe der letzten 30 Tage
+  _recallsHtml() {
+    const r = this._data.settings?.recalls;
+    const on = !!r?.enabled;
+    const admin = !!this._hass?.user?.is_admin;
+    const last = r?.last ? new Date(r.last) : null;
+    const status = !on ? "" : this._privacyOn() ? `<p><b>🔒 Gesperrt</b> <span>– Datenschutz ist an, es wird nichts abgefragt.</span></p>`
+      : r.ok === false ? `<p><b>⚠️ Gerade nicht erreichbar.</b> <span>${esc(r.error || "")}</span></p>`
+      : last ? `<p><b>✅ An</b> <span>· zuletzt</span> ${WD_SHORT[pyWd(last)]}. ${String(last.getHours()).padStart(2, "0")}:${String(last.getMinutes()).padStart(2, "0")} <span>·</span> ${r.checked || 0} <span>Warnungen geprüft</span></p>`
+      : `<p><b>✅ An</b> <span>– die erste Prüfung kommt in ein paar Minuten.</span></p>`;
+    const hits = (r?.hits || []).map((h) => `
+      <div class="recallhit">
+        <div class="grow"><b translate="no">${esc((h.products || []).join(", "))}</b><br>
+          <a href="${esc(h.link)}" target="_blank" rel="noopener noreferrer" translate="no">${esc(h.title)}</a>${h.date ? `<br><small>${esc(new Date(h.date).toLocaleDateString())}</small>` : ""}</div>
+        <button class="iconbtn" data-act="recall-dismiss" data-id="${esc(h.id)}" title="Erledigt – wegklicken" aria-label="Erledigt – wegklicken"><ha-icon icon="mdi:check"></ha-icon></button>
+      </div>`).join("");
+    return `
+      <p class="hint"><b>⚠️ Rückruf-Warnung</b>: Alle 6 Stunden holt die Liste die offiziellen Warnungen von lebensmittelwarnung.de und vergleicht sie mit allem, was ihr in den letzten 30 Tagen abgehakt habt. Passt etwas, kommt eine Meldung in Home Assistant und das Ereignis <code>einkaufsliste_rueckruf</code> für eigene Automationen.</p>
+      <p class="hint warnbox">Der Abgleich geht nur über den Namen: „Kaffee“ passt auf jede Kaffee-Warnung. Darum heißt es „bitte prüfen“. Ob eure Packung wirklich betroffen ist (Marke, Charge, Haltbarkeit), steht im Link. Abgefragt wird nur der Feed – eure Liste verlässt Home Assistant nicht.</p>
+      <p class="hint">🔒 Die Meldung bei einem Treffer sehen alle Home-Assistant-Benutzer (also auch, was gekauft wurde). Mit Datenschutz an wird nichts abgefragt.</p>
+      ${status}
+      ${on && hits ? `<div class="recallhits">${hits}</div>` : on ? `<p class="hint">👍 Keine Treffer.</p>` : ""}
+      ${admin ? `
+      <div class="btnrow">
+        ${on ? `<button class="btn" data-act="recalls-check"><ha-icon icon="mdi:refresh"></ha-icon>Jetzt nachschauen</button><button class="btn" data-act="recalls-off"><ha-icon icon="mdi:close"></ha-icon>Ausschalten</button>`
+          : `<button class="btn primary" data-act="recalls-on"><ha-icon icon="mdi:alert-octagon-outline"></ha-icon>Einschalten</button>`}
       </div>` : `<p class="hint">🔒 Einschalten oder ändern kann das nur ein Admin.</p>`}`;
   }
 
@@ -12731,6 +12776,22 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._ws({ type: "einkaufsliste/offers/refresh" })
           .then((r) => { this._toast(r?.ok ? `🏷️ Fertig: ${r.offers} Angebote zu ${r.items} Artikeln` : "⚠️ Angebote gerade nicht verfügbar"); setTimeout(() => this._renderSettings(), 150); })
           .catch(() => {});
+        break;
+      case "recalls-on":
+      case "recalls-off":
+        this._ws({ type: "einkaufsliste/recalls/set", enabled: act === "recalls-on" })
+          .then(() => { this._toast(act === "recalls-on" ? "⚠️ Rückruf-Warnung ist an" : "⚠️ Rückruf-Warnung ist aus"); setTimeout(() => this._renderSettings(), 150); })
+          .catch(() => {});
+        break;
+      case "recalls-check":
+        this._toast("⚠️ Ich schaue nach …");
+        this._ws({ type: "einkaufsliste/recalls/check" })
+          .then((r) => { this._toast(r?.ok === false ? "⚠️ Gerade nicht erreichbar" : `⚠️ Fertig: ${(r?.hits || []).length} Treffer`); setTimeout(() => this._renderSettings(), 150); })
+          .catch(() => {});
+        break;
+      case "recall-dismiss":
+        this._ws({ type: "einkaufsliste/recalls/dismiss", id: el.dataset.id })
+          .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
         break;
       case "menu-info": {
         const item = this._data.items.find((i) => i.id === el.dataset.id);

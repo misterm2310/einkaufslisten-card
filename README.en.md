@@ -152,7 +152,7 @@ The settings are a **list with groups** – **📋 My list · 🎛️ Extras · 
 ### 🔐 Honestly, about security
 - **The PIN only protects the user interface.** It keeps kids and slips away from the gear. On the server it is **not** enforced for non-admin users: anyone with a Home Assistant user who talks to the interface (API) directly can reach the settings without the PIN. Wrong guesses are slowed down: **after 5 wrong tries the PIN is locked for 60 seconds**. Still not a safe.
 - **The email import trusts the sender address.** The “From” of an email is not authenticated and can be faked. So use a **dedicated mailbox** whose address nobody knows.
-- **🔒 Privacy** (⚙️ → App & info → Privacy, admins only): no camera, no photos, no barcode scanner, no AI cooking – so no photos and no AI requests leave your Home Assistant. The barcode lookup at Open Food Facts, 🏷️ Offers and refreshing product data are blocked too (enforced on the server, not only in the card). Only the **recipe import from a link** is **not** blocked – it only runs when you start it yourself. What goes where is listed in ⚙️ → Privacy.
+- **🔒 Privacy** (⚙️ → App & info → Privacy, admins only): no camera, no photos, no barcode scanner, no AI cooking – so no photos and no AI requests leave your Home Assistant. The barcode lookup at Open Food Facts, 🏷️ Offers, the ⚠️ recall warning and refreshing product data are blocked too (enforced on the server, not only in the card). Only the **recipe import from a link** is **not** blocked – it only runs when you start it yourself. What goes where is listed in ⚙️ → Privacy.
 
 ### 🧹 Cleanup, simply explained
 On cleanup day everything that has been open for at least 7 days (adjustable) gets **checked off**. Example Sunday: added on Tuesday → only 5 days old on the first Sunday, stays → checked off on the second Sunday. Each item shows 🧹 with its date. Nothing is deleted. **On/off**, day, time and minimum age: in the card under **⚙️ → Cleanup** (applies to everyone). When it is off, the 🧹 date below the items disappears too. **🏬 Exclude stores:** in the “Automatic” section single stores can be switched off – their items stay open on cleanup (no 🧹 date); “Check all” by hand still includes them. The page is made of **collapsible boxes** (Automatic · By hand · Delete list · Delete everything · Factory reset), only one is open at a time.
@@ -234,6 +234,11 @@ Turn it on in **⚙️ → Extras → Offers** (admins only): postal code, only 
 
 ⚠️ **Honestly:** the offers come from **Marktguru**, but **unofficially** – without any agreement with Marktguru. The shopping list simply opens the Marktguru website the way your browser does (there's no access key in the code). This can **stop working at any time without warning**; then ⚙️ says “unavailable right now” and the list keeps running normally. Only the names of open items and your postal code are looked up. It's **off** by default.
 
+### ⚠️ Recall warning
+Turn it on in **⚙️ → Extras → Recall warning** (admins only). Every 6 hours the list fetches the **official warnings** from [lebensmittelwarnung.de](https://www.lebensmittelwarnung.de/) (German federal and state authorities) and compares them with everything you **checked off in the last 30 days**. If something matches, you get a **Home Assistant notification** (“⚠️ Einkaufsliste: Rückruf prüfen”) with a link to the warning, the match is listed in ⚙️ (dismiss it with ✔), and the event `einkaufsliste_rueckruf` (with `title`, `link`, `date`, `products`) is there for your own automations, e.g. a phone message. Each warning is reported only once.
+
+⚠️ **To be honest:** matching is by **name** only – “Kaffee” matches every coffee warning. That's why it says “please check”: whether your pack is really affected (brand, batch, best-before date) is in the link. Only the feed is fetched (like opening the web page) – no items, no names, no postcode; the comparison happens in your Home Assistant. The notification for a match is visible to all Home Assistant users. With 🔒 Privacy nothing is fetched. The warnings are German only. It is **off** by default.
+
 ### 📧 Onto the list by email
 1. Create a **separate email address** just for the shopping list and set up the **“IMAP”** integration in Home Assistant with it.
 2. In the card: **⚙️ → Data → Import & backup → 📧 Email**: pick the mailbox, a store if you like, what happens to the email afterwards (📬 leave · 👁️ mark as read · 🗑️ delete), enter the **allowed senders** (at least one), **Turn on**. 🔒 Admins only.
@@ -282,7 +287,7 @@ Everything works in the visual editor. For YAML fans:
 | `einkaufsliste.remove_item` | deletes an item (`name`, optional `store`) |
 | `einkaufsliste.cleanup` | cleans up now; `force: true` checks off everything |
 
-Events: `einkaufsliste_item_added`, `einkaufsliste_item_bought` (when an item is checked off – one event per item, with `name`, `quantity`, `note`, `for_whom`, `store`, `category`, `recipe`, `added_by`, `bought_by`; ideal for your own automation that writes the item into an inventory), `einkaufsliste_cleanup`.
+Events: `einkaufsliste_item_added`, `einkaufsliste_item_bought` (when an item is checked off – one event per item, with `name`, `quantity`, `note`, `for_whom`, `store`, `category`, `recipe`, `added_by`, `bought_by`; ideal for your own automation that writes the item into an inventory), `einkaufsliste_cleanup`, `einkaufsliste_rueckruf` (⚠️ recall warning matches a purchase: `title`, `link`, `date`, `products`).
 
 ```yaml
 # Example: message when you arrive at Aldi and something is on the list there

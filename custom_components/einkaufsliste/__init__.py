@@ -27,6 +27,7 @@ from .todo_sync import TodoSync
 from .grocy_sync import GrocySync
 from .mail_import import MailImport
 from .offers import Offers
+from .recalls import Recalls
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -83,6 +84,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     manager.mail.start()
     manager.offers = Offers(hass, manager)  # 🏷️ Angebote aus Prospekten (inoffiziell, standardmäßig aus)
     manager.offers.start()
+    manager.recalls = Recalls(hass, manager)  # ⚠️ Rückruf-Warnung von lebensmittelwarnung.de (standardmäßig aus)
+    manager.recalls.start()
     manager.grocy_sync = GrocySync(hass, manager)  # 🛒 Dauerabgleich mit Grocy (standardmäßig aus)
     manager.grocy_sync.start()
     handler = error_log.attach(manager)  # 🐞 Fehler-Protokoll

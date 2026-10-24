@@ -2303,5 +2303,22 @@
 "✅ Fritteuse ist vorbereitet – jetzt am Gerät auf Start drücken": "✅ Air fryer is prepared – now press Start on the device",
 "„Egal wo“-Artikel hier nicht zeigen": "Do not show “Anywhere” items here",
 "Gilt für den Reiter und den Laden-Modus dieses Geschäfts. Unter „Alle“ und „Egal wo“ siehst du sie weiter.": "Applies to this store’s tab and shopping mode. You still see them under “All” and “Anywhere”.",
-"Artikel ohne festes Geschäft („Egal wo“) stehen dann in diesem Reiter nicht mit drin – z. B. Cola bei dm": "Items without a fixed store (“Anywhere”) then do not appear in this tab – e.g. cola at a drugstore"
+"Artikel ohne festes Geschäft („Egal wo“) stehen dann in diesem Reiter nicht mit drin – z. B. Cola bei dm": "Items without a fixed store (“Anywhere”) then do not appear in this tab – e.g. cola at a drugstore",
+"Rückruf-Warnung": "Recall warning",
+": Alle 6 Stunden holt die Liste die offiziellen Warnungen von lebensmittelwarnung.de und vergleicht sie mit allem, was ihr in den letzten 30 Tagen abgehakt habt. Passt etwas, kommt eine Meldung in Home Assistant und das Ereignis": ": Every 6 hours the list fetches the official warnings from lebensmittelwarnung.de (Germany) and compares them with everything you checked off in the last 30 days. If something matches, you get a Home Assistant notification and the event",
+"für eigene Automationen.": "for your own automations.",
+"Der Abgleich geht nur über den Namen: „Kaffee“ passt auf jede Kaffee-Warnung. Darum heißt es „bitte prüfen“. Ob eure Packung wirklich betroffen ist (Marke, Charge, Haltbarkeit), steht im Link. Abgefragt wird nur der Feed – eure Liste verlässt Home Assistant nicht.": "Matching is by name only: “Kaffee” matches every coffee warning. That's why it says “please check”. Whether your pack is really affected (brand, batch, best-before date) is in the link. Only the feed is fetched – your list never leaves Home Assistant.",
+"⚠️ Gerade nicht erreichbar.": "⚠️ Unreachable right now.",
+"⚠️ Gerade nicht erreichbar": "⚠️ Unreachable right now",
+"Warnungen geprüft": "warnings checked",
+"– die erste Prüfung kommt in ein paar Minuten.": "– the first check runs in a few minutes.",
+"👍 Keine Treffer.": "👍 No matches.",
+"Erledigt – wegklicken": "Done – dismiss",
+"⚠️ gerade nicht erreichbar": "⚠️ unreachable right now",
+"⚠️ Rückruf-Warnung ist an": "⚠️ Recall warning is on",
+"⚠️ Rückruf-Warnung ist aus": "⚠️ Recall warning is off",
+"⚠️ Ich schaue nach …": "⚠️ Checking …",
+"🔒 Gesperrt": "🔒 Blocked",
+"– Datenschutz ist an, es wird nichts abgefragt.": "– privacy is on, nothing is fetched.",
+"🔒 Die Meldung bei einem Treffer sehen alle Home-Assistant-Benutzer (also auch, was gekauft wurde). Mit Datenschutz an wird nichts abgefragt.": "🔒 The notification for a match is visible to all Home Assistant users (so they also see what was bought). With privacy on nothing is fetched."
 }

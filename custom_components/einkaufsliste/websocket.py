@@ -127,6 +127,9 @@ def async_register(hass: HomeAssistant) -> None:
         ws_offers_refresh,
         ws_offers_search,
         ws_offers_take,
+        ws_recalls_set,
+        ws_recalls_check,
+        ws_recalls_dismiss,
         ws_product_add,
         ws_product_refresh,
         ws_photos_refresh_plan,
@@ -1203,6 +1206,33 @@ async def ws_offers_refresh(hass, connection, msg):
             raise ValueError("Angebote sind aus.")
         return await m.offers.run(force=True)
     await _run_async(hass, connection, msg, _go)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/recalls/set", vol.Required("enabled"): bool})
+@websocket_api.require_admin
+@callback
+def ws_recalls_set(hass, connection, msg):
+    """⚠️ Rückruf-Warnung ein-/ausschalten (nur Admins)."""
+    _run(hass, connection, msg, lambda m: m.set_recalls(msg["enabled"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/recalls/check"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_recalls_check(hass, connection, msg):
+    """⚠️ Jetzt nachschauen."""
+    async def _go(m):
+        if getattr(m, "recalls", None) is None or not (m.recalls_cfg or {}).get("enabled"):
+            raise ValueError("Die Rückruf-Warnung ist aus.")
+        return await m.recalls.run(force=True)
+    await _run_async(hass, connection, msg, _go)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/recalls/dismiss", vol.Required("id"): str})
+@callback
+def ws_recalls_dismiss(hass, connection, msg):
+    """⚠️ Einen Treffer wegklicken (darf jeder)."""
+    _run(hass, connection, msg, lambda m: m.dismiss_recall(msg["id"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/offers/search", vol.Required("q"): str})

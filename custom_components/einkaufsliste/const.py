@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.76.22"
+VERSION = "2.76.23-beta.1"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
@@ -15,6 +15,7 @@ EVENT_ITEM_ADDED = f"{DOMAIN}_item_added"
 EVENT_ITEM_BOUGHT = f"{DOMAIN}_item_bought"
 EVENT_CLEANUP = f"{DOMAIN}_cleanup"
 EVENT_TIMER = f"{DOMAIN}_timer_fertig"  # ⏲️ Kochtimer abgelaufen
+EVENT_RECALL = f"{DOMAIN}_rueckruf"  # ⚠️ offizielle Warnung passt zu einem Einkauf
 
 STATIC_URL = "/einkaufsliste_files"
 CARD_FILENAME = "einkaufsliste-card.js"

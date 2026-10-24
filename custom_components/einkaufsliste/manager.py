@@ -485,6 +485,9 @@ class EinkaufslisteManager:
         self.grocy: dict[str, Any] = {}  # 🛒 Grocy-Dauerabgleich {"url","api_key","a_on",…} – der Schlüssel verlässt den Server nie
         self.offers_cfg: dict[str, Any] | None = None  # 🏷️ {"enabled", "zip", "stores", "hours", "key", "last", "ok", "error", "count"}
         self.offers_data: dict[str, list[dict[str, Any]]] = {}  # 🏷️ Artikelname klein -> Angebote
+        self.recalls_cfg: dict[str, Any] | None = None  # ⚠️ Rückruf-Warnung {"enabled", "last", "ok", "error", "checked"}
+        self.recalls_hits: list[dict[str, Any]] = []  # ⚠️ Treffer {"id","title","link","date","products","found"} – das Neueste vorn
+        self.recalls_seen: list[str] = []  # ⚠️ schon gemeldete Warnungen (gegen doppelte Meldungen)
         self.mail_seen: list[str] = []  # 📧 zuletzt eingetragene Mails (Nummer|Datum) – gegen doppeltes Eintragen
         self.mail_import: dict[str, Any] | None = None  # 📧 {"entry_id", "store_id", "senders", "count"} – per E-Mail
         self.photo_dir = Path(hass.config.path("einkaufsliste_fotos"))
@@ -714,6 +717,9 @@ class EinkaufslisteManager:
         g = data.get("grocy")
         self.grocy = dict(g) if isinstance(g, dict) else {}
         self.offers_data = dict(data.get("offers_data") or {})
+        self.recalls_cfg = data.get("recalls_cfg") or None
+        self.recalls_hits = [h for h in (data.get("recalls_hits") or []) if isinstance(h, dict)]
+        self.recalls_seen = [str(k) for k in (data.get("recalls_seen") or [])]
         for store in self.stores:  # 📍 früher eine Zone pro Geschäft, jetzt beliebig viele
             if "zones" not in store:
                 store["zones"] = [store["zone"]] if store.get("zone") else []
@@ -794,6 +800,9 @@ class EinkaufslisteManager:
             "offers_cfg": self.offers_cfg,
             "grocy": self.grocy,
             "offers_data": self.offers_data,
+            "recalls_cfg": self.recalls_cfg,
+            "recalls_hits": self.recalls_hits,
+            "recalls_seen": self.recalls_seen,
             "last_cleanup": self.last_cleanup,
             "log": self.log,
             "log_days": self.log_days,
@@ -891,6 +900,7 @@ class EinkaufslisteManager:
                 "todo_syncs": [self._todo_sync_info(c) for c in self.todo_syncs],
                 "mail_import": self._mail_import_info(),
                 "offers": self._offers_info(),
+                "recalls": self.recalls_info(),
                 "grocy": self.grocy_info(),
                 "errors": len(self.errors),
                 "errors_24h": self._errors_since(timedelta(hours=24)),
@@ -1082,6 +1092,46 @@ class EinkaufslisteManager:
             self.offers.start()
         self._changed()
         return self._offers_info()
+
+    def recalls_info(self) -> dict[str, Any] | None:
+        """⚠️ Rückruf-Warnung für die Karte: Schalter, letzter Stand und Treffer."""
+        cfg = self.recalls_cfg
+        if not cfg:
+            return None
+        return {**{k: cfg.get(k) for k in ("enabled", "last", "ok", "error", "checked")}, "hits": self.recalls_hits}
+
+    def set_recalls(self, enabled: bool) -> dict[str, Any] | None:
+        """⚠️ Rückruf-Warnung ein-/ausschalten (lebensmittelwarnung.de, offiziell)."""
+        cfg = dict(self.recalls_cfg or {})
+        cfg.update(enabled=bool(enabled), last=None)
+        self.recalls_cfg = cfg
+        if getattr(self, "recalls", None) is not None:
+            self.recalls.start()
+        self._changed()
+        return self.recalls_info()
+
+    def recalls_result(self, ok: bool, error: str | None = None, hits: list[dict[str, Any]] | None = None,
+                       checked: int | None = None) -> None:
+        """⚠️ Ergebnis einer Prüfung merken (neue Treffer vorn, gemeldete Warnungen nicht noch einmal)."""
+        from .recalls import MAX_HITS, MAX_SEEN  # noqa: PLC0415
+
+        cfg = dict(self.recalls_cfg or {})
+        cfg.update(last=_now_iso(), ok=ok, error=None if ok else error)
+        if checked is not None:
+            cfg["checked"] = checked
+        self.recalls_cfg = cfg
+        for hit in hits or []:
+            self.recalls_hits.insert(0, hit)
+            self.recalls_seen.append(hit["id"])
+        self.recalls_hits = self.recalls_hits[:MAX_HITS]
+        self.recalls_seen = self.recalls_seen[-MAX_SEEN:]
+        self._changed()
+
+    def dismiss_recall(self, recall_id: str) -> dict[str, Any] | None:
+        """⚠️ Treffer wegklicken (er kommt nicht wieder – die Warnung gilt als gemeldet)."""
+        self.recalls_hits = [h for h in self.recalls_hits if h.get("id") != recall_id]
+        self._changed()
+        return self.recalls_info()
 
     def grocy_info(self) -> dict[str, Any] | None:
         """🛒 Grocy-Abgleich für die Karte – NIE mit Schlüssel und Verknüpfungen."""
@@ -3905,6 +3955,8 @@ class EinkaufslisteManager:
             self.mail.stop()
         if getattr(self, "offers", None) is not None:
             self.offers.stop()
+        if getattr(self, "recalls", None) is not None:
+            self.recalls.stop()
         if getattr(self, "grocy_sync", None) is not None:
             self.grocy_sync.stop()
         if getattr(self, "_unsub_offer_exp", None):

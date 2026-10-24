@@ -150,7 +150,7 @@ Die Einstellungen sind eine **Liste mit Gruppen** – **📋 Meine Liste · 🎛
 ### 🔐 Ehrlich zur Sicherheit
 - **Die PIN schützt nur die Oberfläche.** Sie hält Kinder und Versehen vom Zahnrad fern. Auf dem Server wird sie für Nicht-Admins **nicht** durchgesetzt: Wer einen Home-Assistant-Benutzer hat und die Schnittstelle (API) selbst anspricht, kommt auch ohne PIN an die Einstellungen. Falsch geratene PINs werden gebremst: **nach 5 Fehlversuchen 60 Sekunden Sperre**. Ein Tresor ist das trotzdem nicht.
 - **Der E-Mail-Import vertraut der Absender-Adresse.** Der „Von“-Eintrag einer Mail wird nicht geprüft und lässt sich fälschen. Nimm deshalb ein **eigenes Postfach**, dessen Adresse niemand kennt.
-- **🔒 Datenschutz** (⚙️ → App & Info → Datenschutz, nur Admins): keine Kamera, keine Fotos, kein Barcode-Scanner, kein KI-Kochen – es gehen also keine Fotos und keine KI-Anfragen raus. Auch das Barcode-Nachschlagen bei Open Food Facts, die 🏷️ Angebote und das Auffrischen von Produktdaten sind gesperrt (die Sperre gilt auch auf dem Server, nicht nur in der Karte). Nur der **Rezept-Import aus einem Link** ist davon **nicht** gesperrt – er läuft nur, wenn du ihn selbst startest. Was genau wohin geht, steht in ⚙️ → Datenschutz.
+- **🔒 Datenschutz** (⚙️ → App & Info → Datenschutz, nur Admins): keine Kamera, keine Fotos, kein Barcode-Scanner, kein KI-Kochen – es gehen also keine Fotos und keine KI-Anfragen raus. Auch das Barcode-Nachschlagen bei Open Food Facts, die 🏷️ Angebote, die ⚠️ Rückruf-Warnung und das Auffrischen von Produktdaten sind gesperrt (die Sperre gilt auch auf dem Server, nicht nur in der Karte). Nur der **Rezept-Import aus einem Link** ist davon **nicht** gesperrt – er läuft nur, wenn du ihn selbst startest. Was genau wohin geht, steht in ⚙️ → Datenschutz.
 
 ### 🧹 Aufräumen, einfach erklärt
 Am Aufräum-Tag wird alles **abgehakt**, was mindestens 7 Tage (einstellbar) offen ist. Beispiel Sonntag: Am Dienstag eingetragen → am ersten Sonntag erst 5 Tage alt, bleibt → am zweiten Sonntag abgehakt. Unter jedem Artikel steht mit 🧹, wann es so weit ist. Gelöscht wird nichts. **An/Aus**, Tag, Uhrzeit und Mindestalter: in der Karte unter **⚙️ → Aufräumen** (gilt für alle). Ist es aus, verschwindet auch das 🧹-Datum unter den Artikeln. **🏬 Geschäfte ausnehmen:** Im Aufklapper „Automatisch“ lassen sich einzelne Geschäfte abschalten – ihre Artikel bleiben beim Aufräumen offen (kein 🧹-Datum); „Alles abhaken“ von Hand nimmt sie trotzdem mit. Die Seite besteht aus **Aufklappern** (Automatisch · Von Hand · Liste löschen · Alles löschen · Werkseinstellungen), immer nur einer ist offen.
@@ -233,6 +233,11 @@ In **⚙️ → Extras → Angebote** einschalten (nur Admins): Postleitzahl, au
 
 ⚠️ **Ehrlich gesagt:** Die Angebote kommen von **Marktguru**, aber **inoffiziell** – ohne Absprache mit Marktguru. Die Einkaufsliste öffnet dafür einfach die Marktguru-Webseite, so wie dein Browser es auch tut (im Code steht kein Zugangsschlüssel). Das kann **jederzeit ohne Vorwarnung aufhören** zu funktionieren; dann steht in ⚙️ „gerade nicht verfügbar“ und die Liste läuft normal weiter. Nachgeschaut werden nur die Namen offener Artikel und deine Postleitzahl. Standardmäßig ist das **aus**.
 
+### ⚠️ Rückruf-Warnung
+In **⚙️ → Extras → Rückruf-Warnung** einschalten (nur Admins). Alle 6 Stunden holt die Liste die **offiziellen Warnungen** von [lebensmittelwarnung.de](https://www.lebensmittelwarnung.de/) (Bund und Länder) und vergleicht sie mit allem, was ihr in den **letzten 30 Tagen abgehakt** habt. Passt etwas, kommt eine **Meldung in Home Assistant** („⚠️ Einkaufsliste: Rückruf prüfen“) mit Link zur Warnung, der Treffer steht in ⚙️ (mit ✔ wegklicken), und das Ereignis `einkaufsliste_rueckruf` (mit `title`, `link`, `date`, `products`) ist für eigene Automationen da, z. B. eine Handy-Meldung. Jede Warnung wird nur einmal gemeldet.
+
+⚠️ **Ehrlich gesagt:** Der Abgleich geht nur über den **Namen** – „Kaffee“ passt auf jede Kaffee-Warnung. Darum heißt es „bitte prüfen“: Ob eure Packung wirklich betroffen ist (Marke, Charge, Haltbarkeit), steht im Link. Abgefragt wird nur der Feed (wie beim Öffnen der Webseite) – keine Artikel, keine Namen, keine Postleitzahl; der Abgleich passiert in deinem Home Assistant. Die Meldung bei einem Treffer sehen alle Home-Assistant-Benutzer. Mit 🔒 Datenschutz wird nichts abgefragt. Standardmäßig ist das **aus**.
+
 ### 📧 Per E-Mail auf die Liste
 1. Eine **eigene Mail-Adresse** nur für die Einkaufsliste anlegen und in Home Assistant die Integration **„IMAP“** damit einrichten.
 2. In der Karte **⚙️ → Daten → Import & Sicherung → 📧 E-Mail**: Postfach wählen, auf Wunsch ein Geschäft, was danach mit der Mail passiert (📬 liegen lassen · 👁️ als gelesen markieren · 🗑️ löschen), **erlaubte Absender** eintragen (mindestens einer), **Einschalten**. 🔒 Nur Admins.
@@ -281,7 +286,7 @@ Alles geht im visuellen Editor. Für YAML-Fans:
 | `einkaufsliste.remove_item` | Artikel löschen (`name`, optional `store`) |
 | `einkaufsliste.cleanup` | jetzt aufräumen, mit `force: true` alles abhaken |
 
-Events: `einkaufsliste_item_added`, `einkaufsliste_item_bought` (beim Abhaken – jeder Artikel einzeln, mit `name`, `quantity`, `note`, `for_whom`, `store`, `category`, `recipe`, `added_by`, `bought_by`; ideal für eine eigene Automation, die den Artikel z. B. in ein Inventar schreibt), `einkaufsliste_cleanup`.
+Events: `einkaufsliste_item_added`, `einkaufsliste_item_bought` (beim Abhaken – jeder Artikel einzeln, mit `name`, `quantity`, `note`, `for_whom`, `store`, `category`, `recipe`, `added_by`, `bought_by`; ideal für eine eigene Automation, die den Artikel z. B. in ein Inventar schreibt), `einkaufsliste_cleanup`, `einkaufsliste_rueckruf` (⚠️ Rückruf-Warnung passt zu einem Einkauf: `title`, `link`, `date`, `products`).
 
 ```yaml
 # Beispiel: Nachricht, wenn man bei Aldi ankommt und dort etwas auf der Liste steht
