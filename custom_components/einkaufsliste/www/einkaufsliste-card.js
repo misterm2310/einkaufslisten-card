@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.23-beta.1";
+const EL_VERSION = "2.76.23-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.22"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -256,9 +256,9 @@ const EL_HELP = {
     "Needs a <b>postcode</b> (admins only). Also: “Only these stores” (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b>, <b>Switch off</b>. The status line shows the count and the last check. The offers come unofficially from Marktguru and can stop at any time.",
   ]],
   recalls: ["extras", [
-    "<b>Einschalten</b> (nur Admins). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was in den letzten 30 Tagen abgehakt wurde. Treffer kommen als Meldung in Home Assistant, stehen hier mit Link und lassen sich mit ✔ wegklicken. Der Abgleich geht nur über den Namen – im Link prüfen, ob eure Packung betroffen ist.",
+    "<b>Einschalten</b> (nur Admins). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was in den letzten 30 Tagen abgehakt wurde. Treffer kommen als Meldung in Home Assistant, stehen hier mit Link und lassen sich mit ✔ wegklicken. In der Liste bekommt der Artikel ein rotes ❗. Treffer verschwinden von selbst, wenn der Kauf über 30 Tage her ist oder die Warnung älter als 60 Tage. Der Abgleich geht nur über den Namen – im Link prüfen, ob eure Packung betroffen ist.",
   ], [
-    "<b>Turn on</b> (admins only). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything checked off in the last 30 days. Matches arrive as a Home Assistant notification, are listed here with a link and can be dismissed with ✔. Matching is by name only – check the link to see whether your pack is affected.",
+    "<b>Turn on</b> (admins only). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything checked off in the last 30 days. Matches arrive as a Home Assistant notification, are listed here with a link and can be dismissed with ✔. In the list the item gets a red ❗. Matches disappear on their own when the purchase is more than 30 days ago or the warning is older than 60 days. Matching is by name only – check the link to see whether your pack is affected.",
   ]],
   spend: ["extras", [
     "Eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist). Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert. Gilt für alle Geräte.",
@@ -394,6 +394,9 @@ const EL_BETA_NEWS = [
   ["⚠️ <b>Rückruf-Warnung:</b> Neu in ⚙️ → Extras (standardmäßig aus). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was ihr in den letzten 30 Tagen abgehakt habt. Treffer kommen als Meldung in Home Assistant und als Ereignis „einkaufsliste_rueckruf“. Von euch geht nichts raus; mit Datenschutz an wird nichts abgefragt.",
    "⚠️ <b>Recall warning:</b> new in ⚙️ → Extras (off by default). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything you checked off in the last 30 days. Matches arrive as a Home Assistant notification and as the event “einkaufsliste_rueckruf”. Nothing of yours is sent; with privacy on nothing is fetched.",
    "beta.1"],
+  ["❗ <b>Rotes Ausrufezeichen in der Liste:</b> Passt ein Artikel zu einer Rückruf-Warnung, steht links neben dem Angebotszeichen ein rotes ❗. Antippen öffnet die Warnung. · 🧹 <b>Räumt sich selbst auf:</b> Ein Treffer verschwindet von allein, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage. · 🐛 Das ✔ beim Wegklicken eines Treffers und 🗑️ Löschen im Einkaufs-Protokoll gingen nicht („expected str at id“) – repariert.",
+   "❗ <b>Red exclamation mark in the list:</b> if an item matches a recall warning, a red ❗ appears to the left of the offer icon. Tap it to open the warning. · 🧹 <b>Tidies itself up:</b> a match disappears on its own when your purchase is more than 30 days ago or the warning is older than 60 days. · 🐛 The ✔ to dismiss a match and 🗑️ delete in the purchase log did not work (“expected str at id”) – fixed.",
+   "beta.2"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -3037,6 +3040,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .item:focus, .recipe:focus, .delrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
+.item .acts .recalltag ha-icon { color:#e53935 !important; } /* ⚠️ Rückruf: rotes ❗ */
 .item .acts .offtag .oi ha-icon { color:#f9a825 !important; } /* 🏷️ Angebot und 🔀 Ähnliches: beide gelb */
 .item .acts .shopphoto { color:var(--primary-color,#03a9f4); } .item .acts .shopphoto ha-icon { --mdc-icon-size:22px; display:flex; } /* 📷 so groß wie das Angebotszeichen */
 .item .acts .offtag .oi { font-size:calc(var(--mdc-icon-size, 24px) * .6); width:var(--mdc-icon-size, 24px); height:var(--mdc-icon-size, 24px); display:flex; align-items:center; justify-content:center; line-height:1; } /* 🏷️ bunt, aber klein und dezent */
@@ -5463,6 +5467,8 @@ class EinkaufslisteCard extends HTMLElement {
       offBtn = `<button class="iconbtn offtag" data-act="offers-show" data-id="${item.id}" title="${alt ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}"><span class="oi">${alt ? "🔀" : "🏷️"}</span></button>`;
     }
     else if (!item.checked && off?.expired && Date.now() - new Date(off.expired) < DAY) meta.unshift(`<span class="offgone" title="Das Angebot ist abgelaufen">⌛ Angebot vorbei</span>`);
+    const rc = this._recallFor(item); // ⚠️ offene Rückruf-Warnung zu diesem Artikel: rotes ❗ links neben dem Angebotszeichen
+    const recallBtn = rc ? `<button class="iconbtn recalltag" data-act="recall-open" data-link="${esc(rc.link)}" title="Rückruf-Warnung: ${esc(rc.title)} – antippen" aria-label="Rückruf-Warnung – antippen"><ha-icon icon="mdi:alert-circle"></ha-icon></button>` : "";
     if (this._shopMode && !offBtn && v.photo && this._hasPhoto(this._pk(item.name, item.note))) { // 📷 Laden-Modus: Foto-Symbol steht dort, wo sonst das Angebotszeichen war (gleiche Größe)
       offBtn = `<button class="iconbtn offtag shopphoto" data-act="photo-view" data-name="${esc(this._pk(item.name, item.note))}" title="Foto ansehen"><ha-icon icon="${this._photoIcon(this._pk(item.name, item.note))}"></ha-icon></button>`;
     }
@@ -5496,7 +5502,7 @@ class EinkaufslisteCard extends HTMLElement {
           <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}${qty}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${who}${v.fav ? this._favStar(pk) : ""}${v.photo && !this._shopMode && this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="${this._photoIcon(pk)}"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
           ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
         </div>
-        ${(v.move && !item.checked && this._data.stores.length > 1) || offBtn ? `<div class="acts">${offBtn}${v.move && !item.checked && this._data.stores.length > 1 ? `<button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button>` : ""}</div>` : ""}
+        ${(v.move && !item.checked && this._data.stores.length > 1) || offBtn || recallBtn ? `<div class="acts">${recallBtn}${offBtn}${v.move && !item.checked && this._data.stores.length > 1 ? `<button class="iconbtn" data-act="move" title="War aus – in anderes Geschäft"><ha-icon icon="mdi:swap-horizontal"></ha-icon></button>` : ""}</div>` : ""}
       </div>`;
   }
 
@@ -9947,7 +9953,7 @@ ${(() => {
         cur = "stats"; f.quick = "month"; f.who = ""; f.store = ""; loaded = false; draw(); load();
       } else if (act === "del") {
         if (!await elConfirm("Diesen Einkauf aus dem Protokoll löschen?")) return;
-        try { await this._ws({ type: "einkaufsliste/purchases/remove", id: b.dataset.id }); } catch (_) { return; }
+        try { await this._ws({ type: "einkaufsliste/purchases/remove", purchase_id: b.dataset.id }); } catch (_) { return; }
         entries = entries.filter((e) => e.id !== b.dataset.id);
         draw();
       }
@@ -11078,6 +11084,14 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
 
   // ℹ️ Produkt-Infos – nur auf Nachfrage (lange drücken → Infos)
   // 🏷️ Angebote (Marktguru) zu einem Artikel
+  // ⚠️ Passt der Artikel zu einem offenen Treffer der Rückruf-Warnung? (gleicher Name wie beim Kauf)
+  _recallFor(item) {
+    const r = this._data?.settings?.recalls;
+    if (!r?.enabled) return null;
+    const name = String(item?.name || "").trim().toLowerCase();
+    return (r.hits || []).find((h) => (h.products || []).some((p) => String(p).trim().toLowerCase() === name)) || null;
+  }
+
   _offersFor(item) {
     return (this._data?.offers || {})[String(item?.name || "").toLowerCase()] || [];
   }
@@ -11239,6 +11253,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     return `
       <p class="hint"><b>⚠️ Rückruf-Warnung</b>: Alle 6 Stunden holt die Liste die offiziellen Warnungen von lebensmittelwarnung.de und vergleicht sie mit allem, was ihr in den letzten 30 Tagen abgehakt habt. Passt etwas, kommt eine Meldung in Home Assistant und das Ereignis <code>einkaufsliste_rueckruf</code> für eigene Automationen.</p>
       <p class="hint warnbox">Der Abgleich geht nur über den Namen: „Kaffee“ passt auf jede Kaffee-Warnung. Darum heißt es „bitte prüfen“. Ob eure Packung wirklich betroffen ist (Marke, Charge, Haltbarkeit), steht im Link. Abgefragt wird nur der Feed – eure Liste verlässt Home Assistant nicht.</p>
+      <p class="hint">❗ In der Liste steht beim Artikel ein rotes Ausrufezeichen. Treffer verschwinden von selbst, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage.</p>
       <p class="hint">🔒 Die Meldung bei einem Treffer sehen alle Home-Assistant-Benutzer (also auch, was gekauft wurde). Mit Datenschutz an wird nichts abgefragt.</p>
       ${status}
       ${on && hits ? `<div class="recallhits">${hits}</div>` : on ? `<p class="hint">👍 Keine Treffer.</p>` : ""}
@@ -12789,8 +12804,11 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           .then((r) => { this._toast(r?.ok === false ? "⚠️ Gerade nicht erreichbar" : `⚠️ Fertig: ${(r?.hits || []).length} Treffer`); setTimeout(() => this._renderSettings(), 150); })
           .catch(() => {});
         break;
+      case "recall-open":
+        if (/^https:\/\/www\.lebensmittelwarnung\.de\//.test(el.dataset.link || "")) window.open(el.dataset.link, "_blank", "noopener,noreferrer");
+        break;
       case "recall-dismiss":
-        this._ws({ type: "einkaufsliste/recalls/dismiss", id: el.dataset.id })
+        this._ws({ type: "einkaufsliste/recalls/dismiss", recall_id: el.dataset.id })
           .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
         break;
       case "menu-info": {

@@ -101,6 +101,40 @@ def recent_names(items: list[dict[str, Any]], now: datetime, days: int = BOUGHT_
     return list(names.values())
 
 
+def last_bought(items: list[dict[str, Any]], names: list[str]) -> datetime | None:
+    """Wann wurde einer dieser Artikel zuletzt abgehakt? (None = gerade nicht abgehakt)"""
+    want = {n.lower() for n in names}
+    best = None
+    for item in items:
+        if item.get("checked") and not item.get("removed") and item.get("name", "").lower() in want:
+            when = dt_util.parse_datetime(str(item.get("checked_at") or ""))
+            if when is not None and (best is None or when > best):
+                best = when
+    return best
+
+
+def prune_hits(hits: list[dict[str, Any]], items: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
+    """🧹 Alte Treffer verschwinden von selbst: Kauf länger als 30 Tage her oder Warnung älter als 60 Tage.
+
+    Ob die Warnung noch im Feed steht, zählt bewusst NICHT – der Feed zeigt nur die neuesten Meldungen,
+    eine noch gültige Warnung kann dort längst herausgerutscht sein."""
+    kept = []
+    for hit in hits:
+        hit = dict(hit)
+        newer = last_bought(items, hit.get("products") or [])
+        bought = dt_util.parse_datetime(str(hit.get("bought") or hit.get("found") or ""))
+        if newer is not None and (bought is None or newer > bought):  # nochmal gekauft → Uhr läuft neu
+            bought = newer
+            hit["bought"] = newer.isoformat()
+        warned = dt_util.parse_datetime(str(hit.get("date") or ""))
+        if bought is not None and now - bought > timedelta(days=BOUGHT_DAYS):
+            continue
+        if warned is not None and now - warned > timedelta(days=WARN_DAYS):
+            continue
+        kept.append(hit)
+    return kept
+
+
 class Recalls:
     """Schaut regelmäßig nach neuen Warnungen und gleicht sie mit den Einkäufen ab."""
 
@@ -160,6 +194,7 @@ class Recalls:
                 warnings = parse_feed(await self._fetch())
             except (TimeoutError, aiohttp.ClientError, ValueError, ET.ParseError) as err:
                 _LOGGER.info("Rückruf-Warnungen gerade nicht abrufbar: %s", err)
+                self.manager.recalls_hits = prune_hits(self.manager.recalls_hits, self.manager.items, dt_util.utcnow())
                 self.manager.recalls_result(ok=False, error=str(err) or type(err).__name__)
                 return self.manager.recalls_info()
             return self.check(warnings)
@@ -179,8 +214,9 @@ class Recalls:
                 continue
             products = [n for n in names if match(n, w)]
             if products and w["id"] not in seen:
+                bought = last_bought(self.manager.items, products)
                 new_hits.append({**{k: w[k] for k in ("id", "title", "link", "date")}, "products": products,
-                                 "found": now.isoformat()})
+                                 "found": now.isoformat(), "bought": bought.isoformat() if bought else None})
         for hit in new_hits:
             self.hass.bus.async_fire(EVENT_RECALL, {k: hit[k] for k in ("title", "link", "date", "products")})
         if new_hits:
@@ -192,5 +228,6 @@ class Recalls:
                 title="⚠️ Einkaufsliste: Rückruf prüfen",
                 notification_id=NOTIFY_ID,
             )
+        self.manager.recalls_hits = prune_hits(self.manager.recalls_hits, self.manager.items, now)
         self.manager.recalls_result(ok=True, hits=new_hits, checked=len(warnings))
         return self.manager.recalls_info()

@@ -935,10 +935,10 @@ def ws_purchases_add(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.add_purchase(msg["store_id"], msg["amount"], msg.get("day")))
 
 
-@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/purchases/remove", vol.Required("id"): str})
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/purchases/remove", vol.Required("purchase_id"): str})  # nicht „id“ – das ist die Nachrichtennummer von HA
 @callback
 def ws_purchases_remove(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: m.remove_purchase(msg["id"]))
+    _run(hass, connection, msg, lambda m: m.remove_purchase(msg["purchase_id"]))
 
 
 @websocket_api.websocket_command(
@@ -1228,11 +1228,11 @@ async def ws_recalls_check(hass, connection, msg):
     await _run_async(hass, connection, msg, _go)
 
 
-@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/recalls/dismiss", vol.Required("id"): str})
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/recalls/dismiss", vol.Required("recall_id"): str})  # nicht „id“ – das ist die Nachrichtennummer von HA
 @callback
 def ws_recalls_dismiss(hass, connection, msg):
     """⚠️ Einen Treffer wegklicken (darf jeder)."""
-    _run(hass, connection, msg, lambda m: m.dismiss_recall(msg["id"]))
+    _run(hass, connection, msg, lambda m: m.dismiss_recall(msg["recall_id"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/offers/search", vol.Required("q"): str})

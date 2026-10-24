@@ -111,3 +111,59 @@ async def test_old_purchases_do_not_count(hass: HomeAssistant, m) -> None:
     for w in warnings:
         w["date"] = later.isoformat()
     assert m.recalls.check(warnings, now=later)["hits"] == []
+
+
+def test_prune_hits_after_30_days_or_old_warning():
+    """🧹 Treffer räumen sich selbst auf: Kauf > 30 Tage oder Warnung > 60 Tage – nochmal gekauft = Uhr läuft neu."""
+    now = dt_util.utcnow()
+    ago = lambda d: (now - timedelta(days=d)).isoformat()  # noqa: E731
+    hits = [
+        {"id": "a", "products": ["Kaffee"], "bought": ago(31), "date": ago(5)},  # Kauf zu alt → weg
+        {"id": "b", "products": ["Milch"], "bought": ago(3), "date": ago(61)},  # Warnung zu alt → weg
+        {"id": "c", "products": ["Brot"], "bought": ago(3), "date": ago(5)},  # bleibt
+        {"id": "d", "products": ["Tee"], "bought": ago(40), "date": ago(5)},  # zu alt, aber gerade nochmal gekauft → bleibt
+    ]
+    items = [{"name": "tee", "checked": True, "checked_at": ago(1)}]
+    kept = mod.prune_hits(hits, items, now)
+    assert [h["id"] for h in kept] == ["c", "d"]
+    assert kept[1]["bought"] == items[0]["checked_at"]
+
+
+async def test_recall_hit_is_pruned_on_next_check(hass: HomeAssistant, m) -> None:
+    kaffee = m.add_item("Kaffee")
+    m.set_checked(kaffee["id"], True)
+    m.set_recalls(True)
+    warnings = mod.parse_feed(_feed())
+    m.recalls.check(warnings)
+    assert len(m.recalls_info()["hits"]) == 1 and m.recalls_info()["hits"][0]["bought"]
+    later = dt_util.utcnow() + timedelta(days=mod.BOUGHT_DAYS + 1)
+    m.recalls.check([], now=later)
+    assert m.recalls_info()["hits"] == []
+
+
+async def test_dismiss_and_purchase_remove_over_real_websocket(hass: HomeAssistant, m, hass_ws_client, hass_admin_user) -> None:
+    """🐛 „expected str at 'id'“: „id“ ist bei HA die Nachrichtennummer – über einen echten Websocket prüfen."""
+    kaffee = m.add_item("Kaffee")
+    m.set_checked(kaffee["id"], True)
+    m.set_recalls(True)
+    m.recalls.check(mod.parse_feed(_feed()))
+    hit_id = m.recalls_info()["hits"][0]["id"]
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 7, "type": "einkaufsliste/recalls/dismiss", "recall_id": hit_id})
+    res = await client.receive_json()
+    assert res["success"], res
+    assert m.recalls_info()["hits"] == []
+    await client.send_json({"id": 8, "type": "einkaufsliste/purchases/remove", "purchase_id": "gibtsnicht"})
+    res = await client.receive_json()
+    assert not res["success"] and res["error"]["code"] == "invalid"  # Schema passt, nur der Eintrag fehlt
+
+
+def test_no_command_uses_reserved_id_field():
+    """🛡️ Kein Befehl darf ein eigenes Feld „id“ haben – das überschreibt HA mit der Nachrichtennummer."""
+    import re
+    from pathlib import Path
+    base = Path(__file__).resolve().parents[1] / "custom_components" / "einkaufsliste"
+    ws = (base / "websocket.py").read_text(encoding="utf-8")
+    assert not re.search(r'vol\.(Required|Optional)\("id"\)', ws)
+    card = (base / "www" / "einkaufsliste-card.js").read_text(encoding="utf-8")
+    assert not re.search(r'(callWS|_ws)\(\{[^}]*[ ,{]id:', card)

@@ -100,9 +100,26 @@ r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=asyn
   await new Promise(r=>setTimeout(r,100));
   return { href:a?.getAttribute("href"), rel:a?.getAttribute("rel"), prod:host.querySelector(".recallhit b")?.textContent, check:!!host.querySelector('[data-act="recalls-check"]'), calls }; })()`);
 check("Rückruf-Warnung: Treffer mit sicherem Link", r.href === "https://www.lebensmittelwarnung.de/x.html" && /noopener/.test(r.rel) && r.prod === "Kaffee" && r.check, JSON.stringify(r));
-check("Rückruf-Warnung: ✔ schickt „dismiss“", r.calls.some((m) => m.type === "einkaufsliste/recalls/dismiss" && m.id === "w1"), JSON.stringify(r.calls));
+check("Rückruf-Warnung: ✔ schickt „dismiss“", r.calls.some((m) => m.type === "einkaufsliste/recalls/dismiss" && m.recall_id === "w1"), JSON.stringify(r.calls));
 r = await p.evaluate(`(() => { const c=${card}; const was=c._data.settings.privacy; c._data.settings.privacy=true; const blocked=/Gesperrt/.test(c._recallsHtml()); const priv=/Rückruf-Warnung/.test(c._privacyHtml(false)) && /Recall warning/.test(c._privacyHtml(true)); c._data.settings.privacy=was; return { blocked, priv, privOn: c._privacyOn.toString().slice(0,80) }; })()`);
 check("Rückruf-Warnung: Datenschutz an = „🔒 Gesperrt“, und sie steht auf der Datenschutz-Seite", r.blocked && r.priv, JSON.stringify(r));
+
+// 9) ❗ Rotes Ausrufezeichen in der Liste beim passenden Artikel – antippen öffnet die Warnung (nur lebensmittelwarnung.de)
+r = await p.evaluate(`(async () => { const c=${card}; const opened=[]; const wo=window.open; window.open=(u)=>{opened.push(u); return null;};
+  c._data.settings.recalls={enabled:true, ok:true, hits:[{id:"w2", title:"Brot, 500 Gramm", link:"https://www.lebensmittelwarnung.de/m.html", products:["brot"]}]};
+  const brot=c._data.items.find(i=>i.name==="Brot"); c._data.items.push({...brot, id:"butter1", name:"Butter"});
+  c._data.offers={ brot:[{p:0.99, s:"Aldi", to:new Date(Date.now()+2*864e5).toISOString()}] };
+  c._renderList(); await new Promise(r=>setTimeout(r,100));
+  const rows=[...c.shadowRoot.querySelectorAll(".item")].map(it=>({ name:it.querySelector(".name")?.textContent, acts:[...it.querySelectorAll(".acts > button")].map(b=>b.dataset.act) }));
+  c.shadowRoot.querySelector(".recalltag")?.click();
+  const fake=document.createElement("button"); fake.dataset.act="recall-open"; fake.dataset.link="https://evil.example/x"; c.shadowRoot.querySelector("ha-card").append(fake); fake.click(); fake.remove();
+  c._data.settings.recalls.enabled=false; c._renderList(); const offHides=!c.shadowRoot.querySelector(".recalltag");
+  window.open=wo; c._data.offers={}; c._data.items=c._data.items.filter(i=>i.id!=="butter1"); return { rows, opened, offHides }; })()`);
+const brot = r.rows.find((x) => x.name === "Brot"), butter = r.rows.find((x) => x.name === "Butter");
+check("❗ steht bei „Brot“ links neben dem Angebotszeichen", brot && brot.acts[0] === "recall-open" && brot.acts[1] === "offers-show", JSON.stringify(r.rows));
+check("❗ nicht bei „Butter“", butter && !butter.acts.includes("recall-open"), JSON.stringify(r.rows));
+check("❗ antippen öffnet nur lebensmittelwarnung.de", r.opened.length === 1 && r.opened[0] === "https://www.lebensmittelwarnung.de/m.html", JSON.stringify(r.opened));
+check("❗ weg, wenn die Rückruf-Warnung aus ist", r.offHides, "");
 
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
