@@ -121,23 +121,26 @@ check("❗ nicht bei „Butter“", butter && !butter.acts.includes("recall-open
 check("❗ antippen öffnet nur lebensmittelwarnung.de", r.opened.length === 1 && r.opened[0] === "https://www.lebensmittelwarnung.de/m.html", JSON.stringify(r.opened));
 check("❗ weg, wenn die Rückruf-Warnung aus ist", r.offHides, "");
 
-// 10) 🎡 Zahlenrad: Menge halten, hochziehen = mehr, Loslassen speichert, vibriert dabei
+// 10) 👉 Mengen-Zeile: auf der Zahl wischen, rechts = mehr, links = weniger, Loslassen speichert, vibriert dabei
 r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=async(m)=>{calls.push(m); return {};}; const vib=[]; const nv=navigator.vibrate; navigator.vibrate=(x)=>{vib.push(x); return true;};
   const brot=c._data.items.find(i=>i.name==="Brot"); brot.quantity="2x"; c._tab="all"; c._renderList(); await new Promise(r=>setTimeout(r,50));
-  const btn=c.shadowRoot.querySelector('.item[data-id="'+brot.id+'"] button.qty[data-act="qty-edit"]'); if(!btn) return {nobtn:true};
-  const b=btn.getBoundingClientRect(), x=b.left+b.width/2, y=b.top+b.height/2;
-  const ev=(t,yy)=>btn.dispatchEvent(new PointerEvent(t,{bubbles:true,composed:true,clientX:x,clientY:yy,pointerId:7,pointerType:"touch"}));
-  ev("pointerdown",y); await new Promise(r=>setTimeout(r,350));
-  const wheel=!!c.shadowRoot.querySelector(".qtywheel"); const mid=c.shadowRoot.querySelector(".qtywheel .qw.on")?.textContent;
-  ev("pointermove",y-60); await new Promise(r=>setTimeout(r,20)); const mid2=c.shadowRoot.querySelector(".qtywheel .qw.on")?.textContent;
-  ev("pointerup",y-60); await new Promise(r=>setTimeout(r,20));
-  const gone=!c.shadowRoot.querySelector(".qtywheel"); btn.click(); const noEdit=!c.shadowRoot.querySelector("#qtyIn, .qtyedit input");
-  ev("pointerdown",y); ev("pointerup",y); await new Promise(r=>setTimeout(r,300)); const shortNoWheel=!c.shadowRoot.querySelector(".qtywheel") && calls.length===1;
-  navigator.vibrate=nv; brot.quantity=null; return { wheel, mid, mid2, gone, noEdit, shortNoWheel, calls, vib, hold:c._qtyHold }; })()`);
-check("Zahlenrad: erscheint nach kurzem Halten", r.wheel && /2/.test(r.mid || ""), JSON.stringify(r));
-check("Zahlenrad: hochziehen dreht auf 4, Loslassen speichert", /^4/.test(r.mid2 || "") && r.gone && r.calls.length >= 1 && r.calls[0].type === "einkaufsliste/item/update" && /^4/.test(r.calls[0].quantity), JSON.stringify(r));
-check("Zahlenrad: vibriert beim Start und bei jedem Schritt", r.vib.length >= 2, JSON.stringify(r.vib));
-check("Zahlenrad: kurzes Tippen dreht nichts", r.shortNoWheel && r.hold === false, JSON.stringify(r));
+  c.shadowRoot.querySelector('.item[data-id="'+brot.id+'"] button.qty[data-act="qty-edit"]').click(); await new Promise(r=>setTimeout(r,50));
+  const zone=c.shadowRoot.querySelector('.qtyrow[data-id="'+brot.id+'"] .qswipe'); if(!zone) return {nozone:true};
+  const arrows=[...zone.querySelectorAll(".qarr")].map(a=>a.textContent).join(""), hasBtns=c.shadowRoot.querySelectorAll('.qtyrow [data-act="qty-minus"], .qtyrow [data-act="qty-plus"]').length;
+  const b=zone.getBoundingClientRect(), x=b.left+b.width/2, y=b.top+b.height/2;
+  const ev=(t,xx)=>zone.dispatchEvent(new PointerEvent(t,{bubbles:true,composed:true,clientX:xx,clientY:y,pointerId:7,pointerType:"touch"}));
+  ev("pointerdown",x); ev("pointermove",x+35); ev("pointermove",x+62); const mid=zone.querySelector(".qval").textContent; ev("pointerup",x+62); await new Promise(r=>setTimeout(r,20));
+  const right=[...calls];
+  ev("pointerdown",x); ev("pointermove",x-200); const low=zone.querySelector(".qval").textContent; ev("pointercancel",x-200); await new Promise(r=>setTimeout(r,20));
+  const left=calls.slice(right.length);
+  ev("pointerdown",x); ev("pointerup",x); await new Promise(r=>setTimeout(r,20)); const tapNoCall=calls.length===right.length+left.length;
+  const wheel=!!c.shadowRoot.querySelector(".qtywheel");
+  navigator.vibrate=nv; brot.quantity=null; c._qtyEdit=null; c._renderList(); return { arrows, hasBtns, mid, right, low, left, tapNoCall, vib, wheel }; })()`);
+check("Mengen-Zeile: ‹ › Pfeile und − ＋ Knöpfe", r.arrows === "‹›" && r.hasBtns === 2, JSON.stringify(r));
+check("Mengen-Zeile: nach rechts wischen = mehr, Loslassen speichert", /^4/.test(r.mid || "") && r.right?.length === 1 && r.right[0].type === "einkaufsliste/item/update" && /^4/.test(r.right[0].quantity), JSON.stringify(r));
+check("Mengen-Zeile: nach links wischen = weniger (nie unter 1 Schritt), auch bei Abbruch gespeichert", /^1/.test(r.low || "") && r.left?.length === 1 && /^1/.test(r.left[0].quantity), JSON.stringify(r));
+check("Mengen-Zeile: vibriert bei jedem Schritt", r.vib.length >= 3, JSON.stringify(r.vib));
+check("Mengen-Zeile: nur tippen ändert nichts, kein Zahlenrad mehr", r.tapNoCall && !r.wheel, JSON.stringify(r));
 
 // 11) 🏷️ Marken-Check: Zeile in den Einstellungen und oranges ❗ bei „vielleicht andere Marke“
 r = await p.evaluate(`(async () => { const c=${card};
@@ -182,6 +185,20 @@ r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=asyn
 check("📝 „Fertig“ fragt „Notiz fürs nächste Mal?“", r.hasFertig && /Notiz fürs nächste Mal/.test(r.q), JSON.stringify(r));
 check("📝 Notiz wird gespeichert", r.calls.some((m) => m.type === "einkaufsliste/recipe/update" && m.recipe_id === "ra" && m.cook_note === "mehr Wasser"), JSON.stringify(r.calls));
 check("📝 Das andere Rezept bleibt offen und kommt nach vorn", r.left === 1 && r.shown === 1, JSON.stringify(r));
+
+// 13b) 📝 Notizen stehen auch bei „Wartet auf OK“: ✏️ öffnet das Rezept, 🗑️ löscht die Notiz überall
+r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=async(m)=>{calls.push(m); return {};};
+  c._data.recipes=[{id:"rn",name:"Gulasch",items:[{name:"Rind"}],steps:"Schmoren.",heat:[],cook_note:"weniger Salz"},{id:"ro",name:"Salat",items:[{name:"Gurke"}],steps:"Schneiden."}]; c._data.proposals=[];
+  const host=document.createElement("div"); host.innerHTML=c._recWaitHtml(); const rows=[...host.querySelectorAll(".prop.note")].map(x=>x.textContent.replace(/\\s+/g," ").trim());
+  const box=c._recBoxes(""); const sub=/1 Notiz/.test(box);
+  const bt=document.createElement("button"); bt.dataset.act="cook-note-del"; bt.dataset.id="rn"; c.shadowRoot.querySelector("ha-card").append(bt); bt.click(); bt.remove();
+  await new Promise(r=>setTimeout(r,200)); const conf=!!document.querySelector("[data-elconfirm]");
+  const yes=[...document.querySelectorAll("[data-elconfirm] button")].pop(); yes?.click(); await new Promise(r=>setTimeout(r,100));
+  const none=(() => { c._data.recipes[0].cook_note=null; const h=document.createElement("div"); h.innerHTML=c._recWaitHtml(); return /wartet nichts/.test(h.textContent); })();
+  return { rows, sub, conf, calls, none }; })()`);
+check("📝 „Wartet auf OK“ zeigt die Notiz mit Rezeptname", r.rows.length === 1 && /Gulasch/.test(r.rows[0]) && /weniger Salz/.test(r.rows[0]) && r.sub, JSON.stringify(r));
+check("📝 🗑️ fragt nach und löscht die Notiz am Rezept", r.conf && r.calls.some((m) => m.type === "einkaufsliste/recipe/update" && m.recipe_id === "rn" && m.cook_note === ""), JSON.stringify(r));
+check("📝 ohne Notizen und Vorschläge: „wartet nichts“", r.none, JSON.stringify(r));
 
 // 14) 🛒 Laden-Modus nach dem Neuladen mitten im Einkauf: springt zum ersten offenen Artikel (nur einmal)
 r = await p.evaluate(`(async () => { const c=${card}; const seen=[]; const siv=Element.prototype.scrollIntoView; Element.prototype.scrollIntoView=function(){ seen.push(this.className+"|"+(this.querySelector(".name")?.textContent||"")); };

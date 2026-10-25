@@ -2331,5 +2331,11 @@
 "📝 Notiz gespeichert": "📝 Note saved",
 "Rezept dazu – mehrere gleichzeitig kochen": "Add a recipe – cook several at once",
 "➕ Welches Rezept kochst du dazu?": "➕ Which recipe are you cooking as well?",
-"Keine weiteren Rezepte mit Schritten da.": "No other recipes with steps."
+"Keine weiteren Rezepte mit Schritten da.": "No other recipes with steps.",
+"Wischen: links = weniger, rechts = mehr": "Swipe: left = less, right = more",
+"Rezept öffnen und ändern": "Open and change the recipe",
+"🗑️ Notiz gelöscht": "🗑️ Note deleted",
+"1 Notiz": "1 note",
+"{} Notizen": "{0} notes",
+"Die Notiz bei „{}“ löschen? Sie verschwindet dann auch in der Kochmütze.": "Delete the note for “{0}”? It will also disappear from the chef's hat."
 }

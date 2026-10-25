@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.23-beta.3";
+const EL_VERSION = "2.76.23-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.22"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -397,9 +397,12 @@ const EL_BETA_NEWS = [
   ["❗ <b>Rotes Ausrufezeichen in der Liste:</b> Passt ein Artikel zu einer Rückruf-Warnung, steht links neben dem Angebotszeichen ein rotes ❗. Antippen öffnet die Warnung. · 🧹 <b>Räumt sich selbst auf:</b> Ein Treffer verschwindet von allein, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage. · 🐛 Das ✔ beim Wegklicken eines Treffers und 🗑️ Löschen im Einkaufs-Protokoll gingen nicht („expected str at id“) – repariert.",
    "❗ <b>Red exclamation mark in the list:</b> if an item matches a recall warning, a red ❗ appears to the left of the offer icon. Tap it to open the warning. · 🧹 <b>Tidies itself up:</b> a match disappears on its own when your purchase is more than 30 days ago or the warning is older than 60 days. · 🐛 The ✔ to dismiss a match and 🗑️ delete in the purchase log did not work (“expected str at id”) – fixed.",
    "beta.2"],
-  ["🏷️ <b>Marken-Check:</b> Steht beim Artikel eine Notiz (z. B. die Marke), sagt die Rückruf-Warnung, ob genau diese Marke betroffen ist. · 🎡 <b>Zahlenrad:</b> Auf der Menge halten und hoch/runter ziehen, jeder Schritt vibriert. · ➕ <b>Mehrere Rezepte gleichzeitig kochen</b> mit Reitern und Tipp, womit du anfängst. · 📝 <b>Notiz nach dem Kochen</b> fürs nächste Mal. · 🛒 Der Laden-Modus springt beim Wiederöffnen zum ersten offenen Artikel.",
-   "🏷️ <b>Brand check:</b> if the item has a note (e.g. the brand), the recall warning tells you whether exactly this brand is affected. · 🎡 <b>Number wheel:</b> hold the quantity and drag up/down, every step vibrates. · ➕ <b>Cook several recipes at once</b> with tabs and a tip on which to start with. · 📝 <b>Note after cooking</b> for next time. · 🛒 Shop mode jumps to the first open item when you reopen it.",
+  ["🏷️ <b>Marken-Check:</b> Steht beim Artikel eine Notiz (z. B. die Marke), sagt die Rückruf-Warnung, ob genau diese Marke betroffen ist. · ➕ <b>Mehrere Rezepte gleichzeitig kochen</b> mit Reitern und Tipp, womit du anfängst. · 📝 <b>Notiz nach dem Kochen</b> fürs nächste Mal. · 🛒 Der Laden-Modus springt beim Wiederöffnen zum ersten offenen Artikel.",
+   "🏷️ <b>Brand check:</b> if the item has a note (e.g. the brand), the recall warning tells you whether exactly this brand is affected. · ➕ <b>Cook several recipes at once</b> with tabs and a tip on which to start with. · 📝 <b>Note after cooking</b> for next time. · 🛒 Shop mode jumps to the first open item when you reopen it.",
    "beta.3"],
+  ["👉 <b>Menge wischen:</b> Menge antippen, dann in der Zeile [−] ‹ 2x › [＋] auf der Zahl nach rechts wischen = mehr, nach links = weniger. Jeder Schritt vibriert kurz. · 📝 <b>Rezept-Notizen bei „Wartet auf OK“:</b> In ⚙️ → Rezepte stehen alle Notizen nach dem Kochen. ✏️ öffnet das Rezept zum Anpassen, 🗑️ löscht die Notiz überall.",
+   "👉 <b>Swipe the quantity:</b> tap the quantity, then in the row [−] ‹ 2x › [＋] swipe right on the number = more, left = less. Every step vibrates briefly. · 📝 <b>Recipe notes under “Waiting for OK”:</b> ⚙️ → Recipes lists all notes from cooking. ✏️ opens the recipe to adjust it, 🗑️ deletes the note everywhere.",
+   "beta.4"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -2755,12 +2758,7 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .item { border-left:4px solid var(--cc, transparent); padding-left:0; }
 .item[style*="--rc"] { box-shadow: inset -4px 0 0 var(--rc); }
 .item .txt { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
-.item .qty { border:0; font:inherit; font-size:.85em; cursor:pointer; color:inherit; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
-.item .qty.qtywheel-on { outline:2px solid var(--primary-color,#03a9f4); }
-.qtywheel { position:fixed; z-index:20; transform:translate(-50%,-50%); pointer-events:none; background:var(--card-background-color,#fff); border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,.25); padding:4px 0; min-width:76px; text-align:center; }
-.qtywheel .qw { height:28px; line-height:28px; font-size:.9em; opacity:.35; color:var(--primary-text-color); }
-.qtywheel .qw:nth-child(2), .qtywheel .qw:nth-child(4) { opacity:.6; }
-.qtywheel .qw.on { opacity:1; font-weight:700; font-size:1.15em; color:var(--primary-color,#03a9f4); background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); }
+.item .qty { border:0; font:inherit; font-size:.85em; cursor:pointer; color:inherit; }
 /* 🔵 Menge blau – passt zum ①-Icon, sieht man beim Einkaufen sofort */
 .item .qty { background:color-mix(in srgb, var(--primary-color,#03a9f4) 14%, transparent); color:var(--primary-color,#03a9f4); font-weight:600; }
 .item.done .qty { background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); color:var(--secondary-text-color); font-weight:400; }
@@ -2773,6 +2771,9 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .qbtn { width:40px; height:40px; border-radius:50%; border:1.5px solid var(--primary-color,#03a9f4); background:transparent; color:var(--primary-color,#03a9f4); font-size:1.3em; cursor:pointer; }
 .qbtn[disabled] { opacity:.3; }
 .qval { min-width:44px; text-align:center; font-weight:600; font-size:1.1em; }
+.qswipe { display:inline-flex; align-items:center; gap:4px; padding:6px 8px; border-radius:20px; touch-action:none; cursor:ew-resize; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; background:color-mix(in srgb, var(--primary-color,#03a9f4) 10%, transparent); }
+.qswipe .qarr { opacity:.45; font-size:1.1em; color:var(--primary-color,#03a9f4); }
+.qswipe.on { background:color-mix(in srgb, var(--primary-color,#03a9f4) 22%, transparent); }
 ha-card.shop form.add { display:none; }
 ha-card.shop #btnRecipes { display:none; }
 ha-card.shop #btnCalc { order:0; } /* 🧮 Rechner (nur im Laden-Modus) steht links vor den 💳 Karten */
@@ -4626,7 +4627,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._setupTabScroll(this.$("tabs"));
     this._setupLongPress(this.$("list"));
     this._setupSwipe(this.$("list"));
-    this._setupQtyWheel(this.$("list"));
+    this._setupQtySwipe(this.$("list"));
     root.addEventListener("change", (e) => this._onChange(e));
     root.addEventListener("input", (e) => this._onInput(e));
     root.addEventListener("submit", (e) => {
@@ -4678,65 +4679,47 @@ class EinkaufslisteCard extends HTMLElement {
       if (!itemEl) return;
       e.preventDefault();
       clearTimeout(timer);
-      if (this._qtyHold) return; // 🎡 Finger hält die Menge: Zahlenrad statt Menü
       if (!this._longPressed) open(itemEl);
     });
   }
 
-  // 🎡 Zahlenrad: Finger kurz auf der Menge („5x“) halten, dann hoch = mehr, runter = weniger.
-  // Jede Stufe tickt mit kurzer Vibration (Android; iPhone erlaubt das Webseiten nicht). Kurz tippen öffnet wie bisher ＋/−.
-  _setupQtyWheel(list) {
-    const STEP_PX = 28, HOLD = 250;
+  // 👉 Mengen-Zeile [−] ‹ 2x › [＋]: auf der Zahl nach rechts wischen = mehr, nach links = weniger.
+  // Jede Stufe tickt mit kurzer Vibration (Android; iPhone erlaubt das Webseiten nicht). Loslassen speichert.
+  _setupQtySwipe(list) {
+    const STEP_PX = 30;
     let st = null;
-    const draw = () => {
-      const vals = [2, 1, 0, -1, -2].map((k) => st.n + k * st.step).map((n) => (n >= st.step ? this._fmtQty(n, st.p.unit) : ""));
-      st.wheel.innerHTML = vals.map((v, i) => `<div class="qw${i === 2 ? " on" : ""}">${esc(v)}</div>`).join("");
-    };
-    const stop = (commit) => {
-      if (!st) return;
-      const s = st; st = null; this._qtyHold = false;
-      clearTimeout(s.timer);
-      s.wheel?.remove();
-      s.btn.classList.remove("qtywheel-on");
-      if (!s.on) return;
-      this._wheeled = Date.now(); // der Klick danach öffnet nicht das Mengen-Feld
-      if (commit && s.n !== s.p.n) this._ws({ type: "einkaufsliste/item/update", item_id: s.id, quantity: this._fmtQty(s.n, s.p.unit) }).catch(() => {});
-    };
     list.addEventListener("pointerdown", (e) => {
-      const btn = e.target.closest?.('button.qty[data-act="qty-edit"]');
-      if (!btn || st) return;
-      const id = btn.closest(".item[data-id]")?.dataset.id;
+      const zone = e.target.closest?.(".qtyrow .qswipe");
+      if (!zone || st) return;
+      const id = zone.closest(".qtyrow")?.dataset.id;
       const item = this._data?.items.find((i) => i.id === id);
-      const p = this._parseQty(item?.quantity);
-      if (!p) return; // „ein paar“ o. Ä.: kein Rad
-      st = { btn, id, p, step: this._qtyStepFor(item), n: p.n, x: e.clientX, y: e.clientY, on: false };
-      this._qtyHold = true;
-      st.timer = setTimeout(() => {
-        if (!st) return;
-        st.on = true;
-        try { btn.setPointerCapture(e.pointerId); } catch (_) { /* egal */ }
-        btn.classList.add("qtywheel-on");
-        const r = btn.getBoundingClientRect();
-        st.wheel = document.createElement("div");
-        st.wheel.className = "qtywheel";
-        st.wheel.style.left = `${Math.round(r.left + r.width / 2)}px`;
-        st.wheel.style.top = `${Math.round(r.top + r.height / 2)}px`;
-        this.shadowRoot.append(st.wheel);
-        draw();
-        elVibrate(15);
-      }, HOLD);
+      const p = this._parseQty(item?.quantity) || { n: 1, unit: "x" };
+      const step = (this._qtyStep ||= {})[id] || this._qtyStepFor(item);
+      st = { zone, id, p, step, n: p.n, x: e.clientX, moved: false };
+      try { zone.setPointerCapture(e.pointerId); } catch (_) { /* egal */ }
+      zone.classList.add("on");
     });
     list.addEventListener("pointermove", (e) => {
       if (!st) return;
-      if (!st.on) { if (Math.abs(e.clientX - st.x) > 8 || Math.abs(e.clientY - st.y) > 8) stop(false); return; } // vorher bewegt = normal scrollen
-      const k = Math.round((st.y - e.clientY) / STEP_PX);
+      const k = Math.round((e.clientX - st.x) / STEP_PX);
+      if (k) st.moved = true;
       const n = Math.max(st.step, Math.round((st.p.n + k * st.step) * 100) / 100);
-      if (n !== st.n) { st.n = n; draw(); elVibrate(8); }
+      if (n === st.n) return;
+      st.n = n;
+      const v = st.zone.querySelector(".qval");
+      if (v) v.textContent = this._fmtQty(n, st.p.unit);
+      elVibrate(8);
     });
-    list.addEventListener("touchmove", (e) => { if (st?.on) e.preventDefault(); }, { passive: false }); // Rad dreht, Liste bleibt stehen
-    list.addEventListener("pointerup", () => stop(true));
-    list.addEventListener("pointercancel", () => stop(false));
-    list.addEventListener("contextmenu", (e) => { if (st) e.preventDefault(); });
+    const stop = () => {
+      if (!st) return;
+      const s = st; st = null;
+      s.zone.classList.remove("on");
+      if (!s.moved) return;
+      this._qtySwiped = Date.now(); // der Klick danach zählt nicht
+      if (s.n !== s.p.n) this._ws({ type: "einkaufsliste/item/update", item_id: s.id, quantity: this._fmtQty(s.n, s.p.unit) }).catch(() => {});
+    };
+    list.addEventListener("pointerup", stop);
+    list.addEventListener("pointercancel", stop); // Handy bricht ab: was schon gewischt ist, bleibt
   }
 
   // 👆 Wischen am Handy: Zeile nach links = abhaken, nach rechts = (erledigt) wieder auf die Liste
@@ -5620,7 +5603,7 @@ class EinkaufslisteCard extends HTMLElement {
     return `
       <div class="qtyrow" data-id="${item.id}">
         <button class="qbtn" data-act="qty-minus" ${p.n <= step ? "disabled" : ""}>−</button>
-        <span class="qval">${esc(this._fmtQty(p.n, p.unit))}</span>
+        <span class="qswipe" title="Wischen: links = weniger, rechts = mehr"><span class="qarr">‹</span><span class="qval">${esc(this._fmtQty(p.n, p.unit))}</span><span class="qarr">›</span></span>
         <button class="qbtn" data-act="qty-plus">＋</button>
         <button class="iconbtn" data-act="qty-done" title="Fertig"><ha-icon icon="mdi:check"></ha-icon></button>
       </div>`;
@@ -7065,14 +7048,14 @@ ${(() => {
   // 🗂️ ⚙️ → Rezepte: aufklappbare Kästen wie in den Einstellungen und bei den Gar-Zeiten (nur einer offen, alle starten zu)
   _recBoxes(body) {
     const d = this._data || {}, cur = this._recTab || "none";
-    const nr = (d.recipes || []).length, ng = (d.recipe_groups || []).length, nw = (d.proposals || []).filter((x) => x.status !== "rejected").length;
+    const nr = (d.recipes || []).length, ng = (d.recipe_groups || []).length, nw = (d.proposals || []).filter((x) => x.status !== "rejected").length, nn = (d.recipes || []).filter((r) => r.cook_note).length;
     const box = (act, k, icon, color, title, sub, open, own) => `<div class="lgbox xacc ${open ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="${act}" ${act === "rec-tab" ? `data-tab="${k}" aria-expanded="${open}"` : ""}><span class="gem" style="background:${color};color:#fff"><ha-icon icon="${icon}" style="color:#fff"></ha-icon></span><span class="grow"><b>${title}</b><small>${sub}</small></span>${act === "rec-tab" ? `<ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>` : `<ha-icon class="chev" icon="mdi:plus-circle-outline"></ha-icon>`}</button>${open ? `<div class="xacc-b">${own ?? body}</div>` : ""}</div>`;
     return `<div class="xaccs">${[
       box("recipe-new", "new", "mdi:plus", "#43a047", "Neues Rezept", "Ein eigenes Rezept anlegen", false),
       box("rec-tab", "recipes", "mdi:chef-hat", "#e53935", "Rezepte", nr ? (nr === 1 ? "1 Rezept" : `${nr} Rezepte`) : "noch keine", cur === "recipes"),
       box("rec-tab", "groups", "mdi:tag-multiple-outline", "#8e24aa", "Rezept-Gruppen", ng ? (ng === 1 ? "1 Gruppe" : `${ng} Gruppen`) : "noch keine", cur === "groups"),
       box("rec-tab", "file", "mdi:file-document-outline", "#546e7a", "Rezepte aus Datei", "Aus einer Datei einlesen", cur === "file"),
-      box("rec-tab", "wait", "mdi:timer-sand", "#fb8c00", "Wartet auf OK", nw ? (nw === 1 ? "1 Vorschlag wartet" : `${nw} Vorschläge warten`) : "nichts offen", cur === "wait"),
+      box("rec-tab", "wait", "mdi:timer-sand", "#fb8c00", "Wartet auf OK", [nw ? (nw === 1 ? "1 Vorschlag wartet" : `${nw} Vorschläge warten`) : "", nn ? (nn === 1 ? "1 Notiz" : `${nn} Notizen`) : ""].filter(Boolean).join(" · ") || "nichts offen", cur === "wait"),
       box("rec-tab", "plan", "mdi:calendar-week", "#43a047", "Wochenplan", d.settings?.plan_reset_on === false ? "Zurücksetzen aus" : `Zurücksetzen jeden ${WD_LONG[d.settings?.plan_reset_day ?? 0]}`, cur === "plan", this._planSetHtml()),
     ].join("")}</div>`;
   }
@@ -8161,10 +8144,19 @@ ${(() => {
   }
 
   // 📝 Warteliste in den Rezept-Einstellungen
+  // 📝 Notizen nach dem Kochen: stehen sofort am Rezept und zusätzlich hier. Rezept ändern, dann 🗑️ = Notiz überall weg.
+  _recNotesHtml() {
+    const rs = (this._data?.recipes || []).filter((r) => r.cook_note);
+    if (!rs.length) return "";
+    return `<div class="propbox">${rs.map((r) => `<div class="prop note"><ha-icon icon="mdi:note-edit-outline" style="color:#c9a227"></ha-icon><span class="pn"><b translate="no">${esc(r.name)}</b><small>📝 ${esc(r.cook_note)}</small></span>
+      <span class="pbtns"><button type="button" class="btn" data-act="cook-note-open" data-id="${esc(r.id)}" title="Rezept öffnen und ändern" aria-label="Rezept öffnen und ändern"><ha-icon icon="mdi:pencil"></ha-icon></button><button type="button" class="btn" data-act="cook-note-del" data-id="${esc(r.id)}" title="Notiz löschen" aria-label="Notiz löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></span></div>`).join("")}</div>`;
+  }
+
   _recWaitHtml() {
     const list = this._data?.proposals || [];
-    if (!list.length) return `<p class="hint">Im Moment wartet nichts auf ein OK. 🎉 Vorschläge entstehen in der Kochmütze mit dem 💡-Knopf.</p>`;
-    return `<div class="propbox">${list.map((p) => {
+    const notes = this._recNotesHtml();
+    if (!list.length) return notes || `<p class="hint">Im Moment wartet nichts auf ein OK. 🎉 Vorschläge entstehen in der Kochmütze mit dem 💡-Knopf.</p>`;
+    return notes + `<div class="propbox">${list.map((p) => {
       if (p.status === "rejected") return `<div class="prop rej"><ha-icon icon="mdi:close-circle-outline"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>abgelehnt${p.by ? ` · von ${esc(p.by)}` : ""} · verschwindet nach einem Tag</small></span><button type="button" class="btn" data-act="prop-del" data-id="${esc(p.id)}" title="Jetzt löschen" aria-label="Jetzt löschen" style="margin-left:auto"><ha-icon icon="mdi:close" style="color:#e53935"></ha-icon></button></div>`;
       const key = `vorschlag#${p.id}`, open = !!this._propOpen?.has(p.id);
       return `<div class="prop wait" style="flex-wrap:wrap"><ha-icon icon="mdi:timer-sand"></ha-icon><span class="pn"><b translate="no">${esc(p.name)}</b><small>wartet auf OK${p.by ? ` · von ${esc(p.by)}` : ""}</small></span>
@@ -12353,7 +12345,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
 
   async _onClick(e) {
     if (this._dragged) { e.stopPropagation(); e.preventDefault(); return; } // war nur Ziehen
-    if (this._wheeled && Date.now() - this._wheeled < 400 && e.target.closest?.("#list")) { e.stopPropagation(); e.preventDefault(); return; } // 🎡 gerade am Zahlenrad gedreht
+    if (this._qtySwiped && Date.now() - this._qtySwiped < 400 && e.target.closest?.("#list")) { e.stopPropagation(); e.preventDefault(); return; } // 👉 gerade an der Menge gewischt
     if (this._swiped && Date.now() - this._swiped < 400 && e.target.closest?.("#list")) { e.stopPropagation(); e.preventDefault(); return; } // 👆 gerade gewischt: der Klick danach zählt nicht
     const el = e.target.closest("[data-act]");
     if (!el) return;
@@ -13667,6 +13659,17 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       case "prop-photo": {
         const pr = (this._data?.proposals || []).find((x) => x.id === el.dataset.id);
         if (pr) this._openPhoto(`vorschlag#${pr.id}`, pr.name);
+        break;
+      }
+      case "cook-note-open": { // 📝 Rezept zur Notiz öffnen, um es anzupassen
+        const r = this._recipe(el.dataset.id);
+        if (r) { this._openRecipe(r); this._renderAll(); }
+        break;
+      }
+      case "cook-note-del": { // 📝 Notiz löschen – auch in der Kochmütze und beim Kochen
+        const r = this._recipe(el.dataset.id);
+        if (!r || !await elConfirm(`Die Notiz bei „${r.name}“ löschen? Sie verschwindet dann auch in der Kochmütze.`)) break;
+        try { await this._ws({ type: "einkaufsliste/recipe/update", recipe_id: r.id, cook_note: "" }); this._toast("🗑️ Notiz gelöscht"); } catch (_) { /* Meldung kam schon */ }
         break;
       }
       case "prop-reject": {
