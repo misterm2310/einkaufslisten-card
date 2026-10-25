@@ -200,6 +200,26 @@ check("📝 „Fertig“ fragt „Notiz fürs nächste Mal?“", r.hasFertig && 
 check("📝 Notiz wird gespeichert", r.calls.some((m) => m.type === "einkaufsliste/recipe/update" && m.recipe_id === "ra" && m.cook_note === "mehr Wasser"), JSON.stringify(r.calls));
 check("📝 Das andere Rezept bleibt offen und kommt nach vorn", r.left === 1 && r.shown === 1, JSON.stringify(r));
 
+// 12b) 👥 Personen-Auswahl: kein Geräte-Kasten von Schritt 1; 💡 Tipp nur, solange beide Rezepte noch bei der Personen-Auswahl sind
+r = await p.evaluate(`(async () => { const c=${card}; c._ws=async()=>({}); document.querySelectorAll("[data-elcook]").forEach(o=>o._elClose?.());
+  const vis=()=>[...document.querySelectorAll("[data-elcook]")].find(o=>o.style.display!=="none");
+  const heatShown=(ov)=>[...ov.querySelectorAll("div")].some(d=>d.style.background==="rgb(58, 31, 15)" && d.offsetParent);
+  const hintShown=(ov)=>!!ov.querySelector("[data-elhint]");
+  const go=(ov)=>[...ov.querySelectorAll("[data-elintro] button")].find(b=>/Los geht/.test(b.textContent))?.click();
+  const g={id:"gy",name:"BBQ Gyros Overload",items:[{name:"Gyros"}],steps:"Backofen vorheizen.\\nGyros 25 Minuten backen.",heat:[{device:"Backofen",mode:"Umluft",temp:200,minutes:25,steps:[1]}],servings:4,servings_unit:"persons"};
+  const n={id:"nu",name:"Reis",items:[{name:"Reis"}],steps:"Reis 15 Minuten kochen.",heat:[],servings:4,servings_unit:"persons"};
+  c._data.recipes=[g,n];
+  c._cookMode(g); await new Promise(r=>setTimeout(r,200)); const introHeat=heatShown(vis()); go(vis()); await new Promise(r=>setTimeout(r,150)); const afterHeat=heatShown(vis());
+  c._cookMode(n); await new Promise(r=>setTimeout(r,200)); const hintLate=hintShown(vis()); const tabsLate=vis().querySelectorAll("[data-elcooktab]").length;
+  document.querySelectorAll("[data-elcook]").forEach(o=>o._elClose?.());
+  c._cookMode(g); await new Promise(r=>setTimeout(r,200)); c._cookMode(n); await new Promise(r=>setTimeout(r,200)); const hintBoth=hintShown(vis());
+  go(vis()); await new Promise(r=>setTimeout(r,150)); const hintAfterGo=[...document.querySelectorAll("[data-elcook]")].some(hintShown);
+  document.querySelectorAll("[data-elcook]").forEach(o=>o._elClose?.()); document.querySelectorAll("[data-elov]").forEach(e=>e.remove());
+  return { introHeat, afterHeat, hintLate, tabsLate, hintBoth, hintAfterGo }; })()`);
+check("Personen-Auswahl: kein Geräte-Kasten von Schritt 1", r.introHeat === false && r.afterHeat === true, JSON.stringify(r));
+check("Tipp nur, wenn beide Rezepte noch bei der Personen-Auswahl sind", r.hintBoth === true && r.hintLate === false && r.tabsLate === 2, JSON.stringify(r));
+check("Tipp verschwindet nach „Los geht’s“", r.hintAfterGo === false, JSON.stringify(r));
+
 // 13b) 📝 Notizen stehen auch bei „Wartet auf OK“: ✏️ öffnet das Rezept, 🗑️ löscht die Notiz überall
 r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=async(m)=>{calls.push(m); return {};};
   c._data.recipes=[{id:"rn",name:"Gulasch",items:[{name:"Rind"}],steps:"Schmoren.",heat:[],cook_note:"weniger Salz"},{id:"ro",name:"Salat",items:[{name:"Gurke"}],steps:"Schneiden."}]; c._data.proposals=[];

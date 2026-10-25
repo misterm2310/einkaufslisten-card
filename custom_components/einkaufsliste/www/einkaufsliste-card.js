@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.23-beta.5";
+const EL_VERSION = "2.76.23-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.22"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -406,6 +406,9 @@ const EL_BETA_NEWS = [
   ["👉 <b>Größeres Wisch-Feld:</b> Die ganze Mengen-Zeile von − bis ＋ ist jetzt zum Wischen da, schon ein kurzer Weg zählt einen Schritt. · 📳 − und ＋ brummen beim Tippen. · 💡 Der Tipp „Fang mit … an“ beim Kochen mehrerer Rezepte ist jetzt gut lesbar.",
    "👉 <b>Bigger swipe area:</b> the whole quantity row from − to ＋ can be swiped now, a short move already counts as one step. · 📳 − and ＋ vibrate when tapped. · 💡 The “Start with …” tip when cooking several recipes is now easy to read.",
    "beta.5"],
+  ["👥 <b>Personen-Auswahl aufgeräumt:</b> Der Geräte-Kasten von Schritt 1 (z. B. Backofen) erscheint erst nach „Los geht’s“. · 💡 Der Tipp „Fang mit … an“ kommt nur, solange alle offenen Rezepte noch bei der Personen-Auswahl sind. ➕ geht weiterhin jederzeit.",
+   "👥 <b>Cleaner people selection:</b> the appliance box of step 1 (e.g. oven) only appears after “Let's go”. · 💡 The “Start with …” tip only shows while all open recipes are still at the people selection. ➕ still works at any time.",
+   "beta.6"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -10417,7 +10420,7 @@ ${(() => {
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
     const renderHeat = () => {
-      const ch = chosenHeat();
+      const ch = ov.querySelector("[data-elintro]") ? [] : chosenHeat(); // 👥 bei der Personen-Auswahl noch kein Gerät von Schritt 1 zeigen
       heatBox.style.display = ch.length ? "flex" : "none";
       heatBox.innerHTML = ch.map((h) => `<div class="ic" style="background:#3a1f0f;border:1px solid #a64b12;color:#ffd7b5;border-radius:12px;padding:10px 12px;font:600 16px Roboto,sans-serif">${esc(heatText(h))}</div>`).join("");
       // 🍟 Nr. 100: bei „Heißluftfritteuse“ (für alle, nur mit Temperatur und Minuten, nur wenn Airfryer Control mit dem Dienst programm_senden installiert ist) steht neben der Anzeige das Symbol zum Schicken – der Start bleibt am Gerät
@@ -10719,6 +10722,7 @@ ${(() => {
       const intro = document.createElement("div");
       intro.dataset.elintro = "1";
       bWish.style.display = "none"; // ✏️ Änderungswunsch gibt es erst bei den Schritten, nicht bei der Personen-/Geräte-Auswahl
+      heatBox.style.display = "none"; // 🔥 Gerät von Schritt 1 erst nach „Los geht’s“
       Object.assign(intro.style, { ...wrapW, flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "18px", textAlign: "center" });
       const q = document.createElement("div");
       q.className = "ic";
@@ -10741,7 +10745,7 @@ ${(() => {
       bm.onclick = () => step(-1); bp.onclick = () => step(1);
       const go = ovButton("Los geht’s 👨‍🍳", true);
       Object.assign(go.style, { padding: "16px 28px", fontSize: "20px", marginTop: "6px" });
-      go.onclick = () => { intro.remove(); bWish.style.display = ""; main.style.display = "flex"; nav.style.display = "flex"; refresh(); renderIng(); layout(); show(); autoR.start(); };
+      go.onclick = () => { intro.remove(); bWish.style.display = ""; main.style.display = "flex"; nav.style.display = "flex"; refresh(); renderIng(); layout(); show(); autoR.start(); this._cookTabs(); };
       pr.append(bm, num, bp);
       if (r.servings) intro.append(q, pr, hint);
       if (freeIdx().length > 1) { // 🔥 Geräte wählen (mehrere möglich); mindestens eins bleibt an
@@ -10795,13 +10799,15 @@ ${(() => {
       main.style.display = "none"; nav.style.display = "none";
       ov.insertBefore(intro, main);
       upd();
-    } else { show(); autoR.start(); }
+      this._cookTabs(); // 💡 jetzt weiß die Karte, dass dieses Rezept noch bei der Personen-Auswahl ist
+    } else { show(); autoR.start(); this._cookTabs(); }
   }
 
   // 🍝🥗 Reiter oben im Kochmodus (ab 2 Rezepten) plus Tipp, womit man anfängt
   _cookTabs() {
     const sess = (this._cookSess || []).filter((x) => x.ov.isConnected);
-    const hint = sess.length > 1 ? this._cookOrderHint(sess) : "";
+    const allIntro = sess.every((x) => x.ov.querySelector("[data-elintro]")); // 💡 Tipp nur, solange noch keins der Rezepte angefangen ist
+    const hint = sess.length > 1 && allIntro ? this._cookOrderHint(sess) : "";
     for (const x of sess) {
       const bar = x.tabs;
       if (!bar) continue;
