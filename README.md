@@ -83,7 +83,7 @@ Den Ordner `custom_components/einkaufsliste` nach `/config/custom_components/ein
 - ⇄ = war aus (bleibt offen mit „war aus“ oder wandert in ein anderes Geschäft).
 - 🤷 **„Egal wo“** = Artikel ohne festes Geschäft. Die stehen in **jedem** Geschäfts-Reiter mit drin (mit Schildchen „🤷 Egal wo“) – egal, wo du gerade bist. Abhaken = überall weg. Gibt es so ein Produkt bei einem Geschäft nicht (z. B. Cola bei dm), schaltest du in den Einstellungen dieses Geschäfts **„Egal wo“-Artikel hier nicht zeigen** ein. Mit ⇄ in ein Geschäft verschieben = zieht einfach um, ohne Rest bei „Erledigt“. Andersrum geht's auch: ⇄ → **🤷 Egal wo**. Wird so ein Artikel im Reiter eines Geschäfts abgehakt, gehört er ab dann dorthin (dort unter „Erledigt“, bei den anderen weg) – und kommt beim nächsten Mal wieder dort auf die Liste.
 - **Lange drücken** = Menü: bearbeiten, verschieben, Menge, Kategorie, Foto, Barcode, Infos.
-- **Auf die Menge tippen** = [−] 2x [＋]. In der Zeile **auf der Zahl wischen** (‹ ›): nach rechts = mehr, nach links = weniger, jeder Schritt vibriert kurz (nicht am iPhone, das erlaubt Apple nicht), Loslassen speichert.
+- **Auf die Menge tippen** = [−] 2x [＋]. In der Zeile **wischen** (überall von − bis ＋, ‹ ›): nach rechts = mehr, nach links = weniger, jeder Schritt und jeder Tipp auf − / ＋ vibriert kurz (nicht am iPhone, das erlaubt Apple nicht), Loslassen speichert.
 - ✨ = neu seit deinem letzten Blick, die rote Zahl am Reiter zeigt, wie viel Neues dort steht.
 - Oben links bringt dich der **Einkaufswagen** von überall (Rezepte, Einstellungen …) zurück auf die Einkaufsliste.
 - Ganz unten unter der Liste öffnet **📖 Anleitung** eine Anleitung für die ganze Familie – samt App-Link zum Kopieren.

@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.23-beta.4";
+const EL_VERSION = "2.76.23-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.22"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -403,6 +403,9 @@ const EL_BETA_NEWS = [
   ["👉 <b>Menge wischen:</b> Menge antippen, dann in der Zeile [−] ‹ 2x › [＋] auf der Zahl nach rechts wischen = mehr, nach links = weniger. Jeder Schritt vibriert kurz. · 📝 <b>Rezept-Notizen bei „Wartet auf OK“:</b> In ⚙️ → Rezepte stehen alle Notizen nach dem Kochen. ✏️ öffnet das Rezept zum Anpassen, 🗑️ löscht die Notiz überall.",
    "👉 <b>Swipe the quantity:</b> tap the quantity, then in the row [−] ‹ 2x › [＋] swipe right on the number = more, left = less. Every step vibrates briefly. · 📝 <b>Recipe notes under “Waiting for OK”:</b> ⚙️ → Recipes lists all notes from cooking. ✏️ opens the recipe to adjust it, 🗑️ deletes the note everywhere.",
    "beta.4"],
+  ["👉 <b>Größeres Wisch-Feld:</b> Die ganze Mengen-Zeile von − bis ＋ ist jetzt zum Wischen da, schon ein kurzer Weg zählt einen Schritt. · 📳 − und ＋ brummen beim Tippen. · 💡 Der Tipp „Fang mit … an“ beim Kochen mehrerer Rezepte ist jetzt gut lesbar.",
+   "👉 <b>Bigger swipe area:</b> the whole quantity row from − to ＋ can be swiped now, a short move already counts as one step. · 📳 − and ＋ vibrate when tapped. · 💡 The “Start with …” tip when cooking several recipes is now easy to read.",
+   "beta.5"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -2771,8 +2774,11 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .qbtn { width:40px; height:40px; border-radius:50%; border:1.5px solid var(--primary-color,#03a9f4); background:transparent; color:var(--primary-color,#03a9f4); font-size:1.3em; cursor:pointer; }
 .qbtn[disabled] { opacity:.3; }
 .qval { min-width:44px; text-align:center; font-weight:600; font-size:1.1em; }
-.qswipe { display:inline-flex; align-items:center; gap:4px; padding:6px 8px; border-radius:20px; touch-action:none; cursor:ew-resize; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; background:color-mix(in srgb, var(--primary-color,#03a9f4) 10%, transparent); }
-.qswipe .qarr { opacity:.45; font-size:1.1em; color:var(--primary-color,#03a9f4); }
+.qswipe { flex:1 1 220px; display:flex; align-items:center; gap:6px; min-height:56px; padding:4px 6px; border-radius:30px; touch-action:none; cursor:ew-resize; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; background:color-mix(in srgb, var(--primary-color,#03a9f4) 10%, transparent); }
+.qswipe .qbtn { flex:none; width:46px; height:46px; }
+.qswipe .qmid { flex:1; display:flex; align-items:center; justify-content:space-between; padding:0 6px; }
+.qswipe .qval { font-size:1.3em; }
+.qswipe .qarr { opacity:.45; font-size:1.4em; color:var(--primary-color,#03a9f4); }
 .qswipe.on { background:color-mix(in srgb, var(--primary-color,#03a9f4) 22%, transparent); }
 ha-card.shop form.add { display:none; }
 ha-card.shop #btnRecipes { display:none; }
@@ -4686,23 +4692,26 @@ class EinkaufslisteCard extends HTMLElement {
   // 👉 Mengen-Zeile [−] ‹ 2x › [＋]: auf der Zahl nach rechts wischen = mehr, nach links = weniger.
   // Jede Stufe tickt mit kurzer Vibration (Android; iPhone erlaubt das Webseiten nicht). Loslassen speichert.
   _setupQtySwipe(list) {
-    const STEP_PX = 30;
+    const STEP_PX = 18;
     let st = null;
     list.addEventListener("pointerdown", (e) => {
-      const zone = e.target.closest?.(".qtyrow .qswipe");
+      const zone = e.target.closest?.(".qtyrow .qswipe"); // die ganze Zeile von − bis ＋
       if (!zone || st) return;
       const id = zone.closest(".qtyrow")?.dataset.id;
       const item = this._data?.items.find((i) => i.id === id);
       const p = this._parseQty(item?.quantity) || { n: 1, unit: "x" };
       const step = (this._qtyStep ||= {})[id] || this._qtyStepFor(item);
-      st = { zone, id, p, step, n: p.n, x: e.clientX, moved: false };
-      try { zone.setPointerCapture(e.pointerId); } catch (_) { /* egal */ }
-      zone.classList.add("on");
+      st = { zone, id, p, step, n: p.n, x: e.clientX, moved: false, pid: e.pointerId };
     });
     list.addEventListener("pointermove", (e) => {
       if (!st) return;
       const k = Math.round((e.clientX - st.x) / STEP_PX);
-      if (k) st.moved = true;
+      if (!st.moved && Math.abs(e.clientX - st.x) > 8) { // ab hier ist es Wischen, kein Tipp auf − / ＋
+        st.moved = true;
+        try { st.zone.setPointerCapture(st.pid); } catch (_) { /* egal */ } // erst jetzt festhalten, sonst zählt der Tipp auf − / ＋ nicht
+        st.zone.classList.add("on");
+      }
+      if (!st.moved) return;
       const n = Math.max(st.step, Math.round((st.p.n + k * st.step) * 100) / 100);
       if (n === st.n) return;
       st.n = n;
@@ -5602,9 +5611,11 @@ class EinkaufslisteCard extends HTMLElement {
     const step = (this._qtyStep ||= {})[item.id] || (this._qtyStep[item.id] = this._qtyStepFor(item));
     return `
       <div class="qtyrow" data-id="${item.id}">
-        <button class="qbtn" data-act="qty-minus" ${p.n <= step ? "disabled" : ""}>−</button>
-        <span class="qswipe" title="Wischen: links = weniger, rechts = mehr"><span class="qarr">‹</span><span class="qval">${esc(this._fmtQty(p.n, p.unit))}</span><span class="qarr">›</span></span>
-        <button class="qbtn" data-act="qty-plus">＋</button>
+        <div class="qswipe" title="Wischen: links = weniger, rechts = mehr">
+          <button class="qbtn" data-act="qty-minus" ${p.n <= step ? "disabled" : ""}>−</button>
+          <span class="qmid"><span class="qarr">‹</span><span class="qval">${esc(this._fmtQty(p.n, p.unit))}</span><span class="qarr">›</span></span>
+          <button class="qbtn" data-act="qty-plus">＋</button>
+        </div>
         <button class="iconbtn" data-act="qty-done" title="Fertig"><ha-icon icon="mdi:check"></ha-icon></button>
       </div>`;
   }
@@ -10811,7 +10822,7 @@ ${(() => {
         row.append(b);
       }
       bar.append(row);
-      if (hint) { const h = document.createElement("div"); h.textContent = hint; Object.assign(h.style, { color: "#ffd7b5", font: "15px Roboto,sans-serif" }); bar.append(h); }
+      if (hint) { const h = document.createElement("div"); h.dataset.elhint = "1"; h.textContent = hint; Object.assign(h.style, { color: "#fff3b0", background: "#3b3510", border: "1px solid #c9a227", borderRadius: "12px", padding: "8px 12px", font: "600 16px Roboto,sans-serif", lineHeight: "1.35" }); bar.append(h); } // 💡 gut lesbar: wie die 📝 Notiz
     }
   }
 
@@ -13039,6 +13050,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         const p = this._parseQty(item?.quantity) || { n: 1, unit: "x" };
         const step = (this._qtyStep ||= {})[itemId] || this._qtyStepFor(item);
         const n = act === "qty-plus" ? p.n + step : Math.max(step, p.n - step);
+        elVibrate(10); // 📳 auch beim Tippen kurz brummen
         this._ws({ type: "einkaufsliste/item/update", item_id: itemId, quantity: this._fmtQty(n, p.unit) }).catch(() => {});
         break;
       }

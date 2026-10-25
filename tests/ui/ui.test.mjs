@@ -129,18 +129,31 @@ r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=asyn
   const arrows=[...zone.querySelectorAll(".qarr")].map(a=>a.textContent).join(""), hasBtns=c.shadowRoot.querySelectorAll('.qtyrow [data-act="qty-minus"], .qtyrow [data-act="qty-plus"]').length;
   const b=zone.getBoundingClientRect(), x=b.left+b.width/2, y=b.top+b.height/2;
   const ev=(t,xx)=>zone.dispatchEvent(new PointerEvent(t,{bubbles:true,composed:true,clientX:xx,clientY:y,pointerId:7,pointerType:"touch"}));
-  ev("pointerdown",x); ev("pointermove",x+35); ev("pointermove",x+62); const mid=zone.querySelector(".qval").textContent; ev("pointerup",x+62); await new Promise(r=>setTimeout(r,20));
+  ev("pointerdown",x); ev("pointermove",x+20); ev("pointermove",x+36); const mid=zone.querySelector(".qval").textContent; ev("pointerup",x+36); await new Promise(r=>setTimeout(r,20));
   const right=[...calls];
   ev("pointerdown",x); ev("pointermove",x-200); const low=zone.querySelector(".qval").textContent; ev("pointercancel",x-200); await new Promise(r=>setTimeout(r,20));
   const left=calls.slice(right.length);
   ev("pointerdown",x); ev("pointerup",x); await new Promise(r=>setTimeout(r,20)); const tapNoCall=calls.length===right.length+left.length;
   const wheel=!!c.shadowRoot.querySelector(".qtywheel");
   navigator.vibrate=nv; brot.quantity=null; c._qtyEdit=null; c._renderList(); return { arrows, hasBtns, mid, right, low, left, tapNoCall, vib, wheel }; })()`);
-check("Mengen-Zeile: ‹ › Pfeile und − ＋ Knöpfe", r.arrows === "‹›" && r.hasBtns === 2, JSON.stringify(r));
+check("Mengen-Zeile: ‹ › Pfeile und − ＋ Knöpfe im Wisch-Feld", r.arrows === "‹›" && r.hasBtns === 2, JSON.stringify(r));
 check("Mengen-Zeile: nach rechts wischen = mehr, Loslassen speichert", /^4/.test(r.mid || "") && r.right?.length === 1 && r.right[0].type === "einkaufsliste/item/update" && /^4/.test(r.right[0].quantity), JSON.stringify(r));
 check("Mengen-Zeile: nach links wischen = weniger (nie unter 1 Schritt), auch bei Abbruch gespeichert", /^1/.test(r.low || "") && r.left?.length === 1 && /^1/.test(r.left[0].quantity), JSON.stringify(r));
 check("Mengen-Zeile: vibriert bei jedem Schritt", r.vib.length >= 3, JSON.stringify(r.vib));
 check("Mengen-Zeile: nur tippen ändert nichts, kein Zahlenrad mehr", r.tapNoCall && !r.wheel, JSON.stringify(r));
+
+// 10b) 👉 Mit echter Maus: auf ＋ tippen zählt (mit Brummen), vom ＋ aus nach links wischen geht auch
+await p.evaluate(`(async () => { const c=${card}; window.__calls=[]; c._ws=async(m)=>{window.__calls.push(m); return {};}; window.__vib=[]; navigator.vibrate=(x)=>{window.__vib.push(x); return true;};
+  const brot=c._data.items.find(i=>i.name==="Brot"); brot.quantity="5x"; c._qtyEdit=brot.id; c._qtyStep={}; c._view="list"; c._tab="all"; c._renderAll(); await new Promise(r=>setTimeout(r,100)); })()`);
+let bx = await p.evaluate(`(() => {  const r=${card}.shadowRoot.querySelector('.qtyrow [data-act="qty-plus"]').getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2, w:${card}.shadowRoot.querySelector(".qswipe").getBoundingClientRect().width}; })()`);
+await wait(450); await p.mouse.click(bx.x, bx.y); await wait(50);
+let tapCalls = await p.evaluate("window.__calls.slice()"), tapVib = await p.evaluate("window.__vib.length");
+await p.mouse.move(bx.x, bx.y); await p.mouse.down(); for (let k = 1; k <= 4; k++) await p.mouse.move(bx.x - k * 14, bx.y); await p.mouse.up(); await wait(50);
+let swCalls = await p.evaluate("window.__calls.slice()");
+await p.evaluate(`(() => { const c=${card}; const brot=c._data.items.find(i=>i.name==="Brot"); brot.quantity=null; c._qtyEdit=null; c._renderList(); })()`);
+check("Wisch-Feld ist groß (über die ganze Zeile)", bx.w >= 200, JSON.stringify(bx));
+check("＋ antippen zählt einen Schritt und brummt", tapCalls.length === 1 && tapCalls[0].quantity === "6x" && tapVib >= 1, JSON.stringify({ tapCalls, tapVib }));
+check("Vom ＋ aus nach links wischen = weniger, kein zusätzlicher ＋-Klick", swCalls.length === 2 && /^[23]x$/.test(swCalls[1].quantity), JSON.stringify(swCalls));
 
 // 11) 🏷️ Marken-Check: Zeile in den Einstellungen und oranges ❗ bei „vielleicht andere Marke“
 r = await p.evaluate(`(async () => { const c=${card};
@@ -159,14 +172,15 @@ r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=asyn
   c._data.recipes=[a,g]; c._cookMode(a); await new Promise(r=>setTimeout(r,200)); const one=[...document.querySelectorAll("[data-elcooktab]")].filter(b=>b.offsetParent).length;
   c._cookMode(g); await new Promise(r=>setTimeout(r,200));
   const vis=[...document.querySelectorAll("[data-elcook]")].filter(o=>o.style.display!=="none");
-  const ov=vis[0]; const tabs=[...ov.querySelectorAll("[data-elcooktab]")].map(b=>b.textContent); const hint=[...ov.querySelectorAll("div")].map(d=>d.textContent).find(t=>/Fang mit/.test(t))||"";
+  const ov=vis[0]; const tabs=[...ov.querySelectorAll("[data-elcooktab]")].map(b=>b.textContent); const hint=[...ov.querySelectorAll("div")].map(d=>d.textContent).find(t=>/Fang mit/.test(t))||""; const hs=ov.querySelector("[data-elhint]"); const hintStyle=hs?getComputedStyle(hs).color+"|"+getComputedStyle(hs).backgroundColor:"";
   const note=ov.querySelector("[data-elnote]")?.textContent;
   [...ov.querySelectorAll("[data-elcooktab]")].find(b=>b.textContent==="Nudeln").click(); await new Promise(r=>setTimeout(r,100));
   const front=[...document.querySelectorAll("[data-elcook]")].filter(o=>o.style.display!=="none").map(o=>o.querySelector("[data-elcooktab][style*='solid rgb']")?.textContent || o.querySelector("span")?.textContent);
-  return { one, count: vis.length, all: document.querySelectorAll("[data-elcook]").length, tabs, hint, note, front }; })()`);
+  return { one, count: vis.length, all: document.querySelectorAll("[data-elcook]").length, tabs, hint, hintStyle, note, front }; })()`);
 check("Mehrere Rezepte: bei einem Rezept keine Reiter", r.one === 0, JSON.stringify(r));
 check("Mehrere Rezepte: zwei Reiter, nur eins vorn", r.all === 2 && r.count === 1 && JSON.stringify(r.tabs) === JSON.stringify(["Nudeln", "Gulasch"]), JSON.stringify(r));
 check("Mehrere Rezepte: Tipp fängt mit dem längsten an", /Fang mit „Gulasch“ an/.test(r.hint) && /„Nudeln“ ca\. 10 Min/.test(r.hint), r.hint);
+check("Mehrere Rezepte: Tipp gut lesbar (helle Schrift auf dunklem Kasten)", r.hintStyle === "rgb(255, 243, 176)|rgb(59, 53, 16)", r.hintStyle);
 check("Mehrere Rezepte: Reiter antippen holt das Rezept nach vorn", r.front.length === 1 && /Nudeln/.test(r.front[0] || ""), JSON.stringify(r.front));
 check("📝 Notiz vom letzten Mal steht oben", /weniger Salz/.test(r.note || ""), r.note);
 
