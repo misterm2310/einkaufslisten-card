@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.23-beta.7";
+const EL_VERSION = "2.76.23";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.22"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -390,29 +390,7 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [
-  ["⚠️ <b>Rückruf-Warnung:</b> Neu in ⚙️ → Extras (standardmäßig aus). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was ihr in den letzten 30 Tagen abgehakt habt. Treffer kommen als Meldung in Home Assistant und als Ereignis „einkaufsliste_rueckruf“. Von euch geht nichts raus; mit Datenschutz an wird nichts abgefragt.",
-   "⚠️ <b>Recall warning:</b> new in ⚙️ → Extras (off by default). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything you checked off in the last 30 days. Matches arrive as a Home Assistant notification and as the event “einkaufsliste_rueckruf”. Nothing of yours is sent; with privacy on nothing is fetched.",
-   "beta.1"],
-  ["❗ <b>Rotes Ausrufezeichen in der Liste:</b> Passt ein Artikel zu einer Rückruf-Warnung, steht links neben dem Angebotszeichen ein rotes ❗. Antippen öffnet die Warnung. · 🧹 <b>Räumt sich selbst auf:</b> Ein Treffer verschwindet von allein, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage. · 🐛 Das ✔ beim Wegklicken eines Treffers und 🗑️ Löschen im Einkaufs-Protokoll gingen nicht („expected str at id“) – repariert.",
-   "❗ <b>Red exclamation mark in the list:</b> if an item matches a recall warning, a red ❗ appears to the left of the offer icon. Tap it to open the warning. · 🧹 <b>Tidies itself up:</b> a match disappears on its own when your purchase is more than 30 days ago or the warning is older than 60 days. · 🐛 The ✔ to dismiss a match and 🗑️ delete in the purchase log did not work (“expected str at id”) – fixed.",
-   "beta.2"],
-  ["🏷️ <b>Marken-Check:</b> Steht beim Artikel eine Notiz (z. B. die Marke), sagt die Rückruf-Warnung, ob genau diese Marke betroffen ist. · ➕ <b>Mehrere Rezepte gleichzeitig kochen</b> mit Reitern und Tipp, womit du anfängst. · 📝 <b>Notiz nach dem Kochen</b> fürs nächste Mal. · 🛒 Der Laden-Modus springt beim Wiederöffnen zum ersten offenen Artikel.",
-   "🏷️ <b>Brand check:</b> if the item has a note (e.g. the brand), the recall warning tells you whether exactly this brand is affected. · ➕ <b>Cook several recipes at once</b> with tabs and a tip on which to start with. · 📝 <b>Note after cooking</b> for next time. · 🛒 Shop mode jumps to the first open item when you reopen it.",
-   "beta.3"],
-  ["👉 <b>Menge wischen:</b> Menge antippen, dann in der Zeile [−] ‹ 2x › [＋] auf der Zahl nach rechts wischen = mehr, nach links = weniger. Jeder Schritt vibriert kurz. · 📝 <b>Rezept-Notizen bei „Wartet auf OK“:</b> In ⚙️ → Rezepte stehen alle Notizen nach dem Kochen. ✏️ öffnet das Rezept zum Anpassen, 🗑️ löscht die Notiz überall.",
-   "👉 <b>Swipe the quantity:</b> tap the quantity, then in the row [−] ‹ 2x › [＋] swipe right on the number = more, left = less. Every step vibrates briefly. · 📝 <b>Recipe notes under “Waiting for OK”:</b> ⚙️ → Recipes lists all notes from cooking. ✏️ opens the recipe to adjust it, 🗑️ deletes the note everywhere.",
-   "beta.4"],
-  ["👉 <b>Größeres Wisch-Feld:</b> Die ganze Mengen-Zeile von − bis ＋ ist jetzt zum Wischen da, schon ein kurzer Weg zählt einen Schritt. · 📳 − und ＋ brummen beim Tippen. · 💡 Der Tipp „Fang mit … an“ beim Kochen mehrerer Rezepte ist jetzt gut lesbar.",
-   "👉 <b>Bigger swipe area:</b> the whole quantity row from − to ＋ can be swiped now, a short move already counts as one step. · 📳 − and ＋ vibrate when tapped. · 💡 The “Start with …” tip when cooking several recipes is now easy to read.",
-   "beta.5"],
-  ["👥 <b>Personen-Auswahl aufgeräumt:</b> Der Geräte-Kasten von Schritt 1 (z. B. Backofen) erscheint erst nach „Los geht’s“. · 💡 Der Tipp „Fang mit … an“ kommt nur, solange alle offenen Rezepte noch bei der Personen-Auswahl sind. ➕ geht weiterhin jederzeit.",
-   "👥 <b>Cleaner people selection:</b> the appliance box of step 1 (e.g. oven) only appears after “Let's go”. · 💡 The “Start with …” tip only shows while all open recipes are still at the people selection. ➕ still works at any time.",
-   "beta.6"],
-  ["⚡ <b>− und ＋ ohne Verzögerung:</b> Die Zahl springt sofort um, gespeichert wird im Hintergrund. Schnelles Tippen zählt jetzt jedes Mal.",
-   "⚡ <b>− and ＋ without delay:</b> the number changes right away and is saved in the background. Quick taps now all count.",
-   "beta.7"],
-];
+const EL_BETA_NEWS = [];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", recalls: "#e65100", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -420,6 +398,12 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", year: "#e91e63", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["⚠️ <b>Rückruf-Warnung</b> (⚙️ → Extras, standardmäßig aus): Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de (auch Kosmetik, Spielzeug, Geschirr, Kleidung) mit euren Einkäufen der letzten 30 Tage verglichen. Treffer kommen als Meldung, in der Liste steht ein rotes ❗. 🏷️ Steht beim Artikel eine Notiz (z. B. die Marke), sagt die Liste, ob genau diese Marke betroffen ist.",
+   "⚠️ <b>Recall warning</b> (⚙️ → Extras, off by default): every 6 hours the official warnings from lebensmittelwarnung.de (also cosmetics, toys, dishes, clothing) are compared with your purchases of the last 30 days. Matches arrive as a notification, the list shows a red ❗. 🏷️ If the item has a note (e.g. the brand), the list tells you whether exactly this brand is affected."],
+  ["➕ <b>Mehrere Rezepte gleichzeitig kochen:</b> Im Kochmodus mit ➕ ein weiteres Rezept dazunehmen, oben mit Reitern wechseln; ein 💡 Tipp sagt, womit du anfängst. 📝 <b>Notiz nach dem Kochen</b> fürs nächste Mal – steht in der Kochmütze und bei „Wartet auf OK“ (✏️ Rezept ändern, 🗑️ löschen).",
+   "➕ <b>Cook several recipes at once:</b> in cook mode add another recipe with ➕ and switch with tabs at the top; a 💡 tip says which one to start with. 📝 <b>Note after cooking</b> for next time – shown in the chef's hat and under “Waiting for OK” (✏️ change recipe, 🗑️ delete)."],
+  ["👉 <b>Menge schneller ändern:</b> In der Mengen-Zeile über die ganze Breite wischen (rechts = mehr, links = weniger), − und ＋ reagieren sofort, jeder Schritt brummt kurz. 🛒 Der Laden-Modus springt beim Wiederöffnen mitten im Einkauf zum ersten offenen Artikel.",
+   "👉 <b>Change quantities faster:</b> swipe across the whole quantity row (right = more, left = less), − and ＋ react right away, every step vibrates briefly. 🛒 When you reopen shop mode in the middle of shopping, it jumps to the first open item."],
   ["⏲️ <b>Timer-Laufband:</b> Neue Dashboard-Karte „Einkaufsliste – Timer-Laufband“. Ein Band läuft endlos durch und zeigt alle Kochtimer mit eigenem Symbol (Kochmütze mit Wecker) und „fertig um 18:30 Uhr“, am Ende FERTIG!. Jeder Text läuft gleich schnell. Läuft kein Timer, ist das Band aus.",
    "⏲️ <b>Timer ticker:</b> new dashboard card “Shopping list – timer ticker”. A band runs in an endless loop and shows all cooking timers with their own icon (chef hat with a clock) and “done at 6:30 pm”, DONE! at the end. Every text runs at the same speed. With no timer running the band is hidden."],
   ["🎁 <b>Euer Jahr in Einkäufen</b> (⚙️ → App &amp; Info): Rückblick mit Top-Produkten, wer am meisten einträgt, Lieblingsgeschäft und stärkstem Monat – es zählt ab jetzt, nur Zahlen.",
