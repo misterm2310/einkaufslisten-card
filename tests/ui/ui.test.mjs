@@ -144,7 +144,7 @@ check("Mengen-Zeile: nur tippen ändert nichts, kein Zahlenrad mehr", r.tapNoCal
 
 // 10b) 👉 Mit echter Maus: auf ＋ tippen zählt (mit Brummen), vom ＋ aus nach links wischen geht auch
 await p.evaluate(`(async () => { const c=${card}; window.__calls=[]; c._ws=async(m)=>{window.__calls.push(m); return {};}; window.__vib=[]; navigator.vibrate=(x)=>{window.__vib.push(x); return true;};
-  const brot=c._data.items.find(i=>i.name==="Brot"); brot.quantity="5x"; c._qtyEdit=brot.id; c._qtyStep={}; c._view="list"; c._tab="all"; c._renderAll(); await new Promise(r=>setTimeout(r,100)); })()`);
+  const brot=c._data.items.find(i=>i.name==="Brot"); brot.quantity="5x"; c._qtyEdit=brot.id; c._qtyStep={}; c._qtyPending={}; c._view="list"; c._tab="all"; c._renderAll(); await new Promise(r=>setTimeout(r,100)); })()`);
 let bx = await p.evaluate(`(() => {  const r=${card}.shadowRoot.querySelector('.qtyrow [data-act="qty-plus"]').getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2, w:${card}.shadowRoot.querySelector(".qswipe").getBoundingClientRect().width}; })()`);
 await wait(450); await p.mouse.click(bx.x, bx.y); await wait(50);
 let tapCalls = await p.evaluate("window.__calls.slice()"), tapVib = await p.evaluate("window.__vib.length");
@@ -154,6 +154,17 @@ await p.evaluate(`(() => { const c=${card}; const brot=c._data.items.find(i=>i.n
 check("Wisch-Feld ist groß (über die ganze Zeile)", bx.w >= 200, JSON.stringify(bx));
 check("＋ antippen zählt einen Schritt und brummt", tapCalls.length === 1 && tapCalls[0].quantity === "6x" && tapVib >= 1, JSON.stringify({ tapCalls, tapVib }));
 check("Vom ＋ aus nach links wischen = weniger, kein zusätzlicher ＋-Klick", swCalls.length === 2 && /^[23]x$/.test(swCalls[1].quantity), JSON.stringify(swCalls));
+
+// 10c) ⚡ − / ＋ reagieren sofort, auch wenn Home Assistant langsam antwortet; schnelles Tippen zählt jedes Mal
+r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=(m)=>{calls.push(m); return new Promise(r=>setTimeout(()=>r({}),1500));};
+  const brot=c._data.items.find(i=>i.name==="Brot"); brot.quantity="5x"; c._qtyPending={}; c._qtyStep={}; c._qtyEdit=brot.id; c._qtySwiped=0; c._view="list"; c._tab="all"; c._renderAll(); await new Promise(r=>setTimeout(r,50));
+  const plus=()=>c.shadowRoot.querySelector('.qtyrow [data-act="qty-plus"]');
+  plus().click(); const v1=c.shadowRoot.querySelector(".qtyrow .qval").textContent; plus().click(); plus().click();
+  const v3=c.shadowRoot.querySelector(".qtyrow .qval").textContent, chip=c.shadowRoot.querySelector('.item[data-id="'+brot.id+'"] button.qty').textContent;
+  c._renderList(); const afterRender=c.shadowRoot.querySelector(".qtyrow .qval").textContent;
+  brot.quantity=null; c._qtyPending={}; c._qtyEdit=null; c._renderList(); return { v1, v3, chip, afterRender, q: calls.map(m=>m.quantity) }; })()`);
+check("＋ zeigt die neue Zahl sofort", r.v1 === "6x" && r.v3 === "8x" && r.chip === "8x", JSON.stringify(r));
+check("Schnell dreimal ＋ = 6x, 7x, 8x (kein Tipp geht verloren)", JSON.stringify(r.q) === JSON.stringify(["6x", "7x", "8x"]) && r.afterRender === "8x", JSON.stringify(r));
 
 // 11) 🏷️ Marken-Check: Zeile in den Einstellungen und oranges ❗ bei „vielleicht andere Marke“
 r = await p.evaluate(`(async () => { const c=${card};

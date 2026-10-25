@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.23-beta.6";
+const EL_VERSION = "2.76.23-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.22"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -409,6 +409,9 @@ const EL_BETA_NEWS = [
   ["👥 <b>Personen-Auswahl aufgeräumt:</b> Der Geräte-Kasten von Schritt 1 (z. B. Backofen) erscheint erst nach „Los geht’s“. · 💡 Der Tipp „Fang mit … an“ kommt nur, solange alle offenen Rezepte noch bei der Personen-Auswahl sind. ➕ geht weiterhin jederzeit.",
    "👥 <b>Cleaner people selection:</b> the appliance box of step 1 (e.g. oven) only appears after “Let's go”. · 💡 The “Start with …” tip only shows while all open recipes are still at the people selection. ➕ still works at any time.",
    "beta.6"],
+  ["⚡ <b>− und ＋ ohne Verzögerung:</b> Die Zahl springt sofort um, gespeichert wird im Hintergrund. Schnelles Tippen zählt jetzt jedes Mal.",
+   "⚡ <b>− and ＋ without delay:</b> the number changes right away and is saved in the background. Quick taps now all count.",
+   "beta.7"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -4702,7 +4705,7 @@ class EinkaufslisteCard extends HTMLElement {
       if (!zone || st) return;
       const id = zone.closest(".qtyrow")?.dataset.id;
       const item = this._data?.items.find((i) => i.id === id);
-      const p = this._parseQty(item?.quantity) || { n: 1, unit: "x" };
+      const p = this._parseQty(this._qtyNow(item)) || { n: 1, unit: "x" };
       const step = (this._qtyStep ||= {})[id] || this._qtyStepFor(item);
       st = { zone, id, p, step, n: p.n, x: e.clientX, moved: false, pid: e.pointerId };
     });
@@ -4728,7 +4731,10 @@ class EinkaufslisteCard extends HTMLElement {
       s.zone.classList.remove("on");
       if (!s.moved) return;
       this._qtySwiped = Date.now(); // der Klick danach zählt nicht
-      if (s.n !== s.p.n) this._ws({ type: "einkaufsliste/item/update", item_id: s.id, quantity: this._fmtQty(s.n, s.p.unit) }).catch(() => {});
+      if (s.n !== s.p.n) {
+        this._qtyShow(s.id, this._fmtQty(s.n, s.p.unit), s.n <= s.step);
+        this._ws({ type: "einkaufsliste/item/update", item_id: s.id, quantity: this._fmtQty(s.n, s.p.unit) }).catch(() => {});
+      }
     };
     list.addEventListener("pointerup", stop);
     list.addEventListener("pointercancel", stop); // Handy bricht ab: was schon gewischt ist, bleibt
@@ -5557,7 +5563,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     // hinter dem Namen: für wen es ist (wer es eingetragen hat, steht klein darunter)
     const who = item.for_whom && v.for_whom ? this._forWhomHtml(item.for_whom) : "";
-    const qty = item.quantity && v.qty ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(item.quantity)}</button>` : "";
+    const qty = item.quantity && v.qty ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(this._qtyNow(item))}</button>` : "";
     const icon = item.checked ? "mdi:check-circle" : "mdi:checkbox-blank-circle-outline"; // ✔ erledigt = voller Haken (wie am Ende der Abhak-Animation)
     const cat = this._cat(item.category_id);
     const isNew = v.new && this._isNew(item);
@@ -5609,8 +5615,26 @@ class EinkaufslisteCard extends HTMLElement {
     return Number.isInteger(p.n) ? 1 : 0.5; // 1 L -> 2 L, 1,5 L -> 2 L
   }
 
+  // ⚡ Menge, die gerade getippt/gewischt wurde: gilt 2 s lang, bis Home Assistant sie zurückmeldet (sonst zählen schnelle Tipps doppelt alt)
+  _qtyNow(item) {
+    const pend = this._qtyPending?.[item?.id];
+    return pend && Date.now() - pend.at < 2000 ? pend.q : item?.quantity;
+  }
+
+  // ⚡ neue Menge sofort zeigen: Zahl in der Zeile, Knopf − und das Mengen-Schild am Artikel
+  _qtyShow(itemId, q, minReached) {
+    (this._qtyPending ||= {})[itemId] = { q, at: Date.now() };
+    const row = this.shadowRoot.querySelector(`.qtyrow[data-id="${CSS.escape(itemId)}"]`);
+    const v = row?.querySelector(".qval");
+    if (v) v.textContent = q;
+    const minus = row?.querySelector('[data-act="qty-minus"]');
+    if (minus) minus.disabled = !!minReached;
+    const chip = this.shadowRoot.querySelector(`.item[data-id="${CSS.escape(itemId)}"] button.qty`);
+    if (chip) chip.textContent = q;
+  }
+
   _qtyHtml(item) {
-    const p = this._parseQty(item.quantity) || { n: 1, unit: "x" };
+    const p = this._parseQty(this._qtyNow(item)) || { n: 1, unit: "x" };
     const step = (this._qtyStep ||= {})[item.id] || (this._qtyStep[item.id] = this._qtyStepFor(item));
     return `
       <div class="qtyrow" data-id="${item.id}">
@@ -13053,10 +13077,11 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       case "qty-plus": {
         const itemId = el.closest(".qtyrow").dataset.id;
         const item = this._data.items.find((i) => i.id === itemId);
-        const p = this._parseQty(item?.quantity) || { n: 1, unit: "x" };
+        const p = this._parseQty(this._qtyNow(item)) || { n: 1, unit: "x" };
         const step = (this._qtyStep ||= {})[itemId] || this._qtyStepFor(item);
         const n = act === "qty-plus" ? p.n + step : Math.max(step, p.n - step);
         elVibrate(10); // 📳 auch beim Tippen kurz brummen
+        this._qtyShow(itemId, this._fmtQty(n, p.unit), n <= step); // ⚡ sofort anzeigen, nicht auf Home Assistant warten
         this._ws({ type: "einkaufsliste/item/update", item_id: itemId, quantity: this._fmtQty(n, p.unit) }).catch(() => {});
         break;
       }
