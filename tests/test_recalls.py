@@ -167,3 +167,28 @@ def test_no_command_uses_reserved_id_field():
     assert not re.search(r'vol\.(Required|Optional)\("id"\)', ws)
     card = (base / "www" / "einkaufsliste-card.js").read_text(encoding="utf-8")
     assert not re.search(r'(callWS|_ws)\(\{[^}]*[ ,{]id:', card)
+
+
+def test_brand_check_from_note():
+    """🏷️ 321: Steht die Marke aus der Notiz in der Warnung? match / other / unbekannt."""
+    w = mod.parse_feed(_feed())[0]  # Kaffee, Hersteller Bialetti
+    assert mod.brand_check(["Bialetti"], w) == "match"
+    assert mod.brand_check(["bialetti gemahlen"], w) == "match"
+    assert mod.brand_check(["Tchibo"], w) == "other"
+    assert mod.brand_check([], w) is None
+    assert mod.brand_check(["Bio"], w) is None  # zu kurz – sagt nichts über die Marke
+
+
+async def test_recall_hit_carries_brand(hass: HomeAssistant, m) -> None:
+    events = []
+    hass.bus.async_listen("einkaufsliste_rueckruf", lambda e: events.append(e.data))
+    kaffee = m.add_item("Kaffee", note="Bialetti")
+    m.set_checked(kaffee["id"], True)
+    m.set_recalls(True)
+    m.recalls.check(mod.parse_feed(_feed()))
+    await hass.async_block_till_done()
+    hit = m.recalls_info()["hits"][0]
+    assert hit["brand"] == "match" and hit["notes"] == ["Bialetti"]
+    assert events[0]["brand"] == "match"
+    from homeassistant.components.persistent_notification import _async_get_or_create_notifications
+    assert "eure Marke steht in der Warnung" in _async_get_or_create_notifications(hass)[mod.NOTIFY_ID]["message"]

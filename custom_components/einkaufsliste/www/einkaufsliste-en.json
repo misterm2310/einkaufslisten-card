@@ -2307,7 +2307,7 @@
 "Rückruf-Warnung": "Recall warning",
 ": Alle 6 Stunden holt die Liste die offiziellen Warnungen von lebensmittelwarnung.de und vergleicht sie mit allem, was ihr in den letzten 30 Tagen abgehakt habt. Passt etwas, kommt eine Meldung in Home Assistant und das Ereignis": ": Every 6 hours the list fetches the official warnings from lebensmittelwarnung.de (Germany) and compares them with everything you checked off in the last 30 days. If something matches, you get a Home Assistant notification and the event",
 "für eigene Automationen.": "for your own automations.",
-"Der Abgleich geht nur über den Namen: „Kaffee“ passt auf jede Kaffee-Warnung. Darum heißt es „bitte prüfen“. Ob eure Packung wirklich betroffen ist (Marke, Charge, Haltbarkeit), steht im Link. Abgefragt wird nur der Feed – eure Liste verlässt Home Assistant nicht.": "Matching is by name only: “Kaffee” matches every coffee warning. That's why it says “please check”. Whether your pack is really affected (brand, batch, best-before date) is in the link. Only the feed is fetched – your list never leaves Home Assistant.",
+"Der Abgleich geht über den Namen: „Kaffee“ passt auf jede Kaffee-Warnung. Darum heißt es „bitte prüfen“. Steht beim Artikel eine Notiz (z. B. die Marke „Tchibo“), schaut die Liste zusätzlich, ob sie in der Warnung vorkommt. Charge und Haltbarkeit stehen im Link. Abgefragt wird nur der Feed – eure Liste verlässt Home Assistant nicht. Gemeldet werden auch Kosmetik, Spielzeug, Geschirr und Kleidung, Tierfutter leider nicht.": "Matching is by name: “Kaffee” matches every coffee warning. That's why it says “please check”. If the item has a note (e.g. the brand “Tchibo”), the list also checks whether it appears in the warning. Batch and best-before date are in the link. Only the feed is fetched – your list never leaves Home Assistant. Cosmetics, toys, dishes and clothing are reported too, sadly not pet food.",
 "⚠️ Gerade nicht erreichbar.": "⚠️ Unreachable right now.",
 "⚠️ Gerade nicht erreichbar": "⚠️ Unreachable right now",
 "Warnungen geprüft": "warnings checked",
@@ -2321,5 +2321,15 @@
 "🔒 Gesperrt": "🔒 Blocked",
 "– Datenschutz ist an, es wird nichts abgefragt.": "– privacy is on, nothing is fetched.",
 "🔒 Die Meldung bei einem Treffer sehen alle Home-Assistant-Benutzer (also auch, was gekauft wurde). Mit Datenschutz an wird nichts abgefragt.": "🔒 The notification for a match is visible to all Home Assistant users (so they also see what was bought). With privacy on nothing is fetched.",
-"❗ In der Liste steht beim Artikel ein rotes Ausrufezeichen. Treffer verschwinden von selbst, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage.": "❗ In the list the item shows a red exclamation mark. Matches disappear on their own when your purchase is more than 30 days ago or the warning is older than 60 days."
+"❗ In der Liste steht beim Artikel ein rotes Ausrufezeichen (orange, wenn eure Notiz nicht in der Warnung steht – vielleicht eine andere Marke). Treffer verschwinden von selbst, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage.": "❗ In the list the item shows a red exclamation mark (orange if your note is not in the warning – maybe a different brand). Matches disappear on their own when your purchase is more than 30 days ago or the warning is older than 60 days.",
+"Eure Marke steht in der Warnung": "Your brand is in the warning",
+"Eure Notiz": "Your note",
+"steht nicht drin – vielleicht eine andere Marke": "is not in it – maybe a different brand",
+"Notiz löschen": "Delete note",
+"📝 Notiz fürs nächste Mal?": "📝 Note for next time?",
+"z. B. weniger Salz": "e.g. less salt",
+"📝 Notiz gespeichert": "📝 Note saved",
+"Rezept dazu – mehrere gleichzeitig kochen": "Add a recipe – cook several at once",
+"➕ Welches Rezept kochst du dazu?": "➕ Which recipe are you cooking as well?",
+"Keine weiteren Rezepte mit Schritten da.": "No other recipes with steps."
 }

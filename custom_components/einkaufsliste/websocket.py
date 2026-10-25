@@ -556,11 +556,12 @@ async def ws_proposal_reject(hass, connection, msg):
         vol.Optional("step_map"): [vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=999)))],
         vol.Optional("plan"): vol.In(["", "wish", "week"]),
         vol.Optional("source"): OPT_STR,
+        vol.Optional("cook_note"): OPT_STR,
     }
 )
 @callback
 def ws_recipe_update(hass, connection, msg):
-    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan", "source")
+    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan", "source", "cook_note")
     _run(hass, connection, msg, lambda m: m.update_recipe(msg["recipe_id"], **fields))
 
 

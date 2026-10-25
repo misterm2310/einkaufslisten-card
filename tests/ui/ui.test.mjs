@@ -121,6 +121,78 @@ check("❗ nicht bei „Butter“", butter && !butter.acts.includes("recall-open
 check("❗ antippen öffnet nur lebensmittelwarnung.de", r.opened.length === 1 && r.opened[0] === "https://www.lebensmittelwarnung.de/m.html", JSON.stringify(r.opened));
 check("❗ weg, wenn die Rückruf-Warnung aus ist", r.offHides, "");
 
+// 10) 🎡 Zahlenrad: Menge halten, hochziehen = mehr, Loslassen speichert, vibriert dabei
+r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=async(m)=>{calls.push(m); return {};}; const vib=[]; const nv=navigator.vibrate; navigator.vibrate=(x)=>{vib.push(x); return true;};
+  const brot=c._data.items.find(i=>i.name==="Brot"); brot.quantity="2x"; c._tab="all"; c._renderList(); await new Promise(r=>setTimeout(r,50));
+  const btn=c.shadowRoot.querySelector('.item[data-id="'+brot.id+'"] button.qty[data-act="qty-edit"]'); if(!btn) return {nobtn:true};
+  const b=btn.getBoundingClientRect(), x=b.left+b.width/2, y=b.top+b.height/2;
+  const ev=(t,yy)=>btn.dispatchEvent(new PointerEvent(t,{bubbles:true,composed:true,clientX:x,clientY:yy,pointerId:7,pointerType:"touch"}));
+  ev("pointerdown",y); await new Promise(r=>setTimeout(r,350));
+  const wheel=!!c.shadowRoot.querySelector(".qtywheel"); const mid=c.shadowRoot.querySelector(".qtywheel .qw.on")?.textContent;
+  ev("pointermove",y-60); await new Promise(r=>setTimeout(r,20)); const mid2=c.shadowRoot.querySelector(".qtywheel .qw.on")?.textContent;
+  ev("pointerup",y-60); await new Promise(r=>setTimeout(r,20));
+  const gone=!c.shadowRoot.querySelector(".qtywheel"); btn.click(); const noEdit=!c.shadowRoot.querySelector("#qtyIn, .qtyedit input");
+  ev("pointerdown",y); ev("pointerup",y); await new Promise(r=>setTimeout(r,300)); const shortNoWheel=!c.shadowRoot.querySelector(".qtywheel") && calls.length===1;
+  navigator.vibrate=nv; brot.quantity=null; return { wheel, mid, mid2, gone, noEdit, shortNoWheel, calls, vib, hold:c._qtyHold }; })()`);
+check("Zahlenrad: erscheint nach kurzem Halten", r.wheel && /2/.test(r.mid || ""), JSON.stringify(r));
+check("Zahlenrad: hochziehen dreht auf 4, Loslassen speichert", /^4/.test(r.mid2 || "") && r.gone && r.calls.length >= 1 && r.calls[0].type === "einkaufsliste/item/update" && /^4/.test(r.calls[0].quantity), JSON.stringify(r));
+check("Zahlenrad: vibriert beim Start und bei jedem Schritt", r.vib.length >= 2, JSON.stringify(r.vib));
+check("Zahlenrad: kurzes Tippen dreht nichts", r.shortNoWheel && r.hold === false, JSON.stringify(r));
+
+// 11) 🏷️ Marken-Check: Zeile in den Einstellungen und oranges ❗ bei „vielleicht andere Marke“
+r = await p.evaluate(`(async () => { const c=${card};
+  const m=c._recallBrandHtml({brand:"match"}), o=c._recallBrandHtml({brand:"other", notes:["Milsani"]}), n=c._recallBrandHtml({});
+  c._data.settings.recalls={enabled:true, ok:true, hits:[{id:"w3", title:"Brot", link:"https://www.lebensmittelwarnung.de/b.html", products:["brot"], brand:"other", notes:["Milsani"]}]};
+  c._renderList(); await new Promise(r=>setTimeout(r,50)); const tag=c.shadowRoot.querySelector(".recalltag");
+  const res={ m, o, n, maybe: tag?.classList.contains("maybe"), title: tag?.title }; c._data.settings.recalls={enabled:false}; c._renderList(); return res; })()`);
+check("Marken-Check: „Eure Marke steht in der Warnung“", /recallbrand hit/.test(r.m) && /Eure Marke steht in der Warnung/.test(r.m), r.m);
+check("Marken-Check: andere Marke zeigt die Notiz", /Milsani/.test(r.o) && /vielleicht eine andere Marke/.test(r.o) && r.n === "", JSON.stringify(r));
+check("Marken-Check: ❗ wird orange", r.maybe === true && /andere Marke/.test(r.title || ""), JSON.stringify(r));
+
+// 12) ➕ Zwei Rezepte gleichzeitig: Reiter, Tipp mit dem längsten zuerst, 📝 Notiz oben
+r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=async(m)=>{calls.push(m); return {};};
+  const a={id:"ra",name:"Nudeln",items:[{name:"Nudeln"}],steps:"Wasser 10 Minuten kochen.",heat:[],servings:2,servings_unit:"persons"};
+  const g={id:"rg",name:"Gulasch",items:[{name:"Rind"}],steps:"Anbraten.\\nZwei Stunden schmoren.",heat:[{type:"oven",temp:160,minutes:90}],servings:4,servings_unit:"persons",cook_note:"weniger Salz"};
+  c._data.recipes=[a,g]; c._cookMode(a); await new Promise(r=>setTimeout(r,200)); const one=[...document.querySelectorAll("[data-elcooktab]")].filter(b=>b.offsetParent).length;
+  c._cookMode(g); await new Promise(r=>setTimeout(r,200));
+  const vis=[...document.querySelectorAll("[data-elcook]")].filter(o=>o.style.display!=="none");
+  const ov=vis[0]; const tabs=[...ov.querySelectorAll("[data-elcooktab]")].map(b=>b.textContent); const hint=[...ov.querySelectorAll("div")].map(d=>d.textContent).find(t=>/Fang mit/.test(t))||"";
+  const note=ov.querySelector("[data-elnote]")?.textContent;
+  [...ov.querySelectorAll("[data-elcooktab]")].find(b=>b.textContent==="Nudeln").click(); await new Promise(r=>setTimeout(r,100));
+  const front=[...document.querySelectorAll("[data-elcook]")].filter(o=>o.style.display!=="none").map(o=>o.querySelector("[data-elcooktab][style*='solid rgb']")?.textContent || o.querySelector("span")?.textContent);
+  return { one, count: vis.length, all: document.querySelectorAll("[data-elcook]").length, tabs, hint, note, front }; })()`);
+check("Mehrere Rezepte: bei einem Rezept keine Reiter", r.one === 0, JSON.stringify(r));
+check("Mehrere Rezepte: zwei Reiter, nur eins vorn", r.all === 2 && r.count === 1 && JSON.stringify(r.tabs) === JSON.stringify(["Nudeln", "Gulasch"]), JSON.stringify(r));
+check("Mehrere Rezepte: Tipp fängt mit dem längsten an", /Fang mit „Gulasch“ an/.test(r.hint) && /„Nudeln“ ca\. 10 Min/.test(r.hint), r.hint);
+check("Mehrere Rezepte: Reiter antippen holt das Rezept nach vorn", r.front.length === 1 && /Nudeln/.test(r.front[0] || ""), JSON.stringify(r.front));
+check("📝 Notiz vom letzten Mal steht oben", /weniger Salz/.test(r.note || ""), r.note);
+
+// 13) 📝 Nach dem letzten „Fertig“ fragt die Liste nach einer Notiz und speichert sie; das andere Rezept bleibt offen
+r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=async(m)=>{calls.push(m); return {};};
+  const ov=[...document.querySelectorAll("[data-elcook]")].find(o=>o.style.display!=="none");
+  [...ov.querySelectorAll("[data-elintro] button")].find(b=>/Los geht/.test(b.textContent))?.click(); await new Promise(r=>setTimeout(r,100)); // erst die Personenzahl bestätigen
+  for (let k=0; k<5 && ![...ov.querySelectorAll("button")].some(b=>/Fertig/.test(b.textContent)); k++) [...ov.querySelectorAll("button")].find(b=>/Weiter/.test(b.textContent))?.click();
+  const fertig=[...ov.querySelectorAll("button")].find(b=>/Fertig/.test(b.textContent)); fertig?.click(); await new Promise(r=>setTimeout(r,150));
+  const left=document.querySelectorAll("[data-elcook]").length; const shown=[...document.querySelectorAll("[data-elcook]")].filter(o=>o.style.display!=="none").length;
+  const inp=[...document.querySelectorAll("[data-elov] input")].pop(); const q=inp?.closest("[data-elov]")?.textContent||"";
+  if (inp) { inp.value="mehr Wasser"; inp.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter"})); }
+  await new Promise(r=>setTimeout(r,100));
+  document.querySelectorAll("[data-elcook]").forEach(o=>o._elClose?.()); document.querySelectorAll("[data-elov]").forEach(e=>e.remove());
+  return { hasFertig: !!fertig, left, shown, q, calls }; })()`);
+check("📝 „Fertig“ fragt „Notiz fürs nächste Mal?“", r.hasFertig && /Notiz fürs nächste Mal/.test(r.q), JSON.stringify(r));
+check("📝 Notiz wird gespeichert", r.calls.some((m) => m.type === "einkaufsliste/recipe/update" && m.recipe_id === "ra" && m.cook_note === "mehr Wasser"), JSON.stringify(r.calls));
+check("📝 Das andere Rezept bleibt offen und kommt nach vorn", r.left === 1 && r.shown === 1, JSON.stringify(r));
+
+// 14) 🛒 Laden-Modus nach dem Neuladen mitten im Einkauf: springt zum ersten offenen Artikel (nur einmal)
+r = await p.evaluate(`(async () => { const c=${card}; const seen=[]; const siv=Element.prototype.scrollIntoView; Element.prototype.scrollIntoView=function(){ seen.push(this.className+"|"+(this.querySelector(".name")?.textContent||"")); };
+  const milch=c._data.items.find(i=>i.name==="Milch"); const was={...milch}; Object.assign(milch,{checked:true, checked_at:new Date(Date.now()-5*60e3).toISOString()});
+  const sm=c._shopMode; c._shopMode=true; c._shopResume=true; c._tab="all"; c._renderList(); await new Promise(r=>setTimeout(r,450));
+  const first=[...seen]; c._renderList(); await new Promise(r=>setTimeout(r,450)); const again=seen.length;
+  Object.assign(milch,{checked:false, checked_at:null}); c._shopResume=true; c._renderList(); await new Promise(r=>setTimeout(r,450)); const idle=seen.length;
+  Object.assign(milch,was); c._shopMode=sm; c._renderList(); Element.prototype.scrollIntoView=siv; return { first, again, idle }; })()`);
+check("Laden-Modus: springt zum ersten offenen Artikel", r.first.length === 1 && /item/.test(r.first[0]) && !/done/.test(r.first[0]), JSON.stringify(r));
+check("Laden-Modus: springt nur einmal und nicht ohne frischen Einkauf", r.again === 1 && r.idle === 1, JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

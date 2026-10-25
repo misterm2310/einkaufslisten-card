@@ -4177,6 +4177,12 @@ class EinkaufslisteManager:
             recipe["group"] = self._group(fields["group"])
         if "plan" in fields:
             recipe["plan"] = _plan(fields["plan"])
+        if "cook_note" in fields:  # 📝 Notiz fürs nächste Mal (nach dem Kochen), leer = weg
+            note = re.sub(r"\s+", " ", str(fields["cook_note"] or "")).strip()[:300]
+            if note:
+                recipe["cook_note"] = note
+            else:
+                recipe.pop("cook_note", None)
         if "source" in fields:
             src = _clean_source(fields["source"])
             if src:

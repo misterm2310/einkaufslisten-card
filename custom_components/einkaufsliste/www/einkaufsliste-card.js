@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.23-beta.2";
+const EL_VERSION = "2.76.23-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.22"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -256,9 +256,9 @@ const EL_HELP = {
     "Needs a <b>postcode</b> (admins only). Also: “Only these stores” (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b>, <b>Switch off</b>. The status line shows the count and the last check. The offers come unofficially from Marktguru and can stop at any time.",
   ]],
   recalls: ["extras", [
-    "<b>Einschalten</b> (nur Admins). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was in den letzten 30 Tagen abgehakt wurde. Treffer kommen als Meldung in Home Assistant, stehen hier mit Link und lassen sich mit ✔ wegklicken. In der Liste bekommt der Artikel ein rotes ❗. Treffer verschwinden von selbst, wenn der Kauf über 30 Tage her ist oder die Warnung älter als 60 Tage. Der Abgleich geht nur über den Namen – im Link prüfen, ob eure Packung betroffen ist.",
+    "<b>Einschalten</b> (nur Admins). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was in den letzten 30 Tagen abgehakt wurde. Treffer kommen als Meldung in Home Assistant, stehen hier mit Link und lassen sich mit ✔ wegklicken. In der Liste bekommt der Artikel ein rotes ❗. Treffer verschwinden von selbst, wenn der Kauf über 30 Tage her ist oder die Warnung älter als 60 Tage. Steht beim Artikel eine Notiz (z. B. die Marke), schaut die Liste, ob sie in der Warnung vorkommt: rot „Eure Marke steht in der Warnung“, sonst ein oranges ❗ „vielleicht eine andere Marke“. Im Link trotzdem prüfen, ob eure Packung betroffen ist. Die Warnungen umfassen auch Kosmetik, Spielzeug, Geschirr und Kleidung – Tierfutter leider nicht.",
   ], [
-    "<b>Turn on</b> (admins only). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything checked off in the last 30 days. Matches arrive as a Home Assistant notification, are listed here with a link and can be dismissed with ✔. In the list the item gets a red ❗. Matches disappear on their own when the purchase is more than 30 days ago or the warning is older than 60 days. Matching is by name only – check the link to see whether your pack is affected.",
+    "<b>Turn on</b> (admins only). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything checked off in the last 30 days. Matches arrive as a Home Assistant notification, are listed here with a link and can be dismissed with ✔. In the list the item gets a red ❗. Matches disappear on their own when the purchase is more than 30 days ago or the warning is older than 60 days. If the item has a note (e.g. the brand), the list checks whether it appears in the warning: red “Your brand is in the warning”, otherwise an orange ❗ “maybe a different brand”. Still check the link to see whether your pack is affected. The warnings also cover cosmetics, toys, dishes and clothing – sadly not pet food.",
   ]],
   spend: ["extras", [
     "Eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist). Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert. Gilt für alle Geräte.",
@@ -397,6 +397,9 @@ const EL_BETA_NEWS = [
   ["❗ <b>Rotes Ausrufezeichen in der Liste:</b> Passt ein Artikel zu einer Rückruf-Warnung, steht links neben dem Angebotszeichen ein rotes ❗. Antippen öffnet die Warnung. · 🧹 <b>Räumt sich selbst auf:</b> Ein Treffer verschwindet von allein, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage. · 🐛 Das ✔ beim Wegklicken eines Treffers und 🗑️ Löschen im Einkaufs-Protokoll gingen nicht („expected str at id“) – repariert.",
    "❗ <b>Red exclamation mark in the list:</b> if an item matches a recall warning, a red ❗ appears to the left of the offer icon. Tap it to open the warning. · 🧹 <b>Tidies itself up:</b> a match disappears on its own when your purchase is more than 30 days ago or the warning is older than 60 days. · 🐛 The ✔ to dismiss a match and 🗑️ delete in the purchase log did not work (“expected str at id”) – fixed.",
    "beta.2"],
+  ["🏷️ <b>Marken-Check:</b> Steht beim Artikel eine Notiz (z. B. die Marke), sagt die Rückruf-Warnung, ob genau diese Marke betroffen ist. · 🎡 <b>Zahlenrad:</b> Auf der Menge halten und hoch/runter ziehen, jeder Schritt vibriert. · ➕ <b>Mehrere Rezepte gleichzeitig kochen</b> mit Reitern und Tipp, womit du anfängst. · 📝 <b>Notiz nach dem Kochen</b> fürs nächste Mal. · 🛒 Der Laden-Modus springt beim Wiederöffnen zum ersten offenen Artikel.",
+   "🏷️ <b>Brand check:</b> if the item has a note (e.g. the brand), the recall warning tells you whether exactly this brand is affected. · 🎡 <b>Number wheel:</b> hold the quantity and drag up/down, every step vibrates. · ➕ <b>Cook several recipes at once</b> with tabs and a tip on which to start with. · 📝 <b>Note after cooking</b> for next time. · 🛒 Shop mode jumps to the first open item when you reopen it.",
+   "beta.3"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -2752,7 +2755,12 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
 .item { border-left:4px solid var(--cc, transparent); padding-left:0; }
 .item[style*="--rc"] { box-shadow: inset -4px 0 0 var(--rc); }
 .item .txt { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
-.item .qty { border:0; font:inherit; font-size:.85em; cursor:pointer; color:inherit; }
+.item .qty { border:0; font:inherit; font-size:.85em; cursor:pointer; color:inherit; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+.item .qty.qtywheel-on { outline:2px solid var(--primary-color,#03a9f4); }
+.qtywheel { position:fixed; z-index:20; transform:translate(-50%,-50%); pointer-events:none; background:var(--card-background-color,#fff); border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,.25); padding:4px 0; min-width:76px; text-align:center; }
+.qtywheel .qw { height:28px; line-height:28px; font-size:.9em; opacity:.35; color:var(--primary-text-color); }
+.qtywheel .qw:nth-child(2), .qtywheel .qw:nth-child(4) { opacity:.6; }
+.qtywheel .qw.on { opacity:1; font-weight:700; font-size:1.15em; color:var(--primary-color,#03a9f4); background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); }
 /* 🔵 Menge blau – passt zum ①-Icon, sieht man beim Einkaufen sofort */
 .item .qty { background:color-mix(in srgb, var(--primary-color,#03a9f4) 14%, transparent); color:var(--primary-color,#03a9f4); font-weight:600; }
 .item.done .qty { background:color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); color:var(--secondary-text-color); font-weight:400; }
@@ -3012,6 +3020,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 /* 👨‍🍳 Knöpfe unter der Kochmütze: Foto blau, Kochen rot, Teilen grün (nur das Symbol) */
 .rtools [data-act="photo-view"] ha-icon { color:var(--primary-color,#03a9f4); }
 .rtools [data-act="recipe-cook"] ha-icon { color:var(--error-color,#e53935); }
+.recipe .rnote { display:block; margin-top:2px; background:rgba(249,168,37,.18); border-radius:8px; padding:1px 8px; width:fit-content; max-width:100%; }
 .rtools [data-act="recipe-share"] ha-icon { color:var(--success-color,#43a047); }
 .plansec { margin:12px 4px 4px; font-size:14px; color:var(--secondary-text-color); }
 .planset { margin:8px 0 12px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); }
@@ -3041,6 +3050,9 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .prodrow:focus { outline:2px solid var(--primary-color,#03a9f4); outline-offset:-2px; }
 .offtag { cursor:pointer; }
 .item .acts .recalltag ha-icon { color:#e53935 !important; } /* ⚠️ Rückruf: rotes ❗ */
+.item .acts .recalltag.maybe ha-icon { color:#fb8c00 !important; } /* 🏷️ Notiz passt nicht zur Marke: orange statt rot */
+.recallbrand { font-size:.85em; color:var(--secondary-text-color); }
+.recallbrand.hit { color:#e53935; font-weight:600; }
 .item .acts .offtag .oi ha-icon { color:#f9a825 !important; } /* 🏷️ Angebot und 🔀 Ähnliches: beide gelb */
 .item .acts .shopphoto { color:var(--primary-color,#03a9f4); } .item .acts .shopphoto ha-icon { --mdc-icon-size:22px; display:flex; } /* 📷 so groß wie das Angebotszeichen */
 .item .acts .offtag .oi { font-size:calc(var(--mdc-icon-size, 24px) * .6); width:var(--mdc-icon-size, 24px); height:var(--mdc-icon-size, 24px); display:flex; align-items:center; justify-content:center; line-height:1; } /* 🏷️ bunt, aber klein und dezent */
@@ -4614,6 +4626,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._setupTabScroll(this.$("tabs"));
     this._setupLongPress(this.$("list"));
     this._setupSwipe(this.$("list"));
+    this._setupQtyWheel(this.$("list"));
     root.addEventListener("change", (e) => this._onChange(e));
     root.addEventListener("input", (e) => this._onInput(e));
     root.addEventListener("submit", (e) => {
@@ -4665,8 +4678,65 @@ class EinkaufslisteCard extends HTMLElement {
       if (!itemEl) return;
       e.preventDefault();
       clearTimeout(timer);
+      if (this._qtyHold) return; // 🎡 Finger hält die Menge: Zahlenrad statt Menü
       if (!this._longPressed) open(itemEl);
     });
+  }
+
+  // 🎡 Zahlenrad: Finger kurz auf der Menge („5x“) halten, dann hoch = mehr, runter = weniger.
+  // Jede Stufe tickt mit kurzer Vibration (Android; iPhone erlaubt das Webseiten nicht). Kurz tippen öffnet wie bisher ＋/−.
+  _setupQtyWheel(list) {
+    const STEP_PX = 28, HOLD = 250;
+    let st = null;
+    const draw = () => {
+      const vals = [2, 1, 0, -1, -2].map((k) => st.n + k * st.step).map((n) => (n >= st.step ? this._fmtQty(n, st.p.unit) : ""));
+      st.wheel.innerHTML = vals.map((v, i) => `<div class="qw${i === 2 ? " on" : ""}">${esc(v)}</div>`).join("");
+    };
+    const stop = (commit) => {
+      if (!st) return;
+      const s = st; st = null; this._qtyHold = false;
+      clearTimeout(s.timer);
+      s.wheel?.remove();
+      s.btn.classList.remove("qtywheel-on");
+      if (!s.on) return;
+      this._wheeled = Date.now(); // der Klick danach öffnet nicht das Mengen-Feld
+      if (commit && s.n !== s.p.n) this._ws({ type: "einkaufsliste/item/update", item_id: s.id, quantity: this._fmtQty(s.n, s.p.unit) }).catch(() => {});
+    };
+    list.addEventListener("pointerdown", (e) => {
+      const btn = e.target.closest?.('button.qty[data-act="qty-edit"]');
+      if (!btn || st) return;
+      const id = btn.closest(".item[data-id]")?.dataset.id;
+      const item = this._data?.items.find((i) => i.id === id);
+      const p = this._parseQty(item?.quantity);
+      if (!p) return; // „ein paar“ o. Ä.: kein Rad
+      st = { btn, id, p, step: this._qtyStepFor(item), n: p.n, x: e.clientX, y: e.clientY, on: false };
+      this._qtyHold = true;
+      st.timer = setTimeout(() => {
+        if (!st) return;
+        st.on = true;
+        try { btn.setPointerCapture(e.pointerId); } catch (_) { /* egal */ }
+        btn.classList.add("qtywheel-on");
+        const r = btn.getBoundingClientRect();
+        st.wheel = document.createElement("div");
+        st.wheel.className = "qtywheel";
+        st.wheel.style.left = `${Math.round(r.left + r.width / 2)}px`;
+        st.wheel.style.top = `${Math.round(r.top + r.height / 2)}px`;
+        this.shadowRoot.append(st.wheel);
+        draw();
+        elVibrate(15);
+      }, HOLD);
+    });
+    list.addEventListener("pointermove", (e) => {
+      if (!st) return;
+      if (!st.on) { if (Math.abs(e.clientX - st.x) > 8 || Math.abs(e.clientY - st.y) > 8) stop(false); return; } // vorher bewegt = normal scrollen
+      const k = Math.round((st.y - e.clientY) / STEP_PX);
+      const n = Math.max(st.step, Math.round((st.p.n + k * st.step) * 100) / 100);
+      if (n !== st.n) { st.n = n; draw(); elVibrate(8); }
+    });
+    list.addEventListener("touchmove", (e) => { if (st?.on) e.preventDefault(); }, { passive: false }); // Rad dreht, Liste bleibt stehen
+    list.addEventListener("pointerup", () => stop(true));
+    list.addEventListener("pointercancel", () => stop(false));
+    list.addEventListener("contextmenu", (e) => { if (st) e.preventDefault(); });
   }
 
   // 👆 Wischen am Handy: Zeile nach links = abhaken, nach rechts = (erledigt) wieder auf die Liste
@@ -5047,6 +5117,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (this._shopMode === undefined) {
       try { this._shopMode = localStorage.getItem("einkaufsliste_shopmode") === "1"; } catch (_) { this._shopMode = false; }
       try { this._shopAuto = this._shopMode && localStorage.getItem("einkaufsliste_shopauto") === "1"; } catch (_) { this._shopAuto = false; } // 📌 ging er von selbst an? Dann geht er auch von selbst aus
+      this._shopResume = this._shopMode; // 📌 Nr. 204: einmal zur richtigen Stelle springen
       try { this._dupIgnore = new Set(JSON.parse(localStorage.getItem("einkaufsliste_dup_ignore") || "[]")); } catch (_) { this._dupIgnore = new Set(); }
     }
     const d = this._data;
@@ -5468,7 +5539,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     else if (!item.checked && off?.expired && Date.now() - new Date(off.expired) < DAY) meta.unshift(`<span class="offgone" title="Das Angebot ist abgelaufen">⌛ Angebot vorbei</span>`);
     const rc = this._recallFor(item); // ⚠️ offene Rückruf-Warnung zu diesem Artikel: rotes ❗ links neben dem Angebotszeichen
-    const recallBtn = rc ? `<button class="iconbtn recalltag" data-act="recall-open" data-link="${esc(rc.link)}" title="Rückruf-Warnung: ${esc(rc.title)} – antippen" aria-label="Rückruf-Warnung – antippen"><ha-icon icon="mdi:alert-circle"></ha-icon></button>` : "";
+    const recallBtn = rc ? `<button class="iconbtn recalltag${rc.brand === "other" ? " maybe" : ""}" data-act="recall-open" data-link="${esc(rc.link)}" title="Rückruf-Warnung: ${esc(rc.title)}${rc.brand === "match" ? " – eure Marke!" : rc.brand === "other" ? " – vielleicht eine andere Marke" : ""} – antippen" aria-label="Rückruf-Warnung – antippen"><ha-icon icon="mdi:alert-circle"></ha-icon></button>` : "";
     if (this._shopMode && !offBtn && v.photo && this._hasPhoto(this._pk(item.name, item.note))) { // 📷 Laden-Modus: Foto-Symbol steht dort, wo sonst das Angebotszeichen war (gleiche Größe)
       offBtn = `<button class="iconbtn offtag shopphoto" data-act="photo-view" data-name="${esc(this._pk(item.name, item.note))}" title="Foto ansehen"><ha-icon icon="${this._photoIcon(this._pk(item.name, item.note))}"></ha-icon></button>`;
     }
@@ -5829,6 +5900,12 @@ class EinkaufslisteCard extends HTMLElement {
     }
     list.innerHTML = html.join("");
     if (this._editing) this.$("edName")?.focus(); else this._knRestore();
+    if (this._shopResume && this._shopMode && this._data) { // 📌 Nr. 204: nach Neuladen mitten im Einkauf – zum ersten offenen Artikel springen
+      this._shopResume = false;
+      const busy = this._data.items.some((i) => i.checked && i.checked_at && Date.now() - new Date(i.checked_at) < 30 * 60e3);
+      const first = busy && list.querySelector(".item:not(.done)");
+      if (first) setTimeout(() => { try { first.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (_) { /* egal */ } }, 300);
+    }
   }
 
   // 🖨️ Liste drucken: erst Geschäft wählen, dann Druckvorschau mit Kästchen zum Abhaken mit dem Stift
@@ -8167,7 +8244,7 @@ ${(() => {
       return `
         <div class="recipe rv ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
           <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
-          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${planOn && pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}</div>
+          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${planOn && pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}${r.cook_note ? `<small class="rnote">📝 ${esc(r.cook_note)}</small>` : ""}</div>
         </div>
         <div class="rtools" data-id="${r.id}">
           ${planOn ? `<button class="btn plan ${r.plan || ""}" data-act="recipe-plan" title="Essensplan: antippen = nichts → 💭 Wunsch → 📅 Diese Woche"><ha-icon icon="${pl[0]}"></ha-icon><span class="lbl">${pl[1]}</span></button>` : ""}
@@ -10299,6 +10376,12 @@ ${(() => {
     idx = Math.max(0, Math.min(Number(startIdx) | 0, total - 1));
     const ov = makeOverlay({ full: true });
     ov.dataset.elcook = "1";
+    // 🍝🥗 Mehrere Rezepte gleichzeitig: jedes Rezept hat sein eigenes Koch-Fenster, oben Reiter zum Wechseln
+    const sess = (this._cookSess ||= []).filter((x) => x.ov.isConnected);
+    this._cookSess = sess;
+    const me = { rid: r.id, r: () => r, steps: () => steps, heat: () => heat, ov, disp: "" };
+    for (const x of sess) x.ov.style.display = "none";
+    sess.push(me);
     Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflow: "hidden", touchAction: "pan-y",
       paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 90px)", paddingLeft: "34px", paddingRight: "34px" }); // Platz für die Wisch-Pfeile am Rand
     const wrapW = { width: "100%", maxWidth: "1100px" };
@@ -10320,8 +10403,14 @@ ${(() => {
     bGar.onclick = () => showGarTable(null, this); // im Koch-Fenster bleibt es ein Fenster (die Seite läge dahinter)
     const hbtns = document.createElement("div"); // die rechten Knöpfe bleiben beisammen (zu eng: ganze Gruppe rutscht rechtsbündig in die zweite Zeile)
     Object.assign(hbtns.style, { display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto", flex: "none" });
-    hbtns.append(bTimer, bPhoto, bGar, bClose);
+    const bMore = ovIconButton("mdi:plus-box-multiple-outline", elT("Rezept dazu – mehrere gleichzeitig kochen"));
+    bMore.querySelector("ha-icon").style.color = SET_COLORS.recipes;
+    bMore.onclick = () => this._cookAddPick();
+    hbtns.append(bMore, bTimer, bPhoto, bGar, bClose);
     head.append(title, hbtns);
+    const tabs = document.createElement("div"); // 🍝🥗 Reiter (nur bei mehr als einem Rezept)
+    Object.assign(tabs.style, { ...wrapW, display: "none", flexDirection: "column", gap: "6px", marginBottom: "10px" });
+    me.tabs = tabs;
     const heatBox = document.createElement("div");
     Object.assign(heatBox.style, { ...wrapW, display: heat.length ? "flex" : "none", flexDirection: "column", gap: "6px", marginTop: "14px" });
     const renderHeat = () => {
@@ -10348,6 +10437,18 @@ ${(() => {
       }
     };
     renderHeat();
+    const noteBox = document.createElement("div"); // 📝 Notiz vom letzten Mal (Nr. 264)
+    Object.assign(noteBox.style, { ...wrapW, display: "none", alignItems: "center", gap: "8px", marginTop: "10px" });
+    const renderNote = () => {
+      const n = r.cook_note;
+      noteBox.style.display = n ? "flex" : "none";
+      noteBox.innerHTML = n ? `<div class="ic" data-elnote="1" style="flex:1;background:#3b3510;border:1px solid #c9a227;color:#fff3b0;border-radius:12px;padding:10px 12px;font:600 16px Roboto,sans-serif">📝 ${esc(n)}</div>` : "";
+      if (!n || !r.id) return;
+      const x = ovIconButton("mdi:close", elT("Notiz löschen"));
+      x.onclick = () => this._ws({ type: "einkaufsliste/recipe/update", recipe_id: r.id, cook_note: "" }).then(() => { r = { ...r, cook_note: null }; renderNote(); }).catch(() => {});
+      noteBox.append(x);
+    };
+    renderNote();
     const pos = document.createElement("div");
     Object.assign(pos.style, { color: "#aaa", font: "600 16px Roboto,sans-serif", margin: "6px 0 10px" });
     const text = document.createElement("div");
@@ -10456,7 +10557,8 @@ ${(() => {
       text.style.font = wide ? "500 clamp(20px, 2.6vw, 32px)/1.35 Roboto,sans-serif" : "500 clamp(20px, 5.4vw, 30px)/1.35 Roboto,sans-serif";
     };
     ov.style.paddingBottom = "calc(env(safe-area-inset-bottom, 0px) + 12px)"; // sonst rutscht „Weiter“ um dieses Polster nach oben
-    ov.append(head, timerBar, heatBox, main, nav);
+    ov.append(tabs, head, timerBar, heatBox, noteBox, main, nav);
+    me.disp = ov.style.display || "flex";
     for (const c of ov.children) c.style.flexShrink = "0";
     main.style.flexShrink = "1";
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => { layout(); autoL.start(); autoR.start(); }) : null;
@@ -10481,6 +10583,7 @@ ${(() => {
       timerBar.replaceChildren(...ts.map((t) => this._timerChip(t)));
     };
     this._cookTick = renderTimers;
+    me.tick = renderTimers;
     renderTimers();
     const show = () => {
       const rkey = r.id ? this._recipePhotoKey(r.id) : "";
@@ -10539,12 +10642,16 @@ ${(() => {
       awake?.then((a) => a.stop()).catch(() => {}); ov.remove(); document.removeEventListener("keydown", onKey);
       ro?.disconnect(); this._cookTick = null; autoL.stop(); autoR.stop();
       try { localStorage.removeItem("einkaufsliste_cook"); } catch (_) { /* egal */ }
+      const all = this._cookSess || [], k = all.indexOf(me); if (k >= 0) all.splice(k, 1); // die aktuelle Liste, nicht die vom Öffnen
+      const rest = all.filter((x) => x.ov.isConnected);
+      if (rest.length) this._cookShow(rest[rest.length - 1]); // 🍝🥗 das nächste Rezept kommt nach vorn
       this._renderTimerStrip();
     };
     ov._elClose = close; // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
     awake = elKeepAwake(ov, this._inHaApp()); // 💡 Bildschirm bleibt beim Kochen an
     awake.then((a) => { { this._toast(a.mode === "lock" ? "💡 Bildschirm bleibt an" : a.mode === "video" ? "💡 Bildschirm bleibt an (Video-Trick) – geht er trotzdem aus, sag Bescheid" : this._awakeHint()); } }).catch(() => {});
     const onKey = (e) => {
+      if (ov.style.display === "none") return; // 🍝🥗 anderes Rezept ist gerade vorn
       if (document.querySelector("[data-eltimer]")) return; // Timer-Fenster offen: Tasten gehören dem Fenster
       if (e.key === "Escape") close();
       if (ov.querySelector("[data-elintro]")) return; // erst die Personenzahl bestätigen
@@ -10553,7 +10660,14 @@ ${(() => {
     };
     document.addEventListener("keydown", onKey);
     bPrev.onclick = () => { if (idx) { idx--; show(); } };
-    bNext.onclick = () => { if (idx < total - 1) { idx++; show(); } else close(); };
+    bNext.onclick = () => {
+      if (idx < total - 1) { idx++; show(); return; }
+      const rid = r.id, old = r.cook_note || "";
+      close();
+      if (rid) askText("📝 Notiz fürs nächste Mal?", "z. B. weniger Salz", old).then((t) => { // Nr. 264: steht beim nächsten Mal oben
+        if (t && t !== old) this._ws({ type: "einkaufsliste/recipe/update", recipe_id: rid, cook_note: t }).then(() => this._toast("📝 Notiz gespeichert")).catch(() => {});
+      });
+    };
     bClose.onclick = close;
     swL.onclick = () => bPrev.click();
     swR.onclick = () => bNext.click();
@@ -10592,10 +10706,12 @@ ${(() => {
       idx = Math.max(0, Math.min(idx, total - 1));
       pers = r.servings ? (this._cookPers[r.id] || r.servings) : null;
       const tn = title.querySelector("[data-eltitle]"); if (tn) tn.textContent = r.name;
-      renderHeat(); renderIng(); show();
+      renderHeat(); renderIng(); renderNote(); show();
+      this._cookTabs();
       this._toast("🔄 Rezept wurde geändert – Kochmodus ist aktuell");
     };
     ov._elRefresh = refresh;
+    this._cookTabs();
     if (ask && (r.servings || freeIdx().length > 1)) { // 👥 Vor dem Start: für wie viele Personen wird gekocht? (die Zutaten rechnen sich danach um) · 🔥 und womit gegart wird
       const intro = document.createElement("div");
       intro.dataset.elintro = "1";
@@ -10677,6 +10793,82 @@ ${(() => {
       ov.insertBefore(intro, main);
       upd();
     } else { show(); autoR.start(); }
+  }
+
+  // 🍝🥗 Reiter oben im Kochmodus (ab 2 Rezepten) plus Tipp, womit man anfängt
+  _cookTabs() {
+    const sess = (this._cookSess || []).filter((x) => x.ov.isConnected);
+    const hint = sess.length > 1 ? this._cookOrderHint(sess) : "";
+    for (const x of sess) {
+      const bar = x.tabs;
+      if (!bar) continue;
+      bar.style.display = sess.length > 1 ? "flex" : "none";
+      bar.replaceChildren();
+      if (sess.length < 2) continue;
+      const row = document.createElement("div");
+      Object.assign(row.style, { display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "2px" });
+      for (const y of sess) {
+        const b = document.createElement("button");
+        b.type = "button"; b.dataset.elcooktab = y.rid || "";
+        const on = y === x;
+        b.textContent = y.r().name;
+        Object.assign(b.style, { flex: "none", maxWidth: "46vw", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer",
+          padding: "8px 14px", borderRadius: "12px", font: "600 15px Roboto,sans-serif", color: on ? "#fff" : "#bbb",
+          background: on ? "rgba(229,57,53,.28)" : "rgba(255,255,255,.08)", border: on ? `2px solid ${SET_COLORS.recipes}` : "2px solid transparent" });
+        if (!on) b.onclick = () => this._cookShow(y);
+        row.append(b);
+      }
+      bar.append(row);
+      if (hint) { const h = document.createElement("div"); h.textContent = hint; Object.assign(h.style, { color: "#ffd7b5", font: "15px Roboto,sans-serif" }); bar.append(h); }
+    }
+  }
+
+  _cookShow(y) {
+    const sess = (this._cookSess || []).filter((x) => x.ov.isConnected);
+    for (const x of sess) x.ov.style.display = x === y ? (x.disp || "flex") : "none";
+    this._cookTick = y.tick || null;
+    y.tick?.();
+    this._cookTabs();
+  }
+
+  // ⏱️ Ungefähre Kochzeit: Zeiten aus den Schritten („30 Minuten köcheln“), sonst aus „Backofen & Co.“ – 0 = unbekannt
+  _cookMinutes(steps, heat) {
+    const sec = steps.reduce((a, st) => a + elStepSeconds(st), 0);
+    if (sec) return Math.round(sec / 60);
+    return Math.round((heat || []).reduce((a, h) => a + (Number(h.minutes) || 0), 0));
+  }
+
+  _cookOrderHint(sess) {
+    const rows = sess.map((x) => ({ name: x.r().name, min: this._cookMinutes(x.steps(), x.heat()) }));
+    const known = rows.filter((x) => x.min > 0).sort((a, b) => b.min - a.min);
+    const unknown = rows.filter((x) => !x.min);
+    const en = EL_LANG !== "de", q = (x) => en ? `“${x}”` : `„${x}“`, ca = en ? "approx." : "ca.";
+    const parts = [];
+    if (known.length) {
+      const rest = known.slice(1).map((x) => `${q(x.name)} ${ca} ${x.min} Min`).join(", ");
+      parts.push((en ? `💡 Start with ${q(known[0].name)} (${ca} ${known[0].min} min)` : `💡 Fang mit ${q(known[0].name)} an (${ca} ${known[0].min} Min)`) + (rest ? `, ${rest}` : "") + ".");
+    }
+    if (unknown.length) { const n = unknown.map((x) => q(x.name)).join(", "); parts.push(en ? `I don't know the time for ${n}.` : `Bei ${n} weiß ich die Zeit nicht.`); }
+    return parts.join(" ");
+  }
+
+  // ➕ Noch ein Rezept zum Kochmodus dazu: Auswahl aller Rezepte mit Schritten, die noch nicht offen sind
+  _cookAddPick() {
+    const open = new Set((this._cookSess || []).filter((x) => x.ov.isConnected).map((x) => x.rid));
+    const list = (this._data?.recipes || []).filter((r) => (r.steps || "").trim() && !open.has(r.id)).sort((a, b) => a.name.localeCompare(b.name, "de"));
+    const ov = makeOverlay();
+    ov.innerHTML = `<div style="max-width:420px;width:100%"><div style="font:600 18px Roboto,sans-serif;margin-bottom:10px">${esc(elT("➕ Welches Rezept kochst du dazu?"))}</div><div data-ellist="1" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow:auto"></div><div class="abtn" style="display:flex;justify-content:flex-end;margin-top:14px"></div></div>`;
+    const box = ov.querySelector("[data-ellist]");
+    if (!list.length) box.textContent = elT("Keine weiteren Rezepte mit Schritten da.");
+    for (const r of list) {
+      const b = ovButton(r.name);
+      b.style.textAlign = "left";
+      b.onclick = () => { ov.remove(); this._cookMode(r); };
+      box.append(b);
+    }
+    const cancel = ovButton(elT("Abbrechen"));
+    cancel.onclick = () => ov.remove();
+    ov.querySelector(".abtn").append(cancel);
   }
 
   // ⏲️ ---------------------------------------------------------- Kochtimer (laufen in Home Assistant)
@@ -11084,6 +11276,13 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
 
   // ℹ️ Produkt-Infos – nur auf Nachfrage (lange drücken → Infos)
   // 🏷️ Angebote (Marktguru) zu einem Artikel
+  // 🏷️ Marke: steht ein Wort aus eurer Notiz (z. B. „Hofmaier“) in der Warnung?
+  _recallBrandHtml(h) {
+    if (h?.brand === "match") return `<br><span class="recallbrand hit">⚠️ <span>Eure Marke steht in der Warnung</span></span>`;
+    if (h?.brand === "other") return `<br><span class="recallbrand"><span>Eure Notiz</span> „<span translate="no">${esc((h.notes || []).join(", "))}</span>“ <span>steht nicht drin – vielleicht eine andere Marke</span></span>`;
+    return "";
+  }
+
   // ⚠️ Passt der Artikel zu einem offenen Treffer der Rückruf-Warnung? (gleicher Name wie beim Kauf)
   _recallFor(item) {
     const r = this._data?.settings?.recalls;
@@ -11246,14 +11445,14 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       : `<p><b>✅ An</b> <span>– die erste Prüfung kommt in ein paar Minuten.</span></p>`;
     const hits = (r?.hits || []).map((h) => `
       <div class="recallhit">
-        <div class="grow"><b translate="no">${esc((h.products || []).join(", "))}</b><br>
+        <div class="grow"><b translate="no">${esc((h.products || []).join(", "))}</b>${this._recallBrandHtml(h)}<br>
           <a href="${esc(h.link)}" target="_blank" rel="noopener noreferrer" translate="no">${esc(h.title)}</a>${h.date ? `<br><small>${esc(new Date(h.date).toLocaleDateString())}</small>` : ""}</div>
         <button class="iconbtn" data-act="recall-dismiss" data-id="${esc(h.id)}" title="Erledigt – wegklicken" aria-label="Erledigt – wegklicken"><ha-icon icon="mdi:check"></ha-icon></button>
       </div>`).join("");
     return `
       <p class="hint"><b>⚠️ Rückruf-Warnung</b>: Alle 6 Stunden holt die Liste die offiziellen Warnungen von lebensmittelwarnung.de und vergleicht sie mit allem, was ihr in den letzten 30 Tagen abgehakt habt. Passt etwas, kommt eine Meldung in Home Assistant und das Ereignis <code>einkaufsliste_rueckruf</code> für eigene Automationen.</p>
-      <p class="hint warnbox">Der Abgleich geht nur über den Namen: „Kaffee“ passt auf jede Kaffee-Warnung. Darum heißt es „bitte prüfen“. Ob eure Packung wirklich betroffen ist (Marke, Charge, Haltbarkeit), steht im Link. Abgefragt wird nur der Feed – eure Liste verlässt Home Assistant nicht.</p>
-      <p class="hint">❗ In der Liste steht beim Artikel ein rotes Ausrufezeichen. Treffer verschwinden von selbst, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage.</p>
+      <p class="hint warnbox">Der Abgleich geht über den Namen: „Kaffee“ passt auf jede Kaffee-Warnung. Darum heißt es „bitte prüfen“. Steht beim Artikel eine Notiz (z. B. die Marke „Tchibo“), schaut die Liste zusätzlich, ob sie in der Warnung vorkommt. Charge und Haltbarkeit stehen im Link. Abgefragt wird nur der Feed – eure Liste verlässt Home Assistant nicht. Gemeldet werden auch Kosmetik, Spielzeug, Geschirr und Kleidung, Tierfutter leider nicht.</p>
+      <p class="hint">❗ In der Liste steht beim Artikel ein rotes Ausrufezeichen (orange, wenn eure Notiz nicht in der Warnung steht – vielleicht eine andere Marke). Treffer verschwinden von selbst, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage.</p>
       <p class="hint">🔒 Die Meldung bei einem Treffer sehen alle Home-Assistant-Benutzer (also auch, was gekauft wurde). Mit Datenschutz an wird nichts abgefragt.</p>
       ${status}
       ${on && hits ? `<div class="recallhits">${hits}</div>` : on ? `<p class="hint">👍 Keine Treffer.</p>` : ""}
@@ -12154,6 +12353,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
 
   async _onClick(e) {
     if (this._dragged) { e.stopPropagation(); e.preventDefault(); return; } // war nur Ziehen
+    if (this._wheeled && Date.now() - this._wheeled < 400 && e.target.closest?.("#list")) { e.stopPropagation(); e.preventDefault(); return; } // 🎡 gerade am Zahlenrad gedreht
     if (this._swiped && Date.now() - this._swiped < 400 && e.target.closest?.("#list")) { e.stopPropagation(); e.preventDefault(); return; } // 👆 gerade gewischt: der Klick danach zählt nicht
     const el = e.target.closest("[data-act]");
     if (!el) return;

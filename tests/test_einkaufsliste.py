@@ -4554,3 +4554,20 @@ async def test_geschaeft_egal_wo_abschalten(hass, setup, hass_ws_client) -> None
     await client.send_json({"id": 2, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "no_any": False})
     assert (await client.receive_json())["success"]
     assert "no_any" not in m.store_by_id(aldi)
+
+
+async def test_recipe_cook_note_over_websocket(hass, setup, hass_ws_client):
+    """📝 Notiz nach dem Kochen: wird gespeichert, gekürzt, und leer löscht sie wieder."""
+    m = mgr(hass)
+    r = m.add_recipe("Gulasch", [{"name": "Rindfleisch"}], steps="Anbraten\nSchmoren")
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/update", "recipe_id": r["id"],
+                            "cook_note": "  weniger   Salz,\n mehr Paprika  "})
+    assert (await client.receive_json())["success"]
+    assert m.recipe_by_id(r["id"])["cook_note"] == "weniger Salz, mehr Paprika"
+    m.update_recipe(r["id"], cook_note="x" * 500)
+    assert len(m.recipe_by_id(r["id"])["cook_note"]) == 300
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/update", "recipe_id": r["id"], "cook_note": ""})
+    assert (await client.receive_json())["success"]
+    assert "cook_note" not in m.recipe_by_id(r["id"])
+    assert m.recipe_by_id(r["id"])["steps"] == "Anbraten\nSchmoren"

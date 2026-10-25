@@ -101,6 +101,31 @@ def recent_names(items: list[dict[str, Any]], now: datetime, days: int = BOUGHT_
     return list(names.values())
 
 
+def recent_notes(items: list[dict[str, Any]], now: datetime, days: int = BOUGHT_DAYS) -> dict[str, list[str]]:
+    """Notizen (meist die Marke, z. B. „Hofmaier“) der in den letzten `days` Tagen abgehakten Artikel, je Name."""
+    since = now - timedelta(days=days)
+    out: dict[str, list[str]] = {}
+    for item in items:
+        when = dt_util.parse_datetime(str(item.get("checked_at") or "")) if item.get("checked") else None
+        if when is None or when < since or item.get("removed"):
+            continue
+        for note in (item.get("note"), item.get("own_note")):
+            note = str(note or "").strip()
+            if note and note not in out.setdefault(item["name"].lower(), []):
+                out[item["name"].lower()].append(note)
+    return out
+
+
+def brand_check(notes: list[str], warning: dict[str, Any]) -> str | None:
+    """🏷️ Passt die Marke? „match“ = ein Wort aus der Notiz steht in der Warnung (Titel, Hersteller …),
+    „other“ = es gibt eine Notiz, aber nichts davon steht drin, None = keine taugliche Notiz (dann wissen wir es nicht)."""
+    words = [w for note in notes for w in name_words(note)]
+    if not words:
+        return None
+    tokens = _norm(f"{warning.get('title') or ''} {warning.get('text') or ''}").split()
+    return "match" if any(t == w or t.startswith(w) for w in words for t in tokens) else "other"
+
+
 def last_bought(items: list[dict[str, Any]], names: list[str]) -> datetime | None:
     """Wann wurde einer dieser Artikel zuletzt abgehakt? (None = gerade nicht abgehakt)"""
     want = {n.lower() for n in names}
@@ -206,6 +231,7 @@ class Recalls:
         """Warnungen mit den Einkäufen abgleichen; Neues melden. (Ohne Netz – auch für die Tests.)"""
         now = now or dt_util.utcnow()
         names = recent_names(self.manager.items, now)
+        notes = recent_notes(self.manager.items, now)
         seen = set(self.manager.recalls_seen)
         new_hits: list[dict[str, Any]] = []
         for w in warnings:
@@ -215,12 +241,20 @@ class Recalls:
             products = [n for n in names if match(n, w)]
             if products and w["id"] not in seen:
                 bought = last_bought(self.manager.items, products)
+                used = [n for p in products for n in notes.get(p.lower(), [])]
                 new_hits.append({**{k: w[k] for k in ("id", "title", "link", "date")}, "products": products,
-                                 "found": now.isoformat(), "bought": bought.isoformat() if bought else None})
+                                 "found": now.isoformat(), "bought": bought.isoformat() if bought else None,
+                                 "brand": brand_check(used, w), "notes": used[:5]})
         for hit in new_hits:
-            self.hass.bus.async_fire(EVENT_RECALL, {k: hit[k] for k in ("title", "link", "date", "products")})
+            self.hass.bus.async_fire(EVENT_RECALL, {k: hit[k] for k in ("title", "link", "date", "products", "brand")})
         if new_hits:
-            lines = [f"- **{', '.join(h['products'])}** → [{h['title']}]({h['link']})" for h in new_hits]
+            def brand_line(h: dict[str, Any]) -> str:
+                if h.get("brand") == "match":
+                    return " – ⚠️ **eure Marke steht in der Warnung**"
+                if h.get("brand") == "other":
+                    return f" – eure Notiz „{', '.join(h['notes'])}“ steht nicht drin, vielleicht eine andere Marke"
+                return ""
+            lines = [f"- **{', '.join(h['products'])}** → [{h['title']}]({h['link']}){brand_line(h)}" for h in new_hits]
             persistent_notification.async_create(
                 self.hass,
                 "Zu diesen Einkäufen der letzten Wochen gibt es eine offizielle Warnung. "
