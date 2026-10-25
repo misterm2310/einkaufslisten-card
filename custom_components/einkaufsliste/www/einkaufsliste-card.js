@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.23";
+const EL_VERSION = "2.76.24-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -390,7 +390,11 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [];
+const EL_BETA_NEWS = [
+  ["📦 <b>Produktkatalog:</b> Was du beim Bearbeiten eines Produkts schon getippt hast (Notiz, Spitznamen, Geschäft, Kategorie …), bleibt jetzt stehen, wenn du ein Foto oder einen Barcode dazunimmst. · 🔎 Ein neues Produkt steht danach im Suchfeld und ist gleich offen zum Ausfüllen; ein Suchtext wird beim ➕ als Name vorgeschlagen.",
+   "📦 <b>Product catalogue:</b> what you already typed while editing a product (note, nicknames, store, category …) now stays when you add a photo or a barcode. · 🔎 A new product then shows in the search field and is open right away; a search text is suggested as the name for ➕.",
+   "beta.1"],
+];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", recalls: "#e65100", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -7949,9 +7953,36 @@ ${(() => {
     return false;
   }
 
+  // 🔎 Neues Produkt: Name ins Suchfeld, dann steht es sofort da – offen zum Ausfüllen
+  _prodShowNew(name) {
+    this._prodFilter = name;
+    const inp = this.$("prodSearch");
+    if (inp) {
+      inp.value = name;
+      const er = inp.parentElement?.querySelector('[data-act="search-erase"]');
+      if (er) er.hidden = false;
+    }
+    this._renderProducts();
+  }
+
+  // ✏️ Was im offenen Produkt schon getippt, aber noch nicht gespeichert ist (nur Felder, die du wirklich geändert hast)
+  _prodDraft(box) {
+    const ed = box?.querySelector(".prodedit");
+    if (!ed || ed.dataset.key !== this._prodEdit) return null;
+    const out = {};
+    for (const el of ed.querySelectorAll("input[id], select[id], textarea[id]")) {
+      if (el.type === "hidden") continue;
+      if (el.type === "checkbox") { if (el.checked !== el.defaultChecked) out[el.id] = el.checked; continue; }
+      if (el.tagName === "SELECT") { const d = [...el.options].find((o) => o.defaultSelected)?.value ?? el.options[0]?.value; if (el.value !== d) out[el.id] = el.value; continue; }
+      if (el.value !== el.defaultValue) out[el.id] = el.value;
+    }
+    return { key: ed.dataset.key, vals: out };
+  }
+
   _renderProducts() {
     const box = this.$("prodList");
     if (!box || !this._products) return;
+    const draft = this._prodDraft(box); // 📷 Foto, Barcode oder Neu-Laden: getippter Text bleibt stehen
     const q = (this._prodFilter || "").trim().toLowerCase();
     const scannedTab = this._prodTab === "scanned";
     const ff = scannedTab ? () => true : this._prodFilterFn();
@@ -8009,6 +8040,14 @@ ${(() => {
       }
       return rowHtml;
     }).join("") + (list.length > shown.length ? `<p class="hint">… und ${list.length - shown.length} weitere – oder oben suchen.</p><div class="btnrow"><button class="btn" data-act="more-more" data-w="prod"><ha-icon icon="mdi:plus"></ha-icon>10 weitere</button><button class="btn" data-act="more-all" data-w="prod"><ha-icon icon="mdi:format-list-bulleted"></ha-icon>Alle anzeigen (${list.length - shown.length} mehr)</button></div>` : "");
+    if (draft && draft.key === this._prodEdit) { // ✏️ getippte Felder wieder einsetzen
+      const ed = box.querySelector(".prodedit");
+      for (const [id, v] of Object.entries(draft.vals)) {
+        const el = ed?.querySelector(`#${id}`);
+        if (!el || el.type === "hidden") continue;
+        if (el.type === "checkbox") el.checked = v; else el.value = v;
+      }
+    }
   }
 
   _renderDelList() {
@@ -13246,7 +13285,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         break;
       case "prod-add": {
         const f = this._prodSel || "";
-        askText("📦 Neues Produkt", "z. B. Milch").then(async (name) => {
+        askText("📦 Neues Produkt", "z. B. Milch", (this._prodFilter || "").trim()).then(async (name) => { // 🔎 Suchtext gleich als Name
           if (!name) return;
           const note = await this._prodNoteFor(name); // ✏️ gibt es den Namen schon? Dann Eigene Notiz zum Unterscheiden
           if (note === null) return;
@@ -13254,7 +13293,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           this._toast(`📦 „${p.name}“ ist im Katalog`);
           await this._loadProducts();
           this._prodEdit = p.key;
-          this._renderProducts();
+          this._prodShowNew(p.name);
         }).catch(() => {});
         break;
       }
@@ -13275,7 +13314,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
               this._toast(`📦▥ „${p.name}“ ist im Katalog – mit Barcode`);
               await this._loadProducts();
               this._prodEdit = p.key;
-              this._renderProducts();
+              this._prodShowNew(p.name);
             }).catch(() => {});
         }, "▥ Neues Produkt per Barcode", "Packung scannen, dann den Namen bestätigen.");
         break;

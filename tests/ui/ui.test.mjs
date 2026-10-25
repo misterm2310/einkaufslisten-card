@@ -255,6 +255,32 @@ r = await p.evaluate(`(async () => { const c=${card}; const seen=[]; const siv=E
 check("Laden-Modus: springt zum ersten offenen Artikel", r.first.length === 1 && /item/.test(r.first[0]) && !/done/.test(r.first[0]), JSON.stringify(r));
 check("Laden-Modus: springt nur einmal und nicht ohne frischen Einkauf", r.again === 1 && r.idle === 1, JSON.stringify(r));
 
+// 15) 📦 Produktkatalog: Getipptes bleibt nach Foto/Neu-Laden stehen; neues Produkt landet im Suchfeld (Meldung eines Nutzers)
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._renderAll(); await new Promise(r=>setTimeout(r,50));
+  const cat=c._data.categories[0].id;
+  const mk=(o)=>({key:o.name.toLowerCase(), note:null, own_note:"", aliases:[], barcodes:[], photos:0, store_id:null, category_id:null, ...o});
+  let prods=[mk({name:"Milch"})];
+  c._ws=async(m)=>{ if(m.type==="einkaufsliste/products") return prods.map(x=>({...x})); if(m.type==="einkaufsliste/product/add"){ const n=mk({name:m.name}); prods.push(n); return n; } return {}; };
+  const host=document.createElement("div"); host.id="__prodhost"; host.innerHTML='<div class="srow"><input id="prodSearch"><button class="iconbtn serase" data-act="search-erase" data-for="prodSearch" hidden></button></div><div id="prodList"></div>';
+  c.shadowRoot.querySelector("ha-card").append(host);
+  c._prodFilter=""; c._prodSel=""; c._prodTab="all"; await c._loadProducts(); c._prodEdit="milch"; c._renderProducts();
+  const $=(id)=>c.shadowRoot.getElementById(id);
+  $("peOwn").value="Weidemilch"; $("peAliases").value="Milli"; $("peCat").value=cat; $("peFav").checked=true;
+  prods[0].photos=1; await c._loadProducts();
+  const kept={ own:$("peOwn")?.value, al:$("peAliases")?.value, cat:$("peCat")?.value===cat, fav:$("peFav")?.checked, photo:!!c.shadowRoot.querySelector(".prodrow .pphotos") };
+  c._prodEdit=null; c._renderProducts(); c._prodEdit="milch"; c._renderProducts(); const fresh=$("peOwn")?.value;
+  c._prodEdit=null; c._prodFilter="Hafermilch"; $("prodSearch").value="Hafermilch"; c._renderProducts();
+  const bt=document.createElement("button"); bt.dataset.act="prod-add"; host.append(bt); bt.click(); await new Promise(r=>setTimeout(r,100));
+  const inp=[...document.querySelectorAll("[data-elov] input"), ...c.shadowRoot.querySelectorAll("[data-elov] input, .pagehost input")].filter(i=>!i.closest("#__prodhost")).pop();
+  const pre=inp?.value; if(inp) inp.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter"}));
+  await new Promise(r=>setTimeout(r,300)); while (c._page) c._pageBack(); document.querySelectorAll("[data-elov]").forEach(e=>e.remove());
+  const after={ search:$("prodSearch").value, edit:c.shadowRoot.querySelector(".prodedit")?.dataset.key, rows:[...c.shadowRoot.querySelectorAll(".prodrow b")].map(b=>b.textContent), eraser:!c.shadowRoot.querySelector('#__prodhost [data-act="search-erase"]').hidden };
+  c._prodFilter=""; c._prodEdit=null; host.remove(); return { kept, fresh, pre, after }; })()`);
+check("Produkt: getippte Felder bleiben nach dem Foto stehen", r.kept.own === "Weidemilch" && r.kept.al === "Milli" && r.kept.cat && r.kept.fav && r.kept.photo, JSON.stringify(r));
+check("Produkt: nach Abbrechen und neu öffnen steht wieder der gespeicherte Stand", r.fresh === "", JSON.stringify(r));
+check("Neues Produkt: Suchtext steht schon als Name drin", r.pre === "Hafermilch", JSON.stringify(r));
+check("Neues Produkt: Name im Suchfeld, Produkt offen zum Ausfüllen", r.after.search === "Hafermilch" && r.after.edit === "hafermilch" && JSON.stringify(r.after.rows) === JSON.stringify(["Hafermilch"]) && r.after.eraser, JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }
