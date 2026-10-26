@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.1";
+const EL_VERSION = "2.76.24-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -394,6 +394,9 @@ const EL_BETA_NEWS = [
   ["📦 <b>Produktkatalog:</b> Was du beim Bearbeiten eines Produkts schon getippt hast (Notiz, Spitznamen, Geschäft, Kategorie …), bleibt jetzt stehen, wenn du ein Foto oder einen Barcode dazunimmst. · 🔎 Ein neues Produkt steht danach im Suchfeld und ist gleich offen zum Ausfüllen; ein Suchtext wird beim ➕ als Name vorgeschlagen.",
    "📦 <b>Product catalogue:</b> what you already typed while editing a product (note, nicknames, store, category …) now stays when you add a photo or a barcode. · 🔎 A new product then shows in the search field and is open right away; a search text is suggested as the name for ➕.",
    "beta.1"],
+  ["📱 <b>Ältere iPhones:</b> Die Karte lädt wieder auf iOS 15 (z. B. iPhone 7). Zwei Suchmuster, die Safari dort nicht kannte, sind umgebaut.",
+   "📱 <b>Older iPhones:</b> the card loads again on iOS 15 (e.g. iPhone 7). Two search patterns that Safari did not know there have been rewritten.",
+   "beta.2"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -1277,7 +1280,7 @@ function guessCategory(name, hints) {
     }
     for (const h of hints) for (const w of h.en || []) { // 🌍 englische Wörter nur als ganzes Wort
       if (w.length < minLen || w.length <= len) continue;
-      if (new RegExp(`(?<![a-zäöüß])${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:s|es)?(?![a-zäöüß])`).test(t)) { len = w.length; id = h.id; }
+      if (new RegExp(`(?:^|[^a-zäöüß])${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:s|es)?(?![a-zäöüß])`).test(t)) { len = w.length; id = h.id; } // 📱 ohne Lookbehind, sonst streikt iOS < 16.4
     }
     return id;
   };
@@ -3520,7 +3523,8 @@ function elOcrRecipeParts(text) {
   if (st >= 0) {
     const body = lines.slice(st + 1).join("\n").trim();
     const paras = body.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
-    stepText = (paras.length > 1 ? paras : body.split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ])/).map((x) => x.replace(/\s*\n\s*/g, " ").trim())).filter(Boolean).join("\n");
+    // 📱 Satzende ohne Lookbehind erkennen, sonst streikt iOS < 16.4
+    stepText = (paras.length > 1 ? paras : body.replace(/([.!?])\s+(?=[A-ZÄÖÜ])/g, "$1\u0000").split("\u0000").map((x) => x.replace(/\s*\n\s*/g, " ").trim())).filter(Boolean).join("\n");
   }
   if (ing < 0 && st < 0) ingLines = lines.filter((l) => l.trim()).slice(1);
   return { name, ingredients: ingLines.map((l) => l.replace(/^[\s\-–—•*·|]+/, "").trim()).filter((l) => l.length > 1).join("\n"), steps: stepText };
