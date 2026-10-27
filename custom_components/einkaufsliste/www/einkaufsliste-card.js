@@ -2613,7 +2613,7 @@ ha-card.labels .tool { padding:4px 6px; }
 .iconbtn[disabled] { opacity:.3; pointer-events:none; }
 .iconbtn.on { color:var(--primary-color,#03a9f4); }
 #btnRecipes { position:relative; }
-.recdot { position:absolute; top:-2px; right:-4px; min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#fb8c00; color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; box-shadow:0 0 0 2px var(--card-background-color,#fff); } /* 🟠 752: Vorschläge warten auf OK */
+.recdot { position:absolute; top:-2px; right:-4px; min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#fb8c00; color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; box-shadow:0 0 0 2px var(--card-background-color,#fff); pointer-events:none; } /* 🟠 752: Vorschläge warten auf OK (nur Anzeige, Tippen geht an die Kochmütze) */
 .tabs { display:flex; gap:6px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:thin; cursor:grab; user-select:none; -webkit-overflow-scrolling:touch; }
 .tabs.dragging { cursor:grabbing; }
 .tabs.more-r { -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); } /* ➡️ da kommen noch Reiter */
@@ -4504,7 +4504,7 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon><span class="lbl">Bildschirm</span></button>
           <button class="iconbtn" id="btnCalc" data-act="calc" title="Rechner" hidden><ha-icon icon="mdi:calculator-variant-outline"></ha-icon><span class="lbl">Rechner</span></button>
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
-          <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon><span class="recdot" id="recDot" data-act="rec-wait" hidden></span><span class="lbl">Rezepte</span></button>
+          <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon><span class="recdot" id="recDot" hidden></span><span class="lbl">Rezepte</span></button>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:storefront-outline"></ha-icon><span class="lbl">Laden</span></button>
           <button class="iconbtn on" id="btnBack" data-act="nav-back" title="Zurück" aria-label="Zurück" hidden><ha-icon icon="mdi:close"></ha-icon></button>
         </div>
@@ -6388,9 +6388,9 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
     const dot = this.$("recDot"); // 🟠 Punkt an der Kochmütze: so viele Vorschläge und Änderungswünsche warten auf ein OK (nur wer ans Zahnrad darf, sieht ihn)
     if (dot) {
       const n = (d?.proposals || []).filter((x) => x.status !== "rejected").length;
-      dot.hidden = !n || !c.show_settings || this._view === "settings" || this._view === "recipe";
+      dot.hidden = !n || !c.show_settings || this._view !== "list"; // in der offenen Kochmütze stehen die Vorschläge ja schon da (und oben ist dann das ✕)
       dot.textContent = n > 9 ? "9+" : String(n);
-      dot.title = dot.ariaLabel = elT(n === 1 ? "1 Vorschlag wartet auf OK – antippen zum Ansehen" : `${n} Vorschläge warten auf OK – antippen zum Ansehen`);
+      dot.title = dot.ariaLabel = elT(n === 1 ? "1 Vorschlag wartet auf OK" : `${n} Vorschläge warten auf OK`);
     }
     const btnB = this.$("btnBack"); // ✕ / ← oben rechts: ✕ nur, wenn der nächste Schritt zurück die Einkaufsliste ist, sonst ←
     if (btnB) {
@@ -12478,15 +12478,6 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       case "page-back":
         this._pageBack();
         break;
-      case "rec-wait": { // 🟠 Punkt an der Kochmütze: direkt zu ⚙️ → Rezepte → „Wartet auf OK“
-        if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); break; }
-        this._recTab = "wait";
-        if (this._data?.settings?.pin && !pinUnlocked()) { this._unlockSettings("recipes"); break; } // 🔒 erst die PIN
-        this._closePage(true);
-        this._view = "settings"; this._setSec = "recipes"; this._setOpen = "📋 Meine Liste"; this._draft = null;
-        this._renderAll();
-        break;
-      }
       case "view": {
         const v = el.dataset.view;
         const current = this._view === "recipe" ? "settings" : this._view;
