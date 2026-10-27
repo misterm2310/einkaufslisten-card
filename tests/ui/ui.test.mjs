@@ -281,6 +281,20 @@ check("Produkt: nach Abbrechen und neu öffnen steht wieder der gespeicherte Sta
 check("Neues Produkt: Suchtext steht schon als Name drin", r.pre === "Hafermilch", JSON.stringify(r));
 check("Neues Produkt: Name im Suchfeld, Produkt offen zum Ausfüllen", r.after.search === "Hafermilch" && r.after.edit === "hafermilch" && JSON.stringify(r.after.rows) === JSON.stringify(["Hafermilch"]) && r.after.eraser, JSON.stringify(r));
 
+// 16) 🟠 Punkt an der Kochmütze: Zahl der wartenden Vorschläge, nur mit Zahnrad, antippen öffnet „Wartet auf OK“
+r = await p.evaluate(`(async () => { const c=${card}; const cfg=c._config; c._view="list"; c._page=null;
+  c._data.proposals=[{id:"p1",name:"Pizza",status:"open",by:"Joy"},{id:"p2",name:"Suppe",status:"open"},{id:"p3",name:"Alt",status:"rejected",rejected_at:new Date().toISOString()}];
+  c._config={...cfg, show_recipes:true, show_settings:true}; c._renderAll(); await new Promise(r=>setTimeout(r,50));
+  const dot=c.shadowRoot.getElementById("recDot"); const shown={ hidden:dot.hidden, txt:dot.textContent, inBtn:!!dot.closest("#btnRecipes") };
+  c._config={...cfg, show_recipes:true, show_settings:false}; c._renderAll(); const noCog=dot.hidden;
+  c._config={...cfg, show_recipes:true, show_settings:true}; c._data.proposals=[]; c._renderAll(); const none=dot.hidden;
+  c._data.proposals=[{id:"p1",name:"Pizza",status:"open"}]; c._renderAll(); dot.click(); await new Promise(r=>setTimeout(r,100));
+  const went={ view:c._view, sec:c._setSec, tab:c._recTab, dotHidden:dot.hidden, wait:!!c.shadowRoot.querySelector('.lgbox.open[data-k="wait"]') };
+  c._data.proposals=[]; c._recTab="none"; c._view="list"; c._setSec=null; c._config=cfg; c._renderAll(); return { shown, noCog, none, went }; })()`);
+check("Kochmütze: Punkt zeigt 2 wartende Vorschläge (abgelehnte zählen nicht)", !r.shown.hidden && r.shown.txt === "2" && r.shown.inBtn, JSON.stringify(r));
+check("Kochmütze: kein Punkt ohne Zahnrad und ohne Vorschläge", r.noCog && r.none, JSON.stringify(r));
+check("Kochmütze: Punkt antippen öffnet ⚙️ → Rezepte → „Wartet auf OK“", r.went.view === "settings" && r.went.sec === "recipes" && r.went.tab === "wait" && r.went.wait && r.went.dotHidden, JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

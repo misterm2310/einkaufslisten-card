@@ -2337,5 +2337,7 @@
 "🗑️ Notiz gelöscht": "🗑️ Note deleted",
 "1 Notiz": "1 note",
 "{} Notizen": "{0} notes",
-"Die Notiz bei „{}“ löschen? Sie verschwindet dann auch in der Kochmütze.": "Delete the note for “{0}”? It will also disappear from the chef's hat."
+"Die Notiz bei „{}“ löschen? Sie verschwindet dann auch in der Kochmütze.": "Delete the note for “{0}”? It will also disappear from the chef's hat.",
+"1 Vorschlag wartet auf OK – antippen zum Ansehen": "1 suggestion is waiting for OK – tap to see it",
+"{} Vorschläge warten auf OK – antippen zum Ansehen": "{0} suggestions are waiting for OK – tap to see them"
 }
