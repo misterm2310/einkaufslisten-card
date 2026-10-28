@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.2";
+const EL_VERSION = "2.76.24-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -397,6 +397,24 @@ const EL_BETA_NEWS = [
   ["📱 <b>Ältere iPhones:</b> Die Karte lädt wieder auf iOS 15 (z. B. iPhone 7). Zwei Suchmuster, die Safari dort nicht kannte, sind umgebaut.",
    "📱 <b>Older iPhones:</b> the card loads again on iOS 15 (e.g. iPhone 7). Two search patterns that Safari did not know there have been rewritten.",
    "beta.2"],
+  ["👨‍🍳 <b>Kochmütze:</b> Ein oranger Punkt zeigt, wie viele Rezept-Vorschläge auf dein OK warten.",
+   "👨‍🍳 <b>Chef hat:</b> an orange dot shows how many recipe proposals are waiting for your OK.",
+   "beta.3"],
+  ["ℹ️ <b>Steckbrief pro Geschäft:</b> Adresse, Telefon, Webseite und eigene Tipps. Reiter gedrückt halten, im Öffnungszeiten-Fenster das ℹ️ neben dem Namen antippen. · 🎨 Bekannte Ketten bekommen beim Anlegen gleich ihre Logo-Farbe.",
+   "ℹ️ <b>Store profile:</b> address, phone, website and your own tips. Press and hold the tab, then tap the ℹ️ next to the name in the opening-hours window. · 🎨 Well-known chains get their logo colour right away when you add them.",
+   "beta.3"],
+  ["📤 <b>Drucken & Teilen:</b> Unter der Liste: drucken (bei einem Geschäft mit Adresse und Öffnungszeiten oben) oder 📱 QR-Code, den ein anderes Handy mit der Kamera als Text liest.",
+   "📤 <b>Print & share:</b> below the list: print (for one store with its address and opening hours at the top) or 📱 a QR code another phone reads as text with its camera.",
+   "beta.3"],
+  ["🔁 <b>Umbenennen:</b> Katalog, Verlauf, Foto und Barcode ziehen mit. Steht das Produkt auch in einem Rezept oder bei den Favoriten, fragt die Karte „Überall“ oder „Nur hier“. · 🧠 Zwei Produkte mit demselben Wort in eine Kategorie verschoben? Dann landen auch neue mit diesem Wort dort.",
+   "🔁 <b>Renaming:</b> catalogue, history, photo and barcode follow. If the product is also in a recipe or in the favourites, the card asks “everywhere” or “only here”. · 🧠 Moved two products with the same word into a category? New ones with that word land there too.",
+   "beta.3"],
+  ["🕒 <b>Neuer Sensor pro Geschäft:</b> binary_sensor.einkaufsliste_&lt;geschäft&gt;_offen – an, solange es offen hat (für eigene Automationen). · 🧘 Ruhiger Modus unter 👁️ Ansicht. · ⌨️ Fenster lassen sich mit Tab, Enter und Esc bedienen.",
+   "🕒 <b>New sensor per store:</b> binary_sensor.einkaufsliste_&lt;store&gt;_offen – on while it is open (for your own automations). · 🧘 Calm mode under 👁️ View. · ⌨️ Windows work with Tab, Enter and Esc.",
+   "beta.3"],
+  ["⚡ <b>Schneller:</b> Ein Artikel aus „Erledigt“ steht sofort wieder auf der Liste. · 🛒 Der Einkaufswagen oben schiebt die Liste nicht mehr nach oben.",
+   "⚡ <b>Faster:</b> an item taken back from “Done” is on the list again at once. · 🛒 The cart at the top no longer pushes the list up.",
+   "beta.3"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
