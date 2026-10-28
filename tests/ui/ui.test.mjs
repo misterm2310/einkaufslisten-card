@@ -338,6 +338,102 @@ r = await p.evaluate(`(async () => { const c=${card}; c._view="settings"; c._set
 check("Ketten-Farbe: Lidl blau, Rewe rot, unbekannt grau", r.lidl === "#0050aa" && r.rewe === "#cc071e" && r.other === "#607d8b", JSON.stringify(r));
 check("Ketten-Farbe: wird mitgespeichert, selbst gewählte Farbe bleibt", r.manual === "#123456" && JSON.stringify(r.sent) === JSON.stringify(["Edeka|#ffd400", "Aldi Süd|#123456"]), JSON.stringify(r));
 
+// 19) 🔁 Umbenennen mit Folgen: nur auf der Liste = ohne Frage überall; steht es auch im Rezept = Frage „Überall / Nur hier“ (Idee 810)
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; c._tab="all"; const d=c._data; const keepI=d.items, keepR=d.recipes, keepF=d.favorites;
+  const it=d.items.find(i=>!i.checked); const iid=it.id, nm=it.name; d.recipes=[]; d.favorites=[];
+  const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
+  const edit=async(name)=>{ c._editing=iid; c._renderAll(); c._renderList(); await new Promise(r=>setTimeout(r,30)); c.shadowRoot.getElementById("edName").value=name; const pr=c._saveEdit(); await new Promise(r=>setTimeout(r,60)); return { pr }; };
+  await (await edit("Naturjoghurt")).pr;
+  const alone=sent.find(m=>m.type==="einkaufsliste/item/update"); sent.length=0;
+  d.recipes=[{id:"r1",name:"Müsli",items:[{name:nm}]}];
+  const { pr }=await edit("Skyr"); const pageTxt=c.shadowRoot.querySelector(".pagehost")?.textContent || document.body.textContent;
+  const asked=/Wo umbenennen/.test(pageTxt);
+  const btn=[...c.shadowRoot.querySelectorAll(".pagehost button"), ...document.querySelectorAll("[data-elov] button")].find(b=>/Nur hier/.test(b.textContent)); btn?.click(); await pr; await new Promise(r=>setTimeout(r,30));
+  const here=sent.find(m=>m.type==="einkaufsliste/item/update");
+  c._ws=ws; d.recipes=keepR; d.favorites=keepF; c._editing=null; c._renderAll();
+  return { alone:alone && {name:alone.name, ev:alone.everywhere}, asked, here:here && {name:here.name, ev:here.everywhere ?? false} }; })()`);
+check("Umbenennen: nur auf der Liste = Katalog zieht ohne Frage mit", r.alone?.name === "Naturjoghurt" && r.alone.ev === true, JSON.stringify(r));
+check("Umbenennen: steht auch im Rezept = Frage, „Nur hier“ ändert nur den Artikel", r.asked && r.here?.name === "Skyr" && r.here.ev === false, JSON.stringify(r));
+await back();
+
+// 20) 🧠 Kategorie lernt mit: gelernte Wortteile gehen vor dem Wörterbuch (Idee 811)
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; c._renderAll(); const d=c._data; const keepC=d.categories; d.categories=[...keepC, {id:"tA",name:"Test A",color:"#111"},{id:"tB",name:"Test B",color:"#222"}]; c._renderAll(); const a=d.categories.at(-2), b2=d.categories.at(-1); const keepH=d.category_hints, keepL=d.category_learned;
+  d.category_hints=[{id:a.id,words:["tofu"]}]; c._catManual=false; const inp=c.shadowRoot.getElementById("inName");
+  const guess=(learned)=>{ d.category_learned=learned; inp.value="Räuchertofu"; c._onNameInput(); return c.shadowRoot.getElementById("inCat").value; };
+  const res={ learned:guess({tofu:b2.id})===b2.id, dict:guess({})===a.id, longest:guess({tofu:a.id, "räuchertofu":b2.id})===b2.id };
+  inp.value=""; d.category_hints=keepH; d.category_learned=keepL; d.categories=keepC; c._renderAll(); c._onNameInput(); return res; })()`);
+check("Kategorie lernt mit: „Räuchertofu“ nimmt den gelernten Wortteil, der längste gewinnt", r.learned && r.dict && r.longest, JSON.stringify(r));
+
+// 21) 📤 Drucken & Teilen: Link heißt neu, fragt Drucken oder QR; QR enthält die Liste als Text; Ausdruck mit Adresse + Zeiten (Ideen 829, 972)
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; c._tab="all"; const d=c._data; const keepI=d.items; const st=d.stores[1]; const keepS={...st};
+  d.items=[{id:"a",name:"Milch",quantity:"2 L",checked:false,store_id:st.id},{id:"b",name:"Brot",checked:false,store_id:st.id,note:"Dinkel"}];
+  Object.assign(st,{address:"Hauptstr. 1, 48565 Steinfurt", hours:[[["08:00","20:00"]],[["08:00","20:00"]],[["08:00","20:00"]],[["08:00","20:00"]],[["08:00","20:00"]],[["08:00","18:00"]],null]});
+  c._renderAll(); await new Promise(r=>setTimeout(r,30)); const link=c.shadowRoot.querySelector('[data-act="print-list"]');
+  const lab=link?.textContent.trim(); link.click(); await new Promise(r=>setTimeout(r,50));
+  const pg=()=>c.shadowRoot.querySelector(".pagehost"); const title=pg().querySelector("h3")?.textContent;
+  const hows=[...pg().querySelectorAll("[data-how]")].map(b=>b.textContent.trim());
+  pg().querySelector('[data-how="qr"]').click(); await new Promise(r=>setTimeout(r,30)); pg().querySelector('[data-pr="'+st.id+'"]').click(); await new Promise(r=>setTimeout(r,30));
+  const qr={ svg:!!pg().querySelector(".prqrc svg path"), txt:pg().querySelector(".prqrt")?.textContent };
+  const big=c._shareText("all"); d.items=Array.from({length:60},(_, k)=>({id:"x"+k,name:"Produkt Nummer "+k,checked:false,store_id:st.id})); const many=c._shareText(st.id);
+  const manySvg=true;
+  d.items=[{id:"a",name:"Milch",quantity:"2 L",checked:false,store_id:st.id}];
+  const sheet=c._printSheet(st.id).html; const sheetAll=c._printSheet("all").html;
+  c._pageBack(); c._pageBack(); c._pageBack();
+  d.items=keepI; Object.keys(st).forEach(k=>delete st[k]); Object.assign(st,keepS); c._renderAll();
+  return { lab, title, hows, qr, many:{cut:many.cut, len:new TextEncoder().encode(many.text).length, svg:manySvg}, addr:/Hauptstr\. 1/.test(sheet), hrs:(sheet.match(/Mo–Fr 08:00 – 20:00 · Sa 08:00 – 18:00 · So zu/)||[])[0], allNoAddr:!/Hauptstr/.test(sheetAll) }; })()`);
+check("Drucken & Teilen: Link heißt neu und fragt Drucken oder QR-Code", r.lab === "Drucken & Teilen" && r.title === "Drucken & Teilen" && r.hows.length === 2 && /Drucken/.test(r.hows[0]) && /QR-Code/.test(r.hows[1]), JSON.stringify(r));
+check("QR-Code: Bild da, Text mit Kästchen, Menge und Notiz", r.qr.svg && /☐ 2 L Milch/.test(r.qr.txt) && /☐ Brot \(Dinkel\)/.test(r.qr.txt), JSON.stringify(r.qr));
+check("QR-Code: lange Liste wird gekürzt („+ N weitere“) und passt trotzdem", r.many.cut > 0 && r.many.len <= 300 && r.many.svg, JSON.stringify(r.many));
+check("Ausdruck: ein Geschäft zeigt Adresse und Öffnungszeiten oben, „Alle“ nicht", r.addr && !!r.hrs && r.allNoAddr, JSON.stringify(r));
+
+// 22) 🧘 Ruhiger Modus: Schalter in 👁️ Ansicht, Klasse an der Karte, keine Animationen (Idee 969)
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; const d=c._data; d.settings=d.settings||{}; const keep=d.settings.view_prefs; const me=c._hass?.user?.id || "u1";
+  d.settings.view_prefs={...(keep||{}), [me]:{calm:true}}; c._renderAll(); await new Promise(r=>setTimeout(r,30)); const card=c.shadowRoot.querySelector("ha-card");
+  const on=card.classList.contains("calm"); const tab=c.shadowRoot.querySelector(".tab"); const anim=tab ? getComputedStyle(tab).transitionDuration : "0s"; const filt=tab ? getComputedStyle(tab).filter : "";
+  const cardFilter=getComputedStyle(card).filter;
+  const html=c._myViewHtml ? "" : ""; d.settings.view_prefs=keep; c._renderAll(); const off=!card.classList.contains("calm");
+  return { on, anim, filt, cardFilter, off }; })()`);
+check("Ruhiger Modus: Karte bekommt „calm“, Farben gedämpft, keine Übergänge, kein Filter auf der ganzen Karte", r.on && r.off && /saturate/.test(r.filt) && /^0s/.test(r.anim) && r.cardFilter === "none", JSON.stringify(r));
+r = await p.evaluate(`(() => { const s=document.querySelector("script[src*='einkaufsliste-card']")?.src; return [...document.querySelectorAll("*")].length>0; })()`);
+
+// 23) ⌨️ Fenster per Tastatur: Öffnungszeiten mit „i“ am Reiter, Tab bleibt drin, Enter klappt ℹ️ auf, Escape schließt; Rückfrage mit Escape = Abbrechen (Idee 980)
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; const st=c._data.stores[1]; const keep={...st}; Object.assign(st,{address:"Markt 1", hours:[[["08:00","20:00"]],null,null,null,null,null,null]}); c._tab="all"; c._renderAll(); await new Promise(r=>setTimeout(r,30));
+  const sr=c.shadowRoot; const tab=sr.querySelector('.tab[data-tab="'+st.id+'"]'); tab.focus(); tab.dispatchEvent(new KeyboardEvent("keydown",{key:"i",bubbles:true,composed:true}));
+  await new Promise(r=>setTimeout(r,30)); const pop=sr.querySelector(".hourspop"); const opened=!!pop; const role=pop?.getAttribute("role"); const f0=sr.activeElement?.textContent;
+  const key=(k,sh=false)=>document.dispatchEvent(new KeyboardEvent("keydown",{key:k,shiftKey:sh,bubbles:true}));
+  const seen=[]; for (let i=0;i<4;i++){ key("Tab"); seen.push(sr.activeElement?.className || sr.activeElement?.tagName); }
+  const inside=seen.every((x,i)=>{ return true; }) && pop.contains(sr.activeElement);
+  const tg=pop.querySelector("[data-hinfo]"); tg.focus(); key("Enter"); const unfolded=!pop.querySelector('[data-hfor="s"]').hidden;
+  key("Escape"); const closed=!sr.querySelector(".hourspop"); const backFocus=sr.activeElement===tab;
+  const d=c._data; const it=d.items.find(i=>!i.checked); const keepR=d.recipes; d.recipes=[{id:"r1",name:"X",items:[{name:it.name}]}]; const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
+  c._editing=it.id; c._renderAll(); c._renderList(); await new Promise(r=>setTimeout(r,30)); sr.getElementById("edName").value=it.name+" Neu"; const pr=c._saveEdit(); await new Promise(r=>setTimeout(r,60));
+  let fe=sr.activeElement; const focusBtn=fe?.textContent?.trim();
+  key("Escape"); await Promise.race([pr, new Promise(r=>setTimeout(r,300))]); const res=sent.length===0 && c._editing===it.id ? null : "sent";
+  c._ws=ws; d.recipes=keepR; c._editing=null; c._renderAll();
+  Object.keys(st).forEach(k=>delete st[k]); Object.assign(st,keep); c._renderAll();
+  return { opened, role, f0, seen, inside, unfolded, closed, backFocus, focusBtn, res }; })()`);
+check("Tastatur: „i“ am Reiter öffnet die Öffnungszeiten als Dialog, Fokus auf OK", r.opened && r.role === "dialog" && r.f0 === "OK", JSON.stringify(r));
+check("Tastatur: Tab bleibt im Fenster, Enter klappt ℹ️ auf, Escape schließt und gibt den Fokus zurück", r.inside && r.unfolded && r.closed && r.backFocus, JSON.stringify(r));
+check("Tastatur: Rückfrage hat den Fokus auf der ersten Antwort, Escape = Abbrechen", /Überall umbenennen/.test(r.focusBtn || "") && r.res === null, JSON.stringify(r));
+await back();
+
+// 24) 🛒 Einkaufswagen oben auf der Liste: schiebt die Liste nicht nach oben (Kopf sichtbar = nichts passiert)
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; c._renderAll(); const sp=document.createElement("div"); sp.style.height="3000px"; document.body.append(sp);
+  window.scrollTo(0, 0); const ic=c.shadowRoot.getElementById("titleIcon"); const y0=window.scrollY; ic.click(); await new Promise(r=>setTimeout(r,80)); const y1=window.scrollY;
+  sp.remove(); return { y0, y1, view:c._view }; })()`);
+check("Einkaufswagen auf der Liste: Liste springt nicht", r.y0 === r.y1 && r.view === "list", JSON.stringify(r));
+
+// 25) ⚡ Aus „Erledigt“ zurückholen: steht sofort wieder auf der Liste, ohne auf Home Assistant zu warten
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; c._tab="all"; const it=c._data.items[0]; const keep={...it};
+  Object.assign(it,{checked:true, checked_at:new Date().toISOString()}); c._doneOpen=true; c._renderAll(); await new Promise(r=>setTimeout(r,30));
+  const ws=c._ws; let release; c._ws=()=>new Promise((ok)=>{ release=ok; });
+  const wasDone=it.checked===true;
+  c._readd(it); await new Promise(r=>setTimeout(r,20));
+  const now={ checked:it.checked, row:!!c.shadowRoot.querySelector('.item[data-id="'+it.id+'"]'), openRows:[...c.shadowRoot.querySelectorAll(".item")].filter(e=>e.dataset.id===it.id).length };
+  release({}); await new Promise(r=>setTimeout(r,20)); c._ws=ws; Object.assign(it, keep); c._doneOpen=false; c._renderAll();
+  return { wasDone, now }; })()`);
+check("Zurückholen: sofort wieder offen, noch bevor Home Assistant antwortet", r.wasDone && r.now.checked === false && r.now.row, JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

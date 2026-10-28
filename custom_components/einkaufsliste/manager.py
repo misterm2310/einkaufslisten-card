@@ -315,6 +315,7 @@ VIEW_KEYS = (
     "greet",  # 👋 Gruß in der Leiste oben – pro Benutzer (Standard an)
     "plan",  # 📅 Essensplan bei den Rezepten – pro Benutzer (Standard an)
     "labels",  # 🏷️ Beschriftungen unter den Icons – pro Benutzer (ohne Eintrag gilt der Schalter aus ⚙️ → Extras)
+    "calm",  # 🧘 ruhiger Modus: weniger Farbe, keine Animationen – pro Benutzer (Standard aus)
 )
 VIEW_FONTS = ("s", "m", "l")  # 🔠 Schriftgröße: kleiner / Standard / größer
 
@@ -328,6 +329,14 @@ TODO_SYNC_MAX = 50  # 🔁 so viele To-do-Listen dürfen herübergeholt werden (
 
 
 _HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+CAT_LEARN_AFTER = 2  # 🧠 ab so vielen Verschiebungen gilt ein Wortteil als gelernt
+
+
+def _cat_tokens(name: str | None) -> list[str]:
+    """Wörter ab 4 Buchstaben (klein) – „Tofu natur“ -> tofu, natur."""
+    return [w for w in re.split(r"[^a-zäöüß]+", (name or "").lower()) if len(w) >= 4]
 
 
 HOLIDAY_STATES = ("BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH")
@@ -486,6 +495,7 @@ class EinkaufslisteManager:
         self.favorites: dict[str, dict[str, Any]] = {}  # ⭐ Produkt-Schlüssel -> {"name", "note"} (Favoriten für „alle auf die Liste“)
         self.cards: list[dict[str, Any]] = []  # 💳 Kundenkarten {"id","name","code","fmt","owner","owner_name","color"} (owner = Benutzer-ID, None = für alle)
         self.cards_on: bool = False  # 💳 Kundenkarten-Funktion an/aus (standardmäßig aus) – gilt für alle
+        self.cat_words: dict[str, dict[str, int]] = {}  # 🧠 Kategorie lernt mit: Wortteil (klein) -> {Kategorie-ID: wie oft dorthin verschoben}
         self.typos: dict[str, dict[str, Any]] = {}  # 🧠 Tippfehler (klein) -> {"right": Name, "n": wie oft korrigiert}
         self._pin_fails = 0  # 🛡️ falsche PIN-Eingaben in Folge (nur im Speicher)
         self._pin_locked_until = 0.0
@@ -711,6 +721,8 @@ class EinkaufslisteManager:
         self.catalog_extra = data.get("catalog_extra", {})
         self._migrate_own_notes()
         self.typos = data.get("typos", {})
+        cw = data.get("cat_words")
+        self.cat_words = {k: {c: int(n) for c, n in v.items() if isinstance(n, int)} for k, v in cw.items() if isinstance(v, dict)} if isinstance(cw, dict) else {}
         self.pin_hash = data.get("pin")
         self.mascot = bool(data.get("mascot", False))
         self.plan_reset_on = bool(data.get("plan_reset_on", True))
@@ -804,6 +816,7 @@ class EinkaufslisteManager:
             "own_notes": self.own_notes,
             "catalog_extra": self.catalog_extra,
             "typos": self.typos,
+            "cat_words": self.cat_words,
             "pin": self.pin_hash,
             "mascot": self.mascot,
             "plan_reset_on": self.plan_reset_on,
@@ -892,6 +905,7 @@ class EinkaufslisteManager:
             "version": VERSION,
             "recipe_groups": self.recipe_groups,
             "category_hints": category_hints(self.categories),
+            "category_learned": self._learned_words(),  # 🧠 Wortteil -> Kategorie (ab 2× verschoben)
             "seen": self.seen,
             "own_notes": self.own_notes,
             "favorites": sorted(self.favorites),  # ⭐ Produkt-Schlüssel (Name|Notiz, klein)
@@ -1894,6 +1908,8 @@ class EinkaufslisteManager:
         store = self._check_store(store_id) if store_id is not None else None
         if unit and unit not in UNIT_CHOICES:
             raise ValueError("Diese Einheit gibt es nicht.")
+        if category_id is not None and cat != prod["category_id"]:
+            self._learn_category(new_name, cat)
         for thing in self.items + [ri for r in self.recipes for ri in r["items"]]:
             if product_key(thing["name"], thing.get("note")) == key:
                 thing["name"], thing["note"] = new_name, new_note
@@ -2244,6 +2260,7 @@ class EinkaufslisteManager:
         self.aliases.clear()
         self.favorites.clear()
         self.typos.clear()
+        self.cat_words.clear()
         self.offers_data.clear()
         self.missed_hidden.clear()
         self._changed()
@@ -2518,9 +2535,42 @@ class EinkaufslisteManager:
         return guess_category(name, self.categories)
 
     def _auto_category(self, name: str) -> str | None:
-        """Kategorie von letztem Mal, sonst aus dem Wörterbuch."""
+        """Kategorie von letztem Mal, sonst gelernte Wortteile, sonst aus dem Wörterbuch."""
         cat = (self.history_for(name) or {}).get("category_id")
-        return cat if self.category_by_id(cat) else self.guess_category(name)
+        if self.category_by_id(cat):
+            return cat
+        return self._learned_category(name) or self.guess_category(name)
+
+    def _learned_words(self) -> dict[str, str]:
+        """🧠 Wortteile, die sicher gelernt sind: mindestens 2× in dieselbe Kategorie verschoben, und die liegt klar vorn."""
+        out: dict[str, str] = {}
+        for word, counts in self.cat_words.items():
+            if not counts:
+                continue
+            best = max(counts.values())
+            top = [c for c, n in counts.items() if n == best]
+            if best >= CAT_LEARN_AFTER and len(top) == 1 and self.category_by_id(top[0]):
+                out[word] = top[0]
+        return out
+
+    def _learned_category(self, name: str) -> str | None:
+        """Steckt ein gelernter Wortteil im Namen? Der längste gewinnt („Räuchertofu“ -> „tofu“)."""
+        text = (name or "").lower()
+        hits = [(len(w), c) for w, c in self._learned_words().items() if w in text]
+        return max(hits)[1] if hits else None
+
+    def _learn_category(self, name: str, cat_id: str | None) -> None:
+        """🧠 Artikel von Hand in eine Kategorie verschoben: die Wörter im Namen merken sich das."""
+        if not cat_id or not self.category_by_id(cat_id):
+            return
+        if self.guess_category(name) == cat_id:
+            return  # das Wörterbuch wusste es schon – nichts zu lernen
+        for word in dict.fromkeys(_cat_tokens(name)):
+            counts = self.cat_words.setdefault(word, {})
+            counts[cat_id] = counts.get(cat_id, 0) + 1
+        if len(self.cat_words) > 500:  # nicht endlos wachsen: die seltensten fliegen raus
+            for k in sorted(self.cat_words, key=lambda k: max(self.cat_words[k].values() or [0]))[: len(self.cat_words) - 500]:
+                self.cat_words.pop(k, None)
 
     def history_for(self, name: str) -> dict[str, Any] | None:
         return self.history.get(name.strip().lower())
@@ -2860,10 +2910,15 @@ class EinkaufslisteManager:
             raise ValueError(
                 f"„{new['name']}“ gibt es schon – unterscheide ihn über Notiz, „für wen“ oder Geschäft."
             )
-        old_name = item["name"]
         before = dict(item)
+        everywhere = fields.pop("everywhere", False)
+        if (everywhere and product_key(new["name"], new["note"]) != old_pkey
+                and any(p["key"] == old_pkey for p in self.products())):
+            # 🔁 „Überall umbenennen“: Katalog, Rezepte, Favoriten, Fotos, Barcodes, Verlauf ziehen mit
+            self.update_product(old_pkey, name=new["name"], note=new["note"] or "")
+            old_pkey = product_key(item["name"], item.get("note"))
         item.update(new)
-        old_key = product_key(old_name, before.get("note"))
+        old_key = old_pkey
         new_key = product_key(item["name"], item.get("note"))
         if old_key != new_key:
             self._move_photo(old_key, new_key)
@@ -2872,6 +2927,8 @@ class EinkaufslisteManager:
                     entry.update(name=item["name"], note=item.get("note"))
         if "category_id" in fields:
             item["category_id"] = self._check_category(fields["category_id"])
+            if item["category_id"] != before.get("category_id"):
+                self._learn_category(item["name"], item["category_id"])
         if "quantity" in fields:
             item["quantity"] = norm_qty(_clean(fields["quantity"]))
         if "own_note" in fields:

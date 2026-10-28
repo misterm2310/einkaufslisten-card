@@ -293,11 +293,12 @@ def _auto_photo(hass, manager, code, name) -> None:
         vol.Optional("own_note"): OPT_STR,  # ✏️ Eigene Notiz
         vol.Optional("for_whom"): OPT_STR,
         vol.Optional("aliases"): [str],  # 🏷️ Spitznamen des Produkts
+        vol.Optional("everywhere"): bool,  # 🔁 umbenennen auch in Katalog, Rezepten, Favoriten
     }
 )
 @callback
 def ws_item_update(hass, connection, msg):
-    fields = _pick(msg, "name", "store_id", "category_id", "quantity", "note", "own_note", "for_whom", "aliases")
+    fields = _pick(msg, "name", "store_id", "category_id", "quantity", "note", "own_note", "for_whom", "aliases", "everywhere")
     _run(hass, connection, msg, lambda m: m.update_item(msg["item_id"], **fields))
 
 

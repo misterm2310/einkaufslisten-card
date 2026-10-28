@@ -659,6 +659,19 @@ function elStoreClosed(st, now = new Date()) {
   const r = elStoreInfos(st, now);
   return r.branches ? r.branches.every((x) => x.info?.open === false) : r.info?.open === false;
 }
+// 🕒 Woche kurz für den Ausdruck: gleiche Tage zusammen („Mo–Sa 08:00 – 20:00 · So zu“)
+function elHoursShort(hours) {
+  if (!Array.isArray(hours) || hours.length !== 7) return "";
+  const parts = [];
+  for (let i = 0; i < 7;) {
+    const t = elRangesTxt(hours[i]);
+    let j = i;
+    while (j + 1 < 7 && elRangesTxt(hours[j + 1]) === t) j++;
+    parts.push(`${WD_SHORT[i]}${j > i ? `–${WD_SHORT[j]}` : ""} ${t === "zu" ? elT("zu") : t}`);
+    i = j + 1;
+  }
+  return parts.join(" · ");
+}
 // 🕒 Gibt es echte Uhrzeiten (beim Geschäft oder bei einer Filiale)? Dann steht im Reiter eine Uhr statt des Punkts
 function elHasTimes(st) { return Array.isArray(st?.hours) || (Array.isArray(st?.branches) && st.branches.some((b) => Array.isArray(b.hours))); }
 // 🎨 Bekannte Ketten: Farbvorschlag ungefähr wie im Logo (nur die Farbe, kein Logo, kein Internet)
@@ -1281,8 +1294,14 @@ async function shrinkImage(file, max = 900, quality = 0.8) {
 }
 
 // Kategorie aus dem eingebauten Wörterbuch raten (gleiche Regeln wie in Home Assistant)
-function guessCategory(name, hints) {
+// 🧠 learned = gelernte Wortteile {"tofu": Kategorie-ID} – die gehen vor (der längste Treffer gewinnt)
+function guessCategory(name, hints, learned = null) {
   const text = String(name || "").toLowerCase().trim();
+  if (text && learned) {
+    let len = 0, id = null;
+    for (const [w, cid] of Object.entries(learned)) if (w.length > len && text.includes(w)) { len = w.length; id = cid; }
+    if (id) return id;
+  }
   if (!text || !hints?.length) return null;
   const best = (t, minLen, whole) => {
     let len = 0, id = null;
@@ -2286,6 +2305,42 @@ async function elNextCamera(oldStream, facing) {
   } catch (_) { return null; }
 }
 
+// ⌨️ Kleines Fenster mit der Tastatur bedienen: Tab bleibt im Fenster, Escape schließt, Enter/Leertaste drückt „Knöpfe“ (role="button").
+// Gibt eine Aufräum-Funktion zurück (gibt den Fokus an die alte Stelle zurück).
+function elDialogKeys(ov, close, first = null) {
+  ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+  const rootOf = () => ov.getRootNode?.() || document;
+  let back = document.activeElement;
+  while (back?.shadowRoot?.activeElement) back = back.shadowRoot.activeElement;
+  const items = () => [...ov.querySelectorAll('button, a[href], input, select, textarea, [tabindex="0"]')]
+    .filter((el) => !el.disabled && !el.closest("[hidden]") && el.getClientRects().length);
+  const onKey = (e) => {
+    if (!ov.isConnected) { document.removeEventListener("keydown", onKey, true); return; }
+    const act = rootOf().activeElement;
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); return; }
+    if (e.key === "Tab") {
+      const f = items();
+      if (!f.length) return;
+      const i = f.indexOf(act);
+      e.preventDefault(); e.stopPropagation();
+      f[(i < 0 ? 0 : i + (e.shiftKey ? f.length - 1 : 1)) % f.length].focus();
+      return;
+    }
+    if ((e.key === "ArrowDown" || e.key === "ArrowUp") && act?.tagName === "BUTTON" && ov.contains(act)) { // ⬆️⬇️ zwischen den Knöpfen
+      const f = items().filter((el) => el.tagName === "BUTTON");
+      const i = f.indexOf(act);
+      if (i >= 0) { e.preventDefault(); f[(i + (e.key === "ArrowDown" ? 1 : f.length - 1)) % f.length].focus(); }
+      return;
+    }
+    if ((e.key === "Enter" || e.key === " ") && act && ov.contains(act) && act.getAttribute("role") === "button" && act.tagName !== "BUTTON") {
+      e.preventDefault(); e.stopPropagation(); act.click();
+    }
+  };
+  document.addEventListener("keydown", onKey, true);
+  setTimeout(() => { if (ov.isConnected) ((first && first()) || items()[0])?.focus?.({ preventScroll: true }); }, 0);
+  return () => { document.removeEventListener("keydown", onKey, true); if (back?.isConnected) back.focus?.({ preventScroll: true }); back = null; };
+}
+
 // ❓ Kleine Auswahl-Frage: gibt den Wert der gewählten Option zurück (oder null)
 function askChoice(text, options) {
   return new Promise((resolve) => {
@@ -2296,13 +2351,15 @@ function askChoice(text, options) {
     t.textContent = elT(text);
     t.style.cssText = "font:600 16px Roboto,sans-serif;text-align:center;margin-bottom:4px";
     box.appendChild(t);
-    const done = (v) => { ov.remove(); resolve(v); };
+    let off = null;
+    const done = (v) => { off?.(); ov.remove(); resolve(v); };
     options.forEach(([v, label], i) => { const b = ovButton(label, i === 0); b.onclick = () => done(v); box.appendChild(b); });
     const c = ovButton("Abbrechen");
     c.onclick = () => done(null);
     box.appendChild(c);
     ov.appendChild(box);
     ov.onclick = (e) => { if (e.target === ov) done(null); };
+    off = elDialogKeys(box, () => done(null)); // ⌨️ Tab/Pfeile wählen, Enter nimmt, Escape = Abbrechen
   });
 }
 
@@ -2583,6 +2640,10 @@ const STYLE = `
 ha-card { display:block; padding:12px 12px 8px; overflow:hidden; touch-action:pan-x pan-y; }
 /* 🔠 Schriftgröße (👁️ Ansicht) und ausgeblendete Bereiche */
 ha-card.f-s { zoom:.88; } ha-card.f-l { zoom:1.16; }
+/* 🧘 Ruhiger Modus (👁️ Ansicht): nichts bewegt sich, Farben gedämpft. Filter nur auf einzelnen Teilen – ein Filter auf ha-card würde Fenster mit position:fixed verschieben */
+ha-card.calm *, ha-card.calm *::before, ha-card.calm *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+ha-card.calm .tab, ha-card.calm .chip, ha-card.calm .ghead, ha-card.calm .item, ha-card.calm .iconbtn ha-icon, ha-card.calm .tool ha-icon, ha-card.calm .sechead .ic, ha-card.calm .lrow ha-icon, ha-card.calm .gem { filter:saturate(.25); }
+ha-card.calm .greetwrap.run #greet { animation:none !important; }
 ha-card.no-tabs #tabs { display:none; }
 ha-card.no-name form.add #inName, ha-card.no-name form.add .addbtn, ha-card.no-name form.add .sugg { display:none; }
 ha-card.no-store #inStore, ha-card.no-cat #inCat { display:none; }
@@ -2875,6 +2936,10 @@ ha-card.compact .group { margin-top:4px; }
 .printrow { margin-top:6px; text-align:center; }
 .prlink { background:none; border:0; color:var(--secondary-text-color); font:inherit; font-size:12px; cursor:pointer; padding:4px 8px; display:inline-flex; align-items:center; gap:4px; text-decoration:underline; }
 .prlink ha-icon { --mdc-icon-size:14px; }
+.prqr { display:flex; flex-direction:column; gap:10px; align-items:center; }
+.prqrc { width:min(78vw, 300px); background:#fff; padding:6px; border-radius:12px; line-height:0; }
+.prqrc svg { width:100%; height:auto; display:block; }
+.prqrt { align-self:stretch; max-height:180px; overflow:auto; margin:0; padding:8px 10px; border-radius:10px; background:var(--secondary-background-color, rgba(127,127,127,.1)); font:12px/1.4 Roboto, sans-serif; white-space:pre-wrap; }
 .prchoice { display:flex; flex-direction:column; gap:8px; margin:8px 0; }
 .prchoice .btn { justify-content:flex-start; min-height:48px; font-size:1em; }
 .prchoice .btn .n { margin-left:auto; opacity:.7; }
@@ -4386,7 +4451,7 @@ class EinkaufslisteCard extends HTMLElement {
     const map = (a) => `<a href="https://www.openstreetmap.org/search?query=${encodeURIComponent(a)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">📍 ${esc(a)}</a>`;
     const web = /^https?:\/\//i.test(st.website || "") ? `<a href="${esc(st.website)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🌐 ${esc(st.website.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, ""))}</a>` : "";
     const infoRows = [st.address ? map(st.address) : "", st.phone ? tel(st.phone) : "", web].filter(Boolean).join("");
-    const tog = (k) => `<span class="hitog" data-hinfo="${k}" role="button" aria-expanded="false" title="Infos zum Geschäft" aria-label="Infos zum Geschäft">ℹ️</span>`; // ℹ️ antippen = Steckbrief auf/zu
+    const tog = (k) => `<span class="hitog" data-hinfo="${k}" role="button" tabindex="0" aria-expanded="false" title="Infos zum Geschäft" aria-label="Infos zum Geschäft">ℹ️</span>`; // ℹ️ antippen = Steckbrief auf/zu
     const box = (k, html) => `<div class="hinfo" data-hfor="${k}" hidden>${html}</div>`;
     const info = infoRows || st.tips ? box("s", `${infoRows}${st.tips ? `<div class="htips">💡 ${esc(st.tips)}</div>` : ""}`) : ""; // ℹ️ Steckbrief
     const brInfo = (b) => [b.address ? map(b.address) : "", b.phone ? tel(b.phone) : ""].filter(Boolean).join("");
@@ -4401,9 +4466,10 @@ class EinkaufslisteCard extends HTMLElement {
     const ov = document.createElement("div");
     ov.className = "hourspop";
     ov.innerHTML = `<div class="hbox"><b translate="no">🕒 ${esc(st.name)}${info ? tog("s") : ""}</b>${info}${body}${/^https?:\/\//i.test(st.flyer || "") ? `<a class="btn flyer" href="${esc(st.flyer)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🗞️ Prospekt öffnen</a>` : ""}<button type="button" class="btn">OK</button></div>`;
-    let timer;
-    const close = () => ov.remove();
+    let timer, off = null;
+    const close = () => { clearTimeout(timer); off?.(); ov.remove(); };
     const later = () => { clearTimeout(timer); timer = setTimeout(close, 20000); };
+    ov.addEventListener("keydown", later); // ⌨️ wer tippt, liest noch – nicht von selbst zugehen
     ov.addEventListener("click", (e) => {
       const t = e.target.closest?.("[data-hinfo]");
       if (t) { // ℹ️ Steckbrief auf-/zuklappen, Fenster bleibt offen
@@ -4420,6 +4486,7 @@ class EinkaufslisteCard extends HTMLElement {
     ov.style.pointerEvents = "none";
     setTimeout(() => { ov.style.pointerEvents = ""; }, 500);
     this.shadowRoot.appendChild(ov);
+    off = elDialogKeys(ov, close, () => ov.querySelector(".hbox > .btn:last-child")); // ⌨️ Tab, Enter, Escape
     later();
   }
 
@@ -4455,6 +4522,7 @@ class EinkaufslisteCard extends HTMLElement {
       ov.remove();
     });
     this.shadowRoot.appendChild(ov);
+    elDialogKeys(ov, () => ov.remove()); // ⌨️ Tab, Enter, Escape (räumt sich beim Schließen selbst auf)
   }
 
   _hoursRngHtml(a, b) {
@@ -4652,6 +4720,9 @@ class EinkaufslisteCard extends HTMLElement {
     root.addEventListener("keydown", (e) => {
       const t = e.target;
       if ((e.key === "Enter" || e.key === " ") && t?.getAttribute?.("role") === "button" && t.dataset?.act) { e.preventDefault(); t.click(); }
+      // ⌨️ 🕒 Öffnungszeiten ohne Gedrückthalten: Reiter anwählen, dann Umschalt+Enter, „i“ oder die Menü-Taste
+      const tb = t?.closest?.('.tab[data-act="tab"]');
+      if (tb && this._store(tb.dataset.tab) && ((e.key === "Enter" && e.shiftKey) || e.key === "i" || e.key === "ContextMenu")) { e.preventDefault(); e.stopPropagation(); this._showHours(tb.dataset.tab); }
     });
     root.addEventListener("dblclick", (e) => { // 🖥️ Doppelklick im Katalog = bearbeiten
       const row = e.target.closest?.(".prodrow");
@@ -5170,6 +5241,7 @@ class EinkaufslisteCard extends HTMLElement {
     for (const [k, cls] of [["tabs", "no-tabs"], ["in_name", "no-name"], ["in_store", "no-store"], ["in_cat", "no-cat"], ["in_icons", "no-icons"]]) cardEl.classList.toggle(cls, vp[k] === false);
     cardEl.classList.toggle("f-s", vp.font === "s");
     cardEl.classList.toggle("f-l", vp.font === "l");
+    cardEl.classList.toggle("calm", vp.calm === true); // 🧘 ruhiger Modus: weniger Farbe, keine Animationen
     cardEl.classList.toggle("labels", vp.labels !== undefined ? !!vp.labels : !!d?.settings?.labels); // 🏷️ Beschriftungen unter den Icons: „Meine Ansicht“ gewinnt, sonst der Schalter in ⚙️ → Extras (gilt für alle)
     const btnShop = this.$("btnShop");
     btnShop.hidden = !d || this._view !== "list" || !!this._page;
@@ -5952,8 +6024,8 @@ class EinkaufslisteCard extends HTMLElement {
           done.length ? this._groupedHtml(done, row, byName, true, !!filter) : `<div class="donehint">Nichts gefunden zu „${esc(filter)}“.</div>`}` : ""}
       </div>`);
     }
-    if (open.length && !filter && !this._shopMode) { // 🖨️ Liste drucken (unter der Liste, damit oben nichts voller wird)
-      html.push(`<div class="printrow"><button type="button" class="prlink" data-act="print-list"><ha-icon icon="mdi:printer-outline"></ha-icon>Liste drucken</button></div>`);
+    if (open.length && !filter && !this._shopMode) { // 📤 Drucken & Teilen (unter der Liste, damit oben nichts voller wird)
+      html.push(`<div class="printrow"><button type="button" class="prlink" data-act="print-list"><ha-icon icon="mdi:share-variant-outline"></ha-icon>Drucken & Teilen</button></div>`);
     }
     list.innerHTML = html.join("");
     if (this._editing) this.$("edName")?.focus(); else this._knRestore();
@@ -6042,23 +6114,89 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
     const now = new Date();
     const stamp = `${now.toLocaleDateString(EL_LANG === "en" ? "en-GB" : "de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })} ${EL_LANG === "en" ? "at" : "um"} ${now.toLocaleTimeString(EL_LANG === "en" ? "en-GB" : "de-DE", { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}`;
     const by = `${elT("Ausgedruckt")}${first ? ` ${elT("von")} ${first}` : ""} ${elT("am")} ${stamp}`;
-    const head = `<div class="ph"><div><div class="pt">${esc(elT("Einkaufsliste"))}</div><div class="ps">${esc(day)} · ${esc(label)} · ${esc(unit(count))}</div><div class="ps">${esc(by)}</div></div><div class="pn">${count}</div></div><div class="pbar" style="background:${esc(bar)}"></div>`;
+    // 📍🕒 Nur ein Geschäft gewählt: Adresse und Öffnungszeiten stehen oben mit drauf (bei Filialen jede Filiale)
+    const one = sel !== "all" && sel !== "none" ? this._store(sel) : null;
+    const where = [];
+    if (one && Array.isArray(one.branches) && one.branches.length) {
+      for (const b of one.branches.slice(0, 4)) {
+        const bits = [b.address ? `📍 ${b.address}` : "", elHoursShort(b.hours) ? `🕒 ${elHoursShort(b.hours)}` : ""].filter(Boolean);
+        if (bits.length) where.push(`🏬 ${b.name}: ${bits.join(" · ")}`);
+      }
+    } else if (one) {
+      if (one.address) where.push(`📍 ${one.address}${one.phone ? ` · 📞 ${one.phone}` : ""}`);
+      if (elHoursShort(one.hours)) where.push(`🕒 ${elHoursShort(one.hours)}`);
+    }
+    const whereHtml = where.map((w) => `<div class="ps pwh">${esc(w)}</div>`).join("");
+    const head = `<div class="ph"><div><div class="pt">${esc(elT("Einkaufsliste"))}</div><div class="ps">${esc(day)} · ${esc(label)} · ${esc(unit(count))}</div>${whereHtml}<div class="ps">${esc(by)}</div></div><div class="pn">${count}</div></div><div class="pbar" style="background:${esc(bar)}"></div>`;
     const lv = count >= 60 ? 3 : count >= 40 ? 2 : count >= 20 ? 1 : 0; // 📄 ab 20 Artikeln zwei Spalten, bei mehr wird es enger – möglichst eine Seite
     return { count, by, html: `<div class="pw l${lv}">${head}<div class="pbody">${html}</div><div class="pf">${esc(elT("Erstellt mit Einkaufsliste"))}</div></div>` };
+  }
+
+  // 📱 Liste als Text für den QR-Code: jedes Handy zeigt ihn mit der Kamera an (kein Internet, keine App nötig)
+  _shareText(sel) {
+    const d = this._data;
+    const open = d.items.filter((i) => !i.checked);
+    const pick = sel === "all" ? open : sel === "none" ? open.filter((i) => !i.store_id || !this._store(i.store_id)) : open.filter((i) => i.store_id === sel);
+    const head = `🛒 ${elT("Einkaufsliste")}${sel === "all" ? "" : ` – ${sel === "none" ? elT("Ohne Geschäft") : this._store(sel)?.name || ""}`}`;
+    const lines = [];
+    const stores = sel === "all" ? [...(d.stores || []).map((st) => [st, pick.filter((i) => i.store_id === st.id)]), [null, pick.filter((i) => !i.store_id || !this._store(i.store_id))]] : [[null, pick]];
+    for (const [st, arr] of stores) {
+      if (!arr.length) continue;
+      if (sel === "all") lines.push(`\n${st ? st.name : elT("Ohne Geschäft")}:`);
+      for (const i of [...arr].sort((x, y) => String(x.name).localeCompare(String(y.name), "de")))
+        lines.push(`☐ ${i.quantity ? `${i.quantity} ` : ""}${i.name}${i.note ? ` (${i.note})` : ""}`);
+    }
+    // 📏 Ein QR-Code fasst nur gut 300 Zeichen – zu viel? Dann so viele wie passen und „+ N weitere“
+    const max = 300, enc = (t) => new TextEncoder().encode(t).length;
+    let text = head, used = 0;
+    const items = lines.filter((l) => l.startsWith("☐")).length;
+    for (const l of lines) {
+      const more = items - used - (l.startsWith("☐") ? 1 : 0);
+      const tail = more > 0 ? `\n… + ${more} ${elT("weitere")}` : "";
+      if (enc(`${text}\n${l}${tail}`) > max) break;
+      text += `\n${l}`;
+      if (l.startsWith("☐")) used++;
+    }
+    const cut = items - used;
+    if (cut > 0) text += `\n… + ${cut} ${elT("weitere")}`;
+    return { text, shown: used, cut, full: [head, ...lines].join("\n") };
   }
 
   _printPage() {
     const d = this._data;
     const open = d.items.filter((i) => !i.checked);
-    this._openPage({ key: "print", title: "Liste drucken", icon: "mdi:printer-outline", color: "#546e7a", build: (body) => {
+    this._openPage({ key: "print", title: "Drucken & Teilen", icon: "mdi:share-variant-outline", color: "#546e7a", build: (body) => {
+      let mode = null;
+      const how = () => { // 📤 zuerst: drucken oder aufs Handy?
+        body.innerHTML = `<div style="font:600 16px Roboto,sans-serif;margin:2px 0 6px">${esc(elT("Was möchtest du?"))}</div>
+          <div class="prchoice"><button type="button" class="btn" data-how="print"><span>${esc(elT("🖨️ Drucken"))}</span></button>
+          <button type="button" class="btn" data-how="qr"><span>${esc(elT("📱 QR-Code fürs Handy"))}</span></button></div>
+          <p class="hint">${esc(elT("QR-Code: Ein anderes Handy richtet einfach die Kamera darauf und sieht die Liste als Text – ohne App, ohne Anmelden. Gut für Leute, die kein Home Assistant haben."))}</p>`;
+        body.querySelectorAll("[data-how]").forEach((b) => { b.onclick = () => { mode = b.dataset.how; choose(); }; });
+        body.querySelector("[data-how]")?.focus?.({ preventScroll: true });
+      };
       const choose = () => {
         const rows = [{ id: "all", name: elT("Alle Geschäfte"), n: open.length, color: "#546e7a" }];
         for (const st of d.stores || []) { const n = open.filter((i) => i.store_id === st.id).length; if (n) rows.push({ id: st.id, name: st.name, n, color: st.color || "#888" }); }
         const loose = open.filter((i) => !i.store_id || !this._store(i.store_id)).length;
         if (loose) rows.push({ id: "none", name: elT("Ohne Geschäft"), n: loose, color: "#888" });
         body.innerHTML = `<div style="font:600 16px Roboto,sans-serif;margin:2px 0 6px">${esc(elT("Welches Geschäft?"))}</div>
-          <div class="prchoice">${rows.map((r) => `<button type="button" class="btn" data-pr="${esc(r.id)}"><span style="width:10px;height:10px;border-radius:50%;background:${esc(r.color)};flex:none"></span><span translate="no">${esc(r.name)}</span><span class="n">${r.n}</span></button>`).join("")}</div>`;
-        body.querySelectorAll("[data-pr]").forEach((b) => { b.onclick = () => show(b.dataset.pr); });
+          <div class="prchoice">${rows.map((r) => `<button type="button" class="btn" data-pr="${esc(r.id)}"><span style="width:10px;height:10px;border-radius:50%;background:${esc(r.color)};flex:none"></span><span translate="no">${esc(r.name)}</span><span class="n">${r.n}</span></button>`).join("")}</div>
+          <div style="margin-top:8px"><button type="button" class="btn" data-prhow>${esc(elT("◀ Zurück"))}</button></div>`;
+        body.querySelectorAll("[data-pr]").forEach((b) => { b.onclick = () => (mode === "qr" ? qr(b.dataset.pr) : show(b.dataset.pr)); });
+        body.querySelector("[data-prhow]").onclick = how;
+        body.querySelector("[data-pr]")?.focus?.({ preventScroll: true });
+      };
+      const qr = (sel) => { // 📱 QR-Code mit der Liste als Text
+        const { text, cut } = this._shareText(sel);
+        const code = elCodeSvg(text, "qr");
+        body.innerHTML = `<div class="prqr">${code ? `<div class="prqrc">${code.svg}</div>` : `<p class="hint">${esc(elT("Die Liste ist zu lang für einen QR-Code."))}</p>`}
+          <p class="hint">${esc(elT("Mit der Handy-Kamera abfotografieren – die Liste erscheint als Text zum Abhaken im Kopf."))}${cut ? ` ${esc(elT("Passt nicht alles drauf:"))} + ${cut} ${esc(elT("weitere"))}. ${esc(elT("Tipp: ein einzelnes Geschäft wählen."))}` : ""}</p>
+          <pre class="prqrt">${esc(text)}</pre>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-prback>${esc(elT("Anderes Geschäft"))}</button>${navigator.clipboard?.writeText ? `<button type="button" class="btn" data-prcopy>${esc(elT("📋 Text kopieren"))}</button>` : ""}</div></div>`;
+        body.querySelector("[data-prback]").onclick = choose;
+        const cp = body.querySelector("[data-prcopy]");
+        if (cp) cp.onclick = () => navigator.clipboard.writeText(this._shareText(sel).full).then(() => this._toast(elT("📋 Kopiert"))).catch(() => {});
       };
       const show = (sel) => {
         const { html, by } = this._printSheet(sel);
@@ -6075,7 +6213,7 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
           document.body.append(fr);
         };
       };
-      choose();
+      how();
     } });
   }
 
@@ -6239,7 +6377,7 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
     this._pending.add(id);
     const rowEl = this.shadowRoot.querySelector(`.item[data-id="${id}"]`);
     // ✔️ Abhaken mit kleiner Animation: Haken wird grün, Name durchgestrichen, Zeile rutscht weg – erst danach geht es an HA
-    const anim = !!(it && !it.checked && !undo && rowEl && this._viewPrefs().anim !== false && !matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+    const anim = !!(it && !it.checked && !undo && rowEl && this._viewPrefs().anim !== false && this._viewPrefs().calm !== true && !matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
     const t0 = Date.now();
     rowEl?.classList.add(anim ? "checking" : "pending");
     if (anim) rowEl.querySelector(".check ha-icon")?.setAttribute("icon", "mdi:check-circle");
@@ -6253,6 +6391,14 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
     // 🤷 „Egal wo“ im Reiter eines Geschäfts abgehakt -> gehört ab jetzt zu diesem Geschäft
     const here = this._fixedStore || (this._activeTab !== "all" && this._activeTab !== "none" ? this._activeTab : null);
     const atStore = it && !it.checked && !it.store_id && here && this._store(here) ? here : null;
+    // ⚡ Sofort zeigen, nicht auf Home Assistant warten: die Antwort (ganze Liste) braucht am Handy oft ein paar Sekunden.
+    // Wieder draufholen (und Abhaken ohne Animation) springt gleich um – die echte Antwort von HA ersetzt das danach ohnehin.
+    if (it && (it.checked || !anim)) {
+      const now = new Date().toISOString();
+      if (it.checked) Object.assign(it, { checked: false, checked_at: null, checked_by: null });
+      else Object.assign(it, { checked: true, checked_at: now, checked_by: this._hass?.user?.name || null, ...(atStore ? { store_id: atStore } : {}) });
+      this._renderAll();
+    }
     const send = () => this._ws({ type: "einkaufsliste/item/toggle", item_id: id, ...(atStore ? { store_id: atStore } : {}), ...(undo ? { undo: true } : {}) })
       .catch(() => {})
       .finally(() => {
@@ -6911,6 +7057,7 @@ ${(() => {
     const cnt = (list) => `${list.filter(([k]) => cur[k] !== false).length} von ${list.length} an`;
     const labOn = cur.labels !== undefined ? !!cur.labels : !!this._data?.settings?.labels;
     const animOn = cur.anim !== false;
+    const calmOn = cur.calm === true;
     const greetOn = cur.greet !== false;
     const planViewOn = cur.plan !== false;
     const ck = (on) => `<ha-icon style="flex:none" icon="${on ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>`;
@@ -6922,6 +7069,7 @@ ${(() => {
         <div class="xaccs">
         ${mine ? this._acc(g, "labels", "mdi:format-text", "#546e7a", "Beschriftungen", labOn ? "an – Text unter den Icons" : "aus – Text unter den Icons", `<button class="lrow viewrow" data-act="view-labels" aria-pressed="${labOn}">${ck(labOn)}<span class="grow"><b>Beschriftungen anzeigen</b><small>Nur für dich. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "anim", "mdi:check", "#43a047", "Abhaken", animOn ? "Animation an" : "Animation aus", `<button class="lrow viewrow" data-act="view-anim" aria-pressed="${animOn}">${ck(animOn)}<span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`) : ""}
+        ${mine ? this._acc(g, "calm", "mdi:meditation", "#5c6bc0", "Ruhiger Modus", calmOn ? "an – weniger Farbe, nichts bewegt sich" : "aus", `<button class="lrow viewrow" data-act="view-calm" aria-pressed="${calmOn}">${ck(calmOn)}<span class="grow"><b>Ruhiger Modus</b><small>Nur für dich. Gedämpfte Farben, keine Animationen, kein Lauftext – angenehm für empfindliche Augen und alte Tablets.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "greet", "mdi:hand-wave-outline", "#fb8c00", "Gruß", greetOn ? "an" : "aus", `<button class="lrow viewrow" data-act="view-greet" aria-pressed="${greetOn}">${ck(greetOn)}<span class="grow"><b>Gruß in der Leiste oben</b><small>Nur für dich. Aus = die Leiste bleibt in der Mitte leer.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "plan", "mdi:calendar-check", "#43a047", "Essensplan", planViewOn ? "an" : "aus", `<button class="lrow viewrow" data-act="view-plan" aria-pressed="${planViewOn}">${ck(planViewOn)}<span class="grow"><b>Essensplan bei den Rezepten zeigen</b><small>Nur für dich. Aus = kein „Planen“-Knopf und keine Abschnitte, nur die Rezepte.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "haptic", "mdi:vibrate", "#8e24aa", "Vibration", { off: "Aus", low: "Schwach", normal: "Normal", high: "Stark" }[elHapticLevel()], `
@@ -7041,7 +7189,7 @@ ${(() => {
   // 🪗 Aufklapper-Kasten (Import „Aus anderen Apps“, Aufräumen): immer nur einer pro Gruppe g offen
   _acc(g, k, icon, color, title, sub, inner) {
     const on = (this._accOpen || {})[g] === k;
-    const emo = { "mdi:sync": "🔁", "mdi:import": "📥", "mdi:clipboard-text-outline": "📋", "mdi:file-delimited-outline": "📄", "mdi:calendar-sync": "🗓️", "mdi:broom": "🧹", "mdi:delete-sweep-outline": "🧽", "mdi:delete-forever-outline": "🗑️", "mdi:nuke": "💣", "mdi:format-text": "🏷️", "mdi:check": "✔️", "mdi:format-size": "🔠", "mdi:view-dashboard-outline": "🧩", "mdi:eye-outline": "👁️", "mdi:download": "⬇️", "mdi:backup-restore": "♻️", "mdi:cloud-download-outline": "🥫", "mdi:sync-circle": "🔄", "mdi:information-outline": "ℹ️", "mdi:email-edit-outline": "✉️", "mdi:chart-donut": "📊", "mdi:speedometer": "⏱️" }[icon] || "📁";
+    const emo = { "mdi:sync": "🔁", "mdi:import": "📥", "mdi:clipboard-text-outline": "📋", "mdi:file-delimited-outline": "📄", "mdi:calendar-sync": "🗓️", "mdi:broom": "🧹", "mdi:delete-sweep-outline": "🧽", "mdi:delete-forever-outline": "🗑️", "mdi:nuke": "💣", "mdi:format-text": "🏷️", "mdi:check": "✔️", "mdi:format-size": "🔠", "mdi:view-dashboard-outline": "🧩", "mdi:eye-outline": "👁️", "mdi:download": "⬇️", "mdi:backup-restore": "♻️", "mdi:cloud-download-outline": "🥫", "mdi:sync-circle": "🔄", "mdi:information-outline": "ℹ️", "mdi:email-edit-outline": "✉️", "mdi:chart-donut": "📊", "mdi:speedometer": "⏱️", "mdi:meditation": "🧘" }[icon] || "📁";
     // exakt die gleichen Bauteile wie die Hauptgruppen der Einstellungen (lgbox / lgroup / gem) – sieht darum überall genau so aus wie sie
     return `<div class="lgbox xacc ${on ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="acc-toggle" data-g="${g}" data-k="${k}" aria-expanded="${on}"><span class="gem" style="--gc:${color}">${emo}</span><span class="grow"><b>${title}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button><div class="xacc-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
   }
@@ -10628,7 +10776,7 @@ ${(() => {
     // Fasst man den Text an (wischen, Mausrad, Taste), hört das für diesen Bereich auf.
     const autoScroll = (el) => {
       let raf = 0, timer = 0, stopped = false, pos = 0, last = 0;
-      const reduce = !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const reduce = !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || this._viewPrefs?.().calm === true; // 🧘 ruhiger Modus: kein Lauftext
       const halt = () => { cancelAnimationFrame(raf); clearTimeout(timer); raf = 0; timer = 0; };
       const user = () => { stopped = true; halt(); };
       for (const ev of ["touchstart", "wheel", "pointerdown", "keydown"]) el.addEventListener(ev, user, { passive: true });
@@ -12202,7 +12350,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           name = `❓ Unbekannt ${String(res.code || code).slice(-4)}`;
           stats.unknown++;
         }
-        const guess = res.category_id || guessCategory(name, this._data?.category_hints);
+        const guess = res.category_id || guessCategory(name, this._data?.category_hints, this._data?.category_learned);
         if (this._formMode === "recipe" && this._draft) {
           // 🍳 im Rezept-Editor: gescannte Packung wird eine Zutat
           const ing = {
@@ -12333,7 +12481,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     if (!h) {
       // 📖 Unbekanntes Produkt: Kategorie aus dem Wörterbuch raten (nur wenn du nicht selbst gewählt hast)
       if (this._catManual) return;
-      const guess = guessCategory(val, this._data?.category_hints);
+      const guess = guessCategory(val, this._data?.category_hints, this._data?.category_learned);
       this.$("inCat").value = guess && this._cat(guess) ? guess : "";
       return;
     }
@@ -12560,7 +12708,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           this._view = "list";
           this._setSec = null;
           this._renderAll();
-        } else this.$("list")?.scrollIntoView?.({ block: "nearest" });
+        } else this.shadowRoot.querySelector("ha-card .head")?.scrollIntoView?.({ block: "nearest" }); // schon auf der Liste: nur den Kopf zeigen, falls er weggescrollt ist – nichts verschieben (früher sprang die lange Liste nach oben)
         break;
       case "tab":
         this._tab = el.dataset.tab;
@@ -12684,6 +12832,15 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         prefs.greet = this._viewPrefs().greet === false;
         this._ws({ type: "einkaufsliste/view/set", scope: "me", prefs })
           .then(() => setTimeout(() => { this._renderMyView(); this._updateGreeting(); }, 150)).catch(() => {});
+        break;
+      }
+      case "view-calm": { // 🧘 ruhiger Modus nur für mich an/aus
+        const all = this._data.settings?.view_prefs || {};
+        const me = this._hass?.user?.id;
+        const prefs = { ...((me && all[me]) || {}) };
+        prefs.calm = this._viewPrefs().calm !== true;
+        this._ws({ type: "einkaufsliste/view/set", scope: "me", prefs })
+          .then(() => setTimeout(() => { this._renderMyView(); this._renderAll(); }, 150)).catch(() => {});
         break;
       }
       case "view-anim": { // ✔️ Abhak-Animation nur für mich an/aus
@@ -14439,11 +14596,29 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     const aliases = al && al.value !== al.dataset.orig ? this._capAliases(al.value.split(/[,;]/)) : null;
     try {
       const fav = this.$("edFav"), it0 = this._data.items.find((i) => i.id === id);
+      // 🔁 Umbenannt, und das Produkt steht noch woanders (Rezept, Favorit, andere Liste)? Dann fragen: nur hier oder überall
+      let everywhere = false;
+      const nName = this.$("edName").value.trim(), nNote = this.$("edNote").value.trim();
+      if (it0 && !it0.recipe_id && nName && (nName.toLowerCase() !== it0.name.toLowerCase() || nNote.toLowerCase() !== (it0.note || "").toLowerCase())) {
+        const k = (n, o) => { n = String(n || "").trim().toLowerCase(); o = String(o || "").trim().toLowerCase(); return o ? `${n}|${o}` : n; };
+        const key = k(it0.name, it0.note), d = this._data;
+        const elsewhere = (d.recipes || []).some((r) => (r.items || []).some((ri) => k(ri.name, ri.note) === key))
+          || (d.favorites || []).includes(key)
+          || (d.items || []).some((i) => i.id !== it0.id && k(i.name, i.note) === key);
+        if (!elsewhere) everywhere = true; // nur hier drauf: Katalog und Verlauf ziehen ohne Frage mit
+        else {
+          const how = await askChoice(`„${it0.name}“ gibt es auch in Rezepten, Favoriten oder bei anderen Geschäften. Wo umbenennen?`,
+            [["all", "🔁 Überall umbenennen"], ["here", "✏️ Nur hier"]]);
+          if (!how) return; // Abbrechen: bleibt im Bearbeiten-Modus
+          everywhere = how === "all";
+        }
+      }
       if (fav && it0 && fav.checked !== (fav.dataset.orig === "1")) // ⭐ zuerst (mit dem alten Namen) – eine Umbenennung nimmt den Favoriten mit
         await this._ws({ type: "einkaufsliste/favorite/set", name: it0.name, note: it0.note || null, value: fav.checked });
       await this._ws({
         type: "einkaufsliste/item/update",
         ...(aliases ? { aliases } : {}),
+        ...(everywhere ? { everywhere: true } : {}),
         item_id: id,
         name: this.$("edName").value,
         quantity: this.$("edQty").value,

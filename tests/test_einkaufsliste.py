@@ -4604,3 +4604,89 @@ async def test_recipe_cook_note_over_websocket(hass, setup, hass_ws_client):
     assert (await client.receive_json())["success"]
     assert "cook_note" not in m.recipe_by_id(r["id"])
     assert m.recipe_by_id(r["id"])["steps"] == "Anbraten\nSchmoren"
+
+
+async def test_rename_everywhere(hass: HomeAssistant, setup, hass_ws_client) -> None:
+    """🔁 Idee 810: beim Umbenennen „Überall“ – Katalog, Rezepte, Favoriten ziehen mit; „Nur hier“ lässt sie stehen."""
+    m = mgr(hass)
+    aldi = m.find_store("aldi")
+    it = m.add_item("Joghurt", store_id=aldi)
+    m.add_recipe("Müsli", [{"name": "Joghurt"}])
+    m.set_favorite("Joghurt", None, True)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/item/update", "item_id": it["id"], "name": "Naturjoghurt", "everywhere": True})
+    assert (await client.receive_json())["success"]
+    assert m.get_item(it["id"])["name"] == "Naturjoghurt"
+    assert [ri["name"] for r in m.recipes for ri in r["items"] if r["name"] == "Müsli"] == ["Naturjoghurt"]
+    keys = {p["key"] for p in m.products()}
+    assert "naturjoghurt" in keys and "joghurt" not in keys
+    assert "naturjoghurt" in m.as_dict()["favorites"]
+    # „Nur hier“: das Rezept behält den alten Namen
+    await client.send_json({"id": 2, "type": "einkaufsliste/item/update", "item_id": it["id"], "name": "Griechischer Joghurt"})
+    assert (await client.receive_json())["success"]
+    assert [ri["name"] for r in m.recipes for ri in r["items"] if r["name"] == "Müsli"] == ["Naturjoghurt"]
+
+
+async def test_category_learns_words(hass: HomeAssistant, setup) -> None:
+    """🧠 Idee 811: zweimal „…tofu“ nach Kühlregal verschoben -> „Räuchertofu“ landet von allein dort."""
+    m = mgr(hass)
+    cats = {c["name"]: c["id"] for c in m.categories}
+    guessed = {m.guess_category(n) for n in ("Tofu natur", "Tofu Basilikum", "Räuchertofu")}
+    target = next(cid for cid in cats.values() if cid not in guessed)
+    for name in ("Tofu natur", "Tofu Basilikum"):
+        it = m.add_item(name)
+        m.update_item(it["id"], category_id=target)
+        assert m.get_item(it["id"])["category_id"] == target, (name, m.cat_words)
+    assert "tofu" in m.as_dict()["category_learned"], (m.cat_words, target)
+    assert m.add_item("Räuchertofu")["category_id"] == target
+    # nur einmal verschoben = noch nicht gelernt
+    m2 = next(cid for cid in cats.values() if cid != target)
+    it = m.add_item("Zauberbohne")
+    m.update_item(it["id"], category_id=m2)
+    assert "zauberbohne" not in m.as_dict()["category_learned"]
+
+
+def test_opening_logic() -> None:
+    """🕒 Idee 859: offen/zu, Mittagspause, Feiertag, Filialen."""
+    from custom_components.einkaufsliste.opening import holiday_name, open_now, store_open, easter
+    from datetime import date as _d
+    assert easter(2026) == _d(2026, 4, 5)
+    assert holiday_name(_d(2026, 6, 4), "NW") == "Fronleichnam" and holiday_name(_d(2026, 6, 4), "NI") is None
+    week = [[["08:00", "12:00"], ["14:00", "20:00"]]] * 6 + [None]
+    wed = datetime(2026, 10, 28, 10, 0)  # Mittwoch
+    assert open_now(week, wed) == {"open": True, "until": "12:00"}
+    assert open_now(week, wed.replace(hour=13)) == {"open": False, "next": "14:00", "today": True}
+    sat = datetime(2026, 10, 31, 21, 0)
+    assert open_now(week, sat)["next"] == "08:00" and open_now(week, sat)["day"] == 0
+    assert open_now(week, datetime(2026, 12, 25, 10, 0), "NW")["holiday"] == "1. Weihnachtstag"
+    assert open_now(None, wed) is None
+    st = {"branches": [{"name": "A", "hours": [None] * 7}, {"name": "B", "hours": week}]}
+    assert store_open(st, wed)["state"] is True
+    assert store_open(st, wed.replace(hour=22))["state"] is False
+    assert store_open({"branches": [{"name": "A", "hours": None}, {"name": "B", "hours": [None] * 7}]}, wed)["state"] is None
+
+
+async def test_store_open_sensor(hass: HomeAssistant, setup) -> None:
+    """🕒 binary_sensor.einkaufsliste_aldi_offen: unbekannt ohne Zeiten, an/aus mit Zeiten, neue Geschäfte bekommen einen."""
+    m = mgr(hass)
+    aldi = m.find_store("aldi")
+    assert hass.states.get("binary_sensor.einkaufsliste_aldi_offen").state == "unknown"
+    m.update_group("stores", aldi, hours=[[["00:00", "23:59"]]] * 7)
+    await hass.async_block_till_done()
+    st = hass.states.get("binary_sensor.einkaufsliste_aldi_offen")
+    assert st.state == "on" and st.attributes["offen_bis"] == "23:59"
+    m.update_group("stores", aldi, hours=[None] * 6 + [[["00:00", "00:01"]]])
+    await hass.async_block_till_done()
+    assert hass.states.get("binary_sensor.einkaufsliste_aldi_offen").state in ("off", "unknown")
+    kl = m.add_group("stores", "Kaufland")
+    await hass.async_block_till_done()
+    assert hass.states.get("binary_sensor.einkaufsliste_kaufland_offen") is not None
+    m.remove_group("stores", kl["id"])
+    await hass.async_block_till_done()
+    assert hass.states.get("binary_sensor.einkaufsliste_kaufland_offen") is None
+
+
+async def test_view_calm(hass: HomeAssistant, setup) -> None:
+    """🧘 Idee 969: „calm“ ist eine erlaubte Ansicht-Einstellung."""
+    from custom_components.einkaufsliste.manager import _clean_view
+    assert _clean_view({"calm": True, "quatsch": True}) == {"calm": True}
