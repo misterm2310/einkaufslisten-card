@@ -295,24 +295,33 @@ check("Kochmütze: Punkt zeigt 2 wartende Vorschläge (abgelehnte zählen nicht)
 check("Kochmütze: kein Punkt ohne Zahnrad und ohne Vorschläge", r.noCog && r.none, JSON.stringify(r));
 check("Kochmütze: Punkt ist nur Anzeige, Tippen öffnet ganz normal die Kochmütze", r.went.view === "recipes" && r.went.pe === "none" && r.went.dotHidden, JSON.stringify(r));
 
-// 17) ℹ️ Steckbrief des Geschäfts: ℹ️ nur im aktiven Reiter mit Infos, Tippen öffnet Adresse/Telefon/Tipps; Felder in ⚙️ (Idee 621)
+// 17) ℹ️ Steckbrief: kein ℹ️ im Reiter; im Öffnungszeiten-Fenster (gedrückt halten) neben dem Namen, Antippen klappt auf/zu (Idee 621)
 r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; const [netto, aldi]=c._data.stores; const keep={...aldi};
   Object.assign(aldi,{address:"Hauptstr. 1, 48565 Steinfurt", phone:"02552 1234", website:"https://www.aldi-nord.de", tips:"Parkplatz hinten ist frei"});
-  c._tab=netto.id; c._renderAll(); await new Promise(r=>setTimeout(r,50)); const q=(s)=>c.shadowRoot.querySelector(s);
-  const offOther=!q('.tab[data-tab="'+aldi.id+'"] .tinfo'), offEmpty=!q('.tab[data-tab="'+netto.id+'"] .tinfo');
-  c._tab=aldi.id; c._renderAll(); await new Promise(r=>setTimeout(r,50)); const ti=q('.tab[data-tab="'+aldi.id+'"] .tinfo');
-  const tabBefore=c._tab; ti?.click(); await new Promise(r=>setTimeout(r,50)); const pop=q(".hourspop");
-  const popInfo={ open:!!pop, tel:pop?.querySelector('a[href="tel:025521234"]')?.textContent, map:!!pop?.querySelector('a[href*="openstreetmap.org/search"]'), web:pop?.querySelector('a[href="https://www.aldi-nord.de"]')?.textContent, tips:pop?.querySelector(".htips")?.textContent, tab:c._tab===tabBefore };
-  pop?.remove();
-  c._view="settings"; c._setSec="stores"; c._storeSel=aldi.id; c._renderAll(); await new Promise(r=>setTimeout(r,50));
+  c._tab=aldi.id; c._renderAll(); await new Promise(r=>setTimeout(r,50)); const q=(s)=>c.shadowRoot.querySelector(s);
+  const tabClean=!q('.tab .hitog, .tab [data-hinfo]') && !/ℹ️/.test(q('.tab[data-tab="'+aldi.id+'"]').textContent);
+  c._showHours(aldi.id); const pop=q(".hourspop"); pop.style.pointerEvents="";
+  const head=pop.querySelector(".hbox > b"); const tg=head.querySelector('[data-hinfo="s"]'); const bx=pop.querySelector('[data-hfor="s"]');
+  const closed={ inHead:!!tg, hidden:bx?.hidden };
+  tg.click(); const opened={ shown:!bx.hidden, still:!!q(".hourspop"), exp:tg.getAttribute("aria-expanded"),
+    tel:bx.querySelector('a[href="tel:025521234"]')?.textContent, map:!!bx.querySelector('a[href*="openstreetmap.org/search"]'), web:bx.querySelector('a[href="https://www.aldi-nord.de"]')?.textContent, tips:bx.querySelector(".htips")?.textContent };
+  bx.querySelector(".htips").click(); const tipsStay=!!q(".hourspop");
+  tg.click(); const again=bx.hidden; pop.remove();
+  aldi.branches=[{id:"b1",name:"Borghorst",hours:null,address:"Markt 2",phone:"02552 1"},{id:"b2",name:"Ohne",hours:null}];
+  c._showHours(aldi.id); const p2=q(".hourspop"); const brs=[...p2.querySelectorAll(".hbr")];
+  const br={ t0:!!brs[0]?.querySelector('b [data-hinfo="b0"]'), t1:!!brs[1]?.querySelector("[data-hinfo]"), hid:brs[0]?.querySelector('[data-hfor="b0"]')?.hidden };
+  brs[0].querySelector('[data-hinfo="b0"]').click(); br.open=!brs[0].querySelector('[data-hfor="b0"]').hidden && !!brs[0].querySelector('a[href="tel:025521"]'); p2.remove();
+  delete aldi.address; delete aldi.phone; delete aldi.website; delete aldi.tips; aldi.branches=null; c._showHours(aldi.id); const none=!q('.hourspop [data-hinfo]'); q(".hourspop")?.remove();
+  c._view="settings"; c._setSec="stores"; c._storeSel=aldi.id; Object.assign(aldi,{address:"Hauptstr. 1, 48565 Steinfurt", phone:"02552 1234", website:"https://www.aldi-nord.de", tips:"Parkplatz hinten ist frei"}); c._renderAll(); await new Promise(r=>setTimeout(r,50));
   const f=(n)=>q('.srow[data-id="'+aldi.id+'"] [data-field="'+n+'"]')?.value;
   const fields={ address:f("address"), phone:f("phone"), website:f("website"), tips:f("tips") };
   const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
   const ta=q('.srow[data-id="'+aldi.id+'"] [data-field="tips"]'); ta.value="Neu"; ta.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
   c._ws=ws; Object.keys(aldi).forEach(k=>delete aldi[k]); Object.assign(aldi,keep); c._storeSel=null; c._setSec=null; c._view="list"; c._tab="all"; c._renderAll();
-  return { offOther, offEmpty, has:!!ti, popInfo, fields, sent:sent.map(m=>m.type+"|"+m.group_id+"|"+m.tips) }; })()`);
-check("Steckbrief: ℹ️ nur im aktiven Reiter und nur, wenn es Infos gibt", r.offOther && r.offEmpty && r.has, JSON.stringify(r));
-check("Steckbrief: ℹ️ öffnet Adresse (Karte), Telefon (anrufen), Webseite und Tipps", r.popInfo.open && r.popInfo.tel === "📞 02552 1234" && r.popInfo.map && /aldi-nord\.de$/.test(r.popInfo.web || "") && r.popInfo.tips === "💡 Parkplatz hinten ist frei" && r.popInfo.tab, JSON.stringify(r));
+  return { tabClean, closed, opened, tipsStay, again, br, none, fields, sent:sent.map(m=>m.type+"|"+m.group_id+"|"+m.tips) }; })()`);
+check("Steckbrief: kein ℹ️ im Reiter, im Fenster neben dem Namen, zuerst zugeklappt", r.tabClean && r.closed.inHead && r.closed.hidden === true && r.none, JSON.stringify(r));
+check("Steckbrief: ℹ️ klappt Adresse, Telefon, Webseite und Tipps auf und wieder zu, Fenster bleibt offen", r.opened.shown && r.opened.still && r.opened.exp === "true" && r.opened.tel === "📞 02552 1234" && r.opened.map && /aldi-nord\.de$/.test(r.opened.web || "") && r.opened.tips === "💡 Parkplatz hinten ist frei" && r.tipsStay && r.again, JSON.stringify(r));
+check("Steckbrief: Filiale mit Adresse/Telefon hat ihr eigenes ℹ️, ohne Infos keins", r.br.t0 && !r.br.t1 && r.br.hid === true && r.br.open, JSON.stringify(r));
 check("Steckbrief: Felder in ⚙️ → Geschäfte, Tipps werden gespeichert", r.fields.address === "Hauptstr. 1, 48565 Steinfurt" && r.fields.phone === "02552 1234" && r.fields.website === "https://www.aldi-nord.de" && r.fields.tips === "Parkplatz hinten ist frei" && r.sent.length === 1 && /group\/update\|.+\|Neu$/.test(r.sent[0]), JSON.stringify(r));
 
 // 18) 🎨 Neues Geschäft: bekannte Kette bekommt beim Tippen ihre Logo-Farbe, selbst gewählte Farbe bleibt (Idee 632)
