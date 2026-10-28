@@ -435,23 +435,41 @@ r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=nu
   return { wasDone, now }; })()`);
 check("Zurückholen: sofort wieder offen, noch bevor Home Assistant antwortet", r.wasDone && r.now.checked === false && r.now.row, JSON.stringify(r));
 
-// 26) 🏬 Filialen: Knopf heißt „Filialen ändern“, jede Filiale hat Adresse + Telefon, Änderung wird gespeichert; ohne Filialen wie bisher
-r = await p.evaluate(`(async () => { const c=${card}; const st=c._data.stores[1]; const keep={...st}; const q=(x)=>c.shadowRoot.querySelector(x);
+// 26) 🏬 Filialen: pro Filiale eine Zeile mit ✏️, Bearbeiten im eigenen Fenster (Speichern/Abbrechen/Löschen); ohne Filialen wie bisher
+r = await p.evaluate(`(async () => { const c=${card}; const st=c._data.stores[1]; const keep={...st}; const q=(x)=>c.shadowRoot.querySelector(x); const w=()=>new Promise(r=>setTimeout(r,40));
   Object.assign(st,{address:null, phone:null, branches:[{id:"b1",name:"Borghorst",hours:null,address:"Markt 2"},{id:"b2",name:"Burgsteinfurt",hours:null}]});
-  c._view="settings"; c._setSec="stores"; c._storeSel=st.id; c._hoursOpenFor=null; c._renderAll(); await new Promise(r=>setTimeout(r,40));
-  const closedLbl=q('[data-act="hours-toggle"]')?.textContent.trim(); const stAddr=!!q('.srow[data-id="'+st.id+'"] [data-field="address"]'); const hint=/Adresse und Telefon stehen bei jeder Filiale/.test(c.shadowRoot.textContent);
-  c._hoursOpenFor=st.id; c._renderAll(); await new Promise(r=>setTimeout(r,40));
-  const openLbl=q('[data-act="hours-toggle"]')?.textContent.trim(); const a1=q('input[data-ba="b1"]')?.value, a2=q('input[data-ba="b2"]')?.value, p2=!!q('input[data-bp="b2"]');
+  c._view="settings"; c._setSec="stores"; c._storeSel=st.id; c._hoursOpenFor=null; c._renderAll(); await w();
+  const closedLbl=q('[data-act="hours-toggle"]')?.textContent.trim(); const stAddr=!!q('.srow[data-id="'+st.id+'"] [data-field="address"]'); const hint=/Adresse, Telefon und Tipps stehen bei jeder Filiale/.test(c.shadowRoot.textContent);
+  c._hoursOpenFor=st.id; c._renderAll(); await w();
+  const openLbl=q('[data-act="hours-toggle"]')?.textContent.trim(); const rows=c.shadowRoot.querySelectorAll(".brrow").length; const row1=q(".brrow")?.textContent; const noInputs=!q(".brrow input, .brrow textarea");
   const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
-  const inp=q('input[data-bp="b2"]'); inp.value="02551 99"; inp.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
-  const ad=q('input[data-ba="b2"]'); ad.value="Bahnhofstr. 1"; ad.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
-  const last=sent.at(-1)?.branches;
-  st.branches=null; c._hoursOpenFor=null; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  // ✏️ Burgsteinfurt bearbeiten: Fenster mit den Feldern, Zeiten werden erst mit Speichern geschickt
+  q('[data-act="hours-bredit"][data-bid="b2"]').click(); await w(); let pop=q(".brpop");
+  const popName=pop?.querySelector('[data-bf="name"]').value; const focus=c.shadowRoot.activeElement?.dataset?.bf;
+  pop.querySelector('[data-bf="phone"]').value="02551 99"; pop.querySelector('[data-bf="address"]').value="Bahnhofstr. 1"; pop.querySelector('[data-bf="tips"]').value="Parkplatz hinten";
+  const day=pop.querySelector('.hd[data-wd="0"]'); day.querySelector('[data-hf="from"]').value="08:00"; day.querySelector('[data-hf="to"]').value="20:00"; day.querySelector('[data-hf="to"]').dispatchEvent(new Event("change",{bubbles:true,composed:true}));
+  const sentBeforeSave=sent.length;
+  pop.querySelector('[data-bact="save"]').click(); await w();
+  const saved=sent.at(-1)?.branches; const popGone=!q(".brpop");
+  // Abbrechen schickt nichts
+  q('[data-act="hours-bredit"][data-bid="b1"]').click(); await w(); pop=q(".brpop"); pop.querySelector('[data-bf="name"]').value="Weg damit"; const n0=sent.length; pop.querySelector('[data-bact="cancel"]').click(); const cancelOk=sent.length===n0 && !q(".brpop");
+  // Löschen braucht zwei Tipper
+  q('[data-act="hours-bredit"][data-bid="b1"]').click(); await w(); pop=q(".brpop"); const del=pop.querySelector('[data-bact="del"]'); del.click(); const n1=sent.length; const sure=/Wirklich/.test(del.textContent); del.click(); await w(); const delOk=sure && n1===n0 && sent.at(-1)?.branches?.length===1 && sent.at(-1).branches[0].id==="b2";
+  // ＋ Filiale öffnet ein leeres Fenster, ohne Namen wird nichts gespeichert
+  q('[data-act="hours-bradd"]').click(); await w(); pop=q(".brpop"); const newEmpty=pop.querySelector('[data-bf="name"]').value==="" && !pop.querySelector('[data-bact="del"]'); const n2=sent.length; pop.querySelector('[data-bact="save"]').click(); const noName=sent.length===n2 && !!q(".brpop");
+  pop.querySelector('[data-bf="name"]').value="Neuenkirchen"; pop.querySelector('[data-bact="save"]').click(); await w(); const added=sent.at(-1)?.branches?.at(-1)?.name==="Neuenkirchen" && sent.at(-1).branches.length===3;
+  const stTips=!!q('.srow[data-id="'+st.id+'"] [data-field="tips"]'), stWeb=!!q('.srow[data-id="'+st.id+'"] [data-field="website"]');
+  st.branches=saved; c._view="list"; c._renderAll(); c._showHours(st.id); const hp=c.shadowRoot.querySelector(".hourspop"); hp.querySelector('[data-hinfo="b1"]')?.click(); const popTips=hp.querySelector('[data-hfor="b1"] .htips')?.textContent; hp.remove(); c._view="settings"; c._renderAll();
+  st.branches=null; c._hoursOpenFor=null; c._renderAll(); await w();
   const plainLbl=q('[data-act="hours-toggle"]')?.textContent.trim(); const plainAddr=!!q('.srow[data-id="'+st.id+'"] [data-field="address"]');
   c._ws=ws; Object.keys(st).forEach(k=>delete st[k]); Object.assign(st,keep); c._storeSel=null; c._setSec=null; c._view="list"; c._renderAll();
-  return { closedLbl, stAddr, hint, openLbl, a1, a2, p2, last, plainLbl, plainAddr }; })()`);
+  return { closedLbl, stAddr, hint, openLbl, rows, row1, noInputs, popName, focus, sentBeforeSave, saved, popGone, cancelOk, delOk, newEmpty, noName, added, stTips, stWeb, popTips, plainLbl, plainAddr }; })()`);
 check("Filialen: Knopf heißt „🏬 Filialen ändern“, Adresse/Telefon des Geschäfts weg, Hinweis da", r.closedLbl === "🏬 Filialen ändern" && !r.stAddr && r.hint && /^🏬 Filialen/.test(r.openLbl), JSON.stringify(r));
-check("Filialen: jede Filiale mit Adresse und Telefon, Änderung wird gespeichert", r.a1 === "Markt 2" && r.a2 === "" && r.p2 && r.last?.[1]?.phone === "02551 99" && r.last?.[1]?.address === "Bahnhofstr. 1" && r.last?.[0]?.address === "Markt 2", JSON.stringify(r));
+check("Filialen: pro Filiale nur eine kurze Zeile mit Adresse, ohne Eingabefelder", r.rows === 2 && /Borghorst/.test(r.row1) && /Markt 2/.test(r.row1) && r.noInputs, JSON.stringify(r));
+check("Filialen-Fenster: ✏️ öffnet die Filiale, Name hat den Fokus, Zeiten gehen erst mit Speichern raus", r.popName === "Burgsteinfurt" && r.focus === "name" && r.sentBeforeSave === 0 && r.popGone && r.saved?.[1]?.phone === "02551 99" && r.saved?.[1]?.address === "Bahnhofstr. 1" && r.saved?.[1]?.tips === "Parkplatz hinten" && JSON.stringify(r.saved?.[1]?.hours?.[0]) === '[["08:00","20:00"]]' && r.saved?.[0]?.address === "Markt 2", JSON.stringify(r));
+check("Filialen-Fenster: Abbrechen schickt nichts, Löschen braucht zwei Tipper", r.cancelOk && r.delOk, JSON.stringify(r));
+check("Filialen-Fenster: ＋ Filiale öffnet leeres Fenster, ohne Namen kein Speichern", r.newEmpty && r.noName && r.added, JSON.stringify(r));
+check("Filialen: Tipps pro Filiale im ℹ️ des Zeiten-Fensters, beim Geschäft nur noch die Webseite", !r.stTips && r.stWeb && r.popTips === "💡 Parkplatz hinten", JSON.stringify(r));
 check("Ohne Filialen: Öffnungszeiten-Knopf und Adresse wie bisher", /Öffnungszeiten eintragen/.test(r.plainLbl) && r.plainAddr, JSON.stringify(r));
 
 // 27) 📂 Kategorien in der Liste: Standard offen, antippen klappt zu (Zahl bleibt), nochmal auf

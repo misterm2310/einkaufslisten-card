@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.4";
+const EL_VERSION = "2.76.24-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -421,6 +421,9 @@ const EL_BETA_NEWS = [
   ["🏬 <b>Filialen:</b> In ⚙️ → Geschäfte heißt es jetzt „Filialen ändern“. Jede Filiale hat eigene Adresse, Telefon und Zeiten in einem Block. · 📂 Kategorien in der Liste lassen sich mit einem Tipp auf den Kopf einklappen (am Anfang sind alle offen).",
    "🏬 <b>Branches:</b> in ⚙️ → Stores it is now called “Edit branches”. Each branch has its own address, phone and times in one block. · 📂 Categories in the list can be collapsed by tapping their header (all are open at the start).",
    "beta.4"],
+  ["🏬 <b>Filialen:</b> Jede Filiale ist jetzt eine kurze Zeile. ✏️ Bearbeiten öffnet ein eigenes Fenster (wie bei Rezepten) mit Name, Adresse, Telefon, 💡 Tipps und Öffnungszeiten – gespeichert wird erst mit „Speichern“. Die Webseite bleibt beim Geschäft.",
+   "🏬 <b>Branches:</b> each branch is now one short row. ✏️ Edit opens a window of its own (like recipes) with name, address, phone, 💡 tips and opening hours – nothing is stored until “Save”. The website stays with the store.",
+   "beta.5"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -3276,8 +3279,20 @@ label.btn { cursor:pointer; }
 .hoursed .hhead { margin-top:4px; }
 .hoursed .hbranch .iconbtn.on { background:color-mix(in srgb, var(--primary-color,#03a9f4) 22%, transparent); border-radius:50%; }
 .shead { display:block; margin:8px 0 2px; }
-.hoursed .hbranch input[data-ba], .hoursed .hbranch input[data-bp] { width:auto !important; flex:1 1 0; min-width:0; font:inherit; padding:5px 8px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
-.hoursed .hbranch input[data-bn] { width:auto !important; flex:1 1 0; min-width:0; font:inherit; padding:5px 8px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
+.hoursed .brrow .brtxt { display:flex; flex-direction:column; min-width:0; }
+.hoursed .brrow .brtxt small { overflow-wrap:anywhere; }
+.hoursed .brrow .iconbtn[disabled] { opacity:.3; }
+.hoursed .brrow > .brtop { flex-wrap:nowrap; align-items:flex-start; cursor:pointer; }
+.hoursed .brrow > .brbtnrow { justify-content:flex-end; flex-wrap:nowrap; }
+.brpop { -webkit-user-select:text; user-select:text; }
+.brpop .hbox { width:min(480px, 92vw); max-height:88vh; overflow-y:auto; gap:8px; }
+.brpop .brf { display:flex; flex-direction:column; gap:3px; font-size:.92em; }
+.brpop .brf input, .brpop .brf textarea { font:inherit; font-size:1rem; padding:7px 9px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; box-sizing:border-box; width:100%; }
+.brpop .hoursed { margin:0; }
+.brpop .btn { align-self:auto; margin-top:0; }
+.brpop .brbtns { display:flex; gap:8px; align-items:center; flex-wrap:wrap; position:sticky; bottom:-16px; background:var(--card-background-color,#fff); padding:8px 0; }
+.brpop .brbtns .grow { flex:1; }
+.brpop .brdel { color:var(--error-color,#db4437); }
 .hourspop .hbox { max-height:85vh; overflow-y:auto; }
 .hourspop .hbr { display:flex; flex-direction:column; gap:2px; border-top:1px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:6px; margin-top:4px; font-size:.92em; }
 .hint { color:var(--secondary-text-color); font-size:.8em !important; }
@@ -4481,7 +4496,7 @@ class EinkaufslisteCard extends HTMLElement {
     const tog = (k) => `<span class="hitog" data-hinfo="${k}" role="button" tabindex="0" aria-expanded="false" title="Infos zum Geschäft" aria-label="Infos zum Geschäft">ℹ️</span>`; // ℹ️ antippen = Steckbrief auf/zu
     const box = (k, html) => `<div class="hinfo" data-hfor="${k}" hidden>${html}</div>`;
     const info = infoRows || st.tips ? box("s", `${infoRows}${st.tips ? `<div class="htips">💡 ${esc(st.tips)}</div>` : ""}`) : ""; // ℹ️ Steckbrief
-    const brInfo = (b) => [b.address ? map(b.address) : "", b.phone ? tel(b.phone) : ""].filter(Boolean).join("");
+    const brInfo = (b) => [b.address ? map(b.address) : "", b.phone ? tel(b.phone) : "", b.tips ? `<div class="htips">💡 ${esc(b.tips)}</div>` : ""].filter(Boolean).join(""); // ℹ️ Steckbrief der Filiale
     let body = "";
     if (res.branches) { // 🏬 jede Filiale mit Stand und Zeiten
       body = res.branches.map(({ b, info }, i) => `<div class="hbr"><b translate="no">🏬 ${esc(b.name)}${brInfo(b) ? tog("b" + i) : ""}</b>${brInfo(b) ? box("b" + i, brInfo(b)) : ""}${info ? `<div class="hstat">${elStatusTxt(info)}</div>` : ""}${Array.isArray(b.hours) ? week(b.hours) : `<p class="hint">Keine Zeiten eingetragen.</p>`}</div>`).join("");
@@ -4577,9 +4592,12 @@ class EinkaufslisteCard extends HTMLElement {
     let main;
     if (br.length) {
       // 🏬 pro Filiale alles zusammen: Name, Adresse, Telefon, Zeiten
-      main = br.map((b) => `<div class="hbranch"><div class="hr"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="iconbtn ${this._brOpen === b.id ? "on" : ""}" data-act="hours-brtoggle" data-bid="${b.id}" title="Zeiten dieser Filiale ${this._brOpen === b.id ? "zuklappen" : "anzeigen"}"><ha-icon icon="mdi:clock-outline"></ha-icon></button></div><div class="hr"><button type="button" class="iconbtn" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben"><ha-icon icon="mdi:arrow-up"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten"><ha-icon icon="mdi:arrow-down"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div><div class="hr"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-ba="${b.id}" value="${esc(b.address || "")}" placeholder="📍 Adresse der Filiale" maxlength="120" title="Adresse der Filiale"></div><div class="hr"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-bp="${b.id}" value="${esc(b.phone || "")}" placeholder="📞 Telefon der Filiale" maxlength="40" title="Telefon der Filiale"></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
+      main = br.map((b, i) => { // 🏬 pro Filiale eine kurze Zeile – ✏️ öffnet das Bearbeiten-Fenster
+        const sub = [b.address ? `<span translate="no">📍 ${esc(b.address)}</span>` : "<span>📍 keine Adresse</span>", `<span>${Array.isArray(b.hours) ? "🕒 Zeiten eingetragen" : "🕒 keine Zeiten"}</span>`, b.phone ? "<span>📞</span>" : "", b.tips ? "<span>💡</span>" : ""].filter(Boolean).join(" · ");
+        return `<div class="hbranch brrow"><div class="hr brtop" data-act="hours-bredit" data-id="${e.id}" data-bid="${b.id}" role="button" tabindex="0" title="Diese Filiale bearbeiten"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><span class="grow brtxt"><b translate="no">${esc(b.name)}</b><small class="hint">${sub}</small></span></div><div class="hr brbtnrow"><button type="button" class="iconbtn" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben" ${i ? "" : "disabled"}><ha-icon icon="mdi:arrow-up"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten" ${i < br.length - 1 ? "" : "disabled"}><ha-icon icon="mdi:arrow-down"></ha-icon></button><button type="button" class="btn" data-act="hours-bredit" data-id="${e.id}" data-bid="${b.id}" title="Diese Filiale bearbeiten">✏️ Bearbeiten</button></div></div>`;
+      }).join("");
     } else main = this._hoursWeekHtml(h, e.id, "");
-    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">${br.length ? "🏬 Filialen" : "🕒 Öffnungszeiten"} ▴ zuklappen</button><div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button><button type="button" class="btn" data-act="hours-osm" data-id="${e.id}" title="Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)">🌐 Zeiten aus OpenStreetMap</button></div>${main}${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten, Adresse und Telefon; der Reiter ist nur grau, wenn alle Filialen zu haben. Mit den Pfeilen sortierst du die Filialen. 🌐 „Zeiten aus OpenStreetMap“ sucht das Geschäft im Netz (nur auf Knopfdruck) – die Zeiten stammen von Freiwilligen, bitte kurz prüfen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
+    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">${br.length ? "🏬 Filialen" : "🕒 Öffnungszeiten"} ▴ zuklappen</button><div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button><button type="button" class="btn" data-act="hours-osm" data-id="${e.id}" title="Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)">🌐 Zeiten aus OpenStreetMap</button></div>${main}${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten, Adresse, Telefon und Tipps – „✏️ Bearbeiten“ öffnet dafür ein eigenes Fenster. Der Reiter ist nur grau, wenn alle Filialen zu haben. Mit den Pfeilen sortierst du die Filialen. 🌐 „Zeiten aus OpenStreetMap“ sucht das Geschäft im Netz (nur auf Knopfdruck) – die Zeiten stammen von Freiwilligen, bitte kurz prüfen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
   }
 
   _hoursCollect(box) {
@@ -4592,17 +4610,57 @@ class EinkaufslisteCard extends HTMLElement {
     return out.every((x) => x === null) ? null : out;
   }
 
-  // 🏬 Alle Filialen eines Geschäfts aus dem Bildschirm einsammeln (zugeklappte aus den gespeicherten Daten)
+  // 🏬 Alle Filialen eines Geschäfts (Kopie der gespeicherten Daten – bearbeitet wird im eigenen Fenster)
   _branchesCollect(storeId) {
     const st = this._store(storeId);
-    const root = this.shadowRoot;
-    return (st?.branches || []).map((b) => {
-      const box = root.querySelector(`.hoursed[data-branch="${b.id}"]`);
-      const nm = root.querySelector(`input[data-bn="${b.id}"]`);
-      const ad = root.querySelector(`input[data-ba="${b.id}"]`), ph = root.querySelector(`input[data-bp="${b.id}"]`);
-      return { id: b.id, name: (nm?.value || "").trim() || b.name, hours: box ? this._hoursCollect(box) : (b.hours || null),
-        address: ad ? ad.value.trim() || null : b.address || null, phone: ph ? ph.value.trim() || null : b.phone || null };
+    return (st?.branches || []).map((b) => ({ id: b.id, name: b.name, hours: b.hours || null, address: b.address || null, phone: b.phone || null, tips: b.tips || null }));
+  }
+
+  // 🏬 Eine Filiale in einem eigenen Fenster bearbeiten (wie ein Rezept): erst „Speichern“ schreibt etwas weg
+  _editBranch(storeId, branchId = null) {
+    const st = this._store(storeId);
+    if (!st) return;
+    const list = this._branchesCollect(storeId);
+    const b = branchId ? list.find((x) => x.id === branchId) : null;
+    if (branchId && !b) { this._toast("🏬 Die Filiale gibt es nicht mehr."); return; }
+    const hours = b ? b.hours : !list.length && Array.isArray(st.hours) ? st.hours : null; // erste Filiale übernimmt die Zeiten des Geschäfts (nichts geht verloren)
+    this.shadowRoot.querySelector(".brpop")?.remove();
+    const ov = document.createElement("div");
+    ov.className = "hourspop brpop";
+    ov.innerHTML = `<div class="hbox brbox"><b>${b ? "🏬 Filiale bearbeiten" : "🏬 Neue Filiale"}</b><small class="hint" translate="no">${esc(st.name)}</small>
+      <label class="brf"><span>🏷️ Name</span><input data-bf="name" maxlength="40" value="${esc(b?.name || "")}" placeholder="z. B. Innenstadt"></label>
+      <label class="brf"><span>📍 Adresse</span><input data-bf="address" maxlength="120" value="${esc(b?.address || "")}" placeholder="z. B. Hauptstraße 1, Steinfurt"></label>
+      <label class="brf"><span>📞 Telefon</span><input data-bf="phone" type="tel" inputmode="tel" maxlength="40" value="${esc(b?.phone || "")}" placeholder="z. B. 02551 12345"></label>
+      <label class="brf"><span>💡 Tipps</span><textarea data-bf="tips" rows="2" maxlength="300" placeholder="z. B. Parkplatz hinten ist frei, Pfandautomat links">${esc(b?.tips || "")}</textarea></label>
+      <b class="hhead">🕒 Öffnungszeiten</b>${this._hoursWeekHtml(hours, storeId, b?.id || "neu")}
+      <p class="hint">Die Webseite gilt für alle Filialen und steht beim Geschäft.</p>
+      <div class="brbtns">${b ? `<button type="button" class="btn brdel" data-bact="del">🗑️ Löschen</button>` : ""}<span class="grow"></span><button type="button" class="btn" data-bact="cancel">Abbrechen</button><button type="button" class="btn primary" data-bact="save">💾 Speichern</button></div></div>`;
+    ov.querySelector(".hoursed[data-hoursed]").dataset.draft = "1"; // Zeiten hier erst mit „Speichern“ wegschreiben
+    let off = null;
+    const close = () => { off?.(); ov.remove(); };
+    const send = (branches) => this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: storeId, branches: branches.length ? branches : null })
+      .then(() => { close(); setTimeout(() => this._renderSettings(), 150); }).catch(() => {}); // Fehler (z. B. Telefon mit Buchstaben) zeigt _ws an, das Fenster bleibt offen
+    ov.addEventListener("click", (e) => {
+      const btn = e.target.closest?.("[data-bact]");
+      if (!btn) return;
+      const a = btn.dataset.bact;
+      if (a === "cancel") { close(); return; }
+      const cur = this._branchesCollect(storeId); // frisch holen: jemand anderes könnte inzwischen etwas geändert haben
+      if (a === "del") {
+        if (!btn.dataset.sure) { btn.dataset.sure = "1"; btn.textContent = elT("🗑️ Wirklich löschen?"); return; } // zweimal tippen = kein Versehen
+        send(cur.filter((x) => x.id !== b.id));
+        return;
+      }
+      const val = (k) => ov.querySelector(`[data-bf="${k}"]`).value.trim() || null;
+      const name = val("name");
+      if (!name) { this._toast("🏬 Die Filiale braucht einen Namen"); ov.querySelector('[data-bf="name"]').focus(); return; }
+      const entry = { name, address: val("address"), phone: val("phone"), tips: val("tips"), hours: this._hoursCollect(ov.querySelector(".hoursed[data-hoursed]")) };
+      const k = b ? cur.findIndex((x) => x.id === b.id) : -1;
+      if (k >= 0) cur[k] = { ...cur[k], ...entry }; else cur.push(entry);
+      send(cur);
     });
+    this.shadowRoot.appendChild(ov);
+    off = elDialogKeys(ov, close, () => ov.querySelector('[data-bf="name"]'));
   }
 
   _hoursSendBranches(storeId, branches, rerender = false) {
@@ -4612,6 +4670,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _hoursSave(box) {
+    if (box.dataset.draft) return; // 🏬 im Filialen-Fenster speichert erst „Speichern“
     if (box.dataset.branch) { this._hoursSendBranches(box.dataset.id, this._branchesCollect(box.dataset.id)); return; }
     const hours = this._hoursCollect(box);
     this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: box.dataset.id, hours })
@@ -6695,11 +6754,11 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
         <b class="shead">🗞️ Prospekt-Link</b>
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:newspaper-variant-outline"></ha-icon><input class="grow" type="url" inputmode="url" data-field="flyer" value="${esc(e.flyer || "")}" placeholder="🗞️ Prospekt-Link (https://…)" title="Adresse des Prospekts. Wird nur beim Antippen geöffnet."></div>
         <b class="shead">ℹ️ Steckbrief</b>
-        ${Array.isArray(e.branches) && e.branches.length ? `<p class="hint">🏬 Dieses Geschäft hat Filialen: Adresse und Telefon stehen bei jeder Filiale oben unter „🏬 Filialen“. Webseite und Tipps hier gelten für alle Filialen.</p>` : ""}
+        ${Array.isArray(e.branches) && e.branches.length ? `<p class="hint">🏬 Dieses Geschäft hat Filialen: Adresse, Telefon und Tipps stehen bei jeder Filiale oben unter „🏬 Filialen“. Die Webseite hier gilt für alle Filialen.</p>` : ""}
         ${!(Array.isArray(e.branches) && e.branches.length) || e.address ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-field="address" value="${esc(e.address || "")}" placeholder="📍 Adresse, z. B. Hauptstraße 5, 48565 Steinfurt" maxlength="120"></div>` : ""}
         ${!(Array.isArray(e.branches) && e.branches.length) || e.phone ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-field="phone" value="${esc(e.phone || "")}" placeholder="📞 Telefon" maxlength="40"></div>` : ""}
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:web"></ha-icon><input class="grow" type="url" inputmode="url" data-field="website" value="${esc(e.website || "")}" placeholder="🌐 Webseite (https://…)"></div>
-        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:lightbulb-on-outline"></ha-icon><textarea class="grow" data-field="tips" rows="2" maxlength="300" placeholder="💡 Eure Tipps, z. B. Parkplatz hinten ist frei, Pfandautomat streikt oft">${esc(e.tips || "")}</textarea></div>
+        ${!(Array.isArray(e.branches) && e.branches.length) || e.tips ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:lightbulb-on-outline"></ha-icon><textarea class="grow" data-field="tips" rows="2" maxlength="300" placeholder="💡 Eure Tipps, z. B. Parkplatz hinten ist frei, Pfandautomat streikt oft">${esc(e.tips || "")}</textarea></div>` : ""}
         <p class="hint">ℹ️ Steckbrief: Steht hier etwas, zeigt das Fenster mit den Öffnungszeiten (Reiter gedrückt halten) neben dem Namen ein ℹ️ – antippen klappt alles auf. Holst du die Zeiten bei 🌐 OpenStreetMap, kommen Adresse, Telefon und Webseite meist gleich mit (nur in leere Felder).</p>
         <p class="hint">🗞️ Prospekt-Link: Nur die Adresse wird gespeichert. Die Karte ruft nie selbst etwas dort ab; erst wenn du im Fenster (Namen gedrückt halten) „Prospekt öffnen“ antippst, öffnet sich die Seite – ohne dass sie erfährt, woher du kommst.</p>
         ${zones.length ? "" : `<p class="hint">📍 Noch keine Zonen in Home Assistant angelegt (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen).</p>`}
@@ -12939,14 +12998,15 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           d.querySelector(".chips").hidden = true;
           this._hoursSave(box);
           this._toast("🕒 Übertragen");
+        } else if (box.dataset.draft) { // 🏬 im Filialen-Fenster: nur leeren, gespeichert wird mit „Speichern“
+          for (const t2 of box.querySelectorAll(".hd[data-wd]")) { t2.querySelector(".rngs").innerHTML = this._hoursRngHtml("", ""); t2.querySelector('[data-hf="zu"]').checked = true; t2.classList.add("zu"); }
         } else if (box.dataset.branch) { // 🏬 Zeiten dieser Filiale löschen
           this._hoursSendBranches(box.dataset.id, this._branchesCollect(box.dataset.id).map((b) => (b.id === box.dataset.branch ? { ...b, hours: null } : b)), true);
         } else this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: box.dataset.id, hours: null }).then(() => this._renderSettings()).catch(() => {});
         break;
       }
-      case "hours-brtoggle":
-        this._brOpen = this._brOpen === el.dataset.bid ? null : el.dataset.bid;
-        this._renderSettings();
+      case "hours-bredit": // 🏬 Filiale im eigenen Fenster bearbeiten
+        this._editBranch(el.dataset.id, el.dataset.bid);
         break;
       case "hours-osm": {
         const sid = el.dataset.id;
@@ -12971,24 +13031,9 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._hoursSendBranches(sid, list, true);
         break;
       }
-      case "hours-brdel": {
-        const sid = this._hoursOpenFor;
-        const left = this._branchesCollect(sid).filter((b) => b.id !== el.dataset.bid);
-        this._hoursSendBranches(sid, left, true);
+      case "hours-bradd": // 🏬 neue Filiale: gleich das Fenster öffnen
+        this._editBranch(el.dataset.id, null);
         break;
-      }
-      case "hours-bradd": {
-        const sid = el.dataset.id;
-        const st = this._store(sid);
-        askText("Name der Filiale", "z. B. Innenstadt").then((name) => {
-          if (!name) return;
-          const cur = this._branchesCollect(sid);
-          // erste Filiale übernimmt die bisherigen Zeiten des Geschäfts (nichts geht verloren)
-          cur.push({ name, hours: !cur.length && Array.isArray(st?.hours) ? st.hours : null });
-          this._hoursSendBranches(sid, cur, true);
-        });
-        break;
-      }
       case "view-haptic": { // 📳 Vibrationsstärke (nur dieses Gerät)
         try { localStorage.setItem("einkaufsliste_haptic", el.dataset.level in EL_HAPTIC ? el.dataset.level : "normal"); } catch (_) { /* egal */ }
         elVibrate(40); // Kostprobe
@@ -14575,18 +14620,6 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     if (t.id === "logDays") {
       this._ws({ type: "einkaufsliste/log/settings", days: Number(t.value) })
         .then(() => { this._toast(`📋 Verlauf wird ${t.value} Tage aufgehoben`); this._loadLog(); }).catch(() => {});
-      return;
-    }
-    if (t.dataset?.ba !== undefined || t.dataset?.bp !== undefined) { // 🏬 Adresse/Telefon einer Filiale
-      const sid = this._hoursOpenFor;
-      const p = this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: sid, branches: this._branchesCollect(sid) });
-      p.catch(() => {}); // Fehler (z. B. Telefon mit Buchstaben) zeigt _ws schon an
-      return;
-    }
-    if (t.dataset?.bn) { // 🏬 Filiale umbenannt
-      const sid = this._hoursOpenFor;
-      if (!t.value.trim()) { this._renderSettings(); return; }
-      this._hoursSendBranches(sid, this._branchesCollect(sid));
       return;
     }
     const hbox = t.closest?.(".hoursed[data-hoursed]"); // 🕒 Öffnungszeiten speichern

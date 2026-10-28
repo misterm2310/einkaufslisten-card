@@ -788,6 +788,8 @@ async def test_store_profile(hass, setup, hass_ws_client):
     br = m.store_by_id(aldi)["branches"][0]
     assert br["address"] == "Markt 2" and br["phone"] == "02552 1"
     assert not await upd(branches=[{"name": "B", "hours": None, "phone": "abc"}])
+    assert await upd(branches=[{"name": "Borghorst", "hours": None, "tips": "  Parkplatz  hinten \n Pfand links "}])
+    assert m.store_by_id(aldi)["branches"][0]["tips"] == "Parkplatz hinten\nPfand links"  # 💡 Tipps pro Filiale
 
 
 async def test_store_holiday_state(hass, setup, hass_ws_client):

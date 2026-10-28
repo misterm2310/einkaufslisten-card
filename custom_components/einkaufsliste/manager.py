@@ -343,7 +343,7 @@ HOLIDAY_STATES = ("BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", "NI", "NW", "R
 
 
 def _clean_branches(value: Any) -> list[dict[str, Any]] | None:
-    """Filialen eines Geschäfts: Liste aus {id, name, hours}. Leer/None = keine Filialen."""
+    """Filialen eines Geschäfts: Liste aus {id, name, hours, address, phone, tips}. Leer/None = keine Filialen."""
     if not value:
         return None
     if not isinstance(value, (list, tuple)):
@@ -365,6 +365,9 @@ def _clean_branches(value: Any) -> list[dict[str, Any]] | None:
         phone = _clean_phone(b.get("phone"))
         if phone:
             entry["phone"] = phone
+        tips = _clean_tips(b.get("tips"))  # 💡 eigene Tipps der Filiale (Steckbrief pro Filiale)
+        if tips:
+            entry["tips"] = tips
         out.append(entry)
     return out or None
 
