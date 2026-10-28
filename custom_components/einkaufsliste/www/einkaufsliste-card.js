@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.3";
+const EL_VERSION = "2.76.24-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -415,6 +415,12 @@ const EL_BETA_NEWS = [
   ["⚡ <b>Schneller:</b> Ein Artikel aus „Erledigt“ steht sofort wieder auf der Liste. · 🛒 Der Einkaufswagen oben schiebt die Liste nicht mehr nach oben.",
    "⚡ <b>Faster:</b> an item taken back from “Done” is on the list again at once. · 🛒 The cart at the top no longer pushes the list up.",
    "beta.3"],
+  ["📱 <b>QR-Code:</b> Jetzt kommen immer alle Artikel mit. Lange Listen bekommen mehrere Codes („Teil 1 von 2“).",
+   "📱 <b>QR code:</b> all items are always included now. Long lists get several codes (“Part 1 of 2”).",
+   "beta.4"],
+  ["🏬 <b>Filialen:</b> In ⚙️ → Geschäfte heißt es jetzt „Filialen ändern“. Jede Filiale hat eigene Adresse, Telefon und Zeiten in einem Block. · 📂 Kategorien in der Liste lassen sich mit einem Tipp auf den Kopf einklappen (am Anfang sind alle offen).",
+   "🏬 <b>Branches:</b> in ⚙️ → Stores it is now called “Edit branches”. Each branch has its own address, phone and times in one block. · 📂 Categories in the list can be collapsed by tapping their header (all are open at the start).",
+   "beta.4"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -1479,15 +1485,16 @@ function elRgb(c) {
 // ---------------------------------------------------------------- 💳 Codes zeichnen (QR, EAN-13, EAN-8, Code 128) – alles selbst, ohne Bibliothek
 const elQrMatrix = (text) => {
   const bytes = Array.from(new TextEncoder().encode(String(text)));
-  const ECC = [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24]; // Korrektur-Bytes je Block (Stufe M), Version 1–14
-  const BLK = [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9];                // Blöcke (Stufe M)
+  // Korrektur-Bytes je Block und Anzahl Blöcke (Stufe M), Version 1–40 (aus der QR-Norm)
+  const ECC = [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28];
+  const BLK = [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49];
   const rawModules = (v) => {
     let r = (16 * v + 128) * v + 64;
     if (v >= 2) { const n = Math.floor(v / 7) + 2; r -= (25 * n - 10) * n - 55; if (v >= 7) r -= 36; }
     return r;
   };
   let ver = 0;
-  for (let v = 1; v <= 14; v++) {
+  for (let v = 1; v <= 40; v++) {
     const cap = Math.floor(rawModules(v) / 8) - ECC[v] * BLK[v];
     const need = 4 + (v < 10 ? 8 : 16) + bytes.length * 8;
     if (need <= cap * 8) { ver = v; break; }
@@ -2955,7 +2962,8 @@ ha-card.compact .group { margin-top:4px; }
 .prlink { background:none; border:0; color:var(--secondary-text-color); font:inherit; font-size:12px; cursor:pointer; padding:4px 8px; display:inline-flex; align-items:center; gap:4px; text-decoration:underline; }
 .prlink ha-icon { --mdc-icon-size:14px; }
 .prqr { display:flex; flex-direction:column; gap:10px; align-items:center; }
-.prqrc { width:min(78vw, 300px); background:#fff; padding:6px; border-radius:12px; line-height:0; }
+.prqrbox { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.prqrc { width:min(86vw, 380px); background:#fff; padding:6px; border-radius:12px; line-height:0; }
 .prqrc svg { width:100%; height:auto; display:block; }
 .prqrt { align-self:stretch; max-height:180px; overflow:auto; margin:0; padding:8px 10px; border-radius:10px; background:var(--secondary-background-color, rgba(127,127,127,.1)); font:12px/1.4 Roboto, sans-serif; white-space:pre-wrap; }
 .prchoice { display:flex; flex-direction:column; gap:8px; margin:8px 0; }
@@ -3268,6 +3276,7 @@ label.btn { cursor:pointer; }
 .hoursed .hhead { margin-top:4px; }
 .hoursed .hbranch .iconbtn.on { background:color-mix(in srgb, var(--primary-color,#03a9f4) 22%, transparent); border-radius:50%; }
 .shead { display:block; margin:8px 0 2px; }
+.hoursed .hbranch input[data-ba], .hoursed .hbranch input[data-bp] { width:auto !important; flex:1 1 0; min-width:0; font:inherit; padding:5px 8px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
 .hoursed .hbranch input[data-bn] { width:auto !important; flex:1 1 0; min-width:0; font:inherit; padding:5px 8px; border-radius:8px; border:1px solid var(--divider-color,#ccc); background:transparent; color:inherit; }
 .hourspop .hbox { max-height:85vh; overflow-y:auto; }
 .hourspop .hbr { display:flex; flex-direction:column; gap:2px; border-top:1px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:6px; margin-top:4px; font-size:.92em; }
@@ -4561,15 +4570,16 @@ class EinkaufslisteCard extends HTMLElement {
     const h = Array.isArray(e.hours) ? e.hours : null;
     const br = Array.isArray(e.branches) ? e.branches : [];
     if (this._hoursOpenFor !== e.id) { // 🕒 optional: erst auf Wunsch aufklappen
-      const has = br.length ? `${br.length} Filialen mit eigenen Zeiten.` : h ? "Öffnungszeiten sind eingetragen." : "";
-      return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ${h || br.length ? "ändern" : "eintragen (optional)"}</button><p class="hint">${has || "Noch keine eingetragen – das ist in Ordnung, dann ändert sich nichts."}</p></div>`;
+      const has = br.length ? `${br.length} Filialen – jede mit Adresse, Telefon und Zeiten.` : h ? "Öffnungszeiten sind eingetragen." : "";
+      return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">${br.length ? "🏬 Filialen ändern" : `🕒 Öffnungszeiten ${h ? "ändern" : "eintragen (optional)"}`}</button><p class="hint">${has || "Noch keine eingetragen – das ist in Ordnung, dann ändert sich nichts."}</p></div>`;
     }
     const sel = `<b class="hhead">🎌 An Feiertagen zu</b><div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:calendar-star"></ha-icon><select class="grow" data-field="holiday_state" title="An den gesetzlichen Feiertagen dieses Bundeslandes gilt das Geschäft als geschlossen"><option value="">Feiertage ignorieren</option>${Object.entries(EL_STATES).map(([k, v]) => `<option value="${k}" ${e.holiday_state === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>`;
     let main;
     if (br.length) {
-      main = br.map((b) => `<div class="hbranch"><div class="hr"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="iconbtn ${this._brOpen === b.id ? "on" : ""}" data-act="hours-brtoggle" data-bid="${b.id}" title="Zeiten dieser Filiale ${this._brOpen === b.id ? "zuklappen" : "anzeigen"}"><ha-icon icon="mdi:clock-outline"></ha-icon></button></div><div class="hr"><button type="button" class="iconbtn" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben"><ha-icon icon="mdi:arrow-up"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten"><ha-icon icon="mdi:arrow-down"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
+      // 🏬 pro Filiale alles zusammen: Name, Adresse, Telefon, Zeiten
+      main = br.map((b) => `<div class="hbranch"><div class="hr"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><input class="grow" data-bn="${b.id}" value="${esc(b.name)}" title="Name der Filiale"><button type="button" class="iconbtn ${this._brOpen === b.id ? "on" : ""}" data-act="hours-brtoggle" data-bid="${b.id}" title="Zeiten dieser Filiale ${this._brOpen === b.id ? "zuklappen" : "anzeigen"}"><ha-icon icon="mdi:clock-outline"></ha-icon></button></div><div class="hr"><button type="button" class="iconbtn" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben"><ha-icon icon="mdi:arrow-up"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten"><ha-icon icon="mdi:arrow-down"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdel" data-bid="${b.id}" title="Filiale löschen"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div><div class="hr"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-ba="${b.id}" value="${esc(b.address || "")}" placeholder="📍 Adresse der Filiale" maxlength="120" title="Adresse der Filiale"></div><div class="hr"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-bp="${b.id}" value="${esc(b.phone || "")}" placeholder="📞 Telefon der Filiale" maxlength="40" title="Telefon der Filiale"></div>${this._brOpen === b.id ? this._hoursWeekHtml(Array.isArray(b.hours) ? b.hours : null, e.id, b.id) : `<p class="hint">${Array.isArray(b.hours) ? "Zeiten eingetragen." : "Keine Zeiten eingetragen."}</p>`}</div>`).join("");
     } else main = this._hoursWeekHtml(h, e.id, "");
-    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">🕒 Öffnungszeiten ▴ zuklappen</button><div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button><button type="button" class="btn" data-act="hours-osm" data-id="${e.id}" title="Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)">🌐 Zeiten aus OpenStreetMap</button></div>${main}${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten; der Reiter ist nur grau, wenn alle Filialen zu haben. Mit den Pfeilen sortierst du die Filialen. 🌐 „Zeiten aus OpenStreetMap“ sucht das Geschäft im Netz (nur auf Knopfdruck) – die Zeiten stammen von Freiwilligen, bitte kurz prüfen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
+    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">${br.length ? "🏬 Filialen" : "🕒 Öffnungszeiten"} ▴ zuklappen</button><div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button><button type="button" class="btn" data-act="hours-osm" data-id="${e.id}" title="Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)">🌐 Zeiten aus OpenStreetMap</button></div>${main}${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten, Adresse und Telefon; der Reiter ist nur grau, wenn alle Filialen zu haben. Mit den Pfeilen sortierst du die Filialen. 🌐 „Zeiten aus OpenStreetMap“ sucht das Geschäft im Netz (nur auf Knopfdruck) – die Zeiten stammen von Freiwilligen, bitte kurz prüfen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
   }
 
   _hoursCollect(box) {
@@ -4589,7 +4599,9 @@ class EinkaufslisteCard extends HTMLElement {
     return (st?.branches || []).map((b) => {
       const box = root.querySelector(`.hoursed[data-branch="${b.id}"]`);
       const nm = root.querySelector(`input[data-bn="${b.id}"]`);
-      return { id: b.id, name: (nm?.value || "").trim() || b.name, hours: box ? this._hoursCollect(box) : (b.hours || null), address: b.address || null, phone: b.phone || null };
+      const ad = root.querySelector(`input[data-ba="${b.id}"]`), ph = root.querySelector(`input[data-bp="${b.id}"]`);
+      return { id: b.id, name: (nm?.value || "").trim() || b.name, hours: box ? this._hoursCollect(box) : (b.hours || null),
+        address: ad ? ad.value.trim() || null : b.address || null, phone: ph ? ph.value.trim() || null : b.phone || null };
     });
   }
 
@@ -5962,8 +5974,10 @@ class EinkaufslisteCard extends HTMLElement {
       arr.sort(sortFn);
       const cat = this._cat(cid);
       const label = `<span class="gdot" style="--gc:${esc(cat?.color || "#9e9e9e")}"><ha-icon icon="${esc(cat?.icon || "mdi:tag-outline")}"></ha-icon></span>${esc(cat?.name || "Ohne Kategorie")}<span class="n">${arr.length}</span>`;
-      if (!collapsible) {
-        html.push(`<div class="group"><div class="ghead subhead">${label}</div>${arr.map(row).join("")}</div>`);
+      if (!collapsible) { // 📂 offene Liste: Kategorie antippen klappt sie zu/auf (Standard: alle offen, nach dem Neuladen wieder offen)
+        const ck = cid || "none";
+        const on = !(this._closedCats || new Set()).has(ck) || arr.some((i) => i.id === this._editing);
+        html.push(`<div class="group"><div class="ghead subhead cathead donehead ${on ? "" : "closed"}" role="button" tabindex="0" aria-expanded="${on}" data-act="toggle-cat" data-cat="${esc(ck)}" title="${on ? "Kategorie zuklappen" : "Kategorie aufklappen"}"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>${label}</div>${on ? arr.map(row).join("") : ""}</div>`);
         continue;
       }
       const key = cid || "none";
@@ -6151,7 +6165,8 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
   }
 
   // 📱 Liste als Text für den QR-Code: jedes Handy zeigt ihn mit der Kamera an (kein Internet, keine App nötig)
-  _shareText(sel) {
+  // Es kommen IMMER alle Artikel mit. Ein Code fasst hier bis 900 Bytes (noch gut mit der Handy-Kamera lesbar) – mehr = mehrere Codes „Teil 1/2“ …
+  _shareText(sel, max = 900) {
     const d = this._data;
     const open = d.items.filter((i) => !i.checked);
     const pick = sel === "all" ? open : sel === "none" ? open.filter((i) => !i.store_id || !this._store(i.store_id)) : open.filter((i) => i.store_id === sel);
@@ -6160,24 +6175,22 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
     const stores = sel === "all" ? [...(d.stores || []).map((st) => [st, pick.filter((i) => i.store_id === st.id)]), [null, pick.filter((i) => !i.store_id || !this._store(i.store_id))]] : [[null, pick]];
     for (const [st, arr] of stores) {
       if (!arr.length) continue;
-      if (sel === "all") lines.push(`\n${st ? st.name : elT("Ohne Geschäft")}:`);
+      if (sel === "all") lines.push(`${st ? st.name : elT("Ohne Geschäft")}:`);
       for (const i of [...arr].sort((x, y) => String(x.name).localeCompare(String(y.name), "de")))
         lines.push(`☐ ${i.quantity ? `${i.quantity} ` : ""}${i.name}${i.note ? ` (${i.note})` : ""}`);
     }
-    // 📏 Ein QR-Code fasst nur gut 300 Zeichen – zu viel? Dann so viele wie passen und „+ N weitere“
-    const max = 300, enc = (t) => new TextEncoder().encode(t).length;
-    let text = head, used = 0;
-    const items = lines.filter((l) => l.startsWith("☐")).length;
-    for (const l of lines) {
-      const more = items - used - (l.startsWith("☐") ? 1 : 0);
-      const tail = more > 0 ? `\n… + ${more} ${elT("weitere")}` : "";
-      if (enc(`${text}\n${l}${tail}`) > max) break;
-      text += `\n${l}`;
-      if (l.startsWith("☐")) used++;
+    const enc = (t) => new TextEncoder().encode(t).length;
+    const full = [head, ...lines].join("\n");
+    if (enc(full) <= max) return { parts: [full], full, count: pick.length };
+    const chunks = [];
+    let cur = [];
+    for (const l of lines) { // Teil-Kopf („(10/10)“) mit eingerechnet
+      if (cur.length && enc([`${head} (99/99)`, ...cur, l].join("\n")) > max) { chunks.push(cur); cur = []; }
+      cur.push(l.length > 300 ? l.slice(0, 300) : l);
     }
-    const cut = items - used;
-    if (cut > 0) text += `\n… + ${cut} ${elT("weitere")}`;
-    return { text, shown: used, cut, full: [head, ...lines].join("\n") };
+    if (cur.length) chunks.push(cur);
+    const parts = chunks.map((c, k) => [`${head} (${k + 1}/${chunks.length})`, ...c].join("\n"));
+    return { parts, full, count: pick.length };
   }
 
   _printPage() {
@@ -6205,16 +6218,17 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
         body.querySelector("[data-prhow]").onclick = how;
         body.querySelector("[data-pr]")?.focus?.({ preventScroll: true });
       };
-      const qr = (sel) => { // 📱 QR-Code mit der Liste als Text
-        const { text, cut } = this._shareText(sel);
-        const code = elCodeSvg(text, "qr");
-        body.innerHTML = `<div class="prqr">${code ? `<div class="prqrc">${code.svg}</div>` : `<p class="hint">${esc(elT("Die Liste ist zu lang für einen QR-Code."))}</p>`}
-          <p class="hint">${esc(elT("Mit der Handy-Kamera abfotografieren – die Liste erscheint als Text zum Abhaken im Kopf."))}${cut ? ` ${esc(elT("Passt nicht alles drauf:"))} + ${cut} ${esc(elT("weitere"))}. ${esc(elT("Tipp: ein einzelnes Geschäft wählen."))}` : ""}</p>
-          <pre class="prqrt">${esc(text)}</pre>
+      const qr = (sel) => { // 📱 QR-Code mit der Liste als Text – alle Artikel, bei langen Listen in mehreren Teilen
+        const { parts, full } = this._shareText(sel);
+        const many = parts.length > 1;
+        const codes = parts.map((t, k) => { const c = elCodeSvg(t, "qr"); return `<div class="prqrbox">${many ? `<b>${esc(elT("Teil"))} ${k + 1} ${esc(elT("von"))} ${parts.length}</b>` : ""}${c ? `<div class="prqrc">${c.svg}</div>` : ""}</div>`; }).join("");
+        body.innerHTML = `<div class="prqr">${codes}
+          <p class="hint">${esc(elT("Mit der Handy-Kamera abfotografieren – die Liste erscheint als Text zum Abhaken im Kopf."))}${many ? ` ${esc(elT("Die Liste ist lang, darum gibt es mehrere Codes: einen nach dem anderen abfotografieren."))}` : ""}</p>
+          <pre class="prqrt">${esc(full)}</pre>
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-prback>${esc(elT("Anderes Geschäft"))}</button>${navigator.clipboard?.writeText ? `<button type="button" class="btn" data-prcopy>${esc(elT("📋 Text kopieren"))}</button>` : ""}</div></div>`;
         body.querySelector("[data-prback]").onclick = choose;
         const cp = body.querySelector("[data-prcopy]");
-        if (cp) cp.onclick = () => navigator.clipboard.writeText(this._shareText(sel).full).then(() => this._toast(elT("📋 Kopiert"))).catch(() => {});
+        if (cp) cp.onclick = () => navigator.clipboard.writeText(full).then(() => this._toast(elT("📋 Kopiert"))).catch(() => {});
       };
       const show = (sel) => {
         const { html, by } = this._printSheet(sel);
@@ -6681,8 +6695,9 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
         <b class="shead">🗞️ Prospekt-Link</b>
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:newspaper-variant-outline"></ha-icon><input class="grow" type="url" inputmode="url" data-field="flyer" value="${esc(e.flyer || "")}" placeholder="🗞️ Prospekt-Link (https://…)" title="Adresse des Prospekts. Wird nur beim Antippen geöffnet."></div>
         <b class="shead">ℹ️ Steckbrief</b>
-        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-field="address" value="${esc(e.address || "")}" placeholder="📍 Adresse, z. B. Hauptstraße 5, 48565 Steinfurt" maxlength="120"></div>
-        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-field="phone" value="${esc(e.phone || "")}" placeholder="📞 Telefon" maxlength="40"></div>
+        ${Array.isArray(e.branches) && e.branches.length ? `<p class="hint">🏬 Dieses Geschäft hat Filialen: Adresse und Telefon stehen bei jeder Filiale oben unter „🏬 Filialen“. Webseite und Tipps hier gelten für alle Filialen.</p>` : ""}
+        ${!(Array.isArray(e.branches) && e.branches.length) || e.address ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-field="address" value="${esc(e.address || "")}" placeholder="📍 Adresse, z. B. Hauptstraße 5, 48565 Steinfurt" maxlength="120"></div>` : ""}
+        ${!(Array.isArray(e.branches) && e.branches.length) || e.phone ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-field="phone" value="${esc(e.phone || "")}" placeholder="📞 Telefon" maxlength="40"></div>` : ""}
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:web"></ha-icon><input class="grow" type="url" inputmode="url" data-field="website" value="${esc(e.website || "")}" placeholder="🌐 Webseite (https://…)"></div>
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:lightbulb-on-outline"></ha-icon><textarea class="grow" data-field="tips" rows="2" maxlength="300" placeholder="💡 Eure Tipps, z. B. Parkplatz hinten ist frei, Pfandautomat streikt oft">${esc(e.tips || "")}</textarea></div>
         <p class="hint">ℹ️ Steckbrief: Steht hier etwas, zeigt das Fenster mit den Öffnungszeiten (Reiter gedrückt halten) neben dem Namen ein ℹ️ – antippen klappt alles auf. Holst du die Zeiten bei 🌐 OpenStreetMap, kommen Adresse, Telefon und Webseite meist gleich mit (nur in leere Felder).</p>
@@ -13451,6 +13466,14 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._editing = null;
         this._renderList();
         break;
+      case "toggle-cat": { // 📂 Kategorie in der Liste zu-/aufklappen (mehrere dürfen zu sein)
+        const key = el.dataset.cat;
+        this._closedCats ||= new Set();
+        if (this._closedCats.has(key)) this._closedCats.delete(key); else this._closedCats.add(key);
+        this._renderList();
+        if (e.detail === 0) this.shadowRoot.querySelector(`.cathead[data-cat="${CSS.escape(key)}"]`)?.focus?.({ preventScroll: true }); // ⌨️ nur bei Tastatur (Enter) den Fokus behalten
+        break;
+      }
       case "toggle-donecat": {
         const key = el.dataset.cat;
         // Immer nur eine Kategorie offen: eine aufmachen schließt die anderen
@@ -14552,6 +14575,12 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     if (t.id === "logDays") {
       this._ws({ type: "einkaufsliste/log/settings", days: Number(t.value) })
         .then(() => { this._toast(`📋 Verlauf wird ${t.value} Tage aufgehoben`); this._loadLog(); }).catch(() => {});
+      return;
+    }
+    if (t.dataset?.ba !== undefined || t.dataset?.bp !== undefined) { // 🏬 Adresse/Telefon einer Filiale
+      const sid = this._hoursOpenFor;
+      const p = this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: sid, branches: this._branchesCollect(sid) });
+      p.catch(() => {}); // Fehler (z. B. Telefon mit Buchstaben) zeigt _ws schon an
       return;
     }
     if (t.dataset?.bn) { // 🏬 Filiale umbenannt

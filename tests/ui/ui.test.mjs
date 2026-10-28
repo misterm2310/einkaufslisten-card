@@ -373,17 +373,18 @@ r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=nu
   const pg=()=>c.shadowRoot.querySelector(".pagehost"); const title=pg().querySelector("h3")?.textContent;
   const hows=[...pg().querySelectorAll("[data-how]")].map(b=>b.textContent.trim());
   pg().querySelector('[data-how="qr"]').click(); await new Promise(r=>setTimeout(r,30)); pg().querySelector('[data-pr="'+st.id+'"]').click(); await new Promise(r=>setTimeout(r,30));
-  const qr={ svg:!!pg().querySelector(".prqrc svg path"), txt:pg().querySelector(".prqrt")?.textContent };
-  const big=c._shareText("all"); d.items=Array.from({length:60},(_, k)=>({id:"x"+k,name:"Produkt Nummer "+k,checked:false,store_id:st.id})); const many=c._shareText(st.id);
-  const manySvg=true;
+  const qr={ svg:pg().querySelectorAll(".prqrc svg path").length, txt:pg().querySelector(".prqrt")?.textContent };
+  d.items=Array.from({length:30},(_, k)=>({id:"x"+k,name:"Produkt Nummer "+k,checked:false,store_id:st.id})); const mid=c._shareText(st.id);
+  d.items=Array.from({length:150},(_, k)=>({id:"x"+k,name:"Produkt Nummer "+k,checked:false,store_id:st.id})); const many=c._shareText(st.id);
+  const all150=Array.from({length:150},(_, k)=>"Produkt Nummer "+k).every(n=>many.parts.some(t=>t.split("\\n").includes("☐ "+n)));
   d.items=[{id:"a",name:"Milch",quantity:"2 L",checked:false,store_id:st.id}];
   const sheet=c._printSheet(st.id).html; const sheetAll=c._printSheet("all").html;
   c._pageBack(); c._pageBack(); c._pageBack();
   d.items=keepI; Object.keys(st).forEach(k=>delete st[k]); Object.assign(st,keepS); c._renderAll();
-  return { lab, title, hows, qr, many:{cut:many.cut, len:new TextEncoder().encode(many.text).length, svg:manySvg}, addr:/Hauptstr\. 1/.test(sheet), hrs:(sheet.match(/Mo–Fr 08:00 – 20:00 · Sa 08:00 – 18:00 · So zu/)||[])[0], allNoAddr:!/Hauptstr/.test(sheetAll) }; })()`);
+  return { lab, title, hows, qr, mid:{n:mid.parts.length}, many:{n:many.parts.length, all:all150, max:Math.max(...many.parts.map(t=>new TextEncoder().encode(t).length)), head:many.parts[1]?.split("\\n")[0]}, addr:/Hauptstr\. 1/.test(sheet), hrs:(sheet.match(/Mo–Fr 08:00 – 20:00 · Sa 08:00 – 18:00 · So zu/)||[])[0], allNoAddr:!/Hauptstr/.test(sheetAll) }; })()`);
 check("Drucken & Teilen: Link heißt neu und fragt Drucken oder QR-Code", r.lab === "Drucken & Teilen" && r.title === "Drucken & Teilen" && r.hows.length === 2 && /Drucken/.test(r.hows[0]) && /QR-Code/.test(r.hows[1]), JSON.stringify(r));
-check("QR-Code: Bild da, Text mit Kästchen, Menge und Notiz", r.qr.svg && /☐ 2 L Milch/.test(r.qr.txt) && /☐ Brot \(Dinkel\)/.test(r.qr.txt), JSON.stringify(r.qr));
-check("QR-Code: lange Liste wird gekürzt („+ N weitere“) und passt trotzdem", r.many.cut > 0 && r.many.len <= 300 && r.many.svg, JSON.stringify(r.many));
+check("QR-Code: Bild da, Text mit Kästchen, Menge und Notiz", r.qr.svg === 1 && /☐ 2 L Milch/.test(r.qr.txt) && /☐ Brot \(Dinkel\)/.test(r.qr.txt), JSON.stringify(r.qr));
+check("QR-Code: immer ALLE Artikel – 30 in einem Code, 150 in mehreren Teilen „(2/n)“", r.mid.n === 1 && r.many.n > 1 && r.many.all && r.many.max <= 900 && /\(2\/\d+\)$/.test(r.many.head || ""), JSON.stringify({mid:r.mid, many:r.many}));
 check("Ausdruck: ein Geschäft zeigt Adresse und Öffnungszeiten oben, „Alle“ nicht", r.addr && !!r.hrs && r.allNoAddr, JSON.stringify(r));
 
 // 22) 🧘 Ruhiger Modus: Schalter in 👁️ Ansicht, Klasse an der Karte, keine Animationen (Idee 969)
@@ -433,6 +434,34 @@ r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=nu
   release({}); await new Promise(r=>setTimeout(r,20)); c._ws=ws; Object.assign(it, keep); c._doneOpen=false; c._renderAll();
   return { wasDone, now }; })()`);
 check("Zurückholen: sofort wieder offen, noch bevor Home Assistant antwortet", r.wasDone && r.now.checked === false && r.now.row, JSON.stringify(r));
+
+// 26) 🏬 Filialen: Knopf heißt „Filialen ändern“, jede Filiale hat Adresse + Telefon, Änderung wird gespeichert; ohne Filialen wie bisher
+r = await p.evaluate(`(async () => { const c=${card}; const st=c._data.stores[1]; const keep={...st}; const q=(x)=>c.shadowRoot.querySelector(x);
+  Object.assign(st,{address:null, phone:null, branches:[{id:"b1",name:"Borghorst",hours:null,address:"Markt 2"},{id:"b2",name:"Burgsteinfurt",hours:null}]});
+  c._view="settings"; c._setSec="stores"; c._storeSel=st.id; c._hoursOpenFor=null; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  const closedLbl=q('[data-act="hours-toggle"]')?.textContent.trim(); const stAddr=!!q('.srow[data-id="'+st.id+'"] [data-field="address"]'); const hint=/Adresse und Telefon stehen bei jeder Filiale/.test(c.shadowRoot.textContent);
+  c._hoursOpenFor=st.id; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  const openLbl=q('[data-act="hours-toggle"]')?.textContent.trim(); const a1=q('input[data-ba="b1"]')?.value, a2=q('input[data-ba="b2"]')?.value, p2=!!q('input[data-bp="b2"]');
+  const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
+  const inp=q('input[data-bp="b2"]'); inp.value="02551 99"; inp.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
+  const ad=q('input[data-ba="b2"]'); ad.value="Bahnhofstr. 1"; ad.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
+  const last=sent.at(-1)?.branches;
+  st.branches=null; c._hoursOpenFor=null; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  const plainLbl=q('[data-act="hours-toggle"]')?.textContent.trim(); const plainAddr=!!q('.srow[data-id="'+st.id+'"] [data-field="address"]');
+  c._ws=ws; Object.keys(st).forEach(k=>delete st[k]); Object.assign(st,keep); c._storeSel=null; c._setSec=null; c._view="list"; c._renderAll();
+  return { closedLbl, stAddr, hint, openLbl, a1, a2, p2, last, plainLbl, plainAddr }; })()`);
+check("Filialen: Knopf heißt „🏬 Filialen ändern“, Adresse/Telefon des Geschäfts weg, Hinweis da", r.closedLbl === "🏬 Filialen ändern" && !r.stAddr && r.hint && /^🏬 Filialen/.test(r.openLbl), JSON.stringify(r));
+check("Filialen: jede Filiale mit Adresse und Telefon, Änderung wird gespeichert", r.a1 === "Markt 2" && r.a2 === "" && r.p2 && r.last?.[1]?.phone === "02551 99" && r.last?.[1]?.address === "Bahnhofstr. 1" && r.last?.[0]?.address === "Markt 2", JSON.stringify(r));
+check("Ohne Filialen: Öffnungszeiten-Knopf und Adresse wie bisher", /Öffnungszeiten eintragen/.test(r.plainLbl) && r.plainAddr, JSON.stringify(r));
+
+// 27) 📂 Kategorien in der Liste: Standard offen, antippen klappt zu (Zahl bleibt), nochmal auf
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; c._tab="all"; c._closedCats=null; c._renderAll(); await new Promise(r=>setTimeout(r,30));
+  const q=(x)=>c.shadowRoot.querySelector(x); const head=q("#list .cathead"); const key=head?.dataset.cat; const grp=()=>q('#list .cathead[data-cat="'+key+'"]').closest(".group");
+  const before={ open:head.getAttribute("aria-expanded"), rows:grp().querySelectorAll(".item").length };
+  head.click(); await new Promise(r=>setTimeout(r,30)); const closed={ open:q('#list .cathead[data-cat="'+key+'"]').getAttribute("aria-expanded"), rows:grp().querySelectorAll(".item").length, n:grp().querySelector(".n")?.textContent };
+  q('#list .cathead[data-cat="'+key+'"]').click(); await new Promise(r=>setTimeout(r,30)); const again=grp().querySelectorAll(".item").length;
+  return { before, closed, again }; })()`);
+check("Kategorien: Standard offen, antippen klappt zu (Anzahl bleibt sichtbar), nochmal = auf", r.before.open === "true" && r.before.rows > 0 && r.closed.open === "false" && r.closed.rows === 0 && r.closed.n === String(r.before.rows) && r.again === r.before.rows, JSON.stringify(r));
 
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
