@@ -349,8 +349,40 @@ def _clean_branches(value: Any) -> list[dict[str, Any]] | None:
             raise ValueError("Jede Filiale braucht einen Namen.")
         bid = b.get("id") if isinstance(b.get("id"), str) and b.get("id") and b.get("id") not in seen else _new_id()
         seen.add(bid)
-        out.append({"id": bid, "name": name, "hours": _clean_hours(b.get("hours"))})
+        entry = {"id": bid, "name": name, "hours": _clean_hours(b.get("hours"))}
+        addr = _clean_address(b.get("address"))  # ℹ️ Adresse und Telefon der Filiale (z. B. von OpenStreetMap)
+        if addr:
+            entry["address"] = addr
+        phone = _clean_phone(b.get("phone"))
+        if phone:
+            entry["phone"] = phone
+        out.append(entry)
     return out or None
+
+
+def _clean_address(value: Any) -> str | None:
+    """ℹ️ Adresse: eine Zeile, höchstens 120 Zeichen."""
+    text = " ".join(str(value or "").split())[:120] if isinstance(value, str) else ""
+    return text or None
+
+
+def _clean_phone(value: Any) -> str | None:
+    """ℹ️ Telefon: nur Ziffern, Leerzeichen und + - / ( ), höchstens 40 Zeichen."""
+    text = " ".join(str(value or "").split()) if isinstance(value, str) else ""
+    if not text:
+        return None
+    if len(text) > 40 or not re.fullmatch(r"[0-9+\-/() ]+", text) or not re.search(r"\d", text):
+        raise ValueError("Die Telefonnummer bitte nur mit Ziffern (und + - / ( )).")
+    return text
+
+
+def _clean_tips(value: Any) -> str | None:
+    """ℹ️ Eigene Tipps zum Geschäft („Parkplatz hinten ist frei“): höchstens 300 Zeichen, Zeilen bleiben."""
+    if not isinstance(value, str):
+        return None
+    lines = [" ".join(x.split()) for x in value.replace("\r", "").split("\n")]
+    text = "\n".join(x for x in lines if x)[:300].strip()
+    return text or None
 
 
 def _clean_flyer(value: Any) -> str | None:
@@ -4408,6 +4440,18 @@ class EinkaufslisteManager:
             entry["branches"] = _clean_branches(fields["branches"])
         if "flyer" in fields and kind == "stores":  # 🗞️ Prospekt-Link (nur Adresse speichern, es wird nie etwas abgerufen)
             entry["flyer"] = _clean_flyer(fields["flyer"])
+        if kind == "stores":  # ℹ️ Steckbrief: Adresse, Telefon, Webseite, eigene Tipps (leer = weg)
+            if "address" in fields:
+                entry["address"] = _clean_address(fields["address"])
+            if "phone" in fields:
+                entry["phone"] = _clean_phone(fields["phone"])
+            if "website" in fields:
+                try:
+                    entry["website"] = _clean_flyer(fields["website"])
+                except ValueError as err:
+                    raise ValueError("Bitte eine Webseite, die mit https:// beginnt.") from err
+            if "tips" in fields:
+                entry["tips"] = _clean_tips(fields["tips"])
         if "holiday_state" in fields and kind == "stores":  # 🎌 Bundesland: an dessen Feiertagen ist das Geschäft zu (leer = Feiertage ignorieren)
             code = (fields["holiday_state"] or "").strip().upper()
             if code and code not in HOLIDAY_STATES:

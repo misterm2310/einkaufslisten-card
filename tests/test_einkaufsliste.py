@@ -757,6 +757,39 @@ async def test_store_flyer(hass, setup, hass_ws_client):
     assert await upd("") and m.store_by_id(aldi)["flyer"] is None
 
 
+async def test_store_profile(hass, setup, hass_ws_client):
+    """ℹ️ Steckbrief: Adresse, Telefon, Webseite, Tipps (Idee 621)."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    n = 0
+    async def upd(**f):
+        nonlocal n
+        n += 1
+        await client.send_json({"id": n, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, **f})
+        return (await client.receive_json())["success"]
+    assert await upd(address="  Hauptstr. 1,\n 48565  Steinfurt ", phone="+49 (2552) 12-34/5", website="https://www.aldi-nord.de", tips="Parkplatz hinten\r\n\n  ist frei ")
+    st = m.store_by_id(aldi)
+    assert st["address"] == "Hauptstr. 1, 48565 Steinfurt"
+    assert st["phone"] == "+49 (2552) 12-34/5"
+    assert st["website"] == "https://www.aldi-nord.de"
+    assert st["tips"] == "Parkplatz hinten\nist frei"
+    assert not await upd(phone="ruf mich an")
+    assert not await upd(phone="+++")
+    assert not await upd(phone="1" * 41)
+    assert not await upd(website="javascript:alert(1)")
+    assert m.store_by_id(aldi)["phone"] == "+49 (2552) 12-34/5"
+    assert await upd(tips="x" * 400) and len(m.store_by_id(aldi)["tips"]) == 300
+    assert await upd(address="", phone="", website="", tips="")
+    st = m.store_by_id(aldi)
+    assert st["address"] is None and st["phone"] is None and st["website"] is None and st["tips"] is None
+    # Filialen behalten Adresse und Telefon
+    assert await upd(branches=[{"name": "Borghorst", "hours": None, "address": "Markt 2", "phone": "02552 1"}])
+    br = m.store_by_id(aldi)["branches"][0]
+    assert br["address"] == "Markt 2" and br["phone"] == "02552 1"
+    assert not await upd(branches=[{"name": "B", "hours": None, "phone": "abc"}])
+
+
 async def test_store_holiday_state(hass, setup, hass_ws_client):
     client = await hass_ws_client(hass)
     m = mgr(hass)

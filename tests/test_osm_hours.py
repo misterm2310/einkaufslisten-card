@@ -38,7 +38,7 @@ def test_parse_unsupported_gives_none(raw):
 async def test_search(hass):
     answer = {
         "elements": [
-            {"lat": 52.1, "lon": 7.4, "tags": {"name": "K&K Supermarkt", "opening_hours": "Mo-Sa 07:00-21:00", "addr:city": "Borghorst", "addr:street": "Hauptstr.", "addr:housenumber": "1"}},
+            {"lat": 52.1, "lon": 7.4, "tags": {"name": "K&K Supermarkt", "opening_hours": "Mo-Sa 07:00-21:00", "phone": "+49 2552 1234;+49 2552 999", "website": "kuk.de/borghorst", "addr:city": "Borghorst", "addr:street": "Hauptstr.", "addr:housenumber": "1"}},
             {"center": {"lat": 52.0, "lon": 7.5}, "tags": {"name": "K&K Burgsteinfurt", "opening_hours": "kompliziert"}},
             {"tags": {"shop": "x"}},
         ]
@@ -54,6 +54,9 @@ async def test_search(hass):
     assert any(r["hours"] and r["hours"][0] == [["07:00", "21:00"]] for r in res)
     assert any(r["hours"] is None and r["raw"] == "kompliziert" for r in res)
     assert "K&K" in session.post.call_args.kwargs["data"]["data"]
+    kk = next(r for r in res if r["hours"])
+    assert kk["phone"] == "+49 2552 1234" and kk["website"] == "https://kuk.de/borghorst"
+    assert next(r for r in res if not r["hours"])["phone"] is None
 
 
 async def test_search_privacy_and_short_name(hass):

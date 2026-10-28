@@ -134,6 +134,18 @@ def _address(tags: dict[str, Any]) -> str:
     return ", ".join(x for x in (street, city) if x)
 
 
+def _osm_phone(tags: dict[str, Any]) -> str | None:
+    raw = str(tags.get("phone") or tags.get("contact:phone") or "").split(";")[0].strip()
+    return raw[:40] if raw and re.fullmatch(r"[0-9+\-/() ]+", raw) and re.search(r"\d", raw) else None
+
+
+def _osm_website(tags: dict[str, Any]) -> str | None:
+    raw = str(tags.get("website") or tags.get("contact:website") or "").split(";")[0].strip()
+    if raw and not re.match(r"^https?://", raw, re.I):
+        raw = "https://" + raw
+    return raw[:300] if raw and re.match(r"^https?://[^/\s]+\S*$", raw, re.I) else None
+
+
 async def async_search_hours(
     hass: HomeAssistant, manager: Any, name: str, zone: str | None = None, radius_km: int = 10
 ) -> list[dict[str, Any]]:
@@ -195,6 +207,8 @@ async def async_search_hours(
                 "distance_km": round(dist, 1) if dist is not None else None,
                 "raw": str(raw)[:200] if raw else None,
                 "hours": hours,
+                "phone": _osm_phone(tags),  # ℹ️ für den Steckbrief gleich mit
+                "website": _osm_website(tags),
             }
         )
     out.sort(key=lambda r: (r["distance_km"] is None, r["distance_km"] or 0))

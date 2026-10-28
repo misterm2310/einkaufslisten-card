@@ -295,6 +295,40 @@ check("Kochmütze: Punkt zeigt 2 wartende Vorschläge (abgelehnte zählen nicht)
 check("Kochmütze: kein Punkt ohne Zahnrad und ohne Vorschläge", r.noCog && r.none, JSON.stringify(r));
 check("Kochmütze: Punkt ist nur Anzeige, Tippen öffnet ganz normal die Kochmütze", r.went.view === "recipes" && r.went.pe === "none" && r.went.dotHidden, JSON.stringify(r));
 
+// 17) ℹ️ Steckbrief des Geschäfts: ℹ️ nur im aktiven Reiter mit Infos, Tippen öffnet Adresse/Telefon/Tipps; Felder in ⚙️ (Idee 621)
+r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; const [netto, aldi]=c._data.stores; const keep={...aldi};
+  Object.assign(aldi,{address:"Hauptstr. 1, 48565 Steinfurt", phone:"02552 1234", website:"https://www.aldi-nord.de", tips:"Parkplatz hinten ist frei"});
+  c._tab=netto.id; c._renderAll(); await new Promise(r=>setTimeout(r,50)); const q=(s)=>c.shadowRoot.querySelector(s);
+  const offOther=!q('.tab[data-tab="'+aldi.id+'"] .tinfo'), offEmpty=!q('.tab[data-tab="'+netto.id+'"] .tinfo');
+  c._tab=aldi.id; c._renderAll(); await new Promise(r=>setTimeout(r,50)); const ti=q('.tab[data-tab="'+aldi.id+'"] .tinfo');
+  const tabBefore=c._tab; ti?.click(); await new Promise(r=>setTimeout(r,50)); const pop=q(".hourspop");
+  const popInfo={ open:!!pop, tel:pop?.querySelector('a[href="tel:025521234"]')?.textContent, map:!!pop?.querySelector('a[href*="openstreetmap.org/search"]'), web:pop?.querySelector('a[href="https://www.aldi-nord.de"]')?.textContent, tips:pop?.querySelector(".htips")?.textContent, tab:c._tab===tabBefore };
+  pop?.remove();
+  c._view="settings"; c._setSec="stores"; c._storeSel=aldi.id; c._renderAll(); await new Promise(r=>setTimeout(r,50));
+  const f=(n)=>q('.srow[data-id="'+aldi.id+'"] [data-field="'+n+'"]')?.value;
+  const fields={ address:f("address"), phone:f("phone"), website:f("website"), tips:f("tips") };
+  const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
+  const ta=q('.srow[data-id="'+aldi.id+'"] [data-field="tips"]'); ta.value="Neu"; ta.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
+  c._ws=ws; Object.keys(aldi).forEach(k=>delete aldi[k]); Object.assign(aldi,keep); c._storeSel=null; c._setSec=null; c._view="list"; c._tab="all"; c._renderAll();
+  return { offOther, offEmpty, has:!!ti, popInfo, fields, sent:sent.map(m=>m.type+"|"+m.group_id+"|"+m.tips) }; })()`);
+check("Steckbrief: ℹ️ nur im aktiven Reiter und nur, wenn es Infos gibt", r.offOther && r.offEmpty && r.has, JSON.stringify(r));
+check("Steckbrief: ℹ️ öffnet Adresse (Karte), Telefon (anrufen), Webseite und Tipps", r.popInfo.open && r.popInfo.tel === "📞 02552 1234" && r.popInfo.map && /aldi-nord\.de$/.test(r.popInfo.web || "") && r.popInfo.tips === "💡 Parkplatz hinten ist frei" && r.popInfo.tab, JSON.stringify(r));
+check("Steckbrief: Felder in ⚙️ → Geschäfte, Tipps werden gespeichert", r.fields.address === "Hauptstr. 1, 48565 Steinfurt" && r.fields.phone === "02552 1234" && r.fields.website === "https://www.aldi-nord.de" && r.fields.tips === "Parkplatz hinten ist frei" && r.sent.length === 1 && /group\/update\|.+\|Neu$/.test(r.sent[0]), JSON.stringify(r));
+
+// 18) 🎨 Neues Geschäft: bekannte Kette bekommt beim Tippen ihre Logo-Farbe, selbst gewählte Farbe bleibt (Idee 632)
+r = await p.evaluate(`(async () => { const c=${card}; c._view="settings"; c._setSec="stores"; c._storeSel=null; c._renderAll(); await new Promise(r=>setTimeout(r,50));
+  let form, nm, col; const grab=()=>{ form=c.shadowRoot.querySelector('form[data-addkind="stores"]'); nm=form.elements.name; col=form.elements.color; }; grab();
+  const type=(v)=>{ nm.value=v; nm.dispatchEvent(new Event("input",{bubbles:true,composed:true})); return col.value; };
+  const lidl=type("Lidl Borghorst"), rewe=type("REWE"), other=type("Bäcker Krimphove");
+  const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
+  type("Edeka"); form.requestSubmit(); await new Promise(r=>setTimeout(r,30));
+  grab(); col.value="#123456"; col.dispatchEvent(new Event("input",{bubbles:true,composed:true})); const manual=type("Aldi Süd");
+  form.requestSubmit(); await new Promise(r=>setTimeout(r,30));
+  c._ws=ws; c._setSec=null; c._view="list"; c._renderAll();
+  return { lidl, rewe, other, manual, sent:sent.filter(m=>m.type==="einkaufsliste/group/add").map(m=>m.name+"|"+m.color) }; })()`);
+check("Ketten-Farbe: Lidl blau, Rewe rot, unbekannt grau", r.lidl === "#0050aa" && r.rewe === "#cc071e" && r.other === "#607d8b", JSON.stringify(r));
+check("Ketten-Farbe: wird mitgespeichert, selbst gewählte Farbe bleibt", r.manual === "#123456" && JSON.stringify(r.sent) === JSON.stringify(["Edeka|#ffd400", "Aldi Süd|#123456"]), JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

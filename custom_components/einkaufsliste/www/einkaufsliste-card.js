@@ -661,6 +661,20 @@ function elStoreClosed(st, now = new Date()) {
 }
 // 🕒 Gibt es echte Uhrzeiten (beim Geschäft oder bei einer Filiale)? Dann steht im Reiter eine Uhr statt des Punkts
 function elHasTimes(st) { return Array.isArray(st?.hours) || (Array.isArray(st?.branches) && st.branches.some((b) => Array.isArray(b.hours))); }
+// 🎨 Bekannte Ketten: Farbvorschlag ungefähr wie im Logo (nur die Farbe, kein Logo, kein Internet)
+const EL_CHAIN_COLORS = [
+  [/^aldi/, "#1b3a8c"], [/^lidl/, "#0050aa"], [/^rewe/, "#cc071e"], [/^edeka/, "#ffd400"], [/^netto/, "#ffe100"],
+  [/^penny/, "#cd1414"], [/^kaufland/, "#e10915"], [/^norma/, "#d6001c"], [/^(dm|dm-drogerie)\b/, "#1c3f94"], [/^rossmann/, "#c3002f"],
+  [/^m(ü|ue)ller/, "#f39200"], [/^ikea/, "#0058a3"], [/^obi\b/, "#ff7e21"], [/^hornbach/, "#f7941d"], [/^bauhaus/, "#d6001c"],
+  [/^toom/, "#e2001a"], [/^apotheke/, "#e30613"],
+];
+function elChainColor(name) {
+  const n = String(name || "").trim().toLowerCase();
+  for (const [rx, c] of EL_CHAIN_COLORS) if (rx.test(n)) return c;
+  return null;
+}
+// ℹ️ Gibt es etwas für den Steckbrief? (Adresse, Telefon, Webseite, Tipps, Zeiten, Filialen, Prospekt)
+function elHasStoreInfo(st) { return !!(st && (st.address || st.phone || st.website || st.tips || st.flyer || elHasHoursInfo(st))); }
 function elHasHoursInfo(st) { return !!(st?.hours || st?.holiday_state || (st?.branches || []).length); }
 const elStatusTxt = (info) => {
   if (!info) return "";
@@ -2630,6 +2644,10 @@ ha-card.labels .tool { padding:4px 6px; }
 .tab.active .tclock { color:var(--tc, #fff); }
 .tab .dot { width:9px; height:9px; border-radius:50%; background:var(--c); }
 .tab .n { opacity:.7; font-size:.85em; }
+.tab .tinfo { margin-left:4px; padding:0 2px; cursor:pointer; font-size:1.05em; line-height:1; } /* ℹ️ Steckbrief des Geschäfts */
+.hourspop .hinfo { display:flex; flex-direction:column; gap:4px; margin:2px 0 6px; font-size:.95em; }
+.hourspop .hinfo a { color:var(--primary-color,#03a9f4); text-decoration:none; }
+.hourspop .htips { white-space:pre-line; padding:6px 8px; border-radius:8px; background:var(--secondary-background-color,rgba(127,127,127,.12)); }
 .tab.active { background:var(--c); border-color:var(--c); color:var(--tc, #fff); }
 .tab.active .dot { background:var(--tc, #fff); }
 form.add { display:grid; grid-template-columns: 1fr 48px; gap:6px; margin:2px 2px 6px; }
@@ -4365,9 +4383,15 @@ class EinkaufslisteCard extends HTMLElement {
     const today = pyWd(new Date());
     const week = (h) => h.map((d, i) => `<div class="hrow ${i === today ? "today" : ""}"><span>${WD_LONG[i]}</span><span>${elRangesTxt(d)}</span></div>`).join("");
     const res = elStoreInfos(st);
+    const tel = (n) => `<a href="tel:${esc(String(n).replace(/[^0-9+]/g, ""))}">📞 ${esc(n)}</a>`;
+    const map = (a) => `<a href="https://www.openstreetmap.org/search?query=${encodeURIComponent(a)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">📍 ${esc(a)}</a>`;
+    const web = /^https?:\/\//i.test(st.website || "") ? `<a href="${esc(st.website)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🌐 ${esc(st.website.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, ""))}</a>` : "";
+    const infoRows = [st.address ? map(st.address) : "", st.phone ? tel(st.phone) : "", web].filter(Boolean).join("");
+    const info = infoRows || st.tips ? `<div class="hinfo">${infoRows}${st.tips ? `<div class="htips">💡 ${esc(st.tips)}</div>` : ""}</div>` : ""; // ℹ️ Steckbrief
+    const brInfo = (b) => [b.address ? map(b.address) : "", b.phone ? tel(b.phone) : ""].filter(Boolean).join(" · ");
     let body = "";
     if (res.branches) { // 🏬 jede Filiale mit Stand und Zeiten
-      body = res.branches.map(({ b, info }) => `<div class="hbr"><b translate="no">🏬 ${esc(b.name)}</b>${info ? `<div class="hstat">${elStatusTxt(info)}</div>` : ""}${Array.isArray(b.hours) ? week(b.hours) : `<p class="hint">Keine Zeiten eingetragen.</p>`}</div>`).join("");
+      body = res.branches.map(({ b, info }) => `<div class="hbr"><b translate="no">🏬 ${esc(b.name)}</b>${brInfo(b) ? `<div class="hinfo">${brInfo(b)}</div>` : ""}${info ? `<div class="hstat">${elStatusTxt(info)}</div>` : ""}${Array.isArray(b.hours) ? week(b.hours) : `<p class="hint">Keine Zeiten eingetragen.</p>`}</div>`).join("");
     } else {
       const status = elStatusTxt(res.info);
       body = `${status ? `<div class="hstat">${status}</div>` : ""}${Array.isArray(st.hours) ? week(st.hours)
@@ -4375,7 +4399,7 @@ class EinkaufslisteCard extends HTMLElement {
     }
     const ov = document.createElement("div");
     ov.className = "hourspop";
-    ov.innerHTML = `<div class="hbox"><b translate="no">🕒 ${esc(st.name)}</b>${body}${/^https?:\/\//i.test(st.flyer || "") ? `<a class="btn flyer" href="${esc(st.flyer)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🗞️ Prospekt öffnen</a>` : ""}<button type="button" class="btn">OK</button></div>`;
+    ov.innerHTML = `<div class="hbox"><b translate="no">${info ? "ℹ️" : "🕒"} ${esc(st.name)}</b>${info}${body}${/^https?:\/\//i.test(st.flyer || "") ? `<a class="btn flyer" href="${esc(st.flyer)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🗞️ Prospekt öffnen</a>` : ""}<button type="button" class="btn">OK</button></div>`;
     const close = () => ov.remove();
     ov.addEventListener("click", close);
     ov.addEventListener("contextmenu", (e) => e.preventDefault()); // kein „Kopieren/Teilen“-Menü des Handys
@@ -4405,10 +4429,14 @@ class EinkaufslisteCard extends HTMLElement {
       if (!r) return;
       if (b.dataset.mode === "store") {
         if (!r.hours) { this._toast("🌐 Die Zeiten sind dort nicht lesbar – bitte selbst eintragen"); return; }
-        this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: storeId, hours: r.hours })
+        const extra = {}; // ℹ️ Steckbrief gleich mitfüllen, aber nichts Eigenes überschreiben
+        if (!st.address && r.address) extra.address = r.address;
+        if (!st.phone && r.phone) extra.phone = r.phone;
+        if (!st.website && r.website) extra.website = r.website;
+        this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: storeId, hours: r.hours, ...extra })
           .then(() => setTimeout(() => this._renderSettings(), 150)).catch(() => {});
       } else {
-        this._hoursSendBranches(storeId, [...this._branchesCollect(storeId), { name: r.place, hours: r.hours || null }], true);
+        this._hoursSendBranches(storeId, [...this._branchesCollect(storeId), { name: r.place, hours: r.hours || null, address: r.address || null, phone: r.phone || null }], true);
       }
       this._toast(r.hours ? "🌐 Übernommen – bitte kurz prüfen" : "🌐 Filiale angelegt – Zeiten dort nicht lesbar, bitte selbst eintragen");
       ov.remove();
@@ -4462,7 +4490,7 @@ class EinkaufslisteCard extends HTMLElement {
     return (st?.branches || []).map((b) => {
       const box = root.querySelector(`.hoursed[data-branch="${b.id}"]`);
       const nm = root.querySelector(`input[data-bn="${b.id}"]`);
-      return { id: b.id, name: (nm?.value || "").trim() || b.name, hours: box ? this._hoursCollect(box) : (b.hours || null) };
+      return { id: b.id, name: (nm?.value || "").trim() || b.name, hours: box ? this._hoursCollect(box) : (b.hours || null), address: b.address || null, phone: b.phone || null };
     });
   }
 
@@ -4866,7 +4894,8 @@ class EinkaufslisteCard extends HTMLElement {
     const name = await askText("➕ Neues Geschäft", "z. B. Kaufland");
     if (!name) { this._updateTools(); return; }
     try {
-      const st = await this._ws({ type: "einkaufsliste/group/add", kind: "stores", name });
+      const chain = elChainColor(name); // 🎨 bekannte Kette: Farbe wie im Logo vorschlagen
+      const st = await this._ws({ type: "einkaufsliste/group/add", kind: "stores", name, ...(chain ? { color: chain } : {}) });
       if (st?.id) {
         if (![...sel.options].some((o) => o.value === st.id)) sel.add(new Option(st.name, st.id), sel.querySelector('option[value="~none"]'));
         sel.value = st.id;
@@ -5216,7 +5245,7 @@ class EinkaufslisteCard extends HTMLElement {
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
     for (const s of d.stores) {
       const closed = elStoreClosed(s);
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || (!i.store_id && !s.no_any))}</span>${bubble((i) => i.store_id === s.id || (!i.store_id && !s.no_any), active === s.id)}</button>`);
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)}${active === s.id && elHasStoreInfo(s) ? `<span class="tinfo" data-act="store-info" data-id="${s.id}" role="button" title="Infos zum Geschäft" aria-label="Infos zum Geschäft">ℹ️</span>` : ""} <span class="n">${openCount((i) => i.store_id === s.id || (!i.store_id && !s.no_any))}</span>${bubble((i) => i.store_id === s.id || (!i.store_id && !s.no_any), active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
@@ -6474,6 +6503,12 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
         ${this._hoursEditHtml(e)}
         <b class="shead">🗞️ Prospekt-Link</b>
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:newspaper-variant-outline"></ha-icon><input class="grow" type="url" inputmode="url" data-field="flyer" value="${esc(e.flyer || "")}" placeholder="🗞️ Prospekt-Link (https://…)" title="Adresse des Prospekts. Wird nur beim Antippen geöffnet."></div>
+        <b class="shead">ℹ️ Steckbrief</b>
+        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-field="address" value="${esc(e.address || "")}" placeholder="📍 Adresse, z. B. Hauptstraße 5, 48565 Steinfurt" maxlength="120"></div>
+        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-field="phone" value="${esc(e.phone || "")}" placeholder="📞 Telefon" maxlength="40"></div>
+        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:web"></ha-icon><input class="grow" type="url" inputmode="url" data-field="website" value="${esc(e.website || "")}" placeholder="🌐 Webseite (https://…)"></div>
+        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:lightbulb-on-outline"></ha-icon><textarea class="grow" data-field="tips" rows="2" maxlength="300" placeholder="💡 Eure Tipps, z. B. Parkplatz hinten ist frei, Pfandautomat streikt oft">${esc(e.tips || "")}</textarea></div>
+        <p class="hint">ℹ️ Steckbrief: Steht hier etwas (oder gibt es Öffnungszeiten), zeigt der Reiter des Geschäfts neben dem Namen ein ℹ️ – antippen öffnet alles auf einen Blick. Holst du die Zeiten bei 🌐 OpenStreetMap, kommen Adresse, Telefon und Webseite meist gleich mit (nur in leere Felder).</p>
         <p class="hint">🗞️ Prospekt-Link: Nur die Adresse wird gespeichert. Die Karte ruft nie selbst etwas dort ab; erst wenn du im Fenster (Namen gedrückt halten) „Prospekt öffnen“ antippst, öffnet sich die Seite – ohne dass sie erfährt, woher du kommst.</p>
         ${zones.length ? "" : `<p class="hint">📍 Noch keine Zonen in Home Assistant angelegt (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen).</p>`}
         <p class="hint">🖼️ Icon: Namen tippen (z. B. <b>baguette</b>, <b>pill</b>, <b>hammer</b>) und aus der Vorschau antippen. Leer lassen = Icon der Zone, sonst 🛒.</p>
@@ -6494,6 +6529,7 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
           <input class="grow" name="name" placeholder="Neues Geschäft, z. B. Kaufland">
           <button class="primary" type="submit" title="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button>
         </form>
+        <p class="hint">🎨 Bekannte Ketten (Aldi, Lidl, Rewe, Edeka, dm …) bekommen beim Tippen gleich ihre Logo-Farbe. Lieber eine andere? Einfach selbst wählen, die bleibt dann.</p>
         <p class="hint">⌃⌄ = Reihenfolge der Reiter oben. Geschäft antippen = Name, Farbe, Icon, 📍 Zonen, 🏷️ Eigenmarken und 🗺️ Reihenfolge der Kategorien einstellen.</p>`;
       } },
       { key: "categories", icon: "mdi:shape-outline", title: "Kategorien", info: d.categories.length === 1 ? "1 Kategorie" : `${d.categories.length} Kategorien`, html: () => {
@@ -12311,6 +12347,9 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     }
     if (t.id) { const er = this.shadowRoot.querySelector(`[data-act="search-erase"][data-for="${t.id}"]`); if (er) er.hidden = !t.value; } // 🧽 nur zeigen, wenn etwas im Feld steht
     if (t.id === "rName") { this._autoGroup(); return; }
+    const sform = t.closest?.('form[data-addkind="stores"]'); // 🎨 neues Geschäft: Farbe der Kette gleich zeigen (bis man selbst eine wählt)
+    if (sform && t.name === "color") t.dataset.manual = "1";
+    else if (sform && t.name === "name" && sform.elements.color && !sform.elements.color.dataset.manual) sform.elements.color.value = elChainColor(t.value) || "#607d8b";
     if (t.id === "delSearch") {
       this._delFilter = t.value;
       this._renderDelList();
@@ -13275,6 +13314,10 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._perSel = el.dataset.id || null;
         this._renderSettings();
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
+        break;
+      case "store-info": // ℹ️ Steckbrief des Geschäfts (im aktiven Reiter neben dem Namen)
+        e.stopPropagation();
+        this._showHours(el.dataset.id);
         break;
       case "rec-tab":
         this._recTab = (this._recTab || "none") === el.dataset.tab ? "none" : el.dataset.tab; this._rgSel = null; // den offenen nochmal antippen = zu
@@ -14375,6 +14418,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     if (!name) return;
     const msg = { type: "einkaufsliste/group/add", kind, name };
     if (form.elements.color) msg.color = form.elements.color.value;
+    if (kind === "stores" && form.elements.color && !form.elements.color.dataset.manual) msg.color = elChainColor(name) || msg.color; // 🎨 bekannte Kette: Farbe wie im Logo
     if (form.elements.icon && form.elements.icon.value.trim()) msg.icon = stripMdi(form.elements.icon.value.trim());
     else if (kind === "recipe_groups" && suggestIcon(name)) msg.icon = stripMdi(suggestIcon(name));
     this._ws(msg).then(() => this._renderSettings()).catch(() => {});

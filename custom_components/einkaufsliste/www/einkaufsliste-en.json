@@ -2339,5 +2339,15 @@
 "{} Notizen": "{0} notes",
 "Die Notiz bei „{}“ löschen? Sie verschwindet dann auch in der Kochmütze.": "Delete the note for “{0}”? It will also disappear from the chef's hat.",
 "1 Vorschlag wartet auf OK": "1 suggestion is waiting for OK",
-"{} Vorschläge warten auf OK": "{0} suggestions are waiting for OK"
+"{} Vorschläge warten auf OK": "{0} suggestions are waiting for OK",
+"Steckbrief": "Profile",
+"Infos zum Geschäft": "Store info",
+"Adresse, z. B. Hauptstraße 5, 48565 Steinfurt": "Address, e.g. 5 High Street, Springfield",
+"Telefon": "Phone",
+"Webseite (https://…)": "Website (https://…)",
+"Eure Tipps, z. B. Parkplatz hinten ist frei, Pfandautomat streikt oft": "Your tips, e.g. parking at the back is free, the bottle return machine often jams",
+"ℹ️ Steckbrief: Steht hier etwas (oder gibt es Öffnungszeiten), zeigt der Reiter des Geschäfts neben dem Namen ein ℹ️ – antippen öffnet alles auf einen Blick. Holst du die Zeiten bei 🌐 OpenStreetMap, kommen Adresse, Telefon und Webseite meist gleich mit (nur in leere Felder).": "ℹ️ Profile: if something is filled in here (or there are opening hours), the store tab shows an ℹ️ next to the name – tap it to see everything at a glance. If you fetch the times from 🌐 OpenStreetMap, address, phone and website usually come along too (only into empty fields).",
+"Die Telefonnummer bitte nur mit Ziffern (und + - / ( )).": "Please enter the phone number with digits only (and + - / ( )).",
+"Bitte eine Webseite, die mit https:// beginnt.": "Please enter a website starting with https://.",
+"🎨 Bekannte Ketten (Aldi, Lidl, Rewe, Edeka, dm …) bekommen beim Tippen gleich ihre Logo-Farbe. Lieber eine andere? Einfach selbst wählen, die bleibt dann.": "🎨 Well-known chains (Aldi, Lidl, Rewe, Edeka, dm …) get their logo colour right while you type. Prefer another one? Just pick it yourself, it will stick."
 }

@@ -419,13 +419,17 @@ def ws_group_add(hass, connection, msg):
         vol.Optional("hours"): vol.Any(None, list),
         vol.Optional("flyer"): OPT_STR,
         vol.Optional("branches"): vol.Any(None, list),
+        vol.Optional("address"): OPT_STR,  # ℹ️ Steckbrief des Geschäfts
+        vol.Optional("phone"): OPT_STR,
+        vol.Optional("website"): OPT_STR,
+        vol.Optional("tips"): OPT_STR,
         vol.Optional("holiday_state"): OPT_STR,
         vol.Optional("no_any"): bool,  # 🤷 „Egal wo“-Artikel in diesem Geschäft nicht zeigen
     }
 )
 @callback
 def ws_group_update(hass, connection, msg):
-    fields = _pick(msg, "name", "color", "icon", "zone", "zones", "brands", "cat_order", "cats", "hours", "flyer", "holiday_state", "branches", "no_any")
+    fields = _pick(msg, "name", "color", "icon", "zone", "zones", "brands", "cat_order", "cats", "hours", "flyer", "holiday_state", "branches", "no_any", "address", "phone", "website", "tips")
     _run(
         hass, connection, msg, lambda m: m.update_group(msg["kind"], msg["group_id"], **fields)
     )
