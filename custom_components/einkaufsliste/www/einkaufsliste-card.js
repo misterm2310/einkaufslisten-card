@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.5";
+const EL_VERSION = "2.76.24-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -424,6 +424,9 @@ const EL_BETA_NEWS = [
   ["🏬 <b>Filialen:</b> Jede Filiale ist jetzt eine kurze Zeile. ✏️ Bearbeiten öffnet ein eigenes Fenster (wie bei Rezepten) mit Name, Adresse, Telefon, 💡 Tipps und Öffnungszeiten – gespeichert wird erst mit „Speichern“. Die Webseite bleibt beim Geschäft.",
    "🏬 <b>Branches:</b> each branch is now one short row. ✏️ Edit opens a window of its own (like recipes) with name, address, phone, 💡 tips and opening hours – nothing is stored until “Save”. The website stays with the store.",
    "beta.5"],
+  ["📄 <b>PDF:</b> In „Drucken & Teilen“ gibt es jetzt eine echte PDF-Datei. Auf iPhone und iPad heißt der Knopf „PDF drucken / teilen“: Das Teilen-Menü öffnet sich, dort geht „Drucken“ per AirPrint.",
+   "📄 <b>PDF:</b> “Print & share” now makes a real PDF file. On iPhone and iPad the button is called “Print / share PDF”: the share sheet opens, and “Print” works there via AirPrint.",
+   "beta.6"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -686,6 +689,174 @@ function elStoreClosed(st, now = new Date()) {
   const r = elStoreInfos(st, now);
   return r.branches ? r.branches.every((x) => x.info?.open === false) : r.info?.open === false;
 }
+// 📄 Kleiner PDF-Baukasten (ohne fremde Bibliothek): A4, Helvetica, Kästchen zum Abhaken
+// Warum? iPhone, iPad und die HA-App können aus dem Browser nicht drucken (window.print geht dort nicht) – eine echte PDF-Datei schon: Teilen → Drucken (AirPrint).
+const EL_PDF_W = { r: [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,761,556,0,222,556,333,1000,556,556,333,1000,667,333,1000,0,611,0,0,222,222,333,333,350,556,1000,333,1000,500,333,944,0,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500], b: [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,761,556,0,278,556,500,1000,556,556,333,1000,667,333,1000,0,611,0,0,278,278,500,500,350,556,1000,333,1000,556,333,944,0,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556] }; // Zeichenbreiten (1/1000) für die Zeichen 32–255 (WinAnsi)
+const EL_CP1252 = { 0x20ac: 0x80, 0x201a: 0x82, 0x0192: 0x83, 0x201e: 0x84, 0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87, 0x02c6: 0x88, 0x2030: 0x89, 0x0160: 0x8a, 0x2039: 0x8b, 0x0152: 0x8c, 0x017d: 0x8e, 0x2018: 0x91, 0x2019: 0x92, 0x201c: 0x93, 0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97, 0x02dc: 0x98, 0x2122: 0x99, 0x0161: 0x9a, 0x203a: 0x9b, 0x0153: 0x9c, 0x017e: 0x9e, 0x0178: 0x9f };
+function elPdfChars(text) { // Text → WinAnsi; Emojis und Unbekanntes fallen weg (die Standard-Schrift kennt sie nicht)
+  let out = "";
+  for (const ch of String(text ?? "").normalize("NFC")) {
+    const c = ch.codePointAt(0);
+    if ((c >= 32 && c < 127) || (c >= 160 && c <= 255)) out += ch;
+    else if (EL_CP1252[c]) out += String.fromCharCode(EL_CP1252[c]);
+    else if (c === 0xff0b) out += "+";
+    else if (c === 9 || c === 10 || c === 13) out += " ";
+  }
+  return out.replace(/\s+/g, " ").trim();
+}
+function elPdfWidth(t, bold, size) {
+  const w = bold ? EL_PDF_W.b : EL_PDF_W.r;
+  let n = 0;
+  for (let k = 0; k < t.length; k++) n += w[t.charCodeAt(k) - 32] || 556;
+  return (n * size) / 1000;
+}
+function elPdfWrap(t, bold, size, max) { // Wörter auf Zeilen verteilen; zu lange Wörter werden hart getrennt
+  const lines = [];
+  let cur = "";
+  for (let word of t.split(" ")) {
+    while (elPdfWidth(word, bold, size) > max && word.length > 1) {
+      let k = word.length - 1;
+      while (k > 1 && elPdfWidth(word.slice(0, k), bold, size) > max) k--;
+      if (cur) { lines.push(cur); cur = ""; }
+      lines.push(word.slice(0, k));
+      word = word.slice(k);
+    }
+    const next = cur ? `${cur} ${word}` : word;
+    if (cur && elPdfWidth(next, bold, size) > max) { lines.push(cur); cur = word; } else cur = next;
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [""];
+}
+function elPdfRgb(hex, fallback = [0.33, 0.43, 0.48]) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+  if (!m) return fallback;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+}
+
+// 📄 Die Einkaufsliste als PDF (Uint8Array). m = Daten aus _printModel; t = Übersetzer für feste Wörter
+function elListPdf(m, t = (x) => x) {
+  const PW = 595.28, PH = 841.89, M = 36, BOTTOM = M + 22;
+  const f = (n) => (Math.round(n * 100) / 100).toString();
+  const str = (x) => `(${x.replace(/[\\()]/g, (c) => `\\${c}`).replace(/[\x80-\xff]/g, (c) => `\\${c.charCodeAt(0).toString(8).padStart(3, "0")}`)})`;
+  const pages = [];
+  let ops = null;
+  const newPage = () => { ops = []; pages.push(ops); };
+  const col = (rgb) => rgb.map(f).join(" ");
+  const text = (x, y, s, size, bold = false, rgb = [0.13, 0.13, 0.13]) => { if (s) ops.push(`BT /${bold ? "F2" : "F1"} ${f(size)} Tf ${col(rgb)} rg ${f(x)} ${f(y)} Td ${str(s)} Tj ET`); };
+  const box = (x, y, w, h, rgb = [0.3, 0.3, 0.3], lw = 0.9) => ops.push(`${f(lw)} w ${col(rgb)} RG ${f(x)} ${f(y)} ${f(w)} ${f(h)} re S`);
+  const fill = (x, y, w, h, rgb) => ops.push(`${col(rgb)} rg ${f(x)} ${f(y)} ${f(w)} ${f(h)} re f`);
+  const line = (x1, y1, x2, y2, rgb = [0.7, 0.7, 0.7], lw = 0.6) => ops.push(`${f(lw)} w ${col(rgb)} RG ${f(x1)} ${f(y1)} m ${f(x2)} ${f(y2)} l S`);
+  const gray = [0.42, 0.42, 0.42];
+  for (const g of m.groups) for (const ct of g.cats) ct.items = ct.items.map((it) => ({ qty: elPdfChars(it.qty), name: elPdfChars(it.name) || "?", extra: elPdfChars(it.extra) }));
+  newPage();
+  // 🧾 Kopf
+  let y = PH - M;
+  const accent = elPdfRgb(m.bar);
+  const num = String(m.count);
+  text(PW - M - elPdfWidth(num, true, 28), y - 26, num, 28, true, accent);
+  text(M, y - 20, elPdfChars(t("Einkaufsliste")), 20, true);
+  y -= 38;
+  const headW = PW - 2 * M - 60;
+  for (const [s0, size, rgb] of [[m.sub, 10, gray], ...m.where.map((w) => [w, 9.5, [0.2, 0.2, 0.2]]), [m.by, 9, gray]]) {
+    for (const l of elPdfWrap(elPdfChars(s0), false, size, headW)) { text(M, y, l, size, false, rgb); y -= size + 3.5; }
+  }
+  y -= 2;
+  fill(M, y, PW - 2 * M, 3, accent);
+  y -= 16;
+  const top1 = y;
+  // 📐 Spalten: ab 20 Artikeln zwei (wie beim Drucken)
+  const cols = m.count >= 20 ? 2 : 1, GAP = 18;
+  const CW = (PW - 2 * M - GAP * (cols - 1)) / cols;
+  let c = 0, top = top1, cur = "";
+  const x0 = () => M + c * (CW + GAP);
+  const room = (h) => { // passt der Block noch? sonst nächste Spalte bzw. Seite
+    if (y - h >= BOTTOM) return;
+    if (c < cols - 1) { c++; y = top; return; }
+    newPage(); c = 0; top = PH - M; y = top;
+    if (cur) { text(M, y - 9, `${cur} (${elPdfChars(t("weiter"))})`, 9, true, gray); y -= 18; top = y; } // neue Seite mitten im Geschäft: kurz sagen, wo es weitergeht
+  };
+  const IS = 10.5, NS = 8.5, LH = 14;
+  const itemH = (it) => {
+    const nl = elPdfWrap(it.name, false, IS, CW - 16 - (it.qty ? elPdfWidth(it.qty, true, IS) + 4 : 0)).length;
+    const el = it.extra ? elPdfWrap(it.extra, false, NS, CW - 16).length : 0;
+    return nl * LH + el * (NS + 2.5) + 3;
+  };
+  const item = (it) => {
+    const x = x0();
+    box(x + 0.5, y - 9.5, 9, 9);
+    let tx = x + 16;
+    if (it.qty) { text(tx, y - 8.5, it.qty, IS, true); tx += elPdfWidth(it.qty, true, IS) + 4; }
+    const nl = elPdfWrap(it.name, false, IS, x + CW - tx);
+    nl.forEach((l, k) => text(k ? x + 16 : tx, y - 8.5 - k * LH, l, IS));
+    y -= nl.length * LH;
+    if (it.extra) for (const l of elPdfWrap(it.extra, false, NS, CW - 16)) { text(x + 16, y - 6, l, NS, false, gray); y -= NS + 2.5; }
+    y -= 3;
+  };
+  for (const g of m.groups) {
+    const name = elPdfChars(g.name), cnt = elPdfChars(`${g.count} ${t("Artikel")}`);
+    const first = g.cats[0]?.items[0];
+    cur = "";
+    room(24 + 16 + (first ? itemH(first) : 0)); // Kopf nie allein unten auf der Seite
+    cur = name;
+    const x = x0(), rgb = elPdfRgb(g.color, [0.53, 0.53, 0.53]);
+    fill(x, y - 15, 3.5, 15, rgb);
+    text(x + 9, y - 12, elPdfWrap(name, true, 13, CW - 70)[0], 13, true);
+    text(x + CW - elPdfWidth(cnt, false, 9), y - 11, cnt, 9, false, gray);
+    line(x, y - 19, x + CW, y - 19, rgb, 0.8);
+    y -= 26;
+    for (const ct of g.cats) {
+      const cn = elPdfChars(ct.name), cc = String(ct.items.length);
+      room(16 + itemH(ct.items[0]));
+      const cx = x0();
+      text(cx, y - 9, elPdfWrap(cn, true, 9.5, CW - 30)[0], 9.5, true, [0.35, 0.35, 0.35]);
+      text(cx + CW - elPdfWidth(cc, false, 9), y - 9, cc, 9, false, gray);
+      y -= 15;
+      for (const it of ct.items) { room(itemH(it)); item(it); }
+      y -= 4;
+    }
+    y -= 6;
+  }
+  cur = "";
+  if (m.count) { // ✍️ Platz für Spontanes
+    room(16 + 4 * 18);
+    const x = x0();
+    text(x, y - 9, elPdfChars(t("Sonstiges – noch etwas?")), 9.5, true, [0.35, 0.35, 0.35]);
+    y -= 17;
+    for (let k = 0; k < 4; k++) { box(x + 0.5, y - 9.5, 9, 9); line(x + 16, y - 10, x + CW, y - 10); y -= 18; }
+  } else text(M, y - 10, elPdfChars(t("Nichts offen.")), 11);
+  // 🔢 Fußzeile auf jeder Seite
+  pages.forEach((pg, k) => {
+    ops = pg;
+    const ft = elPdfChars(`${t("Erstellt mit Einkaufsliste")}${pages.length > 1 ? ` · ${k + 1}/${pages.length}` : ""}`);
+    text(PW / 2 - elPdfWidth(ft, false, 8) / 2, M - 4, ft, 8, false, [0.55, 0.55, 0.55]);
+  });
+  // 🧱 Datei zusammensetzen
+  const objs = [];
+  const add = (o) => { objs.push(o); return objs.length; };
+  const cat = add(""), pagesId = add("");
+  const f1 = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  const f2 = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const kids = [];
+  for (const pg of pages) {
+    const body = pg.join("\n");
+    const cs = add(`<< /Length ${body.length} >>\nstream\n${body}\nendstream`);
+    kids.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${f(PW)} ${f(PH)}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${cs} 0 R >>`));
+  }
+  objs[cat - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+  objs[pagesId - 1] = `<< /Type /Pages /Kids [${kids.map((k) => `${k} 0 R`).join(" ")}] /Count ${kids.length} >>`;
+  const info = add(`<< /Title ${str(elPdfChars(t("Einkaufsliste")))} /Producer (Einkaufsliste) >>`);
+  let out = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n";
+  const offs = [];
+  objs.forEach((o, k) => { offs.push(out.length); out += `${k + 1} 0 obj\n${o}\nendobj\n`; });
+  const xref = out.length;
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offs.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")}`;
+  out += `trailer\n<< /Size ${objs.length + 1} /Root ${cat} 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  const bytes = new Uint8Array(out.length);
+  for (let k = 0; k < out.length; k++) bytes[k] = out.charCodeAt(k) & 255;
+  return bytes;
+}
+
 // 🕒 Woche kurz für den Ausdruck: gleiche Tage zusammen („Mo–Sa 08:00 – 20:00 · So zu“)
 function elHoursShort(hours) {
   if (!Array.isArray(hours) || hours.length !== 7) return "";
@@ -6167,43 +6338,40 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
     return `(function(){var r=document.querySelector(".pw");if(!r)return;var p=document.createElement("div");p.style.cssText="position:absolute;visibility:hidden;height:262mm;width:1px";document.body.appendChild(p);var max=p.getBoundingClientRect().height;p.remove();var m=r.className.match(/l(\\d)/);var lv=m?parseInt(m[1],10):0;for(;lv<=3;lv++){r.className="pw l"+lv;if(r.getBoundingClientRect().height<=max)break;}if(lv>3)r.className="pw l3";})();`;
   }
 
-  _printSheet(sel) {
+  // 🧾 Was auf den Zettel kommt (für den Ausdruck UND die PDF): Geschäfte → Kategorien → Artikel
+  _printModel(sel) {
     const d = this._data;
     const open = d.items.filter((i) => !i.checked);
+    const parts = [];
+    for (const st of (d.stores || []).filter((x) => sel === "all" || sel === x.id)) parts.push({ store: st, items: open.filter((i) => i.store_id === st.id) });
+    if (sel === "all" || sel === "none") parts.push({ store: null, items: open.filter((i) => !i.store_id || !this._store(i.store_id)) });
+    const lang = EL_LANG === "en" ? "en-GB" : "de-DE";
+    const day = new Date().toLocaleDateString(lang, { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+    let count = 0;
     const groups = [];
-    for (const st of (d.stores || []).filter((x) => sel === "all" || sel === x.id)) groups.push({ store: st, items: open.filter((i) => i.store_id === st.id) });
-    if (sel === "all" || sel === "none") groups.push({ store: null, items: open.filter((i) => !i.store_id || !this._store(i.store_id)) });
-    const day = new Date().toLocaleDateString(EL_LANG === "en" ? "en-GB" : "de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
-    const unit = (n) => `${n} ${elT("Artikel")}`;
-    let count = 0, html = "";
-    for (const g of groups) {
+    for (const g of parts) {
       if (!g.items.length) continue;
       count += g.items.length;
       const cats = g.store ? this._storeCats(g.store.id) : d.categories;
       const byCat = new Map(cats.map((c) => [c.id, []]));
       byCat.set(null, []);
       for (const i of g.items) (byCat.has(i.category_id) ? byCat.get(i.category_id) : byCat.get(null)).push(i);
-      html += `<section class="pst" style="--sc:${esc(g.store?.color || "#888")}"><div class="psh"><h2>${esc(g.store?.name || elT("Ohne Geschäft"))}</h2><span class="pc">${esc(unit(g.items.length))}</span></div>`;
+      const out = { name: g.store?.name || elT("Ohne Geschäft"), color: g.store?.color || "#888", count: g.items.length, cats: [] };
       for (const [cid, arr] of byCat) {
         if (!arr.length) continue;
         arr.sort((x, y) => String(x.name).localeCompare(String(y.name), "de"));
-        html += `<div class="pcat"><h3>${esc(this._cat(cid)?.name || elT("Ohne Kategorie"))}<span>${arr.length}</span></h3>`;
-        for (const i of arr) {
+        out.cats.push({ name: this._cat(cid)?.name || elT("Ohne Kategorie"), items: arr.map((i) => {
           const own = i.own_note || this._ownNote(i.name, i.note) || "";
-          const extra = [i.note, own, i.for_whom ? `${elT("für")} ${i.for_whom}` : ""].filter(Boolean).map((x) => esc(x)).join(" · ");
-          html += `<div class="pr"><span class="bx"></span><span class="pm"><span>${i.quantity ? `<span class="pq">${esc(i.quantity)}</span>` : ""}${esc(i.name)}</span>${extra ? `<span class="pnt">${extra}</span>` : ""}</span></div>`;
-        }
-        html += `</div>`;
+          return { qty: i.quantity || "", name: i.name, extra: [i.note, own, i.for_whom ? `${elT("für")} ${i.for_whom}` : ""].filter(Boolean).join(" · ") };
+        }) });
       }
-      html += `</section>`;
+      groups.push(out);
     }
-    if (!count) html = `<p>${esc(elT("Nichts offen."))}</p>`;
-    else html += `<section class="pmisc"><div class="pcat"><h3>${esc(elT("Sonstiges – noch etwas?"))}</h3>${'<div class="pr"><span class="bx"></span><span class="pline"></span></div>'.repeat(4)}</div></section>`;
     const label = sel === "all" ? elT("Alle Geschäfte") : sel === "none" ? elT("Ohne Geschäft") : (this._store(sel)?.name || "");
     const bar = sel !== "all" && sel !== "none" ? (this._store(sel)?.color || "#546e7a") : "#546e7a";
     const first = String(this._hass?.user?.name || "").trim().split(/\s+/)[0];
     const now = new Date();
-    const stamp = `${now.toLocaleDateString(EL_LANG === "en" ? "en-GB" : "de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })} ${EL_LANG === "en" ? "at" : "um"} ${now.toLocaleTimeString(EL_LANG === "en" ? "en-GB" : "de-DE", { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}`;
+    const stamp = `${now.toLocaleDateString(lang, { day: "2-digit", month: "2-digit", year: "numeric" })} ${EL_LANG === "en" ? "at" : "um"} ${now.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}`;
     const by = `${elT("Ausgedruckt")}${first ? ` ${elT("von")} ${first}` : ""} ${elT("am")} ${stamp}`;
     // 📍🕒 Nur ein Geschäft gewählt: Adresse und Öffnungszeiten stehen oben mit drauf (bei Filialen jede Filiale)
     const one = sel !== "all" && sel !== "none" ? this._store(sel) : null;
@@ -6217,10 +6385,62 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
       if (one.address) where.push(`📍 ${one.address}${one.phone ? ` · 📞 ${one.phone}` : ""}`);
       if (elHoursShort(one.hours)) where.push(`🕒 ${elHoursShort(one.hours)}`);
     }
-    const whereHtml = where.map((w) => `<div class="ps pwh">${esc(w)}</div>`).join("");
-    const head = `<div class="ph"><div><div class="pt">${esc(elT("Einkaufsliste"))}</div><div class="ps">${esc(day)} · ${esc(label)} · ${esc(unit(count))}</div>${whereHtml}<div class="ps">${esc(by)}</div></div><div class="pn">${count}</div></div><div class="pbar" style="background:${esc(bar)}"></div>`;
+    const unit = (n) => `${n} ${elT("Artikel")}`;
+    return { count, groups, label, bar, by, where, day, sub: `${day} · ${label} · ${unit(count)}` };
+  }
+
+  _printSheet(sel) {
+    const m = this._printModel(sel);
+    const unit = (n) => `${n} ${elT("Artikel")}`;
+    let html = "";
+    for (const g of m.groups) {
+      html += `<section class="pst" style="--sc:${esc(g.color)}"><div class="psh"><h2>${esc(g.name)}</h2><span class="pc">${esc(unit(g.count))}</span></div>`;
+      for (const c of g.cats) {
+        html += `<div class="pcat"><h3>${esc(c.name)}<span>${c.items.length}</span></h3>`;
+        for (const i of c.items) html += `<div class="pr"><span class="bx"></span><span class="pm"><span>${i.qty ? `<span class="pq">${esc(i.qty)}</span>` : ""}${esc(i.name)}</span>${i.extra ? `<span class="pnt">${esc(i.extra)}</span>` : ""}</span></div>`;
+        html += `</div>`;
+      }
+      html += `</section>`;
+    }
+    const count = m.count;
+    if (!count) html = `<p>${esc(elT("Nichts offen."))}</p>`;
+    else html += `<section class="pmisc"><div class="pcat"><h3>${esc(elT("Sonstiges – noch etwas?"))}</h3>${'<div class="pr"><span class="bx"></span><span class="pline"></span></div>'.repeat(4)}</div></section>`;
+    const whereHtml = m.where.map((w) => `<div class="ps pwh">${esc(w)}</div>`).join("");
+    const head = `<div class="ph"><div><div class="pt">${esc(elT("Einkaufsliste"))}</div><div class="ps">${esc(m.sub)}</div>${whereHtml}<div class="ps">${esc(m.by)}</div></div><div class="pn">${count}</div></div><div class="pbar" style="background:${esc(m.bar)}"></div>`;
     const lv = count >= 60 ? 3 : count >= 40 ? 2 : count >= 20 ? 1 : 0; // 📄 ab 20 Artikeln zwei Spalten, bei mehr wird es enger – möglichst eine Seite
-    return { count, by, html: `<div class="pw l${lv}">${head}<div class="pbody">${html}</div><div class="pf">${esc(elT("Erstellt mit Einkaufsliste"))}</div></div>` };
+    return { count, by: m.by, html: `<div class="pw l${lv}">${head}<div class="pbody">${html}</div><div class="pf">${esc(elT("Erstellt mit Einkaufsliste"))}</div></div>` };
+  }
+
+  // 📄 Die Liste als echte PDF-Datei: iPhone/iPad = Teilen-Menü (dort „Drucken“ per AirPrint), HA-App = kurz von Home Assistant bereitgestellt, sonst Herunterladen
+  async _pdfShare(sel) {
+    const m = this._printModel(sel);
+    const bytes = elListPdf(m, (x) => elT(x));
+    const stamp = new Date().toISOString().slice(0, 10);
+    const label = sel === "all" ? "" : `-${String(m.label).replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 30)}`;
+    const name = `${elT("Einkaufsliste")}${label}-${stamp}.pdf`;
+    const file = typeof File === "function" ? new File([bytes], name, { type: "application/pdf" }) : null;
+    const touch = (navigator.maxTouchPoints || 0) > 0 || /iPhone|iPad|Android/i.test(navigator.userAgent || "");
+    if (this._inHaApp()) { // 📱 In der HA-App gibt es kein Teilen/Herunterladen aus der Karte: Home Assistant hält die Datei 10 Minuten bereit, die App öffnet sie im Browser
+      try {
+        let bin = "";
+        for (let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode(...bytes.subarray(k, k + 0x8000));
+        const r = await this._ws({ type: "einkaufsliste/pdf/store", data: btoa(bin), name });
+        window.open(this._hass?.hassUrl ? this._hass.hassUrl(r.url) : new URL(r.url, location.origin).href, "_blank");
+        this._toast(elT("📄 PDF geöffnet – dort über Teilen drucken oder sichern"));
+      } catch (_) { /* Meldung kam schon */ }
+      return;
+    }
+    if (touch && file && navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: elT("Einkaufsliste") }); return; } catch (err) { if (err?.name === "AbortError") return; } // abgebrochen = nichts tun
+    }
+    const a = document.createElement("a"); // 💻 Mac/PC: einfach herunterladen
+    a.href = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    this._toast(elT("📄 PDF gespeichert – öffnen und drucken"));
   }
 
   // 📱 Liste als Text für den QR-Code: jedes Handy zeigt ihn mit der Kamera an (kein Internet, keine App nötig)
@@ -6291,8 +6511,12 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
       };
       const show = (sel) => {
         const { html, by } = this._printSheet(sel);
-        body.innerHTML = `<style>${this._printCss(".prsheet", false)}</style><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" data-prgo><ha-icon icon="mdi:printer-outline"></ha-icon>${esc(elT("Drucken / als PDF"))}</button><button type="button" class="btn" data-prback>${esc(elT("Anderes Geschäft"))}</button></div><div class="prsheet">${html}</div>`;
+        // 🍏 Wo der Browser nicht drucken kann (iPhone, iPad, HA-App auf Apple-Geräten), gibt es nur den PDF-Knopf
+        const apple = /iPhone|iPad|iPod/i.test(navigator.userAgent || "") || (/Macintosh/i.test(navigator.userAgent || "") && (navigator.maxTouchPoints || 0) > 1) || (this._inHaApp() && /Mac|iPhone|iPad/i.test(navigator.userAgent || ""));
+        body.innerHTML = `<style>${this._printCss(".prsheet", false)}</style><div style="display:flex;gap:8px;flex-wrap:wrap">${apple ? "" : `<button type="button" class="btn primary" data-prgo><ha-icon icon="mdi:printer-outline"></ha-icon>${esc(elT("Drucken / als PDF"))}</button>`}<button type="button" class="btn ${apple ? "primary" : ""}" data-prpdf><ha-icon icon="mdi:file-pdf-box"></ha-icon>${esc(elT(apple ? "PDF drucken / teilen" : "PDF-Datei"))}</button><button type="button" class="btn" data-prback>${esc(elT("Anderes Geschäft"))}</button></div><div class="prsheet">${html}</div>`;
         body.querySelector("[data-prback]").onclick = choose;
+        body.querySelector("[data-prpdf]").onclick = () => this._pdfShare(sel);
+        if (apple) return; // 🍏 iPhone/iPad/HA-App: Drucken geht dort nur über die PDF
         body.querySelector("[data-prgo]").onclick = () => {
           const fr = document.createElement("iframe");
           fr.style.cssText = "position:fixed;left:-10000px;top:0;width:182mm;height:263mm;border:0;visibility:hidden;"; // so breit wie die Druckfläche (A4 ohne Rand): nur so kann das Blatt ausmessen, ob es auf eine Seite passt

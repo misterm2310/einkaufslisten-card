@@ -4692,3 +4692,40 @@ async def test_view_calm(hass: HomeAssistant, setup) -> None:
     """🧘 Idee 969: „calm“ ist eine erlaubte Ansicht-Einstellung."""
     from custom_components.einkaufsliste.manager import _clean_view
     assert _clean_view({"calm": True, "quatsch": True}) == {"calm": True}
+
+
+async def test_pdf_share(hass: HomeAssistant, setup, hass_ws_client, hass_client_no_auth) -> None:
+    """📄 Karte schickt eine PDF, Home Assistant hält sie per Zufalls-Link 10 Minuten bereit (für die HA-App)."""
+    import base64
+
+    from custom_components.einkaufsliste.pdf_share import PDF_KEEP, PDF_TTL, get_pdf, store_pdf
+
+    client = await hass_ws_client(hass)
+    pdf = b"%PDF-1.4\n% Test\n%%EOF\n"
+    await client.send_json({"id": 1, "type": "einkaufsliste/pdf/store", "data": base64.b64encode(pdf).decode(), "name": "Einkaufsliste-Käse & Co.pdf"})
+    res = await client.receive_json()
+    assert res["success"], res
+    url = res["result"]["url"]
+    assert url.startswith("/api/einkaufsliste/pdf/") and url.endswith("/Einkaufsliste-Kaese-Co.pdf")
+    web = await hass_client_no_auth()
+    resp = await web.get(url)
+    assert resp.status == 200
+    assert resp.headers["Content-Type"].startswith("application/pdf")
+    assert await resp.read() == pdf
+    # falscher Schlüssel → nichts
+    resp = await web.get("/api/einkaufsliste/pdf/AAAAAAAAAAAAAAAAAAAAAAAAAAAA/x.pdf")
+    assert resp.status == 404
+    # keine PDF / kaputt → Fehler
+    await client.send_json({"id": 2, "type": "einkaufsliste/pdf/store", "data": base64.b64encode(b"<html>").decode()})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 3, "type": "einkaufsliste/pdf/store", "data": "%%%kein base64"})
+    assert not (await client.receive_json())["success"]
+    # abgelaufen und höchstens PDF_KEEP gleichzeitig
+    token = url.split("/")[4]
+    assert get_pdf(hass, token) is not None
+    import time
+
+    assert get_pdf(hass, token, now=time.time() + PDF_TTL + 1) is None
+    for _ in range(PDF_KEEP + 3):
+        store_pdf(hass, base64.b64encode(pdf).decode())
+    assert len(hass.data[DOMAIN]["pdf_files"]) == PDF_KEEP

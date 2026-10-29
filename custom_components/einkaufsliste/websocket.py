@@ -20,6 +20,7 @@ from .recipe_import import async_import
 from .const import DOMAIN, PUSH_DELAY, SIGNAL_UPDATED
 from .mail_import import mail_sources
 from .osm_hours import async_search_hours
+from .pdf_share import store_pdf
 from .transfer import async_todo_text, import_recipe_file, import_text, import_text_by_store, todo_lists
 from .manager import AUTO_CATEGORY, EinkaufslisteManager, person_name_for_user, product_key
 
@@ -139,6 +140,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_errors_report,
         ws_product_merge,
         ws_hours_search,
+        ws_pdf_store,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -627,6 +629,24 @@ async def ws_hours_search(hass, connection, msg):
         return {"results": await async_search_hours(hass, m, msg["name"], msg.get("zone"))}
 
     await _run_async(hass, connection, msg, go)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/pdf/store",
+        vol.Required("data"): vol.All(str, vol.Length(max=7_000_000)),
+        vol.Optional("name"): vol.All(str, vol.Length(max=120)),
+    }
+)
+@callback
+def ws_pdf_store(hass, connection, msg):
+    """📄 Die Karte hat eine PDF gebaut: kurz bereithalten, Link zurück (für die HA-App)."""
+    try:
+        result = store_pdf(hass, msg["data"], msg.get("name"))
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command(

@@ -481,6 +481,35 @@ r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=nu
   return { before, closed, again }; })()`);
 check("Kategorien: Standard offen, antippen klappt zu (Anzahl bleibt sichtbar), nochmal = auf", r.before.open === "true" && r.before.rows > 0 && r.closed.open === "false" && r.closed.rows === 0 && r.closed.n === String(r.before.rows) && r.again === r.before.rows, JSON.stringify(r));
 
+// 28) 📄 PDF: echte Datei mit allen Artikeln (Umlaute bleiben, Emojis fallen weg); iPhone = nur PDF-Knopf, HA-App = Link über Home Assistant
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const it=c._data.items[0]; const keep={name:it.name, note:it.note, checked:it.checked};
+  it.name="Brötchen 🥐 (Süß)"; it.note="für Käse"; it.checked=false;
+  let blob=null, a=null; const o=URL.createObjectURL; URL.createObjectURL=(x)=>{ blob=x; return "blob:x"; };
+  const oc=HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click=function(){ a=this; };
+  await c._pdfShare("all"); URL.createObjectURL=o; HTMLAnchorElement.prototype.click=oc;
+  const buf=new Uint8Array(await blob.arrayBuffer()); let raw=""; for (const x of buf) raw+=String.fromCharCode(x);
+  const head=raw.slice(0,8), eof=/%%EOF\n$/.test(raw), name=a?.download, pages=(raw.match(/\/Type \/Page /g)||[]).length;
+  const hasName=raw.includes("(Br\\366tchen \\(S\\374\\337\\))"), noEmoji=![...raw].some((ch)=>ch.charCodeAt(0)>255);
+  const xref=+raw.match(/startxref\n(\d+)/)[1]; const xrefOk=raw.slice(xref, xref+4)==="xref";
+  // 📱 HA-App: PDF geht per Websocket an Home Assistant, dann wird der Link geöffnet
+  const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return { url:"/api/einkaufsliste/pdf/tok/x.pdf" }; };
+  const ia=c._inHaApp; c._inHaApp=()=>true; const wo=window.open; let opened=null; window.open=(u)=>{ opened=u; return null; };
+  await c._pdfShare("all"); c._inHaApp=ia; window.open=wo; c._ws=ws;
+  const appOk=sent[0]?.type==="einkaufsliste/pdf/store" && atob(sent[0].data).startsWith("%PDF-") && /\/api\/einkaufsliste\/pdf\/tok\/x\.pdf$/.test(opened||"");
+  // 🍏 iPhone: im Drucken-Fenster nur der PDF-Knopf
+  Object.defineProperty(navigator,"userAgent",{configurable:true,get:()=>"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"});
+  c._printPage(); await new Promise(r=>setTimeout(r,60)); const host=c.shadowRoot;
+  host.querySelector('[data-how="print"]')?.click(); await new Promise(r=>setTimeout(r,40));
+  const st=[...host.querySelectorAll("button")].find(b=>/Alle Geschäfte/.test(b.textContent)); st?.click(); await new Promise(r=>setTimeout(r,40));
+  const iphone={ go:!!host.querySelector("[data-prgo]"), pdf:host.querySelector("[data-prpdf]")?.textContent.trim(), st:!!st };
+  delete navigator.userAgent;
+  Object.assign(it,keep); let n=0; while (c._page && n++<6) c._pageBack(); c._renderAll();
+  return { head, eof, name, pages, hasName, noEmoji, xrefOk, appOk, opened, iphone }; });
+check("PDF: echte Datei (Kopf, Ende, Verzeichnis stimmt), Name mit Datum", r.head.startsWith("%PDF-1.4") && r.eof && r.xrefOk && /^Einkaufsliste-\d{4}-\d\d-\d\d\.pdf$/.test(r.name) && r.pages >= 1, JSON.stringify(r));
+check("PDF: Umlaute bleiben, Emojis fallen weg", r.hasName && r.noEmoji, JSON.stringify(r));
+check("PDF in der HA-App: geht an Home Assistant, Link wird geöffnet", r.appOk, JSON.stringify(r));
+check("PDF auf dem iPhone: nur „PDF drucken / teilen“, kein Browser-Drucken", r.iphone.go === false && /PDF drucken \/ teilen/.test(r.iphone.pdf || ""), JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }
