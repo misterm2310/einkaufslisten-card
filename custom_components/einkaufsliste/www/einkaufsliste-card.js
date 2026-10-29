@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.6";
+const EL_VERSION = "2.76.24-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -427,6 +427,9 @@ const EL_BETA_NEWS = [
   ["📄 <b>PDF:</b> In „Drucken & Teilen“ gibt es jetzt eine echte PDF-Datei. Auf iPhone und iPad heißt der Knopf „PDF drucken / teilen“: Das Teilen-Menü öffnet sich, dort geht „Drucken“ per AirPrint.",
    "📄 <b>PDF:</b> “Print & share” now makes a real PDF file. On iPhone and iPad the button is called “Print / share PDF”: the share sheet opens, and “Print” works there via AirPrint.",
    "beta.6"],
+  ["📱 <b>Offline-App:</b> Eigenes Anmeldefenster (Benutzer, Passwort, 2-Faktor-Code) – gleiche Home-Assistant-Anmeldung, gleiche Rechte. Alle Dateien liegen jetzt unter /einkaufsliste/, hinter einem Reverse Proxy reichen /einkaufsliste/*, /auth/* und /api/*.",
+   "📱 <b>Offline app:</b> its own login window (user, password, two-factor code) – same Home Assistant login, same rights. All files are now under /einkaufsliste/, behind a reverse proxy /einkaufsliste/*, /auth/* and /api/* are enough.",
+   "beta.7"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -602,7 +605,8 @@ const DUP_SYNONYMS = (() => {
   for (const g of groups) for (const w of g) map[w] = g[0];
   return map;
 })();
-const EL_BASE = "/einkaufsliste_files";
+// 📁 Woher kommen die eigenen Dateien? Die Offline-App lädt die Karte über /einkaufsliste/files/ (dann reicht beim Reverse Proxy /einkaufsliste/*), Dashboards über /einkaufsliste_files/
+const EL_BASE = (() => { try { return /^\/einkaufsliste\/files\//.test(new URL(import.meta.url).pathname) ? "/einkaufsliste/files" : "/einkaufsliste_files"; } catch (_) { return "/einkaufsliste_files"; } })();
 
 const WD_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Python: Montag = 0
 const LOG_ACT = {

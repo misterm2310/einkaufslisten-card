@@ -48,6 +48,14 @@ body { padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset
 .login img { width:96px; height:96px; border-radius:22px; }
 .big { font:inherit; border:0; background:var(--primary-color); color:#fff; border-radius:12px; padding:13px 22px; font-size:17px; font-weight:600; margin-top:16px; cursor:pointer; }
 .small { font-size:13px; color:var(--secondary-text-color); }
+.lform { display:flex; flex-direction:column; gap:12px; text-align:left; margin-top:18px; }
+.lform label { display:flex; flex-direction:column; gap:4px; font-size:14px; color:var(--secondary-text-color); }
+.lform label.chk { flex-direction:row; align-items:center; gap:8px; }
+.lform input:not([type=checkbox]), .lform select { font:inherit; font-size:17px; padding:11px 12px; border-radius:10px; border:1px solid var(--divider-color); background:var(--card-background-color); color:var(--primary-text-color); }
+.lform .big { margin-top:4px; }
+.lform .big:disabled { opacity:.6; }
+.lerr { margin:0; padding:9px 12px; border-radius:10px; background:rgba(219,68,55,.14); color:var(--error-color,#db4437); font-size:14px; }
+button.link { font:inherit; background:none; border:0; color:inherit; text-decoration:underline; cursor:pointer; padding:4px; }
 /* 📷 Scanner mit der Handykamera */
 .scan { position:fixed; inset:0; z-index:10040; background:#000; color:#fff; display:flex; flex-direction:column; }
 .scan video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
@@ -222,6 +230,82 @@ async function finishLogin() {
   auth = await tokenRequest({ grant_type: "authorization_code", code: q.get("code") });
   put(K.auth, auth); kvSet("auth", { ...auth, client_id: CLIENT_ID });
 }
+// 🔑 Eigene Anmeldung: Benutzer, Passwort, ggf. 2-Faktor-Code. Benutzt dieselbe offizielle Anmelde-Schnittstelle wie die
+// Home-Assistant-Seite (/auth/login_flow) – Home Assistant prüft alles selbst, die Rechte bleiben gleich.
+// Vorteil: Die Anmeldeseite (/frontend_latest, /static) wird nicht gebraucht – hinter einem Reverse Proxy reicht /einkaufsliste/*, /auth/*, /api/*.
+let flow = null; // { id, step, schema, errors, ph }
+let flowBusy = false, flowN = 0, flowLast = {}; // flowN: jede Antwort von Home Assistant zeichnet das Formular neu (z. B. mit Fehlermeldung)
+const FLOW_LABEL = { username: ["Benutzername", "Username"], password: ["Passwort", "Password"], code: ["Code aus der Authentifizierungs-App", "Code from your authenticator app"],
+  multi_factor_auth_module: ["Zweiter Schritt", "Second step"], user: ["Benutzer", "User"] };
+const FLOW_ERR = { invalid_auth: ["Benutzername oder Passwort stimmt nicht.", "Wrong username or password."], invalid_code: ["Der Code stimmt nicht.", "The code is wrong."],
+  invalid_login: ["Benutzername oder Passwort stimmt nicht.", "Wrong username or password."], login_expired: ["Zu lange gewartet – bitte nochmal anmelden.", "Took too long – please log in again."] };
+async function flowPost(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.message || "login " + r.status), { status: r.status });
+  return j;
+}
+async function flowStart() {
+  if (flowBusy) return;
+  flowBusy = true;
+  try {
+    const r = await fetch("/auth/providers");
+    if (!r.ok) throw Object.assign(new Error("providers " + r.status), { status: r.status });
+    const j = await r.json();
+    const list = Array.isArray(j) ? j : j.providers || [];
+    const pr = list.find((x) => x.type === "homeassistant") || list[0];
+    if (!pr) throw new Error("no provider");
+    await flowStep(await flowPost("/auth/login_flow", { client_id: CLIENT_ID, handler: [pr.type, pr.id], redirect_uri: CLIENT_ID }));
+  } catch (err) {
+    flow = null;
+    toast(err.status === 403 ? T("Zu viele Versuche – Home Assistant hat kurz gesperrt.", "Too many attempts – Home Assistant blocked you for a while.") : T("Anmelden geht gerade nicht – kein Netz?", "Can't log in right now – no connection?"));
+    update();
+  } finally { flowBusy = false; }
+}
+async function flowStep(res) {
+  if (res.type === "create_entry") { // ✅ geschafft: Schlüssel holen wie bisher
+    flow = null;
+    auth = await tokenRequest({ grant_type: "authorization_code", code: res.result });
+    put(K.auth, auth); kvSet("auth", { ...auth, client_id: CLIENT_ID });
+    update(); connect();
+    return;
+  }
+  if (res.type === "abort") { flow = null; toast(T("Anmeldung abgebrochen", "Login aborted") + (res.reason ? ` (${res.reason})` : "")); update(); return; }
+  flow = { n: ++flowN, id: res.flow_id, step: res.step_id, schema: Array.isArray(res.data_schema) ? res.data_schema : [], errors: res.errors || {}, ph: res.description_placeholders || {} };
+  update();
+}
+async function flowSubmit(form) {
+  if (!flow || flowBusy) return;
+  flowBusy = true;
+  const btn = form.querySelector("button[type=submit]"); if (btn) btn.disabled = true;
+  const data = {};
+  for (const f of flow.schema) {
+    const el = form.elements[f.name];
+    if (!el) continue;
+    data[f.name] = f.type === "boolean" ? el.checked : el.value;
+  }
+  flowLast = { ...data }; delete flowLast.password; delete flowLast.code; // Benutzername bleibt stehen, wenn das Passwort falsch war
+  try { await flowStep(await flowPost(`/auth/login_flow/${encodeURIComponent(flow.id)}`, { ...data, client_id: CLIENT_ID })); }
+  catch (err) { flow = null; toast(err.status === 403 ? T("Zu viele Versuche – Home Assistant hat kurz gesperrt.", "Too many attempts – Home Assistant blocked you for a while.") : T("Das hat nicht geklappt – bitte nochmal.", "That didn't work – please try again.")); update(); }
+  finally { flowBusy = false; }
+}
+function flowHtml() {
+  const esc = (x) => String(x ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const err = Object.values(flow.errors || {}).map((e) => (FLOW_ERR[e] ? T(...FLOW_ERR[e]) : e));
+  const fields = flow.schema.map((f) => {
+    const lab = FLOW_LABEL[f.name] ? T(...FLOW_LABEL[f.name]) : f.name;
+    if (f.type === "select") {
+      const opts = Array.isArray(f.options) ? f.options : Object.entries(f.options || {});
+      return `<label>${esc(lab)}<select name="${esc(f.name)}">${opts.map((o) => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join("")}</select></label>`;
+    }
+    if (f.type === "boolean") return `<label class="chk"><input type="checkbox" name="${esc(f.name)}"> ${esc(lab)}</label>`;
+    const kind = f.name === "password" ? `type="password" autocomplete="current-password"` : f.name === "code" ? `inputmode="numeric" autocomplete="one-time-code"` : f.name === "username" ? `autocomplete="username" autocapitalize="none" spellcheck="false"` : "";
+    return `<label>${esc(lab)}<input name="${esc(f.name)}" ${kind} value="${esc(flowLast[f.name] || "")}" required></label>`;
+  }).join("");
+  const hint = flow.step === "mfa" ? `<p class="small">${T("Öffne deine Authentifizierungs-App und tippe den Code ein.", "Open your authenticator app and enter the code.")}</p>` : "";
+  return `<form class="lform" data-flow="${flow.n}" autocomplete="on">${hint}${err.length ? `<p class="lerr">${err.map(esc).join("<br>")}</p>` : ""}${fields}<button class="big" type="submit">${flow.step === "init" ? T("Anmelden", "Log in") : T("Weiter", "Continue")}</button></form>`;
+}
+
 async function accessToken() {
   if (auth && auth.expires > Date.now()) return auth.access;
   auth = { ...(await tokenRequest({ grant_type: "refresh_token", refresh_token: auth.refresh })), refresh: auth.refresh };
@@ -569,12 +653,20 @@ function update() {
   const wrap = document.getElementById("wrap");
   if (!auth) {
     card = null;
+    if (flow && navigator.onLine !== false && wrap.querySelector(`form.lform[data-flow="${flow.n}"]`)) return; // 🔑 nicht neu zeichnen, während getippt wird
     wrap.innerHTML = `<div class="login"><img src="icon-192.png" alt=""><h1>${T("Einkaufsliste", "Shopping list")}</h1>
       <p>${T("Einmal mit deinem Home-Assistant-Benutzer anmelden. Danach funktioniert die Liste auch ohne Netz.", "Log in once with your Home Assistant user. After that the list also works without a connection.")}</p>
       ${navigator.onLine === false ? `<p class="small">${T("Zum ersten Anmelden braucht es einmal Netz.", "The first login needs a connection once.")}</p>`
-        : `<button class="big" id="loginBtn">${T("Anmelden", "Log in")}</button>`}
-      <p class="small">${T("Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ – dann hast du ein eigenes Symbol.", "Tip: use “Add to Home screen” in the browser menu to get an app icon.")}</p></div>`;
-    document.getElementById("loginBtn")?.addEventListener("click", startLogin);
+        : flow ? flowHtml() : `<button class="big" id="loginBtn">${T("Anmelden", "Log in")}</button>`}
+      <p class="small">${T("Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ – dann hast du ein eigenes Symbol.", "Tip: use “Add to Home screen” in the browser menu to get an app icon.")}</p>
+      ${navigator.onLine === false ? "" : `<p class="small"><button class="link" id="haLoginBtn" type="button">${T("Mit der Home-Assistant-Seite anmelden", "Log in with the Home Assistant page")}</button></p>`}</div>`;
+    document.getElementById("loginBtn")?.addEventListener("click", flowStart);
+    document.getElementById("haLoginBtn")?.addEventListener("click", startLogin); // 🚪 alter Weg, z. B. für „vertrauenswürdige Netzwerke“
+    const lf = wrap.querySelector("form.lform");
+    if (lf) {
+      lf.addEventListener("submit", (e) => { e.preventDefault(); flowSubmit(lf); });
+      setTimeout(() => ([...lf.querySelectorAll("input,select")].find((x) => !x.value) || lf.querySelector("input,select"))?.focus(), 30);
+    }
     return;
   }
   if (!customElements.get("einkaufsliste-card")) {
@@ -657,7 +749,7 @@ function logout(silent) {
   } catch (_) { /* egal */ }
   const s = document.createElement("script");
   s.type = "module";
-  s.src = "/einkaufsliste_files/einkaufsliste-card.js?v=" + VERSION;
+  s.src = "/einkaufsliste/files/einkaufsliste-card.js?v=" + VERSION; // 📁 unter /einkaufsliste/ – beim Reverse Proxy reicht /einkaufsliste/*, /auth/*, /api/*
   s.onload = () => customElements.whenDefined("einkaufsliste-card").then(update);
   document.head.append(s);
   update();

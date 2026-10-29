@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 DOMAIN = "einkaufsliste"
-VERSION = "2.76.24-beta.6"
+VERSION = "2.76.24-beta.7"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
@@ -18,6 +18,7 @@ EVENT_TIMER = f"{DOMAIN}_timer_fertig"  # ⏲️ Kochtimer abgelaufen
 EVENT_RECALL = f"{DOMAIN}_rueckruf"  # ⚠️ offizielle Warnung passt zu einem Einkauf
 
 STATIC_URL = "/einkaufsliste_files"
+APP_FILES_URL = "/einkaufsliste/files"  # 📱 dieselben Dateien noch einmal unter /einkaufsliste/ (Reverse Proxy: /einkaufsliste/* reicht)
 CARD_FILENAME = "einkaufsliste-card.js"
 
 # Optionen (Aufräumen)

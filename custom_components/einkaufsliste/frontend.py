@@ -9,7 +9,7 @@ from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 
-from .const import CARD_FILENAME, PANEL_FILENAME, PANEL_URL_PATH, STATIC_URL, VERSION
+from .const import APP_FILES_URL, CARD_FILENAME, PANEL_FILENAME, PANEL_URL_PATH, STATIC_URL, VERSION
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +38,8 @@ def _resources(hass: HomeAssistant):
 async def async_setup_frontend(hass: HomeAssistant) -> None:
     """Datei bereitstellen und als Dashboard-Ressource eintragen."""
     await hass.http.async_register_static_paths(
-        [StaticPathConfig(STATIC_URL, str(Path(__file__).parent / "www"), False)]
+        [StaticPathConfig(STATIC_URL, str(Path(__file__).parent / "www"), False),
+         StaticPathConfig(APP_FILES_URL, str(Path(__file__).parent / "www"), False)]
     )
     versioned = f"{CARD_URL}?v={VERSION}"
 

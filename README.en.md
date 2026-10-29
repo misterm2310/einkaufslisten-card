@@ -129,6 +129,10 @@ The **complete card** as its own app on your home screen – with recipes, cook 
 
 **🔄 Sending while the app is closed:** on **Android with Chrome** the app sends remembered changes even when it's closed – Android wakes it up briefly once there's a connection again (Android decides exactly when; with strict battery saving it can take a while). **iPhones** can't do this; there it's sent the next time you open the app. Each app has its own queue: what the offline app remembered is only sent by the offline app.
 
+**🔑 Logging in:** the app has its own small login window (username, password and – if enabled – the two-factor code). It uses the same official Home Assistant login as the normal login page: same users, same rights, same lockout after wrong attempts. If you use a special login (e.g. “trusted networks”), tap **“Log in with the Home Assistant page”** at the bottom.
+
+**🔌 Behind a reverse proxy (Caddy, nginx …):** from outside the app only needs these three areas: `/einkaufsliste/*`, `/auth/*` and `/api/*` (strictly, for `/api/` the live connection `/api/websocket` is enough, plus `/api/einkaufsliste/pdf/*` for the PDF in the HA app). To be honest: with `/auth/` and `/api/websocket` reachable, the normal Home Assistant login is reachable from outside. Whoever logs in can do everything their user may do – not just the shopping list. Best use a separate user **without admin rights** with a strong password and keep `ip_ban_enabled` on.
+
 Good to know: it needs an **https** address (e.g. Nabu Casa). If two people change the same thing at once, the last change wins. iPhones sometimes clear a web app's offline storage after weeks without use – just open it once with a connection.
 
 ---

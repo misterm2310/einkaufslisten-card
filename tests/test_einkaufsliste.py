@@ -2008,6 +2008,15 @@ async def test_offline_app_pages(hass: HomeAssistant, setup, hass_client_no_auth
     assert r.status == 404
     r = await client.get("/einkaufsliste/app", allow_redirects=False)
     assert r.status == 302 and r.headers["Location"] == "/einkaufsliste/app/"
+    # 📁 alles unter /einkaufsliste/ (Reverse Proxy: /einkaufsliste/*, /auth/*, /api/* reichen) – der alte Pfad bleibt für Dashboards
+    body = await (await client.get("/einkaufsliste/app/")).text()
+    assert "/einkaufsliste/files/einkaufsliste-card.js" in body and "/einkaufsliste_files/" not in body
+    assert "/auth/login_flow" in body  # 🔑 eigene Anmeldung, ohne die HA-Anmeldeseite
+    sw = await (await client.get("/einkaufsliste/app/sw.js")).text()
+    assert "/einkaufsliste_files/einkaufsliste" not in sw and "/einkaufsliste/files/einkaufsliste-card.js" in sw
+    for path in ("/einkaufsliste/files/einkaufsliste-card.js", "/einkaufsliste_files/einkaufsliste-card.js", "/einkaufsliste/files/einkaufsliste-en.json"):
+        r = await client.get(path)
+        assert r.status == 200, path
     r = await client.get("/einkaufsliste/app/icons.json")
     assert r.status == 200
     icons = await r.json()

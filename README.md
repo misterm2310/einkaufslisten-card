@@ -127,6 +127,10 @@ Die **komplette Karte** als eigene App auf dem Startbildschirm – mit Rezepten,
 
 **🔄 Nachschicken bei geschlossener App:** Unter **Android mit Chrome** schickt die App gemerkte Änderungen auch dann nach, wenn sie zu ist – Android weckt sie kurz auf, sobald wieder Netz da ist (wann genau, entscheidet Android; bei strengem Akkusparen kann es dauern). Auf dem **iPhone** geht das nicht, dort wird beim nächsten Öffnen nachgeschickt. Jede App hat ihre eigene Warteschlange: Was in der Offline-App gemerkt ist, schickt auch nur die Offline-App nach.
 
+**🔑 Anmelden:** Die App hat ein eigenes kleines Anmeldefenster (Benutzername, Passwort und – falls eingeschaltet – der 2-Faktor-Code). Es benutzt dieselbe offizielle Anmeldung von Home Assistant wie die normale Anmeldeseite: dieselben Benutzer, dieselben Rechte, dieselbe Sperre nach falschen Versuchen. Wer eine besondere Anmeldung nutzt (z. B. „vertrauenswürdige Netzwerke“), tippt unten auf **„Mit der Home-Assistant-Seite anmelden“**.
+
+**🔌 Hinter einem Reverse Proxy (Caddy, nginx …):** Die App braucht von außen nur diese drei Bereiche: `/einkaufsliste/*`, `/auth/*` und `/api/*` (genau genommen reicht bei `/api/` die Live-Verbindung `/api/websocket`, plus `/api/einkaufsliste/pdf/*` für die PDF in der HA-App). Ehrlich gesagt: Mit `/auth/` und `/api/websocket` ist die normale Home-Assistant-Anmeldung von außen erreichbar. Wer sich anmeldet, darf alles, was sein Benutzer darf – nicht nur die Einkaufsliste. Am besten einen eigenen Benutzer **ohne Admin-Rechte** mit starkem Passwort nehmen und `ip_ban_enabled` anlassen.
+
 Gut zu wissen: Es braucht eine **https**-Adresse (z. B. Nabu Casa). Ändern zwei Leute gleichzeitig dasselbe, gewinnt die letzte Änderung. iPhones löschen den Offline-Speicher manchmal, wenn die App wochenlang nicht geöffnet wurde – dann einmal mit Netz öffnen.
 
 ---

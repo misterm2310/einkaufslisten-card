@@ -2,10 +2,10 @@
 const CACHE = "einkaufsliste-app-__EL_VERSION__";
 const FILES = [
   "./", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icons.json", "zxing.min.js?v=__EL_VERSION__",
-  "/einkaufsliste_files/einkaufsliste-card.js?v=__EL_VERSION__",
-  "/einkaufsliste_files/einkaufsliste-en.json?v=__EL_VERSION__",
-  "/einkaufsliste_files/einkaufsliste-start.json?v=__EL_VERSION__",
-  "/einkaufsliste_files/mister-m.webp?v=__EL_VERSION__",
+  "/einkaufsliste/files/einkaufsliste-card.js?v=__EL_VERSION__",
+  "/einkaufsliste/files/einkaufsliste-en.json?v=__EL_VERSION__",
+  "/einkaufsliste/files/einkaufsliste-start.json?v=__EL_VERSION__",
+  "/einkaufsliste/files/mister-m.webp?v=__EL_VERSION__",
 ];
 
 self.addEventListener("install", (e) => {
@@ -21,7 +21,7 @@ self.addEventListener("activate", (e) => {
 // Erst das Netz fragen (dann ist alles aktuell), ohne Netz das Gespeicherte nehmen
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  const ours = url.pathname.startsWith("/einkaufsliste/app/") || url.pathname.startsWith("/einkaufsliste_files/");
+  const ours = url.pathname.startsWith("/einkaufsliste/app/") || url.pathname.startsWith("/einkaufsliste/files/");
   if (e.request.method !== "GET" || url.origin !== location.origin || !ours || url.pathname.endsWith("sw.js") || url.pathname.includes("/__ws/")) return;
   // Gespeichertes suchen (auch ohne ?v=…, notfalls die Startseite)
   const lookup = () => caches.match(e.request).then((r) => r || caches.match(e.request, { ignoreSearch: true }))
