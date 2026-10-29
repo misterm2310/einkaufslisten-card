@@ -5217,7 +5217,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
   _matchesTab(item) {
     const t = this._activeTab;
-    if (t === "all") return true;
+    if (t === "all") return !this._store(item.store_id)?.not_in_all; // 🔨 z. B. Baumarkt: steht nur im eigenen Reiter
     if (t === "none") return !item.store_id;
     return item.store_id === t || (!item.store_id && !this._store(t)?.no_any); // 🤷 „Egal wo“ gibt es in jedem Geschäft (außer dort, wo es abgeschaltet ist)
   }
@@ -5591,7 +5591,8 @@ class EinkaufslisteCard extends HTMLElement {
       return n ? `<span class="bubble">+${n}</span>` : "";
     };
     const noneFn = (i) => !i.store_id;
-    const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(() => true)}</span>${bubble(() => true, active === "all")}</button>`];
+    const inAll = (i) => !this._store(i.store_id)?.not_in_all; // 🔨 Geschäfte mit „Nicht unter ‚Alle‘“ zählen dort nicht mit
+    const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(inAll)}</span>${bubble(inAll, active === "all")}</button>`];
     for (const s of d.stores) {
       const closed = elStoreClosed(s);
       parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || (!i.store_id && !s.no_any))}</span>${bubble((i) => i.store_id === s.id || (!i.store_id && !s.no_any), active === s.id)}</button>`);
@@ -6978,6 +6979,7 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
         ${this._catSetHtml(e)}
         ${this._catOrderHtml(e)}
         <button class="swline" data-act="store-noany" data-id="${e.id}" aria-pressed="${!!e.no_any}" title="Artikel ohne festes Geschäft („Egal wo“) stehen dann in diesem Reiter nicht mit drin – z. B. Cola bei dm"><span class="grow"><b>„Egal wo“-Artikel hier nicht zeigen</b><small>Gilt für den Reiter und den Laden-Modus dieses Geschäfts. Unter „Alle“ und „Egal wo“ siehst du sie weiter.</small></span><span class="tgl"><span></span></span></button>
+        <button class="swline" data-act="store-notinall" data-id="${e.id}" aria-pressed="${!!e.not_in_all}" title="Die Artikel dieses Geschäfts stehen dann nur im eigenen Reiter – z. B. Baumarkt: sammeln, bis sich die Fahrt lohnt"><span class="grow"><b>Nicht unter „Alle“ zeigen</b><small>Die Artikel stehen nur im eigenen Reiter (mit Zahl dran) – praktisch für Baumarkt, Apotheke &amp; Co. Tipp: unter ⚙️ → Aufräumen das Geschäft ausnehmen, dann bleibt alles offen.</small></span><span class="tgl"><span></span></span></button>
         ${this._hoursEditHtml(e)}
         <b class="shead">🗞️ Prospekt-Link</b>
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:newspaper-variant-outline"></ha-icon><input class="grow" type="url" inputmode="url" data-field="flyer" value="${esc(e.flyer || "")}" placeholder="🗞️ Prospekt-Link (https://…)" title="Adresse des Prospekts. Wird nur beim Antippen geöffnet."></div>
@@ -14103,6 +14105,12 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           .then(() => { this._toast("✖ Ausgeblendet – kommt nur wieder, wenn es erneut fehlt"); setTimeout(() => this._renderMissed(), 150); })
           .catch(() => {});
         break;
+      case "store-notinall": { // 🔨 nicht unter „Alle“ zeigen
+        const st = this._store(el.dataset.id);
+        this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: el.dataset.id, not_in_all: !st?.not_in_all })
+          .then(() => setTimeout(() => { this._renderSettings(); this._renderAll?.(); }, 150)).catch(() => {});
+        break;
+      }
       case "store-noany": {
         const st = this._store(el.dataset.id);
         this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: el.dataset.id, no_any: !st?.no_any })

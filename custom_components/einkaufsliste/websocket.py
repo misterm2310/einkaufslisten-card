@@ -428,11 +428,12 @@ def ws_group_add(hass, connection, msg):
         vol.Optional("tips"): OPT_STR,
         vol.Optional("holiday_state"): OPT_STR,
         vol.Optional("no_any"): bool,  # 🤷 „Egal wo“-Artikel in diesem Geschäft nicht zeigen
+        vol.Optional("not_in_all"): bool,  # 🔨 dieses Geschäft nicht unter „Alle“ zeigen
     }
 )
 @callback
 def ws_group_update(hass, connection, msg):
-    fields = _pick(msg, "name", "color", "icon", "zone", "zones", "brands", "cat_order", "cats", "hours", "flyer", "holiday_state", "branches", "no_any", "address", "phone", "website", "tips")
+    fields = _pick(msg, "name", "color", "icon", "zone", "zones", "brands", "cat_order", "cats", "hours", "flyer", "holiday_state", "branches", "no_any", "not_in_all", "address", "phone", "website", "tips")
     _run(
         hass, connection, msg, lambda m: m.update_group(msg["kind"], msg["group_id"], **fields)
     )

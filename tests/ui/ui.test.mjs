@@ -510,6 +510,20 @@ check("PDF: Umlaute bleiben, Emojis fallen weg", r.hasName && r.noEmoji, JSON.st
 check("PDF in der HA-App: geht an Home Assistant, Link wird geöffnet", r.appOk, JSON.stringify(r));
 check("PDF auf dem iPhone: nur „PDF drucken / teilen“, kein Browser-Drucken", r.iphone.go === false && /PDF drucken \/ teilen/.test(r.iphone.pdf || ""), JSON.stringify(r));
 
+// 29) 🔨 Nicht unter „Alle“ zeigen: Artikel nur im eigenen Reiter, Zahl bei „Alle“ ohne sie (Issue #23)
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const st=c._data.stores[1]; const keep=st.not_in_all; const q=(x)=>c.shadowRoot.querySelector(x);
+  const mine=c._data.items.filter((i)=>!i.checked && i.store_id===st.id).length; const total=c._data.items.filter((i)=>!i.checked).length;
+  c._tab="all"; c._view="list"; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  const before=+q('.tab[data-tab="all"] .n')?.textContent;
+  st.not_in_all=true; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  const after=+q('.tab[data-tab="all"] .n')?.textContent; const inAllList=c._data.items.filter((i)=>c._matchesTab(i) && i.store_id===st.id).length;
+  c._tab=st.id; const inOwn=c._data.items.filter((i)=>!i.checked && c._matchesTab(i) && i.store_id===st.id).length; c._tab="all";
+  c._view="settings"; c._setSec="stores"; c._lastSetSec="stores"; c._storeSel=st.id; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  const sw=q('[data-act="store-notinall"]')?.getAttribute("aria-pressed");
+  st.not_in_all=keep; c._storeSel=null; c._setSec=null; c._view="list"; c._renderAll();
+  return { mine, total, before, after, inAllList, inOwn, sw }; });
+check("Nicht unter „Alle“: Zahl bei „Alle“ ohne das Geschäft, Artikel nur im eigenen Reiter, Schalter da", r.mine > 0 && r.before === r.total && r.after === r.total - r.mine && r.inAllList === 0 && r.inOwn === r.mine && r.sw === "true", JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

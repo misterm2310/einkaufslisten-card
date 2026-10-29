@@ -4600,6 +4600,19 @@ async def test_geschaeft_egal_wo_abschalten(hass, setup, hass_ws_client) -> None
     assert "no_any" not in m.store_by_id(aldi)
 
 
+async def test_geschaeft_nicht_unter_alle(hass, setup, hass_ws_client) -> None:
+    """🔨 Pro Geschäft: nicht unter „Alle“ zeigen (z. B. Baumarkt, Issue #23)."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    await client.send_json({"id": 1, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "not_in_all": True})
+    assert (await client.receive_json())["success"]
+    assert any(s["id"] == aldi and s.get("not_in_all") is True for s in m.as_dict()["stores"])
+    await client.send_json({"id": 2, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "not_in_all": False})
+    assert (await client.receive_json())["success"]
+    assert "not_in_all" not in m.store_by_id(aldi)
+
+
 async def test_recipe_cook_note_over_websocket(hass, setup, hass_ws_client):
     """📝 Notiz nach dem Kochen: wird gespeichert, gekürzt, und leer löscht sie wieder."""
     m = mgr(hass)

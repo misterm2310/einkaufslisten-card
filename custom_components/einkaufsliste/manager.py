@@ -4522,6 +4522,11 @@ class EinkaufslisteManager:
                 entry["no_any"] = True
             else:
                 entry.pop("no_any", None)
+        if "not_in_all" in fields and kind == "stores":  # 🔨 nicht unter „Alle“ zeigen (z. B. Baumarkt: sammeln, bis sich die Fahrt lohnt)
+            if fields["not_in_all"]:
+                entry["not_in_all"] = True
+            else:
+                entry.pop("not_in_all", None)
         if "hours" in fields and kind == "stores":  # 🕒 Öffnungszeiten (7 Tage Mo..So; None = zu; sonst ["08:00","20:00"])
             entry["hours"] = _clean_hours(fields["hours"])
         self._changed()
