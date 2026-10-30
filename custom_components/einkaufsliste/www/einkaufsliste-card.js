@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.8";
+const EL_VERSION = "2.76.24-beta.9";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -433,6 +433,9 @@ const EL_BETA_NEWS = [
   ["❌ <b>War nicht da:</b> Im ⇄-Fenster am Artikel gibt es den Knopf „War nicht da“. Der Artikel bleibt 2 Tage grau mit „❌ war nicht da“ für alle sichtbar und wird dann ohne Kauf abgehakt – unter „Erledigt“ mit ❌ statt ✔, er zählt nicht als gekauft. Abschalten unter ⚙️ → Listenansicht → Beim Artikel. · 🔨 <b>Nicht unter „Alle“ zeigen:</b> neuer Schalter pro Geschäft (⚙️ → Geschäfte), z. B. für den Baumarkt – die Sachen stehen dann nur im eigenen Reiter. · 📅 „Abgehakt von“ zeigt jetzt auch Tag und Uhrzeit.",
    "❌ <b>Wasn't there:</b> the ⇄ window on an item has a “Wasn't there” button. The item stays greyed out with “❌ wasn't there” for everyone for 2 days and is then checked off without buying – under “Done” with ❌ instead of ✔, it does not count as bought. Turn it off under ⚙️ → List view → On the item. · 🔨 <b>Don't show under “All”:</b> new switch per store (⚙️ → Stores), e.g. for the hardware store – its items then only show in its own tab. · 📅 “Checked off by” now also shows day and time.",
    "beta.8"],
+  ["📖 <b>Rezept vorschlagen</b> hat ein neues Symbol: ein Buch mit Plus statt der Glühbirne (die steht ja schon für Tipps und „Bildschirm immer an“).",
+   "📖 <b>Suggest a recipe</b> has a new icon: a book with a plus instead of the light bulb (which already stands for tips and “keep screen on”).",
+   "beta.9"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -2976,7 +2979,7 @@ input[hidden] + .tplchips { display:none; }
 @keyframes lockblink { 50% { opacity:.2; } }
 .gearbtn ha-icon { color:#9e9e9e !important; } .gearbtn.open ha-icon { color:#43a047 !important; } .gearbtn.expiring ha-icon { color:#e53935 !important; animation: lockblink 1s steps(2, start) infinite; } /* ⚙️ Zahnrad in der Kochmütze: grau = gesperrt, grün = per PIN offen, rot blinkend = letzte Minute */
 @media (prefers-reduced-motion: reduce) { .gearbtn.expiring ha-icon { animation:none; } }
-button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:lightbulb-on-outline"] { color:#f9a825; } /* 💡 Rezept vorschlagen */
+button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon="mdi:book-plus-outline"] { color:#f9a825; } /* 📖➕ Rezept vorschlagen */
 .propbox { display:flex; flex-direction:column; gap:6px; margin:8px 0 4px; }
 .propbox[hidden] { display:none; }
 .prop { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); background:color-mix(in srgb, var(--primary-text-color, #000) 3%, transparent); }
@@ -8684,7 +8687,7 @@ ${(() => {
     // Suchfeld nur einmal bauen – sonst springt beim Tippen der Cursor raus
     const aiOn = !!this._data.settings?.ai_on && !this._privacyOn();
     if (!ov.querySelector("#recipeList") || !!ov.querySelector("#recipeSearch") !== count > 0 || !!ov.querySelector('[data-act="ai-cook"]') !== aiOn) {
-      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span><button class="btn" data-act="prop-new" title="Rezept vorschlagen" aria-label="Rezept vorschlagen"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><span class="lbl">Rezept vorschlagen</span></button>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon><span class="lbl">Was kann ich kochen?</span></button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button><button class="btn gearbtn" data-act="recipe-settings" title="Einstellungen der Rezepte"><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Einstellungen</span></button></h3>${
+      ov.innerHTML = `<div class="sec"><h3 class="viewhead" style="--ic:${SET_COLORS.recipes}"><ha-icon icon="mdi:chef-hat"></ha-icon>Rezepte<span style="flex:1"></span><button class="btn" data-act="prop-new" title="Rezept vorschlagen" aria-label="Rezept vorschlagen"><ha-icon icon="mdi:book-plus-outline"></ha-icon><span class="lbl">Rezept vorschlagen</span></button>${aiOn ? `<button class="btn" data-act="ai-cook" title="Was kann ich kochen? (mit KI)"><ha-icon icon="mdi:robot-happy-outline"></ha-icon><span class="lbl">Was kann ich kochen?</span></button>` : ""}<button class="btn" data-act="gar" title="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button><button class="btn gearbtn" data-act="recipe-settings" title="Einstellungen der Rezepte"><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Einstellungen</span></button></h3>${
         count ? this._recipeSearchHtml("recipeSearch") : ""}<div id="propBox" class="propbox" hidden></div><div id="recipeList"></div></div>`;
     }
     this._renderRecipeList();
@@ -8710,7 +8713,7 @@ ${(() => {
     let ov = null;
     const closed = new Set(["zut", "ofen", "zub"]);
     const sec = (k, icon, color, title, sub, inner) => this._rsec(k, icon, color, title, sub, "", inner, closed, "psec-toggle");
-    this._openPage({ key: "prop", title: "Rezept vorschlagen", icon: "mdi:lightbulb-on-outline", color: "#f9a825", build: (body) => {
+    this._openPage({ key: "prop", title: "Rezept vorschlagen", icon: "mdi:book-plus-outline", color: "#f9a825", build: (body) => {
       ov = body;
       body.innerHTML = `<div class="pgcol">
         <div class="pgsmall">Schreib dein Rezept einfach auf. Es landet auf der Warteliste und wird erst nach einem OK ins Rezeptbuch übernommen. Zutaten und Zubereitung gehen auch als Link (z. B. von Chefkoch).</div>
