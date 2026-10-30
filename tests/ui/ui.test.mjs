@@ -524,6 +524,37 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   return { mine, total, before, after, inAllList, inOwn, sw }; });
 check("Nicht unter „Alle“: Zahl bei „Alle“ ohne das Geschäft, Artikel nur im eigenen Reiter, Schalter da", r.mine > 0 && r.before === r.total && r.after === r.total - r.mine && r.inAllList === 0 && r.inOwn === r.mine && r.sw === "true", JSON.stringify(r));
 
+// 30) ❌ War nicht da: Knopf im ⇄-Fenster (abschaltbar), Artikel grau mit „war nicht da“, unter „Erledigt“ mit ❌ statt ✔
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const q=(x)=>c.shadowRoot.querySelector(x);
+  c._tab="all"; c._view="list"; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  const it=c._data.items.find((i)=>!i.checked && i.store_id); const keep={ gone_at:it.gone_at, out_at:it.out_at, checked:it.checked, checked_at:it.checked_at, checked_by:it.checked_by };
+  const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
+  c._moving=it.id; c._renderList(); await new Promise(r=>setTimeout(r,30));
+  const btn=q('.moverow [data-act="move-gone"]'); const label=btn?.textContent.trim(); btn?.click(); await new Promise(r=>setTimeout(r,30));
+  const msg=sent[0];
+  it.gone_at=new Date().toISOString(); it.out_at=null; c._renderList(); await new Promise(r=>setTimeout(r,30));
+  const row=()=>q('.item[data-id="'+it.id+'"]');
+  const open={ cls:row()?.classList.contains("gone"), txt:row()?.querySelector(".igone")?.textContent, out:!!row()?.querySelector(".iout:not(.igone)") };
+  it.checked=true; it.checked_by=null; it.checked_at=new Date().toISOString(); const tmp=document.createElement("div"); tmp.innerHTML=c._itemHtml(it);
+  const done={ icon:tmp.querySelector(".check ha-icon")?.getAttribute("icon"), txt:tmp.querySelector(".igone")?.textContent, auto:/automatisch/.test(tmp.textContent||"") };
+  // 🎚️ abgeschaltet: kein Knopf mehr
+  Object.assign(it, keep); delete it.gone_at; const vp=c._data.settings.view_prefs||{}; const keepVp=vp._all; c._data.settings.view_prefs={...vp, _all:{...(vp._all||{}), gone:false}}; c._viewKey=null;
+  c._moving=it.id; c._renderList(); await new Promise(r=>setTimeout(r,30)); const off=!q('.moverow [data-act="move-gone"]');
+  c._data.settings.view_prefs={...vp, _all:keepVp}; if (keepVp===undefined) delete c._data.settings.view_prefs._all; c._viewKey=null;
+  c._moving=null; c._ws=ws; Object.assign(it, keep); if (!keep.gone_at) delete it.gone_at; c._renderAll();
+  return { label, msg, open, done, off }; });
+check("War nicht da: Knopf im ⇄-Fenster schickt item/gone", r.label === "War nicht da" && r.msg?.type === "einkaufsliste/item/gone", JSON.stringify(r));
+check("War nicht da: Artikel grau mit „❌ war nicht da (Tag)“, kein „war aus“", r.open.cls && /❌ war nicht da \(/.test(r.open.txt || "") && !r.open.out, JSON.stringify(r));
+check("War nicht da: unter „Erledigt“ mit ❌ statt ✔, kein „automatisch“", r.done.icon === "mdi:close-circle" && /❌ war nicht da/.test(r.done.txt || "") && !r.done.auto, JSON.stringify(r));
+check("War nicht da: in der Listenansicht abschaltbar", r.off, JSON.stringify(r));
+
+// 31) 📅 „Abgehakt von“ zeigt auch Tag und Uhrzeit
+r = await p.evaluate(() => { const c=document.querySelector('#c1'); const it={ ...c._data.items[0], checked:true, checked_by:"Marco", checked_at:new Date(2026,9,30,20,15).toISOString() };
+  const t=document.createElement("div"); t.innerHTML=c._itemHtml(it); const a=[...t.querySelectorAll(".meta span[title]")].map((x)=>x.getAttribute("title")).find((x)=>/bgehakt/.test(x));
+  const t2=document.createElement("div"); t2.innerHTML=c._itemHtml({ ...it, checked_by:null }); const b=[...t2.querySelectorAll(".meta span[title]")].map((x)=>x.getAttribute("title")).find((x)=>/bgehakt/.test(x));
+  return { a, b }; });
+check("Abgehakt von: mit Tag und Uhrzeit (auch bei automatisch)", r.a === "Abgehakt von Marco am Fr 30.10. um 20:15" && r.b === "Automatisch abgehakt am Fr 30.10. um 20:15", JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

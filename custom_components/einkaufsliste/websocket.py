@@ -68,6 +68,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_pin_set,
         ws_pin_check,
         ws_item_out,
+        ws_item_gone,
         ws_recipe_import_file,
         ws_import_text,
         ws_import_todo_lists,
@@ -974,6 +975,15 @@ def ws_purchases_remove(hass, connection, msg):
 @callback
 def ws_item_out(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.mark_out(msg["item_id"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/item/gone", vol.Required("item_id"): str}
+)
+@callback
+def ws_item_gone(hass, connection, msg):
+    """❌ War nicht da – nach 2 Tagen ohne Kauf abgehakt."""
+    _run(hass, connection, msg, lambda m: m.mark_gone(msg["item_id"]))
 
 
 @websocket_api.websocket_command(

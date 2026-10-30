@@ -4751,3 +4751,41 @@ async def test_pdf_share(hass: HomeAssistant, setup, hass_ws_client, hass_client
     for _ in range(PDF_KEEP + 3):
         store_pdf(hass, base64.b64encode(pdf).decode())
     assert len(hass.data[DOMAIN]["pdf_files"]) == PDF_KEEP
+
+
+async def test_war_nicht_da(hass, setup, hass_ws_client) -> None:
+    """❌ „War nicht da“: bleibt 2 Tage stehen, dann ohne Kauf abgehakt (kein Kauf-Ereignis, keine Statistik)."""
+    from pytest_homeassistant_custom_component.common import async_capture_events
+
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    bought = async_capture_events(hass, "einkaufsliste_item_bought")
+    it = m.add_item("Kokosmilch", store_id=aldi)
+    m.mark_out(it["id"])
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/item/gone", "item_id": it["id"]})
+    assert (await client.receive_json())["success"]
+    assert it["gone_at"] and it["out_at"] is None and not it["checked"]  # „war aus“ wird ersetzt
+    stats_before = m.year_stats.get(str(dt_util.now().year), {}).get("bought", 0)
+    assert m.expire_gone() == []  # noch keine 2 Tage
+    done = m.expire_gone(dt_util.utcnow() + timedelta(days=2, minutes=1))
+    assert done == [it] and it["checked"] and it["checked_by"] is None and it["gone_at"]
+    await hass.async_block_till_done()
+    assert bought == []
+    assert m.year_stats.get(str(dt_util.now().year), {}).get("bought", 0) == stats_before
+    assert m.log[-1]["a"] == "gone_done"
+    # wieder drauf = ganz normal offen, ❌ weg
+    m.set_checked(it["id"], False)
+    assert "gone_at" not in it
+    # doch gekauft = ganz normal abgehakt
+    m.mark_gone(it["id"])
+    m.set_checked(it["id"], True, by="Marco")
+    assert "gone_at" not in it
+    await hass.async_block_till_done()
+    assert len(bought) == 1
+    with pytest.raises(ValueError):
+        m.mark_gone(it["id"])  # schon abgehakt
+    # zählt bei „oft nicht bekommen“ mit
+    it2 = m.add_item("Kokosmilch", store_id=aldi)
+    m.mark_gone(it2["id"])
+    assert m.as_dict()["missed"].get(f"kokosmilch|{aldi}", 0) >= 2

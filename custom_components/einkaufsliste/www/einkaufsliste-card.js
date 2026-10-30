@@ -568,6 +568,7 @@ const VIEW_OPTS = [
   ["barcode", "▥ Barcode-Zeichen", ""],
   ["offer", "🏷️ Angebote", "Preis und Schild"],
   ["out", "⇄ „war aus“-Hinweis", ""],
+  ["gone", "❌ „War nicht da“-Knopf", "im ⇄-Fenster: bleibt 2 Tage grau stehen, dann ohne Kauf erledigt"],
   ["move", "⇄ Verschieben-Knopf", "rechts am Artikel"],
   ["new", "✨ Neu-Zeichen", "neu seit deinem letzten Blick"],
   ["cat_color", "🎨 Farbe der Kategorie", "farbiger Streifen links"],
@@ -616,6 +617,8 @@ const LOG_ACT = {
   edit: { label: "✏️ geändert", verb: "hat % geändert" },
   move: { label: "⇄ verschoben", verb: "hat % verschoben" },
   out: { label: "⇄ war aus", verb: "hat % als „war aus“ markiert" },
+  gone: { label: "❌ war nicht da", verb: "hat % als „war nicht da“ markiert" },
+  gone_done: { label: "❌ ohne Kauf erledigt", verb: "hat % ohne Kauf erledigt" },
   remove: { label: "🗑️ gelöscht", verb: "hat % gelöscht" },
   buy: { label: "🧾 bezahlt", verb: "hat % bezahlt" },
   catalog: { label: "📦 im Katalog angelegt", verb: "hat % im Katalog angelegt" },
@@ -3308,6 +3311,9 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 @keyframes mhop { 0% { transform: translateY(0); } 40% { transform: translateY(-6px); } 100% { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .mascot.full, .mascot.hop { animation: none; } }
 .item .meta .iout { color:var(--primary-text-color); font-weight:500; background:color-mix(in srgb, var(--error-color, #db4437) 9%, transparent); border-radius:8px; padding:0 6px; font-weight:400; }
+.item.gone:not(.done) .name { opacity:.55; } .item.gone:not(.done) .check { opacity:.55; } /* ❌ war nicht da: grau, bleibt aber für alle sichtbar */
+.item.gone.done .check ha-icon { color:var(--error-color, #db4437); }
+.moverow .outbtn.gonebtn { --c:var(--error-color, #db4437); }
 .moverow .outbtn { --c:var(--primary-color,#03a9f4); display:inline-flex; align-items:center; gap:4px; --mdc-icon-size:16px; }
 /* 👨‍🍳 Knöpfe unter der Kochmütze: Foto blau, Kochen rot, Teilen grün (nur das Symbol) */
 .rtools [data-act="photo-view"] ha-icon { color:var(--primary-color,#03a9f4); }
@@ -4122,7 +4128,7 @@ const storeZones = (store) => (Array.isArray(store?.zones) ? store.zones : store
 
 // ⏳ Warteschlange für Funklöcher: wird im Handy gespeichert, damit auch ein Neustart der App nichts verliert
 const QUEUE_TYPES = new Set(["einkaufsliste/item/toggle", "einkaufsliste/item/add", "einkaufsliste/item/update",
-  "einkaufsliste/item/remove", "einkaufsliste/item/move", "einkaufsliste/item/out",
+  "einkaufsliste/item/remove", "einkaufsliste/item/move", "einkaufsliste/item/out", "einkaufsliste/item/gone",
   "einkaufsliste/recipe/add", "einkaufsliste/recipe/update", "einkaufsliste/recipe/remove",
   "einkaufsliste/recipe/apply", "einkaufsliste/recipe/unapply", "einkaufsliste/barcode/assign",
   "einkaufsliste/photo/set"]); // 📸 Fotos werden vorgemerkt, wenn kein Netz da ist (siehe PHOTO_QUEUE_MAX)
@@ -4221,7 +4227,10 @@ function applyQueued(data, list, hass) {
         if (it) { it.store_id = m.store_id || null; it._queued = true; }
         break;
       case "einkaufsliste/item/out":
-        if (it) { it.out_at = now; it._queued = true; }
+        if (it) { it.out_at = now; delete it.gone_at; it._queued = true; }
+        break;
+      case "einkaufsliste/item/gone":
+        if (it) { it.gone_at = now; it.out_at = null; it._queued = true; }
         break;
       case "einkaufsliste/recipe/add":
         if (!(data.recipes || []).some((r) => r.id === m._tmp)) {
@@ -5899,7 +5908,10 @@ class EinkaufslisteCard extends HTMLElement {
     if (item.note && v.note) meta.push(this._noteChip(item.name, item.note));
     if (item.own_note && v.own_note) meta.push(`<span class="inote iown" title="Eigene Notiz – bleibt beim Produkt">✏️ ${esc(item.own_note)}</span>`);
     if (!item.checked && item.from_offer && item.orig?.name) meta.push(`<span class="iinstead" title="Dein ursprüngliches Produkt ist abgehakt – es kommt zurück, wenn das Angebot ohne Kauf endet">↩️ <span>statt</span> <span translate="no">${esc(item.orig.name)}</span></span>`); // „statt Kaffee“
-    if (v.out && !item.checked && item.out_at && Date.now() - new Date(item.out_at) < 3 * DAY)
+    const gone = item.gone_at ? new Date(item.gone_at) : null; // ❌ war nicht da (wird nicht mehr gebraucht)
+    if (gone && !item.checked) meta.push(`<span class="iout igone" title="Gab's nicht – wird am ${fmtDay(new Date(gone.getTime() + 2 * DAY))} ohne Kauf abgehakt">❌ war nicht da (${WD_SHORT[pyWd(gone)]})</span>`);
+    else if (gone) meta.push(`<span class="iout igone" title="Gab's nicht – ohne Kauf erledigt">❌ war nicht da</span>`);
+    else if (v.out && !item.checked && item.out_at && Date.now() - new Date(item.out_at) < 3 * DAY)
       meta.push(`<span class="iout" title="Beim letzten Einkauf nicht bekommen">⇄ war aus (${WD_SHORT[pyWd(new Date(item.out_at))]})</span>`);
     const pk = this._pk(item.name, item.note);
     const codes = this._barcodesOf(pk);
@@ -5921,10 +5933,15 @@ class EinkaufslisteCard extends HTMLElement {
     const when = c.show_dates && v.added_at && !item.checked && !this._shopMode && item.added_at ? fmtWhen(item.added_at) : "";
     if (c.show_added_by && v.added_by && item.added_by) meta.push(`<span title="Eingetragen von"><span translate="no">✍️ ${esc(this._who(item.added_by))}</span>${when ? `, <span>${when}</span>` : ""}</span>`);
     else if (when) meta.push(`<span>${when}</span>`);
-    if (c.show_dates && v.checked_by && item.checked) meta.push(`<span title="Abgehakt von">✓ ${item.checked_by ? esc(this._who(item.checked_by)) : "automatisch"}</span>`);
+    if (c.show_dates && v.checked_by && item.checked && !gone) { // 📅 antippen zeigt auch, wann abgehakt wurde
+      const at = item.checked_at ? new Date(item.checked_at) : null;
+      const day = at && !isNaN(at) ? ` am ${fmtDay(at)} um ${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}` : "";
+      const tip = item.checked_by ? `Abgehakt von ${this._who(item.checked_by)}${day}` : `Automatisch abgehakt${day}`;
+      meta.push(`<span title="${esc(tip)}">✓ ${item.checked_by ? esc(this._who(item.checked_by)) : "automatisch"}</span>`);
+    }
     const rgrp = recipe && this._rgroup(recipe.group);
     if (recipe && v.recipe) meta.push(rgrp?.color ? `<span class="chip" style="--c:${esc(rgrp.color)}">🍽️ ${esc(recipe.name)}</span>` : `<span>🍽️ ${esc(recipe.name)}</span>`);
-    if (c.show_dates && v.cleanup && !this._shopMode) { // 🛒 im Laden-Modus nur das Wichtigste
+    if (c.show_dates && v.cleanup && !this._shopMode && !gone) { // 🛒 im Laden-Modus nur das Wichtigste (❌ hat sein eigenes Datum)
       if (item.checked) {
         // (wer abgehakt hat, steht schon oben)
       } else {
@@ -5937,11 +5954,11 @@ class EinkaufslisteCard extends HTMLElement {
     // hinter dem Namen: für wen es ist (wer es eingetragen hat, steht klein darunter)
     const who = item.for_whom && v.for_whom ? this._forWhomHtml(item.for_whom) : "";
     const qty = item.quantity && v.qty ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(this._qtyNow(item))}</button>` : "";
-    const icon = item.checked ? "mdi:check-circle" : "mdi:checkbox-blank-circle-outline"; // ✔ erledigt = voller Haken (wie am Ende der Abhak-Animation)
+    const icon = item.checked ? (gone ? "mdi:close-circle" : "mdi:check-circle") : "mdi:checkbox-blank-circle-outline"; // ✔ erledigt = voller Haken (wie am Ende der Abhak-Animation)
     const cat = this._cat(item.category_id);
     const isNew = v.new && this._isNew(item);
     return `
-      <div class="item ${item.checked ? "done" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""} ${this._knMarked === item.id ? "marked" : ""}" tabindex="0" data-id="${item.id}" style="--cc:${esc((v.cat_color && cat?.color) || "transparent")}${recipe && this._rgroup(recipe.group)?.color ? `;--rc:${esc(this._rgroup(recipe.group).color)}` : ""}">
+      <div class="item ${item.checked ? "done" : ""} ${gone ? "gone" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""} ${this._knMarked === item.id ? "marked" : ""}" tabindex="0" data-id="${item.id}" style="--cc:${esc((v.cat_color && cat?.color) || "transparent")}${recipe && this._rgroup(recipe.group)?.color ? `;--rc:${esc(this._rgroup(recipe.group).color)}` : ""}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
           <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}${qty}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${who}${v.fav ? this._favStar(pk) : ""}${v.photo && !this._shopMode && this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="${this._photoIcon(pk)}"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
@@ -6091,7 +6108,9 @@ class EinkaufslisteCard extends HTMLElement {
       <div class="moverow" data-id="${item.id}">
         <span class="movetxt">${here ? `Bei ${esc(here.name)} nicht da?` : "Wo gibt's das?"}</span>
         ${here && this._missedAt(item.name, here.id) >= 2 ? `<span class="movewarn">⚠️ Schon ${this._missedAt(item.name, here.id) + 1}× nicht bekommen – lieber woanders?</span>` : ""}
-        ${here ? `<button class="tab outbtn" data-act="move-out" title="Bleibt offen hier – alle sehen „war aus“"><ha-icon icon="mdi:refresh"></ha-icon>Nächstes Mal wieder hier</button><span class="movetxt">oder ab zu:</span>` : ""}
+        ${here ? `<button class="tab outbtn" data-act="move-out" title="Bleibt offen hier – alle sehen „war aus“"><ha-icon icon="mdi:refresh"></ha-icon>Nächstes Mal wieder hier</button>` : ""}
+        ${this._viewPrefs().gone ? `<button class="tab outbtn gonebtn" data-act="move-gone" title="Bleibt 2 Tage für alle sichtbar („war nicht da“), dann ohne Kauf abgehakt"><ha-icon icon="mdi:close-circle-outline"></ha-icon>War nicht da</button>` : ""}
+        ${here ? `<span class="movetxt">oder ab zu:</span>` : ""}
         ${targets.map((s) => `<button class="tab" style="--c:${esc(s.color)}" data-act="move-to" data-store="${s.id}"${known.includes(s.id) ? ` title="Gibt's da auch"` : ""}><span class="dot"></span>${esc(s.name)}${known.includes(s.id) ? " ✓" : ""}</button>`).join("")}
         ${item.store_id ? `<button class="tab" style="--c:#888" data-act="move-to" data-store="" title="Steht dann in jedem Geschäft – abgehakt wird's da, wo du es kaufst"><span class="dot"></span>🤷 Egal wo</button>` : ""}
         <button class="iconbtn" data-act="move-cancel" title="Abbrechen"><ha-icon icon="mdi:close"></ha-icon></button>
@@ -8263,9 +8282,9 @@ ${(() => {
     const hidden = this._data?.missed_hidden || {};
     const byName = new Map(this._data.stores.map((st) => [st.name.trim().toLowerCase(), st]));
     for (const e of this._logData.entries) {
-      if (!e.n || (e.a !== "out" && e.a !== "move")) continue;
+      if (!e.n || (e.a !== "out" && e.a !== "gone" && e.a !== "move")) continue;
       // ⇄ aus „Egal wo“ ist nur ein Umzug – das war nicht „nicht bekommen“
-      const st = e.a === "out" ? this._store(e.s) : byName.get(String(e.d || "").split(" → ")[0].trim().toLowerCase());
+      const st = e.a === "out" || e.a === "gone" ? this._store(e.s) : byName.get(String(e.d || "").split(" → ")[0].trim().toLowerCase());
       if (!st) continue;
       const key = e.n.toLowerCase() + "|" + st.id;
       if ((e.t || "") <= (hidden[key] || "")) continue; // ✖ weggeklickt: zählt ab da neu
@@ -13651,6 +13670,14 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._moving = null;
         this._ws({ type: "einkaufsliste/item/out", item_id: itemId })
           .then(() => this._toast("👍 Bleibt auf der Liste – alle sehen „war aus“")).catch(() => {});
+        this._renderList();
+        break;
+      }
+      case "move-gone": { // ❌ war nicht da (wird nicht mehr gebraucht)
+        const itemId = el.closest(".moverow").dataset.id;
+        this._moving = null;
+        this._ws({ type: "einkaufsliste/item/gone", item_id: itemId })
+          .then(() => this._toast("❌ Alle sehen „war nicht da“ – in 2 Tagen ohne Kauf erledigt")).catch(() => {});
         this._renderList();
         break;
       }

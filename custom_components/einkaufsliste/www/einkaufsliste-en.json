@@ -2393,5 +2393,20 @@
 "weiter": "continued",
 "Nicht unter „Alle“ zeigen": "Don't show under “All”",
 "Die Artikel stehen nur im eigenen Reiter (mit Zahl dran) – praktisch für Baumarkt, Apotheke & Co. Tipp: unter ⚙️ → Aufräumen das Geschäft ausnehmen, dann bleibt alles offen.": "The items only appear in this store's own tab (with a count) – handy for DIY store, pharmacy & co. Tip: exclude the store under ⚙️ → Clean-up so everything stays open.",
-"Die Artikel dieses Geschäfts stehen dann nur im eigenen Reiter – z. B. Baumarkt: sammeln, bis sich die Fahrt lohnt": "This store's items then only appear in its own tab – e.g. DIY store: collect until the trip is worth it"
+"Die Artikel dieses Geschäfts stehen dann nur im eigenen Reiter – z. B. Baumarkt: sammeln, bis sich die Fahrt lohnt": "This store's items then only appear in its own tab – e.g. DIY store: collect until the trip is worth it",
+"War nicht da": "Wasn't there",
+"❌ war nicht da": "❌ wasn't there",
+"❌ Alle sehen „war nicht da“ – in 2 Tagen ohne Kauf erledigt": "❌ Everyone sees “wasn't there” – done without buying in 2 days",
+"Bleibt 2 Tage für alle sichtbar („war nicht da“), dann ohne Kauf abgehakt": "Stays visible to everyone for 2 days (“wasn't there”), then checked off without buying",
+"Gab's nicht – ohne Kauf erledigt": "Wasn't available – done without buying",
+"❌ ohne Kauf erledigt": "❌ done without buying",
+"❌ war nicht da ({})": "❌ wasn't there ({0})",
+"Gab's nicht – wird am {} ohne Kauf abgehakt": "Wasn't available – checked off without buying on {0}",
+"hat % als „war nicht da“ markiert": "marked % as “wasn't there”",
+"hat % ohne Kauf erledigt": "finished % without buying",
+"❌ „War nicht da“-Knopf": "❌ “Wasn't there” button",
+"im ⇄-Fenster: bleibt 2 Tage grau stehen, dann ohne Kauf erledigt": "in the ⇄ window: stays greyed out for 2 days, then done without buying",
+"Abgehakt von {} am {} um {}": "Checked off by {0} on {1} at {2}",
+"Automatisch abgehakt am {} um {}": "Checked off automatically on {0} at {1}",
+"Automatisch abgehakt": "Checked off automatically"
 }

@@ -309,7 +309,7 @@ def _name_list(value: Any, limit: int = 40, size: int = 60) -> list[str]:
 # 👁️ Listenansicht: was beim Artikel zu sehen ist (an/aus) – für alle ("_all") und pro Benutzer (Benutzer-ID)
 VIEW_KEYS = (
     "qty", "note", "own_note", "for_whom", "added_by", "added_at", "checked_by", "cleanup", "store",
-    "recipe", "barcode", "photo", "fav", "offer", "out", "move", "new", "cat_color",
+    "recipe", "barcode", "photo", "fav", "offer", "out", "gone", "move", "new", "cat_color",
     "tabs", "in_name", "in_store", "in_cat", "in_icons",  # 🧩 Leiste/Eingabe-Felder oben (an/aus)
     "anim",  # ✔️ Abhak-Animation – pro Benutzer (Standard an)
     "greet",  # 👋 Gruß in der Leiste oben – pro Benutzer (Standard an)
@@ -1702,9 +1702,9 @@ class EinkaufslisteManager:
         by_name = {st["name"].lower(): st["id"] for st in self.stores}
         out: dict[str, int] = {}
         for e in self.log:
-            if not e.get("n") or e.get("a") not in ("out", "move"):
+            if not e.get("n") or e.get("a") not in ("out", "gone", "move"):
                 continue
-            if e["a"] == "out":
+            if e["a"] in ("out", "gone"):
                 sid = e.get("s")
             else:  # ⇄ verschoben – aus „Egal wo“ ist nur ein Umzug, kein „nicht bekommen“
                 sid = by_name.get(str(e.get("d") or "").split(" → ")[0].strip().lower())
@@ -2354,9 +2354,51 @@ class EinkaufslisteManager:
         if item["checked"]:
             raise ValueError("Der Artikel ist schon abgehakt.")
         item["out_at"] = _now_iso()
+        item.pop("gone_at", None)  # ❌ doch nochmal versuchen
         self._log("out", item, "war aus")
         self._changed()
         return item
+
+    GONE_DAYS = 2  # ❌ so viele Tage bleibt „war nicht da“ sichtbar, dann wird ohne Kauf abgehakt
+
+    @callback
+    def mark_gone(self, item_id: str) -> dict[str, Any]:
+        """❌ „War nicht da“ (brauch ich nicht mehr): bleibt für alle sichtbar stehen (grau, „war nicht da“)
+        und wird nach GONE_DAYS Tagen automatisch abgehakt – zählt aber NICHT als gekauft."""
+        item = self.get_item(item_id)
+        if item["checked"]:
+            raise ValueError("Der Artikel ist schon abgehakt.")
+        item["gone_at"] = _now_iso()
+        item["out_at"] = None  # das „war aus“-Schild wird ersetzt
+        self._log("gone", item, "war nicht da")
+        self._changed()
+        return item
+
+    @callback
+    def expire_gone(self, now: datetime | None = None) -> list[dict[str, Any]]:
+        """❌ Abgelaufene „war nicht da“-Artikel ohne Kauf abhaken (kein Kauf-Ereignis, keine Statistik).
+        Rezept-Zutaten verschwinden dabei ganz (wie beim Aufräumen)."""
+        cutoff = (now or dt_util.utcnow()) - timedelta(days=self.GONE_DAYS)
+        done: list[dict[str, Any]] = []
+        keep: list[dict[str, Any]] = []
+        stamp = _now_iso()
+        for item in self.items:
+            keep.append(item)
+            if item["checked"] or not item.get("gone_at"):
+                continue
+            at = dt_util.parse_datetime(item["gone_at"])
+            if at is None or at > cutoff:
+                continue
+            item.update(checked=True, checked_at=stamp, checked_by=None, out_at=None)
+            with self._via("cleanup"):
+                self._log("gone_done", item, who="")
+            done.append(item)
+            if item.get("recipe_id"):
+                keep.pop()
+        if done:
+            self.items = keep
+            self._changed()
+        return done
 
     @callback
     def remove_barcode(self, code: str) -> None:
@@ -3017,6 +3059,7 @@ class EinkaufslisteManager:
             return {**item, "checked": True, "checked_at": _now_iso(), "checked_by": by, "removed": True}
         if checked:
             item.update(checked=True, checked_at=_now_iso(), checked_by=by, out_at=None)
+            item.pop("gone_at", None)  # ❌ doch noch bekommen = normal gekauft
             self._learn_store(item["name"], item.get("store_id"))  # 🏪 hier gekauft = gibt's hier
             self._fire_bought(item, by)
         elif undo:
@@ -3026,6 +3069,7 @@ class EinkaufslisteManager:
             return item
         else:
             # Wieder drauf: neues Datum, und wer ihn reinnimmt, steht dahinter
+            item.pop("gone_at", None)
             item.update(
                 checked=False,
                 checked_at=None,
@@ -3049,6 +3093,7 @@ class EinkaufslisteManager:
         beim nächsten Mal in jedem Geschäft wieder antippen kann.
         """
         item = self.get_item(item_id)
+        item.pop("gone_at", None)  # ❌ woanders probieren = wieder ganz normal offen
         target = self._check_store(None if store_id == "~none" else store_id)
         if target == item["store_id"]:
             return item
@@ -4004,7 +4049,8 @@ class EinkaufslisteManager:
     def async_start_scheduler(self) -> None:
         self._restore_timers()
         self.expire_offers()
-        self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: self.expire_offers(), timedelta(hours=1))
+        self.expire_gone()  # ❌ verpasst (HA war aus)? Gleich nachholen
+        self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: (self.expire_offers(), self.expire_gone()), timedelta(hours=1))
         self._schedule_cleanup()
         self._schedule_plan_reset()
         if self.plan_reset_on:  # 📅 verpasst (HA war aus)? Dann jetzt nachholen
