@@ -18,6 +18,16 @@
 
 ## ✨ Was kann das Ding?
 
+- 🏪 **Mehrere Geschäfte** mit eigenem Reiter – im Laden springt die Liste von selbst zum richtigen.
+- 👨‍👩‍👧‍👦 **Für die ganze Familie**, live auf allen Handys, ohne Admin-Rechte.
+- ⚡ **Schnell eintragen** mit Vorschlägen, Mengen („3 milch“), Fotos und Barcodes.
+- 🍽️ **Rezepte** mit Koch-Modus, Essensplan und Zutaten per Tipp auf die Liste.
+- 🛒 **Laden-Modus** mit großen Zeilen – und 📱 **Offline-App**, die auch ohne Netz geht.
+- 🗣️ **Alexa**, 🥫 Grocy, 🏷️ Angebote, ⚠️ Rückruf-Warnung, 🤖 KI-Kochideen und vieles mehr.
+- 🌍 Deutsch & Englisch, alles bleibt **lokal** in Home Assistant.
+
+<details><summary>📋 Alle Funktionen im Detail</summary>
+
 | Funktion | So klappt's |
 |---|---|
 | 🏪 **Mehrere Geschäfte** | Jedes Geschäft hat oben seinen Reiter. Bist du laut Standort in einem Laden, springt die Liste dorthin. |
@@ -42,7 +52,9 @@
 
 Leere Eingabefelder zeigen ein Beispiel (bei der Menge passend zum Produkt, z. B. „2 L“), und die Anleitungen gibt es in Hell und Dunkel (wie die Karte). Dazu viele Kleinigkeiten: Fotos pro Produkt, Spitznamen („Tempos“ = Taschentücher), gelernte Tippfehler, Eigenmarken beim Scannen, Doppelt-Finder, Verlauf, Sicherung, Maskottchen 🛒😊 und mehr.
 
-**🗣️ Mit Alexa:** „Alexa, setz Milch auf die Einkaufsliste“ – und die Milch steht auf *dieser* Liste (siehe [Alexa & andere Listen](#-alexa--andere-listen)).
+**🗣️ Mit Alexa:** „Alexa, setz Milch auf die Einkaufsliste“ – und die Milch steht auf *dieser* Liste (siehe ⚙️ Einstellungen → „Alexa & andere Listen“).
+
+</details>
 
 ---
 
@@ -74,6 +86,8 @@ Den Ordner `custom_components/einkaufsliste` nach `/config/custom_components/ein
 
 ## 👆 So wird's benutzt
 
+<details><summary>Eintragen, abhaken, wischen, Laden-Modus, Öffnungszeiten, Filialen und Rezepte – <i>aufklappen</i></summary>
+
 **Eintragen:** Name tippen, grüner Haken ✔. Die Knöpfe darunter: 🔢 Menge · ✏️ Eigene Notiz · 👤 Für wen · 📷 Foto (am Handy: 📷 Kamera · 🖼️ Galerie · 📋 Einfügen – die Kamera öffnet sich über https direkt in der Karte; in der HA-App über die lokale http-Adresse geht gleich die Galerie auf. Am PC: Fenster zum Reinziehen, **Strg + V** (z. B. Screenshot aus dem Prospekt) oder Auswählen) · ⭐ alle Favoriten auf die Liste (Produkt beim Bearbeiten mit „⭐ Favorit“ markieren; was schon draufsteht, kommt nicht doppelt) · 🧽 alles leeren. Geschäft und Kategorie sind meist schon richtig ausgewählt. Ein Geschäft fehlt? In der Auswahl **„➕ Neues Geschäft …“** – nur den Namen tippen, den Rest später in ⚙️. 🎨 Bekannte Ketten (Aldi, Lidl, Rewe, Edeka, dm, Rossmann …) bekommen dabei gleich ihre Logo-Farbe; in ⚙️ → Geschäfte geht das schon beim Tippen, und eine selbst gewählte Farbe bleibt.
 
 **In der Liste:**
@@ -92,9 +106,13 @@ Den Ordner `custom_components/einkaufsliste` nach `/config/custom_components/ein
 
 **Rezepte:** Anlegen in ⚙️ → Rezepte (Zutaten genau wie auf der Liste eintragen, oder eine Zutaten-Liste bzw. einen Rezept-Link einfügen). Die **Kochmütze** oben: **Auf die Liste** → anhaken, was fehlt → fertig. Dazu 👥 Personen oder 🍕 Bleche umrechnen, **🔥 Kochen** (Schritt für Schritt), **Teilen** (z. B. WhatsApp) und **⏲️ Gar-Zeiten**. **🔗 Original öffnen:** beim Import per Link merkt sich das Rezept die Quelle. Der Koch-Modus merkt sich pro Rezept den Schritt und fragt, ob du dort weitermachen willst. **➕ Mehrere Rezepte gleichzeitig:** im Koch-Modus oben ➕ antippen und ein zweites Rezept wählen – oben erscheinen Reiter zum Hin- und Herspringen, die Timer laufen für alle weiter, und solange alle noch bei der Personen-Auswahl stehen, sagt ein 💡 Tipp, womit du anfangen solltest (das mit der längsten Zeit aus den Schritten). Der Geräte-Kasten (z. B. Backofen) erscheint erst nach „Los geht’s“. **📝 Notiz nach dem Kochen:** nach dem letzten „Fertig“ fragt die Liste „Notiz fürs nächste Mal?“ (z. B. „weniger Salz“). Die Notiz steht sofort beim nächsten Kochen gelb oben und in der Rezeptliste. Zusätzlich steht sie in ⚙️ → Rezepte → **Wartet auf OK**: ✏️ öffnet das Rezept zum Anpassen, 🗑️ (oder ✕ beim Kochen) löscht die Notiz überall. **💳 Kundenkarte am Geschäft:** beim Bearbeiten einer Karte ein Geschäft wählen – im Laden-Modus dort steht sie in „Meine Karten“ ganz oben (📍), die anderen bleiben darunter. **🍟 Fritteuse:** Hat ein Schritt „Heißluftfritteuse“ mit Programm, Temperatur und Minuten und ist Airfryer Control installiert, schickt der Knopf im Koch-Modus (für alle, braucht eine aktuelle Airfryer Control) die Werte an die Fritteuse – gestartet wird am Gerät. **▥ Scan:** steht ein gescannter Artikel schon auf der Liste, sagt die Liste „steht schon drauf“. Abgehakte Rezept-Zutaten verschwinden ganz. Die Knöpfe sind nur Icons; den Text zeigt ⚙️ → Extras → **Beschriftungen** oder langes Drücken.
 
+</details>
+
 ---
 
 ## 🔍 Barcode scannen
+
+<details><summary>Zu Hause scannen = eintragen, im Laden scannen = abhaken – <i>aufklappen</i></summary>
 
 Der ▥-Knopf oben weiß, wo du bist:
 - 🏠 **Zu Hause:** Packung scannen → Name, Marke und Kategorie sind ausgefüllt → ✔. Mit **„📦 Mehrere scannen“** kommt jede Packung sofort auf die Liste. Unbekannte landen als „❓ Unbekannt“ drauf – einmal umbenennen, dann kennt die Liste den Barcode.
@@ -108,9 +126,13 @@ Der ▥-Knopf oben weiß, wo du bist:
 
 Die Produktnamen kommen aus **Open Food Facts**, **Open Beauty Facts** und **Open Products Facts** (dafür braucht Home Assistant Internet). Eigenmarken wie Milsani, ja! oder Balea landen gleich beim richtigen Geschäft; eigene Marken trägst du in ⚙️ → Geschäfte ein.
 
+</details>
+
 ---
 
 ## 📱 Offline-App
+
+<details><summary>Die ganze Karte als App aufs Handy – öffnet auch ohne Netz – <i>aufklappen</i></summary>
 
 Die **komplette Karte** als eigene App auf dem Startbildschirm – mit Rezepten, Koch-Modus, Gar-Zeiten, Einstellungen und Kamera-Scanner. Sie öffnet auch **ohne Netz** mit dem letzten Stand.
 
@@ -133,9 +155,13 @@ Die **komplette Karte** als eigene App auf dem Startbildschirm – mit Rezepten,
 
 Gut zu wissen: Es braucht eine **https**-Adresse (z. B. Nabu Casa). Ändern zwei Leute gleichzeitig dasselbe, gewinnt die letzte Änderung. iPhones löschen den Offline-Speicher manchmal, wenn die App wochenlang nicht geöffnet wurde – dann einmal mit Netz öffnen.
 
+</details>
+
 ---
 
 ## ⚙️ Die Einstellungen (Zahnrad)
+
+<details><summary>Geschäfte, Kategorien, Rezepte, Katalog, Aufräumen, Sicherheit und alle Extras – <i>aufklappen</i></summary>
 
 Die Einstellungen sind eine **Liste mit Gruppen** – **📋 Meine Liste · 🎛️ Extras · 💾 Daten · 🩺 Gesundheit · 👁️ Ansicht · 📱 App & Info** – und nur **eine Ebene tief**. Fenster (PIN, Foto, Barcode, Scanner, Karte ändern, Teilen …) öffnen als **Seite in der Karte** mit ← oben links; nur der Koch-Modus ist Vollbild. Auf solchen Seiten stehen unten keine Knöpfe (Ansicht, Anleitung, Abmelden). Wer die Einstellungen verlässt, findet beim nächsten Mal alle Gruppen zugeklappt. Ganz unten auf der ersten Seite steht **📖 Anleitung**. Ein **Suchfeld** ganz oben findet Zeilen nach Name oder Thema („Foto“, „Mail“, „Sicherung“, „Sensor“). Jede Gruppe ist ein **Kasten** mit kurzer Vorschau, was drin ist, und jede Zeile hat ein **buntes Icon** – so wie das Einstellungs-Menü am Handy. Die Gruppen sind erst **zugeklappt**: antippen öffnet sie, die vorherige geht dabei zu (die Suche klappt passende von selbst auf). Einfache An/Aus-Sachen (🛒😊 Maskottchen, 💳 Kundenkarten, 🧾 Einkaufs-Protokoll, 📍 Laden-Modus automatisch, 🏷️ Beschriftungen) haben einen **Schalter direkt in der Zeile**; die Zeile selbst öffnet die Erklärung mit demselben Schalter oben. Zurück geht es mit dem runden **←** oben. Unten gibt es den Knopf **📖 Anleitung Einstellungen**; die Anleitung fürs Einkaufen und die Rezepte steht davon getrennt vorne (Einkaufswagen oder Knopf „Anleitung“).
 
@@ -151,12 +177,16 @@ Die Einstellungen sind eine **Liste mit Gruppen** – **📋 Meine Liste · 🎛
 | 🆕 **Was ist neu** | Was sich in der aktuellen Version geändert hat. Steht auch in der Anleitung. In einer **Beta-Version** steht oben zusätzlich ein Kasten „🧪 Du bist in der Beta …“ mit den Neuerungen dieser Beta. |
 | 🙏 **Credits** | Version, wer's gemacht hat, Links zu GitHub und „Fehler melden“. Steht auch in der Anleitung. |
 
-### 🔐 Ehrlich zur Sicherheit
+<details><summary><b>🔐 Ehrlich zur Sicherheit</b></summary>
+
 - **Die PIN schützt nur die Oberfläche.** Sie hält Kinder und Versehen vom Zahnrad fern. Auf dem Server wird sie für Nicht-Admins **nicht** durchgesetzt: Wer einen Home-Assistant-Benutzer hat und die Schnittstelle (API) selbst anspricht, kommt auch ohne PIN an die Einstellungen. Falsch geratene PINs werden gebremst: **nach 5 Fehlversuchen 60 Sekunden Sperre**. Ein Tresor ist das trotzdem nicht.
 - **Der E-Mail-Import vertraut der Absender-Adresse.** Der „Von“-Eintrag einer Mail wird nicht geprüft und lässt sich fälschen. Nimm deshalb ein **eigenes Postfach**, dessen Adresse niemand kennt.
 - **🔒 Datenschutz** (⚙️ → App & Info → Datenschutz, nur Admins): keine Kamera, keine Fotos, kein Barcode-Scanner, kein KI-Kochen – es gehen also keine Fotos und keine KI-Anfragen raus. Auch das Barcode-Nachschlagen bei Open Food Facts, die 🏷️ Angebote, die ⚠️ Rückruf-Warnung und das Auffrischen von Produktdaten sind gesperrt (die Sperre gilt auch auf dem Server, nicht nur in der Karte). Nur der **Rezept-Import aus einem Link** ist davon **nicht** gesperrt – er läuft nur, wenn du ihn selbst startest. Was genau wohin geht, steht in ⚙️ → Datenschutz.
 
-### 🧹 Aufräumen, einfach erklärt
+</details>
+
+<details><summary><b>🧹 Aufräumen, einfach erklärt</b></summary>
+
 Am Aufräum-Tag wird alles **abgehakt**, was mindestens 7 Tage (einstellbar) offen ist. Beispiel Sonntag: Am Dienstag eingetragen → am ersten Sonntag erst 5 Tage alt, bleibt → am zweiten Sonntag abgehakt. Unter jedem Artikel steht mit 🧹, wann es so weit ist. Gelöscht wird nichts. **An/Aus**, Tag, Uhrzeit und Mindestalter: in der Karte unter **⚙️ → Aufräumen** (gilt für alle). Ist es aus, verschwindet auch das 🧹-Datum unter den Artikeln. **🏬 Geschäfte ausnehmen:** Im Aufklapper „Automatisch“ lassen sich einzelne Geschäfte abschalten – ihre Artikel bleiben beim Aufräumen offen (kein 🧹-Datum); „Alles abhaken“ von Hand nimmt sie trotzdem mit. Die Seite besteht aus **Aufklappern** (Automatisch · Von Hand · Liste löschen · Alles löschen · Werkseinstellungen), immer nur einer ist offen.
 
 **🧽 Liste löschen (nur Admins):** Unter ⚙️ → Aufräumen ein Geschäft (oder „Alle Geschäfte“) wählen, dann **„Erledigte löschen“** (nur Abgehaktes) oder **„Liste leeren“** (offen und erledigt – gut am Sonntag für die neue Woche). Vorher kommt eine Frage mit der Anzahl. Der **Katalog bleibt**: Produkte erscheinen beim Tippen weiter als Vorschlag, Fotos, Barcodes, Notizen und Favoriten bleiben. Nicht rückgängig.
@@ -173,10 +203,16 @@ Am Aufräum-Tag wird alles **abgehakt**, was mindestens 7 Tage (einstellbar) off
 
 **🧹 Alles löschen (nur Admins):** Unter ⚙️ → Aufräumen löscht **„Katalog & Liste komplett löschen“** die Einkaufsliste und den ganzen Katalog mit allen Fotos, Barcodes, Spitznamen, Eigenen Notizen, Favoriten und gelernten Tippfehlern. Zwei Sicherheitsfragen, **nicht rückgängig** – vorher eine Sicherung machen. Geschäfte, Kategorien, Personen, Rezepte, Kundenkarten und Einstellungen bleiben.
 
-### 📍 Nächstes Geschäft zuerst
+</details>
+
+<details><summary><b>📍 Nächstes Geschäft zuerst</b></summary>
+
 Für jedes Geschäft eine **Zone** anlegen (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen) und sie in ⚙️ → Geschäfte → Geschäft antippen → 📍 auswählen. Mehrere Filialen? Einfach mehrere Zonen beim selben Geschäft wählen. Wer seinen Standort über die Companion-App sendet, landet im Laden automatisch im richtigen Reiter. Ist **⚙️ → Extras → Laden-Modus automatisch** an, geht der Laden-Modus im Geschäft von selbst an und beim Verlassen wieder aus (auch nach einem Neuladen der App). Der Laden-Modus sperrt dabei die Bildschirmdrehung wie beim Start (Hoch- oder Querformat), soweit Handy und Browser das erlauben (meist Vollbild oder installierte App, auf dem iPhone nicht).
 
-### 🗣️ Alexa & andere Listen
+</details>
+
+<details><summary><b>🗣️ Alexa & andere Listen</b></summary>
+
 Die Einkaufsliste kann eine andere To-do-Liste aus Home Assistant **automatisch leer räumen**: Alles, was dort landet, wandert sofort herüber und wird dort gelöscht.
 
 1. In Home Assistant die Integration **„Alexa Devices“** einrichten. Dann taucht die Alexa-Einkaufsliste als To-do-Liste in HA auf.
@@ -192,7 +228,10 @@ Die Einkaufsliste kann eine andere To-do-Liste aus Home Assistant **automatisch 
 
 Das geht mit jeder To-do-Liste in HA (Google Tasks, Bring!, Todoist, die HA-Einkaufsliste …). Ehrlich gesagt: „Hey Google, …“ schreibt in Google Keep, und Keep hat keine offizielle Verbindung zu Home Assistant – mit Google klappt es deshalb so nicht.
 
-### 🥫 Produkte aus Grocy holen
+</details>
+
+<details><summary><b>🥫 Produkte aus Grocy holen</b></summary>
+
 Du nutzt Grocy? Dann kannst du deine Produkte in den Katalog holen: **⚙️ → Daten → Import & Sicherung → Grocy**. Adresse (z. B. `http://192.168.1.20:9283`) und **API-Schlüssel** eintippen (in Grocy: Benutzer → *API-Schlüssel verwalten*), **Produkte holen**, in der Vorschau abwählen, was nicht rein soll, **Übernehmen**. Übernommen werden **Name**, **Barcodes** (nur echte Ziffern-Strichcodes) und die **Produktgruppe** (wird zur Kategorie, auf Wunsch neu angelegt). Lagerbestand, Haltbarkeit und Standorte bleiben draußen, was es hier schon gibt, wird nicht überschrieben. Bei der einmaligen Abfrage wird der Schlüssel **nicht gespeichert**. 🔒 Nur Admins; Home Assistant muss Grocy erreichen können.
 
 **🔄 Dauerabgleich** (im selben Tab, darunter): zwei Teile, **jeder einzeln** an- oder ausschaltbar – oder beide:
@@ -201,10 +240,16 @@ Du nutzt Grocy? Dann kannst du deine Produkte in den Katalog holen: **⚙️ →
 
 Dafür liegt der API-Schlüssel auf dem Server (nie auf Handys, nie in Sicherungen). „Verbindung entfernen“ löscht ihn wieder. *Hinweis: gegen ein echtes Grocy bisher nur nach dessen API-Beschreibung gebaut – Rückmeldungen willkommen.*
 
-### 📄 Katalog aus CSV
+</details>
+
+<details><summary><b>📄 Katalog aus CSV</b></summary>
+
 **⚙️ → Import & Sicherung → Aus anderen Apps → 📄 Katalog aus CSV oder Liste** (nur Admins): eine CSV- oder Textdatei (oder eingefügte Zeilen) kommt als **Produkte in den Katalog** – nicht auf die Einkaufsliste. Spalten `Name; Kategorie; Barcode; Notiz`, mit oder ohne Kopfzeile (Reihenfolge egal, wenn eine Kopfzeile da ist). Trenner `;` `,` oder Tab. Vorher sagt dir die Karte, wie viele Produkte sie erkannt hat. Was es schon gibt, wird nicht überschrieben.
 
-### 🤖 „Was kann ich kochen?“ (mit KI)
+</details>
+
+<details><summary><b>🤖 „Was kann ich kochen?“ (mit KI)</b></summary>
+
 **⚙️ → Extras → KI-Kochen** (nur Admin, standardmäßig **aus**): Du wählst einen **KI-Assistenten aus Home Assistant** (z. B. OpenAI, Google, Anthropic oder lokal Ollama) und schaltest es mit **Einschalten / Ausschalten** an oder aus (der Assistent bleibt dabei gemerkt). Zwei Felder (nur Admin) merken sich **„Immer im Haus“** (Salz, Öl, Mehl … geht bei jeder Anfrage mit) und **„Das nie vorschlagen“** (Allergien, Abneigungen); keine Namen von Personen eintragen. Danach steht bei den **Rezepten** oben links neben den Gar-Zeiten der Knopf „Was kann ich kochen?“. Zutaten eintippen – auch Dinge, die nicht im Katalog stehen –, auf Wunsch die offenen Artikel der Liste mitnehmen. Mit „👥 Für … Personen“ stellst du die Personenzahl ein, beim Tippen kommen Vorschläge aus dem Katalog (höchstens 2). Pro Vorschlag: **Fehlendes auf die Liste** oder **Als Rezept speichern**; ein Tipp auf eine Zutat verschiebt sie zwischen „Hast du“ und „Fehlt“. 🔒 Die **Namen der Zutaten** gehen an den gewählten Assistenten (Cloud: ins Internet, lokal: bleibt zu Hause); bei eingeschaltetem **Datenschutz** geht nichts raus. Antworten einer KI können falsch sein. *Gegen einen echten KI-Assistenten noch nicht ausprobiert – nur mit einer Attrappe getestet.*
 
 **📖 Rezept vorschlagen:** In der Kochmütze steht neben „KI kochen“ ein Knopf mit einem Buch mit Plus. Jeder in der Familie kann dort ein Rezept vorschlagen (Name, Zutaten, Backofen & Co., Zubereitung, Foto). Vorgeschlagene Rezepte landen in ⚙️ → Rezepte → „Wartet auf OK“; wer die PIN kennt, schaut sie an und übernimmt oder lehnt ab. Solange etwas wartet, zeigt ein **🟠 Punkt mit Zahl** an der Kochmütze, wie viele Vorschläge und Änderungswünsche offen sind; der Punkt zeigt nur an, Antippen öffnet ganz normal die Kochmütze (den Punkt sieht nur, wer in der Karte ans Zahnrad darf, also nicht bei `show_settings: false`). Abgelehnte Vorschläge verschwinden nach einem Tag oder per ✖ in den Einstellungen. **🔍 Fotos zoomen:** Zwei Finger oder doppelt tippen, im Zoom mit einem Finger verschieben.
@@ -213,22 +258,40 @@ Dafür liegt der API-Schlüssel auf dem Server (nie auf Handys, nie in Sicherung
 
 **🖨️ Rezept als PDF:** Im Teilen-Fenster eines Rezepts steht „Drucken / als PDF“ – mit Vorschau wie bei „Liste drucken“. Beim Teilen stehen die Zeiten von Backofen & Co. direkt bei dem Schritt, zu dem sie gehören.
 
-### ⏲️ Timer-Laufband (eigene Karte)
+</details>
+
+<details><summary><b>⏲️ Timer-Laufband (eigene Karte)</b></summary>
+
 Die Integration bringt eine zweite, kleine Karte mit: **`custom:einkaufsliste-timer-ticker`**. Sie zeigt die laufenden Kochtimer als Endlos-Laufband („+++ ⏲️ Lasagne: fertig um 19:42 Uhr +++ …“), zum Beispiel auf einem Küchen-Dashboard, mit farbigem Rahmen (türkis) und einer Kochmütze links und rechts. Ist ein Timer fertig, steht „⏰ … FERTIG!“, Rahmen und Kochmützen werden rot und pulsieren – bis der Timer in der App weggedrückt wird (sonst verschwindet er nach 1 Stunde von selbst). Ohne Timer ist die Karte unsichtbar. Im Karten-Editor gibt es: Sensor (Standard `sensor.einkaufsliste_kochtimer`), „Ohne Timer ausblenden“, Tempo, Sprache und „Fertige Timer per Antippen wegdrücken“ (Standard aus).
 
-### 📝 Notiz-Vorlagen
+</details>
+
+<details><summary><b>📝 Notiz-Vorlagen</b></summary>
+
 **⚙️ → Extras → Notiz-Vorlagen**: kleine Knöpfe unter dem ✏️ Eigene-Notiz-Feld („Bio“, „ohne Laktose“, „große Packung“ …). Sie erscheinen erst mit dem ersten getippten Buchstaben und zeigen nur die passenden; ein Tipp ersetzt das Angetippte durch die Vorlage. Die Texte pflegst du selbst, für alle Geräte.
 
-### 🗣️ Siri / Kurzbefehle (iPhone)
+</details>
+
+<details><summary><b>🗣️ Siri / Kurzbefehle (iPhone)</b></summary>
+
 In der Kurzbefehle-App einen neuen Kurzbefehl anlegen, die Aktion **„Dienst aufrufen“** der Home-Assistant-App wählen, Dienst `einkaufsliste.add_item`, Daten `name: Milch` (den Namen „Nach Eingabe fragen“). Als „Einkauf“ benannt reicht „Hey Siri, Einkauf“. Zum Abhaken `einkaufsliste.check_item`. *Auf einem iPhone nicht getestet; die Namen der Aktionen können je nach App-Version leicht anders heißen.*
 
-### 🎁 Euer Jahr in Einkäufen
+</details>
+
+<details><summary><b>🎁 Euer Jahr in Einkäufen</b></summary>
+
 In **⚙️ → App & Info → Euer Jahr in Einkäufen** (Schalter gilt für alle, standardmäßig **an**) steht der Rückblick aufs Jahr: wie viele Artikel **gekauft** und **eingetragen** wurden, die **5 häufigsten Produkte**, **wer am meisten einträgt** (🥇🥈🥉), das **Lieblingsgeschäft** und der **stärkste Monat** mit zwölf kleinen Säulen. Gezählt werden **nur Zahlen** (pro Produkt, Person, Geschäft und Monat), nichts davon verlässt dein Home Assistant. Die Zähler laufen **ab dem Tag des Einbaus** – für früher gibt es nichts. Die Zahlen sind **ungefähr**: ↩️ Rückgängig und Löschen zählen nicht zurück. Der Verlauf selbst behält weiter nur 90 Tage, die Zähler sind davon unabhängig. Mit mehreren Jahren erscheinen oben Jahres-Knöpfe. Nur Admins können den Schalter umlegen und **Zähler löschen**. Offline zeigt die App den zuletzt geladenen Stand.
 
-### 🧾 Einkaufs-Protokoll
+</details>
+
+<details><summary><b>🧾 Einkaufs-Protokoll</b></summary>
+
 In **⚙️ → Extras → Einkaufs-Protokoll** einschalten (gilt für alle, standardmäßig **aus**). Dann sitzt oben in der Karte ein **🧾-Knopf** (und einer im Verlauf). **➕ Eintragen:** nach dem Einkauf Geschäft, Betrag und Datum – **wer** und **wann** setzt die Liste selbst. **📊 Auswertung:** zusammengerechnet, **pro Geschäft** und **pro Monat**, mit Filtern nach **Person**, **Geschäft** und **Datum** (Schnellwahl *Dieser Monat / Letzter Monat / Alles*). Unabhängig von den Listen – der Betrag wird von Hand eingetragen oder aus einem **Kassenbon** gelesen: **📷 Kassenbon lesen** (Foto) oder **📄 PDF einlesen** (digitaler Bon als PDF). Die Karte schlägt **Geschäft, Datum und Summe** vor, du prüfst und speicherst; das PDF bleibt auf dem Gerät. Ein PDF, das nur ein Bild ist, wird nicht gelesen – dann den Bon fotografieren. Getestet nur mit selbst gebauten Beispiel-Bons, bei echten Bons kann die Erkennung danebenliegen (deshalb die Prüfung). Alle in der Familie sehen alles; falsch eingetragen → ✖. **🎉 Automatisch fragen (Option):** Im selben Kasten kannst du einschalten, dass der Eintragen-Dialog von selbst aufgeht, sobald alles auf der Liste abgehakt ist (Geschäft schon ausgewählt, gilt für alle). Ausschalten versteckt nur die Anzeige, die Einträge bleiben gespeichert.
 
-### 🏷️ Angebote aus den Prospekten (inoffiziell)
+</details>
+
+<details><summary><b>🏷️ Angebote aus den Prospekten (inoffiziell)</b></summary>
+
 In **⚙️ → Extras → Angebote** einschalten (nur Admins): Postleitzahl, auf Wunsch nur bestimmte Geschäfte, wie oft nachgeschaut wird (alle 3–24 Stunden). Steht etwas von deiner Liste gerade im Angebot, bekommt der Artikel **ganz rechts in der Zeile** einen **🏷️-Knopf** (weit weg von der Menge, damit man sie nicht aus Versehen trifft; im **Laden-Modus** ausgeblendet) – antippen oder lange drücken → **Angebote** zeigt Geschäft, Preis, alten Preis und wie lange es gilt. **🛒 Hier kaufen** legt den Angebots-Artikel in diesem Geschäft an – mit dem Namen des Angebots und „🏷️ 1,19 € bis Sa.“ in einem **eigenen Feld** (nicht in der Notiz; startet das Angebot erst später, steht „ab Mo.“) – und hakt das ursprüngliche Produkt ab. Artikel aus Angeboten sind beim Abhaken ganz weg. Läuft das Angebot ab, wird ein dadurch entstandener Artikel 1 Tag später gelöscht und dein ursprüngliches Produkt kommt wieder auf die Liste (Angebot an deinem eigenen Produkt: nur das Angebot fällt weg) (gibt's das Geschäft bei dir nicht: anlegen oder „Egal wo“).
 
 **🔀 Ähnliche Angebote:** Gibt es für einen Artikel kein Angebot für genau diesen Namen (Barcode-Namen sind sehr genau, z. B. „H-Milch“ oder „Erdbeer Max Balance“), zerlegt die Liste den Namen in Wörter (ohne Zahlen, Mengen und Füllwörter), sucht einzeln und bewertet die Treffer nach getroffenen Wörtern; Marke, Produkttyp aus der Datenbank (nur wenn sie ihn kennt), Spitznamen und deine Kategorie helfen dabei. Höchstens 4 Treffer, mit **🔀** „Ähnlich“ gekennzeichnet. Gibt es für genau den Artikel eins, kommt nur das. Ein **roter Besen** bei einem Artikel zeigt ab einem Werktag (Mo–Fr) vor dem automatischen Abhaken, dass es bald so weit ist.
@@ -237,12 +300,18 @@ In **⚙️ → Extras → Angebote** einschalten (nur Admins): Postleitzahl, au
 
 ⚠️ **Ehrlich gesagt:** Die Angebote kommen von **Marktguru**, aber **inoffiziell** – ohne Absprache mit Marktguru. Die Einkaufsliste öffnet dafür einfach die Marktguru-Webseite, so wie dein Browser es auch tut (im Code steht kein Zugangsschlüssel). Das kann **jederzeit ohne Vorwarnung aufhören** zu funktionieren; dann steht in ⚙️ „gerade nicht verfügbar“ und die Liste läuft normal weiter. Nachgeschaut werden nur die Namen offener Artikel und deine Postleitzahl. Standardmäßig ist das **aus**.
 
-### ⚠️ Rückruf-Warnung
+</details>
+
+<details><summary><b>⚠️ Rückruf-Warnung</b></summary>
+
 In **⚙️ → Extras → Rückruf-Warnung** einschalten (nur Admins). Alle 6 Stunden holt die Liste die **offiziellen Warnungen** von [lebensmittelwarnung.de](https://www.lebensmittelwarnung.de/) (Bund und Länder) und vergleicht sie mit allem, was ihr in den **letzten 30 Tagen abgehakt** habt. Passt etwas, kommt eine **Meldung in Home Assistant** („⚠️ Einkaufsliste: Rückruf prüfen“) mit Link zur Warnung, der Treffer steht in ⚙️ (mit ✔ wegklicken), und das Ereignis `einkaufsliste_rueckruf` (mit `title`, `link`, `date`, `products`, `brand`) ist für eigene Automationen da, z. B. eine Handy-Meldung. Jede Warnung wird nur einmal gemeldet. In der Liste bekommt der Artikel ein **rotes ❗** links neben dem Angebotszeichen (antippen öffnet die Warnung). Ein Treffer **verschwindet von selbst**, wenn euer Kauf länger als 30 Tage her ist oder die Warnung älter als 60 Tage. **🏷️ Marken-Check:** steht beim Artikel eine Notiz (z. B. „Milsani“), schaut die Liste, ob genau diese Marke in der Warnung steht: dann heißt es „⚠️ Eure Marke steht in der Warnung“ (`brand: match`), sonst „vielleicht eine andere Marke“ (`brand: other`, das ❗ wird orange). Ohne Notiz bleibt `brand` leer. **Was drin ist:** lebensmittelwarnung.de meldet nicht nur Lebensmittel, sondern auch **Kosmetik, Spielzeug, Geschirr und Kleidung**. Für **Tierfutter** gibt es leider keine offene Quelle, das fehlt also.
 
 ⚠️ **Ehrlich gesagt:** Der Abgleich geht nur über den **Namen** – „Kaffee“ passt auf jede Kaffee-Warnung. Darum heißt es „bitte prüfen“: Ob eure Packung wirklich betroffen ist (Marke, Charge, Haltbarkeit), steht im Link. Abgefragt wird nur der Feed (wie beim Öffnen der Webseite) – keine Artikel, keine Namen, keine Postleitzahl; der Abgleich passiert in deinem Home Assistant. Die Meldung bei einem Treffer sehen alle Home-Assistant-Benutzer. Mit 🔒 Datenschutz wird nichts abgefragt. Standardmäßig ist das **aus**.
 
-### 📧 Per E-Mail auf die Liste
+</details>
+
+<details><summary><b>📧 Per E-Mail auf die Liste</b></summary>
+
 1. Eine **eigene Mail-Adresse** nur für die Einkaufsliste anlegen und in Home Assistant die Integration **„IMAP“** damit einrichten.
 2. In der Karte **⚙️ → Daten → Import & Sicherung → 📧 E-Mail**: Postfach wählen, auf Wunsch ein Geschäft, was danach mit der Mail passiert (📬 liegen lassen · 👁️ als gelesen markieren · 🗑️ löschen), **erlaubte Absender** eintragen (mindestens einer), **Einschalten**. 🔒 Nur Admins.
 3. Mail an die Adresse schicken – **jede Zeile ein Artikel** („Milch“, „6 Eier“ …). Mehrere in einer Zeile gehen auch: „Milch, Butter, Brot“. Anrede („Hallo …“), Grüße („Viele Grüße“, „LG“), Signatur, Zitate, „Gesendet von meinem iPhone“ und ganze Sätze werden übersprungen, Mengen erkannt. Kommt die Mail ohne Zeilenumbrüche an (manche Handy-Mail-Apps), holt die Liste sie sich selbst nochmal richtig aus dem Postfach. Im Verlauf steht 📧.
@@ -250,9 +319,15 @@ In **⚙️ → Extras → Rückruf-Warnung** einschalten (nur Admins). Alle 6 S
 
 Ehrlich gesagt: Absender lassen sich fälschen – deshalb eine Adresse nehmen, die nicht öffentlich ist. Je nach Postfach dauert es ein paar Sekunden bis Minuten, bis eine Mail ankommt. Gelesen markiert oder gelöscht werden nur Mails, aus denen wirklich etwas auf die Liste kam – fremde Mails bleiben liegen. Bei Gmail heißt „löschen“ je nach Einstellung „archivieren“.
 
+</details>
+
+</details>
+
 ---
 
 ## 🎛️ Karten-Optionen
+
+<details><summary>Was du im YAML der Karte einstellen kannst – <i>aufklappen</i></summary>
 
 Alles geht im visuellen Editor. Für YAML-Fans:
 
@@ -270,9 +345,13 @@ Alles geht im visuellen Editor. Für YAML-Fans:
 | `auto_store` | `true` | automatisch zum Geschäft springen, bei dem man gerade ist |
 | `language` | `auto` | `auto` = wie Home Assistant, `de` oder `en` |
 
+</details>
+
 ---
 
 ## 🤖 Für Automationen
+
+<details><summary>Sensoren, Ereignisse, Dienste und fertige Beispiele – <i>aufklappen</i></summary>
 
 | Sensor | Was zeigt er? |
 |---|---|
@@ -310,7 +389,7 @@ actions:
       message: "🛒 Bei Aldi stehen {{ states('sensor.einkaufsliste_aldi') }} Sachen auf der Liste"
 ```
 
-### ⏲️ Kochtimer im Dashboard und per Ansage
+<details><summary><b>⏲️ Kochtimer im Dashboard und per Ansage</b></summary>
 
 Der Kochtimer (in der Kochansicht bei jedem Schritt) läuft in Home Assistant weiter, auch wenn die App zu ist. Er zeigt sich so:
 
@@ -355,6 +434,10 @@ actions:
 
 Der Sensor hat außerdem die Felder `naechster` (z. B. „Lasagne – Schritt 2"), `laufend` und `fertig`. Bis zu 12 Timer laufen gleichzeitig.
 
+</details>
+
+</details>
+
 ---
 
 ## ❓ Häufige Fragen
@@ -373,6 +456,8 @@ Sie ist und bleibt **kostenlos**. Wenn du magst, kannst du mir ganz freiwillig e
 
 [![PayPal](https://img.shields.io/badge/PayPal-Spenden-0070BA?logo=paypal&logoColor=white)](https://paypal.me/MarcoStrickmann)
 
+---
+
 ## 💡 Ideen, Wünsche und Fehler
 
 - **Idee oder Wunsch?** Schreib sie bei den [Diskussionen](https://github.com/misterm2310/einkaufslisten-card/discussions) (Kategorie **Ideas**). Dort kann jeder mit 👍 zustimmen und mitreden. Auch **Abstimmungen** laufen dort.
@@ -381,6 +466,8 @@ Sie ist und bleibt **kostenlos**. Wenn du magst, kannst du mir ganz freiwillig e
 ---
 
 ## 🧪 Für Entwickler
+
+<details><summary>Eigenmarken & Wörterbuch ergänzen, Tests – <i>aufklappen</i></summary>
 
 **Eigenmarken und Kategorie-Wörterbuch ergänzen – ohne Programmieren:** Beides steht in eigenen Dateien unter `custom_components/einkaufsliste/data/`:
 - `eigenmarken.json` – nach Land (`DE`, `AT`, `CH` …, wie in HA unter Einstellungen → System → Allgemein eingestellt) → Kette → Marken. Unbekanntes Land = alle zusammen.
@@ -394,5 +481,7 @@ pytest
 ```
 
 Dazu gibt es einen **Oberflächen-Test** im Browser (Symbole, Seitenköpfe, Aufräum-Zeile): `cd tests/ui && npm install && npx playwright install chromium && node ui.test.mjs`. Er läuft bei GitHub bei jeder Änderung automatisch mit.
+
+</details>
 
 Lizenz: MIT · Produktdaten: [Open Food Facts](https://world.openfoodfacts.org) (ODbL) · Symbole in der Offline-App: [Material Design Icons](https://pictogrammers.com) (Apache 2.0) · Barcode-Leser in der Offline-App: [ZXing-js](https://github.com/zxing-js/library) (Apache 2.0)

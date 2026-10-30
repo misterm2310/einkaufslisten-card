@@ -20,6 +20,16 @@
 
 ## ✨ What can it do?
 
+- 🏪 **Several stores**, each with its own tab – in the shop the list jumps to the right one by itself.
+- 👨‍👩‍👧‍👦 **For the whole family**, live on every phone, no admin rights needed.
+- ⚡ **Quick to add** with suggestions, quantities (“3 milk”), photos and barcodes.
+- 🍽️ **Recipes** with cooking mode, meal plan and ingredients onto the list with one tap.
+- 🛒 **Shop mode** with big rows – and a 📱 **offline app** that works without network.
+- 🗣️ **Alexa**, 🥫 Grocy, 🏷️ offers, ⚠️ recall warnings, 🤖 AI cooking ideas and much more.
+- 🌍 German & English, everything stays **local** in Home Assistant.
+
+<details><summary>📋 All features in detail</summary>
+
 | Feature | How it works |
 |---|---|
 | 🏪 **Several stores** | Each store gets its own tab. When your location says you're at a store, the list jumps there. |
@@ -44,7 +54,9 @@
 
 Empty input fields show an example (for the quantity one that fits the product, e.g. “2 L”), and the guides come in light and dark (like the card). Plus lots of small things: photos per product, nicknames (“Kleenex” = tissues), learned typos, store brands when scanning, duplicate finder, history, backup, a mascot 🛒😊 and more.
 
-**🗣️ With Alexa:** “Alexa, add milk to my shopping list” – and the milk lands on *this* list (see [Alexa & other lists](#-alexa--other-lists)).
+**🗣️ With Alexa:** “Alexa, add milk to my shopping list” – and the milk lands on *this* list (see ⚙️ Settings → “Alexa & other lists”).
+
+</details>
 
 ---
 
@@ -76,6 +88,8 @@ Copy `custom_components/einkaufsliste` to `/config/custom_components/einkaufslis
 
 ## 👆 How to use it
 
+<details><summary>Adding, checking off, swiping, shop mode, opening hours, branches and recipes – <i>expand</i></summary>
+
 **Adding:** type a name, tap the green ✔. The buttons below: 🔢 quantity · ✏️ own note · 👤 for whom · 📷 photo (on the phone: 📷 camera · 🖼️ gallery · 📋 paste – over https the camera opens right inside the card; in the HA app over the local http address the gallery opens straight away. On a PC: a window to drag into, **Ctrl + V** (e.g. a screenshot of a flyer) or choose a file) · ⭐ all favourites onto the list (mark a product with “⭐ Favourite” when editing; whatever is already on it is not added twice) · 🧽 clear. Store and category are usually picked correctly already. A store is missing? Pick **“➕ New store …”** in the list – just type the name, the rest later in ⚙️. 🎨 Well-known chains (Aldi, Lidl, Rewe, Edeka, dm, Rossmann …) get their logo colour right away; in ⚙️ → Stores this happens while you type, and a colour you picked yourself sticks.
 
 **In the list:**
@@ -94,9 +108,13 @@ Copy `custom_components/einkaufsliste` to `/config/custom_components/einkaufslis
 
 **Recipes:** create them in ⚙️ → Recipes (ingredients just like on the list, or paste an ingredient list or a recipe link). The **chef's hat** at the top: **Add to list** → tick what's missing → done. Also 👥 people or 🍕 trays scaling, **🔥 Cook** (step by step), **Share** (e.g. WhatsApp) and **⏲️ cooking times**. **🔗 Open original:** when importing by link the recipe remembers the source. Cook mode remembers the step per recipe and asks whether you want to continue there. **➕ Several recipes at once:** in cook mode tap ➕ at the top and pick a second recipe – tabs appear at the top to jump back and forth, the timers keep running for all of them, and while all of them are still at the people selection, a 💡 tip says which one to start with (the one with the longest time from its steps). The appliance box (e.g. oven) only appears after “Let's go”. **📝 Note after cooking:** after the last “Done” the list asks “Note for next time?” (e.g. “less salt”). The note shows right away in yellow at the top the next time you cook and in the recipe list. It is also listed in ⚙️ → Recipes → **Waiting for OK**: ✏️ opens the recipe to adjust it, 🗑️ (or ✕ while cooking) deletes the note everywhere. **💳 Card at a store:** when editing a card pick a store – in shopping mode there it is at the very top of “My cards” (📍), the others stay below. **🍟 Air fryer:** if a step has “Heißluftfritteuse” with mode, temperature and minutes and Airfryer Control is installed, the button in cook mode (for everyone, needs a current Airfryer Control) sends the values to the fryer – you start it on the device. **▥ Scan:** if a scanned item is already on the list, the list says “already on it”. Checked recipe ingredients disappear completely. The buttons are icons only; ⚙️ → Extras → **Labels** or a long press shows the text.
 
+</details>
+
 ---
 
 ## 🔍 Scanning barcodes
+
+<details><summary>Scan at home = add, scan in the shop = check off – <i>expand</i></summary>
 
 The ▥ button at the top knows where you are:
 - 🏠 **At home:** scan a pack → name, brand and category are filled in → ✔. With **“📦 Scan several”** every pack goes straight onto the list. Unknown ones are added as “❓ Unknown” – rename once and the list knows the barcode.
@@ -110,9 +128,13 @@ The ▥ button at the top knows where you are:
 
 Product names come from **Open Food Facts**, **Open Beauty Facts** and **Open Products Facts** (Home Assistant needs internet for that). Store brands such as Milsani, ja! or Balea go straight to the right store; add your own per store in ⚙️ → Stores.
 
+</details>
+
 ---
 
 ## 📱 Offline app
+
+<details><summary>The whole card as an app on your phone – opens without network too – <i>expand</i></summary>
 
 The **complete card** as its own app on your home screen – with recipes, cook mode, cooking times, settings and camera scanner. It opens **without a connection** with the last state.
 
@@ -135,9 +157,13 @@ The **complete card** as its own app on your home screen – with recipes, cook 
 
 Good to know: it needs an **https** address (e.g. Nabu Casa). If two people change the same thing at once, the last change wins. iPhones sometimes clear a web app's offline storage after weeks without use – just open it once with a connection.
 
+</details>
+
 ---
 
 ## ⚙️ Settings (gear)
+
+<details><summary>Stores, categories, recipes, catalogue, cleanup, security and all extras – <i>expand</i></summary>
 
 The settings are a **list with groups** – **📋 My list · 🎛️ Extras · 💾 Data · 🩺 Health · 👁️ View · 📱 App & info** – and only **one level deep**. Windows (PIN, photo, barcode, scanner, edit card, share …) open as a **page inside the card** with ← at the top left; only cooking mode is full screen. No buttons (View, Guide, Log out) are shown at the bottom of such pages. When you leave the settings, all groups are closed the next time. At the very bottom of the first page you find **📖 Guide**. A **search field** at the very top finds rows by name or topic (“photo”, “mail”, “backup”, “sensor”). Each group is a **box** with a short preview of what's inside, and every row has a **coloured icon** – like the settings menu on your phone. The groups start **collapsed**: tap one to open it, the previous one closes (the search opens matching ones by itself). Simple on/off things (🛒😊 Mascot, 💳 Loyalty cards, 🧾 Purchase log, 📍 Automatic shop mode, 🏷️ Labels) have a **switch right in the row**; the row itself opens the explanation with the same switch at the top. Go back with the round **←** at the top. At the bottom there is the **📖 Settings guide** button; the guide for shopping and recipes is separate, up front (cart or “Guide” button).
 
@@ -153,12 +179,16 @@ The settings are a **list with groups** – **📋 My list · 🎛️ Extras · 
 | 🆕 **What's new** | What changed in the current version. Also in the guide. In a **beta version** an extra box “🧪 You are in the beta …” at the top lists what is new in that beta. |
 | 🙏 **Credits** | Version, who made it, links to GitHub and “Report a bug”. Also in the guide. |
 
-### 🔐 Honestly, about security
+<details><summary><b>🔐 Honestly, about security</b></summary>
+
 - **The PIN only protects the user interface.** It keeps kids and slips away from the gear. On the server it is **not** enforced for non-admin users: anyone with a Home Assistant user who talks to the interface (API) directly can reach the settings without the PIN. Wrong guesses are slowed down: **after 5 wrong tries the PIN is locked for 60 seconds**. Still not a safe.
 - **The email import trusts the sender address.** The “From” of an email is not authenticated and can be faked. So use a **dedicated mailbox** whose address nobody knows.
 - **🔒 Privacy** (⚙️ → App & info → Privacy, admins only): no camera, no photos, no barcode scanner, no AI cooking – so no photos and no AI requests leave your Home Assistant. The barcode lookup at Open Food Facts, 🏷️ Offers, the ⚠️ recall warning and refreshing product data are blocked too (enforced on the server, not only in the card). Only the **recipe import from a link** is **not** blocked – it only runs when you start it yourself. What goes where is listed in ⚙️ → Privacy.
 
-### 🧹 Cleanup, simply explained
+</details>
+
+<details><summary><b>🧹 Cleanup, simply explained</b></summary>
+
 On cleanup day everything that has been open for at least 7 days (adjustable) gets **checked off**. Example Sunday: added on Tuesday → only 5 days old on the first Sunday, stays → checked off on the second Sunday. Each item shows 🧹 with its date. Nothing is deleted. **On/off**, day, time and minimum age: in the card under **⚙️ → Cleanup** (applies to everyone). When it is off, the 🧹 date below the items disappears too. **🏬 Exclude stores:** in the “Automatic” section single stores can be switched off – their items stay open on cleanup (no 🧹 date); “Check all” by hand still includes them. The page is made of **collapsible boxes** (Automatic · By hand · Delete list · Delete everything · Factory reset), only one is open at a time.
 
 **🧽 Delete list (admins only):** under ⚙️ → Cleanup pick a store (or “All stores”), then **“Delete done items”** (only what is checked off) or **“Empty list”** (open and done – good on Sunday for the new week). A question with the number comes first. The **catalogue stays**: products still show up as suggestions while typing, photos, barcodes, notes and favourites stay. Cannot be undone.
@@ -175,10 +205,16 @@ On cleanup day everything that has been open for at least 7 days (adjustable) ge
 
 **🧹 Delete everything (admins only):** under ⚙️ → Cleanup, **“Delete catalogue & list completely”** deletes the shopping list and the whole catalogue with all photos, barcodes, nicknames, own notes, favourites and learned typos. Two safety questions, **cannot be undone** – make a backup first. Stores, categories, people, recipes, loyalty cards and settings stay.
 
-### 📍 Nearest store first
+</details>
+
+<details><summary><b>📍 Nearest store first</b></summary>
+
 Create a **zone** per store (Settings → Areas, labels & zones → Zones) and pick it in ⚙️ → Stores → tap the store → 📍. Several branches? Just pick several zones for the same store. Whoever shares their location via the companion app lands on the right tab in the store. If **⚙️ → Extras → Store mode automatic** is on, store mode switches on by itself in the store and off again when you leave (even after the app was reloaded). Store mode also locks the screen rotation as it was at the start (portrait or landscape), as far as phone and browser allow it (usually full screen or an installed app, not on the iPhone).
 
-### 🗣️ Alexa & other lists
+</details>
+
+<details><summary><b>🗣️ Alexa & other lists</b></summary>
+
 The shopping list can **empty another Home Assistant to-do list automatically**: everything that lands there moves over right away and is deleted there.
 
 1. Set up the **“Alexa Devices”** integration in Home Assistant. The Alexa shopping list then shows up as a to-do list in HA.
@@ -193,7 +229,10 @@ The shopping list can **empty another Home Assistant to-do list automatically**:
 
 This works with any to-do list in HA (Google Tasks, Bring!, Todoist, the HA shopping list …). Honestly: “Hey Google, …” writes to Google Keep, which has no official Home Assistant connection – so it doesn't work that way with Google.
 
-### 🥫 Fetch products from Grocy
+</details>
+
+<details><summary><b>🥫 Fetch products from Grocy</b></summary>
+
 Using Grocy? You can bring your products into the catalogue: **⚙️ → Data → Import & backup → Grocy**. Type the address (e.g. `http://192.168.1.20:9283`) and the **API key** (in Grocy: user → *Manage API keys*), **Fetch products**, untick what should stay out in the preview, **Import**. What comes over: **name**, **barcodes** (only real digit barcodes) and the **product group** (becomes the category, created if you like). Stock, shelf life and locations stay out, and whatever already exists here is not overwritten. For the one-time fetch the key is **not stored**. 🔒 Admins only; Home Assistant must be able to reach Grocy.
 
 **🔄 Continuous sync** (same tab, below): two parts, **each on or off on its own** – or both:
@@ -202,10 +241,16 @@ Using Grocy? You can bring your products into the catalogue: **⚙️ → Data �
 
 For this the API key is kept on the server (never on phones, never in backups). “Remove connection” deletes it again. *Note: so far built against Grocy's API description only, not a real Grocy – feedback welcome.*
 
-### 📄 Catalogue from CSV
+</details>
+
+<details><summary><b>📄 Catalogue from CSV</b></summary>
+
 **⚙️ → Import & backup → From other apps → 📄 Catalogue from CSV or list** (admins only): a CSV or text file (or pasted lines) becomes **products in the catalogue** – not items on the shopping list. Columns `Name; Category; Barcode; Note`, with or without a header row (any order if there is a header). Separator `;` `,` or tab. The card tells you how many products it recognised before importing. Whatever already exists is not overwritten.
 
-### 🤖 “What can I cook?” (with AI)
+</details>
+
+<details><summary><b>🤖 “What can I cook?” (with AI)</b></summary>
+
 **⚙️ → Extras → AI cooking** (admin only, **off** by default): choose an **AI assistant from Home Assistant** (e.g. OpenAI, Google, Anthropic or local Ollama) and switch it on or off with **Turn on / Turn off** (the assistant stays remembered). Two fields (admin only) remember **“Always at home”** (salt, oil, flour … goes with every request) and **“Never suggest”** (allergies, dislikes); do not enter names of people. Then **Recipes** shows the button “What can I cook?” at the top left, next to the cooking times. Type ingredients – also things that are not in the catalogue – and optionally include the open items of the list. “👥 For … people” sets the number of people, and while typing you get catalogue suggestions (at most 2). For every suggestion: **Missing items to the list** or **Save as recipe**; tapping an ingredient moves it between “You have” and “Missing”. 🔒 The **ingredient names** go to the chosen assistant (cloud: over the internet, local: stays at home); with **Privacy** switched on nothing is sent. AI answers can be wrong. *Not tried against a real AI assistant yet – only tested with a stand-in.*
 
 **📖 Suggest a recipe:** In the chef-hat view there is a book-with-plus button next to “AI cooking”. Anyone in the family can suggest a recipe there (name, ingredients, oven & co., steps, photo). Suggestions wait in ⚙️ → Recipes → “Waiting for OK”; whoever knows the PIN looks at them and accepts or rejects. While something is waiting, an **🟠 dot with a number** on the chef hat shows how many suggestions and change requests are open; it only shows the count, tapping opens the chef hat as usual (only visible where the card may open the cog, so not with `show_settings: false`). Rejected suggestions disappear after a day or via ✖ in the settings. **🔍 Zoom photos:** two fingers or double-tap, then drag with one finger.
@@ -214,22 +259,40 @@ For this the API key is kept on the server (never on phones, never in backups). 
 
 **🖨️ Recipe as PDF:** the share window of a recipe has “Print / save as PDF” – with a preview like “Print list”. When sharing, the times of Oven & Co. appear right at the step they belong to.
 
-### ⏲️ Timer ticker (own card)
+</details>
+
+<details><summary><b>⏲️ Timer ticker (own card)</b></summary>
+
 The integration brings a second, small card: **`custom:einkaufsliste-timer-ticker`**. It shows the running cooking timers as an endless ticker (“+++ ⏲️ Lasagne: done at 7:42 pm +++ …”), for example on a kitchen dashboard, with a coloured frame (teal) and a chef hat on each side. When a timer is finished it says “⏰ … DONE!”, the frame and chef hats turn red and pulse – until the timer is dismissed in the app (otherwise it disappears by itself after 1 hour). Without a timer the card is invisible. The card editor offers: sensor (default `sensor.einkaufsliste_kochtimer`), “Hide when no timer”, speed, language and “Dismiss finished timers by tapping” (off by default).
 
-### 📝 Note templates
+</details>
+
+<details><summary><b>📝 Note templates</b></summary>
+
 **⚙️ → Extras → Note templates**: small buttons under the ✏️ Own note field (“Organic”, “lactose-free”, “large pack” …). They only appear once you type the first letter and show only the matching ones; a tap replaces what you typed with the template. You maintain the texts yourself, for all devices.
 
-### 🗣️ Siri / Shortcuts (iPhone)
+</details>
+
+<details><summary><b>🗣️ Siri / Shortcuts (iPhone)</b></summary>
+
 In the Shortcuts app create a new shortcut, choose the Home Assistant app’s **“Call service”** action, service `einkaufsliste.add_item`, data `name: Milk` (set the name to “Ask each time”). Named “Shopping”, “Hey Siri, Shopping” is enough. To tick off use `einkaufsliste.check_item`. *Not tested on an iPhone; action names can differ slightly depending on the app version.*
 
-### 🎁 Your year in shopping
+</details>
+
+<details><summary><b>🎁 Your year in shopping</b></summary>
+
 In **⚙️ → App & info → Your year in shopping** (switch applies to everyone, **on** by default) you get the look back at the year: how many items were **bought** and **added**, the **5 most frequent products**, **who adds the most** (🥇🥈🥉), the **favourite store** and the **busiest month** with twelve small bars. Only **numbers** are counted (per product, person, store and month); nothing leaves your Home Assistant. Counting starts **the day it was added** – there is nothing for earlier. The numbers are **approximate**: ↩️ undo and deleting do not count back. The log itself still keeps only 90 days; the counters are independent of it. With several years, year buttons appear at the top. Only admins can flip the switch and **delete counters**. Offline the app shows the last loaded state.
 
-### 🧾 Purchase log
+</details>
+
+<details><summary><b>🧾 Purchase log</b></summary>
+
 Turn it on in **⚙️ → Extras → Purchase log** (applies to everyone, **off** by default). A **🧾 button** then appears at the top of the card (and one in the history). **➕ Add:** after shopping, enter store, amount and date – the list fills in **who** and **when**. **📊 Overview:** in total, **per store** and **per month**, with filters for **person**, **store** and **date** (quick buttons *This month / Last month / All*). Independent of the lists – the amount is entered by hand or read from a **receipt**: **📷 Read receipt** (photo) or **📄 Read PDF** (digital receipt as PDF). The card suggests **store, date and total**, you check and save; the PDF stays on the device. A PDF that is only an image is not read – photograph the receipt instead. Tested only with self-made sample receipts, so with real receipts the recognition can be off (hence the check). Everyone in the family sees everything; entered wrong → ✖. **🎉 Ask automatically (option):** in the same box you can switch on that the Add dialog opens by itself as soon as everything on the list is checked off (store already selected, applies to everyone). Turning it off only hides the display, the entries stay saved.
 
-### 🏷️ Offers from the flyers (unofficial)
+</details>
+
+<details><summary><b>🏷️ Offers from the flyers (unofficial)</b></summary>
+
 Turn it on in **⚙️ → Extras → Offers** (admins only): postal code, only certain stores if you like, how often to check (every 3–24 hours). If something on your list is on offer right now, the item gets a **🏷️ button at the far right of the row** (well away from the quantity, so you do not hit it by mistake; hidden in **store mode**) – tap or long-press → **Offers** shows store, price, old price and how long it's valid. **🛒 Buy here** creates the offer item at that store – with the offer's name and “🏷️ 1.19 € until Sat” in its **own field** (not in the note; “from Mon” if it starts later) – and checks off the original product. Items from offers are gone completely when checked off. When the offer ends, an item created by it is deleted 1 day later and your original product goes back on the list (offer on your own product: only the offer goes away) (store not on your list yet: add it or use “Anywhere”).
 
 **🔀 Similar offers:** if there is no offer for exactly an item's name (barcode names are very precise, e.g. “UHT milk” or “Strawberry Max Balance”), the list splits the name into words (without numbers, quantities and filler words), searches them one by one and scores the hits by matched words; brand, product type from the database (only if it knows it), nicknames and your category help. At most 4 hits, marked **🔀** “Similar”. If there is one for exactly that item, only that is shown. A **red broom** on an item shows from one working day (Mon–Fri) before the automatic check-off that it's about to happen.
@@ -238,12 +301,18 @@ Turn it on in **⚙️ → Extras → Offers** (admins only): postal code, only 
 
 ⚠️ **Honestly:** the offers come from **Marktguru**, but **unofficially** – without any agreement with Marktguru. The shopping list simply opens the Marktguru website the way your browser does (there's no access key in the code). This can **stop working at any time without warning**; then ⚙️ says “unavailable right now” and the list keeps running normally. Only the names of open items and your postal code are looked up. It's **off** by default.
 
-### ⚠️ Recall warning
+</details>
+
+<details><summary><b>⚠️ Recall warning</b></summary>
+
 Turn it on in **⚙️ → Extras → Recall warning** (admins only). Every 6 hours the list fetches the **official warnings** from [lebensmittelwarnung.de](https://www.lebensmittelwarnung.de/) (German federal and state authorities) and compares them with everything you **checked off in the last 30 days**. If something matches, you get a **Home Assistant notification** (“⚠️ Einkaufsliste: Rückruf prüfen”) with a link to the warning, the match is listed in ⚙️ (dismiss it with ✔), and the event `einkaufsliste_rueckruf` (with `title`, `link`, `date`, `products`, `brand`) is there for your own automations, e.g. a phone message. Each warning is reported only once. In the list the item gets a **red ❗** to the left of the offer icon (tap it to open the warning). A match **disappears on its own** when your purchase is more than 30 days ago or the warning is older than 60 days. **🏷️ Brand check:** if the item has a note (e.g. “Milsani”), the list checks whether exactly this brand is in the warning: then it says “⚠️ Your brand is in the warning” (`brand: match`), otherwise “maybe a different brand” (`brand: other`, the ❗ turns orange). Without a note `brand` stays empty. **What's covered:** lebensmittelwarnung.de reports not only food but also **cosmetics, toys, dishes and clothing**. There is sadly no open source for **pet food**, so that is missing.
 
 ⚠️ **To be honest:** matching is by **name** only – “Kaffee” matches every coffee warning. That's why it says “please check”: whether your pack is really affected (brand, batch, best-before date) is in the link. Only the feed is fetched (like opening the web page) – no items, no names, no postcode; the comparison happens in your Home Assistant. The notification for a match is visible to all Home Assistant users. With 🔒 Privacy nothing is fetched. The warnings are German only. It is **off** by default.
 
-### 📧 Onto the list by email
+</details>
+
+<details><summary><b>📧 Onto the list by email</b></summary>
+
 1. Create a **separate email address** just for the shopping list and set up the **“IMAP”** integration in Home Assistant with it.
 2. In the card: **⚙️ → Data → Import & backup → 📧 Email**: pick the mailbox, a store if you like, what happens to the email afterwards (📬 leave · 👁️ mark as read · 🗑️ delete), enter the **allowed senders** (at least one), **Turn on**. 🔒 Admins only.
 3. Send an email to that address – **one item per line** (“milk”, “6 eggs” …). Several in one line work too: “milk, butter, bread”. Greetings (“Hi …”, “Best regards”), signatures, quotes, “Sent from my iPhone” and whole sentences are skipped, quantities are recognized. If the email arrives without line breaks (some phone mail apps), the list fetches it again properly from the mailbox. The history shows 📧.
@@ -251,9 +320,15 @@ Turn it on in **⚙️ → Extras → Recall warning** (admins only). Every 6 ho
 
 Honestly: senders can be faked – so use an address that isn't public. Depending on the mailbox it takes a few seconds to minutes until an email arrives. Only emails that actually put something on the list are marked as read or deleted – others stay. With Gmail, “delete” may mean “archive” depending on your settings.
 
+</details>
+
+</details>
+
 ---
 
 ## 🎛️ Card options
+
+<details><summary>What you can set in the card's YAML – <i>expand</i></summary>
 
 Everything works in the visual editor. For YAML fans:
 
@@ -271,9 +346,13 @@ Everything works in the visual editor. For YAML fans:
 | `auto_store` | `true` | jump to the store you are at |
 | `language` | `auto` | `auto` = like Home Assistant, `de` or `en` |
 
+</details>
+
 ---
 
 ## 🤖 For automations
+
+<details><summary>Sensors, events, services and ready-made examples – <i>expand</i></summary>
 
 | Entity | What it shows |
 |---|---|
@@ -311,7 +390,7 @@ actions:
       message: "🛒 There are {{ states('sensor.einkaufsliste_aldi') }} things on the list at Aldi"
 ```
 
-### ⏲️ Cooking timer on the dashboard and as an announcement
+<details><summary><b>⏲️ Cooking timer on the dashboard and as an announcement</b></summary>
 
 The cooking timer (in cooking view at each step) keeps running in Home Assistant even if the app is closed. You can see it like this:
 
@@ -356,6 +435,10 @@ actions:
 
 The sensor also has the fields `naechster` (e.g. “Lasagna – Schritt 2”), `laufend` (running) and `fertig` (done). Up to 12 timers run at the same time.
 
+</details>
+
+</details>
+
 ---
 
 ## ❓ FAQ
@@ -378,6 +461,8 @@ It is and stays **free**. If you like, you can send me a small donation via PayP
 
 [![PayPal](https://img.shields.io/badge/PayPal-Donate-0070BA?logo=paypal&logoColor=white)](https://paypal.me/MarcoStrickmann)
 
+---
+
 ## 💡 Ideas, wishes and bugs
 
 - **An idea or a wish?** Post it in the [Discussions](https://github.com/misterm2310/einkaufslisten-card/discussions) (category **Ideas**). Anyone can agree with 👍 and join in. **Polls** run there too.
@@ -386,6 +471,8 @@ It is and stays **free**. If you like, you can send me a small donation via PayP
 ---
 
 ## 🧪 For developers
+
+<details><summary>Add store brands & dictionary, tests – <i>expand</i></summary>
 
 **Adding store brands and the category dictionary – without programming:** both live in their own files under `custom_components/einkaufsliste/data/`:
 - `eigenmarken.json` – by country (`DE`, `AT`, `CH` …, as set in HA under Settings → System → General) → chain → brands. Unknown country = all combined.
@@ -401,5 +488,7 @@ pytest
 There is also a **UI test** in a real browser (icons, page headers, cleanup line): `cd tests/ui && npm install && npx playwright install chromium && node ui.test.mjs`. It runs automatically on GitHub for every change.
 
 ---
+
+</details>
 
 License: MIT · Product data: [Open Food Facts](https://world.openfoodfacts.org) (ODbL) · Offline app icons: [Material Design Icons](https://pictogrammers.com) (Apache 2.0) · Offline app barcode reader: [ZXing-js](https://github.com/zxing-js/library) (Apache 2.0)
