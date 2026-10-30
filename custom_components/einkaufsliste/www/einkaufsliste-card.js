@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.7";
+const EL_VERSION = "2.76.24-beta.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -430,6 +430,9 @@ const EL_BETA_NEWS = [
   ["📱 <b>Offline-App:</b> Eigenes Anmeldefenster (Benutzer, Passwort, 2-Faktor-Code) – gleiche Home-Assistant-Anmeldung, gleiche Rechte. Alle Dateien liegen jetzt unter /einkaufsliste/, hinter einem Reverse Proxy reichen /einkaufsliste/*, /auth/* und /api/*.",
    "📱 <b>Offline app:</b> its own login window (user, password, two-factor code) – same Home Assistant login, same rights. All files are now under /einkaufsliste/, behind a reverse proxy /einkaufsliste/*, /auth/* and /api/* are enough.",
    "beta.7"],
+  ["❌ <b>War nicht da:</b> Im ⇄-Fenster am Artikel gibt es den Knopf „War nicht da“. Der Artikel bleibt 2 Tage grau mit „❌ war nicht da“ für alle sichtbar und wird dann ohne Kauf abgehakt – unter „Erledigt“ mit ❌ statt ✔, er zählt nicht als gekauft. Abschalten unter ⚙️ → Listenansicht → Beim Artikel. · 🔨 <b>Nicht unter „Alle“ zeigen:</b> neuer Schalter pro Geschäft (⚙️ → Geschäfte), z. B. für den Baumarkt – die Sachen stehen dann nur im eigenen Reiter. · 📅 „Abgehakt von“ zeigt jetzt auch Tag und Uhrzeit.",
+   "❌ <b>Wasn't there:</b> the ⇄ window on an item has a “Wasn't there” button. The item stays greyed out with “❌ wasn't there” for everyone for 2 days and is then checked off without buying – under “Done” with ❌ instead of ✔, it does not count as bought. Turn it off under ⚙️ → List view → On the item. · 🔨 <b>Don't show under “All”:</b> new switch per store (⚙️ → Stores), e.g. for the hardware store – its items then only show in its own tab. · 📅 “Checked off by” now also shows day and time.",
+   "beta.8"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
