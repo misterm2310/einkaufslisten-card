@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.9";
+const EL_VERSION = "2.76.24-beta.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -457,6 +457,9 @@ const EL_BETA_NEWS = [
   ["📖 <b>Rezept vorschlagen</b> hat ein neues Symbol: ein Buch mit Plus statt der Glühbirne (die steht ja schon für Tipps und „Bildschirm immer an“).",
    "📖 <b>Suggest a recipe</b> has a new icon: a book with a plus instead of the light bulb (which already stands for tips and “keep screen on”).",
    "beta.9"],
+  ["📖 <b>Anleitung aufgefrischt:</b> Neu drin sind ❌ War nicht da, 🔨 Nicht unter „Alle“, 🏬 Filialen ändern, 📤 Drucken & Teilen und 📖 Rezept vorschlagen. Lange Punkte sind kürzer.",
+   "📖 <b>Guide refreshed:</b> now covers ❌ Wasn't there, 🔨 Not under “All”, 🏬 Edit branches, 📤 Print & share and 📖 Suggest a recipe. Long points are shorter.",
+   "beta.10"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
