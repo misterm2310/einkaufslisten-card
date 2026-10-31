@@ -129,7 +129,7 @@
       "fields": {
         "offers": {
           "name": "Offers",
-          "description": "List of entries: name (required, item name), price (required), store, title, regular_price, valid_from, valid_until, description, currency (e.g. CHF)."
+          "description": "List of entries: name (required, item name), price (required), store, title, regular_price, valid_from, valid_until, description, currency (e.g. CHF), url (https link to the product page)."
         },
         "source": {
           "name": "Source",

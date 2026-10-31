@@ -358,7 +358,7 @@ Alles geht im visuellen Editor. Für YAML-Fans:
 | Sensor | Was zeigt er? |
 |---|---|
 | `sensor.einkaufsliste_offene_artikel` | alle offenen Artikel (Attribute `pro_geschaeft`, `artikel`, `abgehakt`, `naechstes_aufraeumen`) |
-| `sensor.einkaufsliste_<geschäft>` | **pro Geschäft** die offenen Artikel, Attribut `artikel` (Text) und `angebote` (nur Artikel mit laufendem Angebot: `artikel`, `preis`, `ab`, `bis`, `haendler`, `waehrung` – z. B. für eigene Skripte) |
+| `sensor.einkaufsliste_<geschäft>` | **pro Geschäft** die offenen Artikel, Attribut `artikel` (Text) und `angebote` (nur Artikel mit laufendem Angebot: `artikel`, `preis`, `ab`, `bis`, `haendler`, `waehrung`, bei gemeldeten Angeboten mit Link auch `link` – z. B. für eigene Skripte) |
 | `binary_sensor.einkaufsliste_etwas_zu_kaufen` | an, sobald etwas offen ist |
 | `binary_sensor.einkaufsliste_<geschäft>_offen` | **pro Geschäft**: an, solange es laut Öffnungszeiten offen hat (mit Filialen: sobald eine offen hat; Feiertage des gewählten Bundeslands zählen mit). Ohne eingetragene Zeiten „unbekannt“. Attribute `offen_bis`, `oeffnet` (z. B. „Montag 08:00“), `feiertag`, bei Filialen `filialen`. Wird jede Minute neu berechnet – z. B. „Erinnere mich, wenn Aldi in 30 Minuten zumacht“ |
 | `sensor.einkaufsliste_zuletzt_eingetragen` | letzter Artikel mit `von`, `wann`, `geschaeft` |
@@ -396,7 +396,7 @@ actions:
 
 Die 🏷️ Angebote von Marktguru gibt es nur für Deutschland und Österreich. Hast du eine **eigene Quelle** (AppDaemon-Skript, REST-Sensor, Scraper …), schickt sie ihre Treffer mit der Aktion **`einkaufsliste.angebote_melden`** an die Liste. Die Karte zeigt sie dann genau wie die Marktguru-Angebote: **🏷️** am passenden Artikel, Preis, Normalpreis durchgestrichen, „gültig bis“ und **🛒 Hier kaufen**. Unten in der Liste steht „📬 Von deiner eigenen Automation gemeldet“.
 
-- **Pro Angebot:** `name` (Pflicht – der Artikel auf deiner Liste; Menge und Notiz dürfen drinstehen, z. B. „1 Sack Äpfel · Pink Lady“ passt zu „Äpfel“), `price` (Pflicht), optional `store`, `title` (Produktname im Angebot), `regular_price`, `valid_from`, `valid_until`, `description`, `currency` (z. B. `CHF`, ohne = €).
+- **Pro Angebot:** `name` (Pflicht – der Artikel auf deiner Liste; Menge und Notiz dürfen drinstehen, z. B. „1 Sack Äpfel · Pink Lady“ passt zu „Äpfel“), `price` (Pflicht), optional `store`, `title` (Produktname im Angebot), `regular_price`, `valid_from`, `valid_until`, `description`, `currency` (z. B. `CHF`, ohne = €), `url` (Link zur Produktseite, nur `https://` – im Angebots-Fenster steht dann **🔗 Zum Angebot**, und nach „🛒 Hier kaufen“ bleibt am Artikel ein kleines 🔗).
 - **`source`** (z. B. `denner`): Jede Quelle hat ihre eigenen Angebote. Standard **`replace: true`** = die neue Meldung ersetzt die alte dieser Quelle. Leere Liste = Quelle leeren. `replace: false` = dazulegen.
 - Abgelaufene Angebote fallen von selbst weg. Die Antwort der Aktion sagt, wie viele angekommen sind und zu welchen Artikeln sie passen.
 - 🔒 Die Liste fragt dafür **selbst nirgends** nach – sie nimmt nur an, was deine Automation schickt. Deshalb werden gemeldete Angebote auch bei „Datenschutz an“ gezeigt.
@@ -419,6 +419,7 @@ actions:
           price: "{{ state_attr('sensor.denner_treffer', 'price_current') }}"
           regular_price: "{{ state_attr('sensor.denner_treffer', 'price_regular') }}"
           valid_until: "{{ state_attr('sensor.denner_treffer', 'validUntil') }}"
+          url: "{{ state_attr('sensor.denner_treffer', 'productUrl') }}"
           currency: CHF
 ```
 
@@ -427,7 +428,8 @@ Aus **AppDaemon** geht es direkt, mit beliebig vielen Treffern auf einmal:
 ```python
 self.call_service("einkaufsliste/angebote_melden", source="denner", offers=[
     {"name": "Äpfel", "store": "Denner", "title": "Pink Lady 1 kg", "price": 2.95,
-     "regular_price": 3.95, "valid_until": "2026-11-07", "currency": "CHF"},
+     "regular_price": 3.95, "valid_until": "2026-11-07", "currency": "CHF",
+     "url": "https://www.example.com/aepfel"},
 ])
 ```
 

@@ -2409,5 +2409,6 @@
 "Abgehakt von {} am {} um {}": "Checked off by {0} on {1} at {2}",
 "Automatisch abgehakt am {} um {}": "Checked off automatically on {0} at {1}",
 "Automatisch abgehakt": "Checked off automatically",
-"📬 Von deiner eigenen Automation gemeldet": "📬 Reported by your own automation"
+"📬 Von deiner eigenen Automation gemeldet": "📬 Reported by your own automation",
+"🔗 Zum Angebot": "🔗 To the offer"
 }

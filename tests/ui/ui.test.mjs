@@ -572,6 +572,25 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
 check("Gemeldete Angebote: Preis in CHF (Etikett, Fenster, am Artikel), sonst €", /2,95 CHF/.test(r.label) && /1,19 €/.test(r.eurLabel) && r.page.price && r.page.old && /2,95 CHF/.test(r.tag), JSON.stringify(r));
 check("Gemeldete Angebote: Quelle „eigene Automation“ statt Marktguru", r.page.src && !r.page.mg, JSON.stringify(r));
 
+// 33) 🔗 Link zum Angebot: Knopf im Fenster, kleines 🔗 am Artikel, nur https, Tippen hakt nicht ab
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const root=c.shadowRoot;
+  const it=c._data.items.find((i)=>!i.checked); const keepOff=c._data.offers;
+  const o={ id:"ext-2", r:"Coop", p:31.5, d:"Prosecco", cur:"CHF", src:"coop", url:"https://www.coop.ch/de/p/4922122" };
+  c._data.offers={ [it.name.toLowerCase()]: [o, { ...o, id:"ext-3", url:"javascript:alert(1)" }] };
+  c._showOffers(it); await new Promise(r=>setTimeout(r,60));
+  const links=[...root.querySelectorAll("a.offlink"), ...document.querySelectorAll("a.offlink")].filter((a)=>a.offsetParent || a.isConnected);
+  const win={ n:links.length, href:links[0]?.getAttribute("href"), target:links[0]?.getAttribute("target"), rel:links[0]?.getAttribute("rel"), txt:links[0]?.textContent.trim() };
+  c._closePage?.(); document.querySelectorAll("body > div").forEach((d)=>{ if (/Prosecco/.test(d.textContent||"")) d.remove(); });
+  c._data.offers=keepOff;
+  const keep=it.offer; it.offer={ p:31.5, r:"Coop", cur:"CHF", url:o.url }; c._renderList(); await new Promise(r=>setTimeout(r,30));
+  const a=root.querySelector('.item[data-id="'+it.id+'"] a.offlink');
+  const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
+  a?.addEventListener("click",(e)=>e.preventDefault(),{ once:true }); a?.click(); await new Promise(r=>setTimeout(r,40));
+  c._ws=ws; const stillOpen=!it.checked; if (keep===undefined) delete it.offer; else it.offer=keep; c._renderAll();
+  return { win, item:{ has:!!a, href:a?.getAttribute("href") }, sent:sent.map((m)=>m.type), stillOpen }; });
+check("Link zum Angebot: „🔗 Zum Angebot“ im Fenster (nur https, neues Fenster)", r.win.n === 1 && r.win.href === "https://www.coop.ch/de/p/4922122" && r.win.target === "_blank" && /noopener/.test(r.win.rel || "") && /Zum Angebot/.test(r.win.txt || ""), JSON.stringify(r));
+check("Link zum Angebot: kleines 🔗 am Artikel, Tippen hakt nicht ab", r.item.has && r.item.href === "https://www.coop.ch/de/p/4922122" && r.stillOpen && !r.sent.some((t)=>/check|toggle/.test(t)), JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

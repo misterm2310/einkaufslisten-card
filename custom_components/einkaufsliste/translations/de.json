@@ -129,7 +129,7 @@
       "fields": {
         "offers": {
           "name": "Angebote",
-          "description": "Liste mit Einträgen: name (Pflicht, Artikelname), price (Pflicht), store, title, regular_price, valid_from, valid_until, description, currency (z. B. CHF)."
+          "description": "Liste mit Einträgen: name (Pflicht, Artikelname), price (Pflicht), store, title, regular_price, valid_from, valid_until, description, currency (z. B. CHF), url (https-Link zur Produktseite)."
         },
         "source": {
           "name": "Quelle",

@@ -78,6 +78,7 @@ SCHEMA_OFFER = vol.Schema(
         vol.Optional("valid_until"): vol.Any(None, _txt),
         vol.Optional("description"): vol.Any(None, _txt),
         vol.Optional("currency"): vol.Any(None, _txt),
+        vol.Optional("url"): vol.Any(None, _txt),
     },
     extra=vol.REMOVE_EXTRA,
 )

@@ -1057,6 +1057,9 @@ class EinkaufslisteManager:
                    "cur": (str(raw.get("currency") or "").strip().upper()[:5] or None), "src": src}
             if reg is not None and float(reg) > off["p"]:
                 off["op"] = round(float(reg), 2)
+            url = self._offer_url(raw.get("url"))
+            if url:
+                off["url"] = url  # 🔗 Produktseite des Geschäfts (nur https)
             key = f"{src}|{name.lower()}|{store.lower()}|{title.lower()}"
             off["id"] = "ext-" + hashlib.sha1(key.encode()).hexdigest()[:12]
             new.append(off)
@@ -1074,6 +1077,12 @@ class EinkaufslisteManager:
         names = sorted({n for n, offs in found.items() if any(o.get("src") == src for o in offs)})
         self._changed()
         return {"source": src, "count": len(lst), "skipped": skipped, "matched": names}
+
+    @staticmethod
+    def _offer_url(value: Any) -> str | None:
+        """🔗 Nur echte https-Links (keine Leerzeichen, höchstens 500 Zeichen) – alles andere fällt weg."""
+        u = str(value or "").strip()
+        return u if re.fullmatch(r"https://[^\s<>\"']{3,500}", u) else None
 
     def _ext_match(self, text: str, open_names: list[str]) -> str | None:
         """Welcher offene Artikel passt zum gemeldeten Namen? Gleicher Name – sonst der längste Artikelname,
@@ -1171,6 +1180,9 @@ class EinkaufslisteManager:
                          "taken": _now_iso()}  # „taken“: ohne Enddatum zählen die 14 Tage ab hier
         if offer.get("cur"):
             item["offer"]["cur"] = offer["cur"]  # 💱 z. B. CHF
+        url = self._offer_url(offer.get("url"))
+        if url:
+            item["offer"]["url"] = url  # 🔗 Link zum Angebot bleibt am Artikel
         self._log("update", item, f"Angebot {offer.get('r') or ''} {self.offer_note(offer)}".strip(), who=by)
         if original is not None and not original["checked"]:
             self.set_checked(original["id"], True, by, by_id)  # das eigentliche Produkt ist „erledigt“

@@ -84,7 +84,7 @@ angebote_melden:
   fields:
     offers:
       required: true
-      example: '[{"name": "Äpfel", "store": "Denner", "price": 2.95, "regular_price": 3.95, "valid_until": "2026-11-07", "currency": "CHF"}]'
+      example: '[{"name": "Äpfel", "store": "Denner", "price": 2.95, "regular_price": 3.95, "valid_until": "2026-11-07", "currency": "CHF", "url": "https://www.example.com/aepfel"}]'
       selector:
         object:
     source:

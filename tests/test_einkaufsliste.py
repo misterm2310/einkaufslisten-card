@@ -4838,3 +4838,25 @@ async def test_angebote_melden(hass, setup) -> None:
     assert "birnen" in m.as_dict()["offers"]
     # Werte überleben einen Neustart (gespeichert)
     assert m._to_storage()["offers_ext"]["coop"]
+
+
+async def test_angebote_melden_link(hass, setup) -> None:
+    """🔗 Gemeldete Angebote dürfen einen https-Link zur Produktseite mitbringen – andere Links fallen weg."""
+    m = mgr(hass)
+    wein = m.add_item("Wein")
+    m.add_item("Bananen")
+    m.add_item("Kiwi")
+    await hass.services.async_call(DOMAIN, "angebote_melden", {"source": "coop", "offers": [
+        {"name": "Wein", "store": "Coop", "price": 31.5, "regular_price": 53.7, "currency": "CHF",
+         "valid_until": "2099-11-01T22:00:00.000Z", "url": "https://www.coop.ch/de/weine/p/4922122"},
+        {"name": "Bananen", "price": 2.2, "url": "javascript:alert(1)"},
+        {"name": "Kiwi", "price": 1, "url": "None"},
+    ]}, blocking=True)
+    offers = m.as_dict()["offers"]
+    assert offers["wein"][0]["url"] == "https://www.coop.ch/de/weine/p/4922122"
+    assert offers["wein"][0]["to"] == "2099-11-01T22:00:00.000Z"
+    assert "url" not in offers["bananen"][0] and "url" not in offers["kiwi"][0]
+    item = m.take_offer(offers["wein"][0], wein["id"], store_id=m.find_store("Aldi"))
+    assert item["offer"]["url"] == "https://www.coop.ch/de/weine/p/4922122"
+    bad = m.take_offer({"p": 1, "r": "X", "url": "http://unsicher.example"}, name="Kiwi")
+    assert "url" not in bad["offer"]

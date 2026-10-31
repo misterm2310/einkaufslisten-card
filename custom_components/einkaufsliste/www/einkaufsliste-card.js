@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.11";
+const EL_VERSION = "2.76.24-beta.12";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -273,10 +273,10 @@ const EL_HELP = {
   ]],
   offers: ["extras", [
     "Braucht eine <b>Postleitzahl</b> (nur Admins). Dazu: „Nur diese Geschäfte“ (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b>, <b>Ausschalten</b>. Die Statuszeile zeigt Zahl und letzte Prüfung. Die Angebote kommen inoffiziell von Marktguru und können jederzeit ausfallen.",
-    "📬 <b>Eigene Angebote</b> (z. B. Schweiz): Eine eigene Automation kann mit der Aktion <code>einkaufsliste.angebote_melden</code> Angebote schicken (Name, Geschäft, Preis, gültig bis, Währung wie CHF). Sie erscheinen wie diese hier am Artikel – auch wenn Marktguru aus ist. Beispiel in der README unter „🤖 Für Automationen“.",
+    "📬 <b>Eigene Angebote</b> (z. B. Schweiz): Eine eigene Automation kann mit der Aktion <code>einkaufsliste.angebote_melden</code> Angebote schicken (Name, Geschäft, Preis, gültig bis, Währung wie CHF, Link zur Produktseite). Sie erscheinen wie diese hier am Artikel – auch wenn Marktguru aus ist. Beispiel in der README unter „🤖 Für Automationen“.",
   ], [
     "Needs a <b>postcode</b> (admins only). Also: “Only these stores” (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b>, <b>Switch off</b>. The status line shows the count and the last check. The offers come unofficially from Marktguru and can stop at any time.",
-    "📬 <b>Your own offers</b> (e.g. Switzerland): your own automation can send offers with the action <code>einkaufsliste.angebote_melden</code> (name, store, price, valid until, currency like CHF). They show up at the item like these – even when Marktguru is off. Example in the README under “🤖 For automations”.",
+    "📬 <b>Your own offers</b> (e.g. Switzerland): your own automation can send offers with the action <code>einkaufsliste.angebote_melden</code> (name, store, price, valid until, currency like CHF, link to the product page). They show up at the item like these – even when Marktguru is off. Example in the README under “🤖 For automations”.",
   ]],
   recalls: ["extras", [
     "<b>Einschalten</b> (nur Admins). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was in den letzten 30 Tagen abgehakt wurde. Treffer kommen als Meldung in Home Assistant, stehen hier mit Link und lassen sich mit ✔ wegklicken. In der Liste bekommt der Artikel ein rotes ❗. Treffer verschwinden von selbst, wenn der Kauf über 30 Tage her ist oder die Warnung älter als 60 Tage. Steht beim Artikel eine Notiz (z. B. die Marke), schaut die Liste, ob sie in der Warnung vorkommt: rot „Eure Marke steht in der Warnung“, sonst ein oranges ❗ „vielleicht eine andere Marke“. Im Link trotzdem prüfen, ob eure Packung betroffen ist. Die Warnungen umfassen auch Kosmetik, Spielzeug, Geschirr und Kleidung – Tierfutter leider nicht.",
@@ -465,6 +465,9 @@ const EL_BETA_NEWS = [
   ["📬 <b>Angebote melden:</b> Neue Aktion <code>einkaufsliste.angebote_melden</code> – eine eigene Automation (z. B. AppDaemon) schickt Angebote an die Liste, etwa aus der Schweiz. Sie erscheinen wie die Marktguru-Angebote mit 🏷️ am Artikel und „🛒 Hier kaufen“, auch in CHF. Die Liste fragt dafür selbst nirgends nach. Beispiel in der README.",
    "📬 <b>Report offers:</b> new action <code>einkaufsliste.angebote_melden</code> – your own automation (e.g. AppDaemon) sends offers to the list, for example from Switzerland. They appear like the Marktguru offers with 🏷️ at the item and “🛒 Buy here”, also in CHF. The list does not ask anywhere itself. Example in the README.",
    "beta.11"],
+  ["🔗 <b>Link zum Angebot:</b> Gemeldete Angebote (Aktion <code>einkaufsliste.angebote_melden</code>) dürfen jetzt einen Link zur Produktseite mitbringen (<code>url</code>). Im Angebots-Fenster steht dann „🔗 Zum Angebot“, und nach „🛒 Hier kaufen“ bleibt am Artikel ein kleines 🔗.",
+   "🔗 <b>Link to the offer:</b> reported offers (action <code>einkaufsliste.angebote_melden</code>) can now bring a link to the product page (<code>url</code>). The offer window then shows “🔗 To the offer”, and after “🛒 Buy here” a small 🔗 stays at the item.",
+   "beta.12"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -3412,6 +3415,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .pemerge { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; border-radius:12px; border:1px dashed var(--divider-color, rgba(127,127,127,.4)); }
 .pemerge select { flex:1; min-width:140px; }
 .iinstead { opacity:.8; font-style:italic; }
+.offlink { text-decoration:none; margin-left:2px; }
 .offinfo { color:color-mix(in srgb, #e53935 70%, var(--primary-text-color)); font-weight:600; }
 #btnNewBarcode.plus::before { content:"+"; position:absolute; top:1px; right:4px; font:700 13px/1 Roboto,sans-serif; }
 .chip2.offsearch { border-style:dashed; } .chip2.offsearch ha-icon { color:#f9a825; }
@@ -5953,7 +5957,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (v.barcode && codes.length && !this._shopMode) meta.push(`<span class="bc" title="Barcode hinterlegt: ${esc(codes.join(", "))}">▥</span>`);
     const off = item.offer;
     let offBtn = "";
-    if (!v.offer) { /* 🏷️ Angebote ausgeblendet */ } else if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" data-ecolor="#f9a825" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
+    if (!v.offer) { /* 🏷️ Angebote ausgeblendet */ } else if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" data-ecolor="#f9a825" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>${this._offerLink(off, true)}`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
     else if (!item.checked && !this._shopMode && this._offersFor(item).length) { // 🏷️ im Laden-Modus ausgeblendet; sonst eigener Knopf ganz rechts (weit weg von der Menge, größer zu treffen)
       const alt = this._offersFor(item).every((o) => o.alt);
       offBtn = `<button class="iconbtn offtag" data-act="offers-show" data-id="${item.id}" title="${alt ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}"><span class="oi">${alt ? "🔀" : "🏷️"}</span></button>`;
@@ -11948,6 +11952,15 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     return parts.join("<br>");
   }
 
+  // 🔗 Link zur Produktseite (nur https, öffnet in neuem Fenster) – small = kleines 🔗 am Artikel
+  _offerLink(o, small = false) {
+    const u = String(o?.url || "");
+    if (!/^https:\/\/[^\s<>"']{3,500}$/.test(u)) return "";
+    const t = esc(elT("🔗 Zum Angebot"));
+    return small ? `<a class="offlink" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${t}" aria-label="${t}">🔗</a>`
+      : `<a class="btn offlink" href="${esc(u)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">${t}</a>`;
+  }
+
   _offersFor(item) {
     return (this._data?.offers || {})[String(item?.name || "").toLowerCase()] || [];
   }
@@ -11998,7 +12011,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
             <div style="font-size:13px;color:var(--secondary-text-color)">${o.from ? `<span>ab</span> ${esc(day(o.from))} ` : ""}${o.to ? `<span>bis</span> ${esc(day(o.to))}` : ""}</div>
           </div>
           <div style="text-align:right;flex:none"><div style="font:700 18px Roboto,sans-serif;color:#2e7d32">${eur(o.p, o.cur)}</div>${o.op ? `<div style="color:var(--secondary-text-color);text-decoration:line-through;font-size:13px">${eur(o.op, o.cur)}</div>` : ""}</div>
-        </div><div style="text-align:right;margin-top:6px"><button type="button" class="btn primary" data-take="${n}">${esc(elT(btnLabel))}</button></div></div>`).join("")}
+        </div><div style="text-align:right;margin-top:6px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">${this._offerLink(o)}<button type="button" class="btn primary" data-take="${n}">${esc(elT(btnLabel))}</button></div></div>`).join("")}
         <div style="color:var(--secondary-text-color);font-size:12px;margin-top:10px">${this._offersSource(list)}</div>`;
         body.querySelectorAll("[data-take]").forEach((b) => { b.onclick = () => onTake(list[Number(b.dataset.take)], () => this._closePage()); });
         body.querySelectorAll("img[data-big]").forEach((im) => { im.onclick = () => { const o = list[Number(im.dataset.big)]; showPhotoOverlay(im.src, o?.d || o?.r || "", true); }; }); // 🖼️ Bild antippen = einfach groß
@@ -12018,7 +12031,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           <div style="font-size:13px;color:#aaa">${o.from ? `<span>ab</span> ${esc(day(o.from))} ` : ""}${o.to ? `<span>bis</span> ${esc(day(o.to))}` : ""}</div>
         </div>
         <div style="text-align:right;flex:none"><div style="font:700 18px Roboto,sans-serif;color:#81c784">${eur(o.p, o.cur)}</div>${o.op ? `<div style="color:#999;text-decoration:line-through;font-size:13px">${eur(o.op, o.cur)}</div>` : ""}</div>
-      </div><div style="text-align:right;margin-top:6px"><button type="button" data-take="${n}" style="${OV_BTN_MAIN}padding:7px 12px">${esc(elT(btnLabel))}</button></div></div>`).join("")}
+      </div><div style="text-align:right;margin-top:6px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">${o.url && this._offerLink(o) ? `<a class="offlink" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer" style="${OV_BTN_MAIN}padding:7px 12px;background:#333;color:#fff;text-decoration:none">${esc(elT("🔗 Zum Angebot"))}</a>` : ""}<button type="button" data-take="${n}" style="${OV_BTN_MAIN}padding:7px 12px">${esc(elT(btnLabel))}</button></div></div>`).join("")}
       <div style="color:#888;font-size:12px;margin-top:10px">${this._offersSource(list)}</div>`;
     const close = () => ov.remove();
     card.querySelectorAll("[data-take]").forEach((b) => { b.onclick = () => onTake(list[Number(b.dataset.take)], close); });
@@ -12059,7 +12072,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       }
     }
     try {
-      const res = await this._ws({ type: "einkaufsliste/offers/take", offer: { p: o.p, to: o.to || null, from: o.from || null, r: o.r, d: o.d || null, img: o.img || null, ...(o.cur ? { cur: o.cur } : {}) }, // 📸 Foto des Angebots kommt mit
+      const res = await this._ws({ type: "einkaufsliste/offers/take", offer: { p: o.p, to: o.to || null, from: o.from || null, r: o.r, d: o.d || null, img: o.img || null, ...(o.cur ? { cur: o.cur } : {}), ...(o.url ? { url: o.url } : {}) }, // 📸 Foto des Angebots kommt mit
         ...(item ? { item_id: item.id } : { name }), store_id: store?.id || null, ...(extra ? { extra: true } : {}) });
       this._toast(`🛒 ${res?.name || item?.name || name}: ${store ? store.name : "Egal wo"} · ${Number(o.p).toFixed(2).replace(".", ",")} ${this._cur(o.cur)}`);
       return true;
@@ -13015,6 +13028,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     if (this._dragged) { e.stopPropagation(); e.preventDefault(); return; } // war nur Ziehen
     if (this._qtySwiped && Date.now() - this._qtySwiped < 400 && e.target.closest?.("#list")) { e.stopPropagation(); e.preventDefault(); return; } // 👉 gerade an der Menge gewischt
     if (this._swiped && Date.now() - this._swiped < 400 && e.target.closest?.("#list")) { e.stopPropagation(); e.preventDefault(); return; } // 👆 gerade gewischt: der Klick danach zählt nicht
+    if (e.target.closest?.("a.offlink")) { e.stopPropagation(); return; } // 🔗 Link zum Angebot: nur öffnen, nicht abhaken
     const el = e.target.closest("[data-act]");
     if (!el) return;
     const act = el.dataset.act;

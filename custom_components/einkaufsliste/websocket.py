@@ -1285,7 +1285,7 @@ async def ws_offers_search(hass, connection, msg):
 
 OFFER = vol.Schema({vol.Required("p"): vol.Coerce(float), vol.Optional("to"): OPT_STR, vol.Optional("from"): OPT_STR, vol.Optional("r"): OPT_STR,
                     vol.Optional("d"): OPT_STR, vol.Optional("img"): OPT_STR,
-                    vol.Optional("cur"): OPT_STR}, extra=vol.REMOVE_EXTRA)
+                    vol.Optional("cur"): OPT_STR, vol.Optional("url"): OPT_STR}, extra=vol.REMOVE_EXTRA)
 
 
 @websocket_api.websocket_command(

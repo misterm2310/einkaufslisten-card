@@ -359,7 +359,7 @@ Everything works in the visual editor. For YAML fans:
 | Entity | What it shows |
 |---|---|
 | `sensor.einkaufsliste_offene_artikel` | all open items (attributes per store, items, checked, next cleanup) |
-| `sensor.einkaufsliste_<store>` | one sensor **per store**: open items there, attribute `artikel` (text) and `angebote` (only items with a current offer: `artikel`, `preis`, `ab`, `bis`, `haendler`, `waehrung` – handy for your own scripts) |
+| `sensor.einkaufsliste_<store>` | one sensor **per store**: open items there, attribute `artikel` (text) and `angebote` (only items with a current offer: `artikel`, `preis`, `ab`, `bis`, `haendler`, `waehrung`, for reported offers with a link also `link` – handy for your own scripts) |
 | `binary_sensor.einkaufsliste_etwas_zu_kaufen` (English HA: `…_something_to_buy`) | on as soon as anything is open |
 | `binary_sensor.einkaufsliste_<store>_offen` | **per store**: on while it is open according to its opening hours (with branches: as soon as one is open; public holidays of the chosen German state count too). Without opening hours it is “unknown”. Attributes `offen_bis` (open until), `oeffnet` (opens, e.g. “Montag 08:00”), `feiertag` (holiday), with branches `filialen`. Recalculated every minute – e.g. “remind me when Aldi closes in 30 minutes” |
 | `sensor.einkaufsliste_zuletzt_eingetragen` (English HA: `…_last_added`) | last added item with `von` (who), `wann` (when), `geschaeft` (store) |
@@ -397,7 +397,7 @@ actions:
 
 The 🏷️ offers from Marktguru only exist for Germany and Austria. If you have **your own source** (AppDaemon script, REST sensor, scraper …), it sends its hits to the list with the action **`einkaufsliste.angebote_melden`**. The card then shows them just like the Marktguru offers: **🏷️** at the matching item, price, regular price struck through, “valid until” and **🛒 Buy here**. At the bottom of the list it says “📬 Reported by your own automation”.
 
-- **Per offer:** `name` (required – the item on your list; quantity and note may be included, e.g. “1 bag apples · Pink Lady” matches “apples”), `price` (required), optional `store`, `title` (product name in the offer), `regular_price`, `valid_from`, `valid_until`, `description`, `currency` (e.g. `CHF`, without = €).
+- **Per offer:** `name` (required – the item on your list; quantity and note may be included, e.g. “1 bag apples · Pink Lady” matches “apples”), `price` (required), optional `store`, `title` (product name in the offer), `regular_price`, `valid_from`, `valid_until`, `description`, `currency` (e.g. `CHF`, without = €), `url` (link to the product page, `https://` only – the offer window then shows **🔗 To the offer**, and after “🛒 Buy here” a small 🔗 stays at the item).
 - **`source`** (e.g. `denner`): each source has its own offers. Default **`replace: true`** = the new report replaces the old one of this source. Empty list = clear the source. `replace: false` = add.
 - Expired offers drop out by themselves. The action's response tells you how many arrived and which items they match.
 - 🔒 The list **does not ask anywhere itself** – it only accepts what your automation sends. That's why reported offers are shown even with “Privacy on”.
@@ -420,6 +420,7 @@ actions:
           price: "{{ state_attr('sensor.denner_treffer', 'price_current') }}"
           regular_price: "{{ state_attr('sensor.denner_treffer', 'price_regular') }}"
           valid_until: "{{ state_attr('sensor.denner_treffer', 'validUntil') }}"
+          url: "{{ state_attr('sensor.denner_treffer', 'productUrl') }}"
           currency: CHF
 ```
 
@@ -428,7 +429,8 @@ From **AppDaemon** it works directly, with as many hits as you like at once:
 ```python
 self.call_service("einkaufsliste/angebote_melden", source="denner", offers=[
     {"name": "Äpfel", "store": "Denner", "title": "Pink Lady 1 kg", "price": 2.95,
-     "regular_price": 3.95, "valid_until": "2026-11-07", "currency": "CHF"},
+     "regular_price": 3.95, "valid_until": "2026-11-07", "currency": "CHF",
+     "url": "https://www.example.com/aepfel"},
 ])
 ```
 
