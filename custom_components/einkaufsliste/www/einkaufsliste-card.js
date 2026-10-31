@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.10";
+const EL_VERSION = "2.76.24-beta.11";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -273,8 +273,10 @@ const EL_HELP = {
   ]],
   offers: ["extras", [
     "Braucht eine <b>Postleitzahl</b> (nur Admins). Dazu: „Nur diese Geschäfte“ (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b>, <b>Ausschalten</b>. Die Statuszeile zeigt Zahl und letzte Prüfung. Die Angebote kommen inoffiziell von Marktguru und können jederzeit ausfallen.",
+    "📬 <b>Eigene Angebote</b> (z. B. Schweiz): Eine eigene Automation kann mit der Aktion <code>einkaufsliste.angebote_melden</code> Angebote schicken (Name, Geschäft, Preis, gültig bis, Währung wie CHF). Sie erscheinen wie diese hier am Artikel – auch wenn Marktguru aus ist. Beispiel in der README unter „🤖 Für Automationen“.",
   ], [
     "Needs a <b>postcode</b> (admins only). Also: “Only these stores” (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b>, <b>Switch off</b>. The status line shows the count and the last check. The offers come unofficially from Marktguru and can stop at any time.",
+    "📬 <b>Your own offers</b> (e.g. Switzerland): your own automation can send offers with the action <code>einkaufsliste.angebote_melden</code> (name, store, price, valid until, currency like CHF). They show up at the item like these – even when Marktguru is off. Example in the README under “🤖 For automations”.",
   ]],
   recalls: ["extras", [
     "<b>Einschalten</b> (nur Admins). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was in den letzten 30 Tagen abgehakt wurde. Treffer kommen als Meldung in Home Assistant, stehen hier mit Link und lassen sich mit ✔ wegklicken. In der Liste bekommt der Artikel ein rotes ❗. Treffer verschwinden von selbst, wenn der Kauf über 30 Tage her ist oder die Warnung älter als 60 Tage. Steht beim Artikel eine Notiz (z. B. die Marke), schaut die Liste, ob sie in der Warnung vorkommt: rot „Eure Marke steht in der Warnung“, sonst ein oranges ❗ „vielleicht eine andere Marke“. Im Link trotzdem prüfen, ob eure Packung betroffen ist. Die Warnungen umfassen auch Kosmetik, Spielzeug, Geschirr und Kleidung – Tierfutter leider nicht.",
@@ -460,6 +462,9 @@ const EL_BETA_NEWS = [
   ["📖 <b>Anleitung aufgefrischt:</b> Neu drin sind ❌ War nicht da, 🔨 Nicht unter „Alle“, 🏬 Filialen ändern, 📤 Drucken & Teilen und 📖 Rezept vorschlagen. Lange Punkte sind kürzer.",
    "📖 <b>Guide refreshed:</b> now covers ❌ Wasn't there, 🔨 Not under “All”, 🏬 Edit branches, 📤 Print & share and 📖 Suggest a recipe. Long points are shorter.",
    "beta.10"],
+  ["📬 <b>Angebote melden:</b> Neue Aktion <code>einkaufsliste.angebote_melden</code> – eine eigene Automation (z. B. AppDaemon) schickt Angebote an die Liste, etwa aus der Schweiz. Sie erscheinen wie die Marktguru-Angebote mit 🏷️ am Artikel und „🛒 Hier kaufen“, auch in CHF. Die Liste fragt dafür selbst nirgends nach. Beispiel in der README.",
+   "📬 <b>Report offers:</b> new action <code>einkaufsliste.angebote_melden</code> – your own automation (e.g. AppDaemon) sends offers to the list, for example from Switzerland. They appear like the Marktguru offers with 🏷️ at the item and “🛒 Buy here”, also in CHF. The list does not ask anywhere itself. Example in the README.",
+   "beta.11"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -10916,6 +10921,9 @@ ${(() => {
       <p class="hint">🏷️ <b>${t("Angebote", "Offers")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
         "Es gehen die Namen offener Artikel und deine Postleitzahl an Marktguru. Sonst nichts – keine Namen von Personen, keine Fotos. Inoffiziell, kann jederzeit aufhören zu funktionieren.",
         "The names of open items and your postcode go to Marktguru. Nothing else – no names of people, no photos. Unofficial, can stop working at any time.")}</p>
+      <p class="hint">📬 <b>${t("Gemeldete Angebote", "Reported offers")}</b> (${t("Dienst „Angebote melden“", "service “Report offers”")}): ${t(
+        "Die Liste fragt dafür selbst nirgends nach. Sie nimmt nur an, was deine eigene Automation (z. B. AppDaemon) ihr schickt, und zeigt es an. Was diese Automation im Internet abruft, entscheidest du dort. Gemeldete Angebote werden auch bei „Datenschutz an“ gezeigt, weil sie aus deinem eigenen Haus kommen.",
+        "The list does not ask anywhere itself. It only accepts what your own automation (e.g. AppDaemon) sends to it and shows it. What that automation fetches from the internet is up to you. Reported offers are shown even with “Privacy on”, because they come from your own home.")}</p>
       <p class="hint">⚠️ <b>${t("Rückruf-Warnung", "Recall warning")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
         "Dein Home Assistant holt nur die öffentliche Warnliste von lebensmittelwarnung.de – wie ein Browser, der die Seite öffnet. Von euch geht nichts hin: keine Artikel, keine Namen, keine Postleitzahl. Der Abgleich mit euren Einkäufen passiert zu Hause. Die Meldung bei einem Treffer sehen alle Home-Assistant-Benutzer. Mit Datenschutz an wird nichts abgefragt.",
         "Your Home Assistant only fetches the public warning list from lebensmittelwarnung.de – like a browser opening the page. Nothing of yours goes there: no items, no names, no postcode. The comparison with your purchases happens at home. The notification for a match is visible to all Home Assistant users. With privacy on nothing is fetched.")}</p>
@@ -11928,6 +11936,18 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     return (r.hits || []).find((h) => (h.products || []).some((p) => String(p).trim().toLowerCase() === name)) || null;
   }
 
+  // 💱 „EUR“/leer -> „€“, sonst das Kürzel (z. B. „CHF“ aus einer eigenen Automation)
+  _cur(c) { const x = String(c || "").trim(); return !x || /^(eur|€)$/i.test(x) ? "€" : x; }
+
+  // 📬 Quelle unter der Angebotsliste: Marktguru und/oder eigene Automation
+  _offersSource(list) {
+    const ext = [...new Set(list.filter((o) => o.src).map((o) => o.src))];
+    const parts = [];
+    if (list.some((o) => !o.src)) parts.push(elT("Quelle: Marktguru (inoffiziell) · Angaben ohne Gewähr · kann jederzeit aufhören zu funktionieren"));
+    if (ext.length) parts.push(`${esc(elT("📬 Von deiner eigenen Automation gemeldet"))}: <span translate="no">${ext.map(esc).join(", ")}</span>`);
+    return parts.join("<br>");
+  }
+
   _offersFor(item) {
     return (this._data?.offers || {})[String(item?.name || "").toLowerCase()] || [];
   }
@@ -11935,7 +11955,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
   // 🏷️ „🏷️ 1,19 € bis Sa.“ – liegt der Start in der Zukunft: „ab Mo.“
   _offerLabel(off) {
     const day = (iso) => { const d = new Date(iso); return `${WD_SHORT[pyWd(d)]}.`; };
-    const price = `${Number(off.p).toFixed(2).replace(".", ",")} €`;
+    const price = `${Number(off.p).toFixed(2).replace(".", ",")} ${this._cur(off.cur)}`;
     let when = "";
     if (off.from && new Date(off.from) > new Date()) when = ` <span>ab</span> ${day(off.from)}`;
     else if (off.to) when = ` <span>bis</span> ${day(off.to)}`;
@@ -11965,7 +11985,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
   }
 
   _offersOverlay(titleHtml, list, btnLabel, onTake) {
-    const eur = (n) => `${Number(n).toFixed(2).replace(".", ",")} €`;
+    const eur = (n, c) => `${Number(n).toFixed(2).replace(".", ",")} ${this._cur(c)}`;
     const day = (iso) => { if (!iso) return ""; const d = new Date(iso); return `${WD_SHORT[pyWd(d)]}. ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`; };
     if (this._openPage) { // 🏷️ als Seite IN der Karte (Pfeil zurück, Farben der Karte)
       this._openPage({ key: "offers", title: "Angebote", icon: "mdi:tag-outline", color: "#d81b60", build: (body) => {
@@ -11977,9 +11997,9 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
             <div style="color:var(--secondary-text-color);font-size:13px" translate="no">${esc(o.d || "")}${o.q ? ` · ${esc(o.q)}` : ""}</div>
             <div style="font-size:13px;color:var(--secondary-text-color)">${o.from ? `<span>ab</span> ${esc(day(o.from))} ` : ""}${o.to ? `<span>bis</span> ${esc(day(o.to))}` : ""}</div>
           </div>
-          <div style="text-align:right;flex:none"><div style="font:700 18px Roboto,sans-serif;color:#2e7d32">${eur(o.p)}</div>${o.op ? `<div style="color:var(--secondary-text-color);text-decoration:line-through;font-size:13px">${eur(o.op)}</div>` : ""}</div>
+          <div style="text-align:right;flex:none"><div style="font:700 18px Roboto,sans-serif;color:#2e7d32">${eur(o.p, o.cur)}</div>${o.op ? `<div style="color:var(--secondary-text-color);text-decoration:line-through;font-size:13px">${eur(o.op, o.cur)}</div>` : ""}</div>
         </div><div style="text-align:right;margin-top:6px"><button type="button" class="btn primary" data-take="${n}">${esc(elT(btnLabel))}</button></div></div>`).join("")}
-        <div style="color:var(--secondary-text-color);font-size:12px;margin-top:10px">Quelle: Marktguru (inoffiziell) · Angaben ohne Gewähr · kann jederzeit aufhören zu funktionieren</div>`;
+        <div style="color:var(--secondary-text-color);font-size:12px;margin-top:10px">${this._offersSource(list)}</div>`;
         body.querySelectorAll("[data-take]").forEach((b) => { b.onclick = () => onTake(list[Number(b.dataset.take)], () => this._closePage()); });
         body.querySelectorAll("img[data-big]").forEach((im) => { im.onclick = () => { const o = list[Number(im.dataset.big)]; showPhotoOverlay(im.src, o?.d || o?.r || "", true); }; }); // 🖼️ Bild antippen = einfach groß
       } });
@@ -11997,9 +12017,9 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
           <div style="color:#ccc;font-size:13px" translate="no">${esc(o.d || "")}${o.q ? ` · ${esc(o.q)}` : ""}</div>
           <div style="font-size:13px;color:#aaa">${o.from ? `<span>ab</span> ${esc(day(o.from))} ` : ""}${o.to ? `<span>bis</span> ${esc(day(o.to))}` : ""}</div>
         </div>
-        <div style="text-align:right;flex:none"><div style="font:700 18px Roboto,sans-serif;color:#81c784">${eur(o.p)}</div>${o.op ? `<div style="color:#999;text-decoration:line-through;font-size:13px">${eur(o.op)}</div>` : ""}</div>
+        <div style="text-align:right;flex:none"><div style="font:700 18px Roboto,sans-serif;color:#81c784">${eur(o.p, o.cur)}</div>${o.op ? `<div style="color:#999;text-decoration:line-through;font-size:13px">${eur(o.op, o.cur)}</div>` : ""}</div>
       </div><div style="text-align:right;margin-top:6px"><button type="button" data-take="${n}" style="${OV_BTN_MAIN}padding:7px 12px">${esc(elT(btnLabel))}</button></div></div>`).join("")}
-      <div style="color:#888;font-size:12px;margin-top:10px">Quelle: Marktguru (inoffiziell) · Angaben ohne Gewähr · kann jederzeit aufhören zu funktionieren</div>`;
+      <div style="color:#888;font-size:12px;margin-top:10px">${this._offersSource(list)}</div>`;
     const close = () => ov.remove();
     card.querySelectorAll("[data-take]").forEach((b) => { b.onclick = () => onTake(list[Number(b.dataset.take)], close); });
     card.querySelectorAll("img[data-big]").forEach((im) => { im.onclick = () => { const o = list[Number(im.dataset.big)]; showPhotoOverlay(im.src, o?.d || o?.r || "", true); }; }); // 🖼️ Bild antippen = einfach groß
@@ -12039,9 +12059,9 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       }
     }
     try {
-      const res = await this._ws({ type: "einkaufsliste/offers/take", offer: { p: o.p, to: o.to || null, from: o.from || null, r: o.r, d: o.d || null, img: o.img || null }, // 📸 Foto des Angebots kommt mit
+      const res = await this._ws({ type: "einkaufsliste/offers/take", offer: { p: o.p, to: o.to || null, from: o.from || null, r: o.r, d: o.d || null, img: o.img || null, ...(o.cur ? { cur: o.cur } : {}) }, // 📸 Foto des Angebots kommt mit
         ...(item ? { item_id: item.id } : { name }), store_id: store?.id || null, ...(extra ? { extra: true } : {}) });
-      this._toast(`🛒 ${res?.name || item?.name || name}: ${store ? store.name : "Egal wo"} · ${Number(o.p).toFixed(2).replace(".", ",")} €`);
+      this._toast(`🛒 ${res?.name || item?.name || name}: ${store ? store.name : "Egal wo"} · ${Number(o.p).toFixed(2).replace(".", ",")} ${this._cur(o.cur)}`);
       return true;
     } catch (_) { return false; }
   }

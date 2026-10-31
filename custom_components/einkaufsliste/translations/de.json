@@ -122,6 +122,24 @@
           "description": "Überschreibt einmalig das eingestellte Mindestalter."
         }
       }
+    },
+    "angebote_melden": {
+      "name": "Angebote melden",
+      "description": "Eigene Angebote (z. B. aus AppDaemon oder einer REST-Abfrage) an die Liste schicken. Die Karte zeigt sie wie die Marktguru-Angebote mit 🏷️ am passenden Artikel. Es geht nichts ins Internet.",
+      "fields": {
+        "offers": {
+          "name": "Angebote",
+          "description": "Liste mit Einträgen: name (Pflicht, Artikelname), price (Pflicht), store, title, regular_price, valid_from, valid_until, description, currency (z. B. CHF)."
+        },
+        "source": {
+          "name": "Quelle",
+          "description": "Name deiner Quelle (z. B. denner). Mit „Ersetzen“ an werden nur die alten Angebote dieser Quelle ersetzt."
+        },
+        "replace": {
+          "name": "Ersetzen",
+          "description": "An = alte Angebote dieser Quelle fallen weg. Aus = dazulegen. Leere Liste + an = Quelle leeren."
+        }
+      }
     }
   },
   "entity": {

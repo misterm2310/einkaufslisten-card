@@ -122,6 +122,24 @@
           "description": "Override once."
         }
       }
+    },
+    "angebote_melden": {
+      "name": "Report offers",
+      "description": "Send your own offers (e.g. from AppDaemon or a REST request) to the list. The card shows them like the Marktguru offers with 🏷️ at the matching item. Nothing is sent to the internet.",
+      "fields": {
+        "offers": {
+          "name": "Offers",
+          "description": "List of entries: name (required, item name), price (required), store, title, regular_price, valid_from, valid_until, description, currency (e.g. CHF)."
+        },
+        "source": {
+          "name": "Source",
+          "description": "Name of your source (e.g. denner). With “Replace” on, only the old offers of this source are replaced."
+        },
+        "replace": {
+          "name": "Replace",
+          "description": "On = old offers of this source are dropped. Off = add. Empty list + on = clear the source."
+        }
+      }
     }
   },
   "entity": {

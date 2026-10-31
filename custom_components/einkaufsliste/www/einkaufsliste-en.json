@@ -2408,5 +2408,6 @@
 "im ⇄-Fenster: bleibt 2 Tage grau stehen, dann ohne Kauf erledigt": "in the ⇄ window: stays greyed out for 2 days, then done without buying",
 "Abgehakt von {} am {} um {}": "Checked off by {0} on {1} at {2}",
 "Automatisch abgehakt am {} um {}": "Checked off automatically on {0} at {1}",
-"Automatisch abgehakt": "Checked off automatically"
+"Automatisch abgehakt": "Checked off automatically",
+"📬 Von deiner eigenen Automation gemeldet": "📬 Reported by your own automation"
 }

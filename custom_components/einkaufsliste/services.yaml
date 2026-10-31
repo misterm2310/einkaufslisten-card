@@ -79,3 +79,20 @@ cleanup:
           min: 0
           max: 365
           mode: box
+
+angebote_melden:
+  fields:
+    offers:
+      required: true
+      example: '[{"name": "Äpfel", "store": "Denner", "price": 2.95, "regular_price": 3.95, "valid_until": "2026-11-07", "currency": "CHF"}]'
+      selector:
+        object:
+    source:
+      default: "extern"
+      example: "denner"
+      selector:
+        text:
+    replace:
+      default: true
+      selector:
+        boolean:

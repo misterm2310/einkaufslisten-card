@@ -125,6 +125,7 @@ class GeschaeftSensor(_Base):
                     "ab": i["offer"].get("from"),
                     "bis": i["offer"].get("to"),
                     "haendler": i["offer"].get("r"),
+                    "waehrung": i["offer"].get("cur") or "EUR",
                 }
                 for i in self._open()
                 if (i.get("offer") or {}).get("p") is not None and not i["offer"].get("expired")

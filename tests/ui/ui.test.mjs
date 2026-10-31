@@ -555,6 +555,23 @@ r = await p.evaluate(() => { const c=document.querySelector('#c1'); const it={ .
   return { a, b }; });
 check("Abgehakt von: mit Tag und Uhrzeit (auch bei automatisch)", r.a === "Abgehakt von Marco am Fr 30.10. um 20:15" && r.b === "Automatisch abgehakt am Fr 30.10. um 20:15", JSON.stringify(r));
 
+// 32) 📬 Gemeldete Angebote (eigene Automation, CHF): Preis mit Währung, Quelle unten
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const root=c.shadowRoot;
+  const it=c._data.items.find((i)=>!i.checked); const keepOff=c._data.offers;
+  const o={ id:"ext-1", r:"Denner", p:2.95, op:3.95, to:new Date(Date.now()+3*864e5).toISOString().slice(0,10), d:"Pink Lady 1 kg", cur:"CHF", src:"denner", img:null };
+  c._data.offers={ [it.name.toLowerCase()]: [o] };
+  const label=c._offerLabel(o); const eurLabel=c._offerLabel({ p:1.19 });
+  c._showOffers(it); await new Promise(r=>setTimeout(r,60));
+  const txt=(root.textContent||"") + (document.body.textContent||"");
+  const page={ price:/2,95 CHF/.test(txt), old:/3,95 CHF/.test(txt), src:/eigenen Automation/.test(txt) && /denner/.test(txt), mg:/Marktguru \(inoffiziell\)/.test(txt) };
+  c._closePage?.(); document.querySelectorAll("body > div").forEach((d)=>{ if (/Pink Lady/.test(d.textContent||"")) d.remove(); });
+  const tmp=document.createElement("div"); tmp.innerHTML=c._itemHtml({ ...it, offer:{ p:2.95, r:"Denner", cur:"CHF", to:o.to } });
+  const tag=tmp.querySelector(".offinfo")?.textContent||"";
+  c._data.offers=keepOff; c._renderAll();
+  return { label, eurLabel, page, tag }; });
+check("Gemeldete Angebote: Preis in CHF (Etikett, Fenster, am Artikel), sonst €", /2,95 CHF/.test(r.label) && /1,19 €/.test(r.eurLabel) && r.page.price && r.page.old && /2,95 CHF/.test(r.tag), JSON.stringify(r));
+check("Gemeldete Angebote: Quelle „eigene Automation“ statt Marktguru", r.page.src && !r.page.mg, JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

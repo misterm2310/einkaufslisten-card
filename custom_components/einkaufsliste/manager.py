@@ -530,6 +530,7 @@ class EinkaufslisteManager:
         self.grocy: dict[str, Any] = {}  # 🛒 Grocy-Dauerabgleich {"url","api_key","a_on",…} – der Schlüssel verlässt den Server nie
         self.offers_cfg: dict[str, Any] | None = None  # 🏷️ {"enabled", "zip", "stores", "hours", "key", "last", "ok", "error", "count"}
         self.offers_data: dict[str, list[dict[str, Any]]] = {}  # 🏷️ Artikelname klein -> Angebote
+        self.offers_ext: dict[str, list[dict[str, Any]]] = {}  # 📬 Quelle -> Angebote aus eigenen Automationen (Dienst angebote_melden)
         self.recalls_cfg: dict[str, Any] | None = None  # ⚠️ Rückruf-Warnung {"enabled", "last", "ok", "error", "checked"}
         self.recalls_hits: list[dict[str, Any]] = []  # ⚠️ Treffer {"id","title","link","date","products","found"} – das Neueste vorn
         self.recalls_seen: list[str] = []  # ⚠️ schon gemeldete Warnungen (gegen doppelte Meldungen)
@@ -764,6 +765,9 @@ class EinkaufslisteManager:
         g = data.get("grocy")
         self.grocy = dict(g) if isinstance(g, dict) else {}
         self.offers_data = dict(data.get("offers_data") or {})
+        raw_ext = data.get("offers_ext")
+        self.offers_ext = {str(k): [o for o in v if isinstance(o, dict)] for k, v in raw_ext.items()
+                           if isinstance(v, list)} if isinstance(raw_ext, dict) else {}
         self.recalls_cfg = data.get("recalls_cfg") or None
         self.recalls_hits = [h for h in (data.get("recalls_hits") or []) if isinstance(h, dict)]
         self.recalls_seen = [str(k) for k in (data.get("recalls_seen") or [])]
@@ -848,6 +852,7 @@ class EinkaufslisteManager:
             "offers_cfg": self.offers_cfg,
             "grocy": self.grocy,
             "offers_data": self.offers_data,
+            "offers_ext": self.offers_ext,
             "recalls_cfg": self.recalls_cfg,
             "recalls_hits": self.recalls_hits,
             "recalls_seen": self.recalls_seen,
@@ -955,7 +960,7 @@ class EinkaufslisteManager:
                 "errors_24h": self._errors_since(timedelta(hours=24)),
             },
             "missed": self.missed_counts(),
-            "offers": self.offers_data if (self.offers_cfg or {}).get("enabled") else {},
+            "offers": self._offers_merged(),
             "missed_hidden": self.missed_hidden,
         }
 
@@ -1004,15 +1009,133 @@ class EinkaufslisteManager:
     @staticmethod
     def offer_note(offer: dict[str, Any]) -> str:
         """„🏷️ 1,19 € bis Sa.“ – liegt der Start in der Zukunft: „🏷️ 1,19 € ab Mo.“"""
-        price = f"{float(offer.get('p') or 0):.2f}".replace(".", ",")
+        price = f"{float(offer.get('p') or 0):.2f}".replace(".", ",") + " " + EinkaufslisteManager.currency_sign(offer.get("cur"))
         names = ["Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa.", "So."]
         start = EinkaufslisteManager._parse_offer_dt(offer.get("from"))
         end = EinkaufslisteManager._parse_offer_dt(offer.get("to"), end_of_day=True)
         if start is not None and start > dt_util.utcnow():
-            return f"🏷️ {price} € ab {names[dt_util.as_local(start).weekday()]}"
+            return f"🏷️ {price} ab {names[dt_util.as_local(start).weekday()]}"
         if end is not None:
-            return f"🏷️ {price} € bis {names[dt_util.as_local(end).weekday()]}"
-        return f"🏷️ {price} €"
+            return f"🏷️ {price} bis {names[dt_util.as_local(end).weekday()]}"
+        return f"🏷️ {price}"
+
+    @staticmethod
+    def currency_sign(cur: Any) -> str:
+        """💱 „EUR“/leer -> „€“, sonst das Kürzel (z. B. „CHF“)."""
+        c = str(cur or "").strip()
+        return "€" if c.upper() in ("", "EUR", "€") else c
+
+    # ------------------------------------------------------------------ 📬 Angebote aus eigenen Automationen
+    EXT_MAX = 300  # je Quelle höchstens so viele Angebote merken
+
+    def report_offers(self, offers: list[dict[str, Any]], source: str | None = None,
+                      replace: bool = True, now: datetime | None = None) -> dict[str, Any]:
+        """📬 Dienst „angebote_melden“: eine eigene Automation (z. B. AppDaemon, REST, Scraper) meldet Angebote.
+        Die Karte zeigt sie wie die Marktguru-Angebote (🏷️ am Artikel, „🛒 Hier kaufen“).
+        Es geht dabei nichts ins Internet – die Liste nimmt nur an, was ihr geschickt wird."""
+        now = now or dt_util.utcnow()
+        src = re.sub(r"\s+", " ", str(source or "").strip())[:40] or "extern"
+        new: list[dict[str, Any]] = []
+        skipped = 0
+        for raw in offers or []:
+            name = re.sub(r"\s+", " ", str(raw.get("name") or "").strip())[:200]
+            price = raw.get("price")
+            if not name or price is None:
+                skipped += 1
+                continue
+            to = str(raw.get("valid_until") or "").strip()[:40] or None
+            end = self._parse_offer_dt(to, end_of_day=True) if to else None
+            if end is not None and end <= now:
+                skipped += 1  # schon vorbei
+                continue
+            frm = str(raw.get("valid_from") or "").strip()[:40] or None
+            reg = raw.get("regular_price")
+            store = str(raw.get("store") or "").strip()[:60] or src
+            title = str(raw.get("title") or "").strip()[:200] or name
+            off = {"n": name, "r": store, "p": round(float(price), 2), "from": frm, "to": to,
+                   "d": title, "q": (str(raw.get("description") or "").strip()[:200] or None), "img": None,
+                   "cur": (str(raw.get("currency") or "").strip().upper()[:5] or None), "src": src}
+            if reg is not None and float(reg) > off["p"]:
+                off["op"] = round(float(reg), 2)
+            key = f"{src}|{name.lower()}|{store.lower()}|{title.lower()}"
+            off["id"] = "ext-" + hashlib.sha1(key.encode()).hexdigest()[:12]
+            new.append(off)
+        if replace:
+            merged = {o["id"]: o for o in new}
+        else:
+            merged = {o["id"]: o for o in self.offers_ext.get(src, [])}
+            merged.update({o["id"]: o for o in new})
+        lst = list(merged.values())[-self.EXT_MAX:]
+        if lst:
+            self.offers_ext[src] = lst
+        else:
+            self.offers_ext.pop(src, None)
+        found = self._offers_ext_matched()
+        names = sorted({n for n, offs in found.items() if any(o.get("src") == src for o in offs)})
+        self._changed()
+        return {"source": src, "count": len(lst), "skipped": skipped, "matched": names}
+
+    def _ext_match(self, text: str, open_names: list[str]) -> str | None:
+        """Welcher offene Artikel passt zum gemeldeten Namen? Gleicher Name – sonst der längste Artikelname,
+        der als ganzes Wort darin steckt („1 Sack Äpfel · Aber nur Pink Lady“ -> „Äpfel“)."""
+        low = text.strip().lower()
+        if low in open_names:
+            return low
+        best = None
+        for n in open_names:
+            if len(n) < 3 or (best and len(n) <= len(best)):
+                continue
+            if re.search(r"(?<![\w])" + re.escape(n) + r"(?![\w])", low):
+                best = n
+        return best
+
+    def _offers_ext_matched(self, now: datetime | None = None) -> dict[str, list[dict[str, Any]]]:
+        """📬 Gemeldete Angebote -> {offener Artikelname klein: [Angebote]} (abgelaufene fallen weg)."""
+        if not self.offers_ext:
+            return {}
+        now = now or dt_util.utcnow()
+        open_names = sorted({i["name"].strip().lower() for i in self.items
+                             if not i["checked"] and not i.get("from_offer")})
+        out: dict[str, list[dict[str, Any]]] = {}
+        for lst in self.offers_ext.values():
+            for o in lst:
+                end = self._parse_offer_dt(o.get("to"), end_of_day=True) if o.get("to") else None
+                if end is not None and end <= now:
+                    continue
+                k = self._ext_match(o.get("n") or "", open_names)
+                if k:
+                    out.setdefault(k, []).append({x: v for x, v in o.items() if x != "n"})
+        return out
+
+    def _offers_merged(self) -> dict[str, list[dict[str, Any]]]:
+        """🏷️ Marktguru (nur wenn eingeschaltet) + 📬 gemeldete Angebote (immer – kommen aus dem eigenen Haus)."""
+        out = {k: list(v) for k, v in self.offers_data.items()} if (self.offers_cfg or {}).get("enabled") else {}
+        try:
+            for k, v in self._offers_ext_matched().items():
+                out.setdefault(k, []).extend(v)
+        except Exception:  # noqa: BLE001 – kaputte Meldung darf die Liste nie blockieren
+            _LOGGER.exception("Gemeldete Angebote konnten nicht zugeordnet werden")
+        return out
+
+    def prune_offers_ext(self, now: datetime | None = None) -> int:
+        """⌛ Abgelaufene gemeldete Angebote wegwerfen."""
+        now = now or dt_util.utcnow()
+        n = 0
+        for src in list(self.offers_ext):
+            keep = []
+            for o in self.offers_ext[src]:
+                end = self._parse_offer_dt(o.get("to"), end_of_day=True) if o.get("to") else None
+                if end is not None and end <= now:
+                    n += 1
+                else:
+                    keep.append(o)
+            if keep:
+                self.offers_ext[src] = keep
+            else:
+                del self.offers_ext[src]
+        if n:
+            self._changed()
+        return n
 
     def take_offer(self, offer: dict[str, Any], item_id: str | None = None, name: str | None = None,
                    store_id: str | None = None, by: str | None = None, by_id: str | None = None,
@@ -1046,6 +1169,8 @@ class EinkaufslisteManager:
                                 "added_by": original.get("added_by"), "added_by_id": original.get("added_by_id")}
         item["offer"] = {"to": offer.get("to"), "from": offer.get("from"), "r": offer.get("r"), "p": offer.get("p"),
                          "taken": _now_iso()}  # „taken“: ohne Enddatum zählen die 14 Tage ab hier
+        if offer.get("cur"):
+            item["offer"]["cur"] = offer["cur"]  # 💱 z. B. CHF
         self._log("update", item, f"Angebot {offer.get('r') or ''} {self.offer_note(offer)}".strip(), who=by)
         if original is not None and not original["checked"]:
             self.set_checked(original["id"], True, by, by_id)  # das eigentliche Produkt ist „erledigt“
@@ -2265,6 +2390,7 @@ class EinkaufslisteManager:
         self.typos.clear()
         self.cat_words.clear()
         self.offers_data.clear()
+        self.offers_ext.clear()
         self.missed_hidden.clear()
         self._changed()
         return {"items": removed_items, "products": removed_products}
@@ -4050,7 +4176,7 @@ class EinkaufslisteManager:
         self._restore_timers()
         self.expire_offers()
         self.expire_gone()  # ❌ verpasst (HA war aus)? Gleich nachholen
-        self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: (self.expire_offers(), self.expire_gone()), timedelta(hours=1))
+        self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: (self.expire_offers(), self.expire_gone(), self.prune_offers_ext()), timedelta(hours=1))
         self._schedule_cleanup()
         self._schedule_plan_reset()
         if self.plan_reset_on:  # 📅 verpasst (HA war aus)? Dann jetzt nachholen

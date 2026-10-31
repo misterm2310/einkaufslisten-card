@@ -300,6 +300,8 @@ In **⚙️ → Extras → Angebote** einschalten (nur Admins): Postleitzahl, au
 
 ⚠️ **Ehrlich gesagt:** Die Angebote kommen von **Marktguru**, aber **inoffiziell** – ohne Absprache mit Marktguru. Die Einkaufsliste öffnet dafür einfach die Marktguru-Webseite, so wie dein Browser es auch tut (im Code steht kein Zugangsschlüssel). Das kann **jederzeit ohne Vorwarnung aufhören** zu funktionieren; dann steht in ⚙️ „gerade nicht verfügbar“ und die Liste läuft normal weiter. Nachgeschaut werden nur die Namen offener Artikel und deine Postleitzahl. Standardmäßig ist das **aus**.
 
+📬 **Andere Länder oder eigene Quellen:** Mit der Aktion `einkaufsliste.angebote_melden` schickt deine eigene Automation Angebote an die Liste (siehe 🤖 Für Automationen).
+
 </details>
 
 <details><summary><b>⚠️ Rückruf-Warnung</b></summary>
@@ -356,7 +358,7 @@ Alles geht im visuellen Editor. Für YAML-Fans:
 | Sensor | Was zeigt er? |
 |---|---|
 | `sensor.einkaufsliste_offene_artikel` | alle offenen Artikel (Attribute `pro_geschaeft`, `artikel`, `abgehakt`, `naechstes_aufraeumen`) |
-| `sensor.einkaufsliste_<geschäft>` | **pro Geschäft** die offenen Artikel, Attribut `artikel` (Text) und `angebote` (nur Artikel mit laufendem Angebot: `artikel`, `preis`, `ab`, `bis`, `haendler` – z. B. für eigene Skripte) |
+| `sensor.einkaufsliste_<geschäft>` | **pro Geschäft** die offenen Artikel, Attribut `artikel` (Text) und `angebote` (nur Artikel mit laufendem Angebot: `artikel`, `preis`, `ab`, `bis`, `haendler`, `waehrung` – z. B. für eigene Skripte) |
 | `binary_sensor.einkaufsliste_etwas_zu_kaufen` | an, sobald etwas offen ist |
 | `binary_sensor.einkaufsliste_<geschäft>_offen` | **pro Geschäft**: an, solange es laut Öffnungszeiten offen hat (mit Filialen: sobald eine offen hat; Feiertage des gewählten Bundeslands zählen mit). Ohne eingetragene Zeiten „unbekannt“. Attribute `offen_bis`, `oeffnet` (z. B. „Montag 08:00“), `feiertag`, bei Filialen `filialen`. Wird jede Minute neu berechnet – z. B. „Erinnere mich, wenn Aldi in 30 Minuten zumacht“ |
 | `sensor.einkaufsliste_zuletzt_eingetragen` | letzter Artikel mit `von`, `wann`, `geschaeft` |
@@ -369,6 +371,7 @@ Alles geht im visuellen Editor. Für YAML-Fans:
 | `einkaufsliste.check_item` | Artikel abhaken (`name`, optional `store`) |
 | `einkaufsliste.remove_item` | Artikel löschen (`name`, optional `store`) |
 | `einkaufsliste.cleanup` | jetzt aufräumen, mit `force: true` alles abhaken |
+| `einkaufsliste.angebote_melden` | 📬 eigene Angebote an die Liste schicken (z. B. Schweiz, siehe unten) |
 
 Events: `einkaufsliste_item_added`, `einkaufsliste_item_bought` (beim Abhaken – jeder Artikel einzeln, mit `name`, `quantity`, `note`, `for_whom`, `store`, `category`, `recipe`, `added_by`, `bought_by`; ideal für eine eigene Automation, die den Artikel z. B. in ein Inventar schreibt), `einkaufsliste_cleanup`, `einkaufsliste_rueckruf` (⚠️ Rückruf-Warnung passt zu einem Einkauf: `title`, `link`, `date`, `products`, `brand`).
 
@@ -388,6 +391,47 @@ actions:
     data:
       message: "🛒 Bei Aldi stehen {{ states('sensor.einkaufsliste_aldi') }} Sachen auf der Liste"
 ```
+
+<details><summary><b>📬 Eigene Angebote melden (z. B. für die Schweiz)</b></summary>
+
+Die 🏷️ Angebote von Marktguru gibt es nur für Deutschland und Österreich. Hast du eine **eigene Quelle** (AppDaemon-Skript, REST-Sensor, Scraper …), schickt sie ihre Treffer mit der Aktion **`einkaufsliste.angebote_melden`** an die Liste. Die Karte zeigt sie dann genau wie die Marktguru-Angebote: **🏷️** am passenden Artikel, Preis, Normalpreis durchgestrichen, „gültig bis“ und **🛒 Hier kaufen**. Unten in der Liste steht „📬 Von deiner eigenen Automation gemeldet“.
+
+- **Pro Angebot:** `name` (Pflicht – der Artikel auf deiner Liste; Menge und Notiz dürfen drinstehen, z. B. „1 Sack Äpfel · Pink Lady“ passt zu „Äpfel“), `price` (Pflicht), optional `store`, `title` (Produktname im Angebot), `regular_price`, `valid_from`, `valid_until`, `description`, `currency` (z. B. `CHF`, ohne = €).
+- **`source`** (z. B. `denner`): Jede Quelle hat ihre eigenen Angebote. Standard **`replace: true`** = die neue Meldung ersetzt die alte dieser Quelle. Leere Liste = Quelle leeren. `replace: false` = dazulegen.
+- Abgelaufene Angebote fallen von selbst weg. Die Antwort der Aktion sagt, wie viele angekommen sind und zu welchen Artikeln sie passen.
+- 🔒 Die Liste fragt dafür **selbst nirgends** nach – sie nimmt nur an, was deine Automation schickt. Deshalb werden gemeldete Angebote auch bei „Datenschutz an“ gezeigt.
+
+```yaml
+alias: Denner-Angebote an die Einkaufsliste
+description: Schickt die Treffer meines Denner-Sensors als Angebote an die Einkaufsliste.
+triggers:
+  - trigger: state
+    entity_id: sensor.denner_treffer
+actions:
+  - action: einkaufsliste.angebote_melden
+    continue_on_error: true
+    data:
+      source: denner
+      offers:
+        - name: "{{ state_attr('sensor.denner_treffer', 'artikel') }}"
+          store: Denner
+          title: "{{ state_attr('sensor.denner_treffer', 'productName') }}"
+          price: "{{ state_attr('sensor.denner_treffer', 'price_current') }}"
+          regular_price: "{{ state_attr('sensor.denner_treffer', 'price_regular') }}"
+          valid_until: "{{ state_attr('sensor.denner_treffer', 'validUntil') }}"
+          currency: CHF
+```
+
+Aus **AppDaemon** geht es direkt, mit beliebig vielen Treffern auf einmal:
+
+```python
+self.call_service("einkaufsliste/angebote_melden", source="denner", offers=[
+    {"name": "Äpfel", "store": "Denner", "title": "Pink Lady 1 kg", "price": 2.95,
+     "regular_price": 3.95, "valid_until": "2026-11-07", "currency": "CHF"},
+])
+```
+
+</details>
 
 <details><summary><b>⏲️ Kochtimer im Dashboard und per Ansage</b></summary>
 

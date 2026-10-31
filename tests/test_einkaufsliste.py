@@ -1952,7 +1952,7 @@ async def test_store_sensor_offers_attribute(hass: HomeAssistant, setup) -> None
     await hass.async_block_till_done()
     st = hass.states.get("sensor.einkaufsliste_aldi")
     assert st.state == "2" and "2 L Milch" in st.attributes["artikel"] and any("Dinkelbrötchen" in x for x in st.attributes["artikel"])
-    assert st.attributes["angebote"] == [{"artikel": "Dinkelbrötchen", "preis": 1.99, "ab": "2099-01-05", "bis": "2099-01-10", "haendler": "Aldi"}]
+    assert st.attributes["angebote"] == [{"artikel": "Dinkelbrötchen", "preis": 1.99, "ab": "2099-01-05", "bis": "2099-01-10", "haendler": "Aldi", "waehrung": "EUR"}]
 
 
 async def test_pin_typos_and_brackets(hass: HomeAssistant, setup, hass_ws_client) -> None:
@@ -4789,3 +4789,52 @@ async def test_war_nicht_da(hass, setup, hass_ws_client) -> None:
     it2 = m.add_item("Kokosmilch", store_id=aldi)
     m.mark_gone(it2["id"])
     assert m.as_dict()["missed"].get(f"kokosmilch|{aldi}", 0) >= 2
+
+
+async def test_angebote_melden(hass, setup) -> None:
+    """📬 Dienst „angebote_melden“: eigene Automation meldet Angebote (z. B. Denner, CHF) – die Karte zeigt sie am Artikel."""
+    m = mgr(hass)
+    apfel = m.add_item("Äpfel")
+    m.add_item("Milch")
+    future = (dt_util.now() + timedelta(days=3)).date().isoformat()
+    past = (dt_util.now() - timedelta(days=2)).date().isoformat()
+    res = await hass.services.async_call(
+        DOMAIN, "angebote_melden",
+        {"source": "denner", "offers": [
+            {"name": "1 Sack Äpfel · Aber nur Pink Lady", "store": "Denner", "title": "Pink Lady 1 kg",
+             "price": "2,95", "regular_price": "3.95", "valid_until": future, "currency": "CHF"},
+            {"name": "Milchschokolade", "store": "Denner", "price": 1.5, "valid_until": future},  # passt nicht zu „Milch“
+            {"name": "Butter", "store": "Denner", "price": 2, "valid_until": past},  # schon vorbei
+            {"name": "None", "price": "None"},  # leere Vorlage
+        ]},
+        blocking=True, return_response=True,
+    )
+    assert res["count"] == 2 and res["skipped"] == 2 and res["matched"] == ["äpfel"]
+    offers = m.as_dict()["offers"]  # Marktguru ist aus – gemeldete Angebote kommen trotzdem
+    assert list(offers) == ["äpfel"]
+    o = offers["äpfel"][0]
+    assert o["r"] == "Denner" and o["p"] == 2.95 and o["op"] == 3.95 and o["cur"] == "CHF" and o["src"] == "denner"
+    assert o["d"] == "Pink Lady 1 kg" and o["id"].startswith("ext-") and "n" not in o
+    # 🛒 übernehmen: Währung bleibt dran
+    item = m.take_offer(o, apfel["id"], store_id=m.find_store("Aldi"))
+    assert item["offer"]["cur"] == "CHF" and "CHF" in m.offer_note(item["offer"])
+    # Ersetzen: neue Meldung ersetzt die alte dieser Quelle, andere Quellen bleiben
+    m.add_item("Birnen")
+    await hass.services.async_call(DOMAIN, "angebote_melden",
+                                   {"source": "coop", "offers": [{"name": "Birnen", "price": 3}]}, blocking=True)
+    await hass.services.async_call(DOMAIN, "angebote_melden",
+                                   {"source": "denner", "offers": []}, blocking=True)
+    assert set(m.offers_ext) == {"coop"} and list(m.as_dict()["offers"]) == ["birnen"]
+    # Dazulegen statt ersetzen
+    await hass.services.async_call(DOMAIN, "angebote_melden",
+                                   {"source": "coop", "replace": False,
+                                    "offers": [{"name": "Birnen", "store": "Coop City", "price": 2.5}]}, blocking=True)
+    assert len(m.offers_ext["coop"]) == 2
+    # ⌛ abgelaufen fällt weg
+    m.offers_ext["coop"][0]["to"] = past
+    assert m.prune_offers_ext() == 1 and len(m.offers_ext["coop"]) == 1
+    # Datenschutz an: gemeldete Angebote bleiben sichtbar (kommen aus dem eigenen Haus)
+    m.set_privacy(True)
+    assert "birnen" in m.as_dict()["offers"]
+    # Werte überleben einen Neustart (gespeichert)
+    assert m._to_storage()["offers_ext"]["coop"]

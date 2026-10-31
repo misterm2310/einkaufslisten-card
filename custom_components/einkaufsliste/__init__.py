@@ -51,6 +51,43 @@ SCHEMA_BY_NAME = vol.Schema(
 SCHEMA_RECIPE = vol.Schema(
     {vol.Required("name"): cv.string, vol.Optional("added_by"): cv.string}
 )
+_EMPTY = ("", "none", "null", "unknown", "unavailable")  # leere Vorlagen-Werte wie {{ none }}
+
+
+def _num(value):
+    """„1,95“, "1.95" oder 1.95 -> 1.95 (leer = None)."""
+    if value is None or (isinstance(value, str) and value.strip().lower() in _EMPTY):
+        return None
+    if isinstance(value, str):
+        value = value.strip().replace("CHF", "").replace("€", "").replace(",", ".").strip()
+    return float(value)
+
+
+def _txt(value):
+    return None if value is None or str(value).strip().lower() in _EMPTY else str(value)
+
+
+SCHEMA_OFFER = vol.Schema(
+    {
+        vol.Required("name"): vol.Any(None, _txt),
+        vol.Required("price"): _num,
+        vol.Optional("store"): vol.Any(None, _txt),
+        vol.Optional("title"): vol.Any(None, _txt),
+        vol.Optional("regular_price"): vol.Any(None, _num),
+        vol.Optional("valid_from"): vol.Any(None, _txt),
+        vol.Optional("valid_until"): vol.Any(None, _txt),
+        vol.Optional("description"): vol.Any(None, _txt),
+        vol.Optional("currency"): vol.Any(None, _txt),
+    },
+    extra=vol.REMOVE_EXTRA,
+)
+SCHEMA_REPORT_OFFERS = vol.Schema(
+    {
+        vol.Required("offers"): vol.All(cv.ensure_list, [SCHEMA_OFFER]),
+        vol.Optional("source", default="extern"): cv.string,
+        vol.Optional("replace", default=True): cv.boolean,
+    }
+)
 SCHEMA_CLEANUP = vol.Schema(
     {
         vol.Optional("force", default=False): cv.boolean,
@@ -204,6 +241,22 @@ def _register_services(hass: HomeAssistant) -> None:
         "add_recipe",
         add_recipe,
         SCHEMA_RECIPE,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    async def report_offers(call: ServiceCall) -> ServiceResponse:
+        """📬 Angebote aus einer eigenen Automation annehmen (nichts geht ins Internet)."""
+        try:
+            return _get_manager(hass).report_offers(
+                call.data["offers"], call.data.get("source"), call.data["replace"]
+            )
+        except (ValueError, TypeError) as err:
+            raise HomeAssistantError(str(err)) from err
+
+    hass.services.async_register(
+        DOMAIN,
+        "angebote_melden",
+        report_offers,
+        SCHEMA_REPORT_OFFERS,
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(
