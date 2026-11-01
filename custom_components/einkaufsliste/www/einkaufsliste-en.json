@@ -2410,5 +2410,11 @@
 "Automatisch abgehakt am {} um {}": "Checked off automatically on {0} at {1}",
 "Automatisch abgehakt": "Checked off automatically",
 "📬 Von deiner eigenen Automation gemeldet": "📬 Reported by your own automation",
-"🔗 Zum Angebot": "🔗 To the offer"
+"🔗 Zum Angebot": "🔗 To the offer",
+"✔️ Bereich „Erledigt“": "✔️ “Done” section",
+"unten, was schon gekauft ist – die Vorschläge beim Eintippen kennen es trotzdem": "at the bottom, what was already bought – suggestions while typing still know it",
+"📂 „Erledigt“ startet aufgeklappt": "📂 “Done” starts unfolded",
+"aus = eingeklappt, Antippen klappt auf (das Gerät merkt es sich)": "off = folded, tapping unfolds it (the device remembers)",
+"Der Bereich „Erledigt“ ganz unten: ganz ausblenden oder eingeklappt starten. Gilt auch in der Offline-App.": "The “Done” section at the very bottom: hide it completely or let it start folded. Also applies in the offline app.",
+"Erledigt": "Done"
 }

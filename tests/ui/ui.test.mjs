@@ -591,6 +591,31 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
 check("Link zum Angebot: „🔗 Zum Angebot“ im Fenster (nur https, neues Fenster)", r.win.n === 1 && r.win.href === "https://www.coop.ch/de/p/4922122" && r.win.target === "_blank" && /noopener/.test(r.win.rel || "") && /Zum Angebot/.test(r.win.txt || ""), JSON.stringify(r));
 check("Link zum Angebot: kleines 🔗 am Artikel, Tippen hakt nicht ab", r.item.has && r.item.href === "https://www.coop.ch/de/p/4922122" && r.stillOpen && !r.sent.some((t)=>/check|toggle/.test(t)), JSON.stringify(r));
 
+// 34) ✔️ „Erledigt“: unter 👁️ Ansicht ausblenden / eingeklappt starten, Gerät merkt sich Auf/Zu
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const q=(x)=>c.shadowRoot.querySelector(x);
+  const it=c._data.items.find((i)=>!i.checked); const keep={ checked:it.checked, checked_at:it.checked_at, checked_by:it.checked_by };
+  it.checked=true; it.checked_at=new Date(Date.now()-864e5).toISOString(); c._tab="all"; c._view="list";
+  const vp=c._data.settings.view_prefs||{}; const keepAll=vp._all; const setAll=(x)=>{ c._data.settings.view_prefs={ ...vp, _all:{ ...(keepAll||{}), ...x } }; c._viewKey=null; };
+  try { localStorage.removeItem("einkaufsliste_done_open"); } catch (_) {}
+  const head=()=>q(".donebox:not(.justbox) .donehead");
+  c._doneOpen=null; c._renderAll(); await new Promise(r=>setTimeout(r,40)); const std={ there:!!head(), open:head()?.getAttribute("aria-expanded") };
+  setAll({ done_open:false }); c._doneOpen=null; c._renderList(); await new Promise(r=>setTimeout(r,30)); const folded=head()?.getAttribute("aria-expanded");
+  head()?.click(); await new Promise(r=>setTimeout(r,30)); let saved=null; try { saved=localStorage.getItem("einkaufsliste_done_open"); } catch (_) {}
+  c._doneOpen=null; c._renderList(); await new Promise(r=>setTimeout(r,30)); const remembered=head()?.getAttribute("aria-expanded"); // wie nach dem Neuladen
+  setAll({ done:false }); c._renderList(); await new Promise(r=>setTimeout(r,30)); const hidden=!head();
+  // Einstellungs-Seite: eigener Aufklapper „Erledigt“ mit zwei Häkchen
+  const tmp=document.createElement("div"); tmp.innerHTML=c._viewHtml(); const keys=[...tmp.querySelectorAll('[data-act="view-toggle"]')].map((b)=>b.dataset.key);
+  const page={ done:keys.includes("done"), open:keys.includes("done_open"), title:/Erledigt/.test(tmp.textContent||"") };
+  c._data.settings.view_prefs={ ...vp }; if (keepAll===undefined) delete c._data.settings.view_prefs._all; c._viewKey=null;
+  try { localStorage.removeItem("einkaufsliste_done_open"); } catch (_) {}
+  Object.assign(it, keep); c._doneOpen=null; c._renderAll();
+  return { std, folded, saved, remembered, hidden, page }; });
+check("Erledigt: Standard sichtbar und offen", r.std.there && r.std.open === "true", JSON.stringify(r));
+check("Erledigt: „startet aufgeklappt“ aus = eingeklappt", r.folded === "false", JSON.stringify(r));
+check("Erledigt: Antippen merkt sich das Gerät (auch nach Neuladen)", r.saved === "1" && r.remembered === "true", JSON.stringify(r));
+check("Erledigt: Bereich ganz ausblendbar", r.hidden, JSON.stringify(r));
+check("Erledigt: eigener Aufklapper unter 👁️ Ansicht mit beiden Häkchen", r.page.done && r.page.open && r.page.title, JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

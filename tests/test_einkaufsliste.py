@@ -4860,3 +4860,10 @@ async def test_angebote_melden_link(hass, setup) -> None:
     assert item["offer"]["url"] == "https://www.coop.ch/de/weine/p/4922122"
     bad = m.take_offer({"p": 1, "r": "X", "url": "http://unsicher.example"}, name="Kiwi")
     assert "url" not in bad["offer"]
+
+
+def test_view_prefs_erledigt() -> None:
+    """✔️ „Erledigt“ ausblenden / eingeklappt starten wird gespeichert (für alle und pro Benutzer)."""
+    from custom_components.einkaufsliste.manager import _clean_view
+
+    assert _clean_view({"done": False, "done_open": 0, "quatsch": True}) == {"done": False, "done_open": False}

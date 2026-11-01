@@ -311,6 +311,7 @@ VIEW_KEYS = (
     "qty", "note", "own_note", "for_whom", "added_by", "added_at", "checked_by", "cleanup", "store",
     "recipe", "barcode", "photo", "fav", "offer", "out", "gone", "move", "new", "cat_color",
     "tabs", "in_name", "in_store", "in_cat", "in_icons",  # 🧩 Leiste/Eingabe-Felder oben (an/aus)
+    "done", "done_open",  # ✔️ Bereich „Erledigt“ zeigen / aufgeklappt starten (Standard beides an)
     "anim",  # ✔️ Abhak-Animation – pro Benutzer (Standard an)
     "greet",  # 👋 Gruß in der Leiste oben – pro Benutzer (Standard an)
     "plan",  # 📅 Essensplan bei den Rezepten – pro Benutzer (Standard an)

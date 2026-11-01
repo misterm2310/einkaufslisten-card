@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.12";
+const EL_VERSION = "2.76.24-beta.13";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -194,7 +194,7 @@ const EL_GUIDE = [
       "<b>🏷️ Beschriftungen:</b> Text unter den Icons – nur für dich an oder aus. Ohne eigene Wahl gilt ⚙️ → Ansicht → Beschriftungen.",
       "<b>✔️ Animation beim Abhaken:</b> nur für dich aus- oder einschaltbar. Aus = die Zeile verschwindet sofort.",
       "<b>🔠 Schriftgröße:</b> Kleiner · Standard · Größer.",
-      "<b>Beim Artikel</b> blendest du Menge, Notizen, Für wen, Datum, Foto, Stern und mehr aus. <b>Oben &amp; beim Eintragen</b> auch die Geschäfte-Leiste, das Eingabefeld, die Geschäft- und Kategorie-Auswahl und die Icon-Leiste.",
+      "<b>Beim Artikel</b> blendest du Menge, Notizen, Für wen, Datum, Foto, Stern und mehr aus. <b>Oben &amp; beim Eintragen</b> auch die Geschäfte-Leiste, das Eingabefeld, die Geschäft- und Kategorie-Auswahl und die Icon-Leiste. Bei <b>Erledigt</b> blendest du den Bereich unten ganz aus oder lässt ihn eingeklappt starten – auch in der Offline-App.",
       "Was du nicht änderst, kommt von „Für alle“ (⚙️ → Listenansicht, nur mit Zugang zum Zahnrad).",
     ],
     en: [
@@ -202,7 +202,7 @@ const EL_GUIDE = [
       "<b>🏷️ Labels:</b> text under the icons – on or off just for you. Without your own choice ⚙️ → View → Labels applies.",
       "<b>✔️ Tick-off animation:</b> can be switched on or off just for you. Off = the row disappears at once.",
       "<b>🔠 Font size:</b> Smaller · Standard · Larger.",
-      "<b>On the item</b> you hide quantity, notes, for whom, date, photo, star and more. <b>Top &amp; adding</b> also the store bar, the input field, the store and category choice and the icon bar.",
+      "<b>On the item</b> you hide quantity, notes, for whom, date, photo, star and more. <b>Top &amp; adding</b> also the store bar, the input field, the store and category choice and the icon bar. Under <b>Done</b> you hide the section at the bottom completely or let it start folded – also in the offline app.",
       "Whatever you do not change comes from “For everyone” (⚙️ → List view, only with access to the gear).",
     ] },
   { id: "signs", icon: "🛒", c: "#8e24aa", t: ["Die Zeichen oben", "The symbols at the top"], s: ["Leiste, Wagen, Zahnrad, neue Version", "Bar, cart, gear, new version"],
@@ -468,6 +468,9 @@ const EL_BETA_NEWS = [
   ["🔗 <b>Link zum Angebot:</b> Gemeldete Angebote (Aktion <code>einkaufsliste.angebote_melden</code>) dürfen jetzt einen Link zur Produktseite mitbringen (<code>url</code>). Im Angebots-Fenster steht dann „🔗 Zum Angebot“, und nach „🛒 Hier kaufen“ bleibt am Artikel ein kleines 🔗.",
    "🔗 <b>Link to the offer:</b> reported offers (action <code>einkaufsliste.angebote_melden</code>) can now bring a link to the product page (<code>url</code>). The offer window then shows “🔗 To the offer”, and after “🛒 Buy here” a small 🔗 stays at the item.",
    "beta.12"],
+  ["✔️ <b>„Erledigt“ einklappen oder ausblenden:</b> Unter 👁️ Ansicht → Erledigt kannst du den Bereich unten ganz ausblenden oder eingeklappt starten lassen – auch in der Offline-App. Wer „Erledigt“ antippt, dessen Gerät merkt sich jetzt, ob es auf oder zu war.",
+   "✔️ <b>Fold or hide “Done”:</b> under 👁️ View → Done you can hide the section at the bottom completely or let it start folded – also in the offline app. When you tap “Done”, your device now remembers whether it was open or closed.",
+   "beta.13"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -615,7 +618,11 @@ const VIEW_OPTS = [
   ["in_store", "🏪 Geschäft-Auswahl beim Eintragen", ""],
   ["in_cat", "🗂️ Kategorie-Auswahl beim Eintragen", ""],
   ["in_icons", "🧰 Icon-Leiste unter dem Eingabefeld", "Menge, Notiz, Foto, Favoriten …"],
+  ["done", "✔️ Bereich „Erledigt“", "unten, was schon gekauft ist – die Vorschläge beim Eintippen kennen es trotzdem"],
+  ["done_open", "📂 „Erledigt“ startet aufgeklappt", "aus = eingeklappt, Antippen klappt auf (das Gerät merkt es sich)"],
 ];
+const EL_DONE_KEY = "einkaufsliste_done_open"; // ✔️ auf diesem Gerät zuletzt auf-/zugeklappt
+const VIEW_TOP_N = 24; // Einträge ab hier gehören zu „Erledigt“
 // 🎨 Schrift auf einer Farbe: dunkel auf hellen Farben (Gelb, Hellgrün), sonst weiß
 function elTextOn(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
@@ -4321,7 +4328,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._view = "list"; // list | recipes | recipe | settings
     this._editing = null;
     this._draft = null;
-    this._doneOpen = true;
+    this._doneOpen = null; // ✔️ „Erledigt“ auf/zu – null = vom Gerät gemerkt oder aus 👁️ Ansicht
     this._openDoneCats = new Set(); // aufgeklappte Kategorien bei „Erledigt“
     this._pending = new Set();
     this._picker = null; // welches Icon-Feld gerade sucht
@@ -5921,6 +5928,16 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 👁️ Was soll beim Artikel zu sehen sein? Standard (alles an) ← „für alle“ ← „nur für mich“
+  // ✔️ „Erledigt“ aufgeklappt? Zuletzt auf diesem Gerät angetippt – sonst die Wahl aus 👁️ Ansicht (Standard: auf)
+  _doneIsOpen() {
+    if (this._doneOpen === null) {
+      let saved = null;
+      try { saved = localStorage.getItem(EL_DONE_KEY); } catch (_) { /* egal */ }
+      this._doneOpen = saved === "1" ? true : saved === "0" ? false : this._viewPrefs().done_open !== false;
+    }
+    return this._doneOpen;
+  }
+
   _viewPrefs() {
     const all = this._data?.settings?.view_prefs || {};
     const me = this._hass?.user?.id;
@@ -6341,11 +6358,11 @@ class EinkaufslisteCard extends HTMLElement {
           ${just.map((i) => `<div class="jrow"><div class="jmain">${row(i)}</div><button type="button" class="btn jback" data-act="just-back" data-jid="${esc(i.id)}" title="Zurück auf die Liste" aria-label="Zurück auf die Liste"><ha-icon icon="mdi:undo"></ha-icon></button></div>`).join("")}
         </div>`);
       }
-    } else if (this._config.show_checked && (done.length || filter)) {
+    } else if (this._config.show_checked && this._viewPrefs().done !== false && (done.length || filter)) {
       const total = allView ? this._groupStores(items.filter((i) => i.checked)).length : items.filter((i) => i.checked).length;
       html.push(`<div class="group donebox">
-        <div class="ghead donehead ${this._doneOpen || filter ? "" : "closed"}" role="button" tabindex="0" aria-expanded="${this._doneOpen || filter ? "true" : "false"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
-        ${this._doneOpen || filter ? `<div class="donehint">Nach rechts wischen ↩ (oder auf den Kreis tippen), um es wieder auf die Liste zu nehmen.</div>${
+        <div class="ghead donehead ${this._doneIsOpen() || filter ? "" : "closed"}" role="button" tabindex="0" aria-expanded="${this._doneIsOpen() || filter ? "true" : "false"}" data-act="toggle-done"><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon>Erledigt – schon mal gekauft<span class="n">${filter ? `${done.length} / ` : ""}${total}</span></div>
+        ${this._doneIsOpen() || filter ? `<div class="donehint">Nach rechts wischen ↩ (oder auf den Kreis tippen), um es wieder auf die Liste zu nehmen.</div>${
           done.length ? this._groupedHtml(done, row, byName, true, !!filter) : `<div class="donehint">Nichts gefunden zu „${esc(filter)}“.</div>`}` : ""}
       </div>`);
     }
@@ -7433,7 +7450,7 @@ ${(() => {
     const row = ([k, label, sub]) => `<button class="lrow viewrow" data-act="view-toggle" data-scope="${scope}" data-key="${k}" aria-pressed="${cur[k] !== false}">
           <ha-icon icon="${cur[k] !== false ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline"}"></ha-icon>
           <span class="grow"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span></button>`;
-    const top = VIEW_OPTS.slice(VIEW_ITEM_N), item = VIEW_OPTS.slice(0, VIEW_ITEM_N);
+    const top = VIEW_OPTS.slice(VIEW_ITEM_N, VIEW_TOP_N), item = VIEW_OPTS.slice(0, VIEW_ITEM_N), doneOpts = VIEW_OPTS.slice(VIEW_TOP_N);
     const cnt = (list) => `${list.filter(([k]) => cur[k] !== false).length} von ${list.length} an`;
     const labOn = cur.labels !== undefined ? !!cur.labels : !!this._data?.settings?.labels;
     const animOn = cur.anim !== false;
@@ -7458,6 +7475,7 @@ ${(() => {
         ${this._acc(g, "font", "mdi:format-size", "#1e88e5", "Schriftgröße", { s: "Kleiner", m: "Standard", l: "Größer" }[cur.font || "m"], `
         <div class="fontrow">${[["s", "Kleiner"], ["m", "Standard"], ["l", "Größer"]].map(([f, t]) => `<button class="btn ${(cur.font || "m") === f ? "primary" : ""}" data-act="view-font" data-scope="${scope}" data-font="${f}" aria-pressed="${(cur.font || "m") === f}">${t}</button>`).join("")}</div>`)}
         ${this._acc(g, "top", "mdi:view-dashboard-outline", "#8e24aa", "Oben & beim Eintragen", cnt(top), `<p class="hint">Was du nicht brauchst, blendest du aus.</p>${top.map(row).join("")}`)}
+        ${this._acc(g, "done", "mdi:check-circle-outline", "#43a047", "Erledigt", cnt(doneOpts), `<p class="hint">Der Bereich „Erledigt“ ganz unten: ganz ausblenden oder eingeklappt starten. Gilt auch in der Offline-App.</p>${doneOpts.map(row).join("")}`)}
         ${this._acc(g, "item", "mdi:eye-outline", "#fb8c00", "Beim Artikel", cnt(item), item.map(row).join(""))}
         </div>
         <div class="btnrow">${mine
@@ -13217,6 +13235,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         const prefs = { ...(mine ? (me && all[me]) || {} : all._all || {}) };
         const shown = mine ? this._viewPrefs() : { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
         prefs[el.dataset.key] = shown[el.dataset.key] === false;
+        if (el.dataset.key === "done_open") { this._doneOpen = null; try { localStorage.removeItem(EL_DONE_KEY); } catch (_) { /* egal */ } } // neue Wahl gilt sofort
         this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })
           .then(() => setTimeout(() => { if (mine) this._renderMyView(); else this._renderSettings(); }, 150)).catch(() => {});
         break;
@@ -13868,7 +13887,8 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._printPage();
         break;
       case "toggle-done":
-        this._doneOpen = !this._doneOpen;
+        this._doneOpen = !this._doneIsOpen();
+        try { localStorage.setItem(EL_DONE_KEY, this._doneOpen ? "1" : "0"); } catch (_) { /* privater Modus: dann nur bis zum Neuladen */ }
         this._renderList();
         break;
       case "store-sel":
