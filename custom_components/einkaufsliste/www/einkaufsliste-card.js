@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.24-beta.13";
+const EL_VERSION = "2.76.24";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.23"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.24"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -413,65 +413,7 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [
-  ["📦 <b>Produktkatalog:</b> Was du beim Bearbeiten eines Produkts schon getippt hast (Notiz, Spitznamen, Geschäft, Kategorie …), bleibt jetzt stehen, wenn du ein Foto oder einen Barcode dazunimmst. · 🔎 Ein neues Produkt steht danach im Suchfeld und ist gleich offen zum Ausfüllen; ein Suchtext wird beim ➕ als Name vorgeschlagen.",
-   "📦 <b>Product catalogue:</b> what you already typed while editing a product (note, nicknames, store, category …) now stays when you add a photo or a barcode. · 🔎 A new product then shows in the search field and is open right away; a search text is suggested as the name for ➕.",
-   "beta.1"],
-  ["📱 <b>Ältere iPhones:</b> Die Karte lädt wieder auf iOS 15 (z. B. iPhone 7). Zwei Suchmuster, die Safari dort nicht kannte, sind umgebaut.",
-   "📱 <b>Older iPhones:</b> the card loads again on iOS 15 (e.g. iPhone 7). Two search patterns that Safari did not know there have been rewritten.",
-   "beta.2"],
-  ["👨‍🍳 <b>Kochmütze:</b> Ein oranger Punkt zeigt, wie viele Rezept-Vorschläge auf dein OK warten.",
-   "👨‍🍳 <b>Chef hat:</b> an orange dot shows how many recipe proposals are waiting for your OK.",
-   "beta.3"],
-  ["ℹ️ <b>Steckbrief pro Geschäft:</b> Adresse, Telefon, Webseite und eigene Tipps. Reiter gedrückt halten, im Öffnungszeiten-Fenster das ℹ️ neben dem Namen antippen. · 🎨 Bekannte Ketten bekommen beim Anlegen gleich ihre Logo-Farbe.",
-   "ℹ️ <b>Store profile:</b> address, phone, website and your own tips. Press and hold the tab, then tap the ℹ️ next to the name in the opening-hours window. · 🎨 Well-known chains get their logo colour right away when you add them.",
-   "beta.3"],
-  ["📤 <b>Drucken & Teilen:</b> Unter der Liste: drucken (bei einem Geschäft mit Adresse und Öffnungszeiten oben) oder 📱 QR-Code, den ein anderes Handy mit der Kamera als Text liest.",
-   "📤 <b>Print & share:</b> below the list: print (for one store with its address and opening hours at the top) or 📱 a QR code another phone reads as text with its camera.",
-   "beta.3"],
-  ["🔁 <b>Umbenennen:</b> Katalog, Verlauf, Foto und Barcode ziehen mit. Steht das Produkt auch in einem Rezept oder bei den Favoriten, fragt die Karte „Überall“ oder „Nur hier“. · 🧠 Zwei Produkte mit demselben Wort in eine Kategorie verschoben? Dann landen auch neue mit diesem Wort dort.",
-   "🔁 <b>Renaming:</b> catalogue, history, photo and barcode follow. If the product is also in a recipe or in the favourites, the card asks “everywhere” or “only here”. · 🧠 Moved two products with the same word into a category? New ones with that word land there too.",
-   "beta.3"],
-  ["🕒 <b>Neuer Sensor pro Geschäft:</b> binary_sensor.einkaufsliste_&lt;geschäft&gt;_offen – an, solange es offen hat (für eigene Automationen). · 🧘 Ruhiger Modus unter 👁️ Ansicht. · ⌨️ Fenster lassen sich mit Tab, Enter und Esc bedienen.",
-   "🕒 <b>New sensor per store:</b> binary_sensor.einkaufsliste_&lt;store&gt;_offen – on while it is open (for your own automations). · 🧘 Calm mode under 👁️ View. · ⌨️ Windows work with Tab, Enter and Esc.",
-   "beta.3"],
-  ["⚡ <b>Schneller:</b> Ein Artikel aus „Erledigt“ steht sofort wieder auf der Liste. · 🛒 Der Einkaufswagen oben schiebt die Liste nicht mehr nach oben.",
-   "⚡ <b>Faster:</b> an item taken back from “Done” is on the list again at once. · 🛒 The cart at the top no longer pushes the list up.",
-   "beta.3"],
-  ["📱 <b>QR-Code:</b> Jetzt kommen immer alle Artikel mit. Lange Listen bekommen mehrere Codes („Teil 1 von 2“).",
-   "📱 <b>QR code:</b> all items are always included now. Long lists get several codes (“Part 1 of 2”).",
-   "beta.4"],
-  ["🏬 <b>Filialen:</b> In ⚙️ → Geschäfte heißt es jetzt „Filialen ändern“. Jede Filiale hat eigene Adresse, Telefon und Zeiten in einem Block. · 📂 Kategorien in der Liste lassen sich mit einem Tipp auf den Kopf einklappen (am Anfang sind alle offen).",
-   "🏬 <b>Branches:</b> in ⚙️ → Stores it is now called “Edit branches”. Each branch has its own address, phone and times in one block. · 📂 Categories in the list can be collapsed by tapping their header (all are open at the start).",
-   "beta.4"],
-  ["🏬 <b>Filialen:</b> Jede Filiale ist jetzt eine kurze Zeile. ✏️ Bearbeiten öffnet ein eigenes Fenster (wie bei Rezepten) mit Name, Adresse, Telefon, 💡 Tipps und Öffnungszeiten – gespeichert wird erst mit „Speichern“. Die Webseite bleibt beim Geschäft.",
-   "🏬 <b>Branches:</b> each branch is now one short row. ✏️ Edit opens a window of its own (like recipes) with name, address, phone, 💡 tips and opening hours – nothing is stored until “Save”. The website stays with the store.",
-   "beta.5"],
-  ["📄 <b>PDF:</b> In „Drucken & Teilen“ gibt es jetzt eine echte PDF-Datei. Auf iPhone und iPad heißt der Knopf „PDF drucken / teilen“: Das Teilen-Menü öffnet sich, dort geht „Drucken“ per AirPrint.",
-   "📄 <b>PDF:</b> “Print & share” now makes a real PDF file. On iPhone and iPad the button is called “Print / share PDF”: the share sheet opens, and “Print” works there via AirPrint.",
-   "beta.6"],
-  ["📱 <b>Offline-App:</b> Eigenes Anmeldefenster (Benutzer, Passwort, 2-Faktor-Code) – gleiche Home-Assistant-Anmeldung, gleiche Rechte. Alle Dateien liegen jetzt unter /einkaufsliste/, hinter einem Reverse Proxy reichen /einkaufsliste/*, /auth/* und /api/*.",
-   "📱 <b>Offline app:</b> its own login window (user, password, two-factor code) – same Home Assistant login, same rights. All files are now under /einkaufsliste/, behind a reverse proxy /einkaufsliste/*, /auth/* and /api/* are enough.",
-   "beta.7"],
-  ["❌ <b>War nicht da:</b> Im ⇄-Fenster am Artikel gibt es den Knopf „War nicht da“. Der Artikel bleibt 2 Tage grau mit „❌ war nicht da“ für alle sichtbar und wird dann ohne Kauf abgehakt – unter „Erledigt“ mit ❌ statt ✔, er zählt nicht als gekauft. Abschalten unter ⚙️ → Listenansicht → Beim Artikel. · 🔨 <b>Nicht unter „Alle“ zeigen:</b> neuer Schalter pro Geschäft (⚙️ → Geschäfte), z. B. für den Baumarkt – die Sachen stehen dann nur im eigenen Reiter. · 📅 „Abgehakt von“ zeigt jetzt auch Tag und Uhrzeit.",
-   "❌ <b>Wasn't there:</b> the ⇄ window on an item has a “Wasn't there” button. The item stays greyed out with “❌ wasn't there” for everyone for 2 days and is then checked off without buying – under “Done” with ❌ instead of ✔, it does not count as bought. Turn it off under ⚙️ → List view → On the item. · 🔨 <b>Don't show under “All”:</b> new switch per store (⚙️ → Stores), e.g. for the hardware store – its items then only show in its own tab. · 📅 “Checked off by” now also shows day and time.",
-   "beta.8"],
-  ["📖 <b>Rezept vorschlagen</b> hat ein neues Symbol: ein Buch mit Plus statt der Glühbirne (die steht ja schon für Tipps und „Bildschirm immer an“).",
-   "📖 <b>Suggest a recipe</b> has a new icon: a book with a plus instead of the light bulb (which already stands for tips and “keep screen on”).",
-   "beta.9"],
-  ["📖 <b>Anleitung aufgefrischt:</b> Neu drin sind ❌ War nicht da, 🔨 Nicht unter „Alle“, 🏬 Filialen ändern, 📤 Drucken & Teilen und 📖 Rezept vorschlagen. Lange Punkte sind kürzer.",
-   "📖 <b>Guide refreshed:</b> now covers ❌ Wasn't there, 🔨 Not under “All”, 🏬 Edit branches, 📤 Print & share and 📖 Suggest a recipe. Long points are shorter.",
-   "beta.10"],
-  ["📬 <b>Angebote melden:</b> Neue Aktion <code>einkaufsliste.angebote_melden</code> – eine eigene Automation (z. B. AppDaemon) schickt Angebote an die Liste, etwa aus der Schweiz. Sie erscheinen wie die Marktguru-Angebote mit 🏷️ am Artikel und „🛒 Hier kaufen“, auch in CHF. Die Liste fragt dafür selbst nirgends nach. Beispiel in der README.",
-   "📬 <b>Report offers:</b> new action <code>einkaufsliste.angebote_melden</code> – your own automation (e.g. AppDaemon) sends offers to the list, for example from Switzerland. They appear like the Marktguru offers with 🏷️ at the item and “🛒 Buy here”, also in CHF. The list does not ask anywhere itself. Example in the README.",
-   "beta.11"],
-  ["🔗 <b>Link zum Angebot:</b> Gemeldete Angebote (Aktion <code>einkaufsliste.angebote_melden</code>) dürfen jetzt einen Link zur Produktseite mitbringen (<code>url</code>). Im Angebots-Fenster steht dann „🔗 Zum Angebot“, und nach „🛒 Hier kaufen“ bleibt am Artikel ein kleines 🔗.",
-   "🔗 <b>Link to the offer:</b> reported offers (action <code>einkaufsliste.angebote_melden</code>) can now bring a link to the product page (<code>url</code>). The offer window then shows “🔗 To the offer”, and after “🛒 Buy here” a small 🔗 stays at the item.",
-   "beta.12"],
-  ["✔️ <b>„Erledigt“ einklappen oder ausblenden:</b> Unter 👁️ Ansicht → Erledigt kannst du den Bereich unten ganz ausblenden oder eingeklappt starten lassen – auch in der Offline-App. Wer „Erledigt“ antippt, dessen Gerät merkt sich jetzt, ob es auf oder zu war.",
-   "✔️ <b>Fold or hide “Done”:</b> under 👁️ View → Done you can hide the section at the bottom completely or let it start folded – also in the offline app. When you tap “Done”, your device now remembers whether it was open or closed.",
-   "beta.13"],
-];
+const EL_BETA_NEWS = [];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", recalls: "#e65100", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -479,6 +421,18 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", year: "#e91e63", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["🏬 <b>Geschäfte mit Steckbrief:</b> Adresse, Telefon, Webseite und eigene 💡 Tipps pro Geschäft (Reiter gedrückt halten → ℹ️). Unter ⚙️ → Geschäfte → „Filialen ändern“ bekommt jede Filiale eigene Adresse, Telefon und Öffnungszeiten. 🎨 Bekannte Ketten kriegen gleich ihre Logo-Farbe, 🕒 neuer Sensor binary_sensor.einkaufsliste_&lt;geschäft&gt;_offen, und 🔨 „Nicht unter Alle zeigen“ hält z. B. den Baumarkt aus dem Reiter „Alle“ raus.",
+   "🏬 <b>Stores with a profile:</b> address, phone, website and your own 💡 tips per store (press and hold the tab → ℹ️). Under ⚙️ → Stores → “Edit branches” every branch gets its own address, phone and opening hours. 🎨 Well-known chains get their logo colour right away, 🕒 new sensor binary_sensor.einkaufsliste_&lt;store&gt;_offen, and 🔨 “Don't show under All” keeps e.g. the hardware store out of the “All” tab."],
+  ["📤 <b>Drucken &amp; Teilen</b> unter der Liste: drucken, als echte PDF-Datei teilen (auf iPhone/iPad übers Teilen-Menü, dort „Drucken“ per AirPrint) oder als 📱 QR-Code, den ein anderes Handy mit der Kamera liest – immer mit allen Artikeln, lange Listen in mehreren Teilen.",
+   "📤 <b>Print &amp; share</b> below the list: print, share as a real PDF file (on iPhone/iPad via the share sheet, “Print” works there via AirPrint) or as a 📱 QR code another phone reads with its camera – always with all items, long lists in several parts."],
+  ["❌ <b>War nicht da:</b> Im ⇄-Fenster am Artikel. Er bleibt 2 Tage grau und wird dann ohne Kauf abgehakt (abschaltbar unter ⚙️ → Listenansicht). 📅 „Abgehakt von“ zeigt Tag und Uhrzeit. ✔️ „Erledigt“ lässt sich unter 👁️ Ansicht einklappen oder ganz ausblenden, 📂 Kategorien klappen mit einem Tipp auf den Kopf zu.",
+   "❌ <b>Wasn't there:</b> in the ⇄ window on an item. It stays greyed out for 2 days and is then checked off without buying (can be turned off under ⚙️ → List view). 📅 “Checked off by” shows day and time. ✔️ “Done” can be folded or hidden under 👁️ View, 📂 categories fold with a tap on their header."],
+  ["📬 <b>Eigene Angebote melden:</b> Mit der Aktion <code>einkaufsliste.angebote_melden</code> schickt eine eigene Automation Angebote an die Liste (z. B. aus der Schweiz, auch in CHF, gern mit 🔗 Link zur Produktseite). Sie erscheinen wie die Marktguru-Angebote mit 🏷️ und „🛒 Hier kaufen“. Beispiel in der README.",
+   "📬 <b>Report your own offers:</b> with the action <code>einkaufsliste.angebote_melden</code> your own automation sends offers to the list (e.g. from Switzerland, also in CHF, optionally with a 🔗 link to the product page). They appear like the Marktguru offers with 🏷️ and “🛒 Buy here”. Example in the README."],
+  ["📱 <b>Offline-App mit eigener Anmeldung</b> (Benutzer, Passwort, 2-Faktor-Code – gleiche Home-Assistant-Anmeldung). Alle Dateien liegen unter /einkaufsliste/, hinter einem Reverse Proxy reichen /einkaufsliste/*, /auth/* und /api/*.",
+   "📱 <b>Offline app with its own login</b> (user, password, two-factor code – same Home Assistant login). All files are under /einkaufsliste/, behind a reverse proxy /einkaufsliste/*, /auth/* and /api/* are enough."],
+  ["🔁 <b>Umbenennen zieht überall mit</b> (Katalog, Verlauf, Foto, Barcode; bei Rezepten/Favoriten fragt die Karte). 🧠 Die Liste lernt Kategorien aus deinen Verschiebungen. 👨‍🍳 Ein oranger Punkt an der Kochmütze zeigt wartende Rezept-Vorschläge, 📖 „Rezept vorschlagen“ hat ein eigenes Symbol. 🧘 Ruhiger Modus unter 👁️ Ansicht, ⌨️ Fenster gehen mit Tab, Enter und Esc. 📦 Im Produktkatalog bleibt Getipptes nach Foto oder Barcode stehen.",
+   "🔁 <b>Renaming follows everywhere</b> (catalogue, history, photo, barcode; for recipes/favourites the card asks). 🧠 The list learns categories from your moves. 👨‍🍳 An orange dot on the chef hat shows waiting recipe proposals, 📖 “Suggest a recipe” has its own icon. 🧘 Calm mode under 👁️ View, ⌨️ windows work with Tab, Enter and Esc. 📦 In the product catalogue your typing stays after a photo or barcode."],
   ["⚠️ <b>Rückruf-Warnung</b> (⚙️ → Extras, standardmäßig aus): Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de (auch Kosmetik, Spielzeug, Geschirr, Kleidung) mit euren Einkäufen der letzten 30 Tage verglichen. Treffer kommen als Meldung, in der Liste steht ein rotes ❗. 🏷️ Steht beim Artikel eine Notiz (z. B. die Marke), sagt die Liste, ob genau diese Marke betroffen ist.",
    "⚠️ <b>Recall warning</b> (⚙️ → Extras, off by default): every 6 hours the official warnings from lebensmittelwarnung.de (also cosmetics, toys, dishes, clothing) are compared with your purchases of the last 30 days. Matches arrive as a notification, the list shows a red ❗. 🏷️ If the item has a note (e.g. the brand), the list tells you whether exactly this brand is affected."],
   ["➕ <b>Mehrere Rezepte gleichzeitig kochen:</b> Im Kochmodus mit ➕ ein weiteres Rezept dazunehmen, oben mit Reitern wechseln; ein 💡 Tipp sagt, womit du anfängst. 📝 <b>Notiz nach dem Kochen</b> fürs nächste Mal – steht in der Kochmütze und bei „Wartet auf OK“ (✏️ Rezept ändern, 🗑️ löschen).",
