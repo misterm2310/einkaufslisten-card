@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 DOMAIN = "einkaufsliste"
-VERSION = "2.76.25"
+# 🔢 Version nur noch an EINER Stelle (manifest.json) – so kann sie nicht mehr vergessen werden
+VERSION: str = json.loads((Path(__file__).parent / "manifest.json").read_text(encoding="utf-8"))["version"]
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_VERSION = 1
