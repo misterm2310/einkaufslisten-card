@@ -6,6 +6,8 @@
 
 **Die Familien-Einkaufsliste direkt im Dashboard.** Mehrere Geschäfte, Kategorien, Rezepte und Live-Sync auf allen Handys. Hinter jedem Artikel steht, wer ihn eingetragen hat. Gekauftes wird abgehakt und bleibt als „schon mal gekauft“ stehen – beim nächsten Mal ist es mit einem Tipp wieder drauf.
 
+Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=einkaufslisten-card&category=integration) [![Integration hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=einkaufsliste)
+
 ![Vorschau – Einkaufsliste hell und dunkel](docs/screenshot.png)
 
 <details><summary>🛒 Laden-Modus ansehen</summary>
@@ -393,6 +395,8 @@ actions:
 ```
 
 <details><summary><b>📬 Eigene Angebote melden (z. B. für die Schweiz)</b></summary>
+
+🇨🇭 **SwissGroceries** von rudiratlos holt Schweizer Aktionen (z. B. Denner, Coop, Migros) und meldet sie über `einkaufsliste.angebote_melden`: [github.com/rudiratlos/swissgroceries-appdaemon](https://github.com/rudiratlos/swissgroceries-appdaemon). Die Erweiterung ist nicht von mir – Fragen bitte dort.
 
 Die 🏷️ Angebote von Marktguru gibt es nur für Deutschland und Österreich. Hast du eine **eigene Quelle** (AppDaemon-Skript, REST-Sensor, Scraper …), schickt sie ihre Treffer mit der Aktion **`einkaufsliste.angebote_melden`** an die Liste. Die Karte zeigt sie dann genau wie die Marktguru-Angebote: **🏷️** am passenden Artikel, Preis, Normalpreis durchgestrichen, „gültig bis“ und **🛒 Hier kaufen**. Unten in der Liste steht „📬 Von deiner eigenen Automation gemeldet“.
 

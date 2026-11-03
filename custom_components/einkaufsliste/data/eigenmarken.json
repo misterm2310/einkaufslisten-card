@@ -2,7 +2,7 @@
   "_info": [
     "🏷️ Eigenmarken der Einkaufsliste: Marken, die es nur in einer Kette gibt (Barcode-Scan -> richtiges Geschäft).",
     "Aufbau: Land (ISO-Kürzel wie in Home Assistant: DE, AT, CH …) -> Stichwort im Geschäfts-Namen (klein) -> Marken (klein).",
-    "Das Land kommt aus Einstellungen -> System -> Allgemein in Home Assistant. Ist es hier nicht drin, gelten alle Länder zusammen.",
+    "Das Land kommt aus Einstellungen -> System -> Allgemein in Home Assistant. Gesucht wird erst im eigenen Land, danach in allen anderen (so erkennt ein Schweizer Aldi/Lidl-Marken trotzdem).",
     "Eigene Marken, die in der Karte bei einem Geschäft eingetragen sind, gehen immer vor.",
     "Ergänzen: Land oder Kette dazuschreiben und als Pull Request auf GitHub schicken."
   ],
@@ -94,6 +94,49 @@
       "rival de loop",
       "sunozon",
       "prokudent"
+    ]
+  },
+  "CH": {
+    "denner": [
+      "denner",
+      "denner vegan"
+    ],
+    "coop": [
+      "coop",
+      "qualité & prix",
+      "prix garantie",
+      "naturaplan",
+      "naturafarm",
+      "pro montagna",
+      "karma",
+      "betty bossi",
+      "fine food",
+      "sapori d'italia",
+      "primagusto",
+      "free from",
+      "jamadu",
+      "délicorn",
+      "miini region",
+      "pro specie rara"
+    ],
+    "migros": [
+      "migros",
+      "m-budget",
+      "m-classic",
+      "migros bio",
+      "sélection",
+      "anna's best",
+      "farmer",
+      "léger",
+      "actilife",
+      "aha!",
+      "v-love",
+      "cornatur",
+      "terrasuisse",
+      "aus der region"
+    ],
+    "manor": [
+      "manor"
     ]
   }
 }

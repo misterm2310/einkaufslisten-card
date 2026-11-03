@@ -6,6 +6,8 @@
 
 **The family shopping list right in your dashboard.** Several stores, categories, recipes and live sync on every phone. Every item shows who added it. Bought things get checked off and stay as “bought before”, so next time they are back on with a single tap.
 
+One click opens it right in your Home Assistant: [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=einkaufslisten-card&category=integration) [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=einkaufsliste)
+
 > 🌍 The card was written in German and speaks English whenever your Home Assistant is not set to German (or with `language: en`). On a fresh English install the default stores, categories and recipe groups are English too. Your own entries are never translated. Spot a German leftover? Please open an issue.
 
 ![Preview – shopping list light and dark](docs/screenshot.png)
@@ -394,6 +396,8 @@ actions:
 ```
 
 <details><summary><b>📬 Report your own offers (e.g. for Switzerland)</b></summary>
+
+🇨🇭 **SwissGroceries** by rudiratlos fetches Swiss deals (e.g. Denner, Coop, Migros) and reports them via `einkaufsliste.angebote_melden`: [github.com/rudiratlos/swissgroceries-appdaemon](https://github.com/rudiratlos/swissgroceries-appdaemon). The extension is not mine – please ask questions there.
 
 The 🏷️ offers from Marktguru only exist for Germany and Austria. If you have **your own source** (AppDaemon script, REST sensor, scraper …), it sends its hits to the list with the action **`einkaufsliste.angebote_melden`**. The card then shows them just like the Marktguru offers: **🏷️** at the matching item, price, regular price struck through, “valid until” and **🛒 Buy here**. At the bottom of the list it says “📬 Reported by your own automation”.
 

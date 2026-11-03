@@ -126,7 +126,7 @@ class GeschaeftOffenSensor(BinarySensorEntity):
         return self._m.store_by_id(self.store_id)
 
     def _calc(self) -> dict[str, Any]:
-        return store_open(self._store or {}, dt_util.now())
+        return store_open(self._store or {}, dt_util.now(), self._m.holidays)
 
     @property
     def available(self) -> bool:

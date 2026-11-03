@@ -1,4 +1,4 @@
-"""🕒 Hat das Geschäft gerade offen? Gleiche Regeln wie in der Karte (Öffnungszeiten + Feiertage je Bundesland)."""
+"""🕒 Hat das Geschäft gerade offen? Gleiche Regeln wie in der Karte (Öffnungszeiten + Feiertage aus dem HA-Feiertagskalender)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ from datetime import date, datetime, timedelta
 from typing import Any
 
 _HHMM = re.compile(r"^(\d\d):(\d\d)$")
-_STATES = ("BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH")
 
 
 def _min(hhmm: Any) -> int | None:
@@ -35,45 +34,16 @@ def easter(year: int) -> date:
     return date(year, mo, da)
 
 
-def holiday_name(day: date, state: str | None) -> str | None:
-    """🎌 Gesetzlicher Feiertag im Bundesland (oder None)."""
-    if state not in _STATES:
-        return None
-    fix = {(1, 1): "Neujahr", (1, 5): "Tag der Arbeit", (3, 10): "Tag der Deutschen Einheit",
-           (25, 12): "1. Weihnachtstag", (26, 12): "2. Weihnachtstag"}
-    if state in ("BW", "BY", "ST"):
-        fix[(6, 1)] = "Heilige Drei Könige"
-    if state in ("BE", "MV"):
-        fix[(8, 3)] = "Frauentag"
-    if state == "SL":
-        fix[(15, 8)] = "Mariä Himmelfahrt"
-    if state == "TH":
-        fix[(20, 9)] = "Weltkindertag"
-    if state in ("BB", "HB", "HH", "MV", "NI", "SN", "ST", "SH", "TH"):
-        fix[(31, 10)] = "Reformationstag"
-    if state in ("BW", "BY", "NW", "RP", "SL"):
-        fix[(1, 11)] = "Allerheiligen"
-    if (day.day, day.month) in fix:
-        return fix[(day.day, day.month)]
-    diff = (day - easter(day.year)).days
-    mov = {-2: "Karfreitag", 1: "Ostermontag", 39: "Christi Himmelfahrt", 50: "Pfingstmontag"}
-    if state == "BB":
-        mov[0], mov[49] = "Ostersonntag", "Pfingstsonntag"
-    if state in ("BW", "BY", "HE", "NW", "RP", "SL"):
-        mov[60] = "Fronleichnam"
-    if diff in mov:
-        return mov[diff]
-    if state == "SN" and day.month == 11 and day.weekday() == 2 and 16 <= day.day <= 22:
-        return "Buß- und Bettag"
-    return None
+def holiday_name(day: date, holidays: dict[str, str] | None) -> str | None:
+    """🎌 Feiertag laut HA-Integration „Feiertage“ (Kalender, z. B. calendar.deutschland_nrw) – oder None."""
+    return (holidays or {}).get(day.isoformat()) if isinstance(holidays, dict) else None
 
 
-def open_now(hours: Any, now: datetime, state: str | None = None) -> dict[str, Any] | None:
+def open_now(hours: Any, now: datetime, state: dict[str, str] | None = None) -> dict[str, Any] | None:
     """{"open": True, "until": "20:00"} / {"open": False, "next": "08:00", "day": 0..6, "today": bool, "holiday": …} / None = unbekannt."""
     today = now.date()
     if not isinstance(hours, list) or len(hours) != 7:
-        hn = holiday_name(today, state)
-        return {"open": False, "holiday": hn} if hn else None
+        return None  # ohne Zeiten: unbekannt (Feiertage zählen nur mit Zeiten)
     cur = now.hour * 60 + now.minute
     wd = now.weekday()
 
@@ -99,9 +69,12 @@ def open_now(hours: Any, now: datetime, state: str | None = None) -> dict[str, A
     return next_day({})
 
 
-def store_open(store: dict[str, Any], now: datetime) -> dict[str, Any]:
-    """Geschäft (mit oder ohne Filialen): offen, sobald EINE Filiale offen hat. state None = unbekannt."""
-    state = store.get("holiday_state")
+def store_open(store: dict[str, Any], now: datetime, holidays: dict[str, str] | None = None) -> dict[str, Any]:
+    """Geschäft (mit oder ohne Filialen): offen, sobald EINE Filiale offen hat. state None = unbekannt.
+
+    🎌 Feiertage gelten für alle Geschäfte (aus dem HA-Feiertagskalender); das alte Bundesland je Geschäft ist weg.
+    """
+    state = holidays
     branches = store.get("branches") if isinstance(store.get("branches"), list) and store.get("branches") else None
     if not branches:
         info = open_now(store.get("hours"), now, state)

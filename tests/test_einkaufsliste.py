@@ -4675,14 +4675,17 @@ def test_opening_logic() -> None:
     from custom_components.einkaufsliste.opening import holiday_name, open_now, store_open, easter
     from datetime import date as _d
     assert easter(2026) == _d(2026, 4, 5)
-    assert holiday_name(_d(2026, 6, 4), "NW") == "Fronleichnam" and holiday_name(_d(2026, 6, 4), "NI") is None
+    hol = {"2026-12-25": "1. Weihnachtstag", "2026-08-01": "Bundesfeier"}  # 🎌 kommt jetzt aus dem HA-Feiertagskalender
+    assert holiday_name(_d(2026, 8, 1), hol) == "Bundesfeier" and holiday_name(_d(2026, 8, 2), hol) is None and holiday_name(_d(2026, 8, 1), None) is None
     week = [[["08:00", "12:00"], ["14:00", "20:00"]]] * 6 + [None]
     wed = datetime(2026, 10, 28, 10, 0)  # Mittwoch
     assert open_now(week, wed) == {"open": True, "until": "12:00"}
     assert open_now(week, wed.replace(hour=13)) == {"open": False, "next": "14:00", "today": True}
     sat = datetime(2026, 10, 31, 21, 0)
     assert open_now(week, sat)["next"] == "08:00" and open_now(week, sat)["day"] == 0
-    assert open_now(week, datetime(2026, 12, 25, 10, 0), "NW")["holiday"] == "1. Weihnachtstag"
+    assert open_now(week, datetime(2026, 12, 25, 10, 0), hol)["holiday"] == "1. Weihnachtstag"
+    assert open_now(None, datetime(2026, 12, 25, 10, 0), hol) is None  # ohne Zeiten bleibt es unbekannt
+    assert store_open({"hours": week}, datetime(2026, 8, 1, 10, 0), hol)["state"] is False
     assert open_now(None, wed) is None
     st = {"branches": [{"name": "A", "hours": [None] * 7}, {"name": "B", "hours": week}]}
     assert store_open(st, wed)["state"] is True
@@ -4867,3 +4870,51 @@ def test_view_prefs_erledigt() -> None:
     from custom_components.einkaufsliste.manager import _clean_view
 
     assert _clean_view({"done": False, "done_open": 0, "quatsch": True}) == {"done": False, "done_open": False}
+
+
+async def test_international_currency_location_details(hass: HomeAssistant, setup) -> None:
+    """🌍 Beträge in jeder Schreibweise, 📍 Standort + Land am Sensor, 🤖 details je Artikel, 🏷️ CH-Eigenmarken."""
+    from custom_components.einkaufsliste.manager import _money_value, split_address
+    from custom_components.einkaufsliste import barcode
+    assert [_money_value(x) for x in ("23,40", "23.40", "1.234,50", "1'234.50", "CHF 12.50", "£12.50", "12,5 €")] == [23.4, 23.4, 1234.5, 1234.5, 12.5, 12.5, 12.5]
+    assert split_address("Bahnhofstr. 1, 8001 Zürich") == ("8001", "Zürich")
+    assert split_address("Musterweg 2") == (None, None)
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    m.update_group("stores", aldi, address="Hauptstraße 5, 48565 Steinfurt", country="it")
+    assert m.store_by_id(aldi)["country"] == "IT"
+    with pytest.raises(ValueError):
+        m.update_group("stores", aldi, country="Italien")
+    m.update_group("stores", aldi, country="")
+    assert m.store_by_id(aldi)["country"] is None
+    m.update_group("stores", aldi, branches=[{"name": "Lugano", "address": "Via Roma 3, 6900 Lugano", "country": "CH", "hours": None}])
+    cat = m.categories[0]
+    m.add_item("Äpfel", store_id=aldi, quantity="1 Sack", note="Pink Lady", category_id=cat["id"])
+    await hass.async_block_till_done()
+    st = next(s for s in hass.states.async_all("sensor") if s.attributes.get("geschaeft") == m.store_by_id(aldi)["name"] and "details" in s.attributes)
+    det = st.attributes["details"]
+    assert det[0]["name"] == "Äpfel" and det[0]["menge"] == "1 Sack" and det[0]["notiz"] == "Pink Lady" and det[0]["kategorie_id"] == cat["id"] and det[0]["kategorie"] == cat["name"]
+    assert st.attributes["plz"] == "48565" and st.attributes["ort"] == "Steinfurt" and st.attributes["land"] == hass.config.country
+    assert st.attributes["filialen"][0] == {"name": "Lugano", "adresse": "Via Roma 3, 6900 Lugano", "plz": "6900", "ort": "Lugano", "land": "CH"}
+    # 🏷️ erst eigenes Land, dann alle anderen
+    lists = barcode.private_label_lists("CH")
+    assert "m-budget" in lists[0]["migros"] and any("milsani" in c.get("aldi", ()) for c in lists[1:])
+    assert barcode.private_label_lists("DE")[0] is barcode.PRIVATE_LABELS_BY_COUNTRY["DE"]
+
+
+async def test_holidays_from_ha_calendar(hass: HomeAssistant, setup) -> None:
+    """🎌 Feiertage kommen aus allen Kalendern der HA-Integration „Feiertage“ (hier nachgebaut)."""
+    from homeassistant.helpers import entity_registry as er
+    from homeassistant.core import SupportsResponse
+    m = mgr(hass)
+    await m.async_refresh_holidays()
+    assert m.holidays == {} and m.holiday_cals == []
+    er.async_get(hass).async_get_or_create("calendar", "holiday", "ch_ti", suggested_object_id="schweiz_tessin")
+    day = dt_util.now().date().isoformat()
+
+    async def get_events(call):
+        return {"calendar.schweiz_tessin": {"events": [{"start": day, "end": day, "summary": "Bundesfeier"}]}}
+    hass.services.async_register("calendar", "get_events", get_events, supports_response=SupportsResponse.ONLY)
+    await m.async_refresh_holidays()
+    assert m.holiday_cals == ["calendar.schweiz_tessin"] and m.holidays == {day: "Bundesfeier"}
+    assert m.as_dict()["holidays"] == {day: "Bundesfeier"}

@@ -90,6 +90,17 @@ def load_private_labels(path: Path = _BRANDS_FILE) -> dict[str, dict[str, tuple[
 PRIVATE_LABELS_BY_COUNTRY = load_private_labels()  # einmal beim Laden der Integration
 
 
+def private_label_lists(country: str | None) -> list[dict[str, tuple[str, ...]]]:
+    """🌍 Erst die Eigenmarken des eigenen Landes, danach alle anderen Länder.
+
+    Für Doofe: Ein Schweizer findet so zuerst Coop-/Migros-Marken, aber Aldi-/Lidl-Marken (Milbona …),
+    die nur unter DE stehen, werden trotzdem noch erkannt.
+    """
+    own = (country or "").upper()
+    first = [PRIVATE_LABELS_BY_COUNTRY[own]] if own in PRIVATE_LABELS_BY_COUNTRY else []
+    return first + [chains for c, chains in PRIVATE_LABELS_BY_COUNTRY.items() if c != own]
+
+
 def private_labels(country: str | None) -> dict[str, tuple[str, ...]]:
     """Eigenmarken fürs Land aus den HA-Einstellungen – kennt die Liste das Land nicht, gelten alle zusammen."""
     if country and country.upper() in PRIVATE_LABELS_BY_COUNTRY:
@@ -116,11 +127,12 @@ def private_label_store(manager: Any, brands: str | None, stores_tags: list[str]
             if brand in own:
                 return st["id"], st["name"]
     for brand in wanted:
-        for key, labels in private_labels(getattr(getattr(getattr(manager, "hass", None), "config", None), "country", None)).items():
-            if brand in labels:
-                st = next((x for x in stores if key in x["name"].lower().replace("-", " ").split() or x["name"].lower().startswith(key)), None)
-                if st:
-                    return st["id"], st["name"]
+        for chains in private_label_lists(getattr(getattr(getattr(manager, "hass", None), "config", None), "country", None)):
+            for key, labels in chains.items():
+                if brand in labels:
+                    st = next((x for x in stores if key in x["name"].lower().replace("-", " ").split() or x["name"].lower().startswith(key)), None)
+                    if st:
+                        return st["id"], st["name"]
     tags = [t.split(":")[-1].replace("-", " ") for t in (stores_tags or [])]
     if len(tags) == 1:
         st = next((x for x in stores if tags[0] and (tags[0] in x["name"].lower() or x["name"].lower() in tags[0])), None)

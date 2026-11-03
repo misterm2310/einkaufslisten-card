@@ -545,7 +545,7 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   return { label, msg, open, done, off }; });
 check("War nicht da: Knopf im ⇄-Fenster schickt item/gone", r.label === "War nicht da" && r.msg?.type === "einkaufsliste/item/gone", JSON.stringify(r));
 check("War nicht da: Artikel grau mit „❌ war nicht da (Tag)“, kein „war aus“", r.open.cls && /❌ war nicht da \(/.test(r.open.txt || "") && !r.open.out, JSON.stringify(r));
-check("War nicht da: unter „Erledigt“ mit ❌ statt ✔, kein „automatisch“", r.done.icon === "mdi:close-circle" && /❌ war nicht da/.test(r.done.txt || "") && !r.done.auto, JSON.stringify(r));
+check("War nicht da: unter „Erledigt“ mit normalem ✔ und „❌ war nicht da“, kein „automatisch“", r.done.icon === "mdi:check-circle" && /❌ war nicht da/.test(r.done.txt || "") && !r.done.auto, JSON.stringify(r));
 check("War nicht da: in der Listenansicht abschaltbar", r.off, JSON.stringify(r));
 
 // 31) 📅 „Abgehakt von“ zeigt auch Tag und Uhrzeit

@@ -309,7 +309,7 @@ def _name_list(value: Any, limit: int = 40, size: int = 60) -> list[str]:
 # 👁️ Listenansicht: was beim Artikel zu sehen ist (an/aus) – für alle ("_all") und pro Benutzer (Benutzer-ID)
 VIEW_KEYS = (
     "qty", "note", "own_note", "for_whom", "added_by", "added_at", "checked_by", "cleanup", "store",
-    "recipe", "barcode", "photo", "fav", "offer", "out", "gone", "move", "new", "cat_color",
+    "recipe", "barcode", "photo", "fav", "offer", "out", "gone", "zone_here", "move", "new", "cat_color",
     "tabs", "in_name", "in_store", "in_cat", "in_icons",  # 🧩 Leiste/Eingabe-Felder oben (an/aus)
     "done", "done_open",  # ✔️ Bereich „Erledigt“ zeigen / aufgeklappt starten (Standard beides an)
     "anim",  # ✔️ Abhak-Animation – pro Benutzer (Standard an)
@@ -369,8 +369,29 @@ def _clean_branches(value: Any) -> list[dict[str, Any]] | None:
         tips = _clean_tips(b.get("tips"))  # 💡 eigene Tipps der Filiale (Steckbrief pro Filiale)
         if tips:
             entry["tips"] = tips
+        country = _clean_country(b.get("country"))  # 🌍 Land der Filiale (leer = Land aus HA)
+        if country:
+            entry["country"] = country
         out.append(entry)
     return out or None
+
+
+def _clean_country(value: Any) -> str | None:
+    """🌍 Land als ISO-Kürzel (DE, CH, IT …). Leer = Land aus Home Assistant."""
+    code = str(value or "").strip().upper() if isinstance(value, str) else ""
+    if not code:
+        return None
+    if not re.fullmatch(r"[A-Z]{2}", code):
+        raise ValueError("Das Land bitte als Kürzel, z. B. DE, CH oder IT.")
+    return code
+
+
+def split_address(address: str | None) -> tuple[str | None, str | None]:
+    """📍 PLZ und Ort aus einer Adresszeile lesen („Bahnhofstr. 1, 8001 Zürich“ → 8001, Zürich). Nichts gefunden = None."""
+    m = None
+    for m in re.finditer(r"(?<![\d-])(\d{4,5})\s+([^\d,;]{2,}?)\s*(?=,|;|$)", address or ""):
+        pass
+    return (m.group(1), m.group(2).strip()) if m else (None, None)
 
 
 def _clean_address(value: Any) -> str | None:
@@ -476,6 +497,16 @@ def _clean_year_stats(raw: Any) -> dict[str, dict[str, Any]]:
     return out
 
 
+
+def _money_value(amount: Any) -> float:
+    """💱 „23,40“, „23.40“, „1.234,50“, „1'234.50“, „CHF 12.50“, „£12.50“ → Zahl (Währung egal, kommt aus HA)."""
+    t = re.sub(r"[^\d,.\-]", "", str(amount).replace("'", "").replace("’", ""))
+    if "," in t and "." in t:  # das letzte Zeichen von beiden ist das Komma der Nachkommastellen
+        t = t.replace(".", "").replace(",", ".") if t.rfind(",") > t.rfind(".") else t.replace(",", "")
+    else:
+        t = t.replace(",", ".")
+    return float(t)
+
 class EinkaufslisteManager:
     """Verwaltet alle Daten der Einkaufsliste."""
 
@@ -543,6 +574,8 @@ class EinkaufslisteManager:
         self.log: list[dict[str, Any]] = []  # 📋 Verlauf, das Neueste hinten
         self.log_days: int = LOG_DEFAULT_DAYS
         self.errors: list[dict[str, Any]] = []  # 🐞 Fehler-Protokoll: {"t","w","m","n"} – das Neueste hinten
+        self.holidays: dict[str, str] = {}  # 🎌 "JJJJ-MM-TT" -> Name (aus dem HA-Feiertagskalender, nicht gespeichert)
+        self.holiday_cals: list[str] = []
         self.missed_hidden: dict[str, str] = {}  # 📈 „Oft nicht bekommen“ weggeklickt: "name|geschäft" -> seit wann
         self._actor = {}
         self._unsub_time: Callable[[], None] | None = None
@@ -912,6 +945,8 @@ class EinkaufslisteManager:
             "photos": {k: v.get("updated") for k, v in self.photos.items()},
             "photo_counts": {k: 1 + len(v["more"]) for k, v in self.photos.items() if v.get("more")},
             "version": VERSION,
+            "holidays": self.holidays,  # 🎌 Feiertage der nächsten Wochen aus dem HA-Kalender („Feiertage“-Integration)
+            "holiday_cals": self.holiday_cals,
             "recipe_groups": self.recipe_groups,
             "category_hints": category_hints(self.categories),
             "category_learned": self._learned_words(),  # 🧠 Wortteil -> Kategorie (ab 2× verschoben)
@@ -1742,7 +1777,7 @@ class EinkaufslisteManager:
         if store is None:
             raise ValueError("Bei welchem Geschäft war das?")
         try:
-            value = round(float(str(amount).strip().replace("€", "").replace(" ", "").replace(",", ".")), 2)
+            value = round(_money_value(amount), 2)
         except (TypeError, ValueError) as err:
             raise ValueError("Der Betrag ist keine Zahl – z. B. 23,40.") from err
         if not 0 < value <= 100000:
@@ -4185,11 +4220,46 @@ class EinkaufslisteManager:
                 self._timer_due(t["id"], quiet=(now - end) > timedelta(minutes=2))
 
     @callback
+    def _holidays_tick(self, _now=None) -> None:
+        self.hass.async_create_task(self.async_refresh_holidays())
+
+    async def async_refresh_holidays(self) -> None:
+        """🎌 Feiertage aus der HA-Integration „Feiertage“ holen (alle Kalender dieser Integration, nächste 40 Tage).
+
+        Für Doofe: Statt fest eingebauter deutscher Bundesländer fragt die Liste den Feiertags-Kalender von
+        Home Assistant – damit klappt es in jedem Land (z. B. 1. August in der Schweiz). Ohne Kalender: keine Feiertage.
+        """
+        from homeassistant.helpers import entity_registry as er
+
+        reg = er.async_get(self.hass)
+        cals = sorted(e.entity_id for e in reg.entities.values() if e.platform == "holiday" and e.domain == "calendar" and not e.disabled_by)
+        found: dict[str, str] = {}
+        start = dt_util.start_of_local_day()
+        for cal in cals:
+            try:
+                res = await self.hass.services.async_call(
+                    "calendar", "get_events", {"entity_id": cal, "start_date_time": start, "end_date_time": start + timedelta(days=40)},
+                    blocking=True, return_response=True,
+                )
+            except Exception as err:  # noqa: BLE001 – Kalender kaputt: dann eben ohne
+                self.log_error("feiertage", f"{cal}: {err}")
+                continue
+            for ev in ((res or {}).get(cal) or {}).get("events", []):
+                day = str(ev.get("start") or "")[:10]
+                if re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
+                    found.setdefault(day, str(ev.get("summary") or "Feiertag")[:60])
+        if found != self.holidays or cals != self.holiday_cals:
+            self.holidays, self.holiday_cals = found, cals
+            self._changed()
+
+    @callback
     def async_start_scheduler(self) -> None:
         self._restore_timers()
         self.expire_offers()
         self.expire_gone()  # ❌ verpasst (HA war aus)? Gleich nachholen
         self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: (self.expire_offers(), self.expire_gone(), self.prune_offers_ext()), timedelta(hours=1))
+        self._unsub_holidays = async_track_time_interval(self.hass, self._holidays_tick, timedelta(hours=6))
+        self.hass.async_create_task(self.async_refresh_holidays())
         self._schedule_cleanup()
         self._schedule_plan_reset()
         if self.plan_reset_on:  # 📅 verpasst (HA war aus)? Dann jetzt nachholen
@@ -4236,6 +4306,9 @@ class EinkaufslisteManager:
             self.recalls.stop()
         if getattr(self, "grocy_sync", None) is not None:
             self.grocy_sync.stop()
+        if getattr(self, "_unsub_holidays", None):
+            self._unsub_holidays()
+            self._unsub_holidays = None
         if getattr(self, "_unsub_offer_exp", None):
             self._unsub_offer_exp()
             self._unsub_offer_exp = None
@@ -4697,6 +4770,8 @@ class EinkaufslisteManager:
                     raise ValueError("Bitte eine Webseite, die mit https:// beginnt.") from err
             if "tips" in fields:
                 entry["tips"] = _clean_tips(fields["tips"])
+            if "country" in fields:  # 🌍 leer = Land aus Home Assistant
+                entry["country"] = _clean_country(fields["country"])
         if "holiday_state" in fields and kind == "stores":  # 🎌 Bundesland: an dessen Feiertagen ist das Geschäft zu (leer = Feiertage ignorieren)
             code = (fields["holiday_state"] or "").strip().upper()
             if code and code not in HOLIDAY_STATES:

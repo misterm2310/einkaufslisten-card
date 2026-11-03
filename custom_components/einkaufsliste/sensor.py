@@ -18,7 +18,7 @@ from homeassistant.helpers.event import async_call_later, async_track_time_inter
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, SIGNAL_UPDATED, VERSION
-from .manager import EinkaufslisteManager
+from .manager import EinkaufslisteManager, split_address
 
 
 async def async_setup_entry(
@@ -79,7 +79,7 @@ class GeschaeftSensor(_Base):
     """sensor.einkaufsliste_aldi – offene Artikel bei diesem Geschäft"""
 
     _attr_native_unit_of_measurement = "Artikel"
-    _unrecorded_attributes = frozenset({"artikel"})
+    _unrecorded_attributes = frozenset({"artikel", "details", "filialen"})
 
     def __init__(self, manager: EinkaufslisteManager, entry: ConfigEntry, store_id: str) -> None:
         super().__init__(manager, entry)
@@ -109,6 +109,16 @@ class GeschaeftSensor(_Base):
     def native_value(self) -> int:
         return len(self._open())
 
+    def _detail(self, i: dict[str, Any]) -> dict[str, Any]:
+        cat = self._m.category_by_id(i.get("category_id")) or {}
+        return {"name": i["name"], "menge": i.get("quantity") or None, "notiz": i.get("note") or None,
+                "kategorie_id": i.get("category_id"), "kategorie": cat.get("name")}
+
+    def _place(self, where: dict[str, Any]) -> dict[str, Any]:
+        addr = where.get("address")
+        plz, ort = split_address(addr)
+        return {"adresse": addr, "plz": plz, "ort": ort, "land": where.get("country") or self.hass.config.country}
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {
@@ -117,6 +127,12 @@ class GeschaeftSensor(_Base):
                 (f"{i['quantity']} " if i.get("quantity") else "") + i["name"] + (f" · {i['note']}" if i.get("note") else "")
                 for i in self._open()
             ],
+            # 🤖 Jeder offene Artikel einzeln – Automationen müssen „1 Sack Äpfel · Pink Lady“ nicht mehr zerlegen
+            "details": [self._detail(i) for i in self._open()],
+            # 📍 Standort (z. B. für regionale Angebote): Adresse wie eingetragen, PLZ/Ort daraus gelesen, Land
+            **self._place(self._store or {}),
+            **({"filialen": [{"name": b.get("name"), **self._place(b)} for b in (self._store or {}).get("branches") or []]}
+               if (self._store or {}).get("branches") else {}),
             # 🏷️ Nur Artikel mit laufendem Angebot (Preis, ab/bis, Händler) – "artikel" oben bleibt unverändert
             "angebote": [
                 {

@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.25";
+const EL_VERSION = "2.76.26-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.24"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -413,7 +413,18 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
-const EL_BETA_NEWS = [];
+const EL_BETA_NEWS = [
+  ["Neu: 🌍 <b>Währung und Zahlen wie in Home Assistant:</b> Einkaufs-Protokoll und Bon-Foto nehmen die Währung aus HA (Einstellungen → System → Allgemein), z. B. „CHF 12.50“ oder „£12.50“. Zahlen und Datum richten sich nach der HA-Sprache. Der Bon-Leser kennt jetzt auch „Total CHF“, „Fr.“, „1'234.50“ und „12.-“. Gemeldete Angebote behalten ihre eigene Währung.",
+   "New: 🌍 <b>Currency and numbers like in Home Assistant:</b> the purchase log and receipt photo use the currency from HA (Settings → System → General), e.g. “CHF 12.50” or “£12.50”. Numbers and dates follow the HA language. The receipt reader now also knows “Total CHF”, “Fr.”, “1'234.50” and “12.-”. Reported offers keep their own currency."],
+  ["Neu: 🎌 <b>Feiertage in jedem Land:</b> Statt der Bundesland-Auswahl nimmt die Liste die Feiertage aus der Home-Assistant-Integration „Feiertage“ (z. B. Schweiz/Tessin mit dem 1. August). Noch keine eingerichtet? Unter ⚙️ → Geschäfte → Öffnungszeiten und in „Alles ok?“ gibt es den Knopf „🎌 Feiertage einrichten“.",
+   "New: 🎌 <b>Holidays in every country:</b> instead of the German state selection the list takes the holidays from the Home Assistant “Holiday” integration (e.g. Switzerland/Ticino with 1 August). None set up yet? Under ⚙️ → Stores → opening hours and in “All OK?” there is the button “🎌 Set up holidays”."],
+  ["Neu: 📍 <b>Jemand ist gerade dort:</b> Ist jemand in einer Zone eines Geschäfts, bekommt dessen Reiter oben einen dicken Rand. Abschaltbar unter 👁️ Ansicht, bei Datenschutz an immer aus.",
+   "New: 📍 <b>Someone is there right now:</b> if someone is in a zone of a store, its tab at the top gets a thick border. Can be switched off under 👁️ View, always off with privacy on."],
+  ["Neu: 🤖 Der Sensor pro Geschäft hat jetzt <b>„details“</b> (jeder offene Artikel einzeln mit Menge, Notiz und Kategorie) und den <b>Standort</b>: adresse, plz, ort, land – auch für jede Filiale. 🌍 Bei Geschäft und Filiale gibt es ein Feld <b>„Land“</b> (leer = Land aus HA).",
+   "New: 🤖 The per-store sensor now has <b>“details”</b> (every open item on its own with quantity, note and category) and the <b>location</b>: adresse, plz, ort, land – for every branch too. 🌍 Store and branch have a <b>“Country”</b> field (empty = country from HA)."],
+  ["Neu: 🇨🇭 <b>Schweizer Eigenmarken</b> (Denner, Coop, Migros, Manor) – gesucht wird erst im eigenen Land, danach in allen anderen. ✔️ Unter „Erledigt“ hat „War nicht da“ kein rotes X mehr vorne.",
+   "New: 🇨🇭 <b>Swiss private labels</b> (Denner, Coop, Migros, Manor) – the own country is searched first, then all others. ✔️ Under “Done” “Was not there” no longer has a red X at the front."],
+];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", recalls: "#e65100", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -564,6 +575,7 @@ const VIEW_OPTS = [
   ["offer", "🏷️ Angebote", "Preis und Schild"],
   ["out", "⇄ „war aus“-Hinweis", ""],
   ["gone", "❌ „War nicht da“-Knopf", "im ⇄-Fenster: bleibt 2 Tage grau stehen, dann ohne Kauf erledigt"],
+  ["zone_here", "📍 Jemand ist gerade dort", "Reiter oben bekommt einen dicken Rand, solange jemand in einer Zone des Geschäfts ist (aus bei Datenschutz an)"],
   ["move", "⇄ Verschieben-Knopf", "rechts am Artikel"],
   ["new", "✨ Neu-Zeichen", "neu seit deinem letzten Blick"],
   ["cat_color", "🎨 Farbe der Kategorie", "farbiger Streifen links"],
@@ -631,39 +643,20 @@ const DAY = 86400000;
 const elMin = (hhmm) => { const m = /^(\d\d):(\d\d)$/.exec(hhmm || ""); return m ? +m[1] * 60 + +m[2] : null; };
 const elRanges = (d) => (!d || !d.length ? null : typeof d[0] === "string" ? [d] : d); // alt: ein [von, bis]
 const elRangesTxt = (d) => { const r = elRanges(d); return r ? r.map((x) => `${x[0]} – ${x[1]}`).join(", ") : "zu"; };
-// 🎌 Gesetzliche Feiertage je Bundesland (berechnet, ohne Internet)
-const EL_STATES = { BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen", HH: "Hamburg", HE: "Hessen", MV: "Mecklenburg-Vorpommern", NI: "Niedersachsen", NW: "Nordrhein-Westfalen", RP: "Rheinland-Pfalz", SL: "Saarland", SN: "Sachsen", ST: "Sachsen-Anhalt", SH: "Schleswig-Holstein", TH: "Thüringen" };
+// 🎌 Feiertage kommen aus der HA-Integration „Feiertage“ (Kalender) – in jedem Land. Ohne Kalender: keine Feiertage.
+let EL_HOLIDAYS = {}; // "JJJJ-MM-TT" -> Name (vom Server, nächste 40 Tage)
 function elEaster(y) { // Gauß
   const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
   const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
   const mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
   return new Date(y, mo - 1, da);
 }
-function elHolidayName(date, st) {
-  if (!st || !EL_STATES[st]) return null;
-  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
-  const fix = { "1.1": "Neujahr", "1.5": "Tag der Arbeit", "3.10": "Tag der Deutschen Einheit", "25.12": "1. Weihnachtstag", "26.12": "2. Weihnachtstag" };
-  if (["BW", "BY", "ST"].includes(st)) fix["6.1"] = "Heilige Drei Könige";
-  if (["BE", "MV"].includes(st)) fix["8.3"] = "Frauentag";
-  if (st === "SL") fix["15.8"] = "Mariä Himmelfahrt";
-  if (st === "TH") fix["20.9"] = "Weltkindertag";
-  if (["BB", "HB", "HH", "MV", "NI", "SN", "ST", "SH", "TH"].includes(st)) fix["31.10"] = "Reformationstag";
-  if (["BW", "BY", "NW", "RP", "SL"].includes(st)) fix["1.11"] = "Allerheiligen";
-  if (fix[`${d}.${m}`]) return fix[`${d}.${m}`];
-  const e = elEaster(y), t = new Date(y, m - 1, d);
-  const diff = Math.round((t - e) / DAY);
-  const mov = { "-2": "Karfreitag", 1: "Ostermontag", 39: "Christi Himmelfahrt", 50: "Pfingstmontag" };
-  if (st === "BB") { mov[0] = "Ostersonntag"; mov[49] = "Pfingstsonntag"; }
-  if (["BW", "BY", "HE", "NW", "RP", "SL"].includes(st)) mov[60] = "Fronleichnam";
-  if (mov[diff]) return mov[diff];
-  if (st === "SN" && t.getDay() === 3 && m === 11 && d >= 16 && d <= 22) return "Buß- und Bettag";
-  return null;
+function elHolidayName(date) {
+  const k = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return EL_HOLIDAYS[k] || null;
 }
 function elOpenNow(hours, now = new Date(), hol = null) {
-  if (!Array.isArray(hours) || hours.length !== 7) { // ohne Zeiten: nur Feiertage zählen (falls Bundesland gewählt), sonst unbekannt → normal anzeigen
-    const hn = elHolidayName(now, hol);
-    return hn ? { open: false, holiday: hn } : null;
-  }
+  if (!Array.isArray(hours) || hours.length !== 7) return null; // ohne Zeiten: unbekannt → normal anzeigen (Feiertage zählen nur mit Zeiten)
   const cur = now.getHours() * 60 + now.getMinutes();
   const dayAt = (k) => { const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate() + k); return { dt, h: elHolidayName(dt, hol) }; };
   const wd = pyWd(now);
@@ -688,8 +681,8 @@ function elOpenNow(hours, now = new Date(), hol = null) {
 // 🏬 Geschäft mit Filialen: jede Filiale hat eigene Zeiten. Der Reiter ist nur grau, wenn ALLE zu haben.
 function elStoreInfos(st, now = new Date()) {
   const br = Array.isArray(st?.branches) && st.branches.length ? st.branches : null;
-  if (!br) return { branches: null, info: elOpenNow(st?.hours, now, st?.holiday_state) };
-  return { branches: br.map((b) => ({ b, info: elOpenNow(b.hours, now, st.holiday_state) })), info: null };
+  if (!br) return { branches: null, info: elOpenNow(st?.hours, now) };
+  return { branches: br.map((b) => ({ b, info: elOpenNow(b.hours, now) })), info: null };
 }
 function elStoreClosed(st, now = new Date()) {
   const r = elStoreInfos(st, now);
@@ -890,7 +883,7 @@ function elChainColor(name) {
   for (const [rx, c] of EL_CHAIN_COLORS) if (rx.test(n)) return c;
   return null;
 }
-function elHasHoursInfo(st) { return !!(st?.hours || st?.holiday_state || (st?.branches || []).length); }
+function elHasHoursInfo(st) { return !!(st?.hours || (st?.branches || []).length); }
 const elStatusTxt = (info) => {
   if (!info) return "";
   if (info.holiday) return `🎌 Heute ist Feiertag (${info.holiday}) – geschlossen${info.next ? `, öffnet ${WD_LONG[info.dayIdx]} um ${info.next} Uhr` : ""}`;
@@ -1121,7 +1114,27 @@ function elUnwatch(root) {
   EL_OBSERVERS.delete(root);
   EL_I18N_ROOTS.delete(root);
 }
+// 🌍 Währung und Zahlen-/Datumsformat kommen aus Home Assistant (Einstellungen → System → Allgemein) – keine eigene Einstellung
+let EL_CUR = "EUR", EL_LOC = "de-DE", EL_DEC = ",";
+function elUseLocale(hass) {
+  const cur = String(hass?.config?.currency || "EUR").toUpperCase();
+  const loc = String(hass?.locale?.language || hass?.language || (EL_LANG === "de" ? "de-DE" : "en-GB"));
+  if (cur === EL_CUR && loc === EL_LOC) return;
+  try { new Intl.NumberFormat(loc, { style: "currency", currency: cur }); EL_CUR = cur; EL_LOC = loc; } catch (_) { return; }
+  try { EL_DEC = (1.5).toLocaleString(EL_LOC).replace(/\d/g, "") || ","; } catch (_) { EL_DEC = ","; }
+}
+// 💱 Betrag mit Währung: „12,50 €“, „CHF 12.50“, „£12.50“ (cur leer = Währung aus HA)
+function elMoney(n, cur) {
+  const v = Number(n) || 0, c = String(cur || EL_CUR).trim();
+  const code = /^(€|eur)$/i.test(c) ? "EUR" : /^(fr\.?|sfr\.?)$/i.test(c) ? "CHF" : /^£$/.test(c) ? "GBP" : /^\$$/.test(c) ? "USD" : c.toUpperCase();
+  try { return v.toLocaleString(EL_LOC, { style: "currency", currency: code }).replace(/[\u00a0\u202f]/g, " "); } catch (_) { return `${elNum(v)} ${c}`; }
+}
+// 🔢 Zahl mit 2 Nachkommastellen im Format der HA-Sprache („1,19“ / „1.19“)
+const elNum = (n, d = 2) => { try { return Number(n).toLocaleString(EL_LOC, { minimumFractionDigits: d, maximumFractionDigits: d }); } catch (_) { return Number(n).toFixed(d).replace(".", EL_DEC); } };
+// 💱 Nur das Währungszeichen (für „Betrag in …“)
+const elCurSym = () => { try { return new Intl.NumberFormat(EL_LOC, { style: "currency", currency: EL_CUR }).formatToParts(1).find((p) => p.type === "currency")?.value || EL_CUR; } catch (_) { return EL_CUR; } };
 function elUseLang(hass, config, root) {
+  elUseLocale(hass);
   const lang = elWantLang(hass, config);
   if (lang !== EL_LANG) EL_LANG = lang;
   if (root) elWatch(root);
@@ -1219,7 +1232,7 @@ function qtyValue(text) { // „1½“ -> 1.5, „1 1/2“ -> 1.5, „1/2“ -> 
   return Number.isFinite(v) && /^\d+(?:[.,]\d+)?$/.test(t) ? v : null;
 }
 const qtyRound = (v) => Math.floor(v * 100 + 0.5) / 100;
-const qtyNumText = (v) => { v = qtyRound(v); return Number.isInteger(v) ? String(v) : String(v).replace(".", ","); };
+const qtyNumText = (v) => { v = qtyRound(v); return Number.isInteger(v) ? String(v) : String(v).replace(".", EL_DEC); };
 function qtyFmt(num, unit) { // Zahl (oder Bereich) + Einheit ordentlich, null wenn nicht lesbar
   const m = String(num).trim().match(QTY_RANGE_RX);
   if (!m) return null;
@@ -1334,7 +1347,7 @@ function scaleQty(qty, factor) {
     if (v >= 10) return Math.round(v);
     return Math.round(v * 10) / 10;
   };
-  const fmt = (v) => String(v).replace(".", ",");
+  const fmt = (v) => String(v).replace(".", EL_DEC);
   const a = round(num(m[1]) * factor);
   const b = m[2] ? round(num(m[2]) * factor) : null;
   const n = fmt(a) + (b != null && b !== a ? "-" + fmt(b) : "");
@@ -2903,6 +2916,7 @@ ha-card.labels .tool { padding:4px 6px; }
 @media (hover:none) { .tabs { scrollbar-width:none; } .tabs::-webkit-scrollbar { display:none; } }
 .tab { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; --c: var(--primary-color,#03a9f4); flex:0 0 auto; border:1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background:transparent; border-radius:999px; padding:5px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.9em; }
 .tab.closed:not(.active) { opacity:.45; filter:grayscale(1); } /* 🕒 Geschäft hat gerade zu */
+.tab.here { border-width:3px; box-shadow:0 0 0 2px var(--c); } /* 📍 gerade ist jemand dort */
 .tab.closed.active { filter:grayscale(.8); opacity:.8; }
 .tab .tclock { --mdc-icon-size:17px; color:var(--c); flex:0 0 auto; display:inline-flex; }
 .tab.active .tclock { color:var(--tc, #fff); }
@@ -3311,7 +3325,6 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 @media (prefers-reduced-motion: reduce) { .mascot.full, .mascot.hop { animation: none; } }
 .item .meta .iout { color:var(--primary-text-color); font-weight:500; background:color-mix(in srgb, var(--error-color, #db4437) 9%, transparent); border-radius:8px; padding:0 6px; font-weight:400; }
 .item.gone:not(.done) .name { opacity:.55; } .item.gone:not(.done) .check { opacity:.55; } /* ❌ war nicht da: grau, bleibt aber für alle sichtbar */
-.item.gone.done .check ha-icon { color:var(--error-color, #db4437); }
 .moverow .outbtn.gonebtn { --c:var(--error-color, #db4437); }
 .moverow .outbtn { --c:var(--primary-color,#03a9f4); display:inline-flex; align-items:center; gap:4px; --mdc-icon-size:16px; }
 /* 👨‍🍳 Knöpfe unter der Kochmütze: Foto blau, Kochen rot, Teilen grün (nur das Symbol) */
@@ -3721,14 +3734,14 @@ async function elOcrRead(dataUrl, onProgress) {
 // 🧾 Kassenbon lesen: Betrag („zu zahlen“, „Summe“ …), Datum und Geschäft herausfischen
 function elReceiptInfo(text, stores = [], today = new Date()) {
   const lines = String(text || "").split(/\n+/).map((l) => l.trim()).filter(Boolean);
-  const moneyRx = /(\d{1,3}(?:\.\d{3})+,\d{2}|\d+\s?[,.]\s?\d{2})(?!\d)/g;
+  const moneyRx = /(\d{1,3}(?:\.\d{3})+,\d{2}|\d{1,3}(?:['’]\d{3})+\.\d{2}|\d+\s?[,.]\s?\d{2}|\d+\.-)(?!\d)/g; // 🇨🇭 auch „1'234.50“ und „12.-“
   const money = (l) => [...l.replace(/\d{1,2}[.\-/]\d{1,2}[.\-/]\d{2,4}|\d{1,2}:\d{2}(?::\d{2})?/g, " ").matchAll(moneyRx)].map((m) => { // Datum und Uhrzeit sind keine Beträge
-    let v = m[1].replace(/\s/g, "");
+    let v = m[1].replace(/[\s'’]/g, "").replace(/\.-$/, ".00");
     v = v.includes(",") ? v.replace(/\./g, "").replace(",", ".") : v;
     return parseFloat(v);
   }).filter((n) => n > 0 && n < 10000);
-  const strong = /(zu zahlen|zahlbetrag|gesamtbetrag|gesamtsumme|endbetrag|summe|total|gesamt|betrag)/i;
-  const skip = /(gegeben|r[üu]e?ckgeld|zur[üu]ck|wechselgeld|mwst|mehrwertsteuer|\bust\b|steuer|netto|brutto|rabatt|ersparnis|gespart|pfand|punkte|payback|preisvorteil|vorteil|coupon|auszahlung|bargeld)/i;
+  const strong = /(zu zahlen|zahlbetrag|gesamtbetrag|gesamtsumme|endbetrag|summe|total|gesamt|betrag|to pay|amount due|balance due)/i; // 🌍 auch „Total CHF“, „Fr.“, „£“
+  const skip = /(gegeben|r[üu]e?ckgeld|zur[üu]ck|wechselgeld|mwst|mehrwertsteuer|\bust\b|steuer|netto|brutto|rabatt|ersparnis|gespart|pfand|punkte|payback|preisvorteil|vorteil|coupon|auszahlung|bargeld|rundung|change due|cashback)/i;
   const card = /(girocard|\bec\b|karte|visa|master|maestro|kreditkarte|bar\b)/i;
   const pickMax = (rx, notRx) => {
     const all = lines.filter((l) => rx.test(l) && !(notRx && notRx.test(l))).flatMap(money);
@@ -4320,6 +4333,10 @@ class EinkaufslisteCard extends HTMLElement {
     this._autoStore();
     this._updateLive();
     this._applyScheme(hass);
+    if (this._data) { // 📍 jemand kommt/geht in eine Geschäfts-Zone → Reiter neu (dicker Rand)
+      const zsig = this._data.stores.map((s) => this._someoneAt(s) ? 1 : 0).join("");
+      if (zsig !== this._zoneSig) { const first = this._zoneSig === undefined; this._zoneSig = zsig; if (!first) this._renderTabs(); }
+    }
   }
 
   // 🌙 Dunkles Design: auch die Aufklapp-Listen (select) dunkel – der Browser malt sie sonst hell
@@ -4547,7 +4564,7 @@ class EinkaufslisteCard extends HTMLElement {
         (data) => {
           if (elQueue.length) applyQueued(data, elQueue, this._hass); // Gemerktes gleich wieder drüberlegen
           const openBefore = this._data ? this._data.items.filter((i) => !i.checked).length : -1;
-          this._data = data;
+          this._data = data; EL_HOLIDAYS = data?.holidays || {}; // 🎌 aus dem HA-Feiertagskalender
           this._autoSpend(openBefore);
           this._error = null;
           if (!this._seenSnap && this._mySeen()) this._seenSnap = { ...this._mySeen() };
@@ -4722,7 +4739,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (!st) return;
     this.shadowRoot.querySelector(".hourspop")?.remove();
     const hasBr = Array.isArray(st.branches) && st.branches.length > 0;
-    const rows = results.length ? results.map((r, i) => `<div class="hbr osmres"><b translate="no">${esc(r.name)}</b><div class="hint">${esc(r.address || r.place)}${r.distance_km != null ? ` · ${String(r.distance_km).replace(".", ",")} km` : ""}</div><div class="hint">${r.hours ? `✔ Zeiten lesbar: ${esc(r.raw || "")}` : r.raw ? `⚠ Zeiten nicht lesbar: ${esc(r.raw)}` : "Keine Zeiten bei OpenStreetMap"}</div><div class="hr"><button type="button" class="btn" data-osm="${i}" data-mode="branch">＋ Als Filiale</button>${hasBr ? "" : `<button type="button" class="btn" data-osm="${i}" data-mode="store">Für das Geschäft</button>`}</div></div>`).join("")
+    const rows = results.length ? results.map((r, i) => `<div class="hbr osmres"><b translate="no">${esc(r.name)}</b><div class="hint">${esc(r.address || r.place)}${r.distance_km != null ? ` · ${String(r.distance_km).replace(".", EL_DEC)} km` : ""}</div><div class="hint">${r.hours ? `✔ Zeiten lesbar: ${esc(r.raw || "")}` : r.raw ? `⚠ Zeiten nicht lesbar: ${esc(r.raw)}` : "Keine Zeiten bei OpenStreetMap"}</div><div class="hr"><button type="button" class="btn" data-osm="${i}" data-mode="branch">＋ Als Filiale</button>${hasBr ? "" : `<button type="button" class="btn" data-osm="${i}" data-mode="store">Für das Geschäft</button>`}</div></div>`).join("")
       : `<p class="hint">Nichts gefunden. Probier einen kürzeren Namen oder trage die Zeiten selbst ein.</p>`;
     const ov = document.createElement("div");
     ov.className = "hourspop";
@@ -4772,7 +4789,8 @@ class EinkaufslisteCard extends HTMLElement {
       const has = br.length ? `${br.length} Filialen – jede mit Adresse, Telefon und Zeiten.` : h ? "Öffnungszeiten sind eingetragen." : "";
       return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">${br.length ? "🏬 Filialen ändern" : `🕒 Öffnungszeiten ${h ? "ändern" : "eintragen (optional)"}`}</button><p class="hint">${has || "Noch keine eingetragen – das ist in Ordnung, dann ändert sich nichts."}</p></div>`;
     }
-    const sel = `<b class="hhead">🎌 An Feiertagen zu</b><div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:calendar-star"></ha-icon><select class="grow" data-field="holiday_state" title="An den gesetzlichen Feiertagen dieses Bundeslandes gilt das Geschäft als geschlossen"><option value="">Feiertage ignorieren</option>${Object.entries(EL_STATES).map(([k, v]) => `<option value="${k}" ${e.holiday_state === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>`;
+    const cals = this._data?.holiday_cals || [], MYHA = "https://my.home-assistant.io/redirect/config_flow_start/?domain=holiday";
+    const sel = `<b class="hhead">🎌 Feiertage</b><p class="hint">${cals.length ? `An Feiertagen aus <span translate="no">${esc(cals.join(", "))}</span> gilt jedes Geschäft als geschlossen (Integration „Feiertage“ von Home Assistant).` : `Noch kein Feiertags-Kalender. Richte in Home Assistant die Integration <b>„Feiertage“</b> für dein Land/Bundesland/Kanton ein – dann gelten Feiertage automatisch als geschlossen.`}</p>${cals.length ? "" : `<div class="hr"><a class="btn" href="${MYHA}" target="_blank" rel="noopener">🎌 Feiertage einrichten</a></div>`}`;
     let main;
     if (br.length) {
       // 🏬 pro Filiale alles zusammen: Name, Adresse, Telefon, Zeiten
@@ -4781,7 +4799,7 @@ class EinkaufslisteCard extends HTMLElement {
         return `<div class="hbranch brrow"><div class="hr brtop" data-act="hours-bredit" data-id="${e.id}" data-bid="${b.id}" role="button" tabindex="0" title="Diese Filiale bearbeiten"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><span class="grow brtxt"><b translate="no">${esc(b.name)}</b><small class="hint">${sub}</small></span></div><div class="hr brbtnrow"><button type="button" class="iconbtn" data-act="hours-brup" data-bid="${b.id}" title="Filiale nach oben" ${i ? "" : "disabled"}><ha-icon icon="mdi:arrow-up"></ha-icon></button><button type="button" class="iconbtn" data-act="hours-brdown" data-bid="${b.id}" title="Filiale nach unten" ${i < br.length - 1 ? "" : "disabled"}><ha-icon icon="mdi:arrow-down"></ha-icon></button><button type="button" class="btn" data-act="hours-bredit" data-id="${e.id}" data-bid="${b.id}" title="Diese Filiale bearbeiten">✏️ Bearbeiten</button></div></div>`;
       }).join("");
     } else main = this._hoursWeekHtml(h, e.id, "");
-    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">${br.length ? "🏬 Filialen" : "🕒 Öffnungszeiten"} ▴ zuklappen</button><div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button><button type="button" class="btn" data-act="hours-osm" data-id="${e.id}" title="Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)">🌐 Zeiten aus OpenStreetMap</button></div>${main}${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten, Adresse, Telefon und Tipps – „✏️ Bearbeiten“ öffnet dafür ein eigenes Fenster. Der Reiter ist nur grau, wenn alle Filialen zu haben. Mit den Pfeilen sortierst du die Filialen. 🌐 „Zeiten aus OpenStreetMap“ sucht das Geschäft im Netz (nur auf Knopfdruck) – die Zeiten stammen von Freiwilligen, bitte kurz prüfen. 🎌 Mit dem Bundesland gilt das Geschäft an dessen gesetzlichen Feiertagen als geschlossen.</p></div>`;
+    return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">${br.length ? "🏬 Filialen" : "🕒 Öffnungszeiten"} ▴ zuklappen</button><div class="hr"><button type="button" class="btn" data-act="hours-bradd" data-id="${e.id}" title="Eine Filiale mit eigenen Öffnungszeiten hinzufügen (z. B. 3 Märkte der gleichen Kette)">＋ Filiale</button><button type="button" class="btn" data-act="hours-osm" data-id="${e.id}" title="Sucht das Geschäft bei OpenStreetMap und übernimmt die Zeiten (nur auf Knopfdruck)">🌐 Zeiten aus OpenStreetMap</button></div>${main}${sel}<p class="hint">Hat das Geschäft zu, wird sein Reiter oben grau. Gedrückt halten auf den Namen zeigt die Zeiten. „＋ Zeit“ = mehrere Zeitfenster am Tag (z. B. 8–12 und 14–18 Uhr). „📋 auf Tage…“ überträgt die Zeiten auf andere Tage. 🏬 Mit „＋ Filiale“ hat jede Filiale eigene Zeiten, Adresse, Telefon und Tipps – „✏️ Bearbeiten“ öffnet dafür ein eigenes Fenster. Der Reiter ist nur grau, wenn alle Filialen zu haben. Mit den Pfeilen sortierst du die Filialen. 🌐 „Zeiten aus OpenStreetMap“ sucht das Geschäft im Netz (nur auf Knopfdruck) – die Zeiten stammen von Freiwilligen, bitte kurz prüfen. 🎌 Feiertage kommen aus der Home-Assistant-Integration „Feiertage“ – in jedem Land.</p></div>`;
   }
 
   _hoursCollect(box) {
@@ -4797,7 +4815,14 @@ class EinkaufslisteCard extends HTMLElement {
   // 🏬 Alle Filialen eines Geschäfts (Kopie der gespeicherten Daten – bearbeitet wird im eigenen Fenster)
   _branchesCollect(storeId) {
     const st = this._store(storeId);
-    return (st?.branches || []).map((b) => ({ id: b.id, name: b.name, hours: b.hours || null, address: b.address || null, phone: b.phone || null, tips: b.tips || null }));
+    return (st?.branches || []).map((b) => ({ id: b.id, name: b.name, hours: b.hours || null, address: b.address || null, phone: b.phone || null, tips: b.tips || null, country: b.country || null }));
+  }
+  // 🌍 Land-Auswahl (leer = Land aus Home Assistant) – wichtig z. B. für Einkäufe im Nachbarland (EUR statt CHF)
+  _countrySel(cur, attrs) {
+    const ha = this._hass?.config?.country || "";
+    const list = [...new Set(["DE", "AT", "CH", "IT", "FR", "NL", "BE", "LU", "DK", "PL", "CZ", "GB", "US", ...(cur ? [cur] : [])])];
+    let name = (c) => c; try { const dn = new Intl.DisplayNames([EL_LOC], { type: "region" }); name = (c) => dn.of(c) || c; } catch (_) { /* nur Kürzel */ }
+    return `<select ${attrs} title="Land (leer = wie in Home Assistant)"><option value="">${esc(elT("🌍 Land wie in Home Assistant"))}${ha ? ` (${esc(name(ha))})` : ""}</option>${list.map((c) => `<option value="${c}" ${c === cur ? "selected" : ""}>${esc(name(c))}</option>`).join("")}</select>`;
   }
 
   // 🏬 Eine Filiale in einem eigenen Fenster bearbeiten (wie ein Rezept): erst „Speichern“ schreibt etwas weg
@@ -4814,6 +4839,7 @@ class EinkaufslisteCard extends HTMLElement {
     ov.innerHTML = `<div class="hbox brbox"><b>${b ? "🏬 Filiale bearbeiten" : "🏬 Neue Filiale"}</b><small class="hint" translate="no">${esc(st.name)}</small>
       <label class="brf"><span>🏷️ Name</span><input data-bf="name" maxlength="40" value="${esc(b?.name || "")}" placeholder="z. B. Innenstadt"></label>
       <label class="brf"><span>📍 Adresse</span><input data-bf="address" maxlength="120" value="${esc(b?.address || "")}" placeholder="z. B. Hauptstraße 1, Steinfurt"></label>
+      <label class="brf"><span>🌍 Land</span>${this._countrySel(b?.country || "", 'data-bf="country"')}</label>
       <label class="brf"><span>📞 Telefon</span><input data-bf="phone" type="tel" inputmode="tel" maxlength="40" value="${esc(b?.phone || "")}" placeholder="z. B. 02551 12345"></label>
       <label class="brf"><span>💡 Tipps</span><textarea data-bf="tips" rows="2" maxlength="300" placeholder="z. B. Parkplatz hinten ist frei, Pfandautomat links">${esc(b?.tips || "")}</textarea></label>
       <b class="hhead">🕒 Öffnungszeiten</b>${this._hoursWeekHtml(hours, storeId, b?.id || "neu")}
@@ -4838,7 +4864,7 @@ class EinkaufslisteCard extends HTMLElement {
       const val = (k) => ov.querySelector(`[data-bf="${k}"]`).value.trim() || null;
       const name = val("name");
       if (!name) { this._toast("🏬 Die Filiale braucht einen Namen"); ov.querySelector('[data-bf="name"]').focus(); return; }
-      const entry = { name, address: val("address"), phone: val("phone"), tips: val("tips"), hours: this._hoursCollect(ov.querySelector(".hoursed[data-hoursed]")) };
+      const entry = { name, address: val("address"), country: val("country"), phone: val("phone"), tips: val("tips"), hours: this._hoursCollect(ov.querySelector(".hoursed[data-hoursed]")) };
       const k = b ? cur.findIndex((x) => x.id === b.id) : -1;
       if (k >= 0) cur[k] = { ...cur[k], ...entry }; else cur.push(entry);
       send(cur);
@@ -5588,6 +5614,11 @@ class EinkaufslisteCard extends HTMLElement {
     this._renderMyView();
   }
 
+  // 📍 Ist gerade jemand (egal wer) in einer Zone dieses Geschäfts? HA zählt die Personen je Zone im Zustand der Zone.
+  _someoneAt(s) {
+    if (this._privacyOn() || this._viewPrefs().zone_here === false) return false;
+    return storeZones(s).some((z) => Number(this._hass?.states?.[z]?.state) > 0);
+  }
   _renderTabs() {
     const tabs = this.$("tabs");
     const d = this._data;
@@ -5603,8 +5634,8 @@ class EinkaufslisteCard extends HTMLElement {
     const inAll = (i) => !this._store(i.store_id)?.not_in_all; // 🔨 Geschäfte mit „Nicht unter ‚Alle‘“ zählen dort nicht mit
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(inAll)}</span>${bubble(inAll, active === "all")}</button>`];
     for (const s of d.stores) {
-      const closed = elStoreClosed(s);
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""}" ${closed ? 'title="Geschlossen"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || (!i.store_id && !s.no_any))}</span>${bubble((i) => i.store_id === s.id || (!i.store_id && !s.no_any), active === s.id)}</button>`);
+      const closed = elStoreClosed(s), here = this._someoneAt(s);
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""} ${here ? "here" : ""}" ${closed ? 'title="Geschlossen"' : here ? 'title="Gerade ist jemand dort 📍"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || (!i.store_id && !s.no_any))}</span>${bubble((i) => i.store_id === s.id || (!i.store_id && !s.no_any), active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
@@ -5964,7 +5995,7 @@ class EinkaufslisteCard extends HTMLElement {
     // hinter dem Namen: für wen es ist (wer es eingetragen hat, steht klein darunter)
     const who = item.for_whom && v.for_whom ? this._forWhomHtml(item.for_whom) : "";
     const qty = item.quantity && v.qty ? `<button class="qty" data-act="qty-edit" title="Menge ändern">${esc(this._qtyNow(item))}</button>` : "";
-    const icon = item.checked ? (gone ? "mdi:close-circle" : "mdi:check-circle") : "mdi:checkbox-blank-circle-outline"; // ✔ erledigt = voller Haken (wie am Ende der Abhak-Animation)
+    const icon = item.checked ? "mdi:check-circle" : "mdi:checkbox-blank-circle-outline"; // ❌ war nicht da: unter „Erledigt“ normaler Haken (kein rotes X vorne, Marco) // ✔ erledigt = voller Haken (wie am Ende der Abhak-Animation)
     const cat = this._cat(item.category_id);
     const isNew = v.new && this._isNew(item);
     return `
@@ -6004,7 +6035,7 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   _fmtQty(n, unit) {
-    const num = Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100).replace(".", ",");
+    const num = Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100).replace(".", EL_DEC);
     return normQty(unit === "x" ? `${num}x` : `${num} ${unit}`); // 1 Dose -> 2 Dosen
   }
 
@@ -6065,10 +6096,13 @@ class EinkaufslisteCard extends HTMLElement {
     box.innerHTML = `<p class="hint">Prüfe … 🔍</p>`;
     this._ws({ type: "einkaufsliste/check" }).then((res) => {
       const items = res.items || [];
-      if (!items.length) { box.innerHTML = `<p>✅ <b>Alles ok!</b> Nichts gefunden. 🎉</p>`; return; }
+      // 🎌 Feiertage fehlen: Öffnungszeiten eingetragen, aber kein Feiertags-Kalender in Home Assistant
+      const noHol = !(this._data?.holiday_cals || []).length && (this._data?.stores || []).some((st) => elHasHoursInfo(st));
+      const pre = noHol ? `<div class="chkitem"><p>🎌 <b>Feiertage fehlen.</b> Ohne die Home-Assistant-Integration „Feiertage“ gelten deine Geschäfte an Feiertagen als offen.</p><div class="btnrow"><a class="btn" href="https://my.home-assistant.io/redirect/config_flow_start/?domain=holiday" target="_blank" rel="noopener">🎌 Feiertage einrichten</a></div></div>` : "";
+      if (!items.length) { box.innerHTML = pre + `<p>✅ <b>Alles ok!</b> Nichts gefunden. 🎉</p>`; return; }
       const shown = items.slice(0, 150);
       this._checkEdits = Object.fromEntries(shown.filter((e) => e.edit).map((e) => [e.id, e.edit]));
-      box.innerHTML = `<p><b>⚠️ ${items.length} ${items.length === 1 ? "Sache gefunden" : "Sachen gefunden"}.</b> Anhaken, was repariert werden soll – und wie:</p>
+      box.innerHTML = pre + `<p><b>⚠️ ${items.length} ${items.length === 1 ? "Sache gefunden" : "Sachen gefunden"}.</b> Anhaken, was repariert werden soll – und wie:</p>
         <div class="btnrow"><button class="btn" data-act="check-all">Alle an</button><button class="btn" data-act="check-none">Alle aus</button></div>
         <div class="chklist">${shown.map((e) => {
           const pick = e.options ? `<select title="So reparieren">${e.default ? "" : `<option value="" data-need="${e.empty ? "" : "1"}">${e.empty ? "" : "– bitte wählen –"}</option>`}
@@ -7015,6 +7049,7 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
         <b class="shead">ℹ️ Steckbrief</b>
         ${Array.isArray(e.branches) && e.branches.length ? `<p class="hint">🏬 Dieses Geschäft hat Filialen: Adresse, Telefon und Tipps stehen bei jeder Filiale oben unter „🏬 Filialen“. Die Webseite hier gilt für alle Filialen.</p>` : ""}
         ${!(Array.isArray(e.branches) && e.branches.length) || e.address ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-field="address" value="${esc(e.address || "")}" placeholder="📍 Adresse, z. B. Hauptstraße 5, 48565 Steinfurt" maxlength="120"></div>` : ""}
+        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:earth"></ha-icon>${this._countrySel(e.country || "", 'class="grow" data-field="country"')}</div>
         ${!(Array.isArray(e.branches) && e.branches.length) || e.phone ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-field="phone" value="${esc(e.phone || "")}" placeholder="📞 Telefon" maxlength="40"></div>` : ""}
         <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:web"></ha-icon><input class="grow" type="url" inputmode="url" data-field="website" value="${esc(e.website || "")}" placeholder="🌐 Webseite (https://…)"></div>
         ${!(Array.isArray(e.branches) && e.branches.length) || e.tips ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:lightbulb-on-outline"></ha-icon><textarea class="grow" data-field="tips" rows="2" maxlength="300" placeholder="💡 Eure Tipps, z. B. Parkplatz hinten ist frei, Pfandautomat streikt oft">${esc(e.tips || "")}</textarea></div>` : ""}
@@ -10496,8 +10531,8 @@ ${(() => {
       Object.assign(ov.style, { background: "#111", justifyContent: "flex-start", overflowY: "auto", touchAction: "pan-y",
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)" });
     }
-    const loc = EL_LANG === "de" ? "de-DE" : "en-GB";
-    const eur = (n) => n.toLocaleString(loc, { style: "currency", currency: "EUR" });
+    const loc = EL_LOC; // 🌍 Datum und Zahlen wie in Home Assistant eingestellt
+    const eur = (n) => elMoney(n); // 💱 Währung aus Home Assistant
     const cnt = (n) => EL_LANG === "de" ? `${n} ${n === 1 ? "Einkauf" : "Einkäufe"}` : `${n} ${n === 1 ? "purchase" : "purchases"}`;
     const two = (n) => String(n).padStart(2, "0");
     const iso = (d) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
@@ -10528,8 +10563,8 @@ ${(() => {
         body = `${autoAsk ? `<p class="sp-hint"><b>🎉 Alles abgehakt – Einkauf eintragen?</b></p>` : ""}<p class="sp-hint">Nach dem Einkauf: Wo warst du und wie viel hat es gekostet? Wer und wann trägt die Liste selbst ein.</p>
           <label class="sp-l">Geschäft</label>
           <select id="spStore">${stores.map((st) => opt(st.id, st.name, start)).join("")}</select>
-          <label class="sp-l">Betrag in €</label>
-          <input id="spAmount" inputmode="decimal" placeholder="z. B. 23,40" autocomplete="off">
+          <label class="sp-l">${esc(elT("Betrag in {}").replace("{}", elCurSym()))}</label>
+          <input id="spAmount" inputmode="decimal" placeholder="${esc(elT("z. B. {}").replace("{}", elNum(23.4)))}" autocomplete="off">
           <div class="sp-row" style="margin-top:8px"><button class="sp-q" data-sp="scan" style="flex:1">📷 Kassenbon lesen</button><button class="sp-q" data-sp="pdf" style="flex:1">📄 PDF einlesen</button></div>
           <input type="file" id="spPdf" accept="application/pdf,.pdf" hidden>
           <div class="sp-row" id="spAlts" style="margin-top:6px" hidden></div>
@@ -10601,17 +10636,17 @@ ${(() => {
       const info = elReceiptInfo(text, stores);
       bon = this._spendBon = data;
       const q = (id) => ov.querySelector(id);
-      if (info.amount != null && q("#spAmount")) q("#spAmount").value = info.amount.toFixed(2).replace(".", ",");
+      if (info.amount != null && q("#spAmount")) q("#spAmount").value = info.amount.toFixed(2).replace(".", EL_DEC);
       if (info.store && q("#spStore")) q("#spStore").value = info.store;
       if (info.day && q("#spDay")) q("#spDay").value = info.day;
       if (q("#spBon")) q("#spBon").textContent = info.amount == null
         ? (data ? "📎 Bon-Foto ist dabei. Den Betrag konnte ich nicht lesen – bitte selbst eintragen." : "Den Betrag konnte ich nicht lesen – bitte selbst eintragen.")
-        : (data ? "📎 Bon-Foto ist dabei. " : "") + `Erkannt: ${info.amount.toFixed(2).replace(".", ",")} €${info.sure ? "" : " (unsicher)"} – bitte kurz prüfen.`;
+        : (data ? "📎 Bon-Foto ist dabei. " : "") + `Erkannt: ${elMoney(info.amount)}${info.sure ? "" : " (unsicher)"} – bitte kurz prüfen.`;
       const alts = q("#spAlts"); // 🎯 war es vielleicht einer von diesen?
       if (alts) {
-        const fmt = (v) => v.toFixed(2).replace(".", ",");
+        const fmt = (v) => v.toFixed(2).replace(".", EL_DEC);
         alts.hidden = !info.alts?.length;
-        alts.innerHTML = info.alts?.length ? `<span style="align-self:center;font-size:13px;opacity:.75">${esc(elT("Oder war es:"))}</span>` + info.alts.map((v) => `<button class="sp-q" type="button" data-sp="alt" data-v="${fmt(v)}">${fmt(v)} €</button>`).join("") : "";
+        alts.innerHTML = info.alts?.length ? `<span style="align-self:center;font-size:13px;opacity:.75">${esc(elT("Oder war es:"))}</span>` + info.alts.map((v) => `<button class="sp-q" type="button" data-sp="alt" data-v="${fmt(v)}">${elMoney(v)}</button>`).join("") : "";
       }
     };
     ov.addEventListener("click", async (ev) => {
@@ -10850,7 +10885,7 @@ ${(() => {
     try { ld = await this._ws({ type: "einkaufsliste/load" }); } catch (_) { /* Last-Zahlen sind nur ein Extra */ }
     const box = this.$("statsBox");
     if (!box || !st) return;
-    const mb = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(1).replace(".", ",")} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+    const mb = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(1).replace(".", EL_DEC)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
     const row = (icon, label, val) => `<div class="statrow"><ha-icon icon="${icon}"></ha-icon><span class="grow">${label}</span><b translate="no">${val}</b></div>`;
     box.innerHTML = `<div class="stats">
       ${row("mdi:database-outline", "Daten (Liste, Produkte, Rezepte, Verlauf)", mb(st.data_bytes))}
@@ -10888,6 +10923,9 @@ ${(() => {
         : t("Aus = alles wie gehabt. An = keine Kamera, keine Fotos, kein Barcode-Scanner, kein KI-Kochen (für alle Geräte).", "Off = as usual. On = no camera, no photos, no barcode scanner, no AI cooking (for all devices).")}</p>`;
     return `<div translate="no">
       ${sw}
+      <p class="hint">📍 <b>${t("Jemand ist gerade dort", "Someone is there right now")}</b>: ${t(
+        "Ist jemand in einer Zone eines Geschäfts, bekommt dessen Reiter oben einen dicken Rand – für alle, die die Liste sehen. Wer genau dort ist, steht nirgends. Das kommt aus deinem Home Assistant und bleibt im Haus. Abschalten: 👁️ Ansicht → „Jemand ist gerade dort“. Bei Datenschutz an ist es immer aus.",
+        "If someone is in a zone of a store, its tab at the top gets a thick border – for everyone who sees the list. Who exactly is there is not shown. It comes from your Home Assistant and stays at home. Switch off: 👁️ View → “Someone is there right now”. With privacy on it is always off.")}</p>
       <p class="hint">🏠 <b>${t("Das bleibt in deinem Home Assistant", "This stays in your Home Assistant")}</b>: ${t(
         "deine Liste, Rezepte, Fotos, Verlauf, Einstellungen und Sicherungen. Es gibt keine Cloud vom Entwickler, keine Werbung und kein Tracking.",
         "your list, recipes, photos, history, settings and backups. There is no developer cloud, no ads and no tracking.")}</p>
@@ -11940,7 +11978,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
   // 🏷️ „🏷️ 1,19 € bis Sa.“ – liegt der Start in der Zukunft: „ab Mo.“
   _offerLabel(off) {
     const day = (iso) => { const d = new Date(iso); return `${WD_SHORT[pyWd(d)]}.`; };
-    const price = `${Number(off.p).toFixed(2).replace(".", ",")} ${this._cur(off.cur)}`;
+    const price = elMoney(off.p, off.cur || "EUR"); // 🏷️ Angebote behalten ihre eigene Währung (Marktguru = €)
     let when = "";
     if (off.from && new Date(off.from) > new Date()) when = ` <span>ab</span> ${day(off.from)}`;
     else if (off.to) when = ` <span>bis</span> ${day(off.to)}`;
@@ -11970,7 +12008,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
   }
 
   _offersOverlay(titleHtml, list, btnLabel, onTake) {
-    const eur = (n, c) => `${Number(n).toFixed(2).replace(".", ",")} ${this._cur(c)}`;
+    const eur = (n, c) => elMoney(n, c || "EUR");
     const day = (iso) => { if (!iso) return ""; const d = new Date(iso); return `${WD_SHORT[pyWd(d)]}. ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`; };
     if (this._openPage) { // 🏷️ als Seite IN der Karte (Pfeil zurück, Farben der Karte)
       this._openPage({ key: "offers", title: "Angebote", icon: "mdi:tag-outline", color: "#d81b60", build: (body) => {
@@ -12046,7 +12084,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     try {
       const res = await this._ws({ type: "einkaufsliste/offers/take", offer: { p: o.p, to: o.to || null, from: o.from || null, r: o.r, d: o.d || null, img: o.img || null, ...(o.cur ? { cur: o.cur } : {}), ...(o.url ? { url: o.url } : {}) }, // 📸 Foto des Angebots kommt mit
         ...(item ? { item_id: item.id } : { name }), store_id: store?.id || null, ...(extra ? { extra: true } : {}) });
-      this._toast(`🛒 ${res?.name || item?.name || name}: ${store ? store.name : "Egal wo"} · ${Number(o.p).toFixed(2).replace(".", ",")} ${this._cur(o.cur)}`);
+      this._toast(`🛒 ${res?.name || item?.name || name}: ${store ? store.name : "Egal wo"} · ${elMoney(o.p, o.cur || "EUR")}`);
       return true;
     } catch (_) { return false; }
   }
