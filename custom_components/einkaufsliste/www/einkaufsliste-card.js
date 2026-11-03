@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.26-beta.2";
+const EL_VERSION = "2.76.26-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.24"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -414,6 +414,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🎌 <b>Feiertage pro Geschäft:</b> Unter ⚙️ → Geschäfte → Öffnungszeiten wählst du bei „🎌 Feiertage“: <b>Automatisch</b> (alle Feiertags-Kalender), einen <b>bestimmten Kalender</b> (z. B. Laden in der Schweiz) oder <b>Keine</b> (Kiosk, Tankstelle, Bofrost – hat an Feiertagen offen). Gilt auch für alle Filialen.",
+   "New: 🎌 <b>Holidays per store:</b> under ⚙️ → Stores → opening hours choose at “🎌 Holidays”: <b>Automatic</b> (all holiday calendars), one <b>specific calendar</b> (e.g. a shop in Switzerland) or <b>None</b> (kiosk, petrol station – open on holidays). Applies to all branches too."],
   ["Neu: 🌍 <b>Währung und Zahlen wie in Home Assistant:</b> Einkaufs-Protokoll und Bon-Foto nehmen die Währung aus HA (Einstellungen → System → Allgemein), z. B. „CHF 12.50“ oder „£12.50“. Zahlen und Datum richten sich nach der HA-Sprache. Der Bon-Leser kennt jetzt auch „Total CHF“, „Fr.“, „1'234.50“ und „12.-“. Gemeldete Angebote behalten ihre eigene Währung.",
    "New: 🌍 <b>Currency and numbers like in Home Assistant:</b> the purchase log and receipt photo use the currency from HA (Settings → System → General), e.g. “CHF 12.50” or “£12.50”. Numbers and dates follow the HA language. The receipt reader now also knows “Total CHF”, “Fr.”, “1'234.50” and “12.-”. Reported offers keep their own currency."],
   ["Neu: 🎌 <b>Feiertage in jedem Land:</b> Statt der Bundesland-Auswahl nimmt die Liste die Feiertage aus der Home-Assistant-Integration „Feiertage“ (z. B. Schweiz/Tessin mit dem 1. August). Noch keine eingerichtet? Unter ⚙️ → Geschäfte → Öffnungszeiten und in „Alles ok?“ gibt es den Knopf „🎌 Feiertage einrichten“.",
@@ -575,11 +577,11 @@ const VIEW_OPTS = [
   ["offer", "🏷️ Angebote", "Preis und Schild"],
   ["out", "⇄ „war aus“-Hinweis", ""],
   ["gone", "❌ „War nicht da“-Knopf", "im ⇄-Fenster: bleibt 2 Tage grau stehen, dann ohne Kauf erledigt"],
-  ["zone_here", "📍 Jemand ist gerade dort", "Reiter oben bekommt einen dicken Rand, solange jemand in einer Zone des Geschäfts ist (aus bei Datenschutz an)"],
   ["move", "⇄ Verschieben-Knopf", "rechts am Artikel"],
   ["new", "✨ Neu-Zeichen", "neu seit deinem letzten Blick"],
   ["cat_color", "🎨 Farbe der Kategorie", "farbiger Streifen links"],
   ["tabs", "🏪 Geschäfte-Leiste oben", "die Reiter Alle · Netto · Aldi …"],
+  ["zone_here", "📍 Jemand ist gerade dort", "Reiter oben bekommt einen dicken Rand, solange jemand in einer Zone des Geschäfts ist (aus bei Datenschutz an)"],
   ["in_name", "✍️ Eingabefeld „Was brauchen wir?“", "mit Häkchen zum Eintragen"],
   ["in_store", "🏪 Geschäft-Auswahl beim Eintragen", ""],
   ["in_cat", "🗂️ Kategorie-Auswahl beim Eintragen", ""],
@@ -588,7 +590,7 @@ const VIEW_OPTS = [
   ["done_open", "📂 „Erledigt“ startet aufgeklappt", "aus = eingeklappt, Antippen klappt auf (das Gerät merkt es sich)"],
 ];
 const EL_DONE_KEY = "einkaufsliste_done_open"; // ✔️ auf diesem Gerät zuletzt auf-/zugeklappt
-const VIEW_TOP_N = 24; // Einträge ab hier gehören zu „Erledigt“
+const VIEW_TOP_N = 25; // Einträge ab hier gehören zu „Erledigt“
 // 🎨 Schrift auf einer Farbe: dunkel auf hellen Farben (Gelb, Hellgrün), sonst weiß
 function elTextOn(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
@@ -645,15 +647,23 @@ const elRanges = (d) => (!d || !d.length ? null : typeof d[0] === "string" ? [d]
 const elRangesTxt = (d) => { const r = elRanges(d); return r ? r.map((x) => `${x[0]} – ${x[1]}`).join(", ") : "zu"; };
 // 🎌 Feiertage kommen aus der HA-Integration „Feiertage“ (Kalender) – in jedem Land. Ohne Kalender: keine Feiertage.
 let EL_HOLIDAYS = {}; // "JJJJ-MM-TT" -> Name (vom Server, nächste 40 Tage)
+let EL_HOL_BY = {}; let EL_HOL_CALS = []; // 🎌 je Kalender (für „bestimmter Kalender“ pro Geschäft)
+// 🎌 Welche Feiertage gelten für dieses Geschäft? leer = automatisch (alle), "none" = keine, sonst nur dieser Kalender
+function elHolFor(st) {
+  const c = st?.holiday_cal;
+  if (c === "none") return {};
+  if (c && EL_HOL_CALS.includes(c)) return EL_HOL_BY[c] || {};
+  return EL_HOLIDAYS;
+}
 function elEaster(y) { // Gauß
   const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
   const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
   const mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
   return new Date(y, mo - 1, da);
 }
-function elHolidayName(date) {
+function elHolidayName(date, hol = null) {
   const k = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-  return EL_HOLIDAYS[k] || null;
+  return (hol || EL_HOLIDAYS)[k] || null;
 }
 function elOpenNow(hours, now = new Date(), hol = null) {
   if (!Array.isArray(hours) || hours.length !== 7) return null; // ohne Zeiten: unbekannt → normal anzeigen (Feiertage zählen nur mit Zeiten)
@@ -681,8 +691,9 @@ function elOpenNow(hours, now = new Date(), hol = null) {
 // 🏬 Geschäft mit Filialen: jede Filiale hat eigene Zeiten. Der Reiter ist nur grau, wenn ALLE zu haben.
 function elStoreInfos(st, now = new Date()) {
   const br = Array.isArray(st?.branches) && st.branches.length ? st.branches : null;
-  if (!br) return { branches: null, info: elOpenNow(st?.hours, now) };
-  return { branches: br.map((b) => ({ b, info: elOpenNow(b.hours, now) })), info: null };
+  const hol = elHolFor(st); // 🎌 gilt auch für alle Filialen
+  if (!br) return { branches: null, info: elOpenNow(st?.hours, now, hol) };
+  return { branches: br.map((b) => ({ b, info: elOpenNow(b.hours, now, hol) })), info: null };
 }
 function elStoreClosed(st, now = new Date()) {
   const r = elStoreInfos(st, now);
@@ -4564,7 +4575,7 @@ class EinkaufslisteCard extends HTMLElement {
         (data) => {
           if (elQueue.length) applyQueued(data, elQueue, this._hass); // Gemerktes gleich wieder drüberlegen
           const openBefore = this._data ? this._data.items.filter((i) => !i.checked).length : -1;
-          this._data = data; EL_HOLIDAYS = data?.holidays || {}; // 🎌 aus dem HA-Feiertagskalender
+          this._data = data; EL_HOLIDAYS = data?.holidays || {}; EL_HOL_BY = data?.holidays_by_cal || {}; EL_HOL_CALS = data?.holiday_cals || []; // 🎌 aus dem HA-Feiertagskalender
           this._autoSpend(openBefore);
           this._error = null;
           if (!this._seenSnap && this._mySeen()) this._seenSnap = { ...this._mySeen() };
@@ -4790,7 +4801,10 @@ class EinkaufslisteCard extends HTMLElement {
       return `<div class="hoursed"><button type="button" class="btn" data-act="hours-toggle" data-id="${e.id}">${br.length ? "🏬 Filialen ändern" : `🕒 Öffnungszeiten ${h ? "ändern" : "eintragen (optional)"}`}</button><p class="hint">${has || "Noch keine eingetragen – das ist in Ordnung, dann ändert sich nichts."}</p></div>`;
     }
     const cals = this._data?.holiday_cals || [], MYHA = "https://my.home-assistant.io/redirect/config_flow_start/?domain=holiday";
-    const sel = `<b class="hhead">🎌 Feiertage</b><p class="hint">${cals.length ? `An Feiertagen aus <span translate="no">${esc(cals.join(", "))}</span> gilt jedes Geschäft als geschlossen (Integration „Feiertage“ von Home Assistant).` : `Noch kein Feiertags-Kalender. Richte in Home Assistant die Integration <b>„Feiertage“</b> für dein Land/Bundesland/Kanton ein – dann gelten Feiertage automatisch als geschlossen.`}</p>${cals.length ? "" : `<div class="hr"><a class="btn" href="${MYHA}" target="_blank" rel="noopener">🎌 Feiertage einrichten</a></div>`}`;
+    const hc = e.holiday_cal === "none" ? "none" : cals.includes(e.holiday_cal) ? e.holiday_cal : "";
+    const calName = (c) => this.hass?.states?.[c]?.attributes?.friendly_name || c;
+    const pick = cals.length ? `<div class="hr"><label class="grow">Feiertage für dieses Geschäft <select data-act="holcal" data-store="${e.id}"><option value=""${hc === "" ? " selected" : ""}>Automatisch (alle Feiertags-Kalender)</option>${cals.map((c) => `<option value="${esc(c)}"${hc === c ? " selected" : ""} translate="no">${esc(calName(c))}</option>`).join("")}<option value="none"${hc === "none" ? " selected" : ""}>Keine – hat auch an Feiertagen offen</option></select></label></div>` : "";
+    const sel = `<b class="hhead">🎌 Feiertage</b><p class="hint">${cals.length ? (hc === "none" ? "Dieses Geschäft hat an Feiertagen ganz normal offen (z. B. Kiosk, Tankstelle, Bofrost)." : hc ? `Nur Feiertage aus <span translate="no">${esc(calName(hc))}</span> gelten hier als geschlossen – gut für einen Laden in einem anderen Land oder Bundesland.` : `An Feiertagen aus <span translate="no">${esc(cals.map(calName).join(", "))}</span> gilt dieses Geschäft als geschlossen (Integration „Feiertage“ von Home Assistant).`) + (br.length ? " Gilt für alle Filialen." : "") : `Noch kein Feiertags-Kalender. Richte in Home Assistant die Integration <b>„Feiertage“</b> für dein Land/Bundesland/Kanton ein – dann gelten Feiertage automatisch als geschlossen.`}</p>${pick}${cals.length ? "" : `<div class="hr"><a class="btn" href="${MYHA}" target="_blank" rel="noopener">🎌 Feiertage einrichten</a></div>`}`;
     let main;
     if (br.length) {
       // 🏬 pro Filiale alles zusammen: Name, Adresse, Telefon, Zeiten
@@ -14931,6 +14945,11 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       this._logF[logKey] = t.value;
       this._logMax = 150;
       this._renderLogList();
+      return;
+    }
+    if (t.dataset?.act === "holcal") { // 🎌 Feiertage pro Geschäft: Automatisch / bestimmter Kalender / Keine
+      this._ws({ type: "einkaufsliste/group/update", kind: "stores", group_id: t.dataset.store, holiday_cal: t.value || "" })
+        .then(() => { this._toast(t.value === "none" ? "🎌 Hier gibt's keine Feiertage – immer offen laut Zeiten" : t.value ? "🎌 Nur noch dieser Feiertags-Kalender" : "🎌 Wieder automatisch alle Feiertage"); this._renderSettings(); }).catch(() => {});
       return;
     }
     if (t.id === "catSetMode") { // 🗂️ eigene Kategorien pro Geschäft an/aus

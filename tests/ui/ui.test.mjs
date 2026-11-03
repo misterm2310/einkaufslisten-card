@@ -472,6 +472,25 @@ check("Filialen-Fenster: ＋ Filiale öffnet leeres Fenster, ohne Namen kein Spe
 check("Filialen: Tipps pro Filiale im ℹ️ des Zeiten-Fensters, beim Geschäft nur noch die Webseite", !r.stTips && r.stWeb && r.popTips === "💡 Parkplatz hinten", JSON.stringify(r));
 check("Ohne Filialen: Öffnungszeiten-Knopf und Adresse wie bisher", /Öffnungszeiten eintragen/.test(r.plainLbl) && r.plainAddr, JSON.stringify(r));
 
+// 26b) 🎌 Feiertage pro Geschäft: Auswahl Automatisch / Kalender / Keine – „Keine“ = an Feiertagen offen
+r = await p.evaluate(`(async () => { const c=${card}; const q=(x)=>c.shadowRoot.querySelector(x); const w=()=>new Promise(r=>setTimeout(r,40));
+  const today=new Date(); const k=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+  const orig=structuredClone(c._data); const nd=structuredClone(c._data); const conn=c._hass.connection; const sub=conn.subscribeMessage;
+  Object.assign(nd,{holidays:{[k]:"Testtag"},holidays_by_cal:{"calendar.de":{[k]:"Testtag"},"calendar.ch":{}},holiday_cals:["calendar.ch","calendar.de"]});
+  const st=nd.stores[1]; st.hours=Array(7).fill([["00:00","23:59"]]); st.branches=null;
+  const feed=async(d)=>{ conn.subscribeMessage=async(cb)=>{ cb(structuredClone(d)); return ()=>{}; }; await c._subscribe(); conn.subscribeMessage=sub; await w(); };
+  const closed=async(v)=>{ st.holiday_cal=v; await feed(nd); c._renderAll(); await w(); return !!q('.tab.closed[data-tab="'+st.id+'"]'); };
+  const auto=await closed(null), none=await closed("none"), ch=await closed("calendar.ch"), de=await closed("calendar.de");
+  st.holiday_cal=null; await feed(nd);
+  c._view="settings"; c._setSec="stores"; c._lastSetSec="stores"; c._storeSel=st.id; c._hoursOpenFor=st.id; c._renderAll(); await w();
+  const sel=q('select[data-act="holcal"]'); const opts=sel?[...sel.options].map(o=>o.value):[];
+  const sent=[]; const ws=c._ws; c._ws=async(m)=>{ sent.push(m); return {}; };
+  if (sel) { sel.value="none"; sel.dispatchEvent(new Event("change",{bubbles:true,composed:true})); await w(); }
+  c._ws=ws; c._hoursOpenFor=null; c._storeSel=null; c._setSec=null; c._view="list"; await feed(orig); c._renderAll();
+  return { auto, none, ch, de, opts, msg: sent[0] }; })()`);
+check("Feiertage pro Geschäft: Automatisch zu, Keine offen, nur Schweiz offen, nur DE zu", r.auto === true && r.none === false && r.ch === false && r.de === true, JSON.stringify(r));
+check("Feiertage pro Geschäft: Auswahl mit Automatisch, Kalendern, Keine – schickt holiday_cal", JSON.stringify(r.opts) === '["","calendar.ch","calendar.de","none"]' && r.msg?.holiday_cal === "none" && r.msg?.type === "einkaufsliste/group/update", JSON.stringify(r));
+
 // 27) 📂 Kategorien in der Liste: Standard offen, antippen klappt zu (Zahl bleibt), nochmal auf
 r = await p.evaluate(`(async () => { const c=${card}; c._view="list"; c._page=null; c._tab="all"; c._closedCats=null; c._renderAll(); await new Promise(r=>setTimeout(r,30));
   const q=(x)=>c.shadowRoot.querySelector(x); const head=q("#list .cathead"); const key=head?.dataset.cat; const grp=()=>q('#list .cathead[data-cat="'+key+'"]').closest(".group");

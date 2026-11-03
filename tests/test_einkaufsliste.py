@@ -792,6 +792,18 @@ async def test_store_profile(hass, setup, hass_ws_client):
     assert m.store_by_id(aldi)["branches"][0]["tips"] == "Parkplatz hinten\nPfand links"  # 💡 Tipps pro Filiale
 
 
+async def test_store_holiday_cal(hass, setup, hass_ws_client):
+    """🎌 Feiertage pro Geschäft: leer = automatisch, "none" = keine, sonst ein Kalender."""
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    sid = m.find_store("Aldi")
+    for n, (val, want, ok) in enumerate([("none", "none", True), ("calendar.deutschland_nw", "calendar.deutschland_nw", True), ("", None, True), ("quatsch", None, False)], start=1):
+        await client.send_json({"id": n, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": sid, "holiday_cal": val})
+        res = await client.receive_json()
+        assert res["success"] is ok
+        assert m.store_by_id(sid).get("holiday_cal") == want
+
+
 async def test_store_holiday_state(hass, setup, hass_ws_client):
     client = await hass_ws_client(hass)
     m = mgr(hass)
@@ -4911,6 +4923,12 @@ async def test_holidays_from_ha_calendar(hass: HomeAssistant, setup) -> None:
     assert m.holidays == {} and m.holiday_cals == []
     er.async_get(hass).async_get_or_create("calendar", "holiday", "ch_ti", suggested_object_id="schweiz_tessin")
     day = dt_util.now().date().isoformat()
+    # ⏳ Kalender da, aber noch nicht geladen (kurz nach dem Start): kein Fehler, später nochmal
+    errs = len(m.errors)
+    await m.async_refresh_holidays()
+    assert m.holidays == {} and len(m.errors) == errs
+    assert m._holiday_tries == 1
+    hass.states.async_set("calendar.schweiz_tessin", "off")
 
     async def get_events(call):
         return {"calendar.schweiz_tessin": {"events": [{"start": day, "end": day, "summary": "Bundesfeier"}]}}
@@ -4918,3 +4936,10 @@ async def test_holidays_from_ha_calendar(hass: HomeAssistant, setup) -> None:
     await m.async_refresh_holidays()
     assert m.holiday_cals == ["calendar.schweiz_tessin"] and m.holidays == {day: "Bundesfeier"}
     assert m.as_dict()["holidays"] == {day: "Bundesfeier"}
+    # 🎌 pro Geschäft: Automatisch / bestimmter Kalender / Keine
+    st = {"holiday_cal": None}
+    assert m.holidays_for(st) == {day: "Bundesfeier"}
+    assert m.holidays_for({"holiday_cal": "none"}) == {}
+    assert m.holidays_for({"holiday_cal": "calendar.schweiz_tessin"}) == {day: "Bundesfeier"}
+    assert m.holidays_for({"holiday_cal": "calendar.weg"}) == {day: "Bundesfeier"}  # Kalender weg = automatisch
+    assert m.as_dict()["holidays_by_cal"] == {"calendar.schweiz_tessin": {day: "Bundesfeier"}}

@@ -22,7 +22,8 @@ from time import monotonic as _monotonic
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.event import async_track_point_in_utc_time, async_track_time_change, async_track_time_interval
+from homeassistant.helpers.event import async_call_later, async_track_point_in_utc_time, async_track_time_change, async_track_time_interval
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
@@ -576,6 +577,7 @@ class EinkaufslisteManager:
         self.errors: list[dict[str, Any]] = []  # 🐞 Fehler-Protokoll: {"t","w","m","n"} – das Neueste hinten
         self.holidays: dict[str, str] = {}  # 🎌 "JJJJ-MM-TT" -> Name (aus dem HA-Feiertagskalender, nicht gespeichert)
         self.holiday_cals: list[str] = []
+        self.holidays_by_cal: dict[str, dict[str, str]] = {}  # 🎌 je Kalender, für „bestimmter Kalender“ pro Geschäft
         self.missed_hidden: dict[str, str] = {}  # 📈 „Oft nicht bekommen“ weggeklickt: "name|geschäft" -> seit wann
         self._actor = {}
         self._unsub_time: Callable[[], None] | None = None
@@ -947,6 +949,7 @@ class EinkaufslisteManager:
             "version": VERSION,
             "holidays": self.holidays,  # 🎌 Feiertage der nächsten Wochen aus dem HA-Kalender („Feiertage“-Integration)
             "holiday_cals": self.holiday_cals,
+            "holidays_by_cal": self.holidays_by_cal,
             "recipe_groups": self.recipe_groups,
             "category_hints": category_hints(self.categories),
             "category_learned": self._learned_words(),  # 🧠 Wortteil -> Kategorie (ab 2× verschoben)
@@ -4223,6 +4226,17 @@ class EinkaufslisteManager:
     def _holidays_tick(self, _now=None) -> None:
         self.hass.async_create_task(self.async_refresh_holidays())
 
+    @callback
+    def _holidays_retry(self) -> None:
+        """⏳ Feiertags-Kalender noch nicht bereit: später nochmal (höchstens 15× = eine halbe Stunde)."""
+        self._holiday_tries = getattr(self, "_holiday_tries", 0) + 1
+        if self._holiday_tries > 15:
+            self.log_error("feiertage", "Feiertags-Kalender antwortet nicht – ist die Integration „Feiertage“ geladen?")
+            self._holiday_tries = 0
+            return
+        unsub = async_call_later(self.hass, 120, self._holidays_tick)
+        self._unsub_holiday_retry = unsub
+
     async def async_refresh_holidays(self) -> None:
         """🎌 Feiertage aus der HA-Integration „Feiertage“ holen (alle Kalender dieser Integration, nächste 40 Tage).
 
@@ -4234,7 +4248,14 @@ class EinkaufslisteManager:
         reg = er.async_get(self.hass)
         cals = sorted(e.entity_id for e in reg.entities.values() if e.platform == "holiday" and e.domain == "calendar" and not e.disabled_by)
         found: dict[str, str] = {}
+        by_cal: dict[str, dict[str, str]] = {}
         start = dt_util.start_of_local_day()
+        # ⏳ Kalender noch nicht fertig geladen (z. B. kurz nach dem HA-Start)? Kein Fehler – in 2 Minuten nochmal,
+        # bis dahin bleiben die alten Feiertage stehen.
+        if cals and (not self.hass.services.has_service("calendar", "get_events") or any(self.hass.states.get(c) is None for c in cals)):
+            self._holidays_retry()
+            return
+        self._holiday_tries = 0
         for cal in cals:
             try:
                 res = await self.hass.services.async_call(
@@ -4247,10 +4268,26 @@ class EinkaufslisteManager:
             for ev in ((res or {}).get(cal) or {}).get("events", []):
                 day = str(ev.get("start") or "")[:10]
                 if re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
-                    found.setdefault(day, str(ev.get("summary") or "Feiertag")[:60])
-        if found != self.holidays or cals != self.holiday_cals:
-            self.holidays, self.holiday_cals = found, cals
+                    name = str(ev.get("summary") or "Feiertag")[:60]
+                    found.setdefault(day, name)
+                    by_cal.setdefault(cal, {}).setdefault(day, name)
+        if found != self.holidays or cals != self.holiday_cals or by_cal != self.holidays_by_cal:
+            self.holidays, self.holiday_cals, self.holidays_by_cal = found, cals, by_cal
             self._changed()
+
+    def holidays_for(self, store: dict[str, Any] | None) -> dict[str, str]:
+        """🎌 Welche Feiertage gelten für dieses Geschäft?
+
+        Für Doofe: „Automatisch“ (leer) = alle Feiertags-Kalender zusammen, „Keine“ = Kiosk & Co. haben nie
+        Feiertag, sonst nur der gewählte Kalender (z. B. Schweiz für den Laden hinter der Grenze).
+        Ist der gewählte Kalender weg, gilt wieder „Automatisch“.
+        """
+        cal = (store or {}).get("holiday_cal")
+        if cal == "none":
+            return {}
+        if cal and cal in self.holiday_cals:
+            return self.holidays_by_cal.get(cal, {})
+        return self.holidays
 
     @callback
     def async_start_scheduler(self) -> None:
@@ -4259,7 +4296,7 @@ class EinkaufslisteManager:
         self.expire_gone()  # ❌ verpasst (HA war aus)? Gleich nachholen
         self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: (self.expire_offers(), self.expire_gone(), self.prune_offers_ext()), timedelta(hours=1))
         self._unsub_holidays = async_track_time_interval(self.hass, self._holidays_tick, timedelta(hours=6))
-        self.hass.async_create_task(self.async_refresh_holidays())
+        async_at_started(self.hass, self._holidays_tick)  # 🎌 erst wenn HA ganz gestartet ist (vorher fehlen die Kalender)
         self._schedule_cleanup()
         self._schedule_plan_reset()
         if self.plan_reset_on:  # 📅 verpasst (HA war aus)? Dann jetzt nachholen
@@ -4309,6 +4346,9 @@ class EinkaufslisteManager:
         if getattr(self, "_unsub_holidays", None):
             self._unsub_holidays()
             self._unsub_holidays = None
+        if getattr(self, "_unsub_holiday_retry", None):
+            self._unsub_holiday_retry()
+            self._unsub_holiday_retry = None
         if getattr(self, "_unsub_offer_exp", None):
             self._unsub_offer_exp()
             self._unsub_offer_exp = None
@@ -4777,6 +4817,11 @@ class EinkaufslisteManager:
             if code and code not in HOLIDAY_STATES:
                 raise ValueError("Das Bundesland kenne ich nicht.")
             entry["holiday_state"] = code or None
+        if "holiday_cal" in fields and kind == "stores":  # 🎌 Feiertage pro Geschäft: leer = automatisch, "none" = keine
+            cal = (fields["holiday_cal"] or "").strip()
+            if cal and cal != "none" and not re.fullmatch(r"calendar\.[a-z0-9_]+", cal):
+                raise ValueError("Diesen Feiertags-Kalender kenne ich nicht.")
+            entry["holiday_cal"] = cal or None
         if "no_any" in fields and kind == "stores":  # 🤷 „Egal wo“-Artikel hier nicht zeigen (z. B. Cola bei dm)
             if fields["no_any"]:
                 entry["no_any"] = True
