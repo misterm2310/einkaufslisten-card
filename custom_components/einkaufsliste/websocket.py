@@ -107,6 +107,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_privacy_set,
         ws_spend_set,
         ws_auto_shop_set,
+        ws_geo_radius_set,
         ws_spend_auto_set,
         ws_year_get,
         ws_year_set,
@@ -630,7 +631,11 @@ async def ws_recipe_import(hass, connection, msg):
 @websocket_api.async_response
 async def ws_hours_search(hass, connection, msg):
     async def go(m):
-        return {"results": await async_search_hours(hass, m, msg["name"], msg.get("zone"))}
+        results = await async_search_hours(hass, m, msg["name"], msg.get("zone"))
+        for r in results:  # 📍 die Punkte kennt OpenStreetMap schon – merken, dann muss später niemand nachschlagen
+            if r.get("address") and r.get("lat") is not None:
+                m.geo_remember(r["address"], r["lat"], r["lon"])
+        return {"results": results}
 
     await _run_async(hass, connection, msg, go)
 
@@ -837,6 +842,13 @@ def ws_mail_import(hass, connection, msg):
 def ws_auto_shop_set(hass, connection, msg):
     """📍 Laden-Modus automatisch für alle an/aus."""
     _run(hass, connection, msg, lambda m: m.set_auto_shop(msg["on"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/georadius/set", vol.Required("radius"): vol.All(int, vol.Range(min=20, max=500))})
+@callback
+def ws_geo_radius_set(hass, connection, msg):
+    """📍 Umkreis für Geschäfte ohne Zone (Meter, gilt für alle)."""
+    _run(hass, connection, msg, lambda m: m.set_geo_radius(msg["radius"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/privacy/set", vol.Required("on"): bool})

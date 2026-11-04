@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.26-beta.3";
+const EL_VERSION = "2.76.26-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.24"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -414,6 +414,10 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 📍 <b>Geschäfte ohne Zone erkennen:</b> Trägst du bei einem Geschäft oder einer Filiale die Adresse ein, sucht die Einkaufsliste beim Speichern selbst, wo sie liegt. Bist du dann in der Nähe (Umkreis 50 m, einstellbar), springt die Liste auf das Geschäft – ganz ohne Zone in Home Assistant. Vorhandene Zonen gehen weiter.",
+   "New: 📍 <b>Recognise stores without a zone:</b> enter the address of a store or branch and the list looks up where it is when you save. When you are nearby (radius 50 m, adjustable) the list jumps to that store – no zone in Home Assistant needed. Existing zones keep working."],
+  ["Neu: 🗂️ <b>Geschäfte-Einstellungen aufgeräumt:</b> Oben siehst du den Reiter, darunter fünf Ordner (Aussehen, Ort &amp; Kontakt, Zeiten &amp; Filialen, Liste, Scannen &amp; Angebote). Jedes Feld hat eine Überschrift, Erklärungen gibt es beim ⓘ.",
+   "New: 🗂️ <b>Store settings tidied up:</b> the tab preview at the top, five folders below (Look, Place &amp; contact, Hours &amp; branches, List, Scanning &amp; offers). Every field has a heading, explanations are behind the ⓘ."],
   ["Neu: 🎌 <b>Feiertage pro Geschäft:</b> Unter ⚙️ → Geschäfte → Öffnungszeiten wählst du bei „🎌 Feiertage“: <b>Automatisch</b> (alle Feiertags-Kalender), einen <b>bestimmten Kalender</b> (z. B. Laden in der Schweiz) oder <b>Keine</b> (Kiosk, Tankstelle, Bofrost – hat an Feiertagen offen). Gilt auch für alle Filialen.",
    "New: 🎌 <b>Holidays per store:</b> under ⚙️ → Stores → opening hours choose at “🎌 Holidays”: <b>Automatic</b> (all holiday calendars), one <b>specific calendar</b> (e.g. a shop in Switzerland) or <b>None</b> (kiosk, petrol station – open on holidays). Applies to all branches too."],
   ["Neu: 🌍 <b>Währung und Zahlen wie in Home Assistant:</b> Einkaufs-Protokoll und Bon-Foto nehmen die Währung aus HA (Einstellungen → System → Allgemein), z. B. „CHF 12.50“ oder „£12.50“. Zahlen und Datum richten sich nach der HA-Sprache. Der Bon-Leser kennt jetzt auch „Total CHF“, „Fr.“, „1'234.50“ und „12.-“. Gemeldete Angebote behalten ihre eigene Währung.",
@@ -3631,6 +3635,17 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .srow.stack input, .srow.stack button { width:100%; box-sizing:border-box; justify-content:center; }
 .srow.stack .grow { flex:none; }
 .storehead { display:flex; align-items:center; gap:8px; font-size:1.1em; margin:4px 2px 8px; }
+.storehero { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--divider-color, rgba(127,127,127,.25)); border-radius:12px; margin:4px 0 0; } /* 🏪 Kopf: so sieht der Reiter aus */
+.storehero .tabprev { display:inline-flex; align-items:center; gap:6px; max-width:55%; padding:6px 14px; border-radius:20px; background:var(--sc); color:#fff; font-weight:600; }
+.storehero .tabprev b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.storehero small { color:var(--secondary-text-color); font-size:.8em; min-width:0; }
+.storehero .btn { flex:none; }
+.flab { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:10px 2px 0; font-size:.8em; color:var(--secondary-text-color); } /* kleine Überschrift über einem Feld */
+.flab:first-child { margin-top:4px; }
+.finfo { flex:none; width:20px; height:20px; padding:0; border-radius:50%; border:1.5px solid var(--primary-color, #03a9f4); background:none; color:var(--primary-color, #03a9f4); font:700 11px/1 serif; font-style:italic; cursor:pointer; }
+.finfo[aria-expanded="true"] { background:var(--primary-color, #03a9f4); color:#fff; }
+.fhint { margin:4px 2px 2px; padding:8px 10px; border-radius:10px; background:color-mix(in srgb, var(--primary-color, #03a9f4) 10%, transparent); }
+.fhint[hidden] { display:none; }
 .storehead ha-icon { color:var(--sc); }
 .zonechips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 .zchip { display:inline-flex; align-items:center; gap:2px; border-radius:999px; padding:2px 4px 2px 10px; font-size:.9em;
@@ -4149,6 +4164,8 @@ function mascotSvg(mood, deco) {
 
 // 📍 Zonen eines Geschäfts (früher genau eine, jetzt beliebig viele)
 const storeZones = (store) => (Array.isArray(store?.zones) ? store.zones : store?.zone ? [store.zone] : []);
+// 📍 Punkte aus den Adressen (Geschäft oder Filialen) – damit wird ein Geschäft auch ohne Zone erkannt
+const storePoints = (data, store) => (data?.geo?.[store?.id]?.points || []).filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon));
 
 // ⏳ Warteschlange für Funklöcher: wird im Handy gespeichert, damit auch ein Neustart der App nichts verliert
 const QUEUE_TYPES = new Set(["einkaufsliste/item/toggle", "einkaufsliste/item/add", "einkaufsliste/item/update",
@@ -4442,6 +4459,13 @@ class EinkaufslisteCard extends HTMLElement {
           if (dist > (zone.attributes.radius || 100) + 200) dist = null; // noch zu weit weg
         }
         if (dist !== null && (!best || dist < best.dist)) best = { id: store.id, dist };
+      }
+      if (lat != null && lon != null) { // 📍 ohne Zone: nah genug an der Adresse (Umkreis gilt für alle Geschäfte)
+        const rad = this._data.settings?.geo_radius || 50;
+        for (const pt of storePoints(this._data, store)) {
+          const dist = distance(lat, lon, pt.lat, pt.lon);
+          if (dist <= rad && (!best || dist < best.dist)) best = { id: store.id, dist };
+        }
       }
     }
     return best?.id || null;
@@ -5631,7 +5655,12 @@ class EinkaufslisteCard extends HTMLElement {
   // 📍 Ist gerade jemand (egal wer) in einer Zone dieses Geschäfts? HA zählt die Personen je Zone im Zustand der Zone.
   _someoneAt(s) {
     if (this._privacyOn() || this._viewPrefs().zone_here === false) return false;
-    return storeZones(s).some((z) => Number(this._hass?.states?.[z]?.state) > 0);
+    if (storeZones(s).some((z) => Number(this._hass?.states?.[z]?.state) > 0)) return true;
+    const pts = storePoints(this._data, s);
+    if (!pts.length) return false;
+    const rad = this._data?.settings?.geo_radius || 50; // 📍 ohne Zone: ist irgendeine Person nah genug an einer Adresse?
+    return Object.values(this._hass?.states || {}).some((st) => st.entity_id.startsWith("person.") && st.attributes.latitude != null
+      && pts.some((pt) => distance(st.attributes.latitude, st.attributes.longitude, pt.lat, pt.lon) <= rad));
   }
   _renderTabs() {
     const tabs = this.$("tabs");
@@ -7014,8 +7043,14 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
         <button class="iconbtn" data-act="group-remove" title="Löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
       </div>
       ${kind === "categories" || kind === "recipe_groups" ? `<div class="picker" hidden></div>` : ""}
-      ${kind === "stores" && zones.length ? (() => {
-        const mine = storeZones(e);
+`;
+    const zones = Object.values(this._hass.states)
+      .filter((st) => st.entity_id.startsWith("zone.") && st.entity_id !== "zone.home")
+      .map((st) => ({ id: st.entity_id, name: st.attributes.friendly_name || st.entity_id }))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+    const zoneRow = (e) => { // 📍 Zonen eines Geschäfts als Kärtchen + Auswahl für weitere
+      if (!zones.length) return "";
+      const mine = storeZones(e);
         const zname = (id) => zones.find((z) => z.id === id)?.name || id.slice(5);
         const free = zones.filter((z) => !mine.includes(z.id));
         return `
@@ -7027,16 +7062,11 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
           ${free.map((z) => `<option value="${esc(z.id)}">📍 ${esc(z.name)}</option>`).join("")}
         </select>` : ""}</div>
       </div>`;
-      })() : ""}
-      ${kind === "stores" ? `
-      <div class="srow zonerow" data-kind="stores" data-id="${e.id}">
+      };
+    const brandRow = (e) => `      <div class="srow zonerow" data-kind="stores" data-id="${e.id}">
         <ha-icon class="prev" icon="mdi:tag-outline"></ha-icon>
         <input class="grow" data-field="brands" value="${esc((e.brands || []).join(", "))}" placeholder="🏷️ Eigenmarken, z. B. Milsani, Moser Roth (mit Komma)" title="Beim Scannen landen diese Marken gleich bei diesem Geschäft">
-      </div>` : ""}`;
-    const zones = Object.values(this._hass.states)
-      .filter((st) => st.entity_id.startsWith("zone.") && st.entity_id !== "zone.home")
-      .map((st) => ({ id: st.entity_id, name: st.attributes.friendly_name || st.entity_id }))
-      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+      </div>`;
     const persons = d.persons || [];
     const recipes = [...(d.recipes || [])].sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" }));
     const sections = [
@@ -7045,38 +7075,64 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
         const k = d.stores.findIndex((x) => x.id === this._storeSel);
         if (k >= 0) {
           const e = d.stores[k];
-          return `
-        <div class="storehead" style="--sc:${esc(e.color || "#607d8b")}"><ha-icon icon="${esc(this._storeIcon(e))}"></ha-icon><b translate="no">${esc(e.name)}</b></div>
+          // 🗂️ Ordner statt langer Liste: Kopf wie der Reiter, darunter aufklappbare Gruppen (immer nur eine offen)
+          const hasBr = Array.isArray(e.branches) && e.branches.length;
+          const lab = (t, help) => `<div class="flab"><span>${t}</span>${help ? `<button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="Was ist das?" aria-label="Erklärung: ${t}">i</button>` : ""}</div>${help ? `<p class="hint fhint" hidden>${help}</p>` : ""}`;
+          const sum = (parts, none) => esc(parts.filter(Boolean).join(" · ") || none);
+          const nz = storeZones(e).length, nbr = (e.brands || []).length;
+          const gi = this._data.geo?.[e.id] || { points: [], missing: [], waiting: [] };
+          const gp = gi.points.length, gm = gi.missing.length, gw = gi.waiting.length;
+          const geoLine = this._privacyOn() && (gw || gm) ? `<p class="hint geoline">🔒 Datenschutz an: Der Ort zur Adresse wird nicht gesucht.</p>`
+            : gp + gm + gw === 0 ? ""
+            : `<p class="hint geoline">${gp ? `✅ ${hasBr ? `${gp} von ${gp + gm + gw} Filialen gefunden` : "Ort gefunden"} – das Geschäft wird auch ohne Zone erkannt.` : ""}${gm ? ` ⚠️ ${hasBr ? `${gm} ${gm === 1 ? "Filiale" : "Filialen"} nicht gefunden` : "Adresse nicht gefunden"} – bitte genauer schreiben (Straße Nr., PLZ Ort).` : ""}${gw ? ` ⏳ ${hasBr && gw > 1 ? `${gw} Adressen werden` : "Ort wird"} gerade gesucht …` : ""}</p>`;
+          const look = `
+        ${lab("Name und Farbe")}
         ${row("stores", e, k, d.stores.length)}
+        ${lab("Icon", "Namen tippen (z. B. <b>baguette</b>, <b>pill</b>, <b>hammer</b>) und aus der Vorschau antippen. Leer lassen = Icon der Zone, sonst 🛒.")}
         <div class="srow" data-kind="stores" data-id="${e.id}">
           <ha-icon class="prev" icon="${esc(this._storeIcon(e))}"></ha-icon>
           <input class="icon grow" data-field="icon" value="${esc(e.icon && !EL_START_STORE_ICONS.has(e.icon) ? stripMdi(e.icon) : "")}" placeholder="Icon, z. B. baguette" title="Leer lassen = Icon der Zone (wenn sie eins hat), sonst Einkaufswagen">
         </div>
-        <div class="picker" hidden></div>
+        <div class="picker" hidden></div>`;
+          const place = `
+        ${hasBr ? `<p class="hint">🏬 Dieses Geschäft hat Filialen: Adresse, Telefon und Tipps stehen bei jeder Filiale unter „Zeiten &amp; Filialen“. Die Webseite hier gilt für alle Filialen.</p>` : ""}
+        ${!hasBr || e.address ? `${lab("Adresse", "Steht hier etwas, zeigt das Fenster mit den Öffnungszeiten (Reiter gedrückt halten) neben dem Namen ein ℹ️ – antippen klappt alles auf. Holst du die Zeiten bei 🌐 OpenStreetMap, kommen Adresse, Telefon und Webseite meist gleich mit (nur in leere Felder).")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-field="address" value="${esc(e.address || "")}" placeholder="z. B. Hauptstraße 5, 48565 Steinfurt" maxlength="120"></div>` : ""}
+        ${lab("Land")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:earth"></ha-icon>${this._countrySel(e.country || "", 'class="grow" data-field="country"')}</div>
+        ${!hasBr || e.phone ? `${lab("Telefon")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-field="phone" value="${esc(e.phone || "")}" placeholder="z. B. 02552 1234" maxlength="40"></div>` : ""}
+        ${lab("Webseite")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:web"></ha-icon><input class="grow" type="url" inputmode="url" data-field="website" value="${esc(e.website || "")}" placeholder="https://…"></div>
+        ${!hasBr || e.tips ? `${lab("Eure Tipps")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:lightbulb-on-outline"></ha-icon><textarea class="grow" data-field="tips" rows="2" maxlength="300" placeholder="z. B. Parkplatz hinten ist frei, Pfandautomat streikt oft">${esc(e.tips || "")}</textarea></div>` : ""}
+        ${geoLine}
+        ${lab("Umkreis ohne Zone", "So nah musst du an der Adresse sein, damit die Einkaufsliste das Geschäft erkennt – auch ohne Zone in Home Assistant. Gilt für alle Geschäfte. Handy-GPS liegt in Gebäuden oft etwas daneben.")}
+        <div class="srow"><ha-icon class="prev" icon="mdi:map-marker-radius-outline"></ha-icon><select class="grow" data-georadius="1">${[30, 50, 75, 100, 150, 250].concat([this._data.settings?.geo_radius || 50]).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => x - y).map((v) => `<option value="${v}" ${v === (this._data.settings?.geo_radius || 50) ? "selected" : ""}>${v} m</option>`).join("")}</select></div>
+        ${lab("Zonen (freiwillig)", "Hast du in Home Assistant schon Zonen angelegt, kannst du sie hier zuordnen. Bist du in einer davon, springt die Liste auf dieses Geschäft – mehrere gehen, z. B. für mehrere Filialen. Ohne Zone reicht die Adresse.")}
+        ${zones.length ? zoneRow(e) : `<p class="hint">📍 Keine Zonen in Home Assistant? Kein Problem – die Adresse oben reicht.</p>`}`;
+          const list = `
         ${this._catSetHtml(e)}
         ${this._catOrderHtml(e)}
         <button class="swline" data-act="store-noany" data-id="${e.id}" aria-pressed="${!!e.no_any}" title="Artikel ohne festes Geschäft („Egal wo“) stehen dann in diesem Reiter nicht mit drin – z. B. Cola bei dm"><span class="grow"><b>„Egal wo“-Artikel hier nicht zeigen</b><small>Gilt für den Reiter und den Laden-Modus dieses Geschäfts. Unter „Alle“ und „Egal wo“ siehst du sie weiter.</small></span><span class="tgl"><span></span></span></button>
-        <button class="swline" data-act="store-notinall" data-id="${e.id}" aria-pressed="${!!e.not_in_all}" title="Die Artikel dieses Geschäfts stehen dann nur im eigenen Reiter – z. B. Baumarkt: sammeln, bis sich die Fahrt lohnt"><span class="grow"><b>Nicht unter „Alle“ zeigen</b><small>Die Artikel stehen nur im eigenen Reiter (mit Zahl dran) – praktisch für Baumarkt, Apotheke &amp; Co. Tipp: unter ⚙️ → Aufräumen das Geschäft ausnehmen, dann bleibt alles offen.</small></span><span class="tgl"><span></span></span></button>
-        ${this._hoursEditHtml(e)}
-        <b class="shead">🗞️ Prospekt-Link</b>
-        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:newspaper-variant-outline"></ha-icon><input class="grow" type="url" inputmode="url" data-field="flyer" value="${esc(e.flyer || "")}" placeholder="🗞️ Prospekt-Link (https://…)" title="Adresse des Prospekts. Wird nur beim Antippen geöffnet."></div>
-        <b class="shead">ℹ️ Steckbrief</b>
-        ${Array.isArray(e.branches) && e.branches.length ? `<p class="hint">🏬 Dieses Geschäft hat Filialen: Adresse, Telefon und Tipps stehen bei jeder Filiale oben unter „🏬 Filialen“. Die Webseite hier gilt für alle Filialen.</p>` : ""}
-        ${!(Array.isArray(e.branches) && e.branches.length) || e.address ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-field="address" value="${esc(e.address || "")}" placeholder="📍 Adresse, z. B. Hauptstraße 5, 48565 Steinfurt" maxlength="120"></div>` : ""}
-        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:earth"></ha-icon>${this._countrySel(e.country || "", 'class="grow" data-field="country"')}</div>
-        ${!(Array.isArray(e.branches) && e.branches.length) || e.phone ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-field="phone" value="${esc(e.phone || "")}" placeholder="📞 Telefon" maxlength="40"></div>` : ""}
-        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:web"></ha-icon><input class="grow" type="url" inputmode="url" data-field="website" value="${esc(e.website || "")}" placeholder="🌐 Webseite (https://…)"></div>
-        ${!(Array.isArray(e.branches) && e.branches.length) || e.tips ? `<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:lightbulb-on-outline"></ha-icon><textarea class="grow" data-field="tips" rows="2" maxlength="300" placeholder="💡 Eure Tipps, z. B. Parkplatz hinten ist frei, Pfandautomat streikt oft">${esc(e.tips || "")}</textarea></div>` : ""}
-        <p class="hint">ℹ️ Steckbrief: Steht hier etwas, zeigt das Fenster mit den Öffnungszeiten (Reiter gedrückt halten) neben dem Namen ein ℹ️ – antippen klappt alles auf. Holst du die Zeiten bei 🌐 OpenStreetMap, kommen Adresse, Telefon und Webseite meist gleich mit (nur in leere Felder).</p>
-        <p class="hint">🗞️ Prospekt-Link: Nur die Adresse wird gespeichert. Die Karte ruft nie selbst etwas dort ab; erst wenn du im Fenster (Namen gedrückt halten) „Prospekt öffnen“ antippst, öffnet sich die Seite – ohne dass sie erfährt, woher du kommst.</p>
-        ${zones.length ? "" : `<p class="hint">📍 Noch keine Zonen in Home Assistant angelegt (Einstellungen → Bereiche, Beschriftungen & Zonen → Zonen).</p>`}
-        <p class="hint">🖼️ Icon: Namen tippen (z. B. <b>baguette</b>, <b>pill</b>, <b>hammer</b>) und aus der Vorschau antippen. Leer lassen = Icon der Zone, sonst 🛒.</p>
-        <p class="hint">📍 Zonen: Bist du in einer davon, springt die Liste auf dieses Geschäft – mehrere gehen, z. B. für mehrere Filialen. 🏷️ Eigenmarken: Beim Scannen landen diese Marken gleich hier.</p>`;
+        <button class="swline" data-act="store-notinall" data-id="${e.id}" aria-pressed="${!!e.not_in_all}" title="Die Artikel dieses Geschäfts stehen dann nur im eigenen Reiter – z. B. Baumarkt: sammeln, bis sich die Fahrt lohnt"><span class="grow"><b>Nicht unter „Alle“ zeigen</b><small>Die Artikel stehen nur im eigenen Reiter (mit Zahl dran) – praktisch für Baumarkt, Apotheke &amp; Co. Tipp: unter ⚙️ → Aufräumen das Geschäft ausnehmen, dann bleibt alles offen.</small></span><span class="tgl"><span></span></span></button>`;
+          const scan = `
+        ${lab("Eigenmarken", "Beim Scannen eines Barcodes landen diese Marken gleich bei diesem Geschäft. Mehrere mit Komma trennen.")}
+        ${brandRow(e)}
+        ${lab("Prospekt-Link", "Nur die Adresse wird gespeichert. Die Karte ruft nie selbst etwas dort ab; erst wenn du im Fenster (Namen gedrückt halten) „Prospekt öffnen“ antippst, öffnet sich die Seite – ohne dass sie erfährt, woher du kommst.")}
+        <div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:newspaper-variant-outline"></ha-icon><input class="grow" type="url" inputmode="url" data-field="flyer" value="${esc(e.flyer || "")}" placeholder="https://…" title="Adresse des Prospekts. Wird nur beim Antippen geöffnet."></div>`;
+          this._accOpen = this._accOpen || {};
+          if (this._accOpen.store === undefined) this._accOpen.store = "";
+          return `
+        <div class="xaccs storeset">
+        <div class="storehero" style="--sc:${esc(e.color || "#607d8b")}"><span class="tabprev"><ha-icon icon="${esc(this._storeIcon(e))}"></ha-icon><b translate="no">${esc(e.name)}</b></span><small class="grow">So sieht der Reiter aus</small><button type="button" class="btn" data-act="acc-toggle" data-g="store" data-k="look">✏️ ändern</button></div>
+        ${this._acc("store", "look", "mdi:palette-outline", "#8e24aa", "Aussehen", "Name, Farbe und Icon", look)}
+        ${this._acc("store", "place", "mdi:map-marker-outline", "#e53935", "Ort &amp; Kontakt", sum([hasBr ? "" : e.address, e.phone, gp ? "📍 wird erkannt" : "", nz ? `${nz} ${nz === 1 ? "Zone" : "Zonen"}` : ""], "Adresse, Telefon, Zonen – alles freiwillig"), place)}
+        ${this._acc("store", "hours", "mdi:clock-outline", "#fb8c00", "Zeiten &amp; Filialen", sum([hasBr ? `${e.branches.length} ${e.branches.length === 1 ? "Filiale" : "Filialen"}` : "", !hasBr && Array.isArray(e.hours) ? "Öffnungszeiten eingetragen" : ""], "Noch keine – freiwillig"), this._hoursEditHtml(e))}
+        ${this._acc("store", "list", "mdi:format-list-bulleted", "#43a047", "Liste", sum([Array.isArray(e.cat_order) ? "eigene Reihenfolge" : "Reihenfolge wie überall", e.no_any ? "ohne „Egal wo“" : "", e.not_in_all ? "nicht unter „Alle“" : ""], ""), list)}
+        ${this._acc("store", "scan", "mdi:tag-outline", "#3949ab", "Scannen &amp; Angebote", sum([nbr ? `${nbr} ${nbr === 1 ? "Eigenmarke" : "Eigenmarken"}` : "keine Eigenmarken", e.flyer ? "Prospekt-Link" : "kein Prospekt"], ""), scan)}
+        </div>`;
         }
         return `
         <div class="storelist">${d.stores.map((e, i) => {
           const nz = storeZones(e).length, nb = (e.brands || []).length;
-          const info = [nz ? `📍 ${nz} ${nz === 1 ? "Zone" : "Zonen"}` : "", nb ? `🏷️ ${nb} ${nb === 1 ? "Marke" : "Marken"}` : "", Array.isArray(e.cat_order) ? "🗺️ eigene Reihenfolge" : ""].filter(Boolean).join(" · ") || "antippen zum Einstellen";
+          const nbr = Array.isArray(e.branches) ? e.branches.length : 0;
+          const info = [nbr ? `🏬 ${nbr} ${nbr === 1 ? "Filiale" : "Filialen"}` : Array.isArray(e.hours) ? "🕒 Öffnungszeiten" : "", nz ? `📍 ${nz} ${nz === 1 ? "Zone" : "Zonen"}` : storePoints(d, e).length ? "📍 wird erkannt" : "", nb ? `🏷️ ${nb} ${nb === 1 ? "Marke" : "Marken"}` : "", Array.isArray(e.cat_order) ? "🗺️ eigene Reihenfolge" : ""].filter(Boolean).join(" · ") || "antippen zum Einstellen";
           return `<div class="srow storerow" data-kind="stores" data-id="${e.id}" style="--sc:${esc(e.color || "#607d8b")}">
             <button class="storepick grow" type="button" data-act="store-sel" data-id="${e.id}"><ha-icon icon="${esc(this._storeIcon(e))}"></ha-icon><span><b translate="no">${esc(e.name)}</b><small>${esc(info)}</small></span></button>
             <button class="iconbtn" data-act="up" ${i === 0 ? "disabled" : ""} title="Nach oben"><ha-icon icon="mdi:chevron-up"></ha-icon></button>
@@ -7590,7 +7646,7 @@ ${(() => {
   // 🪗 Aufklapper-Kasten (Import „Aus anderen Apps“, Aufräumen): immer nur einer pro Gruppe g offen
   _acc(g, k, icon, color, title, sub, inner) {
     const on = (this._accOpen || {})[g] === k;
-    const emo = { "mdi:sync": "🔁", "mdi:import": "📥", "mdi:clipboard-text-outline": "📋", "mdi:file-delimited-outline": "📄", "mdi:calendar-sync": "🗓️", "mdi:broom": "🧹", "mdi:delete-sweep-outline": "🧽", "mdi:delete-forever-outline": "🗑️", "mdi:nuke": "💣", "mdi:format-text": "🏷️", "mdi:check": "✔️", "mdi:format-size": "🔠", "mdi:view-dashboard-outline": "🧩", "mdi:eye-outline": "👁️", "mdi:download": "⬇️", "mdi:backup-restore": "♻️", "mdi:cloud-download-outline": "🥫", "mdi:sync-circle": "🔄", "mdi:information-outline": "ℹ️", "mdi:email-edit-outline": "✉️", "mdi:chart-donut": "📊", "mdi:speedometer": "⏱️", "mdi:meditation": "🧘" }[icon] || "📁";
+    const emo = { "mdi:sync": "🔁", "mdi:import": "📥", "mdi:clipboard-text-outline": "📋", "mdi:file-delimited-outline": "📄", "mdi:calendar-sync": "🗓️", "mdi:broom": "🧹", "mdi:delete-sweep-outline": "🧽", "mdi:delete-forever-outline": "🗑️", "mdi:nuke": "💣", "mdi:format-text": "🏷️", "mdi:check": "✔️", "mdi:format-size": "🔠", "mdi:view-dashboard-outline": "🧩", "mdi:eye-outline": "👁️", "mdi:download": "⬇️", "mdi:backup-restore": "♻️", "mdi:cloud-download-outline": "🥫", "mdi:sync-circle": "🔄", "mdi:information-outline": "ℹ️", "mdi:email-edit-outline": "✉️", "mdi:chart-donut": "📊", "mdi:speedometer": "⏱️", "mdi:meditation": "🧘", "mdi:palette-outline": "🎨", "mdi:map-marker-outline": "📍", "mdi:clock-outline": "🕒", "mdi:format-list-bulleted": "🗂️", "mdi:tag-outline": "🏷️" }[icon] || "📁";
     // exakt die gleichen Bauteile wie die Hauptgruppen der Einstellungen (lgbox / lgroup / gem) – sieht darum überall genau so aus wie sie
     return `<div class="lgbox xacc ${on ? "open" : ""}" data-k="${k}"><button type="button" class="lgroup xacc-h" data-act="acc-toggle" data-g="${g}" data-k="${k}" aria-expanded="${on}"><span class="gem" style="--gc:${color}">${emo}</span><span class="grow"><b>${title}</b><small>${sub}</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button><div class="xacc-b" ${on ? "" : "hidden"}>${inner}</div></div>`;
   }
@@ -10940,6 +10996,9 @@ ${(() => {
       <p class="hint">📍 <b>${t("Jemand ist gerade dort", "Someone is there right now")}</b>: ${t(
         "Ist jemand in einer Zone eines Geschäfts, bekommt dessen Reiter oben einen dicken Rand – für alle, die die Liste sehen. Wer genau dort ist, steht nirgends. Das kommt aus deinem Home Assistant und bleibt im Haus. Abschalten: 👁️ Ansicht → „Jemand ist gerade dort“. Bei Datenschutz an ist es immer aus.",
         "If someone is in a zone of a store, its tab at the top gets a thick border – for everyone who sees the list. Who exactly is there is not shown. It comes from your Home Assistant and stays at home. Switch off: 👁️ View → “Someone is there right now”. With privacy on it is always off.")}</p>
+      <p class="hint">🗺️ <b>${t("Geschäfte ohne Zone", "Stores without a zone")}</b>: ${t(
+        "Trägst du bei einem Geschäft oder einer Filiale eine Adresse ein, schlägt Home Assistant einmal bei OpenStreetMap nach, wo sie liegt. Dabei geht nur die Adresse des Geschäfts raus, nichts über dich. Ob jemand in der Nähe ist, rechnet die Karte zu Hause aus. Bei Datenschutz an wird nichts nachgeschlagen.",
+        "If you enter an address for a store or branch, Home Assistant looks up once at OpenStreetMap where it is. Only the store's address is sent, nothing about you. Whether someone is nearby is worked out at home. With privacy on nothing is looked up.")}</p>
       <p class="hint">🏠 <b>${t("Das bleibt in deinem Home Assistant", "This stays in your Home Assistant")}</b>: ${t(
         "deine Liste, Rezepte, Fotos, Verlauf, Einstellungen und Sicherungen. Es gibt keine Cloud vom Entwickler, keine Werbung und kein Tracking.",
         "your list, recipes, photos, history, settings and backups. There is no developer cloud, no ads and no tracking.")}</p>
@@ -13899,6 +13958,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         break;
       case "store-sel":
         this._storeSel = el.dataset.id || null;
+        if (this._accOpen) this._accOpen.store = ""; // 🗂️ neues Geschäft = alle Ordner zu
         this._hoursOpenFor = null; // 🕒 Öffnungszeiten-Editor klappt zu, wenn man das Geschäft verlässt
         this._renderSettings();
         this.$("otherView").scrollIntoView?.({ block: "nearest" });
@@ -14599,6 +14659,11 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._syncSel = null;
         this._renderSettings();
         break;
+      case "finfo": { // ⓘ neben einer Feld-Überschrift: Erklärung darunter auf-/zuklappen
+        const h = el.closest(".flab")?.nextElementSibling;
+        if (h?.classList.contains("fhint")) { h.hidden = !h.hidden; el.setAttribute("aria-expanded", String(!h.hidden)); }
+        break;
+      }
       case "acc-toggle": { // Aufklapper: immer nur einer offen, ohne neu zu zeichnen (Eingaben bleiben)
         const g = el.dataset.g, k = el.dataset.k;
         this._accOpen = this._accOpen || {};
@@ -14986,6 +15051,11 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       if (t.dataset.hf === "zu") d.classList.toggle("zu", t.checked);
       else { const cb = d.querySelector('[data-hf="zu"]'); if (cb.checked) { cb.checked = false; d.classList.remove("zu"); } }
       this._hoursSave(hbox);
+      return;
+    }
+    if (t.dataset.georadius) { // 📍 Umkreis für Geschäfte ohne Zone (gilt für alle)
+      this._ws({ type: "einkaufsliste/georadius/set", radius: Number(t.value) })
+        .then(() => this._toast(`📍 Umkreis: ${t.value} m – für alle Geschäfte`)).catch(() => this._renderSettings());
       return;
     }
     const srow = t.closest(".srow[data-kind]");

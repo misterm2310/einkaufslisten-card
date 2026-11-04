@@ -209,6 +209,7 @@ async def async_search_hours(
                 "hours": hours,
                 "phone": _osm_phone(tags),  # ℹ️ für den Steckbrief gleich mit
                 "website": _osm_website(tags),
+                **({"lat": round(float(c["lat"]), 6), "lon": round(float(c["lon"]), 6)} if dist is not None else {}),  # 📍 Punkt fürs Erkennen ohne Zone
             }
         )
     out.sort(key=lambda r: (r["distance_km"] is None, r["distance_km"] or 0))

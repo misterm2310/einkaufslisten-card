@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
+import asyncio
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -4943,3 +4944,47 @@ async def test_holidays_from_ha_calendar(hass: HomeAssistant, setup) -> None:
     assert m.holidays_for({"holiday_cal": "calendar.schweiz_tessin"}) == {day: "Bundesfeier"}
     assert m.holidays_for({"holiday_cal": "calendar.weg"}) == {day: "Bundesfeier"}  # Kalender weg = automatisch
     assert m.as_dict()["holidays_by_cal"] == {"calendar.schweiz_tessin": {day: "Bundesfeier"}}
+
+
+async def test_geo_stores_without_zone(hass: HomeAssistant, setup, monkeypatch) -> None:
+    """📍 Adresse -> Punkt (einmal nachschlagen, merken), Filialen einzeln, Datenschutz = nichts fragen."""
+    from custom_components.einkaufsliste import manager as manager_mod
+    m = mgr(hass)
+    asked: list[tuple[str, str | None]] = []
+
+    async def fake_geocode(_hass, address, country):
+        asked.append((address, country))
+        return None if "Nirgendwo" in address else [52.1, 7.3]
+    monkeypatch.setattr(manager_mod, "async_geocode", fake_geocode)
+    real_sleep = asyncio.sleep
+    monkeypatch.setattr(manager_mod.asyncio, "sleep", lambda *_: real_sleep(0))
+    sid = m.stores[0]["id"]
+    m.update_group("stores", sid, address="Hauptstr. 1, 48565 Steinfurt")
+    await m._geo_task
+    info = m.as_dict()["geo"][sid]
+    assert info["points"] == [{"b": None, "lat": 52.1, "lon": 7.3}] and not info["missing"] and not info["waiting"]
+    # gleiche Adresse nochmal speichern = nicht nochmal fragen
+    m.update_group("stores", sid, address="Hauptstr. 1, 48565 Steinfurt")
+    await m._geo_task
+    assert len(asked) == 1
+    # Filialen: jede für sich, die Adresse des Geschäfts zählt dann nicht mehr
+    m.update_group("stores", sid, branches=[{"name": "Lugano", "address": "Via Roma 3, 6900 Lugano", "country": "CH", "hours": None},
+                                            {"name": "Weg", "address": "Nirgendwo 99", "hours": None}])
+    await m._geo_task
+    info = m.geo_info()[sid]
+    assert len(info["points"]) == 1 and len(info["missing"]) == 1
+    assert ("Via Roma 3, 6900 Lugano", "CH") in asked
+    assert not any(k.endswith("hauptstr. 1, 48565 steinfurt") for k in m.geo)  # 🧹 alte Adresse aufgeräumt
+    # 🔒 Datenschutz an: nichts nachschlagen
+    m.privacy = True
+    m.update_group("stores", m.stores[1]["id"], address="Markt 2, 48565 Steinfurt")
+    await m._geo_task
+    assert not any(a == "Markt 2, 48565 Steinfurt" for a, _ in asked) and m.geo_info()[m.stores[1]["id"]]["waiting"] == [None]
+    # 📏 Umkreis 20–500, sonst 50
+    m.set_geo_radius(10)
+    assert m.geo_radius == 20 and m.as_dict()["settings"]["geo_radius"] == 20
+    m.set_geo_radius("quatsch")
+    assert m.geo_radius == 50
+    # OpenStreetMap-Treffer werden gleich gemerkt
+    m.geo_remember("Bahnhofstr. 9, 48565 Steinfurt", "52.2", "7.4")
+    assert m.geo[manager_mod.geo_key("Bahnhofstr. 9, 48565 Steinfurt", hass.config.country)] == [52.2, 7.4]

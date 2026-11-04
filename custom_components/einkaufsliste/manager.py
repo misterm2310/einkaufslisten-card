@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
 import hashlib
@@ -28,6 +29,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .categories import category_hints, guess_category
+from .geocode import async_geocode, geo_key
 from .netutil import photo_file_complete
 from .quantity import UNIT_CHOICES, apply_unit, is_bare, norm_qty, split_qty, split_qty_ex, unit_of
 from .const import (
@@ -377,6 +379,14 @@ def _clean_branches(value: Any) -> list[dict[str, Any]] | None:
     return out or None
 
 
+def _clean_geo_radius(value: Any) -> int:
+    """📍 Umkreis in Metern: 20 bis 500, sonst 50."""
+    try:
+        return max(20, min(500, int(value)))
+    except (TypeError, ValueError):
+        return 50
+
+
 def _clean_country(value: Any) -> str | None:
     """🌍 Land als ISO-Kürzel (DE, CH, IT …). Leer = Land aus Home Assistant."""
     code = str(value or "").strip().upper() if isinstance(value, str) else ""
@@ -549,6 +559,10 @@ class EinkaufslisteManager:
         self.privacy: bool = False  # 🔒 Datenschutz an = keine Kamera, keine Fotos, kein Barcode-Scanner (für alle Geräte)
         self.spend: bool = False  # 🧾 Einkaufs-Protokoll an/aus (standardmäßig aus) – gilt für alle
         self.auto_shop: bool = False  # 📍 Laden-Modus geht in der Zone von selbst an – ein Schalter für alle Geräte
+        self.geo: dict[str, list[float] | None] = {}  # 📍 Merkzettel Adresse -> GPS-Punkt (None = nicht gefunden)
+        self.geo_radius: int = 50  # 📍 so nah (Meter) muss man an einem Geschäft sein, damit es ohne Zone erkannt wird
+        self._geo_task: Any = None
+        self._geo_again = False
         self.view_prefs: dict[str, dict[str, bool]] = {}  # 👁️ Listenansicht: "_all" = für alle, sonst Benutzer-ID -> {Schlüssel: an/aus}
         self.spend_auto: bool = False  # 🧾 Protokoll von selbst anbieten, wenn alles abgehakt ist (Option, standardmäßig aus)
         self.year_on: bool = True  # 🎁 Jahresrückblick zählt mit (nur Zähler, keine Einzelheiten) – für alle an/aus
@@ -786,6 +800,9 @@ class EinkaufslisteManager:
         ys = data.get("year_since")
         self.year_since = ys if isinstance(ys, str) and len(ys) <= 10 else None
         self.auto_shop = bool(data.get("auto_shop", False))
+        geo = data.get("geo")
+        self.geo = {str(k): (v if isinstance(v, list) and len(v) == 2 else None) for k, v in geo.items()} if isinstance(geo, dict) else {}
+        self.geo_radius = _clean_geo_radius(data.get("geo_radius", 50))
         self.view_prefs = {
             str(u): _clean_view(p)
             for u, p in (data.get("view_prefs") or {}).items() if isinstance(p, dict)
@@ -879,6 +896,8 @@ class EinkaufslisteManager:
             "year_stats": self.year_stats,
             "year_since": self.year_since,
             "auto_shop": self.auto_shop,
+            "geo": self.geo,
+            "geo_radius": self.geo_radius,
             "cleanup": self.cleanup_cfg,
             "view_prefs": self.view_prefs,
             "purchases": self.purchases,
@@ -990,6 +1009,7 @@ class EinkaufslisteManager:
                 "spend_auto": self.spend_auto,
                 "year_on": self.year_on,
                 "auto_shop": self.auto_shop,
+                "geo_radius": self.geo_radius,
                 "todo_syncs": [self._todo_sync_info(c) for c in self.todo_syncs],
                 "mail_import": self._mail_import_info(),
                 "offers": self._offers_info(),
@@ -999,6 +1019,7 @@ class EinkaufslisteManager:
                 "errors_24h": self._errors_since(timedelta(hours=24)),
             },
             "missed": self.missed_counts(),
+            "geo": self.geo_info(),
             "offers": self._offers_merged(),
             "missed_hidden": self.missed_hidden,
         }
@@ -1743,6 +1764,85 @@ class EinkaufslisteManager:
         """📍 Laden-Modus automatisch für alle an- oder ausschalten."""
         self.auto_shop = bool(on)
         self._changed()
+
+    def set_geo_radius(self, radius: Any) -> None:
+        """📍 Umkreis (Meter), in dem ein Geschäft auch ohne Zone erkannt wird – gilt für alle."""
+        self.geo_radius = _clean_geo_radius(radius)
+        self._changed()
+
+    # ---------------------------------------------------- 📍 Geschäfte ohne Zone
+    def _geo_country(self, store: dict[str, Any], branch: dict[str, Any] | None = None) -> str:
+        return ((branch or {}).get("country") or store.get("country") or getattr(self.hass.config, "country", None) or "").upper()
+
+    def _geo_places(self) -> list[tuple[str, str | None, str, str, str]]:
+        """Alle Adressen (Geschäft ohne Filialen bzw. jede Filiale): (Geschäft, Filiale, Schlüssel, Adresse, Land)."""
+        out: list[tuple[str, str | None, str, str, str]] = []
+        for st in self.stores:
+            br = st.get("branches") or []
+            spots = [(b.get("id"), b) for b in br] if br else [(None, None)]
+            for bid, b in spots:
+                addr = (b or st).get("address")
+                country = self._geo_country(st, b)
+                key = geo_key(addr, country)
+                if key:
+                    out.append((st["id"], bid, key, addr, country))
+        return out
+
+    def geo_info(self) -> dict[str, Any]:
+        """Für die Karte: pro Geschäft die gefundenen Punkte und welche Adresse (noch) keinen hat."""
+        info: dict[str, Any] = {}
+        for sid, bid, key, _addr, _c in self._geo_places():
+            slot = info.setdefault(sid, {"points": [], "missing": [], "waiting": []})
+            if key not in self.geo:
+                slot["waiting"].append(bid)
+            elif self.geo[key]:
+                slot["points"].append({"b": bid, "lat": self.geo[key][0], "lon": self.geo[key][1]})
+            else:
+                slot["missing"].append(bid)
+        return info
+
+    def geo_remember(self, address: str | None, lat: Any, lon: Any) -> None:
+        """OpenStreetMap-Suche kennt den Punkt schon: gleich merken, dann muss später niemand fragen."""
+        key = geo_key(address, getattr(self.hass.config, "country", None))
+        try:
+            if key and key not in self.geo:
+                self.geo[key] = [round(float(lat), 6), round(float(lon), 6)]
+        except (TypeError, ValueError):
+            pass
+
+    @callback
+    def schedule_geo(self, *_: Any) -> None:
+        """Fehlende Punkte im Hintergrund nachschlagen (eine Adresse pro Sekunde, wie OpenStreetMap es möchte)."""
+        if self._geo_task and not self._geo_task.done():
+            self._geo_again = True
+            return
+        self._geo_task = self.hass.async_create_background_task(self._async_geo_fill(), "einkaufsliste_geo")
+
+    async def _async_geo_fill(self) -> None:
+        while True:
+            self._geo_again = False
+            changed = False
+            wanted = self._geo_places()
+            keys = {w[2] for w in wanted}
+            for k in [k for k in self.geo if k not in keys]:  # 🧹 Adressen, die es nicht mehr gibt
+                del self.geo[k]
+                changed = True
+            done: set[str] = set()
+            for _sid, _bid, key, addr, country in wanted:
+                if key in self.geo or key in done or self.privacy:  # 🔒 Datenschutz an = nichts fragen
+                    continue
+                done.add(key)
+                try:
+                    self.geo[key] = await async_geocode(self.hass, addr, country)
+                except Exception as err:  # noqa: BLE001 – Netz weg o. Ä.: nichts merken, später nochmal (nächster Anlass oder in 6 Stunden)
+                    _LOGGER.debug("📍 Adresse „%s“ gerade nicht nachschlagbar: %s", addr, err)
+                    break
+                changed = True
+                await asyncio.sleep(1.1)
+            if changed:
+                self._changed()
+            if not self._geo_again:
+                return
 
     def set_view(self, scope: str, prefs: dict[str, Any] | None) -> dict[str, Any]:
         """👁️ Listenansicht einstellen: scope "all" = Standard für alle, "me" = nur für den, der gerade tippt.
@@ -4297,6 +4397,8 @@ class EinkaufslisteManager:
         self._unsub_offer_exp = async_track_time_interval(self.hass, lambda now: (self.expire_offers(), self.expire_gone(), self.prune_offers_ext()), timedelta(hours=1))
         self._unsub_holidays = async_track_time_interval(self.hass, self._holidays_tick, timedelta(hours=6))
         async_at_started(self.hass, self._holidays_tick)  # 🎌 erst wenn HA ganz gestartet ist (vorher fehlen die Kalender)
+        async_at_started(self.hass, self.schedule_geo)  # 📍 fehlende Punkte zu Adressen nachschlagen
+        self._unsub_geo = async_track_time_interval(self.hass, self.schedule_geo, timedelta(hours=6))
         self._schedule_cleanup()
         self._schedule_plan_reset()
         if self.plan_reset_on:  # 📅 verpasst (HA war aus)? Dann jetzt nachholen
@@ -4346,6 +4448,11 @@ class EinkaufslisteManager:
         if getattr(self, "_unsub_holidays", None):
             self._unsub_holidays()
             self._unsub_holidays = None
+        if getattr(self, "_unsub_geo", None):
+            self._unsub_geo()
+            self._unsub_geo = None
+        if getattr(self, "_geo_task", None) and not self._geo_task.done():
+            self._geo_task.cancel()
         if getattr(self, "_unsub_holiday_retry", None):
             self._unsub_holiday_retry()
             self._unsub_holiday_retry = None
@@ -4835,6 +4942,8 @@ class EinkaufslisteManager:
         if "hours" in fields and kind == "stores":  # 🕒 Öffnungszeiten (7 Tage Mo..So; None = zu; sonst ["08:00","20:00"])
             entry["hours"] = _clean_hours(fields["hours"])
         self._changed()
+        if kind == "stores" and {"address", "branches", "country"} & set(fields):
+            self.schedule_geo()  # 📍 neue Adresse? Dann gleich den Punkt dazu nachschlagen
         return entry
 
     @callback

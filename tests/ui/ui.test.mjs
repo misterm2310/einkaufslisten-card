@@ -635,6 +635,22 @@ check("Erledigt: Antippen merkt sich das Gerät (auch nach Neuladen)", r.saved =
 check("Erledigt: Bereich ganz ausblendbar", r.hidden, JSON.stringify(r));
 check("Erledigt: eigener Aufklapper unter 👁️ Ansicht mit beiden Häkchen", r.page.done && r.page.open && r.page.title, JSON.stringify(r));
 
+// 35) 📍 Geschäft ohne Zone: Adress-Punkt + Umkreis zählt wie eine Zone (nächstes Geschäft, dicker Rand); neue Ordner in ⚙️ → Geschäfte
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const d=c._data; const st=d.stores[1]; const keepGeo=d.geo; const keepSt={...st}; const keepRad=d.settings.geo_radius;
+  const states=c._hass.states; const uid=c._hass.user?.id || "u1"; c._hass.user = c._hass.user || { id: uid };
+  states["person.test"]={entity_id:"person.test", state:"not_home", attributes:{user_id:uid, latitude:52.10030, longitude:7.30000}}; // ~33 m vom Punkt
+  st.zones=[]; st.zone=null; d.geo={ [st.id]:{ points:[{b:null, lat:52.1, lon:7.3}], missing:[], waiting:[] } }; d.settings.geo_radius=50;
+  const near50=c._nearStore(); const vp=c._viewPrefs; const here50=c._someoneAt(st);
+  d.settings.geo_radius=30; const near30=c._nearStore();
+  d.settings.geo_radius=50; c._view="settings"; c._setSec="stores"; c._lastSetSec="stores"; c._storeSel=st.id; c._accOpen={...(c._accOpen||{}), store:"place"}; c._renderAll(); await new Promise(r=>setTimeout(r,60));
+  const sr=c.shadowRoot; const groups=[...sr.querySelectorAll(".storeset .xacc")].map(x=>x.dataset.k); const line=sr.querySelector(".geoline")?.textContent||""; const rad=sr.querySelector("[data-georadius]")?.value;
+  const labels=[...sr.querySelectorAll(".storeset .flab span")].map(x=>x.textContent);
+  delete states["person.test"]; d.geo=keepGeo; Object.assign(st,keepSt); d.settings.geo_radius=keepRad; c._storeSel=null; c._view="list"; c._renderAll();
+  return { near50: near50===st.id, here50, near30, groups, line, rad, labels }; });
+check("Ohne Zone: im Umkreis 50 m wird das Geschäft erkannt (auch „Jemand ist gerade dort“)", r.near50 && r.here50 === true, JSON.stringify(r));
+check("Ohne Zone: bei 30 m Umkreis zu weit weg", r.near30 === null, JSON.stringify(r));
+check("Geschäfte-Einstellungen: fünf Ordner, Feld-Überschriften, Ort gefunden, Umkreis-Auswahl", JSON.stringify(r.groups) === '["look","place","hours","list","scan"]' && /Ort gefunden/.test(r.line) && r.rad === "50" && r.labels.includes("Adresse") && r.labels.includes("Telefon"), JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }
