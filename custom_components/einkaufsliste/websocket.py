@@ -651,7 +651,7 @@ async def ws_hours_search(hass, connection, msg):
 def ws_pdf_store(hass, connection, msg):
     """📄 Die Karte hat eine PDF gebaut: kurz bereithalten, Link zurück (für die HA-App)."""
     try:
-        result = store_pdf(hass, msg["data"], msg.get("name"))
+        result = store_pdf(hass, msg["data"], msg.get("name"), refresh_token_id=connection.refresh_token_id)
     except ValueError as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return
@@ -1299,7 +1299,7 @@ async def ws_offers_search(hass, connection, msg):
 
 OFFER = vol.Schema({vol.Required("p"): vol.Coerce(float), vol.Optional("to"): OPT_STR, vol.Optional("from"): OPT_STR, vol.Optional("r"): OPT_STR,
                     vol.Optional("d"): OPT_STR, vol.Optional("img"): OPT_STR,
-                    vol.Optional("cur"): OPT_STR, vol.Optional("url"): OPT_STR}, extra=vol.REMOVE_EXTRA)
+                    vol.Optional("cur"): vol.Any(None, vol.All(str, vol.Length(max=5))), vol.Optional("url"): OPT_STR}, extra=vol.REMOVE_EXTRA)
 
 
 @websocket_api.websocket_command(

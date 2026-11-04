@@ -379,6 +379,12 @@ def _clean_branches(value: Any) -> list[dict[str, Any]] | None:
     return out or None
 
 
+def _clean_currency(value: Any) -> str | None:
+    """💱 Währung: höchstens 5 Zeichen, nichts, was in einer Webseite Unfug anstellen kann."""
+    text = re.sub(r"[<>\"'&`\s]", "", str(value or ""))[:5].upper() if isinstance(value, str) else ""
+    return text or None
+
+
 def _clean_geo_radius(value: Any) -> int:
     """📍 Umkreis in Metern: 20 bis 500, sonst 50."""
     try:
@@ -1114,7 +1120,7 @@ class EinkaufslisteManager:
             title = str(raw.get("title") or "").strip()[:200] or name
             off = {"n": name, "r": store, "p": round(float(price), 2), "from": frm, "to": to,
                    "d": title, "q": (str(raw.get("description") or "").strip()[:200] or None), "img": None,
-                   "cur": (str(raw.get("currency") or "").strip().upper()[:5] or None), "src": src}
+                   "cur": _clean_currency(raw.get("currency")), "src": src}
             if reg is not None and float(reg) > off["p"]:
                 off["op"] = round(float(reg), 2)
             url = self._offer_url(raw.get("url"))
@@ -1238,8 +1244,9 @@ class EinkaufslisteManager:
                                 "added_by": original.get("added_by"), "added_by_id": original.get("added_by_id")}
         item["offer"] = {"to": offer.get("to"), "from": offer.get("from"), "r": offer.get("r"), "p": offer.get("p"),
                          "taken": _now_iso()}  # „taken“: ohne Enddatum zählen die 14 Tage ab hier
-        if offer.get("cur"):
-            item["offer"]["cur"] = offer["cur"]  # 💱 z. B. CHF
+        cur = _clean_currency(offer.get("cur"))
+        if cur:
+            item["offer"]["cur"] = cur  # 💱 z. B. CHF (höchstens 5 Zeichen, nur Buchstaben/Zeichen ohne < > " ')
         url = self._offer_url(offer.get("url"))
         if url:
             item["offer"]["url"] = url  # 🔗 Link zum Angebot bleibt am Artikel

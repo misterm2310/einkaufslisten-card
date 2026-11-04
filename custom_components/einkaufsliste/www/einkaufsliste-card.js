@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.26-beta.4";
+const EL_VERSION = "2.76.26";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.24"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -414,22 +414,6 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
-  ["Neu: 📍 <b>Geschäfte ohne Zone erkennen:</b> Trägst du bei einem Geschäft oder einer Filiale die Adresse ein, sucht die Einkaufsliste beim Speichern selbst, wo sie liegt. Bist du dann in der Nähe (Umkreis 50 m, einstellbar), springt die Liste auf das Geschäft – ganz ohne Zone in Home Assistant. Vorhandene Zonen gehen weiter.",
-   "New: 📍 <b>Recognise stores without a zone:</b> enter the address of a store or branch and the list looks up where it is when you save. When you are nearby (radius 50 m, adjustable) the list jumps to that store – no zone in Home Assistant needed. Existing zones keep working."],
-  ["Neu: 🗂️ <b>Geschäfte-Einstellungen aufgeräumt:</b> Oben siehst du den Reiter, darunter fünf Ordner (Aussehen, Ort &amp; Kontakt, Zeiten &amp; Filialen, Liste, Scannen &amp; Angebote). Jedes Feld hat eine Überschrift, Erklärungen gibt es beim ⓘ.",
-   "New: 🗂️ <b>Store settings tidied up:</b> the tab preview at the top, five folders below (Look, Place &amp; contact, Hours &amp; branches, List, Scanning &amp; offers). Every field has a heading, explanations are behind the ⓘ."],
-  ["Neu: 🎌 <b>Feiertage pro Geschäft:</b> Unter ⚙️ → Geschäfte → Öffnungszeiten wählst du bei „🎌 Feiertage“: <b>Automatisch</b> (alle Feiertags-Kalender), einen <b>bestimmten Kalender</b> (z. B. Laden in der Schweiz) oder <b>Keine</b> (Kiosk, Tankstelle, Bofrost – hat an Feiertagen offen). Gilt auch für alle Filialen.",
-   "New: 🎌 <b>Holidays per store:</b> under ⚙️ → Stores → opening hours choose at “🎌 Holidays”: <b>Automatic</b> (all holiday calendars), one <b>specific calendar</b> (e.g. a shop in Switzerland) or <b>None</b> (kiosk, petrol station – open on holidays). Applies to all branches too."],
-  ["Neu: 🌍 <b>Währung und Zahlen wie in Home Assistant:</b> Einkaufs-Protokoll und Bon-Foto nehmen die Währung aus HA (Einstellungen → System → Allgemein), z. B. „CHF 12.50“ oder „£12.50“. Zahlen und Datum richten sich nach der HA-Sprache. Der Bon-Leser kennt jetzt auch „Total CHF“, „Fr.“, „1'234.50“ und „12.-“. Gemeldete Angebote behalten ihre eigene Währung.",
-   "New: 🌍 <b>Currency and numbers like in Home Assistant:</b> the purchase log and receipt photo use the currency from HA (Settings → System → General), e.g. “CHF 12.50” or “£12.50”. Numbers and dates follow the HA language. The receipt reader now also knows “Total CHF”, “Fr.”, “1'234.50” and “12.-”. Reported offers keep their own currency."],
-  ["Neu: 🎌 <b>Feiertage in jedem Land:</b> Statt der Bundesland-Auswahl nimmt die Liste die Feiertage aus der Home-Assistant-Integration „Feiertage“ (z. B. Schweiz/Tessin mit dem 1. August). Noch keine eingerichtet? Unter ⚙️ → Geschäfte → Öffnungszeiten und in „Alles ok?“ gibt es den Knopf „🎌 Feiertage einrichten“.",
-   "New: 🎌 <b>Holidays in every country:</b> instead of the German state selection the list takes the holidays from the Home Assistant “Holiday” integration (e.g. Switzerland/Ticino with 1 August). None set up yet? Under ⚙️ → Stores → opening hours and in “All OK?” there is the button “🎌 Set up holidays”."],
-  ["Neu: 📍 <b>Jemand ist gerade dort:</b> Ist jemand in einer Zone eines Geschäfts, bekommt dessen Reiter oben einen dicken Rand. Abschaltbar unter 👁️ Ansicht, bei Datenschutz an immer aus.",
-   "New: 📍 <b>Someone is there right now:</b> if someone is in a zone of a store, its tab at the top gets a thick border. Can be switched off under 👁️ View, always off with privacy on."],
-  ["Neu: 🤖 Der Sensor pro Geschäft hat jetzt <b>„details“</b> (jeder offene Artikel einzeln mit Menge, Notiz und Kategorie) und den <b>Standort</b>: adresse, plz, ort, land – auch für jede Filiale. 🌍 Bei Geschäft und Filiale gibt es ein Feld <b>„Land“</b> (leer = Land aus HA).",
-   "New: 🤖 The per-store sensor now has <b>“details”</b> (every open item on its own with quantity, note and category) and the <b>location</b>: adresse, plz, ort, land – for every branch too. 🌍 Store and branch have a <b>“Country”</b> field (empty = country from HA)."],
-  ["Neu: 🇨🇭 <b>Schweizer Eigenmarken</b> (Denner, Coop, Migros, Manor) – gesucht wird erst im eigenen Land, danach in allen anderen. ✔️ Unter „Erledigt“ hat „War nicht da“ kein rotes X mehr vorne.",
-   "New: 🇨🇭 <b>Swiss private labels</b> (Denner, Coop, Migros, Manor) – the own country is searched first, then all others. ✔️ Under “Done” “Was not there” no longer has a red X at the front."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -438,6 +422,22 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", year: "#e91e63", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["📍 <b>Geschäfte ohne Zone erkennen:</b> Trägst du bei einem Geschäft oder einer Filiale die Adresse ein, sucht die Einkaufsliste beim Speichern selbst, wo sie liegt. Bist du dann in der Nähe (Umkreis 50 m, einstellbar), springt die Liste auf das Geschäft – ganz ohne Zone in Home Assistant. Vorhandene Zonen gehen weiter.",
+   "📍 <b>Recognise stores without a zone:</b> enter the address of a store or branch and the list looks up where it is when you save. When you are nearby (radius 50 m, adjustable) the list jumps to that store – no zone in Home Assistant needed. Existing zones keep working."],
+  ["🗂️ <b>Geschäfte-Einstellungen aufgeräumt:</b> Oben siehst du den Reiter, darunter fünf Ordner (Aussehen, Ort &amp; Kontakt, Zeiten &amp; Filialen, Liste, Scannen &amp; Angebote). Jedes Feld hat eine Überschrift, Erklärungen gibt es beim ⓘ.",
+   "🗂️ <b>Store settings tidied up:</b> the tab preview at the top, five folders below (Look, Place &amp; contact, Hours &amp; branches, List, Scanning &amp; offers). Every field has a heading, explanations are behind the ⓘ."],
+  ["🎌 <b>Feiertage pro Geschäft:</b> Unter ⚙️ → Geschäfte → Öffnungszeiten wählst du bei „🎌 Feiertage“: <b>Automatisch</b> (alle Feiertags-Kalender), einen <b>bestimmten Kalender</b> (z. B. Laden in der Schweiz) oder <b>Keine</b> (Kiosk, Tankstelle, Bofrost – hat an Feiertagen offen). Gilt auch für alle Filialen.",
+   "🎌 <b>Holidays per store:</b> under ⚙️ → Stores → opening hours choose at “🎌 Holidays”: <b>Automatic</b> (all holiday calendars), one <b>specific calendar</b> (e.g. a shop in Switzerland) or <b>None</b> (kiosk, petrol station – open on holidays). Applies to all branches too."],
+  ["🌍 <b>Währung und Zahlen wie in Home Assistant:</b> Einkaufs-Protokoll und Bon-Foto nehmen die Währung aus HA (Einstellungen → System → Allgemein), z. B. „CHF 12.50“ oder „£12.50“. Zahlen und Datum richten sich nach der HA-Sprache. Der Bon-Leser kennt jetzt auch „Total CHF“, „Fr.“, „1'234.50“ und „12.-“. Gemeldete Angebote behalten ihre eigene Währung.",
+   "🌍 <b>Currency and numbers like in Home Assistant:</b> the purchase log and receipt photo use the currency from HA (Settings → System → General), e.g. “CHF 12.50” or “£12.50”. Numbers and dates follow the HA language. The receipt reader now also knows “Total CHF”, “Fr.”, “1'234.50” and “12.-”. Reported offers keep their own currency."],
+  ["🎌 <b>Feiertage in jedem Land:</b> Statt der Bundesland-Auswahl nimmt die Liste die Feiertage aus der Home-Assistant-Integration „Feiertage“ (z. B. Schweiz/Tessin mit dem 1. August). Noch keine eingerichtet? Unter ⚙️ → Geschäfte → Öffnungszeiten und in „Alles ok?“ gibt es den Knopf „🎌 Feiertage einrichten“.",
+   "🎌 <b>Holidays in every country:</b> instead of the German state selection the list takes the holidays from the Home Assistant “Holiday” integration (e.g. Switzerland/Ticino with 1 August). None set up yet? Under ⚙️ → Stores → opening hours and in “All OK?” there is the button “🎌 Set up holidays”."],
+  ["📍 <b>Jemand ist gerade dort:</b> Ist jemand in einer Zone eines Geschäfts, bekommt dessen Reiter oben einen dicken Rand. Abschaltbar unter 👁️ Ansicht, bei Datenschutz an immer aus.",
+   "📍 <b>Someone is there right now:</b> if someone is in a zone of a store, its tab at the top gets a thick border. Can be switched off under 👁️ View, always off with privacy on."],
+  ["🤖 Der Sensor pro Geschäft hat jetzt <b>„details“</b> (jeder offene Artikel einzeln mit Menge, Notiz und Kategorie) und den <b>Standort</b>: adresse, plz, ort, land – auch für jede Filiale. 🌍 Bei Geschäft und Filiale gibt es ein Feld <b>„Land“</b> (leer = Land aus HA).",
+   "🤖 The per-store sensor now has <b>“details”</b> (every open item on its own with quantity, note and category) and the <b>location</b>: adresse, plz, ort, land – for every branch too. 🌍 Store and branch have a <b>“Country”</b> field (empty = country from HA)."],
+  ["🇨🇭 <b>Schweizer Eigenmarken</b> (Denner, Coop, Migros, Manor) – gesucht wird erst im eigenen Land, danach in allen anderen. ✔️ Unter „Erledigt“ hat „War nicht da“ kein rotes X mehr vorne.",
+   "🇨🇭 <b>Swiss private labels</b> (Denner, Coop, Migros, Manor) – the own country is searched first, then all others. ✔️ Under “Done” “Was not there” no longer has a red X at the front."],
   ["🏬 <b>Geschäfte mit Steckbrief:</b> Adresse, Telefon, Webseite und eigene 💡 Tipps pro Geschäft (Reiter gedrückt halten → ℹ️). Unter ⚙️ → Geschäfte → „Filialen ändern“ bekommt jede Filiale eigene Adresse, Telefon und Öffnungszeiten. 🎨 Bekannte Ketten kriegen gleich ihre Logo-Farbe, 🕒 neuer Sensor binary_sensor.einkaufsliste_&lt;geschäft&gt;_offen, und 🔨 „Nicht unter Alle zeigen“ hält z. B. den Baumarkt aus dem Reiter „Alle“ raus.",
    "🏬 <b>Stores with a profile:</b> address, phone, website and your own 💡 tips per store (press and hold the tab → ℹ️). Under ⚙️ → Stores → “Edit branches” every branch gets its own address, phone and opening hours. 🎨 Well-known chains get their logo colour right away, 🕒 new sensor binary_sensor.einkaufsliste_&lt;store&gt;_offen, and 🔨 “Don't show under All” keeps e.g. the hardware store out of the “All” tab."],
   ["📤 <b>Drucken &amp; Teilen</b> unter der Liste: drucken, als echte PDF-Datei teilen (auf iPhone/iPad übers Teilen-Menü, dort „Drucken“ per AirPrint) oder als 📱 QR-Code, den ein anderes Handy mit der Kamera liest – immer mit allen Artikeln, lange Listen in mehreren Teilen.",
@@ -12024,7 +12024,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
   }
 
   // 💱 „EUR“/leer -> „€“, sonst das Kürzel (z. B. „CHF“ aus einer eigenen Automation)
-  _cur(c) { const x = String(c || "").trim(); return !x || /^(eur|€)$/i.test(x) ? "€" : x; }
+  _cur(c) { const x = String(c || "").trim().slice(0, 5); return !x || /^(eur|€)$/i.test(x) ? "€" : esc(x); } // 💱 kommt von außen: immer unschädlich machen
 
   // 📬 Quelle unter der Angebotsliste: Marktguru und/oder eigene Automation
   _offersSource(list) {

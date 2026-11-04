@@ -2,7 +2,8 @@
 
 Die HA-App auf iPhone/iPad kann aus der Karte weder drucken noch Dateien teilen. Darum baut die
 Karte die PDF selbst, schickt sie hierher und die App öffnet einen Link darauf im Browser des Handys
-(dort: Teilen → Drucken / In Dateien sichern). Der Link ist zufällig, gilt 10 Minuten und verrät nichts.
+(dort: Teilen → Drucken / In Dateien sichern). Der Link ist von Home Assistant unterschrieben (async_sign_path),
+gilt 10 Minuten und funktioniert darum auch ohne Anmeldung im Browser – ohne Unterschrift kommt niemand an die Datei.
 """
 
 from __future__ import annotations
@@ -12,12 +13,14 @@ import binascii
 import re
 import secrets
 import time
+from datetime import timedelta
 from http import HTTPStatus
 from typing import Any
 
 from aiohttp import web
 
 from homeassistant.components.http import HomeAssistantView
+from homeassistant.components.http.auth import async_sign_path
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
@@ -42,8 +45,8 @@ def _clean_name(name: Any) -> str:
     return f"{text}.pdf"
 
 
-def store_pdf(hass: HomeAssistant, data: str, name: Any = None, now: float | None = None) -> dict[str, str]:
-    """PDF (Base64) merken und den Link darauf zurückgeben."""
+def store_pdf(hass: HomeAssistant, data: str, name: Any = None, now: float | None = None, refresh_token_id: str | None = None) -> dict[str, str]:
+    """PDF (Base64) merken und den unterschriebenen Link darauf zurückgeben (gilt PDF_TTL Sekunden)."""
     try:
         raw = base64.b64decode(data, validate=True)
     except (binascii.Error, ValueError) as err:
@@ -61,7 +64,8 @@ def store_pdf(hass: HomeAssistant, data: str, name: Any = None, now: float | Non
     token = secrets.token_urlsafe(24)
     fname = _clean_name(name)
     files[token] = {"data": raw, "until": now + PDF_TTL, "name": fname}
-    return {"url": f"/api/einkaufsliste/pdf/{token}/{fname}"}
+    path = f"/api/einkaufsliste/pdf/{token}/{fname}"
+    return {"url": async_sign_path(hass, path, timedelta(seconds=PDF_TTL), refresh_token_id=refresh_token_id)}
 
 
 def get_pdf(hass: HomeAssistant, token: str, now: float | None = None) -> dict[str, Any] | None:
@@ -74,11 +78,11 @@ def get_pdf(hass: HomeAssistant, token: str, now: float | None = None) -> dict[s
 
 
 class PdfView(HomeAssistantView):
-    """GET = die PDF zum Link (ohne Anmeldung: der Browser des Handys hat keine; der zufällige Link ist der Schlüssel)."""
+    """GET = die PDF zum Link. Home Assistant prüft die Unterschrift im Link (der Browser des Handys hat keine Anmeldung)."""
 
     url = "/api/einkaufsliste/pdf/{token}/{name}"
     name = "api:einkaufsliste:pdf"
-    requires_auth = False
+    requires_auth = True
 
     async def get(self, request: web.Request, token: str, name: str) -> web.Response:
         entry = get_pdf(request.app["hass"], token)

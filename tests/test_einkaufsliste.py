@@ -4744,22 +4744,24 @@ async def test_pdf_share(hass: HomeAssistant, setup, hass_ws_client, hass_client
     res = await client.receive_json()
     assert res["success"], res
     url = res["result"]["url"]
-    assert url.startswith("/api/einkaufsliste/pdf/") and url.endswith("/Einkaufsliste-Kaese-Co.pdf")
+    assert url.startswith("/api/einkaufsliste/pdf/") and "/Einkaufsliste-Kaese-Co.pdf?authSig=" in url
     web = await hass_client_no_auth()
     resp = await web.get(url)
     assert resp.status == 200
+    # 🔐 ohne Unterschrift kein Zugriff (auch mit richtigem Zufalls-Teil)
+    assert (await web.get(url.split("?")[0])).status == 401
     assert resp.headers["Content-Type"].startswith("application/pdf")
     assert await resp.read() == pdf
     # falscher Schlüssel → nichts
     resp = await web.get("/api/einkaufsliste/pdf/AAAAAAAAAAAAAAAAAAAAAAAAAAAA/x.pdf")
-    assert resp.status == 404
+    assert resp.status == 401
     # keine PDF / kaputt → Fehler
     await client.send_json({"id": 2, "type": "einkaufsliste/pdf/store", "data": base64.b64encode(b"<html>").decode()})
     assert not (await client.receive_json())["success"]
     await client.send_json({"id": 3, "type": "einkaufsliste/pdf/store", "data": "%%%kein base64"})
     assert not (await client.receive_json())["success"]
     # abgelaufen und höchstens PDF_KEEP gleichzeitig
-    token = url.split("/")[4]
+    token = url.split("?")[0].split("/")[4]
     assert get_pdf(hass, token) is not None
     import time
 
@@ -4988,3 +4990,14 @@ async def test_geo_stores_without_zone(hass: HomeAssistant, setup, monkeypatch) 
     # OpenStreetMap-Treffer werden gleich gemerkt
     m.geo_remember("Bahnhofstr. 9, 48565 Steinfurt", "52.2", "7.4")
     assert m.geo[manager_mod.geo_key("Bahnhofstr. 9, 48565 Steinfurt", hass.config.country)] == [52.2, 7.4]
+
+
+async def test_offer_currency_is_cleaned(hass: HomeAssistant, setup) -> None:
+    """💱 Währung: nur kurze, harmlose Zeichen kommen an (kein HTML in der Karte)."""
+    m = mgr(hass)
+    it = m.add_item("Milch", store_id=None)
+    got = m.take_offer({"p": 1.0, "r": "Lidl", "d": "Milch", "cur": '<img src=x onerror="alert(1)">'}, item_id=it["id"], store_id=None)
+    cur = got["offer"].get("cur") or ""
+    assert len(cur) <= 5 and not any(c in cur for c in "<>\"'&")
+    ok = m.take_offer({"p": 1.0, "r": "Lidl", "d": "Käse", "cur": "chf"}, name="Käse")
+    assert ok["offer"]["cur"] == "CHF"
