@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.3";
+const EL_VERSION = "2.76.27-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -414,6 +414,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🔢 <b>OSM-Nummer klappt auch bei vollen Servern:</b> Gibst du bei „🌐 Zeiten aus OpenStreetMap“ die Nummer oder den Link ein (z. B. W304790824), fragt Home Assistant direkt bei openstreetmap.org statt bei den oft überlasteten Such-Servern. Sind die Such-Server voll, probiert es die Liste nach kurzer Pause nochmal, und die Meldung sagt genau, welcher Server was hatte (Issue #30).",
+   "New: 🔢 <b>OSM number works even when servers are full:</b> if you enter the number or link at “🌐 Times from OpenStreetMap” (e.g. W304790824), Home Assistant asks openstreetmap.org directly instead of the often overloaded search servers. If the search servers are full, the list tries again after a short pause, and the message says exactly which server had what problem (issue #30)."],
   ["Neu: 🌐 <b>OpenStreetMap-Suche besser sichtbar:</b> Nach „OK“ bleibt „Suche läuft …“ als eigene Seite stehen, bis wirklich eine Antwort da ist. Die Treffer erscheinen auf derselben Seite, und wenn etwas schiefgeht, steht dort, was los ist. Antwortet ein Server nicht, wird schneller der nächste gefragt (Issue #30).",
    "New: 🌐 <b>OpenStreetMap search easier to see:</b> after “OK”, “Searching …” stays on its own page until an answer really arrives. The results appear on the same page, and if something goes wrong it says what happened. If a server doesn't answer, the next one is asked sooner (issue #30)."],
   ["Neu: 🌐 <b>Öffnungszeiten aus OpenStreetMap klappen öfter:</b> Zeiten wie „Su,PH off“ (Sonntag und Feiertag zu) oder „Mo-We,Fr …“ werden jetzt verstanden. Gesucht wird rund um die eingetragene Adresse des Geschäfts. Und statt des Namens geht auch die OSM-Nummer oder der Link (z. B. W304790824), dann darf dein Geschäft heißen, wie du willst (Issue #30).",
@@ -13435,7 +13437,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       case "hours-osm": {
         const sid = el.dataset.id;
         const st = this._store(sid);
-        askText("🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und den ungefähren Ort (Adresse des Geschäfts, seine Zone oder dein Zuhause) an overpass-api.de (ist der überlastet, an einen Ersatz-Server). Name des Geschäfts – oder die OSM-Nummer bzw. den Link (z. B. W304790824), dann darf dein Geschäft heißen, wie du willst:", "z. B. K&K", st?.name || "").then(async (name) => {
+        askText("🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und den ungefähren Ort (Adresse des Geschäfts, seine Zone oder dein Zuhause) an overpass-api.de (ist der überlastet, an einen Ersatz-Server). Name des Geschäfts – oder die OSM-Nummer bzw. den Link (z. B. W304790824, geht direkt an openstreetmap.org und klappt auch, wenn die Suche überlastet ist), dann darf dein Geschäft heißen, wie du willst:", "z. B. K&K", st?.name || "").then(async (name) => {
           if (!name) return;
           // ⏳ eigenes Fenster (wie die Eingabe): „Suche läuft“ bleibt stehen, bis wirklich eine Antwort da ist (Issue #30)
           const ov = this._osmPage();

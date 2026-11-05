@@ -26,6 +26,9 @@ OVERPASS_SERVERS = (
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
 )
+OSM_API = "https://api.openstreetmap.org/api/0.6"  # 🔢 für eine einzelne OSM-Nummer: schnell, ohne Warteschlange
+_BUSY = (429, 502, 503, 504)  # „alle Plätze belegt“
+_pause = asyncio.sleep  # (in Tests ersetzbar)
 _DAYS = {"Mo": 0, "Tu": 1, "We": 2, "Th": 3, "Fr": 4, "Sa": 5, "Su": 6}
 _TIME = re.compile(r"^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$")
 
@@ -137,6 +140,66 @@ def parse_osm_ref(text: str | None) -> tuple[str, int] | None:
     return (_OSM_TYPES[m.group(1).lower()], int(m.group(2))) if m else None
 
 
+async def _async_overpass(session: Any, query: str, reasons: dict[str, str]) -> Any:
+    """Overpass fragen: alle Server der Reihe nach, und wenn einer nur „überlastet“ war, nach kurzer Pause nochmal."""
+    for attempt in range(2):
+        busy: list[str] = []
+        for url in OVERPASS_SERVERS:
+            host = url.split("/")[2]
+            try:
+                async with asyncio.timeout(10):  # ⏱️ lieber schnell den nächsten Server fragen als ewig warten (Issue #30)
+                    resp = await session.post(url, data={"data": query}, headers={"User-Agent": USER_AGENT})
+                    if resp.status != 200:
+                        reasons[host] = f"überlastet ({resp.status})" if resp.status in _BUSY else f"Fehler {resp.status}"
+                        if resp.status in _BUSY:
+                            busy.append(url)
+                        _LOGGER.debug("OpenStreetMap-Server %s antwortet mit %s", url, resp.status)
+                        continue
+                    return await resp.json(content_type=None)
+            except TimeoutError:
+                reasons[host] = "antwortet nicht"
+                _LOGGER.debug("OpenStreetMap-Server %s antwortet nicht", url)
+            except (aiohttp.ClientError, ValueError) as err:
+                reasons[host] = "nicht erreichbar"
+                _LOGGER.debug("OpenStreetMap-Server %s nicht erreichbar: %s", url, err)
+        if not busy or attempt:
+            return None
+        await _pause(3)  # 🔁 kurz durchatmen, dann nochmal (so wünscht es Overpass)
+    return None
+
+
+async def _async_fetch_ref(session: Any, ref: tuple[str, int]) -> Any:
+    """🔢 Ein einzelnes Objekt direkt bei openstreetmap.org holen (kein Overpass nötig).
+    Antwort im gleichen Format wie Overpass: {"elements": [{"lat", "lon", "tags"}]} – oder None."""
+    kind, oid = ref
+    url = f"{OSM_API}/{kind}/{oid}.json" if kind == "node" else f"{OSM_API}/{kind}/{oid}/full.json"
+    try:
+        async with asyncio.timeout(10):
+            resp = await session.get(url, headers={"User-Agent": USER_AGENT})
+            if resp.status == 404 or resp.status == 410:
+                return {"elements": []}  # gibt es nicht (mehr)
+            if resp.status != 200:
+                _LOGGER.debug("openstreetmap.org antwortet mit %s für %s", resp.status, url)
+                return None
+            raw = await resp.json(content_type=None)
+    except (TimeoutError, aiohttp.ClientError, ValueError) as err:
+        _LOGGER.debug("openstreetmap.org nicht erreichbar: %s", err)
+        return None
+    els = raw.get("elements") if isinstance(raw, dict) else None
+    if not isinstance(els, list):
+        return None
+    main = next((e for e in els if isinstance(e, dict) and e.get("type") == kind and e.get("id") == oid), None)
+    if main is None:
+        return {"elements": []}
+    if kind == "node":
+        return {"elements": [main]}
+    pts = [(e["lat"], e["lon"]) for e in els if isinstance(e, dict) and e.get("type") == "node" and "lat" in e and "lon" in e]
+    item: dict[str, Any] = {"tags": main.get("tags") or {}}
+    if pts:  # 📍 Mitte des Gebäudes = Durchschnitt seiner Eckpunkte
+        item["center"] = {"lat": sum(p[0] for p in pts) / len(pts), "lon": sum(p[1] for p in pts) / len(pts)}
+    return {"elements": [item]}
+
+
 def _distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     p = radians
     a = sin(p(lat2 - lat1) / 2) ** 2 + cos(p(lat1)) * cos(p(lat2)) * sin(p(lon2 - lon1) / 2) ** 2
@@ -203,24 +266,19 @@ async def async_search_hours(
     if ref:
         query = f"[out:json][timeout:15];{ref[0]}({ref[1]});out center tags;"
     session = async_get_clientsession(hass)
-    data: Any = None
-    last = "keine Antwort"
-    for url in OVERPASS_SERVERS:
-        try:
-            async with asyncio.timeout(10):  # ⏱️ lieber schnell den nächsten Server fragen als ewig warten (Issue #30)
-                resp = await session.post(url, data={"data": query}, headers={"User-Agent": USER_AGENT})
-                if resp.status != 200:
-                    last = f"Fehler {resp.status}"
-                    _LOGGER.debug("OpenStreetMap-Server %s antwortet mit %s", url, resp.status)
-                    continue
-                data = await resp.json(content_type=None)
-                break
-        except (TimeoutError, aiohttp.ClientError, ValueError) as err:
-            last = "nicht erreichbar"
-            _LOGGER.debug("OpenStreetMap-Server %s nicht erreichbar: %s", url, err)
+    data: Any = await _async_fetch_ref(session, ref) if ref else None  # 🔢 Nummer: erst direkt bei OpenStreetMap
+    reasons: dict[str, str] = {}
     if data is None:
-        _LOGGER.warning("OpenStreetMap-Suche nach „%s“: kein Server hat geantwortet (%s)", name, last)
-        raise ValueError(f"OpenStreetMap ist gerade überlastet oder nicht erreichbar ({last}). Bitte in ein paar Minuten nochmal versuchen.")
+        data = await _async_overpass(session, query, reasons)
+    if data is None:
+        why = ", ".join(f"{host}: {r}" for host, r in reasons.items()) or "keine Antwort"
+        _LOGGER.warning("OpenStreetMap-Suche nach „%s“: kein Server hat geantwortet (%s)", name, why)
+        busy = any(r.startswith("überlastet") for r in reasons.values())
+        raise ValueError(
+            ("OpenStreetMap ist gerade überlastet" if busy else "OpenStreetMap ist gerade nicht erreichbar")
+            + f" ({why}). Bitte in ein paar Minuten nochmal versuchen"
+            + ("." if busy or ref else " – oder statt des Namens die OSM-Nummer eingeben (z. B. W304790824), die geht oft trotzdem.")
+        )
     out: list[dict[str, Any]] = []
     for el in (data.get("elements") if isinstance(data, dict) else None) or []:
         tags = el.get("tags") if isinstance(el, dict) else None

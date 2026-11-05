@@ -78,12 +78,38 @@ async def test_search_falls_back_to_next_server(hass):
 
 
 async def test_search_all_servers_down(hass):
+    """Alle überlastet: einmal kurz warten und nochmal, dann klare Meldung mit den Gründen."""
     bad = MagicMock(status=504)
     session = MagicMock()
     session.post = AsyncMock(return_value=bad)
-    with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session):
-        with pytest.raises(ValueError, match="überlastet"):
+    with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session), \
+         patch("custom_components.einkaufsliste.osm_hours._pause", AsyncMock()) as pause:
+        with pytest.raises(ValueError, match=r"überlastet \(overpass-api.de: überlastet \(504\)"):
             await async_search_hours(hass, MagicMock(privacy=False), "K&K")
+    assert session.post.call_count == 6 and pause.call_count == 1
+
+
+async def test_search_busy_then_ok(hass):
+    """🔁 Erst „überlastet“ überall, nach der Pause klappt es."""
+    bad = MagicMock(status=504)
+    good = MagicMock(status=200)
+    good.json = AsyncMock(return_value={"elements": [{"lat": 52.1, "lon": 7.4, "tags": {"name": "K&K"}}]})
+    session = MagicMock()
+    session.post = AsyncMock(side_effect=[bad, bad, bad, good])
+    with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session), \
+         patch("custom_components.einkaufsliste.osm_hours._pause", AsyncMock()):
+        res = await async_search_hours(hass, MagicMock(privacy=False), "K&K")
+    assert len(res) == 1
+
+
+async def test_search_unreachable_suggests_number(hass):
+    import aiohttp
+    session = MagicMock()
+    session.post = AsyncMock(side_effect=aiohttp.ClientError("weg"))
+    with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session):
+        with pytest.raises(ValueError, match="nicht erreichbar.*OSM-Nummer"):
+            await async_search_hours(hass, MagicMock(privacy=False), "K&K")
+    assert session.post.call_count == 3  # nicht erreichbar = kein zweiter Durchgang
 
 
 def test_parse_holiday_in_day_list_and_split_days():
@@ -107,14 +133,35 @@ def test_parse_osm_ref():
 
 
 async def test_search_by_ref_and_center(hass):
-    """🔢 OSM-Nummer: genau dieses Objekt holen. 📍 center: dort suchen statt Zuhause."""
-    resp = MagicMock(status=200)
-    resp.json = AsyncMock(return_value={"elements": [{"type": "way", "center": {"lat": 46.0, "lon": 8.95}, "tags": {"name": "Coop", "shop": "supermarket", "opening_hours": "Mo-Sa 08:00-18:30; Su,PH off"}}]})
+    """🔢 OSM-Nummer: direkt bei openstreetmap.org holen (Weg = Mitte der Eckpunkte). 📍 center: dort suchen statt Zuhause."""
+    way = MagicMock(status=200)
+    way.json = AsyncMock(return_value={"elements": [
+        {"type": "node", "id": 1, "lat": 46.0, "lon": 8.95}, {"type": "node", "id": 2, "lat": 46.002, "lon": 8.952},
+        {"type": "way", "id": 304790824, "nodes": [1, 2], "tags": {"name": "Coop", "shop": "supermarket", "opening_hours": "Mo-Sa 08:00-18:30; Su,PH off", "addr:street": "Via Nassa", "addr:housenumber": "22", "addr:postcode": "6900", "addr:city": "Lugano"}}]})
+    node = MagicMock(status=200)
+    node.json = AsyncMock(return_value={"elements": [{"type": "node", "id": 6698847448, "lat": 45.87, "lon": 8.98, "tags": {"name": "Jumbo", "opening_hours": "Mo-Fr 08:00-19:00; Sa 08:00-17:00"}}]})
     session = MagicMock()
+    session.get = AsyncMock(side_effect=[way, node])
+    session.post = AsyncMock()
+    with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session):
+        res = await async_search_hours(hass, MagicMock(privacy=False), "W304790824", center=[46.001, 8.951])
+        assert session.get.call_args.args[0].endswith("/way/304790824/full.json") and not session.post.called
+        assert res[0]["name"] == "Coop" and res[0]["hours"][0] == [["08:00", "18:30"]] and res[0]["distance_km"] == 0.0
+        assert res[0]["address"] == "Via Nassa 22, 6900 Lugano"
+        res = await async_search_hours(hass, MagicMock(privacy=False), "https://www.openstreetmap.org/node/6698847448")
+        assert session.get.call_args.args[0].endswith("/node/6698847448.json") and res[0]["name"] == "Jumbo"
+
+
+async def test_search_by_ref_falls_back_to_overpass(hass):
+    """openstreetmap.org klemmt: dann wie bisher Overpass mit der Nummer; Mitte = center."""
+    import aiohttp
+    resp = MagicMock(status=200)
+    resp.json = AsyncMock(return_value={"elements": [{"type": "way", "center": {"lat": 46.0, "lon": 8.95}, "tags": {"name": "Coop"}}]})
+    session = MagicMock()
+    session.get = AsyncMock(side_effect=aiohttp.ClientError("weg"))
     session.post = AsyncMock(return_value=resp)
     with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session):
-        res = await async_search_hours(hass, MagicMock(privacy=False), "W304790824", center=[46.0, 8.95])
-        assert "way(304790824)" in session.post.call_args.kwargs["data"]["data"]
-        assert res[0]["hours"][0] == [["08:00", "18:30"]] and res[0]["distance_km"] == 0.0
+        res = await async_search_hours(hass, MagicMock(privacy=False), "W304790824")
+        assert "way(304790824)" in session.post.call_args.kwargs["data"]["data"] and res[0]["name"] == "Coop"
         await async_search_hours(hass, MagicMock(privacy=False), "Coop", center=[46.00512, 8.95111])
         assert "46.00512,8.95111" in session.post.call_args.kwargs["data"]["data"]
