@@ -8,6 +8,8 @@
 
 Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=einkaufslisten-card&category=integration) [![Integration hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=einkaufsliste)
 
+> ✅ **Offiziell in HACS** (seit 04.11.2026): einfach in HACS nach **Einkaufsliste** suchen, kein eigenes Repository mehr nötig. 🎉
+
 ![Vorschau – Einkaufsliste hell und dunkel](docs/screenshot.png)
 
 <details><summary>🛒 Laden-Modus ansehen</summary>
@@ -62,7 +64,7 @@ Leere Eingabefelder zeigen ein Beispiel (bei der Menge passend zum Produkt, z. B
 
 ## 📦 Installation
 
-1. **HACS** öffnen und nach **Einkaufsliste** suchen.
+1. **HACS** öffnen (ab Home Assistant 2026.11: **Einstellungen → Marketplace**) und nach **Einkaufsliste** suchen. Oder oben einfach auf „In HACS öffnen“ tippen.
 2. **Herunterladen**, danach **Home Assistant neu starten**.
 3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → Einkaufsliste** → Absenden, fertig. 🎉 (Aufräum-Tag und Uhrzeit stellst du später in der Karte ein: ⚙️ → Aufräumen.)
 4. Dashboard → **Bearbeiten → Karte hinzufügen → Einkaufsliste**.
@@ -74,7 +76,7 @@ type: custom:einkaufsliste-card
 > 🙌 Eine Ressource musst du **nicht** von Hand eintragen, das macht die Integration selbst.
 > Sieht die Karte nach einem Update komisch aus? In der App einmal nach unten ziehen oder im Browser Strg+F5.
 
-<details><summary>Findet HACS die Einkaufsliste nicht? (als benutzerdefiniertes Repository)</summary>
+<details><summary>Plan B: Taucht die Einkaufsliste bei dir noch nicht auf? (als benutzerdefiniertes Repository)</summary>
 
 In HACS oben rechts **⋮ → Benutzerdefinierte Repositories** öffnen, `https://github.com/misterm2310/einkaufslisten-card` eintragen, Typ **Integration**, **Hinzufügen**. Danach weiter mit Schritt 1.
 </details>
@@ -496,7 +498,7 @@ Der Sensor hat außerdem die Felder `naechster` (z. B. „Lasagne – Schritt 2"
 
 **Die Karte sagt „Integration nicht eingerichtet“.** Dann fehlt Schritt 3 der Installation.
 
-**Wann kommen neue Versionen?** Offizielle Versionen immer **sonntags**. An den anderen Tagen gibt es nur **Test-Versionen (Beta)**. Die siehst du in HACS, wenn du bei der Einkaufsliste ⋮ → „Neu herunterladen“ wählst und **„Beta-Versionen anzeigen“** einschaltest. Eine Beta kann noch Ecken und Kanten haben; die Version steht unter ⚙️ → Credits.
+**Wann kommen neue Versionen?** Offizielle Versionen immer **sonntags**. An den anderen Tagen gibt es nur **Test-Versionen (Beta)**. Die siehst du in HACS (ab Home Assistant 2026.11: Marketplace), wenn du bei der Einkaufsliste ⋮ → „Neu herunterladen“ wählst und **„Beta-Versionen anzeigen“** einschaltest. Eine Beta kann noch Ecken und Kanten haben; die Version steht unter ⚙️ → Credits.
 
 ---
 

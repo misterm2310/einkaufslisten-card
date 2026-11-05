@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.26";
+const EL_VERSION = "2.76.27-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -414,6 +414,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🎉 <b>Jetzt offiziell in HACS!</b> Die Einkaufsliste steht seit 04.11.2026 im HACS-Verzeichnis. Neue Nutzer finden sie einfach über die Suche (ab Home Assistant 2026.11: Einstellungen → Marketplace). Wer sie schon hat, muss nichts tun. Danke an alle, die getestet und mitgeholfen haben! Mehr unter ⚙️ → Credits.",
+   "New: 🎉 <b>Now official in HACS!</b> The shopping list has been in the HACS directory since 4 Nov 2026. New users simply find it via search (from Home Assistant 2026.11: Settings → Marketplace). If you already have it, there is nothing to do. Thanks to everyone who tested and helped! More under ⚙️ → Credits."],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -11040,7 +11042,8 @@ ${(() => {
       <p class="elcv"><b>${t("Einkaufsliste", "Shopping list")}</b> v${EL_VERSION}</p>
       <p>${t("Gemacht von <b>Mister-M</b> – mit Hilfe von Claude 🤖", "Made by <b>Mister-M</b> – with help from Claude 🤖")}</p>
       <p>${t("Ich versuche, Updates und Fehler-Korrekturen zeitnah zu erledigen.", "I try to ship updates and fixes promptly.")}</p>
-      <p class="elcsmall">📅 ${t("Neue offizielle Versionen kommen immer sonntags. An den anderen Tagen gibt es nur Test-Versionen (Beta) – die siehst du in HACS unter „Beta-Versionen anzeigen“.", "New official versions always come out on Sundays. On the other days there are only test versions (beta) – you see them in HACS under “Show beta versions”.")}</p>
+      <p>✅ ${t("<b>Offiziell in HACS</b> – seit 04.11.2026 im HACS-Verzeichnis", "<b>Official in HACS</b> – in the HACS directory since 4 Nov 2026")} (<a href="https://github.com/hacs/default/pull/11340" target="_blank" rel="noopener">${t("Antrag", "submission")}</a>)</p>
+      <p class="elcsmall">📅 ${t("Neue offizielle Versionen kommen immer sonntags. An den anderen Tagen gibt es nur Test-Versionen (Beta) – die siehst du in HACS (ab Home Assistant 2026.11: Marketplace) unter „Beta-Versionen anzeigen“.", "New official versions always come out on Sundays. On the other days there are only test versions (beta) – you see them in HACS (from Home Assistant 2026.11: Marketplace) under “Show beta versions”.")}</p>
       <div class="elcbtns">
         <a class="elcbtn" href="${repo}" target="_blank" rel="noopener">🐙 GitHub</a>
         <a class="elcbtn" href="${repo}/discussions" target="_blank" rel="noopener">💡 ${t("Idee oder Wunsch", "Idea or request")}</a>

@@ -8,6 +8,8 @@
 
 One click opens it right in your Home Assistant: [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=einkaufslisten-card&category=integration) [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=einkaufsliste)
 
+> ✅ **Official in HACS** (since 4 Nov 2026): just search HACS for **Einkaufsliste**, no custom repository needed any more. 🎉
+
 > 🌍 The card was written in German and speaks English whenever your Home Assistant is not set to German (or with `language: en`). On a fresh English install the default stores, categories and recipe groups are English too. Your own entries are never translated. Spot a German leftover? Please open an issue.
 
 ![Preview – shopping list light and dark](docs/screenshot.png)
@@ -64,7 +66,7 @@ Empty input fields show an example (for the quantity one that fits the product, 
 
 ## 📦 Installation
 
-1. Open **HACS** and search for **Einkaufsliste**.
+1. Open **HACS** (from Home Assistant 2026.11: **Settings → Marketplace**) and search for **Einkaufsliste**. Or simply tap “Open in HACS” above.
 2. **Download**, then **restart Home Assistant**.
 3. **Settings → Devices & services → Add integration → Einkaufsliste** → Submit, done. 🎉 (Cleanup day and time are set later in the card: ⚙️ → Cleanup.)
 4. Dashboard → **Edit → Add card → Einkaufsliste**.
@@ -76,7 +78,7 @@ type: custom:einkaufsliste-card
 > 🙌 No need to add a resource by hand – the integration does it.
 > Card looks odd after an update? Pull down to refresh in the app or press Ctrl+F5 in the browser.
 
-<details><summary>HACS doesn't find Einkaufsliste? (as a custom repository)</summary>
+<details><summary>Plan B: Einkaufsliste doesn't show up yet? (as a custom repository)</summary>
 
 In HACS open **⋮ → Custom repositories** at the top right, add `https://github.com/misterm2310/einkaufslisten-card`, type **Integration**, **Add**. Then continue with step 1.
 </details>
@@ -501,7 +503,7 @@ The sensor also has the fields `naechster` (e.g. “Lasagna – Schritt 2”), `
 
 **Can I add store brands or category words for my country?** Yes, without programming: both live in their own files under `custom_components/einkaufsliste/data/` – `eigenmarken.json` (country as set in HA → chain → brands; unknown country = all combined) and `kategorien.json` (keywords in the category name + products per language, e.g. `de`, `en`, `nl`). Add yours and send a pull request 🙏
 
-**When do new versions come out?** Official versions always on **Sundays**. On the other days there are only **test versions (beta)**. You see them in HACS by choosing ⋮ → “Redownload” on the shopping list and switching on **“Show beta versions”**. A beta can still have rough edges; the version is shown under ⚙️ → Credits.
+**When do new versions come out?** Official versions always on **Sundays**. On the other days there are only **test versions (beta)**. You see them in HACS (from Home Assistant 2026.11: Marketplace) by choosing ⋮ → “Redownload” on the shopping list and switching on **“Show beta versions”**. A beta can still have rough edges; the version is shown under ⚙️ → Credits.
 
 ---
 
