@@ -207,7 +207,7 @@ async def async_search_hours(
     last = "keine Antwort"
     for url in OVERPASS_SERVERS:
         try:
-            async with asyncio.timeout(20):
+            async with asyncio.timeout(10):  # ⏱️ lieber schnell den nächsten Server fragen als ewig warten (Issue #30)
                 resp = await session.post(url, data={"data": query}, headers={"User-Agent": USER_AGENT})
                 if resp.status != 200:
                     last = f"Fehler {resp.status}"
@@ -219,6 +219,7 @@ async def async_search_hours(
             last = "nicht erreichbar"
             _LOGGER.debug("OpenStreetMap-Server %s nicht erreichbar: %s", url, err)
     if data is None:
+        _LOGGER.warning("OpenStreetMap-Suche nach „%s“: kein Server hat geantwortet (%s)", name, last)
         raise ValueError(f"OpenStreetMap ist gerade überlastet oder nicht erreichbar ({last}). Bitte in ein paar Minuten nochmal versuchen.")
     out: list[dict[str, Any]] = []
     for el in (data.get("elements") if isinstance(data, dict) else None) or []:
@@ -246,4 +247,5 @@ async def async_search_hours(
             }
         )
     out.sort(key=lambda r: (r["distance_km"] is None, r["distance_km"] or 0))
+    _LOGGER.info("OpenStreetMap-Suche nach „%s“ um %.3f,%.3f: %s Treffer", name, lat, lon, len(out))
     return out[:15]

@@ -651,6 +651,24 @@ check("Ohne Zone: im Umkreis 50 m wird das Geschäft erkannt (auch „Jemand ist
 check("Ohne Zone: bei 30 m Umkreis zu weit weg", r.near30 === null, JSON.stringify(r));
 check("Geschäfte-Einstellungen: fünf Ordner, Feld-Überschriften, Ort gefunden, Umkreis-Auswahl", JSON.stringify(r.groups) === '["look","place","hours","list","scan"]' && /Ort gefunden/.test(r.line) && r.rad === "50" && r.labels.includes("Adresse") && r.labels.includes("Telefon"), JSON.stringify(r));
 
+// 36) 🌐 OpenStreetMap-Suche (Issue #30): „Suche läuft“ bleibt als Seite stehen, Treffer auf derselben Seite, Antippen übernimmt
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const d=c._data; const st=d.stores[1]; const keep={...st}; const ws=c._ws; const calls=[]; let release;
+  c._ws=async(m)=>{ calls.push(m); if (m.type==="einkaufsliste/hours/search") { await new Promise(r=>{release=r;}); return { results:[{name:"Coop",place:"Lugano",address:"Via Nassa 22, 6900 Lugano",distance_km:0,raw:"Mo-Sa 08:00-18:30; Su,PH off",hours:[[["08:00","18:30"]],[["08:00","18:30"]],[["08:00","18:30"]],[["08:00","18:30"]],[["08:00","18:30"]],[["08:00","18:30"]],null]}] }; } return {}; };
+  st.branches=[]; c._view="settings"; c._setSec="stores"; c._lastSetSec="stores"; c._storeSel=st.id; c._accOpen={...(c._accOpen||{}), store:"hours"}; c._renderAll(); await new Promise(r=>setTimeout(r,60));
+  c.shadowRoot.querySelector('[data-act="hours-toggle"]')?.click(); await new Promise(r=>setTimeout(r,120));
+  c.shadowRoot.querySelector('[data-act="hours-osm"]')?.click(); await new Promise(r=>setTimeout(r,120));
+  const inp=c.shadowRoot.querySelector(".pagehost input"); if (inp) inp.value="N6698847448";
+  [...c.shadowRoot.querySelectorAll(".pagehost button")].find(b=>/OK/.test(b.textContent))?.click(); await new Promise(r=>setTimeout(r,150));
+  const txt=()=>c.shadowRoot.querySelector(".pagehost")?.textContent||"";
+  const waiting=/Suche läuft/.test(txt()) && !!c._page; release(); await new Promise(r=>setTimeout(r,150));
+  const found=/Coop/.test(txt()) && /Gefunden bei OpenStreetMap/.test(txt()); const sent=calls.find(x=>x.type==="einkaufsliste/hours/search");
+  [...c.shadowRoot.querySelectorAll('.pagehost button[data-mode="store"]')][0]?.click(); await new Promise(r=>setTimeout(r,250));
+  const upd=calls.find(x=>x.type==="einkaufsliste/group/update"); const closed=!c._page;
+  c._ws=ws; Object.assign(st,keep); c._storeSel=null; c._view="list"; c._renderAll();
+  return { waiting, found, sent, upd: !!(upd && upd.hours && upd.address), closed }; });
+check("OSM-Suche: „Suche läuft“ bleibt als Seite stehen, bis die Antwort da ist", r.waiting && r.sent?.store_id && r.sent?.name === "N6698847448", JSON.stringify(r));
+check("OSM-Suche: Treffer auf derselben Seite, „Für das Geschäft“ übernimmt Zeiten + Adresse und schließt", r.found && r.upd && r.closed, JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

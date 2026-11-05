@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.2";
+const EL_VERSION = "2.76.27-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -414,6 +414,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🌐 <b>OpenStreetMap-Suche besser sichtbar:</b> Nach „OK“ bleibt „Suche läuft …“ als eigene Seite stehen, bis wirklich eine Antwort da ist. Die Treffer erscheinen auf derselben Seite, und wenn etwas schiefgeht, steht dort, was los ist. Antwortet ein Server nicht, wird schneller der nächste gefragt (Issue #30).",
+   "New: 🌐 <b>OpenStreetMap search easier to see:</b> after “OK”, “Searching …” stays on its own page until an answer really arrives. The results appear on the same page, and if something goes wrong it says what happened. If a server doesn't answer, the next one is asked sooner (issue #30)."],
   ["Neu: 🌐 <b>Öffnungszeiten aus OpenStreetMap klappen öfter:</b> Zeiten wie „Su,PH off“ (Sonntag und Feiertag zu) oder „Mo-We,Fr …“ werden jetzt verstanden. Gesucht wird rund um die eingetragene Adresse des Geschäfts. Und statt des Namens geht auch die OSM-Nummer oder der Link (z. B. W304790824), dann darf dein Geschäft heißen, wie du willst (Issue #30).",
    "New: 🌐 <b>Opening hours from OpenStreetMap work more often:</b> times like “Su,PH off” (closed on Sundays and holidays) or “Mo-We,Fr …” are now understood. The search looks around the store's address. And instead of the name you can enter the OSM number or link (e.g. W304790824), so your store can be called whatever you like (issue #30)."],
   ["Neu: 🎉 <b>Jetzt offiziell in HACS!</b> Die Einkaufsliste steht seit 04.11.2026 im HACS-Verzeichnis. Neue Nutzer finden sie einfach über die Suche (ab Home Assistant 2026.11: Einstellungen → Marketplace). Wer sie schon hat, muss nichts tun. Danke an alle, die getestet und mitgeholfen haben! Mehr unter ⚙️ → Credits.",
@@ -3292,6 +3294,8 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .sechead { gap:12px; margin-bottom:10px; }
 .pagetools { margin-left:auto; display:flex; gap:6px; align-items:center; flex:none; } /* 📄 Seiten in der Karte (Gar-Zeiten, KI, Karten) */
 .pagebody { display:block; }
+.pagebody .hourspop.inpage { position:static; inset:auto; background:none; display:block; z-index:auto; } /* 🌐 OSM-Treffer als Seite statt schwebend */
+.pagebody .hourspop.inpage .hbox { max-height:none; margin:0 auto; max-width:520px; }
 .pgcol { display:flex; flex-direction:column; gap:10px; }
 .pgrow { display:flex; align-items:center; gap:10px; }
 .pgrow input[type=checkbox] { width:auto; flex:none; }
@@ -4773,16 +4777,33 @@ class EinkaufslisteCard extends HTMLElement {
   }
 
   // 🌐 Suchergebnisse von OpenStreetMap: antippen übernimmt die Zeiten (als Filiale oder für das Geschäft)
-  _showOsm(storeId, results) {
-    const st = this._store(storeId);
-    if (!st) return;
+  // 🌐 Seite für die OpenStreetMap-Suche: erst „Suche läuft“, dann die Treffer (gleiche Art Fenster wie die Eingabe davor)
+  _osmPage() {
     this.shadowRoot.querySelector(".hourspop")?.remove();
+    const ov = document.createElement("div");
+    ov.className = "hourspop inpage";
+    ov.innerHTML = `<div class="hbox"><b>🌐 Suche läuft …</b><p class="hint">Home Assistant fragt OpenStreetMap. Das kann bis zu einer halben Minute dauern.</p><button type="button" class="btn" data-osm-close="1">Abbrechen</button></div>`;
+    ov.remove = () => this._popPage(ov);
+    ov.addEventListener("click", (e) => { if (e.target.closest?.("button[data-osm-close]") && !ov._osmDone) ov.remove(); });
+    this._pushPage(ov, { icon: "mdi:web", color: "#43a047", title: "OpenStreetMap" });
+    return ov;
+  }
+
+  _showOsm(storeId, results, ov = null, error = null) {
+    const st = this._store(storeId);
+    if (!st) { ov?.remove(); return; }
+    if (!ov) this.shadowRoot.querySelector(".hourspop")?.remove();
+    if (error) {
+      ov.innerHTML = `<div class="hbox"><b>🌐 Das hat nicht geklappt</b><p class="hint">${esc(error)}</p><button type="button" class="btn" data-osm-close="1">Schließen</button></div>`;
+      return;
+    }
     const hasBr = Array.isArray(st.branches) && st.branches.length > 0;
     const rows = results.length ? results.map((r, i) => `<div class="hbr osmres"><b translate="no">${esc(r.name)}</b><div class="hint">${esc(r.address || r.place)}${r.distance_km != null ? ` · ${String(r.distance_km).replace(".", EL_DEC)} km` : ""}</div><div class="hint">${r.hours ? `✔ Zeiten lesbar: ${esc(r.raw || "")}` : r.raw ? `⚠ Zeiten nicht lesbar: ${esc(r.raw)}` : "Keine Zeiten bei OpenStreetMap"}</div><div class="hr"><button type="button" class="btn" data-osm="${i}" data-mode="branch">＋ Als Filiale</button>${hasBr ? "" : `<button type="button" class="btn" data-osm="${i}" data-mode="store">Für das Geschäft</button>`}</div></div>`).join("")
       : `<p class="hint">Nichts gefunden. Probier einen kürzeren Namen oder trage die Zeiten selbst ein.</p>`;
-    const ov = document.createElement("div");
-    ov.className = "hourspop";
-    ov.innerHTML = `<div class="hbox"><b>🌐 Gefunden bei OpenStreetMap</b>${results.length ? `<p class="hint">Antippen übernimmt die Zeiten. Du kannst sie danach noch ändern.${hasBr ? "" : " „Für das Geschäft“ ersetzt die bisherigen Zeiten."}</p>` : ""}${rows}<p class="hint">© OpenStreetMap-Mitwirkende. Die Zeiten stammen von Freiwilligen und sind ohne Gewähr.</p><button type="button" class="btn" data-osm-close="1">Schließen</button></div>`;
+    const page = !!ov;
+    if (!ov) { ov = document.createElement("div"); ov.className = "hourspop"; }
+    ov._osmDone = true; // ab jetzt regelt der Klick unten alles
+    ov.innerHTML = `<div class="hbox"><b>🌐 Gefunden bei OpenStreetMap${results.length ? `<span translate="no"> (${results.length})</span>` : ""}</b>${results.length ? `<p class="hint">Antippen übernimmt die Zeiten. Du kannst sie danach noch ändern.${hasBr ? "" : " „Für das Geschäft“ ersetzt die bisherigen Zeiten."}</p>` : ""}${rows}<p class="hint">© OpenStreetMap-Mitwirkende. Die Zeiten stammen von Freiwilligen und sind ohne Gewähr.</p><button type="button" class="btn" data-osm-close="1">Schließen</button></div>`;
     ov.addEventListener("click", (e) => {
       const b = e.target.closest?.("button[data-osm],button[data-osm-close]");
       if (!b) { if (e.target === ov) ov.remove(); return; }
@@ -4803,6 +4824,7 @@ class EinkaufslisteCard extends HTMLElement {
       this._toast(r.hours ? "🌐 Übernommen – bitte kurz prüfen" : "🌐 Filiale angelegt – Zeiten dort nicht lesbar, bitte selbst eintragen");
       ov.remove();
     });
+    if (page) return; // 📄 schon als Seite offen (Escape/Zurück regelt die Seite)
     this.shadowRoot.appendChild(ov);
     elDialogKeys(ov, () => ov.remove()); // ⌨️ Tab, Enter, Escape (räumt sich beim Schließen selbst auf)
   }
@@ -13415,11 +13437,14 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         const st = this._store(sid);
         askText("🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und den ungefähren Ort (Adresse des Geschäfts, seine Zone oder dein Zuhause) an overpass-api.de (ist der überlastet, an einen Ersatz-Server). Name des Geschäfts – oder die OSM-Nummer bzw. den Link (z. B. W304790824), dann darf dein Geschäft heißen, wie du willst:", "z. B. K&K", st?.name || "").then(async (name) => {
           if (!name) return;
-          this._toast("🌐 Suche läuft …");
+          // ⏳ eigenes Fenster (wie die Eingabe): „Suche läuft“ bleibt stehen, bis wirklich eine Antwort da ist (Issue #30)
+          const ov = this._osmPage();
           try {
             const r = await this._ws({ type: "einkaufsliste/hours/search", name, zone: storeZones(st)[0] || null, store_id: sid });
-            this._showOsm(sid, r?.results || []);
-          } catch (_) { /* Meldung kam schon */ }
+            if (ov.isConnected) this._showOsm(sid, r?.results || [], ov);
+          } catch (err) {
+            if (ov.isConnected) this._showOsm(sid, null, ov, err?.message || "Da ist was schiefgelaufen 🙈");
+          }
         });
         break;
       }

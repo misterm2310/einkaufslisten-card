@@ -2170,6 +2170,8 @@
 "z. B. K&K": "e.g. K&K",
 "🌐 Suche läuft …": "🌐 Searching …",
 "🌐 Gefunden bei OpenStreetMap": "🌐 Found on OpenStreetMap",
+"Home Assistant fragt OpenStreetMap. Das kann bis zu einer halben Minute dauern.": "Home Assistant is asking OpenStreetMap. This can take up to half a minute.",
+"🌐 Das hat nicht geklappt": "🌐 That didn't work",
 "Antippen übernimmt die Zeiten. Du kannst sie danach noch ändern.": "Tap to take over the times. You can still change them afterwards.",
 "Antippen übernimmt die Zeiten. Du kannst sie danach noch ändern. „Für das Geschäft“ ersetzt die bisherigen Zeiten.": "Tap to take over the times. You can still change them afterwards. “For the store” replaces the previous times.",
 "Nichts gefunden. Probier einen kürzeren Namen oder trage die Zeiten selbst ein.": "Nothing found. Try a shorter name or enter the times yourself.",
