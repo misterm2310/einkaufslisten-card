@@ -626,12 +626,14 @@ async def ws_recipe_import(hass, connection, msg):
         vol.Required("type"): "einkaufsliste/hours/search",
         vol.Required("name"): str,
         vol.Optional("zone"): OPT_STR,
+        vol.Optional("store_id"): OPT_STR,
     }
 )
 @websocket_api.async_response
 async def ws_hours_search(hass, connection, msg):
     async def go(m):
-        results = await async_search_hours(hass, m, msg["name"], msg.get("zone"))
+        center = m.geo_point(msg.get("store_id")) if msg.get("store_id") else None  # 📍 dort suchen, wo das Geschäft laut Adresse ist
+        results = await async_search_hours(hass, m, msg["name"], msg.get("zone"), center=center)
         for r in results:  # 📍 die Punkte kennt OpenStreetMap schon – merken, dann muss später niemand nachschlagen
             if r.get("address") and r.get("lat") is not None:
                 m.geo_remember(r["address"], r["lat"], r["lon"])

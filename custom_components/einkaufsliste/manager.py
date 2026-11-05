@@ -1808,6 +1808,13 @@ class EinkaufslisteManager:
                 slot["missing"].append(bid)
         return info
 
+    def geo_point(self, store_id: str | None) -> list[float] | None:
+        """📍 Erster gefundener Punkt eines Geschäfts (aus seiner Adresse oder einer Filiale) oder None."""
+        for sid, _bid, key, _addr, _c in self._geo_places():
+            if sid == store_id and self.geo.get(key):
+                return list(self.geo[key])
+        return None
+
     def geo_remember(self, address: str | None, lat: Any, lon: Any) -> None:
         """OpenStreetMap-Suche kennt den Punkt schon: gleich merken, dann muss später niemand fragen."""
         key = geo_key(address, getattr(self.hass.config, "country", None))

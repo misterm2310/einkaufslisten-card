@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from custom_components.einkaufsliste.osm_hours import async_search_hours, parse_opening_hours
+from custom_components.einkaufsliste.osm_hours import async_search_hours, parse_opening_hours, parse_osm_ref
 
 
 def test_parse_simple_week():
@@ -84,3 +84,37 @@ async def test_search_all_servers_down(hass):
     with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session):
         with pytest.raises(ValueError, match="überlastet"):
             await async_search_hours(hass, MagicMock(privacy=False), "K&K")
+
+
+def test_parse_holiday_in_day_list_and_split_days():
+    """🇨🇭 Issue #30: „Su,PH off“ und „Mo-We,Fr …“ kommen in OSM ständig vor."""
+    h = parse_opening_hours("Mo-Sa 08:00-18:30; Su,PH off")
+    assert h[0] == [["08:00", "18:30"]] and h[5] == [["08:00", "18:30"]] and h[6] is None
+    h = parse_opening_hours("Mo-We,Fr 08:00-18:30; Th 08:00-21:00; Sa 08:00-17:00")
+    assert h[0] == h[2] == h[4] == [["08:00", "18:30"]] and h[3] == [["08:00", "21:00"]] and h[6] is None
+    h = parse_opening_hours("Mo-Fr 08:00-12:00,13:30-18:30; Sa 08:00-16:00; Su,PH closed")
+    assert h[0] == [["08:00", "12:00"], ["13:30", "18:30"]] and h[6] is None
+    h = parse_opening_hours("Mo,We 09:00-12:00, Fr 14:00-18:00")
+    assert h[0] == h[2] == [["09:00", "12:00"]] and h[4] == [["14:00", "18:00"]] and h[1] is None
+
+
+def test_parse_osm_ref():
+    assert parse_osm_ref("W304790824") == ("way", 304790824)
+    assert parse_osm_ref(" n13031758127 ") == ("node", 13031758127)
+    assert parse_osm_ref("https://www.openstreetmap.org/node/6698847448#map=19") == ("node", 6698847448)
+    assert parse_osm_ref("https://nominatim.openstreetmap.org/ui/details.html?osmtype=W&osmid=304790824&class=shop") == ("way", 304790824)
+    assert parse_osm_ref("Migros") is None and parse_osm_ref("W") is None
+
+
+async def test_search_by_ref_and_center(hass):
+    """🔢 OSM-Nummer: genau dieses Objekt holen. 📍 center: dort suchen statt Zuhause."""
+    resp = MagicMock(status=200)
+    resp.json = AsyncMock(return_value={"elements": [{"type": "way", "center": {"lat": 46.0, "lon": 8.95}, "tags": {"name": "Coop", "shop": "supermarket", "opening_hours": "Mo-Sa 08:00-18:30; Su,PH off"}}]})
+    session = MagicMock()
+    session.post = AsyncMock(return_value=resp)
+    with patch("custom_components.einkaufsliste.osm_hours.async_get_clientsession", return_value=session):
+        res = await async_search_hours(hass, MagicMock(privacy=False), "W304790824", center=[46.0, 8.95])
+        assert "way(304790824)" in session.post.call_args.kwargs["data"]["data"]
+        assert res[0]["hours"][0] == [["08:00", "18:30"]] and res[0]["distance_km"] == 0.0
+        await async_search_hours(hass, MagicMock(privacy=False), "Coop", center=[46.00512, 8.95111])
+        assert "46.00512,8.95111" in session.post.call_args.kwargs["data"]["data"]

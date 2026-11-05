@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.1";
+const EL_VERSION = "2.76.27-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -414,6 +414,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🌐 <b>Öffnungszeiten aus OpenStreetMap klappen öfter:</b> Zeiten wie „Su,PH off“ (Sonntag und Feiertag zu) oder „Mo-We,Fr …“ werden jetzt verstanden. Gesucht wird rund um die eingetragene Adresse des Geschäfts. Und statt des Namens geht auch die OSM-Nummer oder der Link (z. B. W304790824), dann darf dein Geschäft heißen, wie du willst (Issue #30).",
+   "New: 🌐 <b>Opening hours from OpenStreetMap work more often:</b> times like “Su,PH off” (closed on Sundays and holidays) or “Mo-We,Fr …” are now understood. The search looks around the store's address. And instead of the name you can enter the OSM number or link (e.g. W304790824), so your store can be called whatever you like (issue #30)."],
   ["Neu: 🎉 <b>Jetzt offiziell in HACS!</b> Die Einkaufsliste steht seit 04.11.2026 im HACS-Verzeichnis. Neue Nutzer finden sie einfach über die Suche (ab Home Assistant 2026.11: Einstellungen → Marketplace). Wer sie schon hat, muss nichts tun. Danke an alle, die getestet und mitgeholfen haben! Mehr unter ⚙️ → Credits.",
    "New: 🎉 <b>Now official in HACS!</b> The shopping list has been in the HACS directory since 4 Nov 2026. New users simply find it via search (from Home Assistant 2026.11: Settings → Marketplace). If you already have it, there is nothing to do. Thanks to everyone who tested and helped! More under ⚙️ → Credits."],
 ];
@@ -13411,11 +13413,11 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       case "hours-osm": {
         const sid = el.dataset.id;
         const st = this._store(sid);
-        askText("🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und deinen ungefähren Standort an overpass-api.de (ist der überlastet, an einen Ersatz-Server). Name des Geschäfts:", "z. B. K&K", st?.name || "").then(async (name) => {
+        askText("🌐 Bei OpenStreetMap suchen? Home Assistant schickt dafür den Namen und den ungefähren Ort (Adresse des Geschäfts, seine Zone oder dein Zuhause) an overpass-api.de (ist der überlastet, an einen Ersatz-Server). Name des Geschäfts – oder die OSM-Nummer bzw. den Link (z. B. W304790824), dann darf dein Geschäft heißen, wie du willst:", "z. B. K&K", st?.name || "").then(async (name) => {
           if (!name) return;
           this._toast("🌐 Suche läuft …");
           try {
-            const r = await this._ws({ type: "einkaufsliste/hours/search", name, zone: storeZones(st)[0] || null });
+            const r = await this._ws({ type: "einkaufsliste/hours/search", name, zone: storeZones(st)[0] || null, store_id: sid });
             this._showOsm(sid, r?.results || []);
           } catch (_) { /* Meldung kam schon */ }
         });

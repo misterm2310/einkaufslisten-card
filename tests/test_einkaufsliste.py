@@ -5001,3 +5001,15 @@ async def test_offer_currency_is_cleaned(hass: HomeAssistant, setup) -> None:
     assert len(cur) <= 5 and not any(c in cur for c in "<>\"'&")
     ok = m.take_offer({"p": 1.0, "r": "Lidl", "d": "Käse", "cur": "chf"}, name="Käse")
     assert ok["offer"]["cur"] == "CHF"
+
+
+async def test_geo_point_for_store(hass: HomeAssistant, setup) -> None:
+    """📍 Die OSM-Suche nimmt den Punkt aus der eingetragenen Adresse des Geschäfts."""
+    m = mgr(hass)
+    aldi = m.find_store("Aldi")
+    assert m.geo_point(aldi) is None
+    st = next(s for s in m.stores if s["id"] == aldi)
+    st["address"] = "Via Nassa 22, 6900 Lugano"
+    from custom_components.einkaufsliste.geocode import geo_key
+    m.geo[geo_key(st["address"], m._geo_country(st, None))] = [46.0051, 8.9511]
+    assert m.geo_point(aldi) == [46.0051, 8.9511]

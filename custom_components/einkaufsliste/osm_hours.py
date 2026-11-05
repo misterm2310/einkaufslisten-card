@@ -72,18 +72,26 @@ def parse_opening_hours(raw: str | None) -> list[Any] | None:
         chunk = chunk.strip()
         if not chunk:
             continue
-        # „Mo-Fr 08:00-12:00, Sa 09:00-12:00“: Regeln mit Komma getrennt
-        for rule in re.split(r",\s*(?=(?:Mo|Tu|We|Th|Fr|Sa|Su|PH|SH)\b)", chunk):
+        # „Mo-Fr 08:00-12:00, Sa 09:00-12:00“: Regeln mit Komma getrennt.
+        # Aber „Mo-We,Fr 08:00-18:30“ ist EINE Regel: Stücke nur mit Tagen (ohne Zeit) wieder ankleben
+        rules: list[str] = []
+        for piece in re.split(r",\s*(?=(?:Mo|Tu|We|Th|Fr|Sa|Su|PH|SH)\b)", chunk):
+            if rules and re.fullmatch(r"(?:[A-Z][a-z](?:-[A-Z][a-z])?)(?:,[A-Z][a-z](?:-[A-Z][a-z])?)*", rules[-1].strip()):
+                rules[-1] = rules[-1].strip() + "," + piece.strip()
+            else:
+                rules.append(piece)
+        for rule in rules:
             rule = rule.strip()
             if not rule:
                 continue
             m = re.match(r"^((?:[A-Z][A-Za-z](?:-[A-Z][A-Za-z])?)(?:,[A-Z][A-Za-z](?:-[A-Z][A-Za-z])?)*)\s*(.*)$", rule)
-            if m and m.group(1) in ("PH", "SH"):
-                continue  # Feiertage regelt die Karte selbst
-            if m and ("PH" in m.group(1).split(",") or "SH" in m.group(1).split(",")):
-                return None
             if m:
-                days = _days(m.group(1))
+                # 🎌 Feiertage („PH“, Schulferien „SH“) regelt die Karte selbst: aus der Tag-Liste nehmen
+                # („Su,PH off“ = Sonntag zu). Steht nur ein Feiertag da, die ganze Regel überspringen.
+                parts = [p for p in m.group(1).split(",") if p not in ("PH", "SH")]
+                if not parts:
+                    continue
+                days = _days(",".join(parts))
                 rest = m.group(2).strip()
             else:  # nur Zeiten = jeden Tag
                 days = list(range(7))
@@ -112,6 +120,21 @@ def parse_opening_hours(raw: str | None) -> list[Any] | None:
                 week[d] = ranges
             seen = True
     return week if seen and any(week) else None
+
+
+_OSM_TYPES = {"n": "node", "w": "way", "r": "relation", "node": "node", "way": "way", "relation": "relation"}
+
+
+def parse_osm_ref(text: str | None) -> tuple[str, int] | None:
+    """🔢 OSM-Nummer erkennen: „W304790824“, „node/123“ oder ein Link von openstreetmap.org / Nominatim."""
+    raw = str(text or "").strip()
+    m = (re.fullmatch(r"([NWRnwr])\s*(\d{1,12})", raw)
+         or re.search(r"openstreetmap\.org/(node|way|relation)/(\d{1,12})", raw)
+         or re.fullmatch(r"(node|way|relation)\s*/\s*(\d{1,12})", raw))
+    if m:
+        return _OSM_TYPES[m.group(1).lower()], int(m.group(2))
+    m = re.search(r"osmtype=([NWR])&(?:amp;)?osmid=(\d{1,12})", raw, re.I)
+    return (_OSM_TYPES[m.group(1).lower()], int(m.group(2))) if m else None
 
 
 def _distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -147,12 +170,15 @@ def _osm_website(tags: dict[str, Any]) -> str | None:
 
 
 async def async_search_hours(
-    hass: HomeAssistant, manager: Any, name: str, zone: str | None = None, radius_km: int = 10
+    hass: HomeAssistant, manager: Any, name: str, zone: str | None = None, radius_km: int = 10,
+    center: list[float] | None = None,
 ) -> list[dict[str, Any]]:
-    """Geschäfte mit diesem Namen in der Nähe suchen (Mitte: Zone des Geschäfts, sonst Zuhause)."""
+    """Geschäfte mit diesem Namen in der Nähe suchen.
+    Mitte: 📍 eingetragene Adresse des Geschäfts (center), sonst seine Zone, sonst Zuhause."""
     _check_privacy(manager)
-    name = (name or "").strip()[:60]
-    if len(name) < 2:
+    ref = parse_osm_ref(name)  # 🔢 statt Name geht auch die OSM-Nummer (dann darf das Geschäft heißen, wie du willst)
+    name = (name or "").strip()[:300 if ref else 60]
+    if not ref and len(name) < 2:
         raise ValueError("Bitte einen Namen mit mindestens 2 Zeichen eingeben.")
     lat, lon = hass.config.latitude, hass.config.longitude
     if zone:
@@ -160,6 +186,11 @@ async def async_search_hours(
         try:
             lat, lon = float(st.attributes["latitude"]), float(st.attributes["longitude"])  # type: ignore[union-attr]
         except (AttributeError, KeyError, TypeError, ValueError):
+            pass
+    if center:
+        try:
+            lat, lon = float(center[0]), float(center[1])
+        except (IndexError, TypeError, ValueError):
             pass
     radius = max(1, min(int(radius_km), 30)) * 1000
     rx = _regex_escape(name)
@@ -169,6 +200,8 @@ async def async_search_hours(
         f'[out:json][timeout:15];(nwr["shop"]["name"~"{rx}",i]{around};'
         f'nwr["amenity"]["name"~"{rx}",i]{around};);out center tags 40;'
     )
+    if ref:
+        query = f"[out:json][timeout:15];{ref[0]}({ref[1]});out center tags;"
     session = async_get_clientsession(hass)
     data: Any = None
     last = "keine Antwort"
