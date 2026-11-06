@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.4";
+const EL_VERSION = "2.76.27-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -166,6 +166,7 @@ const EL_GUIDE = [
       "<b>Auf die Liste:</b> anhaken, was du brauchst („Alle“ / „Keine“ geht schneller). Was schon draufsteht oder „haben wir immer“ ist (🧂), ist nicht angehakt. <b>Von der Liste</b> nimmt die Zutaten wieder runter. Steht „Noch nie gekauft – wo kaufen?“, wähle das Geschäft.",
       "<b>👥 Für wie viele?</b> bzw. <b>🍕🍰 Wie viele Bleche?</b> Mit − / ＋ rechnen sich die Mengen mit.",
       "<b>🔥 Kochen</b> = Schritt für Schritt in großer Schrift, mit Zutaten, ⏲️ Gar-Zeiten, Backofen-Angaben und dem Foto zum Schritt. 📷 öffnet die Rezept-Fotos.",
+      "<b>📅 Essensplan:</b> Bei jedem Rezept steht der Knopf <b>„Planen“</b>. Antippen wechselt: nichts → <b>💭 Wunsch</b> (das möchte jemand mal essen) → <b>📅 Diese Woche</b> (wird diese Woche gekocht) → wieder nichts. Oben stehen dann zuerst „Diese Woche“, danach die Wünsche. <b>„Alle Zutaten auf die Liste“</b> geht die eingeplanten Rezepte nacheinander durch – du wählst nur ab, was du nicht brauchst. An welchem Wochentag „Diese Woche“ wieder leer wird, stellt ein Admin in ⚙️ → Rezepte → Wochenplan ein. Wer den Plan nicht mag: unten unter <b>👁️ Ansicht → Essensplan</b> nur für sich abschalten.",
       "<b>⏲️ Gar-Zeiten:</b> Spickzettel nach Gerät (🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse).",
       "<b>📖 Rezept vorschlagen</b> (Buch mit ＋ oben bei den Rezepten): Jeder kann ein Rezept einreichen. Es wartet in ⚙️ → Rezepte auf ein OK, ein 🟠 Punkt an der Kochmütze zeigt, wie viele warten.",
       "<b>🤖 KI-Kochen</b> (wenn ein Admin es in ⚙️ → Extras eingeschaltet hat): „Was kann ich kochen?“ – Zutaten eintippen, der KI-Assistent schlägt Rezepte vor, die du übernehmen kannst.",
@@ -175,6 +176,7 @@ const EL_GUIDE = [
       "<b>To the list:</b> tick what you need (“All” / “None” is quicker). What is already on the list or is “always at home” (🧂) is not ticked. <b>From the list</b> takes the ingredients off again. If it says “Never bought – where to buy?”, pick the store.",
       "<b>👥 For how many?</b> or <b>🍕🍰 How many trays?</b> With − / ＋ the quantities are recalculated.",
       "<b>🔥 Cook</b> = step by step in large type, with ingredients, ⏲️ cooking times, oven settings and the photo for the step. 📷 opens the recipe photos.",
+      "<b>📅 Meal plan:</b> every recipe has a <b>“Plan”</b> button. Tapping it cycles: nothing → <b>💭 Wish</b> (someone would like to eat it) → <b>📅 This week</b> (cooked this week) → nothing again. At the top you then see “This week” first, then the wishes. <b>“All ingredients to the list”</b> goes through the planned recipes one by one – you just untick what you don't need. Which weekday “This week” is emptied again is set by an admin in ⚙️ → Recipes → Week plan. Don't like the plan? Switch it off just for you at the bottom under <b>👁️ View → Meal plan</b>.",
       "<b>⏲️ Cooking times:</b> cheat sheet by appliance (🍲 hob, 🔥 oven, 💨 air fryer).",
       "<b>📖 Suggest a recipe</b> (book with ＋ at the top of the recipes): anyone can hand in a recipe. It waits for an OK in ⚙️ → Recipes, an 🟠 dot on the chef's hat shows how many are waiting.",
       "<b>🤖 AI cooking</b> (if an admin switched it on in ⚙️ → Extras): “What can I cook?” – type ingredients, the AI assistant suggests recipes you can take over.",
@@ -257,12 +259,12 @@ const EL_HELP = {
   ]],
   recipes: ["list", [
     "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
-    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text, Rezept-Link oder „📷 Aus Foto“), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
+    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, <b>„📷 Rezept aus Fotos“</b> oben rechts bei „Eingaben“ (eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
     "<b>🔗 Quelle &amp; Original:</b> Beim Import per Link merkt sich das Rezept die Adresse (im Editor unter dem Namen änderbar, auch von Hand eintragbar). In der Rezeptliste öffnet „Original öffnen“ die Seite. <b>👨‍🍳 Kochmodus:</b> Er merkt sich pro Rezept den Schritt und fragt beim nächsten Start, ob du dort weitermachen willst.",
     "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (für alle, mit Airfryer Control ab Beta 17) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
   ], [
     "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; a list like the categories: tap a group = change name, colour and icon, ⌃⌄ = order; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
-    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text, recipe link or “📷 From photo”), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
+    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, <b>“📷 Recipe from photos”</b> top right at “Inputs” (photograph one or more pages → name, ingredients to check and steps; the photos are added to the recipe), ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text or recipe link), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
     "<b>🔗 Source &amp; original:</b> when importing by link the recipe remembers the address (editable under the name in the editor, can also be typed in). In the recipe list “Open original” opens the page. <b>👨‍🍳 Cook mode:</b> it remembers the step per recipe and asks at the next start whether you want to continue there.",
     "<b>🍟 Air fryer:</b> if a step has “Heißluftfritteuse” with a mode (air fry, bake, grill or reheat), temperature and minutes and <b>Airfryer Control</b> is installed, cook mode shows the button “Send to Airfryer Control” (for everyone, with Airfryer Control from beta 17). You pick the basket (it always asks); the fryer is prepared, <b>you press Start on the device</b>.",
   ]],
@@ -414,6 +416,12 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 📷 <b>Rezept aus Fotos:</b> Im Rezept-Editor oben rechts bei „Eingaben“. Eine oder mehrere Kochbuch-Seiten abfotografieren („➕ Noch eine Seite“ / „✔ Fertig“) – Name, Zutaten zum Prüfen und Schritte werden vorgeschlagen, die Fotos kommen ans Rezept. Aufgeräumt: „Liste aus Foto“ und ⭐ gehören nur zur Einkaufsliste und sind im Editor weg, „Aus Foto“ beim Klemmbrett auch.",
+   "New: 📷 <b>Recipe from photos:</b> in the recipe editor, top right at “Inputs”. Photograph one or more cookbook pages (“➕ Another page” / “✔ Done”) – name, ingredients to check and steps are suggested, the photos are added to the recipe. Tidied up: “List from photo” and ⭐ belong to the shopping list only and are gone from the editor, so is “From photo” at the clipboard."],
+  ["Neu: 📄 <b>PDF-Kassenbon mit allen Seiten:</b> Hat der Bon mehrere Seiten (z. B. ein eBon), werden bis zu 4 Seiten untereinander zu einem Bon-Foto zusammengesetzt – vorher war nur Seite 1 dabei.",
+   "New: 📄 <b>PDF receipt with all pages:</b> if the receipt has several pages (e.g. an e-receipt), up to 4 pages are joined into one receipt picture – before, only page 1 was kept."],
+  ["Neu: 📅 <b>Essensplan erklärt:</b> In der Anleitung unter 👨‍🍳 Rezepte steht jetzt, was „Planen“, 💭 Wunsch und 📅 Diese Woche machen, und unter 👁️ Ansicht → Essensplan gibt es ein ⓘ.",
+   "New: 📅 <b>Meal plan explained:</b> the guide under 👨‍🍳 Recipes now says what “Plan”, 💭 Wish and 📅 This week do, and there is an ⓘ under 👁️ View → Meal plan."],
   ["Neu: 🔢 <b>OSM-Nummer klappt auch bei vollen Servern:</b> Gibst du bei „🌐 Zeiten aus OpenStreetMap“ die Nummer oder den Link ein (z. B. W304790824), fragt Home Assistant direkt bei openstreetmap.org statt bei den oft überlasteten Such-Servern. Sind die Such-Server voll, probiert es die Liste nach kurzer Pause nochmal, und die Meldung sagt genau, welcher Server was hatte (Issue #30).",
    "New: 🔢 <b>OSM number works even when servers are full:</b> if you enter the number or link at “🌐 Times from OpenStreetMap” (e.g. W304790824), Home Assistant asks openstreetmap.org directly instead of the often overloaded search servers. If the search servers are full, the list tries again after a short pause, and the message says exactly which server had what problem (issue #30)."],
   ["Neu: 🌐 <b>OpenStreetMap-Suche besser sichtbar:</b> Nach „OK“ bleibt „Suche läuft …“ als eigene Seite stehen, bis wirklich eine Antwort da ist. Die Treffer erscheinen auf derselben Seite, und wenn etwas schiefgeht, steht dort, was los ist. Antwortet ein Server nicht, wird schneller der nächste gefragt (Issue #30).",
@@ -3623,7 +3631,8 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .rsec > .lgroup > .chev { transition:transform .2s; }
 .rsec.open > .lgroup > .chev { transform:rotate(180deg); }
 .rsec > .lgroup .rimportbtn { margin-left:0; flex:none; }
-.rsec:not(.open) > .lgroup .rimportbtn { display:none; } /* Symbole im Kopf nur, wenn der Kasten offen ist */
+.rsec:not(.open) > .lgroup .rimportbtn:not(.always) { display:none; } /* Symbole im Kopf nur, wenn der Kasten offen ist („📷 Rezept aus Fotos“ immer) */
+#rFormSlot #btnOcrList, #rFormSlot #btnFavAll { display:none !important; } /* im Rezept-Editor: „Liste aus Foto“ und ⭐ gehören zur Einkaufsliste, nicht ins Rezept */
 .rsec-b { padding:4px 6px 10px; margin-left:4px; }
 .rsec-b[hidden] { display:none; }
 .rimportbtn { margin-left:auto; padding:5px 10px; font-size:.8em; font-weight:400; }
@@ -3663,7 +3672,7 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .zchip .zx { border:0; background:none; color:inherit; cursor:pointer; font:inherit; padding:2px 6px; opacity:.7; }
 .zadd { flex:1 1 140px; min-width:0; }
 :host([privacy]) [data-act="scan"], :host([privacy]) [data-act="new-barcode"], :host([privacy]) [data-act="barcode-assign"], :host([privacy]) [data-act="new-photo"],
-:host([privacy]) [data-act="photo-take"], :host([privacy]) [data-act="ocr-list"], :host([privacy]) [data-act="rimport-photo"], :host([privacy]) [data-act="prod-add-bc"],
+:host([privacy]) [data-act="photo-take"], :host([privacy]) [data-act="ocr-list"], :host([privacy]) [data-act="rphotos-read"], :host([privacy]) [data-act="prod-add-bc"],
 :host([privacy]) [data-act="sphoto-take"], :host([privacy]) [data-act="rphoto-take"] { opacity:.35; filter:grayscale(1); }
 .privrow { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0 12px; }
 .mascotprev { display:flex; gap:14px; align-items:center; margin:8px 0; color:var(--primary-text-color); }
@@ -3841,29 +3850,64 @@ function elPdfLines(items) {
   }
   return rows.sort((p, q) => q.y - p.y).map((r) => r.parts.sort((p, q) => p.x - q.x).map((p) => p.s.trim()).join(" ")).join("\n");
 }
+// 📎 PDF-Seiten untereinander zu EINEM langen Bon-Bild zusammenkleben (weiß hinterlegt, höchstens ~12.000 Pixel hoch)
+function elPdfStitch(canvases) {
+  if (!canvases.length) return null;
+  const w = Math.max(...canvases.map((c) => c.width));
+  const total = canvases.reduce((sum, c) => sum + c.height, 0);
+  const shrink = Math.min(1, 12000 / total);
+  const out = document.createElement("canvas");
+  out.width = Math.ceil(w * shrink); out.height = Math.ceil(total * shrink);
+  const ctx = out.getContext("2d");
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, out.width, out.height);
+  let y = 0;
+  for (const c of canvases) { ctx.drawImage(c, 0, y, c.width * shrink, c.height * shrink); y += c.height * shrink; }
+  // Speicher-Grenze im Home Assistant: 3 MB je Foto → notfalls etwas stärker zusammendrücken
+  for (const q of [0.75, 0.6, 0.45]) {
+    const url = out.toDataURL("image/jpeg", q);
+    if (url.length < 3.6 * 1024 * 1024) return url;
+  }
+  return null;
+}
 async function elPdfRead(file, wantImage) {
   const lib = await elPdfLib();
   const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
   let text = "", image = null;
-  const pages = Math.min(doc.numPages, 6);
+  const pages = Math.min(doc.numPages, 6), shots = [];
   for (let n = 1; n <= pages; n++) {
     const page = await doc.getPage(n);
     text += elPdfLines((await page.getTextContent()).items) + "\n";
-    if (n === 1 && wantImage) { // 📎 erste Seite als Bild – wird wie ein Bon-Foto mitgespeichert
+    if (n <= 4 && wantImage) { // 📎 Seiten 1–4 als Bild – werden zusammen wie ein Bon-Foto mitgespeichert
       try {
         const vp0 = page.getViewport({ scale: 1 });
         const vp = page.getViewport({ scale: Math.min(2, 1000 / vp0.width) });
         const cv = document.createElement("canvas");
         cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height);
         await page.render({ canvasContext: cv.getContext("2d"), viewport: vp, background: "#ffffff" }).promise;
-        image = cv.toDataURL("image/jpeg", 0.75);
-      } catch (_) { image = null; }
+        shots.push(cv);
+      } catch (_) { /* Seite ohne Bild – der Text zählt trotzdem */ }
     }
   }
+  try { image = elPdfStitch(shots); } catch (_) { image = null; }
   try { doc.destroy(); } catch (_) { /* egal */ }
   return { text, image };
 }
 
+// 📉 Foto (data:-Adresse) kleiner rechnen – z. B. ein großes Texterkennungs-Foto fürs Speichern beim Rezept
+function elShrinkData(data, max = 900, q = 0.8) {
+  return new Promise((ok) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+      try { ok(cv.toDataURL("image/jpeg", q)); } catch (_) { ok(data); }
+    };
+    img.onerror = () => ok(data);
+    img.src = data;
+  });
+}
 // 🍳 Rezept-Seite lesen: Name, Zutaten und Schritte trennen (an den Überschriften „Zutaten“ / „Zubereitung“)
 function elOcrRecipeParts(text) {
   const raw = String(text || "").replace(/\r/g, "");
@@ -7555,7 +7599,8 @@ ${(() => {
         ${mine ? this._acc(g, "anim", "mdi:check", "#43a047", "Abhaken", animOn ? "Animation an" : "Animation aus", `<button class="lrow viewrow" data-act="view-anim" aria-pressed="${animOn}">${ck(animOn)}<span class="grow"><b>Animation beim Abhaken</b><small>Nur für dich. Aus = die Zeile verschwindet sofort.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "calm", "mdi:meditation", "#5c6bc0", "Ruhiger Modus", calmOn ? "an – weniger Farbe, nichts bewegt sich" : "aus", `<button class="lrow viewrow" data-act="view-calm" aria-pressed="${calmOn}">${ck(calmOn)}<span class="grow"><b>Ruhiger Modus</b><small>Nur für dich. Gedämpfte Farben, keine Animationen, kein Lauftext – angenehm für empfindliche Augen und alte Tablets.</small></span></button>`) : ""}
         ${mine ? this._acc(g, "greet", "mdi:hand-wave-outline", "#fb8c00", "Gruß", greetOn ? "an" : "aus", `<button class="lrow viewrow" data-act="view-greet" aria-pressed="${greetOn}">${ck(greetOn)}<span class="grow"><b>Gruß in der Leiste oben</b><small>Nur für dich. Aus = die Leiste bleibt in der Mitte leer.</small></span></button>`) : ""}
-        ${mine ? this._acc(g, "plan", "mdi:calendar-check", "#43a047", "Essensplan", planViewOn ? "an" : "aus", `<button class="lrow viewrow" data-act="view-plan" aria-pressed="${planViewOn}">${ck(planViewOn)}<span class="grow"><b>Essensplan bei den Rezepten zeigen</b><small>Nur für dich. Aus = kein „Planen“-Knopf und keine Abschnitte, nur die Rezepte.</small></span></button>`) : ""}
+        ${mine ? this._acc(g, "plan", "mdi:calendar-check", "#43a047", "Essensplan", planViewOn ? "an" : "aus", `<button class="lrow viewrow" data-act="view-plan" aria-pressed="${planViewOn}">${ck(planViewOn)}<span class="grow"><b>Essensplan bei den Rezepten zeigen</b><small>Nur für dich. Aus = kein „Planen“-Knopf und keine Abschnitte, nur die Rezepte.</small></span></button>
+        <div class="flab"><span>Was ist der Essensplan?</span><button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="Was ist das?" aria-label="Erklärung: Essensplan">i</button></div><p class="hint fhint" hidden>Bei jedem Rezept gibt es dann den Knopf „Planen“: antippen = nichts → 💭 Wunsch → 📅 Diese Woche. Oben bei den Rezepten stehen zuerst „Diese Woche“, dann die Wünsche, mit „Alle Zutaten auf die Liste“. Welcher Wochentag „Diese Woche“ wieder leert, stellt ein Admin in ⚙️ → Rezepte → Wochenplan ein. Mehr in der Anleitung unter 👨‍🍳 Rezepte.</p>`) : ""}
         ${mine ? this._acc(g, "haptic", "mdi:vibrate", "#8e24aa", "Vibration", { off: "Aus", low: "Schwach", normal: "Normal", high: "Stark" }[elHapticLevel()], `
         <p class="hint">Nur für dieses Gerät. Beim Abhaken, im Rechner, bei der PIN-Eingabe und beim langen Drücken. Manche Handys (z. B. iPhone) vibrieren im Browser nie.</p>
         <div class="fontrow">${[["off", "Aus"], ["low", "Schwach"], ["normal", "Normal"], ["high", "Stark"]].map(([k, t]) => `<button class="btn ${elHapticLevel() === k ? "primary" : ""}" data-act="view-haptic" data-level="${k}" aria-pressed="${elHapticLevel() === k}">${t}</button>`).join("")}</div>`) : ""}
@@ -9162,7 +9207,7 @@ ${(() => {
     this.$("otherView").innerHTML = `
       <div class="sec">
         <h3><ha-icon icon="mdi:chef-hat"></ha-icon>${dr.id ? "Rezept bearbeiten" : "Neues Rezept"}</h3>
-        ${this._rsec("in", "mdi:pencil-outline", "#546e7a", "Eingaben", "Name, Gruppe, Mengen, Foto", "", `
+        ${this._rsec("in", "mdi:pencil-outline", "#546e7a", "Eingaben", "Name, Gruppe, Mengen, Foto", `<button class="btn rimportbtn always" type="button" data-act="rphotos-read" title="Rezept aus Fotos einlesen (auch mehrere Seiten)" aria-label="Rezept aus Fotos"><ha-icon icon="mdi:camera-outline"></ha-icon><span class="lbl">Rezept aus Fotos</span></button>`, `
         <div class="srow recipehead">
           <ha-icon class="prev" id="rIconPrev" icon="${esc(this._recipeIcon(dr))}"></ha-icon>
           <input class="grow" id="rName" value="${esc(dr.name)}" placeholder="Name, z. B. Freitags Fisch">
@@ -9196,7 +9241,7 @@ ${(() => {
         ${this._rsec("zut", "mdi:food-apple-outline", "#43a047", "Zutaten", "Was kommt rein?", `<button class="btn rimportbtn" type="button" data-act="rimport-toggle" title="Zutaten einfügen" aria-label="Zutaten einfügen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon><span class="lbl">Zutaten einfügen</span></button>`, `
         <div class="rimport" id="rImport" hidden>
           <textarea id="rImportText" rows="6" placeholder="Zutaten-Liste hier einfügen – eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;½ l Milch&#10;&#10;…oder einfach einen Rezept-Link (z. B. von Chefkoch) – bei einem Link werden nur die Zutaten geladen. Die Schritte holst du unten bei „Zubereitung“."></textarea>
-          <div class="btnrow"><button class="btn" data-act="rimport-photo"><ha-icon icon="mdi:camera-outline"></ha-icon>Aus Foto</button><button class="btn" data-act="rimport-toggle">Abbrechen</button><button class="primary addbtn btn" data-act="rimport-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
+          <div class="btnrow"><button class="btn" data-act="rimport-toggle">Abbrechen</button><button class="primary addbtn btn" data-act="rimport-go"><ha-icon icon="mdi:check-bold"></ha-icon>Übernehmen</button></div>
         </div>
         <div class="redithint" id="rEditHint" hidden>✏️ Du bearbeitest eine Zutat – ✔ speichert sie. <button class="linkbtn" data-act="ritem-edit-cancel">Abbrechen</button></div>
         <div id="rFormSlot"></div>
@@ -10154,6 +10199,41 @@ ${(() => {
     } finally {
       ov.remove();
     }
+  }
+
+  // 📷 Rezept aus Fotos: ein oder mehrere Seiten abfotografieren → Name, Zutaten (zum Prüfen) und Schritte; die Fotos kommen ans Rezept
+  _recipeFromPhotos(pages) {
+    this._photoTarget = { ocr: async (data) => {
+      pages.push(data);
+      const more = pages.length < 6 && await elConfirm(EL_LANG === "de"
+        ? `Seite ${pages.length} ist drin 👍\nHat das Rezept noch eine Seite?`
+        : `Page ${pages.length} is in 👍\nDoes the recipe have another page?`,
+      { danger: false, title: "📷 Rezept aus Fotos", yes: elT("➕ Noch eine Seite"), no: elT("✔ Fertig") });
+      if (more) { this._recipeFromPhotos(pages); return; }
+      let text = "";
+      for (let i = 0; i < pages.length; i++) {
+        const t = await this._ocrText(pages[i], pages.length > 1 ? (EL_LANG === "de" ? `🔎 Seite ${i + 1} von ${pages.length} wird gelesen` : `🔎 Reading page ${i + 1} of ${pages.length}`) : "🔎 Rezept wird gelesen");
+        if (t == null) return; // Texterkennung ging schief – Meldung kam schon
+        text += t + "\n";
+      }
+      const dr = this._draft;
+      if (!dr || this._view !== "recipe") return; // Editor inzwischen zu
+      const parts = elOcrRecipeParts(text);
+      const nameEl = this.$("rName"), ta = this.$("rImportText");
+      if (nameEl && parts.name && !nameEl.value.trim()) { nameEl.value = parts.name; this._autoGroup?.(); }
+      if (parts.steps && !(dr.stepRows || []).some((r) => r.t.trim())) this._setStepsText(parts.steps);
+      // 📷 die Seiten auch als Rezept-Fotos (zusammen höchstens 6)
+      const room = Math.max(0, 6 - this._recipeSavedPhotos() - (dr.newPhotos || []).length);
+      for (const p of pages.slice(0, room)) (dr.newPhotos ||= []).push(await elShrinkData(p, 900, 0.8));
+      this._renderRecipePhoto();
+      if (ta) {
+        const box = this.$("rImport"), h = box?.closest(".rsec")?.querySelector(":scope > .rsec-h");
+        if (h && h.getAttribute("aria-expanded") === "false") h.click(); // Zutaten-Kasten aufklappen
+        box.hidden = false; ta.value = parts.ingredients; ta.focus();
+      }
+      this._toast("📷 Gelesen – bitte die Zutaten prüfen und auf „Übernehmen“ tippen");
+    } };
+    this._pickFile("photoFile", pages.length ? (EL_LANG === "de" ? `📷 Seite ${pages.length + 1} abfotografieren` : `📷 Photograph page ${pages.length + 1}`) : "🍳 Rezept abfotografieren");
   }
 
   // 🛒 Liste aus einem Foto (handgeschrieben oder gedruckt): Text prüfen, dann auf die Liste
@@ -13871,15 +13951,8 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       case "ocr-list":
         this._ocrList();
         break;
-      case "rimport-photo":
-        this._ocrStart("🔎 Rezept wird gelesen", (text) => {
-          const parts = elOcrRecipeParts(text);
-          const nameEl = this.$("rName"), ta = this.$("rImportText");
-          if (nameEl && parts.name && !nameEl.value.trim()) { nameEl.value = parts.name; this._autoGroup?.(); }
-          if (parts.steps && this._draft && !(this._draft.stepRows || []).some((r) => r.t.trim())) this._setStepsText(parts.steps);
-          if (ta) { this.$("rImport").hidden = false; ta.value = parts.ingredients; ta.focus(); }
-          this._toast("📷 Gelesen – bitte die Zutaten prüfen und auf „Übernehmen“ tippen");
-        }, "🍳 Rezept abfotografieren");
+      case "rphotos-read":
+        this._recipeFromPhotos([]);
         break;
       case "errors-copy":
         elCopy(this._errorsText(), null).then(() => this._toast("📋 Fehler-Protokoll kopiert"));
