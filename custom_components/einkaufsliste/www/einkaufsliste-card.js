@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.7";
+const EL_VERSION = "2.76.27-beta.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -15578,12 +15578,12 @@ if (!customElements.get("einkaufsliste-timer-ticker-editor")) customElements.def
 // sie zeichnet nur neu, wenn sich der Sensor ändert – schont schwache Geräte wie den Fire TV.
 const EL_COOKVIEW_CSS = `
   :host { display:block; }
-  ha-card { padding:16px 18px; box-sizing:border-box; overflow:hidden; }
+  ha-card { padding:16px 18px; box-sizing:border-box; overflow:visible; word-break:break-word; overflow-wrap:break-word; hyphens:auto; -webkit-hyphens:auto; } /* 📺 nichts abschneiden: lange Wörter umbrechen statt rausragen */
   .idle { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:160px; text-align:center; color:var(--secondary-text-color); font:500 20px/1.4 Roboto,sans-serif; }
   .idle ha-icon { --mdc-icon-size:56px; color:#e53935; opacity:.85; }
   .head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .head > ha-icon { --mdc-icon-size:30px; color:#e53935; flex:none; }
-  .name { flex:1 1 220px; min-width:0; font:700 26px/1.25 Roboto,sans-serif; color:var(--primary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .name { flex:1 1 220px; min-width:0; font:700 26px/1.25 Roboto,sans-serif; font-size:min(26px, 4.5vw); color:var(--primary-text-color); }
   .pill { flex:none; border-radius:999px; padding:4px 12px; font:600 17px Roboto,sans-serif; background:rgba(229,57,53,.18); color:var(--primary-text-color); border:1px solid rgba(229,57,53,.55); }
   .pill.p { background:rgba(38,166,154,.16); border-color:rgba(38,166,154,.55); }
   .bar { display:flex; gap:4px; margin:12px 0 4px; }
@@ -15599,11 +15599,11 @@ const EL_COOKVIEW_CSS = `
   .left { flex:2 1 0; min-width:0; }
   .right { flex:1 1 0; min-width:0; border-left:2px solid var(--divider-color,rgba(127,127,127,.3)); padding-left:18px; }
   .pos { color:var(--secondary-text-color); font:600 16px Roboto,sans-serif; margin-bottom:6px; }
-  .text { font:500 var(--elfs,30px)/1.35 Roboto,sans-serif; color:var(--primary-text-color); white-space:pre-wrap; overflow-wrap:anywhere; }
-  .next { margin-top:16px; color:var(--secondary-text-color); font:400 calc(var(--elfs,30px) * .6)/1.4 Roboto,sans-serif; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .text { font:500 var(--elfs,30px)/1.35 Roboto,sans-serif; font-size:min(var(--elfs,30px), 4.2vw); color:var(--primary-text-color); white-space:pre-wrap; } /* 📺 kleine TV-Auflösung: Schrift schrumpft mit */
+  .next { margin-top:16px; color:var(--secondary-text-color); font:400 calc(var(--elfs,30px) * .6)/1.4 Roboto,sans-serif; font-size:min(calc(var(--elfs,30px) * .6), 2.8vw); white-space:pre-wrap; }
   .next b { color:var(--primary-text-color); font-weight:600; }
   .ih { font:600 17px Roboto,sans-serif; color:var(--secondary-text-color); margin-bottom:6px; }
-  .ing { font:400 calc(var(--elfs,30px) * .62)/1.55 Roboto,sans-serif; color:var(--primary-text-color); }
+  .ing { font:400 calc(var(--elfs,30px) * .62)/1.55 Roboto,sans-serif; font-size:min(calc(var(--elfs,30px) * .62), 2.9vw); color:var(--primary-text-color); }
   .by { margin-top:12px; color:var(--secondary-text-color); font:400 14px Roboto,sans-serif; text-align:right; }
   @media (max-width:600px) { .main { flex-direction:column; } .right { border-left:none; padding-left:0; border-top:2px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:10px; } }
 `;
@@ -15611,10 +15611,10 @@ class EinkaufslisteKochmodus extends HTMLElement {
   static getStubConfig() { return { entity: "sensor.einkaufsliste_kochmodus" }; }
   static getConfigElement() { return document.createElement("einkaufsliste-kochmodus-editor"); }
   setConfig(config) {
-    this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, ...config };
+    this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, fit_screen: true, ...config };
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
-      this.shadowRoot.innerHTML = `<style>${EL_COOKVIEW_CSS}</style><ha-card></ha-card>`;
+      this.shadowRoot.innerHTML = `<style>${EL_COOKVIEW_CSS}</style><ha-card lang="${EL_LANG === "en" ? "en" : "de"}"></ha-card>`; // lang: Silbentrennung
     }
     this._sig = null;
     this._update();
@@ -15631,12 +15631,13 @@ class EinkaufslisteKochmodus extends HTMLElement {
     const tst = cfg.show_timers !== false ? this._hass.states?.[cfg.timer_entity] : null;
     // ⚡ Nur neu zeichnen, wenn sich Kochmodus, Timer oder Einstellungen wirklich geändert haben (hass kommt sehr oft)
     if (this._sig && this._st === st && this._tst === tst && this._cfg === cfg) return;
+    if (this._cfg !== cfg) this._fitted = 0; // neue Einstellungen: neu anpassen
     this._st = st; this._tst = tst; this._cfg = cfg;
     elUseLang(this._hass, cfg, null);
     const a = st?.attributes || {};
     const card = root.querySelector("ha-card");
     const on = !!st && a.aktiv === true;
-    card.style.setProperty("--elfs", `${Math.min(60, Math.max(16, Number(cfg.font_size) || 30))}px`);
+    if (cfg.fit_screen === false || !this._fitted) card.style.setProperty("--elfs", `${Math.min(60, Math.max(16, Number(cfg.font_size) || 30))}px`); // angepasste Größe (📺 _fit) nicht wieder überschreiben
     if (!on) {
       const sig = `idle|${cfg.hide_when_idle}|${!!st}`;
       card.style.display = cfg.hide_when_idle === true ? "none" : "";
@@ -15666,19 +15667,46 @@ class EinkaufslisteKochmodus extends HTMLElement {
       + (cfg.show_next !== false && a.naechster ? `<div class="next"><b>${esc(elT("Danach:"))}</b> ${esc(a.naechster)}</div>` : "")
       + `</div>${showIng ? `<div class="right"><div class="ih">🧺 ${esc(elT("Zutaten"))}</div><div class="ing">${items.map((i) => `• ${esc(i)}`).join("<br>")}</div></div>` : ""}</div>`
       + (a.von ? `<div class="by">👨‍🍳 ${esc(a.von)}</div>` : "");
-    if (html === this._sig) return;
+    if (html === this._sig) { this._fit(); return; }
     this._sig = html;
     card.innerHTML = html;
+    this._fitted = 0;
+    this._fit();
   }
+  // 📺 Passt auf den Bildschirm: ist der Text zu lang für die Höhe (Fernseher scrollt nicht), wird die Schrift Stück für Stück kleiner
+  // (höchstens bis 16 px). Läuft nur nach einem neuen Schritt oder wenn sich die Fenstergröße ändert – nicht dauernd.
+  _fit() {
+    const card = this.shadowRoot?.querySelector("ha-card");
+    if (!card || this._config?.fit_screen === false || !card.querySelector(".main")) return;
+    if (!this._onResize) {
+      this._onResize = () => { clearTimeout(this._rt); this._rt = setTimeout(() => { this._fitted = 0; this._fit(); }, 300); };
+      window.addEventListener("resize", this._onResize, { passive: true });
+    }
+    const want = Math.min(60, Math.max(16, Number(this._config.font_size) || 30));
+    const key = `${window.innerWidth}x${window.innerHeight}|${this._sig?.length}`;
+    if (this._fitted === key) return;
+    requestAnimationFrame(() => {
+      const r0 = card.getBoundingClientRect();
+      if (!r0.height || r0.top >= window.innerHeight) return; // unsichtbar oder unterhalb: nichts messen
+      let fs = want;
+      card.style.setProperty("--elfs", `${fs}px`);
+      for (let i = 0; i < 12 && fs > 16 && card.getBoundingClientRect().bottom > window.innerHeight - 6; i++) {
+        fs = Math.max(16, fs - 2);
+        card.style.setProperty("--elfs", `${fs}px`);
+      }
+      this._fitted = key;
+    });
+  }
+  disconnectedCallback() { if (this._onResize) { window.removeEventListener("resize", this._onResize); this._onResize = null; } }
 }
 class EinkaufslisteKochmodusEditor extends HTMLElement {
-  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, ...config }; this._render(); }
+  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, fit_screen: true, ...config }; this._render(); }
   set hass(hass) { this._hass = hass; elUseLang(hass, this._config, null); this._render(); }
   _render() {
     if (!this._hass || !this._config) return;
     if (!this._form) {
       this._form = document.createElement("ha-form");
-      this._form.computeLabel = (s) => elT({ entity: "Sensor Kochmodus", timer_entity: "Sensor der Kochtimer", hide_when_idle: "Ausblenden, wenn nichts gekocht wird", show_ingredients: "Zutaten zeigen", show_next: "Nächsten Schritt zeigen", show_timers: "Kochtimer zeigen", font_size: "Schriftgröße Schritt (Pixel)", language: "Sprache" }[s.name] || s.name);
+      this._form.computeLabel = (s) => elT({ fit_screen: "Schrift an die Bildschirmhöhe anpassen", entity: "Sensor Kochmodus", timer_entity: "Sensor der Kochtimer", hide_when_idle: "Ausblenden, wenn nichts gekocht wird", show_ingredients: "Zutaten zeigen", show_next: "Nächsten Schritt zeigen", show_timers: "Kochtimer zeigen", font_size: "Schriftgröße Schritt (Pixel)", language: "Sprache" }[s.name] || s.name);
       this._form.addEventListener("value-changed", (ev) => {
         this._config = ev.detail.value;
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -15695,6 +15723,7 @@ class EinkaufslisteKochmodusEditor extends HTMLElement {
       { name: "show_next", selector: { boolean: {} } },
       { name: "show_timers", selector: { boolean: {} } },
       { name: "font_size", selector: { number: { min: 16, max: 60, step: 1, mode: "box" } } },
+      { name: "fit_screen", selector: { boolean: {} } },
       { name: "language", selector: { select: { mode: "dropdown", options: [{ value: "auto", label: elT("Automatisch") + " (Home Assistant)" }, { value: "de", label: "Deutsch" }, { value: "en", label: "English" }] } } },
     ];
   }

@@ -275,7 +275,7 @@ The integration brings a second, small card: **`custom:einkaufsliste-timer-ticke
 
 The third card of the integration: **`custom:einkaufsliste-kochmodus`**. You cook as usual on your phone or tablet (Recipes → 🔥 Cook), and a second screen (e.g. a Fire TV in the kitchen) shows it in large type: **recipe name, step X of Y with a progress bar, the step text, “Next: …”, the ingredients for your number of people, the orange oven &amp; co. info, the note from last time and the running cooking timers** (“done at 6:30 pm”). When you swipe to the next step on the phone, the display follows. When you close cook mode it says “Nothing is cooking right now” (or the card disappears if “Hide when nothing is cooking” is on). If the phone is just left lying around, the display switches off by itself after 6 hours without a new step. With several recipes at once it shows the one that is in front on the phone.
 
-The card has no buttons and no animation and only redraws when something changes – good for weak devices like the Fire TV. Card editor: sensor (default `sensor.einkaufsliste_kochmodus`), timer sensor, hide, show ingredients / next step / cooking timers, font size and language.
+The card has no buttons and no animation and only redraws when something changes – good for weak devices like the Fire TV. Card editor: sensor (default `sensor.einkaufsliste_kochmodus`), timer sensor, hide, show ingredients / next step / cooking timers, font size, “Fit font to screen height” (on by default: if a step is too long for the screen the font gets smaller instead of being cut off at the bottom; long words are hyphenated) and language.
 
 ```yaml
 type: custom:einkaufsliste-kochmodus
