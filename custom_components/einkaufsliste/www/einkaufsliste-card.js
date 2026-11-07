@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.8";
+const EL_VERSION = "2.76.27-beta.9";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -15605,13 +15605,21 @@ const EL_COOKVIEW_CSS = `
   .ih { font:600 17px Roboto,sans-serif; color:var(--secondary-text-color); margin-bottom:6px; }
   .ing { font:400 calc(var(--elfs,30px) * .62)/1.55 Roboto,sans-serif; font-size:min(calc(var(--elfs,30px) * .62), 2.9vw); color:var(--primary-text-color); }
   .by { margin-top:12px; color:var(--secondary-text-color); font:400 14px Roboto,sans-serif; text-align:right; }
-  @media (max-width:600px) { .main { flex-direction:column; } .right { border-left:none; padding-left:0; border-top:2px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:10px; } }
+  /* 📺 Bildschirm-Modus: Karte so hoch wie der Platz bis unten, Schritt und Zutaten laufen bei Überlänge langsam von selbst (CSS-Animation, schont den Fire TV) */
+  ha-card.fit { display:flex; flex-direction:column; }
+  ha-card.fit > * { flex:none; }
+  ha-card.fit .main { flex:1 1 auto; min-height:0; }
+  ha-card.fit .left, ha-card.fit .right { overflow:hidden; min-height:0; }
+  .sc.run { animation:elcsc var(--d,20s) ease-in-out infinite alternate; will-change:transform; }
+  @keyframes elcsc { 0%,15% { transform:translateY(0); } 85%,100% { transform:translateY(var(--dist,0px)); } }
+  @media (prefers-reduced-motion: reduce) { .sc.run { animation:none; } }
+  @media (max-width:600px) { .main { flex-direction:column; } .left { flex:2 1 0; } .right { flex:1 1 0; } .right { border-left:none; padding-left:0; border-top:2px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:10px; } }
 `;
 class EinkaufslisteKochmodus extends HTMLElement {
   static getStubConfig() { return { entity: "sensor.einkaufsliste_kochmodus" }; }
   static getConfigElement() { return document.createElement("einkaufsliste-kochmodus-editor"); }
   setConfig(config) {
-    this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, fit_screen: true, ...config };
+    this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, fit_screen: true, auto_scroll: true, ...config };
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML = `<style>${EL_COOKVIEW_CSS}</style><ha-card lang="${EL_LANG === "en" ? "en" : "de"}"></ha-card>`; // lang: Silbentrennung
@@ -15663,9 +15671,9 @@ class EinkaufslisteKochmodus extends HTMLElement {
     const html = `<div class="head"><ha-icon icon="mdi:chef-hat"></ha-icon><div class="name">${esc(a.rezept || st.state)}</div>${pers}<span class="pill">${esc(elT("Schritt"))} ${step} / ${total}</span></div>${bar}`
       + (heat || note ? `<div class="info">${heat}${note}</div>` : "")
       + (tl ? `<div class="tm">${tl}</div>` : "")
-      + `<div class="main"><div class="left"><div class="text">${esc(a.text || "")}</div>`
+      + `<div class="main"><div class="left"><div class="sc"><div class="text">${esc(a.text || "")}</div>`
       + (cfg.show_next !== false && a.naechster ? `<div class="next"><b>${esc(elT("Danach:"))}</b> ${esc(a.naechster)}</div>` : "")
-      + `</div>${showIng ? `<div class="right"><div class="ih">🧺 ${esc(elT("Zutaten"))}</div><div class="ing">${items.map((i) => `• ${esc(i)}`).join("<br>")}</div></div>` : ""}</div>`
+      + `</div></div>${showIng ? `<div class="right"><div class="sc"><div class="ih">🧺 ${esc(elT("Zutaten"))}</div><div class="ing">${items.map((i) => `• ${esc(i)}`).join("<br>")}</div></div></div>` : ""}</div>`
       + (a.von ? `<div class="by">👨‍🍳 ${esc(a.von)}</div>` : "");
     if (html === this._sig) { this._fit(); return; }
     this._sig = html;
@@ -15677,7 +15685,10 @@ class EinkaufslisteKochmodus extends HTMLElement {
   // (höchstens bis 16 px). Läuft nur nach einem neuen Schritt oder wenn sich die Fenstergröße ändert – nicht dauernd.
   _fit() {
     const card = this.shadowRoot?.querySelector("ha-card");
-    if (!card || this._config?.fit_screen === false || !card.querySelector(".main")) return;
+    if (!card) return;
+    const fit = this._config?.fit_screen !== false && !!card.querySelector(".main");
+    card.classList.toggle("fit", fit);
+    if (!fit) { card.style.height = ""; return; }
     if (!this._onResize) {
       this._onResize = () => { clearTimeout(this._rt); this._rt = setTimeout(() => { this._fitted = 0; this._fit(); }, 300); };
       window.addEventListener("resize", this._onResize, { passive: true });
@@ -15686,13 +15697,27 @@ class EinkaufslisteKochmodus extends HTMLElement {
     const key = `${window.innerWidth}x${window.innerHeight}|${this._sig?.length}`;
     if (this._fitted === key) return;
     requestAnimationFrame(() => {
+      card.style.height = "";
       const r0 = card.getBoundingClientRect();
       if (!r0.height || r0.top >= window.innerHeight) return; // unsichtbar oder unterhalb: nichts messen
+      card.style.height = `${Math.max(260, Math.floor(window.innerHeight - Math.max(0, r0.top) - 8))}px`; // bis zum unteren Bildschirmrand
+      const cols = [...card.querySelectorAll(".left, .right")];
+      const over = () => cols.some((c) => c.firstElementChild && c.firstElementChild.scrollHeight > c.clientHeight + 2);
+      for (const c of cols) { const sc = c.firstElementChild; sc.classList.remove("run"); sc.style.removeProperty("--dist"); }
+      // 1) Schrift etwas kleiner (höchstens auf 75 %, nie unter 18 px), damit möglichst alles ohne Laufen passt
+      const min = Math.max(18, Math.round(want * 0.75));
       let fs = want;
       card.style.setProperty("--elfs", `${fs}px`);
-      for (let i = 0; i < 12 && fs > 16 && card.getBoundingClientRect().bottom > window.innerHeight - 6; i++) {
-        fs = Math.max(16, fs - 2);
-        card.style.setProperty("--elfs", `${fs}px`);
+      for (let i = 0; i < 12 && fs > min && over(); i++) { fs = Math.max(min, fs - 2); card.style.setProperty("--elfs", `${fs}px`); }
+      // 2) Immer noch zu lang? Dann läuft die Spalte langsam runter und wieder hoch (ca. 20 Pixel pro Sekunde, oben und unten kurze Pause)
+      if (this._config.auto_scroll !== false) {
+        for (const c of cols) {
+          const sc = c.firstElementChild, dist = sc.scrollHeight - c.clientHeight;
+          if (dist <= 4) continue;
+          sc.style.setProperty("--dist", `-${dist + 6}px`);
+          sc.style.setProperty("--d", `${Math.max(6, Math.round(dist / 20 / 0.7))}s`);
+          sc.classList.add("run");
+        }
       }
       this._fitted = key;
     });
@@ -15700,13 +15725,13 @@ class EinkaufslisteKochmodus extends HTMLElement {
   disconnectedCallback() { if (this._onResize) { window.removeEventListener("resize", this._onResize); this._onResize = null; } }
 }
 class EinkaufslisteKochmodusEditor extends HTMLElement {
-  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, fit_screen: true, ...config }; this._render(); }
+  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, fit_screen: true, auto_scroll: true, ...config }; this._render(); }
   set hass(hass) { this._hass = hass; elUseLang(hass, this._config, null); this._render(); }
   _render() {
     if (!this._hass || !this._config) return;
     if (!this._form) {
       this._form = document.createElement("ha-form");
-      this._form.computeLabel = (s) => elT({ fit_screen: "Schrift an die Bildschirmhöhe anpassen", entity: "Sensor Kochmodus", timer_entity: "Sensor der Kochtimer", hide_when_idle: "Ausblenden, wenn nichts gekocht wird", show_ingredients: "Zutaten zeigen", show_next: "Nächsten Schritt zeigen", show_timers: "Kochtimer zeigen", font_size: "Schriftgröße Schritt (Pixel)", language: "Sprache" }[s.name] || s.name);
+      this._form.computeLabel = (s) => elT({ fit_screen: "An den Bildschirm anpassen (bis zum unteren Rand)", auto_scroll: "Zu lange Texte laufen von selbst", entity: "Sensor Kochmodus", timer_entity: "Sensor der Kochtimer", hide_when_idle: "Ausblenden, wenn nichts gekocht wird", show_ingredients: "Zutaten zeigen", show_next: "Nächsten Schritt zeigen", show_timers: "Kochtimer zeigen", font_size: "Schriftgröße Schritt (Pixel)", language: "Sprache" }[s.name] || s.name);
       this._form.addEventListener("value-changed", (ev) => {
         this._config = ev.detail.value;
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -15724,6 +15749,7 @@ class EinkaufslisteKochmodusEditor extends HTMLElement {
       { name: "show_timers", selector: { boolean: {} } },
       { name: "font_size", selector: { number: { min: 16, max: 60, step: 1, mode: "box" } } },
       { name: "fit_screen", selector: { boolean: {} } },
+      { name: "auto_scroll", selector: { boolean: {} } },
       { name: "language", selector: { select: { mode: "dropdown", options: [{ value: "auto", label: elT("Automatisch") + " (Home Assistant)" }, { value: "de", label: "Deutsch" }, { value: "en", label: "English" }] } } },
     ];
   }
