@@ -42,7 +42,11 @@ if (OUT) await p.screenshot({ path: `${OUT}/3-code.png` });
 await p.fill('input[name=code]', "123456"); await p.click("form.lform button[type=submit]"); await p.waitForTimeout(600);
 res.auth = await p.evaluate(() => Object.keys(localStorage).filter((k) => /auth/.test(k)).map((k) => localStorage.getItem(k)).join("|"));
 res.formGone = (await p.locator("form.lform").count()) === 0;
-res.calls = log;
+res.calls = log.slice();
+// 🍟 Airfryer Control: die App holt die Dienst-Liste, gibt aber nur airfryer_control an die Karte weiter (wie in HA → Knopf im Kochmodus)
+res.fryer = await p.evaluate(async () => { const old = raw; raw = async (m) => m.type === "get_services" ? { light: { turn_on: {} }, airfryer_control: { programm_senden: {} } } : m.type === "get_states" ? [] : {};
+  try { await loadUserAndStates(); } finally { raw = old; }
+  const h = makeHass(); return { keys: Object.keys(h.services || {}), ok: !!h.services?.airfryer_control?.programm_senden, saved: JSON.parse(localStorage.getItem("elapp_services") || "{}") }; });
 let fails = 0;
 const check = (name, ok) => { console.log(`${ok ? "✅" : "❌"} ${name}${ok ? "" : " – " + JSON.stringify(res)}`); if (!ok) fails++; };
 check("Anmelden: eigenes Formular mit Benutzer + Passwort, alter Weg als Knopf", res.haBtn === 1 && res.fields.join() === "username:text,password:password");
@@ -50,6 +54,7 @@ check("Falsches Passwort: Meldung, Benutzername bleibt stehen", /stimmt nicht/.t
 check("2-Faktor: Code-Feld (Einmal-Code fürs Handy)", res.mfa.join() === "code:one-time-code");
 check("Geschafft: Schlüssel gespeichert, Formular weg", /"refresh":"R1"/.test(res.auth) && res.formGone);
 check("Nur /einkaufsliste/*, /auth/* und /api/websocket gebraucht (kein /frontend_latest, /static, /einkaufsliste_files)", res.calls.every((x) => /^(GET|POST) \/(einkaufsliste\/|auth\/|api\/websocket$)/.test(x)));
+check("🍟 Airfryer Control: Kochmodus-Knopf auch in der Offline-App (nur dieser Dienst wird gemerkt)", res.fryer.ok && res.fryer.keys.join() === "airfryer_control" && !!res.fryer.saved.airfryer_control);
 check("keine JavaScript-Fehler", errs.length === 0);
 console.log(fails ? `\n${fails} Fehler` : "\nAlles ok 🎉");
 process.exitCode = fails ? 1 : 0;

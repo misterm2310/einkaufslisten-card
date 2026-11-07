@@ -96,7 +96,7 @@ window.addEventListener("einkaufsliste-theme", (e) => applyTheme(e.detail));
 const BASE = "/einkaufsliste/app/";
 const CLIENT_ID = location.origin + BASE;
 const VERSION = "__EL_VERSION__";
-const K = { auth: "elapp_auth", data: "elapp_data", user: "elapp_user", states: "elapp_states" };
+const K = { auth: "elapp_auth", data: "elapp_data", user: "elapp_user", states: "elapp_states", services: "elapp_services" };
 const get = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } };
 const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) { /* Speicher voll oder privat */ } };
 const EN = !String(navigator.language || "de").toLowerCase().startsWith("de");
@@ -318,6 +318,7 @@ let ws = null, ready = false, msgId = 1, retry = null;
 const pending = new Map();
 const subs = new Map(); // eigene Abo-Nummer -> { msg, cb, serverId }
 let states = get(K.states, {}), user = get(K.user, null);
+let services = get(K.services, {}); // 🍟 nur die Dienste, nach denen die Karte fragt (z. B. Airfryer Control) – nicht die ganze Liste
 let lastData = get(K.data, null);
 
 function connect() {
@@ -363,6 +364,12 @@ function sendSub(s) {
 }
 async function loadUserAndStates() {
   try { user = await raw({ type: "auth/current_user" }); put(K.user, user); } catch (_) { /* später */ }
+  try { // 🍟 Gibt es Airfryer Control? Dann zeigt der Kochmodus den Knopf „An Airfryer Control schicken“ – wie in Home Assistant
+    const sv = await raw({ type: "get_services" });
+    services = {};
+    for (const d of ["airfryer_control"]) if (sv && sv[d]) services[d] = sv[d];
+    put(K.services, services);
+  } catch (_) { /* später */ }
   try {
     const all = await raw({ type: "get_states" });
     states = {};
@@ -605,6 +612,7 @@ function makeHass() {
     locale: { language: EN ? "en" : "de" },
     user: user || { id: "", name: "", is_admin: false },
     states,
+    services,
     auth: { external: EXT.config.hasBarCodeScanner ? EXT : undefined },
     async callWS(msg) {
       const plain = { ...msg };
@@ -727,9 +735,9 @@ function logout(silent) {
   localStorage.removeItem(K.auth);
   kvDel("auth");
   if (!silent) {
-    for (const k of [K.data, K.user, K.states, "einkaufsliste_queue"]) localStorage.removeItem(k);
+    for (const k of [K.data, K.user, K.states, K.services, "einkaufsliste_queue"]) localStorage.removeItem(k);
     kvDel("queue"); kvDel("auth"); kvDel("flushed");
-    lastData = null; user = null; states = {};
+    lastData = null; user = null; states = {}; services = {};
     caches.delete("einkaufsliste-daten").catch(() => {});
     if (refresh) fetch("/auth/token", { method: "POST", body: new URLSearchParams({ action: "revoke", token: refresh }) }).catch(() => {});
   }

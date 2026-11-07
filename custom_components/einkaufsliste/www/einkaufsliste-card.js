@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.10";
+const EL_VERSION = "2.76.27-beta.11";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -166,6 +166,7 @@ const EL_GUIDE = [
       "<b>Auf die Liste:</b> anhaken, was du brauchst („Alle“ / „Keine“ geht schneller). Was schon draufsteht oder „haben wir immer“ ist (🧂), ist nicht angehakt. <b>Von der Liste</b> nimmt die Zutaten wieder runter. Steht „Noch nie gekauft – wo kaufen?“, wähle das Geschäft.",
       "<b>👥 Für wie viele?</b> bzw. <b>🍕🍰 Wie viele Bleche?</b> Mit − / ＋ rechnen sich die Mengen mit.",
       "<b>🔥 Kochen</b> = Schritt für Schritt in großer Schrift, mit Zutaten, ⏲️ Gar-Zeiten, Backofen-Angaben und dem Foto zum Schritt. 📷 öffnet die Rezept-Fotos.",
+      "<b>📺 Auf dem Fernseher mitlesen:</b> Hat jemand die Karte „Einkaufsliste – Kochmodus-Anzeige“ auf einem Dashboard (z. B. Fire TV in der Küche), steht dort groß, was du gerade kochst – Schritt, Zutaten, Foto und Timer. Blätterst du weiter, blättert der Fernseher mit.",
       "<b>📅 Essensplan:</b> Bei jedem Rezept steht der Knopf <b>„Planen“</b>. Antippen wechselt: nichts → <b>💭 Wunsch</b> (das möchte jemand mal essen) → <b>📅 Diese Woche</b> (wird diese Woche gekocht) → wieder nichts. Oben stehen dann zuerst „Diese Woche“, danach die Wünsche. <b>„Alle Zutaten auf die Liste“</b> geht die eingeplanten Rezepte nacheinander durch – du wählst nur ab, was du nicht brauchst. An welchem Wochentag „Diese Woche“ wieder leer wird, stellt ein Admin in ⚙️ → Rezepte → Wochenplan ein. Wer den Plan nicht mag: unten unter <b>👁️ Ansicht → Essensplan</b> nur für sich abschalten.",
       "<b>⏲️ Gar-Zeiten:</b> Spickzettel nach Gerät (🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse).",
       "<b>📖 Rezept vorschlagen</b> (Buch mit ＋ oben bei den Rezepten): Jeder kann ein Rezept einreichen. Es wartet in ⚙️ → Rezepte auf ein OK, ein 🟠 Punkt an der Kochmütze zeigt, wie viele warten.",
@@ -176,6 +177,7 @@ const EL_GUIDE = [
       "<b>To the list:</b> tick what you need (“All” / “None” is quicker). What is already on the list or is “always at home” (🧂) is not ticked. <b>From the list</b> takes the ingredients off again. If it says “Never bought – where to buy?”, pick the store.",
       "<b>👥 For how many?</b> or <b>🍕🍰 How many trays?</b> With − / ＋ the quantities are recalculated.",
       "<b>🔥 Cook</b> = step by step in large type, with ingredients, ⏲️ cooking times, oven settings and the photo for the step. 📷 opens the recipe photos.",
+      "<b>📺 Follow along on the TV:</b> if someone put the card “Shopping list – cook mode display” on a dashboard (e.g. a Fire TV in the kitchen), it shows in large type what you are cooking – step, ingredients, photo and timers. When you go to the next step, the TV follows.",
       "<b>📅 Meal plan:</b> every recipe has a <b>“Plan”</b> button. Tapping it cycles: nothing → <b>💭 Wish</b> (someone would like to eat it) → <b>📅 This week</b> (cooked this week) → nothing again. At the top you then see “This week” first, then the wishes. <b>“All ingredients to the list”</b> goes through the planned recipes one by one – you just untick what you don't need. Which weekday “This week” is emptied again is set by an admin in ⚙️ → Recipes → Week plan. Don't like the plan? Switch it off just for you at the bottom under <b>👁️ View → Meal plan</b>.",
       "<b>⏲️ Cooking times:</b> cheat sheet by appliance (🍲 hob, 🔥 oven, 💨 air fryer).",
       "<b>📖 Suggest a recipe</b> (book with ＋ at the top of the recipes): anyone can hand in a recipe. It waits for an OK in ⚙️ → Recipes, an 🟠 dot on the chef's hat shows how many are waiting.",
@@ -416,6 +418,12 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 📺 <b>Rand für den Fernseher:</b> In der Kochmodus-Anzeige gibt es „Rand ringsum“ (0–80 Pixel). Schneidet der Fernseher am Rand etwas ab, einfach den Rand größer stellen.",
+   "New: 📺 <b>Margin for the TV:</b> the cook mode display has “Margin all around” (0–80 pixels). If the TV cuts something off at the edges, simply make the margin bigger."],
+  ["Neu: 🍟 <b>Airfryer-Knopf auch in der Offline-App:</b> Im Kochmodus steht der Knopf „An Airfryer Control schicken“ jetzt auch in der Offline-App (vorher nur in Home Assistant).",
+   "New: 🍟 <b>Air fryer button in the offline app too:</b> in cook mode the button “Send to Airfryer Control” now also shows in the offline app (before only in Home Assistant)."],
+  ["Neu: 📺 <b>Kochmodus-Anzeige für den Fernseher:</b> Neue Dashboard-Karte „Einkaufsliste – Kochmodus-Anzeige“. Du kochst am Handy, ein zweiter Bildschirm (z. B. Fire TV in der Küche) zeigt groß den Schritt, was danach kommt, die Zutaten für deine Personenzahl, Backofen &amp; Co., die Notiz, das 📷 Foto zum Schritt und die Kochtimer – und blättert mit. Zu lange Texte laufen von selbst runter und wieder hoch. Dazu der Sensor <code>sensor.einkaufsliste_kochmodus</code> (Rezeptname oder „aus“) für eigene Automationen.",
+   "New: 📺 <b>Cook mode display for the TV:</b> new dashboard card “Shopping list – cook mode display”. You cook on your phone, a second screen (e.g. a Fire TV in the kitchen) shows the step in large type, what comes next, the ingredients for your number of people, oven &amp; co., the note, the 📷 step photo and the cooking timers – and follows along. Texts that are too long scroll down and back up by themselves. Plus the sensor <code>sensor.einkaufsliste_kochmodus</code> (recipe name or “aus”) for your own automations."],
   ["Neu: 🎨 <b>Jedes Rezept hat seine Farbe:</b> Artikel aus Rezepten haben rechts einen schmalen Streifen – jetzt in einer eigenen Farbe pro Rezept. Zwei Rezepte auf der Liste sehen nie gleich aus. Links bleibt die Kategorie-Farbe, das 🍽️-Schildchen die Farbe der Rezept-Gruppe.",
    "New: 🎨 <b>Every recipe has its own colour:</b> items from recipes have a thin stripe on the right – now in a colour of its own per recipe. Two recipes on the list never look the same. The left stays the category colour, the 🍽️ label the recipe group colour."],
   ["Neu: 🏷️ <b>Spitznamen im Rezept-Editor:</b> Beim Eintragen einer Zutat gibt es jetzt den Knopf „Spitzname“ (z. B. „Paradeiser“ für Tomaten) – gilt danach überall. „👤 Für wen“ ist im Rezept weg (alte Angaben bleiben).",
@@ -15578,7 +15586,7 @@ if (!customElements.get("einkaufsliste-timer-ticker-editor")) customElements.def
 // die Anzeige zieht mit. Liest nur sensor.einkaufsliste_kochmodus (+ sensor.einkaufsliste_kochtimer), hat keine Knöpfe und keine Animation:
 // sie zeichnet nur neu, wenn sich der Sensor ändert – schont schwache Geräte wie den Fire TV.
 const EL_COOKVIEW_CSS = `
-  :host { display:block; }
+  :host { display:block; padding:var(--elrand,0px); box-sizing:border-box; } /* 📺 Rand gegen Overscan (Fernseher schneiden ringsum etwas ab) */
   ha-card { padding:16px 18px; box-sizing:border-box; overflow:visible; word-break:break-word; overflow-wrap:break-word; hyphens:auto; -webkit-hyphens:auto; } /* 📺 nichts abschneiden: lange Wörter umbrechen statt rausragen */
   .idle { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:160px; text-align:center; color:var(--secondary-text-color); font:500 20px/1.4 Roboto,sans-serif; }
   .idle ha-icon { --mdc-icon-size:56px; color:#e53935; opacity:.85; }
@@ -15621,7 +15629,7 @@ class EinkaufslisteKochmodus extends HTMLElement {
   static getStubConfig() { return { entity: "sensor.einkaufsliste_kochmodus" }; }
   static getConfigElement() { return document.createElement("einkaufsliste-kochmodus-editor"); }
   setConfig(config) {
-    this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, show_photo: true, font_size: 30, fit_screen: true, auto_scroll: true, ...config };
+    this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, show_photo: true, font_size: 30, fit_screen: true, auto_scroll: true, margin: 0, ...config };
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML = `<style>${EL_COOKVIEW_CSS}</style><ha-card lang="${EL_LANG === "en" ? "en" : "de"}"></ha-card>`; // lang: Silbentrennung
@@ -15647,6 +15655,7 @@ class EinkaufslisteKochmodus extends HTMLElement {
     const a = st?.attributes || {};
     const card = root.querySelector("ha-card");
     const on = !!st && a.aktiv === true;
+    this.style.setProperty("--elrand", `${this._rand()}px`);
     if (cfg.fit_screen === false || !this._fitted) card.style.setProperty("--elfs", `${Math.min(60, Math.max(16, Number(cfg.font_size) || 30))}px`); // angepasste Größe (📺 _fit) nicht wieder überschreiben
     if (!on) {
       const sig = `idle|${cfg.hide_when_idle}|${!!st}`;
@@ -15724,7 +15733,7 @@ class EinkaufslisteKochmodus extends HTMLElement {
       card.style.height = "";
       const r0 = card.getBoundingClientRect();
       if (!r0.height || r0.top >= window.innerHeight) return; // unsichtbar oder unterhalb: nichts messen
-      card.style.height = `${Math.max(260, Math.floor(window.innerHeight - Math.max(0, r0.top) - 8))}px`; // bis zum unteren Bildschirmrand
+      card.style.height = `${Math.max(260, Math.floor(window.innerHeight - Math.max(0, r0.top) - 8 - this._rand()))}px`; // bis zum unteren Bildschirmrand (minus Rand)
       const cols = [...card.querySelectorAll(".left, .right")];
       const over = () => cols.some((c) => c.firstElementChild && c.firstElementChild.scrollHeight > c.clientHeight + 2);
       for (const c of cols) { const sc = c.firstElementChild; sc.classList.remove("run"); sc.style.removeProperty("--dist"); }
@@ -15746,16 +15755,17 @@ class EinkaufslisteKochmodus extends HTMLElement {
       this._fitted = key;
     });
   }
+  _rand() { return Math.min(80, Math.max(0, Number(this._config?.margin) || 0)); } // 📺 Rand in Pixeln (0–80)
   disconnectedCallback() { if (this._onResize) { window.removeEventListener("resize", this._onResize); this._onResize = null; } }
 }
 class EinkaufslisteKochmodusEditor extends HTMLElement {
-  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, show_photo: true, font_size: 30, fit_screen: true, auto_scroll: true, ...config }; this._render(); }
+  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, show_photo: true, font_size: 30, fit_screen: true, auto_scroll: true, margin: 0, ...config }; this._render(); }
   set hass(hass) { this._hass = hass; elUseLang(hass, this._config, null); this._render(); }
   _render() {
     if (!this._hass || !this._config) return;
     if (!this._form) {
       this._form = document.createElement("ha-form");
-      this._form.computeLabel = (s) => elT({ fit_screen: "An den Bildschirm anpassen (bis zum unteren Rand)", auto_scroll: "Zu lange Texte laufen von selbst", show_photo: "Foto zum Schritt zeigen", entity: "Sensor Kochmodus", timer_entity: "Sensor der Kochtimer", hide_when_idle: "Ausblenden, wenn nichts gekocht wird", show_ingredients: "Zutaten zeigen", show_next: "Nächsten Schritt zeigen", show_timers: "Kochtimer zeigen", font_size: "Schriftgröße Schritt (Pixel)", language: "Sprache" }[s.name] || s.name);
+      this._form.computeLabel = (s) => elT({ fit_screen: "An den Bildschirm anpassen (bis zum unteren Rand)", auto_scroll: "Zu lange Texte laufen von selbst", margin: "Rand ringsum (Pixel, gegen abgeschnittene Ränder am Fernseher)", show_photo: "Foto zum Schritt zeigen", entity: "Sensor Kochmodus", timer_entity: "Sensor der Kochtimer", hide_when_idle: "Ausblenden, wenn nichts gekocht wird", show_ingredients: "Zutaten zeigen", show_next: "Nächsten Schritt zeigen", show_timers: "Kochtimer zeigen", font_size: "Schriftgröße Schritt (Pixel)", language: "Sprache" }[s.name] || s.name);
       this._form.addEventListener("value-changed", (ev) => {
         this._config = ev.detail.value;
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -15775,6 +15785,7 @@ class EinkaufslisteKochmodusEditor extends HTMLElement {
       { name: "font_size", selector: { number: { min: 16, max: 60, step: 1, mode: "box" } } },
       { name: "fit_screen", selector: { boolean: {} } },
       { name: "auto_scroll", selector: { boolean: {} } },
+      { name: "margin", selector: { number: { min: 0, max: 80, step: 2, mode: "box" } } },
       { name: "language", selector: { select: { mode: "dropdown", options: [{ value: "auto", label: elT("Automatisch") + " (Home Assistant)" }, { value: "de", label: "Deutsch" }, { value: "en", label: "English" }] } } },
     ];
   }
