@@ -271,6 +271,21 @@ The integration brings a second, small card: **`custom:einkaufsliste-timer-ticke
 
 </details>
 
+<details><summary><b>📺 Cook mode display (own card, e.g. a TV in the kitchen)</b></summary>
+
+The third card of the integration: **`custom:einkaufsliste-kochmodus`**. You cook as usual on your phone or tablet (Recipes → 🔥 Cook), and a second screen (e.g. a Fire TV in the kitchen) shows it in large type: **recipe name, step X of Y with a progress bar, the step text, “Next: …”, the ingredients for your number of people, the orange oven &amp; co. info, the note from last time and the running cooking timers** (“done at 6:30 pm”). When you swipe to the next step on the phone, the display follows. When you close cook mode it says “Nothing is cooking right now” (or the card disappears if “Hide when nothing is cooking” is on). If the phone is just left lying around, the display switches off by itself after 6 hours without a new step. With several recipes at once it shows the one that is in front on the phone.
+
+The card has no buttons and no animation and only redraws when something changes – good for weak devices like the Fire TV. Card editor: sensor (default `sensor.einkaufsliste_kochmodus`), timer sensor, hide, show ingredients / next step / cooking timers, font size and language.
+
+```yaml
+type: custom:einkaufsliste-kochmodus
+font_size: 34
+```
+
+It comes with the sensor **`sensor.einkaufsliste_kochmodus`**: state = name of the recipe being cooked, otherwise `aus` (off). Attributes: `schritt` (step), `schritte` (steps), `text`, `naechster` (next), `personen` (people), `zutaten` (ingredients), `geraete` (oven &amp; co.), `notiz` (note), `von` (by), `seit` (since). Use it for an automation such as “turn on the kitchen Fire TV as soon as someone is cooking” (trigger: state is no longer `aus`). Nothing is stored, and the other cards receive no extra data because of it.
+
+</details>
+
 <details><summary><b>📝 Note templates</b></summary>
 
 **⚙️ → Extras → Note templates**: small buttons under the ✏️ Own note field (“Organic”, “lactose-free”, “large pack” …). They only appear once you type the first letter and show only the matching ones; a tap replaces what you typed with the template. You maintain the texts yourself, for all devices.

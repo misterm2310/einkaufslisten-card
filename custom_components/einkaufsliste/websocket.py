@@ -81,6 +81,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_plan_reset,
         ws_timer_start,
         ws_timer_cancel,
+        ws_cook_set,
+        ws_cook_clear,
         ws_labels,
         ws_catalog_wipe,
         ws_factory_reset,
@@ -914,6 +916,43 @@ def ws_timer_start(hass, connection, msg):
 def ws_timer_cancel(hass, connection, msg):
     """⏲️ Kochtimer löschen (laufend oder abgelaufen)."""
     _run(hass, connection, msg, lambda m: m.cancel_timer(msg["timer_id"]))
+
+
+_COOK_TXT = vol.Any(None, vol.All(str, vol.Length(max=2000)))
+_COOK_LIST = vol.All([vol.All(str, vol.Length(max=200))], vol.Length(max=80))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/cook/set",
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=120)),
+        vol.Optional("sid"): OPT_STR,
+        vol.Optional("recipe_id"): OPT_STR,
+        vol.Optional("step"): vol.All(vol.Coerce(int), vol.Range(min=1, max=999)),
+        vol.Optional("total"): vol.All(vol.Coerce(int), vol.Range(min=1, max=999)),
+        vol.Optional("text"): _COOK_TXT,
+        vol.Optional("next"): _COOK_TXT,
+        vol.Optional("persons"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=99))),
+        vol.Optional("unit"): OPT_STR,
+        vol.Optional("items"): _COOK_LIST,
+        vol.Optional("heat"): _COOK_LIST,
+        vol.Optional("note"): _COOK_TXT,
+        vol.Optional("photo"): bool,
+    }
+)
+@callback
+def ws_cook_set(hass, connection, msg):
+    """👨‍🍳 Kochmodus meldet Rezept + Schritt (für die Kochmodus-Anzeige, z. B. am Fernseher in der Küche)."""
+    who = _user_name(hass, connection)
+    data = {k: v for k, v in msg.items() if k not in ("type", "id")}
+    _run(hass, connection, msg, lambda m: m.set_cooking(data, who))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/cook/clear", vol.Optional("sid"): OPT_STR})
+@callback
+def ws_cook_clear(hass, connection, msg):
+    """👨‍🍳 Kochmodus geschlossen: Anzeige aus (nur wenn noch dieses Koch-Fenster gemeldet ist)."""
+    _run(hass, connection, msg, lambda m: m.clear_cooking(msg.get("sid")))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/mascot/set", vol.Required("on"): bool})

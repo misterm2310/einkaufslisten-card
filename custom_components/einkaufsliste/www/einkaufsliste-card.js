@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.6";
+const EL_VERSION = "2.76.27-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -11482,11 +11482,35 @@ ${(() => {
     this._cookTick = renderTimers;
     me.tick = renderTimers;
     renderTimers();
+    // 📺 Kochmodus-Anzeige: beim Umblättern Rezept, Schritt, Zutaten und Backofen & Co. an Home Assistant melden
+    // (sensor.einkaufsliste_kochmodus → Karte „Einkaufsliste – Kochmodus-Anzeige“, z. B. am Fernseher in der Küche). Nur wenn sich etwas ändert.
+    me.sid = Math.random().toString(36).slice(2, 10);
+    let sentSig = "";
+    const report = () => {
+      if (!this._hass || ov.style.display === "none" || ov.querySelector("[data-elintro]")) return;
+      const last = finalStep && idx === steps.length;
+      const f = pers && r.servings ? pers / r.servings : 1;
+      const msg = {
+        type: "einkaufsliste/cook/set", sid: me.sid, recipe_id: r.id || null, name: String(r.name || "Rezept").slice(0, 120),
+        step: idx + 1, total, text: (last ? "📸 Foto vom fertigen Gericht – guten Appetit! 😋" : steps[idx] || "").slice(0, 2000),
+        next: (idx + 1 < steps.length ? steps[idx + 1] : "").slice(0, 2000),
+        persons: r.servings ? pers : null, unit: r.servings ? servLabel(r.servings_unit, pers) : "",
+        items: (r.items || []).slice(0, 80).map((i) => `${[scaleQty(i.quantity, f), i.name].filter(Boolean).join(" ")}${i.note ? ` (📝 ${i.note})` : ""}`.slice(0, 200)),
+        heat: chosenHeat().slice(0, 10).map((h) => String(heatText(h)).slice(0, 200)),
+        note: String(r.cook_note || "").slice(0, 500), photo: last,
+      };
+      const sig = JSON.stringify(msg);
+      if (sig === sentSig) return;
+      sentSig = sig;
+      this._hass.callWS(msg).catch(() => { sentSig = ""; }); // ältere Integration ohne Anzeige: einfach nichts
+    };
+    me.report = () => { sentSig = ""; report(); };
     const show = () => {
       const rkey = r.id ? this._recipePhotoKey(r.id) : "";
       const last = finalStep && idx === steps.length; // 📸 letzter Schritt: Foto vom fertigen Gericht
       pos.textContent = `Schritt ${idx + 1} von ${total}`;
       renderHeat(); // 🔢 orange Info passend zum Schritt
+      report(); // 📺 Kochmodus-Anzeige nachziehen
       autoL.start(); // 📜 neuer Schritt: Text beginnt oben, läuft bei Überlänge von selbst
       memSet(idx < steps.length - 1 ? idx : 0); // 📌 letzter Schritt erreicht = fast fertig → nicht mehr merken
       if (r.id) { try { localStorage.setItem("einkaufsliste_cook", JSON.stringify({ rid: r.id, idx, pers, hs: heatSel, t: Date.now() })); } catch (_) { /* geht auch ohne */ } } // 📌 nach Neuladen geht es hier weiter
@@ -11542,6 +11566,7 @@ ${(() => {
       const all = this._cookSess || [], k = all.indexOf(me); if (k >= 0) all.splice(k, 1); // die aktuelle Liste, nicht die vom Öffnen
       const rest = all.filter((x) => x.ov.isConnected);
       if (rest.length) this._cookShow(rest[rest.length - 1]); // 🍝🥗 das nächste Rezept kommt nach vorn
+      else this._hass?.callWS({ type: "einkaufsliste/cook/clear", sid: me.sid }).catch(() => {}); // 📺 Anzeige aus
       this._renderTimerStrip();
     };
     ov._elClose = close; // 🧹 Zurück-Taste: Tastatur-Listener mit abmelden
@@ -11728,6 +11753,7 @@ ${(() => {
     for (const x of sess) x.ov.style.display = x === y ? (x.disp || "flex") : "none";
     this._cookTick = y.tick || null;
     y.tick?.();
+    y.report?.(); // 📺 Kochmodus-Anzeige zeigt das Rezept, das jetzt vorn ist
     this._cookTabs();
   }
 
@@ -15546,6 +15572,136 @@ class EinkaufslisteTimerTickerEditor extends HTMLElement {
 if (!customElements.get("einkaufsliste-timer-ticker")) customElements.define("einkaufsliste-timer-ticker", EinkaufslisteTimerTicker);
 if (!customElements.get("einkaufsliste-timer-ticker-editor")) customElements.define("einkaufsliste-timer-ticker-editor", EinkaufslisteTimerTickerEditor);
 
+// 📺 Kochmodus-Anzeige: eine dritte Karte, die die Integration mitbringt (custom:einkaufsliste-kochmodus).
+// Zeigt groß, was gerade gekocht wird – z. B. am Fire TV in der Küche. Geblättert wird am Handy/Tablet im Kochmodus der Einkaufsliste,
+// die Anzeige zieht mit. Liest nur sensor.einkaufsliste_kochmodus (+ sensor.einkaufsliste_kochtimer), hat keine Knöpfe und keine Animation:
+// sie zeichnet nur neu, wenn sich der Sensor ändert – schont schwache Geräte wie den Fire TV.
+const EL_COOKVIEW_CSS = `
+  :host { display:block; }
+  ha-card { padding:16px 18px; box-sizing:border-box; overflow:hidden; }
+  .idle { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:160px; text-align:center; color:var(--secondary-text-color); font:500 20px/1.4 Roboto,sans-serif; }
+  .idle ha-icon { --mdc-icon-size:56px; color:#e53935; opacity:.85; }
+  .head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .head > ha-icon { --mdc-icon-size:30px; color:#e53935; flex:none; }
+  .name { flex:1 1 220px; min-width:0; font:700 26px/1.25 Roboto,sans-serif; color:var(--primary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pill { flex:none; border-radius:999px; padding:4px 12px; font:600 17px Roboto,sans-serif; background:rgba(229,57,53,.18); color:var(--primary-text-color); border:1px solid rgba(229,57,53,.55); }
+  .pill.p { background:rgba(38,166,154,.16); border-color:rgba(38,166,154,.55); }
+  .bar { display:flex; gap:4px; margin:12px 0 4px; }
+  .bar i { flex:1; height:6px; border-radius:3px; background:var(--divider-color,rgba(127,127,127,.3)); }
+  .bar i.on { background:#e53935; }
+  .info { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+  .heat { background:#3a1f0f; border:1px solid #a64b12; color:#ffd7b5; border-radius:12px; padding:8px 12px; font:600 18px Roboto,sans-serif; }
+  .note { background:#3b3510; border:1px solid #c9a227; color:#fff3b0; border-radius:12px; padding:8px 12px; font:600 17px Roboto,sans-serif; }
+  .tm { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .tm span { border-radius:999px; padding:4px 12px; font:600 16px Roboto,sans-serif; border:1px solid #26a69a; background:rgba(38,166,154,.14); color:var(--primary-text-color); }
+  .tm span.f { border-color:#e53935; background:rgba(229,57,53,.2); }
+  .main { display:flex; gap:20px; margin-top:14px; }
+  .left { flex:2 1 0; min-width:0; }
+  .right { flex:1 1 0; min-width:0; border-left:2px solid var(--divider-color,rgba(127,127,127,.3)); padding-left:18px; }
+  .pos { color:var(--secondary-text-color); font:600 16px Roboto,sans-serif; margin-bottom:6px; }
+  .text { font:500 var(--elfs,30px)/1.35 Roboto,sans-serif; color:var(--primary-text-color); white-space:pre-wrap; overflow-wrap:anywhere; }
+  .next { margin-top:16px; color:var(--secondary-text-color); font:400 calc(var(--elfs,30px) * .6)/1.4 Roboto,sans-serif; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .next b { color:var(--primary-text-color); font-weight:600; }
+  .ih { font:600 17px Roboto,sans-serif; color:var(--secondary-text-color); margin-bottom:6px; }
+  .ing { font:400 calc(var(--elfs,30px) * .62)/1.55 Roboto,sans-serif; color:var(--primary-text-color); }
+  .by { margin-top:12px; color:var(--secondary-text-color); font:400 14px Roboto,sans-serif; text-align:right; }
+  @media (max-width:600px) { .main { flex-direction:column; } .right { border-left:none; padding-left:0; border-top:2px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:10px; } }
+`;
+class EinkaufslisteKochmodus extends HTMLElement {
+  static getStubConfig() { return { entity: "sensor.einkaufsliste_kochmodus" }; }
+  static getConfigElement() { return document.createElement("einkaufsliste-kochmodus-editor"); }
+  setConfig(config) {
+    this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, ...config };
+    if (!this.shadowRoot) {
+      this.attachShadow({ mode: "open" });
+      this.shadowRoot.innerHTML = `<style>${EL_COOKVIEW_CSS}</style><ha-card></ha-card>`;
+    }
+    this._sig = null;
+    this._update();
+  }
+  set hass(hass) { this._hass = hass; this._update(); }
+  getCardSize() { return 6; }
+  getGridOptions() { return { columns: "full", rows: "auto" }; } // 📐 im Abschnitts-Dashboard über die ganze Breite
+  connectedCallback() { this._update(); }
+  _update() {
+    const root = this.shadowRoot;
+    if (!root || !this._config || !this._hass) return;
+    const cfg = this._config;
+    const st = this._hass.states?.[cfg.entity];
+    const tst = cfg.show_timers !== false ? this._hass.states?.[cfg.timer_entity] : null;
+    // ⚡ Nur neu zeichnen, wenn sich Kochmodus, Timer oder Einstellungen wirklich geändert haben (hass kommt sehr oft)
+    if (this._sig && this._st === st && this._tst === tst && this._cfg === cfg) return;
+    this._st = st; this._tst = tst; this._cfg = cfg;
+    elUseLang(this._hass, cfg, null);
+    const a = st?.attributes || {};
+    const card = root.querySelector("ha-card");
+    const on = !!st && a.aktiv === true;
+    card.style.setProperty("--elfs", `${Math.min(60, Math.max(16, Number(cfg.font_size) || 30))}px`);
+    if (!on) {
+      const sig = `idle|${cfg.hide_when_idle}|${!!st}`;
+      card.style.display = cfg.hide_when_idle === true ? "none" : "";
+      if (sig === this._sig) return;
+      this._sig = sig;
+      card.innerHTML = `<div class="idle"><ha-icon icon="mdi:chef-hat"></ha-icon><div>${esc(elT(st ? "Gerade wird nichts gekocht" : "Sensor nicht gefunden"))}</div>`
+        + `<small>${esc(st ? elT("Starte am Handy bei den Rezepten 🔥 Kochen – hier erscheint dann jeder Schritt.") : cfg.entity)}</small></div>`;
+      return;
+    }
+    card.style.display = "";
+    const lang = this._hass.locale?.language || EL_LANG || "de";
+    const uhr = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? `${new Date(t).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}` : ""; };
+    const timers = Array.isArray(tst?.attributes?.timer) ? tst.attributes.timer : [];
+    const tl = timers.slice().sort((x, y) => (y.fertig - x.fertig) || (Date.parse(x.ende) - Date.parse(y.ende)))
+      .map((t) => `<span class="${t.fertig ? "f" : ""}">⏲️ ${esc(t.name)}: ${t.fertig ? esc(elT("FERTIG!")) : `${esc(elT("fertig um"))} ${esc(uhr(t.ende))}`}</span>`).join("");
+    const total = Math.max(1, Number(a.schritte) || 1), step = Math.min(total, Math.max(1, Number(a.schritt) || 1));
+    const bar = total <= 40 ? `<div class="bar">${Array.from({ length: total }, (_, i) => `<i class="${i < step ? "on" : ""}"></i>`).join("")}</div>` : "";
+    const heat = (Array.isArray(a.geraete) ? a.geraete : []).map((h) => `<div class="heat">${esc(h)}</div>`).join("");
+    const note = a.notiz ? `<div class="note">📝 ${esc(a.notiz)}</div>` : "";
+    const items = Array.isArray(a.zutaten) ? a.zutaten : [];
+    const pers = a.personen ? `<span class="pill p">👥 ${esc(a.personen)} ${esc(elT(a.einheit || "Personen"))}</span>` : "";
+    const showIng = cfg.show_ingredients !== false && items.length;
+    const html = `<div class="head"><ha-icon icon="mdi:chef-hat"></ha-icon><div class="name">${esc(a.rezept || st.state)}</div>${pers}<span class="pill">${esc(elT("Schritt"))} ${step} / ${total}</span></div>${bar}`
+      + (heat || note ? `<div class="info">${heat}${note}</div>` : "")
+      + (tl ? `<div class="tm">${tl}</div>` : "")
+      + `<div class="main"><div class="left"><div class="text">${esc(a.text || "")}</div>`
+      + (cfg.show_next !== false && a.naechster ? `<div class="next"><b>${esc(elT("Danach:"))}</b> ${esc(a.naechster)}</div>` : "")
+      + `</div>${showIng ? `<div class="right"><div class="ih">🧺 ${esc(elT("Zutaten"))}</div><div class="ing">${items.map((i) => `• ${esc(i)}`).join("<br>")}</div></div>` : ""}</div>`
+      + (a.von ? `<div class="by">👨‍🍳 ${esc(a.von)}</div>` : "");
+    if (html === this._sig) return;
+    this._sig = html;
+    card.innerHTML = html;
+  }
+}
+class EinkaufslisteKochmodusEditor extends HTMLElement {
+  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, ...config }; this._render(); }
+  set hass(hass) { this._hass = hass; elUseLang(hass, this._config, null); this._render(); }
+  _render() {
+    if (!this._hass || !this._config) return;
+    if (!this._form) {
+      this._form = document.createElement("ha-form");
+      this._form.computeLabel = (s) => elT({ entity: "Sensor Kochmodus", timer_entity: "Sensor der Kochtimer", hide_when_idle: "Ausblenden, wenn nichts gekocht wird", show_ingredients: "Zutaten zeigen", show_next: "Nächsten Schritt zeigen", show_timers: "Kochtimer zeigen", font_size: "Schriftgröße Schritt (Pixel)", language: "Sprache" }[s.name] || s.name);
+      this._form.addEventListener("value-changed", (ev) => {
+        this._config = ev.detail.value;
+        this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
+      });
+      this.appendChild(this._form);
+    }
+    this._form.hass = this._hass;
+    this._form.data = this._config;
+    this._form.schema = [
+      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "timer_entity", selector: { entity: { domain: "sensor" } } },
+      { name: "hide_when_idle", selector: { boolean: {} } },
+      { name: "show_ingredients", selector: { boolean: {} } },
+      { name: "show_next", selector: { boolean: {} } },
+      { name: "show_timers", selector: { boolean: {} } },
+      { name: "font_size", selector: { number: { min: 16, max: 60, step: 1, mode: "box" } } },
+      { name: "language", selector: { select: { mode: "dropdown", options: [{ value: "auto", label: elT("Automatisch") + " (Home Assistant)" }, { value: "de", label: "Deutsch" }, { value: "en", label: "English" }] } } },
+    ];
+  }
+}
+if (!customElements.get("einkaufsliste-kochmodus")) customElements.define("einkaufsliste-kochmodus", EinkaufslisteKochmodus);
+if (!customElements.get("einkaufsliste-kochmodus-editor")) customElements.define("einkaufsliste-kochmodus-editor", EinkaufslisteKochmodusEditor);
+
 window.customCards = window.customCards || [];
 if (!window.customCards.some((c) => c.type === "einkaufsliste-card")) {
   window.customCards.push({
@@ -15562,6 +15718,16 @@ if (!window.customCards.some((c) => c.type === "einkaufsliste-timer-ticker")) {
     type: "einkaufsliste-timer-ticker",
     name: "Einkaufsliste – Timer-Laufband",
     description: "Laufband mit den laufenden Kochtimern aus der Einkaufsliste (fertige bleiben stehen, bis man sie in der App wegdrückt).",
+    preview: false,
+    documentationURL: "https://github.com/misterm2310/einkaufslisten-card",
+  });
+}
+
+if (!window.customCards.some((c) => c.type === "einkaufsliste-kochmodus")) {
+  window.customCards.push({
+    type: "einkaufsliste-kochmodus",
+    name: "Einkaufsliste – Kochmodus-Anzeige",
+    description: "Zeigt groß den Schritt, die Zutaten und Backofen & Co. des Rezepts, das gerade im Kochmodus gekocht wird (z. B. am Fernseher in der Küche).",
     preview: false,
     documentationURL: "https://github.com/misterm2310/einkaufslisten-card",
   });

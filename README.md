@@ -270,6 +270,21 @@ Die Integration bringt eine zweite, kleine Karte mit: **`custom:einkaufsliste-ti
 
 </details>
 
+<details><summary><b>📺 Kochmodus-Anzeige (eigene Karte, z. B. Fernseher in der Küche)</b></summary>
+
+Die dritte Karte der Integration: **`custom:einkaufsliste-kochmodus`**. Du kochst wie gewohnt am Handy oder Tablet (Rezepte → 🔥 Kochen), und ein zweiter Bildschirm (z. B. Fire TV in der Küche) zeigt groß mit: **Rezeptname, Schritt X von Y mit Fortschrittsbalken, den Schritt-Text, „Danach: …“ (nächster Schritt), die Zutaten für deine Personenzahl, die orange Info von Backofen &amp; Co., die Notiz vom letzten Mal und die laufenden Kochtimer** („fertig um 18:30 Uhr“). Blätterst du am Handy weiter, blättert die Anzeige mit. Schließt du den Kochmodus, steht dort „Gerade wird nichts gekocht“ (oder die Karte verschwindet, wenn „Ausblenden, wenn nichts gekocht wird“ an ist). Bleibt das Handy einfach liegen, geht die Anzeige nach 6 Stunden ohne Umblättern von selbst aus. Kochen mehrere Rezepte gleichzeitig, zeigt sie das Rezept, das am Handy gerade vorn ist.
+
+Die Karte hat keine Knöpfe und keine Animation und zeichnet nur neu, wenn sich etwas ändert – gut für schwache Geräte wie den Fire TV. Im Karten-Editor: Sensor (Standard `sensor.einkaufsliste_kochmodus`), Timer-Sensor, Ausblenden, Zutaten / nächster Schritt / Kochtimer zeigen, Schriftgröße und Sprache.
+
+```yaml
+type: custom:einkaufsliste-kochmodus
+font_size: 34
+```
+
+Dazu gibt es den Sensor **`sensor.einkaufsliste_kochmodus`**: Zustand = Name des Rezepts, das gerade gekocht wird, sonst `aus`. Attribute: `schritt`, `schritte`, `text`, `naechster`, `personen`, `zutaten`, `geraete`, `notiz`, `von`, `seit`. Damit geht z. B. eine Automation „Fire TV in der Küche einschalten, sobald jemand kocht“ (Auslöser: Zustand ist nicht mehr `aus`). Es wird nichts gespeichert, und die anderen Karten bekommen dadurch keine zusätzlichen Daten.
+
+</details>
+
 <details><summary><b>📝 Notiz-Vorlagen</b></summary>
 
 **⚙️ → Extras → Notiz-Vorlagen**: kleine Knöpfe unter dem ✏️ Eigene-Notiz-Feld („Bio“, „ohne Laktose“, „große Packung“ …). Sie erscheinen erst mit dem ersten getippten Buchstaben und zeigen nur die passenden; ein Tipp ersetzt das Angetippte durch die Vorlage. Die Texte pflegst du selbst, für alle Geräte.

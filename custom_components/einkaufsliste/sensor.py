@@ -17,7 +17,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, SIGNAL_UPDATED, VERSION
+from .const import DOMAIN, SIGNAL_COOKING, SIGNAL_UPDATED, VERSION
 from .manager import EinkaufslisteManager, split_address
 
 
@@ -25,7 +25,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     manager: EinkaufslisteManager = hass.data[DOMAIN]["manager"]
-    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry), ZuletztGekauftSensor(manager, entry), GesundheitSensor(manager, entry), KochtimerSensor(manager, entry)])
+    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry), ZuletztGekauftSensor(manager, entry), GesundheitSensor(manager, entry), KochtimerSensor(manager, entry), KochmodusSensor(manager, entry)])
 
     # 🏪 Ein Sensor pro Geschäft – neue Geschäfte bekommen ihren Sensor automatisch, gelöschte verschwinden
     known: dict[str, GeschaeftSensor] = {}
@@ -350,6 +350,53 @@ class KochtimerSensor(_Base):
                 }
                 for t in self._m.timers
             ],
+        }
+
+
+class KochmodusSensor(_Base):
+    """sensor.einkaufsliste_kochmodus – was wird gerade gekocht? Zustand = Rezeptname, „aus“ = keiner kocht.
+    Die Attribute (Schritt, Text, Zutaten, Backofen & Co.) liest die Karte „Einkaufsliste – Kochmodus-Anzeige“ (z. B. Fire TV in der Küche)."""
+
+    _attr_translation_key = "kochmodus"
+    _attr_icon = "mdi:chef-hat"
+    # 📦 Lange Texte nicht in die Datenbank (Verlauf), nur Rezept und Schritt
+    _unrecorded_attributes = frozenset({"text", "naechster", "zutaten", "geraete", "notiz"})
+
+    def __init__(self, manager: EinkaufslisteManager, entry: ConfigEntry) -> None:
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_kochmodus"
+
+    async def async_added_to_hass(self) -> None:
+        # ⚡ Hört nur auf den Kochmodus – Änderungen an der Liste schreiben diesen Sensor nicht neu
+        self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_COOKING, self._refresh))
+
+    @property
+    def native_value(self) -> str:
+        c = self._m.cooking
+        return c["name"] if c else "aus"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        c = self._m.cooking
+        if not c:
+            return {"aktiv": False}
+        return {
+            "aktiv": True,
+            "rezept": c["name"],
+            "rezept_id": c["recipe_id"],
+            "schritt": c["step"],
+            "schritte": c["total"],
+            "text": c["text"],
+            "naechster": c["next"],
+            "personen": c["persons"],
+            "einheit": c["unit"],
+            "zutaten": c["items"],
+            "geraete": c["heat"],
+            "notiz": c["note"],
+            "foto": c["photo"],
+            "von": c["by"],
+            "seit": c["since"],
+            "aktualisiert": c["updated"],
         }
 
 

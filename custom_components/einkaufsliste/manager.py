@@ -59,6 +59,7 @@ from .const import (
     LOG_DEFAULT_DAYS,
     LOG_LIMIT,
     SAVE_DELAY,
+    SIGNAL_COOKING,
     SIGNAL_UPDATED,
     STORAGE_KEY,
     STORAGE_VERSION,
@@ -604,6 +605,8 @@ class EinkaufslisteManager:
         self._unsub_plan: Callable[[], None] | None = None
         self.timers: list[dict[str, Any]] = []  # ⏲️ Kochtimer (laufen hier in HA, nicht im Browser)
         self._unsub_timers: dict[str, Callable[[], None]] = {}
+        self.cooking: dict[str, Any] | None = None  # 👨‍🍳 was gerade gekocht wird (nur im Speicher, für sensor.einkaufsliste_kochmodus)
+        self._unsub_cooking: Callable[[], None] | None = None
         # 🧹 Aufräumen: in der Karte einstellbar (⚙️ → Aufräumen). None = noch nie gespeichert → alte Werte aus den Integrations-Optionen
         self.cleanup_cfg: dict[str, Any] | None = None
 
@@ -4253,6 +4256,67 @@ class EinkaufslisteManager:
             unsub()
         self._changed()
 
+    # ------------------------------------------------------------------ 👨‍🍳 Kochmodus-Anzeige
+    COOK_KEEP = timedelta(hours=6)  # so lange ohne Umblättern bleibt die Anzeige stehen (danach: aus)
+
+    @callback
+    def set_cooking(self, data: dict[str, Any], by: str | None = None) -> dict[str, Any]:
+        """👨‍🍳 Die Karte meldet beim Umblättern Rezept und Schritt – für sensor.einkaufsliste_kochmodus (z. B. Fire TV in der Küche).
+        Nur im Speicher: es wird nichts gespeichert und kein Paket an die Karten geschickt (spart Last)."""
+        def txt(v: Any, n: int) -> str:
+            return (_clean(v) or "")[:n] if isinstance(v, str) else ""
+
+        def lst(v: Any, n: int, m: int) -> list[str]:
+            return [t for t in (txt(x, m) for x in (v if isinstance(v, list) else [])[:n]) if t]
+
+        name = txt(data.get("name"), 120)
+        if not name:
+            raise ValueError("Ohne Rezeptname gibt es nichts anzuzeigen.")
+        total = max(1, min(int(data.get("total") or 1), 999))
+        now = dt_util.utcnow().isoformat()
+        old = self.cooking or {}
+        sid = txt(data.get("sid"), 40)
+        same = old.get("sid") == sid and old.get("recipe_id") == data.get("recipe_id")
+        self.cooking = {
+            "sid": sid,
+            "recipe_id": txt(data.get("recipe_id"), 40) or None,
+            "name": name,
+            "step": max(1, min(int(data.get("step") or 1), total)),
+            "total": total,
+            "text": txt(data.get("text"), 2000),
+            "next": txt(data.get("next"), 2000),
+            "persons": int(data["persons"]) if isinstance(data.get("persons"), int) and not isinstance(data.get("persons"), bool) else None,
+            "unit": txt(data.get("unit"), 30),
+            "items": lst(data.get("items"), 80, 200),
+            "heat": lst(data.get("heat"), 10, 200),
+            "note": txt(data.get("note"), 500),
+            "photo": bool(data.get("photo")),
+            "by": by,
+            "since": old.get("since") if same and old.get("since") else now,
+            "updated": now,
+        }
+        if self._unsub_cooking:
+            self._unsub_cooking()
+        self._unsub_cooking = async_call_later(self.hass, self.COOK_KEEP.total_seconds(), self._cooking_expired)
+        async_dispatcher_send(self.hass, SIGNAL_COOKING)
+        return self.cooking
+
+    @callback
+    def clear_cooking(self, sid: str | None = None) -> None:
+        """👨‍🍳 Kochmodus zu: Anzeige aus. Mit sid nur, wenn noch dieses Koch-Fenster gemeldet ist (sonst kocht gerade jemand anderes)."""
+        if self.cooking is None or (sid and self.cooking.get("sid") and self.cooking["sid"] != sid):
+            return
+        self.cooking = None
+        if self._unsub_cooking:
+            self._unsub_cooking()
+            self._unsub_cooking = None
+        async_dispatcher_send(self.hass, SIGNAL_COOKING)
+
+    @callback
+    def _cooking_expired(self, _now: Any = None) -> None:
+        self._unsub_cooking = None
+        self.clear_cooking()
+
     def _prune_timers(self) -> None:
         now = dt_util.utcnow()
         for t in list(self.timers):
@@ -4482,6 +4546,9 @@ class EinkaufslisteManager:
         for unsub in list(self._unsub_timers.values()):
             unsub()
         self._unsub_timers.clear()
+        if self._unsub_cooking:
+            self._unsub_cooking()
+            self._unsub_cooking = None
 
     # ------------------------------------------------------------------ Rezepte
     def _recipe_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:

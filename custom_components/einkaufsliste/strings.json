@@ -153,6 +153,9 @@
       "kochtimer": {
         "name": "Kochtimer"
       },
+      "kochmodus": {
+        "name": "Kochmodus"
+      },
       "gesundheit": {
         "name": "Gesundheit",
         "state": {

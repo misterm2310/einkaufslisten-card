@@ -669,6 +669,24 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
 check("OSM-Suche: „Suche läuft“ bleibt als Seite stehen, bis die Antwort da ist", r.waiting && r.sent?.store_id && r.sent?.name === "N6698847448", JSON.stringify(r));
 check("OSM-Suche: Treffer auf derselben Seite, „Für das Geschäft“ übernimmt Zeiten + Adresse und schließt", r.found && r.upd && r.closed, JSON.stringify(r));
 
+// 37) 📺 Kochmodus-Anzeige: der Kochmodus meldet Schritt + Zutaten an HA (nur bei Änderung), Schließen schaltet aus; die Anzeige-Karte zeigt es groß
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const calls=[]; const old=c._hass.callWS; c._hass.callWS=async(m)=>{ calls.push(m); return {}; }; c._ws=async()=>({});
+  document.querySelectorAll("[data-elcook]").forEach(o=>o._elClose?.()); calls.length=0;
+  const r={id:"rk",name:"Lasagne",items:[{name:"Hack",quantity:"500 g"}],steps:"Zwiebeln würfeln.\nHack anbraten 10 Minuten.",heat:[],servings:4,servings_unit:"persons"};
+  c._data.recipes=[r]; c._cookMode(r, 0, false); await new Promise(r=>setTimeout(r,150));
+  const ov=document.querySelector("[data-elcook]"); const sets=()=>calls.filter(m=>m.type==="einkaufsliste/cook/set");
+  const first=sets()[0]; [...ov.querySelectorAll("button")].find(b=>/Weiter/.test(b.textContent))?.click(); await new Promise(r=>setTimeout(r,80));
+  const second=sets()[1]; const n=sets().length; c._cookShow(c._cookSess[0]); await new Promise(r=>setTimeout(r,50));
+  ov._elClose(); await new Promise(r=>setTimeout(r,50));
+  const clear=calls.find(m=>m.type==="einkaufsliste/cook/clear"); c._hass.callWS=old;
+  const k=document.createElement("einkaufsliste-kochmodus"); k.id="km"; document.querySelector(".wrap").after(k);
+  k.setConfig({}); k.hass={...c._hass, states:{"sensor.einkaufsliste_kochmodus":{state:"Lasagne",attributes:{aktiv:true,rezept:"Lasagne",schritt:2,schritte:2,text:"Hack anbraten 10 Minuten.",naechster:"",personen:4,einheit:"Personen",zutaten:["500 g Hack"],geraete:["🔥 Backofen 180 °C"],notiz:"weniger Salz",von:"Marco"}}}};
+  const t=k.shadowRoot.textContent; k.hass={...c._hass, states:{"sensor.einkaufsliste_kochmodus":{state:"aus",attributes:{aktiv:false}}}}; const idle=k.shadowRoot.textContent; k.remove();
+  return { first, second, n, clear, t, idle }; });
+check("Kochmodus meldet Rezept, Schritt und Zutaten an HA", r.first?.name === "Lasagne" && r.first.step === 1 && r.first.total === 3 && r.first.items[0] === "500 g Hack" && r.first.sid && r.second?.step === 2 && r.second.text.startsWith("Hack"), JSON.stringify(r));
+check("Kochmodus meldet nur bei Änderung, Schließen schaltet die Anzeige aus", r.n === 2 && r.clear?.sid === r.first?.sid, JSON.stringify(r));
+check("Kochmodus-Anzeige zeigt Schritt, Zutaten, Backofen und Notiz; ohne Kochen den Hinweis", /Schritt 2 \/ 2/.test(r.t) && /Hack anbraten/.test(r.t) && /500 g Hack/.test(r.t) && /Backofen/.test(r.t) && /weniger Salz/.test(r.t) && /nichts gekocht/.test(r.idle), r.t + " | " + r.idle);
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

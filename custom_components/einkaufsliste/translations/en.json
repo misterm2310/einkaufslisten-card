@@ -153,6 +153,9 @@
       "kochtimer": {
         "name": "Cooking timer"
       },
+      "kochmodus": {
+        "name": "Cook mode"
+      },
       "gesundheit": {
         "name": "Health",
         "state": {

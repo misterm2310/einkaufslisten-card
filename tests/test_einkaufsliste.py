@@ -5013,3 +5013,56 @@ async def test_geo_point_for_store(hass: HomeAssistant, setup) -> None:
     from custom_components.einkaufsliste.geocode import geo_key
     m.geo[geo_key(st["address"], m._geo_country(st, None))] = [46.0051, 8.9511]
     assert m.geo_point(aldi) == [46.0051, 8.9511]
+
+
+async def test_kochmodus_anzeige(hass, setup, hass_ws_client, freezer) -> None:
+    """📺 Kochmodus meldet Rezept + Schritt: sensor.einkaufsliste_kochmodus für die Anzeige-Karte (Fire TV), ohne Paket an die Karten."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    nid = 0
+
+    async def ws(ok=True, **msg):
+        nonlocal nid
+        nid += 1
+        await client.send_json({"id": nid, **msg})
+        res = await client.receive_json()
+        assert res["success"] is ok, res
+        return res.get("result")
+
+    await hass.async_block_till_done()
+    st = hass.states.get("sensor.einkaufsliste_kochmodus")
+    assert st is not None and st.state == "aus" and st.attributes["aktiv"] is False
+    pushes = m.stat_changes
+    await ws(type="einkaufsliste/cook/set", sid="a1", recipe_id="r1", name="Lasagne", step=2, total=5,
+             text="Hackfleisch anbraten", next="Soße kochen", persons=4, unit="Personen",
+             items=["500 g Hack", "1 Zwiebel"], heat=["🔥 Backofen 180 °C Umluft, 30 Min"], note="weniger Salz")
+    await hass.async_block_till_done()
+    st = hass.states.get("sensor.einkaufsliste_kochmodus")
+    assert st.state == "Lasagne"
+    a = st.attributes
+    assert a["aktiv"] is True and a["schritt"] == 2 and a["schritte"] == 5 and a["personen"] == 4
+    assert a["text"] == "Hackfleisch anbraten" and a["naechster"] == "Soße kochen"
+    assert a["zutaten"] == ["500 g Hack", "1 Zwiebel"] and a["geraete"][0].startswith("🔥") and a["notiz"] == "weniger Salz"
+    assert m.stat_changes == pushes  # ⚡ kein Speichern, kein Paket an alle Karten
+    seit = a["seit"]
+    await ws(type="einkaufsliste/cook/set", sid="a1", recipe_id="r1", name="Lasagne", step=3, total=5, text="Soße kochen")
+    await hass.async_block_till_done()
+    a = hass.states.get("sensor.einkaufsliste_kochmodus").attributes
+    assert a["schritt"] == 3 and a["seit"] == seit and a["zutaten"] == []
+    # Ein anderes Koch-Fenster schließt: Anzeige bleibt (gemeldet ist ja „a1“)
+    await ws(type="einkaufsliste/cook/clear", sid="zz")
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.einkaufsliste_kochmodus").state == "Lasagne"
+    await ws(type="einkaufsliste/cook/clear", sid="a1")
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.einkaufsliste_kochmodus").state == "aus"
+    # Ohne Namen geht es nicht, zu große Schritte werden gekappt
+    await ws(ok=False, type="einkaufsliste/cook/set", name="")
+    await ws(type="einkaufsliste/cook/set", sid="b", name="Ei", step=9, total=3)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.einkaufsliste_kochmodus").attributes["schritt"] == 3
+    # Tab einfach zu, ohne Schließen: nach 6 Stunden geht die Anzeige von selbst aus
+    freezer.tick(timedelta(hours=6, minutes=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.einkaufsliste_kochmodus").state == "aus" and m.cooking is None

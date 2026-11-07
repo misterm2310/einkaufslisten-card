@@ -15,6 +15,7 @@ SAVE_DELAY = 1
 PUSH_DELAY = 0.3  # ⏱️ Sekunden: schnelle Änderungen werden zu einem Paket an die Karten gebündelt
 
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
+SIGNAL_COOKING = f"{DOMAIN}_cooking"  # 👨‍🍳 Kochmodus hat umgeblättert (nur der Kochmodus-Sensor hört zu, die Karten bekommen kein Paket)
 EVENT_ITEM_ADDED = f"{DOMAIN}_item_added"
 EVENT_ITEM_BOUGHT = f"{DOMAIN}_item_bought"
 EVENT_CLEANUP = f"{DOMAIN}_cleanup"
