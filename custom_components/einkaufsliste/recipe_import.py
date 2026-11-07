@@ -147,8 +147,28 @@ def parse_html(page: str) -> dict[str, Any]:
             "items": items,
             "image_url": _image_url(recipe.get("image")),
             "steps": _steps(recipe.get("recipeInstructions")),
+            "minutes": _total_minutes(recipe),
         }
-    return {"name": None, "items": [], "image_url": None, "steps": None}
+    return {"name": None, "items": [], "image_url": None, "steps": None, "minutes": None}
+
+
+def _iso_minutes(value: Any) -> int | None:
+    """⏱️ schema.org-Zeit wie „PT1H30M“ oder „P0DT0H45M“ in Minuten."""
+    m = re.fullmatch(r"\s*P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:\d+(?:\.\d+)?S)?)?\s*", str(value or ""), re.IGNORECASE)
+    if not m or not any(m.groups()):
+        return None
+    n = int(m[1] or 0) * 1440 + int(m[2] or 0) * 60 + int(m[3] or 0)
+    return n if 1 <= n <= 1440 else None
+
+
+def _total_minutes(recipe: dict[str, Any]) -> int | None:
+    """⏱️ Gesamtzeit von der Rezeptseite (totalTime, sonst Vorbereitung + Kochen)."""
+    total = _iso_minutes(recipe.get("totalTime"))
+    if total:
+        return total
+    parts = [_iso_minutes(recipe.get(k)) for k in ("prepTime", "cookTime")]
+    n = sum(p for p in parts if p)
+    return n if 1 <= n <= 1440 else None
 
 
 def _steps(node: Any) -> str | None:
@@ -260,7 +280,7 @@ async def async_import(hass: HomeAssistant, manager: Any, text: str) -> dict[str
         info = parse_html(page)
         if not info["items"]:
             raise ValueError("Auf der Seite habe ich keine Zutaten-Liste gefunden. Kopier sie lieber als Text rein.")
-        result.update(source="link", name=info["name"], items=info["items"], steps=info.get("steps"), source_url=first[:500])
+        result.update(source="link", name=info["name"], items=info["items"], steps=info.get("steps"), source_url=first[:500], minutes=info.get("minutes"))
         img_url = info.get("image_url")
         if isinstance(img_url, str) and img_url.startswith("http"):
             img = await _download(hass, session, img_url, MAX_IMAGE)

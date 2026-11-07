@@ -507,6 +507,8 @@ RECIPE_ITEM = vol.Schema(
         vol.Optional("heat"): [HEAT_ROW],
         vol.Optional("servings"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=99))),
         vol.Optional("servings_unit"): vol.In(["persons", "trays", "forms"]),
+        vol.Optional("minutes"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=1440))),
+        vol.Optional("step_items"): vol.Any(None, [vol.Any(None, [str])]),
         vol.Optional("group"): vol.Any(None, str),
         vol.Optional("ai"): bool,
         vol.Optional("source"): OPT_STR,
@@ -514,7 +516,7 @@ RECIPE_ITEM = vol.Schema(
 )
 @callback
 def ws_recipe_add(hass, connection, msg):
-    _run(hass, connection, msg, lambda m: m.add_recipe(msg["name"], msg["items"], msg.get("icon"), msg.get("steps"), msg.get("heat"), msg.get("servings"), msg.get("servings_unit"), msg.get("group"), bool(msg.get("ai")), msg.get("source")))
+    _run(hass, connection, msg, lambda m: m.add_recipe(msg["name"], msg["items"], msg.get("icon"), msg.get("steps"), msg.get("heat"), msg.get("servings"), msg.get("servings_unit"), msg.get("group"), bool(msg.get("ai")), msg.get("source"), msg.get("minutes"), msg.get("step_items")))
 
 
 @websocket_api.websocket_command(
@@ -566,6 +568,8 @@ async def ws_proposal_reject(hass, connection, msg):
         vol.Optional("heat"): [HEAT_ROW],
         vol.Optional("servings"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=99))),
         vol.Optional("servings_unit"): vol.In(["persons", "trays", "forms"]),
+        vol.Optional("minutes"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=1440))),
+        vol.Optional("step_items"): vol.Any(None, [vol.Any(None, [str])]),
         vol.Optional("group"): vol.Any(None, str),
         vol.Optional("step_map"): [vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=999)))],
         vol.Optional("plan"): vol.In(["", "wish", "week"]),
@@ -575,7 +579,7 @@ async def ws_proposal_reject(hass, connection, msg):
 )
 @callback
 def ws_recipe_update(hass, connection, msg):
-    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan", "source", "cook_note")
+    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan", "source", "cook_note", "minutes", "step_items")
     _run(hass, connection, msg, lambda m: m.update_recipe(msg["recipe_id"], **fields))
 
 
@@ -935,6 +939,7 @@ _COOK_LIST = vol.All([vol.All(str, vol.Length(max=200))], vol.Length(max=80))
         vol.Optional("persons"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=99))),
         vol.Optional("unit"): OPT_STR,
         vol.Optional("items"): _COOK_LIST,
+        vol.Optional("done"): [vol.All(vol.Coerce(int), vol.Range(min=0, max=999))],
         vol.Optional("heat"): _COOK_LIST,
         vol.Optional("note"): _COOK_TXT,
         vol.Optional("photo"): bool,

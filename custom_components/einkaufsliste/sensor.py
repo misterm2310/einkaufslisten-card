@@ -360,7 +360,7 @@ class KochmodusSensor(_Base):
     _attr_translation_key = "kochmodus"
     _attr_icon = "mdi:chef-hat"
     # 📦 Lange Texte nicht in die Datenbank (Verlauf), nur Rezept und Schritt
-    _unrecorded_attributes = frozenset({"text", "naechster", "zutaten", "geraete", "notiz"})
+    _unrecorded_attributes = frozenset({"text", "naechster", "zutaten", "erledigt", "geraete", "notiz"})
 
     def __init__(self, manager: EinkaufslisteManager, entry: ConfigEntry) -> None:
         super().__init__(manager, entry)
@@ -390,7 +390,9 @@ class KochmodusSensor(_Base):
             "naechster": c["next"],
             "personen": c["persons"],
             "einheit": c["unit"],
+            "rezept_id": c.get("recipe_id"),
             "zutaten": c["items"],
+            "erledigt": c.get("done", []),
             "geraete": c["heat"],
             "notiz": c["note"],
             "foto": c["photo"],

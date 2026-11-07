@@ -124,6 +124,36 @@ def _nice(text: Any) -> str | None:
     return text
 
 
+def _minutes(value: Any) -> int | None:
+    """⏱️ Wie lange braucht das Rezept ungefähr? (Minuten, 1 bis 24 Stunden; leer = nicht angegeben)"""
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        return None
+    return n if 1 <= n <= 1440 else None
+
+
+def _step_items(value: Any, count: int) -> list[list[str] | None] | None:
+    """🥕 Welche Zutaten gehören zu welchem Schritt? Pro Schritt eine Liste mit Zutaten-Namen
+    (klein geschrieben) oder None = automatisch aus dem Schritt-Text erkennen. Alles None = weg."""
+    if not isinstance(value, list) or count <= 0:
+        return None
+    out: list[list[str] | None] = []
+    for entry in value[:count]:
+        if isinstance(entry, list):
+            names = []
+            for n in entry[:80]:
+                n = " ".join(str(n or "").split()).lower()[:100]
+                if n and n not in names:
+                    names.append(n)
+            out.append(names)
+        else:
+            out.append(None)
+    while out and out[-1] is None:
+        out.pop()
+    return out or None
+
+
 def _servings(value: Any) -> int | None:
     """👥 Für wie viele Personen ist das Rezept? (leer = nicht angegeben)"""
     try:
@@ -4288,6 +4318,7 @@ class EinkaufslisteManager:
             "persons": int(data["persons"]) if isinstance(data.get("persons"), int) and not isinstance(data.get("persons"), bool) else None,
             "unit": txt(data.get("unit"), 30),
             "items": lst(data.get("items"), 80, 200),
+            "done": sorted({int(n) for n in (data.get("done") if isinstance(data.get("done"), list) else []) if isinstance(n, int) and 0 <= n < 80}),  # ✔️ schon drin (durchgestrichen)
             "heat": lst(data.get("heat"), 10, 200),
             "note": txt(data.get("note"), 500),
             "photo": bool(data.get("photo")),
@@ -4609,6 +4640,8 @@ class EinkaufslisteManager:
         group: str | None = None,
         ai: bool = False,
         source: str | None = None,
+        minutes: int | None = None,
+        step_items: list[Any] | None = None,
     ) -> dict[str, Any]:
         recipe = {
             "id": _new_id(),
@@ -4625,6 +4658,11 @@ class EinkaufslisteManager:
         src = _clean_source(source)
         if src:  # 🔗 Woher das Rezept kommt (Link) – für „Original öffnen“
             recipe["source"] = src
+        if _minutes(minutes):  # ⏱️ Dauer ca. (steht in der Kochmütze neben der Personenzahl)
+            recipe["minutes"] = _minutes(minutes)
+        si = _step_items(step_items, recipe_step_count(recipe))
+        if si:  # 🥕 Zutaten pro Schritt (im Editor festgelegt)
+            recipe["step_items"] = si
         if ai:  # 🤖 von der KI vorgeschlagen – bleibt für immer dran, auch nach dem Bearbeiten
             recipe["ai"] = True
         self.recipes.append(recipe)
@@ -4746,6 +4784,15 @@ class EinkaufslisteManager:
             recipe["steps"] = _clean_steps(fields["steps"])
             if fields.get("step_map") is not None:
                 self._remap_step_photos(recipe_id, fields["step_map"], recipe_step_count(recipe))
+                if "step_items" not in fields and recipe.get("step_items"):  # 🥕 Zutaten-Zuordnung wandert mit den Schritten
+                    old = recipe["step_items"]
+                    fields["step_items"] = [old[o] if o is not None and 0 <= o < len(old) else None for o in fields["step_map"]]
+        if "step_items" in fields or ("steps" in fields and recipe.get("step_items")):
+            si = _step_items(fields.get("step_items", recipe.get("step_items")), recipe_step_count(recipe))
+            if si:
+                recipe["step_items"] = si
+            else:
+                recipe.pop("step_items", None)
         if "heat" in fields:
             recipe["heat"] = _clean_heat(fields["heat"])
         if "servings" in fields:
@@ -4768,6 +4815,12 @@ class EinkaufslisteManager:
                 recipe["source"] = src
             else:
                 recipe.pop("source", None)
+        if "minutes" in fields:  # ⏱️ Dauer ca., leer = weg
+            mins = _minutes(fields["minutes"])
+            if mins:
+                recipe["minutes"] = mins
+            else:
+                recipe.pop("minutes", None)
         self._changed()
         return recipe
 

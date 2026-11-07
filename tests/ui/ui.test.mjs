@@ -687,9 +687,79 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   k.hass={...c._hass, states:{"sensor.einkaufsliste_kochmodus":{state:"aus",attributes:{aktiv:false}}}}; const idle=k.shadowRoot.textContent; k.remove();
   return { first, second, n, clear, t, idle, img, pic: pics[0] }; });
 check("Kochmodus-Anzeige: Schritt-Foto wird geholt und scrollt im Text-Bereich mit", r.img && r.pic?.type === "einkaufsliste/photo/get" && r.pic.name === "rezept#rk#s0", JSON.stringify({img:r.img, pic:r.pic}));
-check("Kochmodus meldet Rezept, Schritt und Zutaten an HA", r.first?.name === "Lasagne" && r.first.step === 1 && r.first.total === 3 && r.first.items[0] === "500 g Hack" && r.first.sid && r.second?.step === 2 && r.second.text.startsWith("Hack"), JSON.stringify(r));
+check("Kochmodus meldet Rezept, Schritt und nur die Zutaten des Schritts an HA", r.first?.name === "Lasagne" && r.first.step === 1 && r.first.total === 3 && r.first.items.length === 0 && r.first.sid && r.second?.step === 2 && r.second.text.startsWith("Hack") && r.second.items[0] === "500 g Hack", JSON.stringify(r));
 check("Kochmodus meldet nur bei Änderung, Schließen schaltet die Anzeige aus", r.n === 2 && r.clear?.sid === r.first?.sid, JSON.stringify(r));
 check("Kochmodus-Anzeige zeigt Schritt, Zutaten, Backofen und Notiz; ohne Kochen den Hinweis", /Schritt 2 \/ 2/.test(r.t) && /Hack anbraten/.test(r.t) && /500 g Hack/.test(r.t) && /Backofen/.test(r.t) && /weniger Salz/.test(r.t) && /nichts gekocht/.test(r.idle), r.t + " | " + r.idle);
+
+// 38) ⏱️ Dauer ca.: neben der Personenzahl; ohne Eintrag geschätzt mit „≈“; der Editor speichert das Feld mit
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const calls=[]; const old=c._hass.callWS; c._hass.callWS=async(m)=>{ calls.push(m); return {}; }; const oldWs=c._ws; c._ws=async(m)=>{ calls.push(m); return {}; };
+  const a={id:"rt1",name:"Lasagne",items:[{name:"Hack"}],steps:"Backen",heat:[],servings:4,servings_unit:"persons",minutes:75};
+  const e={id:"rt2",name:"Suppe",items:[{name:"Lauch"}],steps:"Kochen 20 Minuten.\nZiehen lassen 10 Minuten.",heat:[],servings:2,servings_unit:"persons"};
+  const tagA=c._servTag(a).replace(/<[^>]+>/g,""), tagE=c._servTag(e).replace(/<[^>]+>/g,"");
+  c._openRecipe(a); await new Promise(r=>setTimeout(r,80)); const inp=c.$("rMinutes"); const val=inp?.value;
+  if (inp) { inp.value="50"; inp.dispatchEvent(new Event("input",{bubbles:true})); }
+  try { await c._saveRecipe(); } catch (err) {} await new Promise(r=>setTimeout(r,80));
+  const sent=calls.find(m=>m.type==="einkaufsliste/recipe/update"); c._hass.callWS=old; c._ws=oldWs;
+  return { tagA, tagE, val, sent: sent?.minutes }; });
+check("⏱️ Dauer steht neben der Personenzahl (eingetragen)", /4 Personen · ⏱️ 1 Std 15 Min/.test(r.tagA), JSON.stringify(r));
+check("⏱️ ohne Eintrag geschätzt mit „≈“", /2 Personen · ⏱️ ≈ 30 Min/.test(r.tagE), JSON.stringify(r));
+check("Rezept-Editor: „Dauer ca.“ zeigt den Wert und speichert ihn", r.val === "75" && r.sent === 50, JSON.stringify(r));
+
+// 39) 🥕 Zutaten pro Schritt: automatisch erkannt (auch „Hack“ ↔ „Hackfleisch“, Mehrzahl), im Editor festlegbar, Kochmodus zeigt nur diese
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const calls=[]; const old=c._hass.callWS; c._hass.callWS=async(m)=>{ calls.push(m); return {}; }; const oldWs=c._ws; c._ws=async(m)=>{ calls.push(m); return {}; };
+  const items=[{name:"Hackfleisch",quantity:"500 g"},{name:"Zwiebel",quantity:"2"},{name:"Tomaten",quantity:"800 g"},{name:"Salz"}];
+  const auto=c._autoStepItems("Zwiebeln würfeln und mit dem Hack anbraten.", items).map(i=>i.name);
+  const none=c._autoStepItems("35 Minuten backen.", items).length;
+  const r={id:"rs",name:"Soße",items,steps:"Zwiebeln würfeln und mit dem Hack anbraten.\nDie Soße einkochen.\nAbschmecken.",heat:[],servings:4,servings_unit:"persons",step_items:[null,["tomaten","salz"]]};
+  const fixed=c._stepItems(r,1).map(i=>i.name);
+  c._data.recipes=[r]; c._openRecipe(r); await new Promise(r=>setTimeout(r,80));
+  const q=(x)=>c.shadowRoot.querySelector(x);
+  const btn=q('.strow[data-k] [data-act="step-ing"]'); const btnTxt=btn?.textContent.trim(); btn?.click(); await new Promise(r=>setTimeout(r,50));
+  const chips=[...c.shadowRoot.querySelectorAll(".sting .stchip.on")].map(b=>b.textContent.replace("✓","").trim());
+  [...c.shadowRoot.querySelectorAll(".sting .stchip")].find(b=>/Tomaten/.test(b.textContent))?.click(); await new Promise(r=>setTimeout(r,50));
+  try { await c._saveRecipe(); } catch (err) {} await new Promise(r=>setTimeout(r,80));
+  const sent=calls.find(m=>m.type==="einkaufsliste/recipe/update")?.step_items;
+  document.querySelectorAll("[data-elcook]").forEach(o=>o._elClose?.());
+  c._cookMode(r, 1, false); await new Promise(r=>setTimeout(r,150));
+  const ov=document.querySelector("[data-elcook]"); [...ov.querySelectorAll("[data-elintro] button")].find(b=>/Los geht/.test(b.textContent))?.click(); await new Promise(r=>setTimeout(r,120));
+  const ingTxt=()=>[...ov.querySelectorAll("div")].map(d=>d.innerHTML).find(h=>/data-elingall/.test(h) && !/data-elcook/.test(h))||"";
+  const s2=ingTxt(); ov.querySelector("[data-elingall]")?.click(); await new Promise(r=>setTimeout(r,50)); const all=ingTxt();
+  ov._elClose(); c._hass.callWS=old; c._ws=oldWs;
+  return { auto, none, fixed, btnTxt, chips, sent, s2: s2.replace(/<[^>]+>/g," "), all: all.replace(/<[^>]+>/g," ") }; });
+check("🥕 Zutaten im Schritt automatisch erkannt (Hack ↔ Hackfleisch, Zwiebeln ↔ Zwiebel)", JSON.stringify(r.auto) === '["Hackfleisch","Zwiebel"]' && r.none === 0, JSON.stringify(r));
+check("🥕 Im Editor festgelegte Zutaten gelten", JSON.stringify(r.fixed) === '["Tomaten","Salz"]', JSON.stringify(r));
+check("🥕 Editor: Knopf zeigt ≈ Anzahl, Kärtchen vorgewählt, Antippen legt fest und wird gespeichert", r.btnTxt === "≈ 2" && JSON.stringify(r.chips) === '["Hackfleisch","Zwiebel"]' && JSON.stringify(r.sent?.[0]) === '["hackfleisch","zwiebel","tomaten"]' && JSON.stringify(r.sent?.[1]) === '["tomaten","salz"]', JSON.stringify(r));
+check("🥕 Kochmodus: nur Zutaten des Schritts, „Alle Zutaten“ zeigt alles", /800 g Tomaten/.test(r.s2) && /Salz/.test(r.s2) && !/Hackfleisch/.test(r.s2) && /Hackfleisch/.test(r.all) && /Zwiebel/.test(r.all), JSON.stringify(r));
+
+// 40) 🧂 Koch-Wörter, „restliche Zutaten“, Abhaken beim Kochen (auch an HA), Hinweis „in keinem Schritt“, 🟢 wird gerade gekocht
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const calls=[]; const old=c._hass.callWS; c._hass.callWS=async(m)=>{ calls.push(m); return {}; };
+  const items=[{name:"Schnitzel"},{name:"Mehl"},{name:"Eier"},{name:"Paniermehl"},{name:"Salz"},{name:"Pfeffer"},{name:"Butterschmalz"},{name:"Zitrone"},{name:"Petersilie"}];
+  const r={id:"rw",name:"Schnitzel",items,steps:"Schnitzel klopfen und würzen.\nPanieren.\nIn Butterschmalz anbraten.\nRestliche Zutaten dazu servieren.",heat:[],servings:2,servings_unit:"persons"};
+  const names=(i)=>c._stepItems(r,i).map(x=>x.name);
+  const s=[0,1,2,3].map(names);
+  const pasta=c._autoStepItems("Nudeln in Wasser kochen.", [{name:"Nudeln"},{name:"Salz"},{name:"Käse"}]).map(x=>x.name);
+  c._data.recipes=[r]; c._openRecipe({...r, steps:r.steps.split("\n").slice(0,3).join("\n"), items:[...items,{name:"Zucker"}]}); await new Promise(r=>setTimeout(r,80));
+  const warn=c.$("rStepWarn")?.textContent||"";
+  document.querySelectorAll("[data-elcook]").forEach(o=>o._elClose?.()); calls.length=0;
+  c._view="list"; c._cookMode(r, 2, false); await new Promise(r=>setTimeout(r,150));
+  const ov=document.querySelector("[data-elcook]"); [...ov.querySelectorAll("[data-elintro] button")].find(b=>/Los geht/.test(b.textContent))?.click(); await new Promise(r=>setTimeout(r,120));
+  ov.querySelector('[data-elingx="butterschmalz"]')?.click(); await new Promise(r=>setTimeout(r,60));
+  const struck=/line-through/.test(ov.querySelector('[data-elingx="butterschmalz"]')?.getAttribute("style")||"");
+  const sets=calls.filter(m=>m.type==="einkaufsliste/cook/set"); const last=sets[sets.length-1];
+  ov._elClose(); c._hass.callWS=old;
+  const k=document.createElement("einkaufsliste-kochmodus"); document.querySelector(".wrap").after(k); k.setConfig({});
+  k.hass={...c._hass, states:{"sensor.einkaufsliste_kochmodus":{state:"Schnitzel",attributes:{aktiv:true,rezept:"Schnitzel",schritt:3,schritte:4,text:"x",zutaten:["Butterschmalz","Salz"],erledigt:[0]}}}};
+  const tvStruck=k.shadowRoot.querySelector(".ing s.dn")?.textContent||""; k.remove();
+  const hs=c._hass; c._hass={...hs, states:{...hs.states, "sensor.einkaufsliste_kochmodus":{state:"Schnitzel",attributes:{aktiv:true,rezept:"Schnitzel",rezept_id:"rw",schritt:3,schritte:4,von:"Jamila"}}}};
+  c._view="recipes"; c._renderAll?.(); await new Promise(r=>setTimeout(r,80));
+  const row=c.shadowRoot.querySelector('.recipe.cooking[data-id="rw"]'); const join=row?.querySelector(".cooknow")?.textContent||"";
+  c._view="list"; c._syncRecipesBtn(); const dot=c.$("cookDot")?.hidden===false; c._hass=hs; c._syncRecipesBtn();
+  return { s, pasta, warn, struck, done:last?.done, items:last?.items, tvStruck, join, dot }; });
+check("🧂 würzen → Salz & Pfeffer, panieren → Mehl/Eier/Paniermehl, anbraten → Butterschmalz", JSON.stringify(r.s[0])==='["Schnitzel","Salz","Pfeffer"]' && JSON.stringify(r.s[1])==='["Mehl","Eier","Paniermehl"]' && JSON.stringify(r.s[2])==='["Butterschmalz"]', JSON.stringify(r));
+check("🧂 Nudeln kochen → Salz; „restliche Zutaten“ = alles, was vorher nicht dran war", JSON.stringify(r.pasta)==='["Nudeln","Salz"]' && JSON.stringify(r.s[3])==='["Zitrone","Petersilie"]', JSON.stringify(r));
+check("⚠️ Editor sagt, welche Zutat in keinem Schritt vorkommt", /Zucker/.test(r.warn) && /Zitrone/.test(r.warn) && !/Salz/.test(r.warn), JSON.stringify(r));
+check("✔️ Zutat antippen = durchgestrichen, HA bekommt es mit, TV streicht durch", r.struck && JSON.stringify(r.done)==='[0]' && /Butterschmalz/.test(r.tvStruck), JSON.stringify(r));
+check("🟢 Kochmütze: grüner Rand + „Wird gerade gekocht · Schritt 3 von 4 · Jamila“, Punkt oben", /gerade gekocht/.test(r.join) && /3 von 4/.test(r.join) && /Jamila/.test(r.join) && r.dot, JSON.stringify(r));
 
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();

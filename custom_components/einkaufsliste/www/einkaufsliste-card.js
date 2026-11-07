@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.11";
+const EL_VERSION = "2.76.27-beta.12";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -165,7 +165,7 @@ const EL_GUIDE = [
       "Die <b>Kochmütze</b> öffnet die Rezepte. Das Suchfeld findet auch Zutaten (und über Spitznamen: „Paradeiser“ findet Tomate). Neue Rezepte anlegen und ändern geht nur in ⚙️ → Rezepte.",
       "<b>Auf die Liste:</b> anhaken, was du brauchst („Alle“ / „Keine“ geht schneller). Was schon draufsteht oder „haben wir immer“ ist (🧂), ist nicht angehakt. <b>Von der Liste</b> nimmt die Zutaten wieder runter. Steht „Noch nie gekauft – wo kaufen?“, wähle das Geschäft.",
       "<b>👥 Für wie viele?</b> bzw. <b>🍕🍰 Wie viele Bleche?</b> Mit − / ＋ rechnen sich die Mengen mit.",
-      "<b>🔥 Kochen</b> = Schritt für Schritt in großer Schrift, mit Zutaten, ⏲️ Gar-Zeiten, Backofen-Angaben und dem Foto zum Schritt. 📷 öffnet die Rezept-Fotos.",
+      "<b>🔥 Kochen</b> = Schritt für Schritt in großer Schrift, mit den <b>Zutaten für genau diesen Schritt</b> (oben „📋 Alle Zutaten“ zeigt alle; eine Zutat antippen = durchgestrichen, schon drin), ⏲️ Gar-Zeiten, Backofen-Angaben und dem Foto zum Schritt. 📷 öffnet die Rezept-Fotos.",
       "<b>📺 Auf dem Fernseher mitlesen:</b> Hat jemand die Karte „Einkaufsliste – Kochmodus-Anzeige“ auf einem Dashboard (z. B. Fire TV in der Küche), steht dort groß, was du gerade kochst – Schritt, Zutaten, Foto und Timer. Blätterst du weiter, blättert der Fernseher mit.",
       "<b>📅 Essensplan:</b> Bei jedem Rezept steht der Knopf <b>„Planen“</b>. Antippen wechselt: nichts → <b>💭 Wunsch</b> (das möchte jemand mal essen) → <b>📅 Diese Woche</b> (wird diese Woche gekocht) → wieder nichts. Oben stehen dann zuerst „Diese Woche“, danach die Wünsche. <b>„Alle Zutaten auf die Liste“</b> geht die eingeplanten Rezepte nacheinander durch – du wählst nur ab, was du nicht brauchst. An welchem Wochentag „Diese Woche“ wieder leer wird, stellt ein Admin in ⚙️ → Rezepte → Wochenplan ein. Wer den Plan nicht mag: unten unter <b>👁️ Ansicht → Essensplan</b> nur für sich abschalten.",
       "<b>⏲️ Gar-Zeiten:</b> Spickzettel nach Gerät (🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse).",
@@ -176,7 +176,7 @@ const EL_GUIDE = [
       "The <b>chef's hat</b> opens the recipes. The search field also finds ingredients (and via nicknames: “Paradeiser” finds tomato). Creating and changing recipes is only in ⚙️ → Recipes.",
       "<b>To the list:</b> tick what you need (“All” / “None” is quicker). What is already on the list or is “always at home” (🧂) is not ticked. <b>From the list</b> takes the ingredients off again. If it says “Never bought – where to buy?”, pick the store.",
       "<b>👥 For how many?</b> or <b>🍕🍰 How many trays?</b> With − / ＋ the quantities are recalculated.",
-      "<b>🔥 Cook</b> = step by step in large type, with ingredients, ⏲️ cooking times, oven settings and the photo for the step. 📷 opens the recipe photos.",
+      "<b>🔥 Cook</b> = step by step in large type, with the <b>ingredients for exactly this step</b> (“📋 All ingredients” at the top shows all; tap an ingredient = crossed off, already in), ⏲️ cooking times, oven settings and the photo for the step. 📷 opens the recipe photos.",
       "<b>📺 Follow along on the TV:</b> if someone put the card “Shopping list – cook mode display” on a dashboard (e.g. a Fire TV in the kitchen), it shows in large type what you are cooking – step, ingredients, photo and timers. When you go to the next step, the TV follows.",
       "<b>📅 Meal plan:</b> every recipe has a <b>“Plan”</b> button. Tapping it cycles: nothing → <b>💭 Wish</b> (someone would like to eat it) → <b>📅 This week</b> (cooked this week) → nothing again. At the top you then see “This week” first, then the wishes. <b>“All ingredients to the list”</b> goes through the planned recipes one by one – you just untick what you don't need. Which weekday “This week” is emptied again is set by an admin in ⚙️ → Recipes → Week plan. Don't like the plan? Switch it off just for you at the bottom under <b>👁️ View → Meal plan</b>.",
       "<b>⏲️ Cooking times:</b> cheat sheet by appliance (🍲 hob, 🔥 oven, 💨 air fryer).",
@@ -261,12 +261,12 @@ const EL_HELP = {
   ]],
   recipes: ["list", [
     "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
-    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Rezept aus Fotos“</b> oben rechts bei „Eingaben“ (eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
+    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, <b>⏱️ Dauer ca.</b> (Minuten; steht in der Kochmütze neben der Personenzahl, ohne Eintrag geschätzt mit „≈“, beim Rezept-Link automatisch), Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Rezept aus Fotos“</b> oben rechts bei „Eingaben“ (eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. <b>🥕 Zutaten pro Schritt:</b> der Knopf mit der Möhre unter jedem Schritt zeigt, welche Zutaten dazugehören – automatisch aus dem Text erkannt (≈), antippen legt sie fest. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
     "<b>🔗 Quelle &amp; Original:</b> Beim Import per Link merkt sich das Rezept die Adresse (im Editor unter dem Namen änderbar, auch von Hand eintragbar). In der Rezeptliste öffnet „Original öffnen“ die Seite. <b>👨‍🍳 Kochmodus:</b> Er merkt sich pro Rezept den Schritt und fragt beim nächsten Start, ob du dort weitermachen willst.",
     "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (für alle, mit Airfryer Control ab Beta 17) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
   ], [
     "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; a list like the categories: tap a group = change name, colour and icon, ⌃⌄ = order; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
-    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, <b>🏷️ nicknames</b> for each ingredient, <b>💾 Save &amp; continue</b> (editor stays open) or “Save &amp; done”, <b>“📷 Recipe from photos”</b> top right at “Inputs” (photograph one or more pages → name, ingredients to check and steps; the photos are added to the recipe), ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text or recipe link), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
+    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, <b>⏱️ time approx.</b> (minutes; shown in the chef's hat next to the number of people, estimated with “≈” if empty, filled automatically from a recipe link), recipe photo, <b>🏷️ nicknames</b> for each ingredient, <b>💾 Save &amp; continue</b> (editor stays open) or “Save &amp; done”, <b>“📷 Recipe from photos”</b> top right at “Inputs” (photograph one or more pages → name, ingredients to check and steps; the photos are added to the recipe), ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text or recipe link), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. <b>🥕 Ingredients per step:</b> the carrot button below each step shows which ingredients belong to it – detected from the text automatically (≈), tapping sets them. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
     "<b>🔗 Source &amp; original:</b> when importing by link the recipe remembers the address (editable under the name in the editor, can also be typed in). In the recipe list “Open original” opens the page. <b>👨‍🍳 Cook mode:</b> it remembers the step per recipe and asks at the next start whether you want to continue there.",
     "<b>🍟 Air fryer:</b> if a step has “Heißluftfritteuse” with a mode (air fry, bake, grill or reheat), temperature and minutes and <b>Airfryer Control</b> is installed, cook mode shows the button “Send to Airfryer Control” (for everyone, with Airfryer Control from beta 17). You pick the basket (it always asks); the fryer is prepared, <b>you press Start on the device</b>.",
   ]],
@@ -418,6 +418,12 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🟢 <b>Wird gerade gekocht:</b> Kocht jemand (egal an welchem Gerät), hat das Rezept in der Kochmütze einen grünen Rand und darunter „👨‍🍳 Wird gerade gekocht · Schritt 3 von 8 · Name“. Antippen = mitkochen an derselben Stelle. Oben an der Kochmütze zeigt ein grüner Punkt, dass gerade gekocht wird.",
+   "New: 🟢 <b>Being cooked right now:</b> when someone is cooking (on any device), the recipe in the chef's hat has a green border and below it “👨‍🍳 Being cooked right now · Step 3 of 8 · name”. Tap = cook along at the same step. A green dot on the chef's hat at the top shows that someone is cooking."],
+  ["Neu: 🥕 <b>Kochmodus zeigt nur die Zutaten für den Schritt:</b> Beim Kochen stehen rechts nur noch die Zutaten, die du gerade brauchst (auch auf der TV-Anzeige). „📋 Alle Zutaten“ zeigt bei Bedarf alles. Die Karte erkennt die Zutaten selbst im Schritt-Text (auch „Hack“ für „Hackfleisch“). Dazu kennt sie Koch-Wörter: „würzen“ = Salz &amp; Pfeffer, „panieren“ = Mehl, Eier &amp; Paniermehl, „anbraten“ = Öl/Butter, „ablöschen“ = Wein/Brühe, „Nudeln kochen“ = Salz, „restliche Zutaten“ = alles, was noch nicht dran war. Passt es nicht, tippst du im Rezept-Editor unter dem Schritt auf die 🥕 und wählst die richtigen aus. Der Editor sagt auch, welche Zutat in keinem Schritt vorkommt. ✔️ Beim Kochen eine Zutat antippen = durchgestrichen (schon drin) – auch auf dem Fernseher.",
+   "New: 🥕 <b>Cook mode only shows the ingredients for the step:</b> while cooking only the ingredients you need right now show on the right (also on the TV display). “📋 All ingredients” shows everything if needed. The card detects the ingredients in the step text by itself. It also knows cooking words: “würzen” (season) = salt &amp; pepper, “panieren” (bread) = flour, eggs &amp; breadcrumbs, “anbraten” (fry) = oil/butter, “ablöschen” (deglaze) = wine/stock, cooking pasta = salt, “remaining ingredients” = everything not used yet. If it's wrong, tap the 🥕 below the step in the recipe editor and pick the right ones. The editor also tells you which ingredient isn't used in any step. ✔️ While cooking, tap an ingredient = crossed off (already in) – on the TV too."],
+  ["Neu: ⏱️ <b>Dauer ca. im Rezept:</b> Im Rezept-Editor gibt es unter den Personen das Feld „Dauer ca.“ (Minuten). In der Kochmütze steht die Zeit neben der Personenzahl, z. B. „4 Personen · ⏱️ 45 Min“. Ohne Eintrag schätzt die Liste aus Schritten und Backofen &amp; Co. (mit „≈“). Beim Import per Rezept-Link wird die Zeit von der Seite übernommen.",
+   "New: ⏱️ <b>Approx. time per recipe:</b> the recipe editor has the field “Time approx.” (minutes) below the people. The chef's hat shows the time next to the number of people, e.g. “4 people · ⏱️ 45 min”. Without an entry the list estimates it from the steps and oven &amp; co. (with “≈”). Importing by recipe link takes the time from the page."],
   ["Neu: 📺 <b>Rand für den Fernseher:</b> In der Kochmodus-Anzeige gibt es „Rand ringsum“ (0–80 Pixel). Schneidet der Fernseher am Rand etwas ab, einfach den Rand größer stellen.",
    "New: 📺 <b>Margin for the TV:</b> the cook mode display has “Margin all around” (0–80 pixels). If the TV cuts something off at the edges, simply make the margin bigger."],
   ["Neu: 🍟 <b>Airfryer-Knopf auch in der Offline-App:</b> Im Kochmodus steht der Knopf „An Airfryer Control schicken“ jetzt auch in der Offline-App (vorher nur in Home Assistant).",
@@ -1401,6 +1407,24 @@ function scaleQty(qty, factor) {
 }
 
 // 👥 Personen oder 🍰 Bleche: richtige Wörter für die Anzeige
+// ⏱️ 45 Min · 1 Std 30 Min (bzw. „45 min“ / „1 h 30 min“ auf Englisch)
+// 🥕 Zutaten im Schritt-Text erkennen: Wörter vergleichen, ohne Endungen („Zwiebeln“ = „Zwiebel“), Teilwörter zählen mit („Hack“ ↔ „Hackfleisch“)
+const EL_ING_SKIP = new Set(["frisch", "gehackt", "gerieb", "getrocknet", "gemahl", "klein", "gross", "weiss", "dose", "packung", "stück", "prise", "etwa", "nach", "geschmack", "oder", "und", "mit", "für", "von", "dem", "den", "der", "die", "das", "ein", "eine", "einer", "beid", "alle", "rest"]);
+const elIngStem = (w) => (w.length > 4 ? w.replace(/(en|er|n|e|s)$/, "") : w);
+const elIngWords = (t) => String(t || "").toLowerCase().replace(/ß/g, "ss").split(/[^a-zäöü]+/).filter((w) => w.length >= 3 || w === "öl").map(elIngStem).filter((w) => (w.length >= 3 || w === "öl") && !EL_ING_SKIP.has(w));
+const elIngHit = (a, b) => a === b || (a === "öl" && b.endsWith(a)) || (b === "öl" && a.endsWith(b)) || (b.length >= 4 && (a.startsWith(b) || a.endsWith(b))) || (a.length >= 4 && (b.startsWith(a) || b.endsWith(a)));
+// 🧂 Koch-Wörter: „würzen“ heißt fast immer Salz & Pfeffer, „panieren“ Mehl, Ei & Brösel usw.
+const EL_ING_RULES = [
+  [/würz|abschmeck|salzen|pfeffern/, ["salz", "pfeffer"]],
+  [/panier/, ["mehl", "eier", "paniermehl", "semmelbrösel", "brösel"]],
+  [/anbrat|anbräun|anschwitz|andünst|braten|brät/, ["öl", "butter", "butterschmalz", "bratfett", "margarine"]],
+  [/ablösch/, ["wein", "brühe", "fond"]],
+  [/(nudel|pasta|spaghetti|penne|fusilli|tagliatelle|kartoffel|reis)[a-zäöüß]*\b.*\bkoch|koch[a-zäöüß]*\b.*\b(nudel|pasta|spaghetti|penne|kartoffel|reis)/, ["salz"]],
+];
+// „restliche Zutaten“ / „alles verrühren“ = alles, was in keinem Schritt davor dran war
+const EL_ING_REST = /restlich|übrig|alle(s| anderen| zutaten)\b.*(verrühr|vermeng|vermisch|mixen|rein|hinzu|dazu|zusammen)|rest der zutaten/;
+const elMinText = (m) => { const n = Math.round(Number(m) || 0), h = Math.floor(n / 60), r = n % 60, en = EL_LANG === "en";
+  return h ? `${h} ${en ? "h" : "Std"}${r ? ` ${r} ${en ? "min" : "Min"}` : ""}` : `${n} ${en ? "min" : "Min"}`; };
 const servLabel = (unit, n) => (unit === "trays" ? (n === 1 ? "Blech" : "Bleche") : unit === "forms" ? (n === 1 ? "Form" : "Formen") : (n === 1 ? "Person" : "Personen"));
 
 // 🔤 Zutaten A–Z (Ä wie A, groß/klein egal) – genau wie im Backend
@@ -2950,6 +2974,11 @@ ha-card.labels .tool { padding:4px 6px; }
 .iconbtn[disabled] { opacity:.3; pointer-events:none; }
 .iconbtn.on { color:var(--primary-color,#03a9f4); }
 #btnRecipes { position:relative; }
+.cookdot { position:absolute; top:-1px; left:-3px; width:12px; height:12px; border-radius:50%; background:#43a047; box-shadow:0 0 0 2px var(--card-background-color,#fff); pointer-events:none; } /* 🟢 gerade wird gekocht */
+.recipe.rv.cooking, .recipe.rv.cooking + .rtools { border:3px solid #43a047; } .recipe.rv.cooking { border-bottom:0; } .recipe.rv.cooking + .rtools { border-top:0; } /* 🟢 wird gerade gekocht: grüner Rand um die ganze Rezept-Karte */
+.cooknow { display:block; margin:4px 0 0; padding:3px 10px; border:0; border-radius:12px; background:color-mix(in srgb, #43a047 16%, transparent); color:#2e7d32; font:600 .82em Roboto,sans-serif; cursor:pointer; text-align:left; }
+:host([dark]) .cooknow { color:#81c784; }
+.stwarn { color:#ef6c00; }
 .recdot { position:absolute; top:-2px; right:-4px; min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#fb8c00; color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; box-shadow:0 0 0 2px var(--card-background-color,#fff); pointer-events:none; } /* 🟠 752: Vorschläge warten auf OK (nur Anzeige, Tippen geht an die Kochmütze) */
 .tabs { display:flex; gap:6px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:thin; cursor:grab; user-select:none; -webkit-overflow-scrolling:touch; }
 .tabs.dragging { cursor:grabbing; }
@@ -3361,6 +3390,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .rserv input { width:70px; flex:none; text-align:center; }
 .rserv select { width:auto; flex:none; }
 .rserv .grow { white-space:nowrap; min-width:0; }
+.rmin .rminunit { flex:none; opacity:.75; }
 .servtag { font-weight:400; opacity:.75; }
 .rgrouprow select { width:auto; min-width:150px; }
 #titleIcon { cursor:pointer; }
@@ -3430,6 +3460,11 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .sthandle:focus-visible { outline:2px solid var(--primary-color); border-radius:8px; }
 .stbtns { display:flex; gap:6px; flex:1 1 100%; justify-content:flex-end; margin-left:0; } /* Symbole unter der Zeile, Text bekommt die volle Breite */
 .stbtns .btn { padding:6px 8px; min-height:0; font-size:.8em; }
+.stbtns .stingbtn.on { background:color-mix(in srgb, #43a047 18%, transparent); }
+.sting { flex:1 1 100%; padding:2px 4px 6px; } .sting .hint { margin:2px 0 6px; }
+.stingchips { display:flex; flex-wrap:wrap; gap:6px; }
+.stingchips .stchip { border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 25%, transparent); background:none; color:inherit; border-radius:16px; padding:5px 10px; font:inherit; font-size:.85em; cursor:pointer; }
+.stingchips .stchip.on { background:#43a047; border-color:#43a047; color:#fff; }
 .stnum { flex:none; padding-top:0; min-width:1.6em; text-align:right; color:var(--secondary-text-color); font-size:.9em; }
 .stin { flex:1 1 150px; min-width:0; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:10px 12px; resize:none; overflow:hidden; }
 .sprow { display:flex; align-items:center; gap:6px; margin:4px 0; }
@@ -4345,12 +4380,12 @@ function applyQueued(data, list, hass) {
       case "einkaufsliste/recipe/add":
         if (!(data.recipes || []).some((r) => r.id === m._tmp)) {
           data.recipes = [...(data.recipes || []), { id: m._tmp, name: m.name, icon: m.icon || null, items: m.items || [], steps: m.steps || null,
-            heat: m.heat || [], servings: m.servings || null, servings_unit: m.servings_unit || "persons", group: m.group || null, _queued: true }];
+            heat: m.heat || [], servings: m.servings || null, servings_unit: m.servings_unit || "persons", minutes: m.minutes || null, group: m.group || null, _queued: true }];
         }
         break;
       case "einkaufsliste/recipe/update": {
         const r = (data.recipes || []).find((x) => x.id === m.recipe_id);
-        if (r) { for (const k of ["name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "plan", "source"]) if (k in m) r[k] = m[k]; r._queued = true; }
+        if (r) { for (const k of ["name", "icon", "items", "steps", "heat", "servings", "servings_unit", "minutes", "step_items", "group", "plan", "source"]) if (k in m) r[k] = m[k]; r._queued = true; }
         break;
       }
       case "einkaufsliste/recipe/remove":
@@ -4430,6 +4465,8 @@ class EinkaufslisteCard extends HTMLElement {
     this._autoStore();
     this._updateLive();
     this._applyScheme(hass);
+    { const n = this._cookNow(), csig = n ? `${n.id}|${n.name}|${n.step}|${n.total}|${n.by}` : ""; // 🟢 jemand fängt an zu kochen / blättert / hört auf
+      if (csig !== this._cookSig) { const first = this._cookSig === undefined; this._cookSig = csig; if (!first && this._data) { this._syncRecipesBtn(); if (this._view === "recipes") this._renderRecipeList(); } } }
     if (this._data) { // 📍 jemand kommt/geht in eine Geschäfts-Zone → Reiter neu (dicker Rand)
       const zsig = this._data.stores.map((s) => this._someoneAt(s) ? 1 : 0).join("");
       if (zsig !== this._zoneSig) { const first = this._zoneSig === undefined; this._zoneSig = zsig; if (!first) this._renderTabs(); }
@@ -5037,7 +5074,7 @@ class EinkaufslisteCard extends HTMLElement {
           <button class="iconbtn" id="btnAwake" data-act="awake" title="Bildschirm immer an" hidden><ha-icon icon="mdi:lightbulb-outline"></ha-icon><span class="lbl">Bildschirm</span></button>
           <button class="iconbtn" id="btnCalc" data-act="calc" title="Rechner" hidden><ha-icon icon="mdi:calculator-variant-outline"></ha-icon><span class="lbl">Rechner</span></button>
           <button class="iconbtn" id="btnCards" data-act="cards" title="Kundenkarten" hidden><ha-icon icon="mdi:credit-card-outline"></ha-icon><span class="lbl">Karten</span></button>
-          <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon><span class="recdot" id="recDot" hidden></span><span class="lbl">Rezepte</span></button>
+          <button class="iconbtn" id="btnRecipes" data-act="view" data-view="recipes" title="Rezepte"><ha-icon icon="mdi:chef-hat"></ha-icon><span class="recdot" id="recDot" hidden></span><span class="cookdot" id="cookDot" hidden></span><span class="lbl">Rezepte</span></button>
           <button class="iconbtn" id="btnShop" data-act="shopmode" title="Laden-Modus"><ha-icon icon="mdi:storefront-outline"></ha-icon><span class="lbl">Laden</span></button>
           <button class="iconbtn on" id="btnBack" data-act="nav-back" title="Zurück" aria-label="Zurück" hidden><ha-icon icon="mdi:close"></ha-icon></button>
         </div>
@@ -7101,6 +7138,15 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
   }
 
   // ---------------------------------------------------------------- Einstellungen
+  // 👨‍🍳 Wird gerade gekocht? (aus sensor.einkaufsliste_kochmodus – gilt für alle Geräte)
+  _cookNow() {
+    const st = this._hass?.states?.["sensor.einkaufsliste_kochmodus"];
+    const a = st?.attributes;
+    if (!a?.aktiv) return null;
+    return { id: a.rezept_id || null, name: String(a.rezept || st.state || ""), step: Number(a.schritt) || 1, total: Number(a.schritte) || 1, by: a.von || "" };
+  }
+  _cookNowFor(r) { const n = this._cookNow(); return n && (n.id ? n.id === r.id : n.name === r.name) ? n : null; }
+
   _syncRecipesBtn() { // 👨‍🍳 Kochmütze ein-/ausblenden (auch beim Wechsel zwischen Einstellungs-Bereichen, ohne die ganze Kopfzeile neu zu bauen)
     const c = this._config || {}, d = this._data, btnR = this.$("btnRecipes");
     if (!btnR) return;
@@ -7113,6 +7159,8 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
       dot.textContent = n > 9 ? "9+" : String(n);
       dot.title = dot.ariaLabel = elT(n === 1 ? "1 Vorschlag wartet auf OK" : `${n} Vorschläge warten auf OK`);
     }
+    const cd = this.$("cookDot"), now = this._cookNow(); // 🟢 Punkt an der Kochmütze: gerade wird gekocht (in der offenen Kochmütze steht es beim Rezept)
+    if (cd) { cd.hidden = !now || this._view === "recipes"; cd.title = cd.ariaLabel = now ? `${elT("Wird gerade gekocht")}: ${now.name}` : ""; }
     const btnB = this.$("btnBack"); // ✕ / ← oben rechts: ✕ nur, wenn der nächste Schritt zurück die Einkaufsliste ist, sonst ←
     if (btnB) {
       const sel = this._storeSel || this._catSel || this._rgSel || this._perSel;
@@ -9070,9 +9118,9 @@ ${(() => {
       const pl = PL[r.plan || ""];
       const planOn = this._viewPrefs().plan !== false; // 👁️ Meine Ansicht: Essensplan abschaltbar
       return `
-        <div class="recipe rv ${this._knMarked === r.id ? "marked" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
+        <div class="recipe rv ${this._knMarked === r.id ? "marked" : ""}${this._cookNowFor(r) ? " cooking" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
           <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
-          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${planOn && pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}${r.cook_note ? `<small class="rnote">📝 ${esc(r.cook_note)}</small>` : ""}</div>
+          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${planOn && pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}${this._cookNowHtml(r)}${r.cook_note ? `<small class="rnote">📝 ${esc(r.cook_note)}</small>` : ""}</div>
         </div>
         <div class="rtools" data-id="${r.id}">
           ${planOn ? `<button class="btn plan ${r.plan || ""}" data-act="recipe-plan" title="Essensplan: antippen = nichts → 💭 Wunsch → 📅 Diese Woche"><ha-icon icon="${pl[0]}"></ha-icon><span class="lbl">${pl[1]}</span></button>` : ""}
@@ -9221,7 +9269,7 @@ ${(() => {
   _openRecipe(recipe) {
     if (this._view === "settings") this._recipeSnap = this._scrollSnap(); // merken, wie weit die Rezeptliste gescrollt war
     this._draft = recipe
-      ? { id: recipe.id, name: recipe.name, group: recipe.group || null, steps: recipe.steps || "", stepRows: this._stepLines(recipe.steps).map((t, i) => ({ k: ++this._stepSeq, t, o: i })), servings: recipe.servings || null, servings_unit: recipe.servings_unit || "persons", source: recipe.source || "", heat: (recipe.heat || []).map((h) => ({ ...h })), items: abcSort(recipe.items.map((i) => ({ ...i }))) }
+      ? { id: recipe.id, name: recipe.name, group: recipe.group || null, steps: recipe.steps || "", stepRows: this._stepLines(recipe.steps).map((t, i) => ({ k: ++this._stepSeq, t, o: i, ing: Array.isArray(recipe.step_items?.[i]) ? [...recipe.step_items[i]] : null })), servings: recipe.servings || null, servings_unit: recipe.servings_unit || "persons", minutes: recipe.minutes || null, source: recipe.source || "", heat: (recipe.heat || []).map((h) => ({ ...h })), items: abcSort(recipe.items.map((i) => ({ ...i }))) }
       : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [], heat: [], stepRows: [] };
     this._view = "recipe";
     this._draftRendered = false;
@@ -9272,6 +9320,14 @@ ${(() => {
             <option value="forms" ${dr.servings_unit === "forms" ? "selected" : ""}>🥧 Formen</option>
           </select>
         </div>
+        <div class="srow rserv rmin">
+          <ha-icon class="prev" icon="mdi:timer-sand"></ha-icon>
+          <span class="grow">Dauer ca.</span>
+          <button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="Was ist das?" aria-label="Erklärung: Dauer ca.">i</button>
+          <input id="rMinutes" type="number" inputmode="numeric" min="1" max="1440" value="${dr.minutes || ""}" placeholder="z. B. 45">
+          <span class="rminunit">Min</span>
+        </div>
+        <p class="hint fhint" hidden>⏱️ Wie lange dauert das Rezept ungefähr, von Anfang bis Ende (in Minuten)? Steht in der Kochmütze neben der Personenzahl. Leer lassen geht auch – dann schätzt die Karte die Zeit aus den Schritten und Backofen &amp; Co. (mit „≈“).</p>
         <div class="photorow" id="rPhotoRow"></div>
         `)}
         ${this._rsec("zut", "mdi:food-apple-outline", "#43a047", "Zutaten", "Was kommt rein?", `<button class="btn rimportbtn" type="button" data-act="rimport-toggle" title="Zutaten einfügen" aria-label="Zutaten einfügen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon><span class="lbl">Zutaten einfügen</span></button>`, `
@@ -9291,6 +9347,7 @@ ${(() => {
         <div id="rStepRows" class="strows"></div>
         <div class="btnrow"><button type="button" class="btn" data-act="step-add"><ha-icon icon="mdi:plus"></ha-icon>Schritt</button></div>
         <div id="rStepPhotos"></div>
+        <div id="rStepWarn"></div>
         `)}
         ${this._rsec("ofen", "mdi:stove", "#ef6c00", "Backofen &amp; Co.", "Grad, Minuten, Modus", `<button class="btn rimportbtn" type="button" data-act="gar" title="Gar-Zeiten" aria-label="Gar-Zeiten"><ha-icon icon="mdi:pot-steam-outline"></ha-icon><span class="lbl">Gar-Zeiten</span></button>`, `
         <div id="rHeat"></div>
@@ -9366,16 +9423,63 @@ ${(() => {
         <button type="button" class="btn" data-act="sphoto-take" data-n="${r.o}" ${cnt >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${has ? "Dazu" : "Foto"}</button>`
         : `${(r.np || []).length ? `<button type="button" class="btn" data-act="sphoto-newdel" data-k="${r.k}" title="Neue Fotos wieder entfernen"><ha-icon icon="mdi:image-outline"></ha-icon>${r.np.length}</button>` : ""}
         <button type="button" class="btn" data-act="sphoto-new" data-k="${r.k}" data-pos="${n}" ${(r.np || []).length >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${(r.np || []).length ? "Dazu" : "Foto"}</button>`}
-        <button type="button" class="btn danger" data-act="step-del" data-k="${r.k}" title="Schritt löschen" aria-label="Schritt löschen"><ha-icon icon="mdi:close"></ha-icon></button>
+        ${this._stepIngBtn(dr, r)}
+        <button type="button" class="btn danger" data-act="step-del" data-k="${r.k}" title="Schritt löschen" aria-label="Schritt löschen"><ha-icon icon="mdi:close"></ha-icon></button></span>
+        ${r.ingOpen ? this._stepIngChips(dr, r) : ""}
       </div>`;
     }).join("");
     const hint = this.$("rStepPhotos");
     if (hint) hint.innerHTML = rows.some((r) => r.t.trim() && r.o == null)
       ? `<p class="hint">📷 Fotos zu neuen Schritten werden beim Speichern mitgespeichert. Verschieben: am ⠿ ziehen (oder ⠿ antippen und ↑ ↓ drücken) – die Fotos wandern mit.</p>` : "";
     this._stepHeatIcons();
+    this._stepIngWarn();
     box.querySelectorAll(".stin").forEach((ta) => this._wireStepInput(ta));
     box.querySelectorAll(".sthandle").forEach((h) => this._wireStepHandle(h));
     if (focusK != null) box.querySelector(`.stin[data-k="${focusK}"]`)?.focus();
+  }
+
+  // 🥕 Zutaten dieses Schritts: festgelegt (r.ing = Namen) oder automatisch erkannt (r.ing = null)
+  _stepIngSel(dr, r) {
+    const names = (dr.items || []).filter((i) => i.name).map((i) => String(i.name).toLowerCase());
+    if (Array.isArray(r.ing)) return r.ing.filter((n) => names.includes(n));
+    const rows = this._stepRowsOf(dr), at = rows.indexOf(r);
+    return this._autoStepItems(r.t, dr.items || [], () => new Set(rows.slice(0, Math.max(0, at)).flatMap((x) => this._stepIngSel(dr, x)))).map((i) => String(i.name).toLowerCase());
+  }
+  // ⚠️ Zutaten, die in keinem Schritt vorkommen (vergessen?)
+  _stepIngMissing(dr) {
+    const rows = this._stepRowsOf(dr).filter((x) => x.t.trim());
+    if (!rows.length) return [];
+    const used = new Set(rows.flatMap((x) => this._stepIngSel(dr, x)));
+    return (dr.items || []).filter((i) => i.name && !used.has(String(i.name).toLowerCase())).map((i) => i.name);
+  }
+  _stepIngWarn() {
+    const box = this.$("rStepWarn"), dr = this._draft;
+    if (!box || !dr) return;
+    const miss = this._stepIngMissing(dr);
+    box.innerHTML = miss.length ? `<p class="hint stwarn"><span>${esc(elT("⚠️ Kommt in keinem Schritt vor:"))}</span> <b>${miss.map(esc).join(", ")}</b> <span>${esc(elT("– vergessen? Über die 🥕 beim passenden Schritt zuordnen."))}</span></p>` : "";
+  }
+  // ⌨️ beim Tippen: Zahl am 🥕-Knopf, offene Kärtchen und Hinweis gleich mitziehen
+  _stepIngLive(r, ta) {
+    const rowEl = ta.closest(".strow"), dr = this._draft;
+    if (!rowEl || !dr) return;
+    const b = rowEl.querySelector('[data-act="step-ing"]');
+    if (b) b.outerHTML = this._stepIngBtn(dr, r);
+    const ch = rowEl.querySelector(".sting");
+    if (ch) ch.outerHTML = this._stepIngChips(dr, r);
+    clearTimeout(this._stWarnT); this._stWarnT = setTimeout(() => this._stepIngWarn(), 300);
+  }
+  _stepIngBtn(dr, r) {
+    if (!(dr.items || []).some((i) => i.name)) return "";
+    const n = this._stepIngSel(dr, r).length, auto = !Array.isArray(r.ing);
+    return `<button type="button" class="btn stingbtn${r.ingOpen ? " on" : ""}" data-act="step-ing" data-k="${r.k}" title="Zutaten für diesen Schritt${auto ? " (automatisch erkannt)" : ""}" aria-label="Zutaten für diesen Schritt"><ha-icon icon="mdi:carrot" style="color:#43a047"></ha-icon>${auto && n ? "≈ " : ""}${n}</button>`;
+  }
+  _stepIngChips(dr, r) {
+    const sel = new Set(this._stepIngSel(dr, r)), auto = !Array.isArray(r.ing);
+    const items = (dr.items || []).filter((i) => i.name);
+    return `<div class="sting">
+      <p class="hint"><span>${auto ? "🤖 Automatisch erkannt – antippen zum Ändern." : "✋ Von dir festgelegt."}</span> <span>Im Kochmodus stehen bei diesem Schritt nur diese Zutaten.</span>${auto ? "" : ` <button type="button" class="linkbtn" data-act="step-ing-auto" data-k="${r.k}">↺ Wieder automatisch</button>`}</p>
+      <div class="stingchips">${items.map((i) => { const key = String(i.name).toLowerCase(); return `<button type="button" class="stchip${sel.has(key) ? " on" : ""}" data-act="step-ing-pick" data-k="${r.k}" data-name="${esc(key)}">${sel.has(key) ? "✓ " : ""}${esc(i.name)}</button>`; }).join("")}</div>
+    </div>`;
   }
 
   // 🔥 Zu diesem Schritt gehört ein Backofen-&-Co.-Eintrag: kleines Icon links neben den Foto-Knöpfen (Antippen zeigt, was)
@@ -9424,6 +9528,7 @@ ${(() => {
       }
       r.t = ta.value;
       this._fitStep(ta);
+      this._stepIngLive(r, ta);
     });
     ta.addEventListener("keydown", (e) => {
       if (e.key === "Backspace" && !ta.value && rows().length > 1) {
@@ -9506,7 +9611,43 @@ ${(() => {
 
   // „Pizza – 1 Blech“ / „Lasagne – 4 Personen“ hinter dem Rezeptnamen
   _servTag(r) {
-    return r.servings ? `<span class="servtag"> – ${r.servings} ${servLabel(r.servings_unit, r.servings)}</span>` : "";
+    const t = this._recipeTime(r); // ⏱️ neben der Personenzahl: eingetragen „45 Min“, sonst geschätzt „≈ 40 Min“
+    const parts = [r.servings ? `${r.servings} ${servLabel(r.servings_unit, r.servings)}` : "", t ? `⏱️ ${t.est ? "≈ " : ""}${elMinText(t.min)}` : ""].filter(Boolean);
+    return parts.length ? `<span class="servtag"> – ${parts.join(" · ")}</span>` : "";
+  }
+  // ⏱️ Dauer eines Rezepts: eingetragen (minutes) oder geschätzt aus Schritten / Backofen & Co. (est = geschätzt)
+  // 🥕 Zutaten zu Schritt i: im Editor festgelegt (step_items[i] = Liste mit Namen) oder automatisch aus dem Schritt-Text erkannt
+  _stepItems(r, i) {
+    const items = r?.items || [], set = r?.step_items?.[i];
+    if (Array.isArray(set)) { const keys = new Set(set.map((n) => String(n).toLowerCase())); return items.filter((it) => keys.has(String(it.name || "").toLowerCase())); }
+    return this._autoStepItems(this._stepLines(r?.steps)[i] || "", items,
+      () => new Set(Array.from({ length: i }, (_, j) => this._stepItems(r, j)).flat().map((it) => String(it.name || "").toLowerCase())));
+  }
+  // used() = Namen der Zutaten aus den Schritten davor (nur für „restliche Zutaten“ gebraucht)
+  _autoStepItems(text, items, used) {
+    const low = String(text || "").toLowerCase();
+    const words = elIngWords(low);
+    for (const [re, want] of EL_ING_RULES) if (re.test(low)) words.push(...want.flatMap((w) => elIngWords(w))); // 🧂 würzen → Salz & Pfeffer usw.
+    const rest = used && EL_ING_REST.test(low) ? used() : null;
+    if (!words.length && !rest) return [];
+    const al = this._data?.aliases || [];
+    return (items || []).filter((it) => {
+      const n = String(it.name || "").toLowerCase();
+      if (rest && !rest.has(n)) return true;
+      const names = [n, ...al.filter((a) => String(a.name || "").toLowerCase() === n).map((a) => String(a.alias || ""))]; // 🏷️ Spitznamen zählen mit
+      return names.some((x) => elIngWords(x).some((a) => words.some((b) => elIngHit(a, b))));
+    });
+  }
+  // 🟢 „Wird gerade gekocht · Schritt 3 von 8 · Marco“ – antippen = mitkochen (an derselben Stelle)
+  _cookNowHtml(r) {
+    const n = this._cookNowFor(r);
+    if (!n) return "";
+    return `<button type="button" class="cooknow" data-act="cook-join" data-id="${esc(r.id)}" data-step="${n.step}"><span>👨‍🍳 ${esc(elT("Wird gerade gekocht"))}</span> · <span>${esc(elT("Schritt"))} ${n.step} ${esc(elT("von"))} ${n.total}</span>${n.by ? ` · ${esc(n.by)}` : ""}</button>`;
+  }
+  _recipeTime(r) {
+    if (Number(r?.minutes) > 0) return { min: Number(r.minutes), est: false };
+    const min = this._cookMinutes(String(r?.steps || "").split(/\n+/).filter((x) => x.trim()), r?.heat || []);
+    return min > 0 ? { min, est: true } : null;
   }
 
   _recipeSavedPhotos() {
@@ -9546,6 +9687,7 @@ ${(() => {
     try {
       const res = await this._ws({ type: "einkaufsliste/recipe/import", text: url });
       if (res.source_url && this._draft && !this._draft.source) { this._draft.source = res.source_url; const se = this.$("rSource"); if (se) se.value = res.source_url; }
+      if (res.minutes && this._draft && !this._draft.minutes) { this._draft.minutes = res.minutes; const me = this.$("rMinutes"); if (me && !me.value) me.value = String(res.minutes); } // ⏱️ Gesamtzeit von der Rezeptseite
       const lines = this._stepLines(res.steps || "").map((x) => x.replace(/^\s*(?:\d+[.)]|[-•*])\s+/, "").trim()).filter(Boolean);
       if (!lines.length) { this._toast(EL_LANG === "de" ? "Auf der Seite habe ich keine Schritte gefunden 🤷" : "I found no steps on that page 🤷"); }
       else {
@@ -9570,6 +9712,7 @@ ${(() => {
       const res = await this._ws({ type: "einkaufsliste/recipe/import", text });
       const dr = this._draft;
       if (res.source_url && !dr.source) { dr.source = res.source_url; const se = this.$("rSource"); if (se) se.value = res.source_url; } // 🔗 Nr. 33: Herkunft merken
+      if (res.minutes && !dr.minutes) { dr.minutes = res.minutes; const me = this.$("rMinutes"); if (me && !me.value) me.value = String(res.minutes); } // ⏱️ Gesamtzeit von der Rezeptseite
       let added = 0;
       for (const it of res.items) {
         const ing = { name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null,
@@ -9907,6 +10050,7 @@ ${(() => {
     if (this.$("rGroup")) dr.group = this.$("rGroup").value || null;
     dr.steps = this._stepRowsOf(dr).map((r) => r.t.replace(/\s*\n+\s*/g, " ").trim()).filter(Boolean).join("\n");
     if (this.$("rServings")) { const n = parseInt(this.$("rServings").value, 10); dr.servings = n >= 1 && n <= 99 ? n : null; }
+    if (this.$("rMinutes")) { const n = parseInt(this.$("rMinutes").value, 10); dr.minutes = n >= 1 && n <= 1440 ? n : null; } // ⏱️ Dauer ca.
     if (this.$("rServUnit")) dr.servings_unit = ["trays", "forms"].includes(this.$("rServUnit").value) ? this.$("rServUnit").value : "persons";
     this._readHeat();
   }
@@ -9933,7 +10077,11 @@ ${(() => {
     const heat = (dr.heat || []).filter((h) => h.mode || h.temp || h.minutes || h.note)
       .map((h) => ({ device: h.device || "Backofen", mode: h.mode || null, temp: h.temp ? Number(h.temp) : null,
         minutes: h.minutes ? Number(h.minutes) : null, minutes_to: h.minutes_to ? Number(h.minutes_to) : null, preheat: !!h.preheat, steps: h._sk ? sr.map((r, i) => (h._sk.includes(r.k) ? i + 1 : 0)).filter(Boolean) : (h.steps || []).map(Number).filter((n) => n > 0), note: h.note || null }));
-    const msg = { name: dr.name.trim(), group: dr.group || null, items, steps: (dr.steps || "").trim() || null, heat, servings: dr.servings || null, servings_unit: dr.servings_unit || "persons", source: /^https?:\/\/\S+$/i.test(dr.source || "") ? dr.source : null };
+    const msg = { name: dr.name.trim(), group: dr.group || null, items, steps: (dr.steps || "").trim() || null, heat, servings: dr.servings || null, servings_unit: dr.servings_unit || "persons", minutes: dr.minutes || null, source: /^https?:\/\/\S+$/i.test(dr.source || "") ? dr.source : null };
+    { const names = new Set(items.map((i) => String(i.name).toLowerCase())); // 🥕 Zutaten pro Schritt (nur festgelegte; null = automatisch)
+      const si = sr.map((r) => (Array.isArray(r.ing) ? r.ing.filter((n) => names.has(n)) : null));
+      msg.step_items = si.some((x) => x) ? si : null; }
+    const missing = this._stepIngMissing(dr); // ⚠️ nach dem Speichern kurz sagen, was in keinem Schritt vorkommt
     if (!msg.name) { this.$("rName").classList.add("shake"); return; }
     try {
       if (dr.id) { // ↕️ Fotos wandern mit den Schritten
@@ -9944,6 +10092,7 @@ ${(() => {
         ? await this._ws({ type: "einkaufsliste/recipe/update", recipe_id: dr.id, ...msg })
         : await this._ws({ type: "einkaufsliste/recipe/add", ...msg });
       const rid = saved?.id || dr.id;
+      if (missing.length && (dr.stepRows || []).some((x) => x.t.trim())) this._toast(`⚠️ ${elT("Kommt in keinem Schritt vor:")} ${missing.slice(0, 6).join(", ")}${missing.length > 6 ? " …" : ""}`);
       if (rid && (dr.newPhotos || []).length) {
         const key = this._recipePhotoKey(rid);
         let add = this._hasPhoto(key);
@@ -11401,12 +11550,26 @@ ${(() => {
     // 👥 Personen umstellen: Mengen werden wie beim „Auf die Liste“ umgerechnet (Start = zuletzt dort gewählt, sonst wie im Rezept)
     this._cookPers = this._cookPers || {};
     let pers = r.servings ? (this._cookPers[r.id] || r.servings) : null;
+    // 🥕 Nur die Zutaten des aktuellen Schritts (bei der Personen-Auswahl, beim Foto am Ende oder mit „Alle Zutaten“: alle)
+    let ingAll = false;
+    const ingDone = new Set(); // ✔️ beim Kochen abgehakte Zutaten (nur für dieses Koch-Fenster)
+    const ingIntro = () => !!ov.querySelector("[data-elintro]") || !r.steps || (finalStep && idx === steps.length);
+    const curIng = () => (ingAll || ingIntro() ? (r.items || []) : this._stepItems(r, idx));
     const renderIng = () => {
       const f = pers && r.servings ? pers / r.servings : 1;
+      const list = curIng(), part = !ingIntro();
+      const sw = part && (r.items || []).length ? `<div style="margin:0 0 8px"><button type="button" data-elingall="1" style="background:none;border:1px solid #555;color:#ddd;border-radius:14px;padding:4px 10px;font:500 14px Roboto,sans-serif;cursor:pointer">${ingAll ? esc(elT("🥕 Nur dieser Schritt")) : `${esc(elT("📋 Alle Zutaten"))} (${r.items.length})`}</button></div>` : "";
+      const none = part && !ingAll && !list.length ? `<div style="color:#999;font-style:italic">${esc(elT("Keine Zutaten in diesem Schritt"))}</div>` : "";
       const bar = r.servings ? `<div class="ic" style="margin-bottom:10px;font:600 16px Roboto,sans-serif">👥 für ${pers} ${esc(servLabel(r.servings_unit, pers))}${pers === r.servings ? "" : ` <small style="color:#aaa;font-weight:400">(Rezept: ${r.servings})</small>`}</div>` : "";
-      ing.innerHTML = bar + r.items.map((i) => { const q = scaleQty(i.quantity, f); return `• ${esc([q, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:8px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}`; }).join("<br>");
+      ing.innerHTML = bar + sw + none + list.map((i) => { const q = scaleQty(i.quantity, f), key = String(i.name || "").toLowerCase(), x = ingDone.has(key); // ✔️ antippen = schon drin (durchgestrichen)
+        return `<span data-elingx="${esc(key)}" role="button" style="cursor:pointer;${x ? "text-decoration:line-through;opacity:.45;" : ""}">${x ? "✔" : "•"} ${esc([q, i.name].filter(Boolean).join(" "))}${i.note ? ` <span style="background:rgba(249,168,37,.22);border-radius:8px;padding:0 6px;">📝 ${esc(i.note)}</span>` : ""}</span>`; }).join("<br>");
     };
     renderIng();
+    ing.addEventListener("click", (e) => {
+      if (e.target.closest?.("[data-elingall]")) { ingAll = !ingAll; renderIng(); report(); return; }
+      const x = e.target.closest?.("[data-elingx]"); // ✔️ Zutat antippen = schon drin, nochmal = zurück
+      if (x) { const k = x.dataset.elingx; if (ingDone.has(k)) ingDone.delete(k); else ingDone.add(k); renderIng(); report(); }
+    });
     // ↔ Griff zwischen Schritt-Text und Zutaten: ziehen = Größe ändern, Doppeltippen = zurück auf 2 : 1. Gilt nur, solange die Kochansicht offen ist.
     const FRAC0 = 2 / 3; let frac = FRAC0, dragging = false;
     const grip = document.createElement("div"); grip.dataset.elgrip = "1"; grip.title = elT("Ziehen: Größe ändern · Doppeltippen: zurück auf 2 : 1");
@@ -11503,7 +11666,8 @@ ${(() => {
         step: idx + 1, total, text: (last ? "📸 Foto vom fertigen Gericht – guten Appetit! 😋" : steps[idx] || "").slice(0, 2000),
         next: (idx + 1 < steps.length ? steps[idx + 1] : "").slice(0, 2000),
         persons: r.servings ? pers : null, unit: r.servings ? servLabel(r.servings_unit, pers) : "",
-        items: (r.items || []).slice(0, 80).map((i) => `${[scaleQty(i.quantity, f), i.name].filter(Boolean).join(" ")}${i.note ? ` (📝 ${i.note})` : ""}`.slice(0, 200)),
+        done: curIng().slice(0, 80).map((i, n) => (ingDone.has(String(i.name || "").toLowerCase()) ? n : -1)).filter((n) => n >= 0),
+        items: curIng().slice(0, 80).map((i) => `${[scaleQty(i.quantity, f), i.name].filter(Boolean).join(" ")}${i.note ? ` (📝 ${i.note})` : ""}`.slice(0, 200)),
         heat: chosenHeat().slice(0, 10).map((h) => String(heatText(h)).slice(0, 200)),
         note: String(r.cook_note || "").slice(0, 500), photo: last,
         photo_key: !last && r.id && r.steps && this._hasPhoto(this._stepPhotoKey(r.id, idx)) ? this._stepPhotoKey(r.id, idx) : null, // 📷 Schritt-Foto für die Anzeige
@@ -11519,6 +11683,7 @@ ${(() => {
       const last = finalStep && idx === steps.length; // 📸 letzter Schritt: Foto vom fertigen Gericht
       pos.textContent = `Schritt ${idx + 1} von ${total}`;
       renderHeat(); // 🔢 orange Info passend zum Schritt
+      renderIng(); // 🥕 Zutaten passend zum Schritt
       report(); // 📺 Kochmodus-Anzeige nachziehen
       autoL.start(); // 📜 neuer Schritt: Text beginnt oben, läuft bei Überlänge von selbst
       memSet(idx < steps.length - 1 ? idx : 0); // 📌 letzter Schritt erreicht = fast fertig → nicht mehr merken
@@ -13778,6 +13943,11 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         if (r?.source && /^https?:\/\//i.test(r.source)) window.open(r.source, "_blank", "noopener,noreferrer");
         break;
       }
+      case "cook-join": { // 🟢 mitkochen: gleiches Rezept, gleicher Schritt
+        const r = this._recipe(el.dataset.id);
+        if (r) this._cookMode(r, Math.max(0, (Number(el.dataset.step) || 1) - 1), false);
+        break;
+      }
       case "recipe-cook": {
         const r = this._recipe(el.closest(".rtools").dataset.id);
         if (r) this._cookMode(r);
@@ -14859,7 +15029,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._renderSettings();
         break;
       case "finfo": { // ⓘ neben einer Feld-Überschrift: Erklärung darunter auf-/zuklappen
-        const h = el.closest(".flab")?.nextElementSibling;
+        const h = el.closest(".flab, .srow")?.nextElementSibling; // auch in Editor-Zeilen (z. B. ⏱️ Dauer im Rezept-Editor)
         if (h?.classList.contains("fhint")) { h.hidden = !h.hidden; el.setAttribute("aria-expanded", String(!h.hidden)); }
         break;
       }
@@ -15024,6 +15194,29 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
             this._view = "list";
             this._renderAll();
           }).catch(() => {});
+        break;
+      }
+      case "step-ing": { // 🥕 Zutaten des Schritts auf-/zuklappen
+        const row = (this._stepRowsOf(this._draft) || []).find((r) => String(r.k) === el.dataset.k);
+        if (!row) break;
+        this._readDraft?.();
+        row.ingOpen = !row.ingOpen;
+        this._renderSteps();
+        break;
+      }
+      case "step-ing-pick": { // ✋ Zutat an/aus – ab jetzt ist die Auswahl fest
+        const dr = this._draft, row = (this._stepRowsOf(dr) || []).find((r) => String(r.k) === el.dataset.k);
+        if (!row) break;
+        const sel = this._stepIngSel(dr, row), n = el.dataset.name;
+        row.ing = sel.includes(n) ? sel.filter((x) => x !== n) : [...sel, n];
+        this._renderSteps();
+        break;
+      }
+      case "step-ing-auto": {
+        const row = (this._stepRowsOf(this._draft) || []).find((r) => String(r.k) === el.dataset.k);
+        if (!row) break;
+        row.ing = null;
+        this._renderSteps();
         break;
       }
       case "step-add": {
@@ -15614,6 +15807,7 @@ const EL_COOKVIEW_CSS = `
   .pic img { display:block; max-width:100%; max-height:42vh; border-radius:16px; margin-top:14px; }
   .ih { font:600 17px Roboto,sans-serif; color:var(--secondary-text-color); margin-bottom:6px; }
   .ing { font:400 calc(var(--elfs,30px) * .62)/1.55 Roboto,sans-serif; font-size:min(calc(var(--elfs,30px) * .62), 2.9vw); color:var(--primary-text-color); }
+  .ing s.dn { opacity:.45; }
   .by { margin-top:12px; color:var(--secondary-text-color); font:400 14px Roboto,sans-serif; text-align:right; }
   /* 📺 Bildschirm-Modus: Karte so hoch wie der Platz bis unten, Schritt und Zutaten laufen bei Überlänge langsam von selbst (CSS-Animation, schont den Fire TV) */
   ha-card.fit { display:flex; flex-direction:column; }
@@ -15677,6 +15871,7 @@ class EinkaufslisteKochmodus extends HTMLElement {
     const heat = (Array.isArray(a.geraete) ? a.geraete : []).map((h) => `<div class="heat">${esc(h)}</div>`).join("");
     const note = a.notiz ? `<div class="note">📝 ${esc(a.notiz)}</div>` : "";
     const items = Array.isArray(a.zutaten) ? a.zutaten : [];
+    const done = new Set(Array.isArray(a.erledigt) ? a.erledigt : []); // ✔️ am Handy durchgestrichen = schon drin
     const pers = a.personen ? `<span class="pill p">👥 ${esc(a.personen)} ${esc(elT(a.einheit || "Personen"))}</span>` : "";
     const showIng = cfg.show_ingredients !== false && items.length;
     const html = `<div class="head"><ha-icon icon="mdi:chef-hat"></ha-icon><div class="name">${esc(a.rezept || st.state)}</div>${pers}<span class="pill">${esc(elT("Schritt"))} ${step} / ${total}</span></div>${bar}`
@@ -15685,7 +15880,7 @@ class EinkaufslisteKochmodus extends HTMLElement {
       + `<div class="main"><div class="left"><div class="sc"><div class="text">${esc(a.text || "")}</div>`
       + (cfg.show_photo !== false && a.foto_schluessel ? `<div class="pic"></div>` : "")
       + (cfg.show_next !== false && a.naechster ? `<div class="next"><b>${esc(elT("Danach:"))}</b> ${esc(a.naechster)}</div>` : "")
-      + `</div></div>${showIng ? `<div class="right"><div class="sc"><div class="ih">🧺 ${esc(elT("Zutaten"))}</div><div class="ing">${items.map((i) => `• ${esc(i)}`).join("<br>")}</div></div></div>` : ""}</div>`
+      + `</div></div>${showIng ? `<div class="right"><div class="sc"><div class="ih">🧺 ${esc(elT("Zutaten"))}</div><div class="ing">${items.map((i, n) => (done.has(n) ? `<s class="dn">✔ ${esc(i)}</s>` : `• ${esc(i)}`)).join("<br>")}</div></div></div>` : ""}</div>`
       + (a.von ? `<div class="by">👨‍🍳 ${esc(a.von)}</div>` : "");
     if (html === this._sig) { this._fit(); return; }
     this._sig = html;

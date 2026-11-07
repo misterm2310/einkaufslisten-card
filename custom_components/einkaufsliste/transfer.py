@@ -225,7 +225,7 @@ def _recipes_from_json(data: Any) -> list[dict[str, Any]]:
         if isinstance(steps, list):
             steps = "\n".join(str(s) for s in steps)
         out.append({"name": str(r["name"]), "items": items, "steps": steps or None,
-                    "servings": r.get("servings")})
+                    "servings": r.get("servings"), "minutes": r.get("minutes")})
     return out
 
 
@@ -335,7 +335,8 @@ def import_recipe_file(manager: EinkaufslisteManager, text: str, filename: str |
             name = f"{rec['name'][:50]} (Import)" if "(Import)" not in name else name + "+"
         try:
             manager.add_recipe(name, rec["items"], steps=rec.get("steps"),
-                               servings=rec.get("servings") if isinstance(rec.get("servings"), int) else None)
+                               servings=rec.get("servings") if isinstance(rec.get("servings"), int) else None,
+                               minutes=rec.get("minutes") if isinstance(rec.get("minutes"), int) else None)
         except ValueError as err:
             _LOGGER.debug("Rezept %s übersprungen: %s", name, err)
             continue

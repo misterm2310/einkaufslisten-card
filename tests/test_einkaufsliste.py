@@ -1202,6 +1202,59 @@ Zubereitung:""")
     assert [i["name"] for i in info["items"]] == ["Mehl", "Eier", "Milch"]
 
 
+def test_recipe_import_minutes():
+    """⏱️ Dauer aus dem Rezept-Link: totalTime, sonst prepTime + cookTime (ISO 8601)."""
+    from custom_components.einkaufsliste.recipe_import import _iso_minutes, parse_html
+
+    assert _iso_minutes("PT1H30M") == 90 and _iso_minutes("PT45M") == 45 and _iso_minutes("P0DT2H") == 120
+    assert _iso_minutes("quatsch") is None and _iso_minutes(None) is None
+    page = """<script type="application/ld+json">{"@type":"Recipe","name":"Lasagne","totalTime":"PT1H15M",
+      "recipeIngredient":["500 g Hack"]}</script>"""
+    assert parse_html(page)["minutes"] == 75
+    page = """<script type="application/ld+json">{"@type":"Recipe","name":"Suppe","prepTime":"PT15M","cookTime":"PT30M",
+      "recipeIngredient":["1 Lauch"]}</script>"""
+    assert parse_html(page)["minutes"] == 45
+    page = """<script type="application/ld+json">{"@type":"Recipe","name":"Brot","recipeIngredient":["Mehl"]}</script>"""
+    assert parse_html(page)["minutes"] is None
+
+
+async def test_recipe_minutes(hass, setup, hass_ws_client):
+    """⏱️ „Dauer ca.“ im Rezept: speichern, ändern, leeren; Unsinn wird ignoriert."""
+    m = mgr(hass)
+    r = m.add_recipe("Lasagne", [{"name": "Hack"}], minutes=60)
+    assert r["minutes"] == 60
+    assert "minutes" not in m.add_recipe("Toast", [{"name": "Brot"}], minutes=0)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/update", "recipe_id": r["id"], "minutes": 45})
+    assert (await client.receive_json())["success"]
+    assert next(x for x in m.recipes if x["id"] == r["id"])["minutes"] == 45
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/update", "recipe_id": r["id"], "minutes": None})
+    assert (await client.receive_json())["success"]
+    assert "minutes" not in next(x for x in m.recipes if x["id"] == r["id"])
+
+
+async def test_recipe_step_items(hass, setup, hass_ws_client):
+    """🥕 Zutaten pro Schritt: speichern, beim Verschieben wandern sie mit, alles automatisch = weg."""
+    m = mgr(hass)
+    r = m.add_recipe("Soße", [{"name": "Hack"}, {"name": "Tomaten"}], steps="Anbraten\nKöcheln\nServieren",
+                     step_items=[["Hack"], None, None, ["zu viel"]])
+    assert r["step_items"] == [["hack"]]
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/update", "recipe_id": r["id"],
+                            "step_items": [None, ["tomaten"], None]})
+    assert (await client.receive_json())["success"]
+    get = lambda: next(x for x in m.recipes if x["id"] == r["id"])
+    assert get()["step_items"] == [None, ["tomaten"]]
+    # ↕️ Schritte getauscht (ohne step_items): Zuordnung wandert mit
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/update", "recipe_id": r["id"],
+                            "steps": "Köcheln\nAnbraten\nServieren", "step_map": [1, 0, 2]})
+    assert (await client.receive_json())["success"]
+    assert get()["step_items"] == [["tomaten"]]
+    await client.send_json({"id": 3, "type": "einkaufsliste/recipe/update", "recipe_id": r["id"], "step_items": None})
+    assert (await client.receive_json())["success"]
+    assert "step_items" not in get()
+
+
 async def test_recipe_import_ws(hass, setup, hass_ws_client, aioclient_mock, monkeypatch):
     from custom_components.einkaufsliste import recipe_import
     monkeypatch.setattr(recipe_import, "_resolve", lambda host, port: ["93.184.216.34"])  # echte Internet-IP
@@ -5035,7 +5088,7 @@ async def test_kochmodus_anzeige(hass, setup, hass_ws_client, freezer) -> None:
     pushes = m.stat_changes
     await ws(type="einkaufsliste/cook/set", sid="a1", recipe_id="r1", name="Lasagne", step=2, total=5,
              text="Hackfleisch anbraten", next="Soße kochen", persons=4, unit="Personen",
-             items=["500 g Hack", "1 Zwiebel"], heat=["🔥 Backofen 180 °C Umluft, 30 Min"], note="weniger Salz")
+             items=["500 g Hack", "1 Zwiebel"], done=[1], heat=["🔥 Backofen 180 °C Umluft, 30 Min"], note="weniger Salz")
     await hass.async_block_till_done()
     st = hass.states.get("sensor.einkaufsliste_kochmodus")
     assert st.state == "Lasagne"
@@ -5043,6 +5096,7 @@ async def test_kochmodus_anzeige(hass, setup, hass_ws_client, freezer) -> None:
     assert a["aktiv"] is True and a["schritt"] == 2 and a["schritte"] == 5 and a["personen"] == 4
     assert a["text"] == "Hackfleisch anbraten" and a["naechster"] == "Soße kochen"
     assert a["zutaten"] == ["500 g Hack", "1 Zwiebel"] and a["geraete"][0].startswith("🔥") and a["notiz"] == "weniger Salz"
+    assert a["erledigt"] == [1] and a["rezept_id"] == "r1"  # ✔️ durchgestrichen + 🟢 welches Rezept
     assert a["foto_schluessel"] is None
     assert m.stat_changes == pushes  # ⚡ kein Speichern, kein Paket an alle Karten
     seit = a["seit"]
