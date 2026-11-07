@@ -394,6 +394,7 @@ class KochmodusSensor(_Base):
             "geraete": c["heat"],
             "notiz": c["note"],
             "foto": c["photo"],
+            "foto_schluessel": c.get("photo_key"),  # 📷 Foto zum Schritt – die Anzeige-Karte holt es mit einkaufsliste/photo/get
             "von": c["by"],
             "seit": c["since"],
             "aktualisiert": c["updated"],

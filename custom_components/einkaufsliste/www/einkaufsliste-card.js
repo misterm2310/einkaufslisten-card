@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.9";
+const EL_VERSION = "2.76.27-beta.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -11498,6 +11498,7 @@ ${(() => {
         items: (r.items || []).slice(0, 80).map((i) => `${[scaleQty(i.quantity, f), i.name].filter(Boolean).join(" ")}${i.note ? ` (📝 ${i.note})` : ""}`.slice(0, 200)),
         heat: chosenHeat().slice(0, 10).map((h) => String(heatText(h)).slice(0, 200)),
         note: String(r.cook_note || "").slice(0, 500), photo: last,
+        photo_key: !last && r.id && r.steps && this._hasPhoto(this._stepPhotoKey(r.id, idx)) ? this._stepPhotoKey(r.id, idx) : null, // 📷 Schritt-Foto für die Anzeige
       };
       const sig = JSON.stringify(msg);
       if (sig === sentSig) return;
@@ -15602,6 +15603,7 @@ const EL_COOKVIEW_CSS = `
   .text { font:500 var(--elfs,30px)/1.35 Roboto,sans-serif; font-size:min(var(--elfs,30px), 4.2vw); color:var(--primary-text-color); white-space:pre-wrap; } /* 📺 kleine TV-Auflösung: Schrift schrumpft mit */
   .next { margin-top:16px; color:var(--secondary-text-color); font:400 calc(var(--elfs,30px) * .6)/1.4 Roboto,sans-serif; font-size:min(calc(var(--elfs,30px) * .6), 2.8vw); white-space:pre-wrap; }
   .next b { color:var(--primary-text-color); font-weight:600; }
+  .pic img { display:block; max-width:100%; max-height:42vh; border-radius:16px; margin-top:14px; }
   .ih { font:600 17px Roboto,sans-serif; color:var(--secondary-text-color); margin-bottom:6px; }
   .ing { font:400 calc(var(--elfs,30px) * .62)/1.55 Roboto,sans-serif; font-size:min(calc(var(--elfs,30px) * .62), 2.9vw); color:var(--primary-text-color); }
   .by { margin-top:12px; color:var(--secondary-text-color); font:400 14px Roboto,sans-serif; text-align:right; }
@@ -15619,7 +15621,7 @@ class EinkaufslisteKochmodus extends HTMLElement {
   static getStubConfig() { return { entity: "sensor.einkaufsliste_kochmodus" }; }
   static getConfigElement() { return document.createElement("einkaufsliste-kochmodus-editor"); }
   setConfig(config) {
-    this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, fit_screen: true, auto_scroll: true, ...config };
+    this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, show_photo: true, font_size: 30, fit_screen: true, auto_scroll: true, ...config };
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML = `<style>${EL_COOKVIEW_CSS}</style><ha-card lang="${EL_LANG === "en" ? "en" : "de"}"></ha-card>`; // lang: Silbentrennung
@@ -15672,6 +15674,7 @@ class EinkaufslisteKochmodus extends HTMLElement {
       + (heat || note ? `<div class="info">${heat}${note}</div>` : "")
       + (tl ? `<div class="tm">${tl}</div>` : "")
       + `<div class="main"><div class="left"><div class="sc"><div class="text">${esc(a.text || "")}</div>`
+      + (cfg.show_photo !== false && a.foto_schluessel ? `<div class="pic"></div>` : "")
       + (cfg.show_next !== false && a.naechster ? `<div class="next"><b>${esc(elT("Danach:"))}</b> ${esc(a.naechster)}</div>` : "")
       + `</div></div>${showIng ? `<div class="right"><div class="sc"><div class="ih">🧺 ${esc(elT("Zutaten"))}</div><div class="ing">${items.map((i) => `• ${esc(i)}`).join("<br>")}</div></div></div>` : ""}</div>`
       + (a.von ? `<div class="by">👨‍🍳 ${esc(a.von)}</div>` : "");
@@ -15680,6 +15683,27 @@ class EinkaufslisteKochmodus extends HTMLElement {
     card.innerHTML = html;
     this._fitted = 0;
     this._fit();
+    if (cfg.show_photo !== false && a.foto_schluessel) this._loadPic(String(a.foto_schluessel));
+  }
+  // 📷 Foto zum Schritt holen (nur das eine, gemerkt für die letzten 4 Schritte) – scrollt danach mit dem Text mit
+  _loadPic(key) {
+    this._pics ||= new Map();
+    const show = (src) => {
+      const box = this.shadowRoot?.querySelector(".pic");
+      if (!box || this._st?.attributes?.foto_schluessel !== key) return; // inzwischen weitergeblättert
+      const img = document.createElement("img");
+      img.alt = "";
+      img.onload = () => { this._fitted = 0; this._fit(); }; // Bild ist da: Höhe neu messen, ggf. Laufen anpassen
+      img.src = src;
+      box.replaceChildren(img);
+    };
+    if (this._pics.has(key)) { show(this._pics.get(key)); return; }
+    this._hass?.callWS({ type: "einkaufsliste/photo/get", name: key, index: 0 }).then((r) => {
+      if (!r?.data) return;
+      this._pics.set(key, r.data);
+      while (this._pics.size > 4) this._pics.delete(this._pics.keys().next().value);
+      show(r.data);
+    }).catch(() => { /* kein Foto – kein Problem */ });
   }
   // 📺 Passt auf den Bildschirm: ist der Text zu lang für die Höhe (Fernseher scrollt nicht), wird die Schrift Stück für Stück kleiner
   // (höchstens bis 16 px). Läuft nur nach einem neuen Schritt oder wenn sich die Fenstergröße ändert – nicht dauernd.
@@ -15725,13 +15749,13 @@ class EinkaufslisteKochmodus extends HTMLElement {
   disconnectedCallback() { if (this._onResize) { window.removeEventListener("resize", this._onResize); this._onResize = null; } }
 }
 class EinkaufslisteKochmodusEditor extends HTMLElement {
-  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, font_size: 30, fit_screen: true, auto_scroll: true, ...config }; this._render(); }
+  setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, show_photo: true, font_size: 30, fit_screen: true, auto_scroll: true, ...config }; this._render(); }
   set hass(hass) { this._hass = hass; elUseLang(hass, this._config, null); this._render(); }
   _render() {
     if (!this._hass || !this._config) return;
     if (!this._form) {
       this._form = document.createElement("ha-form");
-      this._form.computeLabel = (s) => elT({ fit_screen: "An den Bildschirm anpassen (bis zum unteren Rand)", auto_scroll: "Zu lange Texte laufen von selbst", entity: "Sensor Kochmodus", timer_entity: "Sensor der Kochtimer", hide_when_idle: "Ausblenden, wenn nichts gekocht wird", show_ingredients: "Zutaten zeigen", show_next: "Nächsten Schritt zeigen", show_timers: "Kochtimer zeigen", font_size: "Schriftgröße Schritt (Pixel)", language: "Sprache" }[s.name] || s.name);
+      this._form.computeLabel = (s) => elT({ fit_screen: "An den Bildschirm anpassen (bis zum unteren Rand)", auto_scroll: "Zu lange Texte laufen von selbst", show_photo: "Foto zum Schritt zeigen", entity: "Sensor Kochmodus", timer_entity: "Sensor der Kochtimer", hide_when_idle: "Ausblenden, wenn nichts gekocht wird", show_ingredients: "Zutaten zeigen", show_next: "Nächsten Schritt zeigen", show_timers: "Kochtimer zeigen", font_size: "Schriftgröße Schritt (Pixel)", language: "Sprache" }[s.name] || s.name);
       this._form.addEventListener("value-changed", (ev) => {
         this._config = ev.detail.value;
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -15747,6 +15771,7 @@ class EinkaufslisteKochmodusEditor extends HTMLElement {
       { name: "show_ingredients", selector: { boolean: {} } },
       { name: "show_next", selector: { boolean: {} } },
       { name: "show_timers", selector: { boolean: {} } },
+      { name: "show_photo", selector: { boolean: {} } },
       { name: "font_size", selector: { number: { min: 16, max: 60, step: 1, mode: "box" } } },
       { name: "fit_screen", selector: { boolean: {} } },
       { name: "auto_scroll", selector: { boolean: {} } },

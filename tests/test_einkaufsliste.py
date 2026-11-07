@@ -5043,12 +5043,14 @@ async def test_kochmodus_anzeige(hass, setup, hass_ws_client, freezer) -> None:
     assert a["aktiv"] is True and a["schritt"] == 2 and a["schritte"] == 5 and a["personen"] == 4
     assert a["text"] == "Hackfleisch anbraten" and a["naechster"] == "Soße kochen"
     assert a["zutaten"] == ["500 g Hack", "1 Zwiebel"] and a["geraete"][0].startswith("🔥") and a["notiz"] == "weniger Salz"
+    assert a["foto_schluessel"] is None
     assert m.stat_changes == pushes  # ⚡ kein Speichern, kein Paket an alle Karten
     seit = a["seit"]
-    await ws(type="einkaufsliste/cook/set", sid="a1", recipe_id="r1", name="Lasagne", step=3, total=5, text="Soße kochen")
+    await ws(type="einkaufsliste/cook/set", sid="a1", recipe_id="r1", name="Lasagne", step=3, total=5, text="Soße kochen", photo_key="Rezept#r1#S2")
     await hass.async_block_till_done()
     a = hass.states.get("sensor.einkaufsliste_kochmodus").attributes
     assert a["schritt"] == 3 and a["seit"] == seit and a["zutaten"] == []
+    assert a["foto_schluessel"] == "rezept#r1#s2"  # 📷 klein geschrieben wie bei den Fotos
     # Ein anderes Koch-Fenster schließt: Anzeige bleibt (gemeldet ist ja „a1“)
     await ws(type="einkaufsliste/cook/clear", sid="zz")
     await hass.async_block_till_done()

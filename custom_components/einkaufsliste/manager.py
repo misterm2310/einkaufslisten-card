@@ -4291,6 +4291,7 @@ class EinkaufslisteManager:
             "heat": lst(data.get("heat"), 10, 200),
             "note": txt(data.get("note"), 500),
             "photo": bool(data.get("photo")),
+            "photo_key": txt(data.get("photo_key"), 120).lower() or None,  # 📷 Foto zum Schritt (Name wie bei einkaufsliste/photo/get)
             "by": by,
             "since": old.get("since") if same and old.get("since") else now,
             "updated": now,

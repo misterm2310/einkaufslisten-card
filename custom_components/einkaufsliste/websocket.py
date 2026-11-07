@@ -938,6 +938,7 @@ _COOK_LIST = vol.All([vol.All(str, vol.Length(max=200))], vol.Length(max=80))
         vol.Optional("heat"): _COOK_LIST,
         vol.Optional("note"): _COOK_TXT,
         vol.Optional("photo"): bool,
+        vol.Optional("photo_key"): OPT_STR,
     }
 )
 @callback

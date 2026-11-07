@@ -681,8 +681,12 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   const clear=calls.find(m=>m.type==="einkaufsliste/cook/clear"); c._hass.callWS=old;
   const k=document.createElement("einkaufsliste-kochmodus"); k.id="km"; document.querySelector(".wrap").after(k);
   k.setConfig({}); k.hass={...c._hass, states:{"sensor.einkaufsliste_kochmodus":{state:"Lasagne",attributes:{aktiv:true,rezept:"Lasagne",schritt:2,schritte:2,text:"Hack anbraten 10 Minuten.",naechster:"",personen:4,einheit:"Personen",zutaten:["500 g Hack"],geraete:["🔥 Backofen 180 °C"],notiz:"weniger Salz",von:"Marco"}}}};
-  const t=k.shadowRoot.textContent; k.hass={...c._hass, states:{"sensor.einkaufsliste_kochmodus":{state:"aus",attributes:{aktiv:false}}}}; const idle=k.shadowRoot.textContent; k.remove();
-  return { first, second, n, clear, t, idle }; });
+  const t=k.shadowRoot.textContent;
+  const pics=[]; k.hass={...c._hass, callWS:async(m)=>{ pics.push(m); return { data:"data:image/gif;base64,R0lGODlhAQABAAAAACw=" }; }, states:{"sensor.einkaufsliste_kochmodus":{state:"Lasagne",attributes:{aktiv:true,rezept:"Lasagne",schritt:1,schritte:2,text:"Zwiebeln würfeln.",foto_schluessel:"rezept#rk#s0"}}}};
+  await new Promise(r=>setTimeout(r,80)); const img=!!k.shadowRoot.querySelector(".left .sc .pic img");
+  k.hass={...c._hass, states:{"sensor.einkaufsliste_kochmodus":{state:"aus",attributes:{aktiv:false}}}}; const idle=k.shadowRoot.textContent; k.remove();
+  return { first, second, n, clear, t, idle, img, pic: pics[0] }; });
+check("Kochmodus-Anzeige: Schritt-Foto wird geholt und scrollt im Text-Bereich mit", r.img && r.pic?.type === "einkaufsliste/photo/get" && r.pic.name === "rezept#rk#s0", JSON.stringify({img:r.img, pic:r.pic}));
 check("Kochmodus meldet Rezept, Schritt und Zutaten an HA", r.first?.name === "Lasagne" && r.first.step === 1 && r.first.total === 3 && r.first.items[0] === "500 g Hack" && r.first.sid && r.second?.step === 2 && r.second.text.startsWith("Hack"), JSON.stringify(r));
 check("Kochmodus meldet nur bei Änderung, Schließen schaltet die Anzeige aus", r.n === 2 && r.clear?.sid === r.first?.sid, JSON.stringify(r));
 check("Kochmodus-Anzeige zeigt Schritt, Zutaten, Backofen und Notiz; ohne Kochen den Hinweis", /Schritt 2 \/ 2/.test(r.t) && /Hack anbraten/.test(r.t) && /500 g Hack/.test(r.t) && /Backofen/.test(r.t) && /weniger Salz/.test(r.t) && /nichts gekocht/.test(r.idle), r.t + " | " + r.idle);
