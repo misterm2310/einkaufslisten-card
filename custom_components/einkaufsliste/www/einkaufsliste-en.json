@@ -2070,7 +2070,7 @@
 "Name und Farbe ändern, 🗑️ löscht die Person.": "Change name and colour, 🗑️ deletes the person.",
 "Mengen für": "Quantities for",
 "Rezept löschen": "Delete recipe",
-"Eintragen geht wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie vom letzten Mal.": "Adding works like on the list: type the name (with suggestions), 🔢 quantity, ✏️ own note, 👤 for whom, 📷 photo, ▥ barcode – then ✔. “As last time” = store & category from last time.",
+"Eintragen geht wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 🏷️ Spitzname, 📷 Foto, ▥ Barcode – dann ✔. „Wie zuletzt“ = Geschäft & Kategorie vom letzten Mal.": "Adding works like on the list: type the name (with suggestions), 🔢 quantity, ✏️ own note, 🏷️ nickname, 📷 photo, ▥ barcode – then ✔. “As last time” = store & category from last time.",
 "Auf die Liste – Zutaten auswählen": "To the list – choose ingredients",
 "Von der Liste – alle offenen Zutaten dieses Rezepts": "Off the list – all open ingredients of this recipe",
 "Von Liste": "Off list",
@@ -2425,5 +2425,13 @@
 "Rezept aus Fotos": "Recipe from photos",
 "Rezept aus Fotos einlesen (auch mehrere Seiten)": "Read a recipe from photos (several pages too)",
 "📷 Rezept aus Fotos": "📷 Recipe from photos",
-"➕ Noch eine Seite": "➕ Another page"
+"➕ Noch eine Seite": "➕ Another page",
+"🏷️ Spitznamen": "🏷️ Nicknames",
+"🏷️ Spitznamen, z. B. Paradeiser, Tomaten (mit Komma)": "🏷️ Nicknames, e.g. tomatoes, toms (with commas)",
+"Wer so etwas eintippt, landet bei dieser Zutat – gilt überall (Liste, Suche, alle Rezepte)": "Whoever types one of these lands on this ingredient – applies everywhere (list, search, all recipes)",
+"Zwischenspeichern": "Save & continue",
+"Speichern & fertig": "Save & done",
+"Speichern und im Editor weitermachen": "Save and keep editing",
+"Speichern und den Editor schließen": "Save and close the editor",
+"💾 Zwischengespeichert – du kannst weitermachen": "💾 Saved – you can keep going"
 }

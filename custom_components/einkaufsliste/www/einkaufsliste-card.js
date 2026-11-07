@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27-beta.5";
+const EL_VERSION = "2.76.27-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.26"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -259,12 +259,12 @@ const EL_HELP = {
   ]],
   recipes: ["list", [
     "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
-    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, <b>„📷 Rezept aus Fotos“</b> oben rechts bei „Eingaben“ (eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
+    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Rezept aus Fotos“</b> oben rechts bei „Eingaben“ (eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
     "<b>🔗 Quelle &amp; Original:</b> Beim Import per Link merkt sich das Rezept die Adresse (im Editor unter dem Namen änderbar, auch von Hand eintragbar). In der Rezeptliste öffnet „Original öffnen“ die Seite. <b>👨‍🍳 Kochmodus:</b> Er merkt sich pro Rezept den Schritt und fragt beim nächsten Start, ob du dort weitermachen willst.",
     "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (für alle, mit Airfryer Control ab Beta 17) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
   ], [
     "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; a list like the categories: tap a group = change name, colour and icon, ⌃⌄ = order; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
-    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, <b>“📷 Recipe from photos”</b> top right at “Inputs” (photograph one or more pages → name, ingredients to check and steps; the photos are added to the recipe), ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text or recipe link), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
+    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, recipe photo, <b>🏷️ nicknames</b> for each ingredient, <b>💾 Save &amp; continue</b> (editor stays open) or “Save &amp; done”, <b>“📷 Recipe from photos”</b> top right at “Inputs” (photograph one or more pages → name, ingredients to check and steps; the photos are added to the recipe), ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text or recipe link), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
     "<b>🔗 Source &amp; original:</b> when importing by link the recipe remembers the address (editable under the name in the editor, can also be typed in). In the recipe list “Open original” opens the page. <b>👨‍🍳 Cook mode:</b> it remembers the step per recipe and asks at the next start whether you want to continue there.",
     "<b>🍟 Air fryer:</b> if a step has “Heißluftfritteuse” with a mode (air fry, bake, grill or reheat), temperature and minutes and <b>Airfryer Control</b> is installed, cook mode shows the button “Send to Airfryer Control” (for everyone, with Airfryer Control from beta 17). You pick the basket (it always asks); the fryer is prepared, <b>you press Start on the device</b>.",
   ]],
@@ -416,6 +416,12 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["Neu: 🎨 <b>Jedes Rezept hat seine Farbe:</b> Artikel aus Rezepten haben rechts einen schmalen Streifen – jetzt in einer eigenen Farbe pro Rezept. Zwei Rezepte auf der Liste sehen nie gleich aus. Links bleibt die Kategorie-Farbe, das 🍽️-Schildchen die Farbe der Rezept-Gruppe.",
+   "New: 🎨 <b>Every recipe has its own colour:</b> items from recipes have a thin stripe on the right – now in a colour of its own per recipe. Two recipes on the list never look the same. The left stays the category colour, the 🍽️ label the recipe group colour."],
+  ["Neu: 🏷️ <b>Spitznamen im Rezept-Editor:</b> Beim Eintragen einer Zutat gibt es jetzt den Knopf „Spitzname“ (z. B. „Paradeiser“ für Tomaten) – gilt danach überall. „👤 Für wen“ ist im Rezept weg (alte Angaben bleiben).",
+   "New: 🏷️ <b>Nicknames in the recipe editor:</b> when adding an ingredient there is now a “Nickname” button – it applies everywhere afterwards. “👤 For whom” is gone from recipes (old entries stay)."],
+  ["Neu: 💾 <b>Zwischenspeichern:</b> Unten im Rezept-Editor stehen jetzt „Zwischenspeichern“ (gespeichert, du machst weiter) und „Speichern &amp; fertig“. Ein neues Rezept kann so sofort Fotos zu den Schritten bekommen.",
+   "New: 💾 <b>Save &amp; continue:</b> at the bottom of the recipe editor there is now “Save &amp; continue” (saved, you keep going) and “Save &amp; done”. A new recipe can get step photos right away."],
   ["Neu: 📷 <b>Rezept aus Fotos:</b> Im Rezept-Editor oben rechts bei „Eingaben“. Eine oder mehrere Kochbuch-Seiten abfotografieren („➕ Noch eine Seite“ / „✔ Fertig“) – Name, Zutaten zum Prüfen und Schritte werden vorgeschlagen, die Fotos kommen ans Rezept. Aufgeräumt: „Liste aus Foto“ und ⭐ gehören nur zur Einkaufsliste und sind im Editor weg, „Aus Foto“ beim Klemmbrett auch.",
    "New: 📷 <b>Recipe from photos:</b> in the recipe editor, top right at “Inputs”. Photograph one or more cookbook pages (“➕ Another page” / “✔ Done”) – name, ingredients to check and steps are suggested, the photos are added to the recipe. Tidied up: “List from photo” and ⭐ belong to the shopping list only and are gone from the editor, so is “From photo” at the clipboard."],
   ["Neu: 📄 <b>PDF-Kassenbon mit allen Seiten:</b> Hat der Bon mehrere Seiten (z. B. ein eBon), werden bis zu 4 Seiten untereinander zu einem Bon-Foto zusammengesetzt – vorher war nur Seite 1 dabei.",
@@ -618,6 +624,7 @@ function elTextOn(hex) {
   const n = parseInt(m[1], 16), ch = [n >> 16, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
   return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2] > 0.45 ? "#212121" : "#fff";
 }
+const EL_RECIPE_COLORS = ["#e53935", "#1e88e5", "#43a047", "#fb8c00", "#8e24aa", "#00acc1", "#fdd835", "#6d4c41", "#d81b60", "#3949ab", "#7cb342", "#546e7a"]; // 🎨 Rezept-Farben (Streifen rechts)
 const EGAL_CHIP = `<span class="chip" style="--c:#888">🤷 Egal wo</span>`; // Artikel ohne Geschäft: überall kaufen
 
 // Doppelt-Finder: Wörter, die dasselbe meinen (alles klein, ohne Leer-/Sonderzeichen)
@@ -3620,9 +3627,9 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .rsub { margin-top:14px !important; flex-wrap:wrap; }
 #rItems .rrow { border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; background:var(--card-background-color, var(--ha-card-background, #fff)); padding:6px 8px; margin:6px 0; }
 .rhint { font-size:.78em; opacity:.7; }
-.rfoot { display:flex; gap:8px; align-items:stretch; margin-top:10px; }
-.rfoot .btn { flex:1; justify-content:center; }
-.rfoot .primary { flex:2; }
+.rfoot { display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; margin-top:10px; }
+.rfoot .btn { flex:1 1 auto; justify-content:center; white-space:nowrap; }
+.rfoot .primary { flex:1 1 100%; order:9; } /* „Speichern & fertig“ groß in eigener Zeile darunter – passt auch aufs Handy */
 .rfoot .btn.danger { flex:none; padding:8px 12px; }
 .rsteps { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; resize:vertical; }
 .rsec { margin:10px 0 0; }
@@ -5041,6 +5048,7 @@ class EinkaufslisteCard extends HTMLElement {
               <button class="tool" id="tQty" type="button" data-act="tool" data-field="qtyBox" title="Menge"><ha-icon icon="mdi:numeric"></ha-icon><span class="lbl">Menge</span></button>
               <button class="tool" id="tOwn" type="button" data-act="tool" data-field="inOwn" title="✏️ Eigene Notiz"><ha-icon icon="mdi:pencil-outline"></ha-icon><span class="lbl">Notiz</span></button>
               <button class="tool" id="tFor" type="button" data-act="tool" data-field="forBox" title="Für wen?"><ha-icon icon="mdi:account-outline"></ha-icon><span class="lbl">Für wen</span></button>
+              <button class="tool" id="tAlias" type="button" data-act="tool" data-field="inAlias" title="🏷️ Spitznamen" hidden><ha-icon icon="mdi:tag-outline"></ha-icon><span class="lbl">Spitzname</span></button>
               <button class="tool plus" id="btnNewBarcode" type="button" data-act="new-barcode" title="Barcode zum neuen Produkt" hidden><ha-icon icon="mdi:barcode-scan"></ha-icon><span class="lbl">Barcode</span></button>
               <button class="tool" id="btnNewPhoto" type="button" data-act="new-photo" title="Foto zum Artikel"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto</span></button>
               <button class="tool" id="tBasic" type="button" data-act="basic-toggle" title="🧂 Grundvorrat" hidden><ha-icon icon="mdi:shaker-outline"></ha-icon><span class="lbl">Vorrat</span></button>
@@ -5057,6 +5065,7 @@ class EinkaufslisteCard extends HTMLElement {
               </div>
               <input id="inNote" placeholder="📝 Notiz (kommt aus dem Barcode)" readonly hidden title="Kommt aus dem Barcode bzw. der Datenbank. Eigene Texte bitte ins ✏️-Feld.">
               <input id="inOwn" placeholder="✏️ Eigene Notiz, z. B. große Packung" title="Bleibt beim Produkt" maxlength="120" hidden>
+              <input id="inAlias" placeholder="🏷️ Spitznamen, z. B. Paradeiser, Tomaten (mit Komma)" title="Wer so etwas eintippt, landet bei dieser Zutat – gilt überall (Liste, Suche, alle Rezepte)" maxlength="200" hidden>
               <div class="chips tplchips" id="inTpl"></div>
               <div class="chips" id="noteChips" hidden></div>
               <div id="forBox" class="chipbox" hidden><div class="chips" id="forChips"></div></div>
@@ -5117,7 +5126,7 @@ class EinkaufslisteCard extends HTMLElement {
       this._storeManual = true; // 🧽 selbst ausgewählt (nicht durch den Reiter)
       this._updateTools();
     });
-    for (const id of ["inQty", "inNote", "inOwn", "inFor"]) {
+    for (const id of ["inQty", "inNote", "inOwn", "inFor", "inAlias"]) {
       this.$(id).addEventListener("input", () => this._updateTools());
       this.$(id).addEventListener("change", () => this._updateTools());
     }
@@ -5353,6 +5362,24 @@ class EinkaufslisteCard extends HTMLElement {
   _store(id) { return this._data?.stores.find((s) => s.id === id); }
   _cat(id) { return this._data?.categories.find((c) => c.id === id); }
   _recipe(id) { return this._data?.recipes?.find((r) => r.id === id); }
+  // 🎨 Eigene Farbe pro Rezept (schmaler Streifen rechts am Artikel): Rezepte auf der Liste bekommen der Reihe nach
+  // (wer zuerst draufkam) je eine andere Farbe – zwei Rezepte auf der Liste sehen also nie gleich aus
+  _recipeColor(id) {
+    const items = this._data?.items || [];
+    const first = new Map();
+    for (const i of items) if (i.recipe_id && !i.checked) {
+      const t = i.added_at || "";
+      if (!first.has(i.recipe_id) || t < first.get(i.recipe_id)) first.set(i.recipe_id, t);
+    }
+    const sig = [...first].map(([k, t]) => k + t).join("|");
+    if (this._rcSig !== sig) {
+      this._rcSig = sig;
+      this._rcMap = new Map([...first].sort((a, b) => (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : a[0] < b[0] ? -1 : 1)).map(([k], n) => [k, EL_RECIPE_COLORS[n % EL_RECIPE_COLORS.length]]));
+    }
+    if (this._rcMap.has(id)) return this._rcMap.get(id);
+    let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; // abgehakt / nicht mehr offen: feste Farbe aus der Nummer
+    return EL_RECIPE_COLORS[h % EL_RECIPE_COLORS.length];
+  }
   _who(name) {
     if (!name) return "";
     const st = this._config.added_by_style;
@@ -5789,7 +5816,7 @@ class EinkaufslisteCard extends HTMLElement {
     const pf = this.$("inFor");
     const prevFor = pf.value;
     pf.innerHTML = this._personOptions(null);
-    this.$("tFor").hidden = !(d.persons || []).length;
+    this.$("tFor").hidden = this._formMode === "recipe" || !(d.persons || []).length; // 👤 im Rezept-Editor nicht nötig (dort: 🏷️ Spitzname)
     if (this.$("tFor").hidden) this.$("forBox").hidden = true;
     if ((d.persons || []).some((p) => p.name === prevFor)) pf.value = prevFor;
     st.innerHTML = this._selectOptions(d.stores, null, this._formMode === "recipe" ? "🛒 Wie zuletzt" : "🛒 Welches Geschäft?")
@@ -6114,7 +6141,7 @@ class EinkaufslisteCard extends HTMLElement {
     const cat = this._cat(item.category_id);
     const isNew = v.new && this._isNew(item);
     return `
-      <div class="item ${item.checked ? "done" : ""} ${gone ? "gone" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""} ${this._knMarked === item.id ? "marked" : ""}" tabindex="0" data-id="${item.id}" style="--cc:${esc((v.cat_color && cat?.color) || "transparent")}${recipe && this._rgroup(recipe.group)?.color ? `;--rc:${esc(this._rgroup(recipe.group).color)}` : ""}">
+      <div class="item ${item.checked ? "done" : ""} ${gone ? "gone" : ""} ${this._pending.has(item.id) ? "pending" : ""} ${isNew ? "new" : ""} ${item.name.startsWith("❓") ? "unknown" : ""} ${this._knMarked === item.id ? "marked" : ""}" tabindex="0" data-id="${item.id}" style="--cc:${esc((v.cat_color && cat?.color) || "transparent")}${recipe ? `;--rc:${esc(this._recipeColor(recipe.id))}` : ""}">
         <button class="iconbtn check" data-act="toggle" title="${item.checked ? "Wieder auf die Liste" : "Abhaken"}"><ha-icon icon="${icon}"></ha-icon></button>
         <div class="txt">
           <div class="line">${isNew ? `<span class="newbadge" data-act="new-ack" data-id="${item.id}" title="Neu – antippen, wenn du es gesehen hast">✨</span>` : ""}${qty}<span class="name">${esc(item.name)}</span>${item._queued ? `<span class="qwait" title="Wartet aufs Netz">⏳</span>` : ""}${who}${v.fav ? this._favStar(pk) : ""}${v.photo && !this._shopMode && this._hasPhoto(pk) ? `<button class="photobtn" data-act="photo-view" data-name="${esc(pk)}" title="Foto ansehen"><ha-icon icon="${this._photoIcon(pk)}"></ha-icon>${this._data.photo_counts?.[pk] > 1 ? `<small class="pcount">${this._data.photo_counts[pk]}</small>` : ""}</button>` : ""}</div>
@@ -9201,7 +9228,8 @@ ${(() => {
 
   _renderRecipeEditor() {
     const dr = this._draft;
-    if (!this._draftRendered || !this._rsecClosed) this._rsecClosed = dr.proposalId ? new Set() : new Set(["zut", "ofen", "zub"]); // Start: nur „Eingaben“ offen (beim Prüfen eines Vorschlags alles offen, damit man alles sieht)
+    if (this._keepRsec) { this._rsecClosed = this._keepRsec; this._keepRsec = null; } // 💾 nach dem Zwischenspeichern: Kästen bleiben, wie sie waren
+    else if (!this._draftRendered || !this._rsecClosed) this._rsecClosed = dr.proposalId ? new Set() : new Set(["zut", "ofen", "zub"]); // Start: nur „Eingaben“ offen (beim Prüfen eines Vorschlags alles offen, damit man alles sieht)
     this._draftRendered = true;
     this._parkForm();
     this.$("otherView").innerHTML = `
@@ -9260,11 +9288,12 @@ ${(() => {
         <div id="rHeat"></div>
         <div class="btnrow"><button class="btn" data-act="heat-add"><ha-icon icon="mdi:plus"></ha-icon>Einstellung (Grad, Minuten …)</button></div>
         `)}
-        <p class="hint rhint">Eintragen geht wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 👤 Für wen, 📷 Foto, ▥ Barcode – dann ✔. „Wie zuletzt“ = Geschäft &amp; Kategorie vom letzten Mal.</p>
+        <p class="hint rhint">Eintragen geht wie in der Liste: Name tippen (mit Vorschlägen), 🔢 Menge, ✏️ Eigene Notiz, 🏷️ Spitzname, 📷 Foto, ▥ Barcode – dann ✔. „Wie zuletzt“ = Geschäft &amp; Kategorie vom letzten Mal.</p>
         <div class="rfoot">
           ${dr.id ? `<button class="btn danger" data-act="recipe-delete" title="Rezept löschen" aria-label="Rezept löschen"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>` : ""}
           <button class="btn" data-act="recipe-cancel">Abbrechen</button>
-          <button class="btn primary" data-act="recipe-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
+          <button class="btn" data-act="recipe-save-stay" title="Speichern und im Editor weitermachen"><ha-icon icon="mdi:content-save-outline"></ha-icon>Zwischenspeichern</button>
+          <button class="btn primary" data-act="recipe-save" title="Speichern und den Editor schließen"><ha-icon icon="mdi:check-bold"></ha-icon>Speichern &amp; fertig</button>
         </div>
       </div>`;
     this.$("otherView").querySelectorAll(".rsec-h").forEach((h) => h.addEventListener("keydown", (e) => {
@@ -9726,6 +9755,8 @@ ${(() => {
     this.$("btnScan").title = "Barcode scannen";
     this.$("tBasic").hidden = false;
     this.$("inOwn").hidden = true;
+    this.$("tFor").hidden = true; this.$("forBox").hidden = true; // 👤 Für wen braucht ein Rezept nicht …
+    this.$("tAlias").hidden = false; // … dafür 🏷️ Spitznamen
     this.$("rEditHint").hidden = true;
   }
 
@@ -9738,6 +9769,8 @@ ${(() => {
     this._rEditIdx = null;
     this.$("tBasic").hidden = true;
     this.$("tOwn").hidden = false;
+    this.$("tAlias").hidden = true; this.$("inAlias").hidden = true;
+    this.$("tFor").hidden = !(this._data?.persons || []).length;
     this.$("inName").placeholder = elT("Was brauchen wir/du? z. B. Milch");
     const none = this.$("inStore").querySelector('option[value="~none"]');
     if (none) none.hidden = false;
@@ -9810,6 +9843,11 @@ ${(() => {
       el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
       return;
     }
+    // 🏷️ Spitznamen gehören zum Produkt: geändert? Dann beim Speichern des Rezepts mitschicken (vorher gibt es das Produkt evtl. noch nicht)
+    const ia = this.$("inAlias");
+    if (ia && ia.dataset.touched && this._capAliases(ia.value.split(/[,;]/)).join(", ") !== (ia.dataset.orig || "")) {
+      (dr.aliasEdits ||= {})[this._pk(ing.name, ing.note)] = this._capAliases(ia.value.split(/[,;]/));
+    }
     if (idx != null && dr.items[idx]) dr.items[idx] = ing;
     else dr.items.push(ing);
     abcSort(dr.items);
@@ -9847,6 +9885,7 @@ ${(() => {
     this._setBasic(it.basic);
     this._renderQtyChips();
     this._renderForChips();
+    { const ia = this.$("inAlias"), cur = this._itemAliases(it).join(", "); ia.value = cur; ia.dataset.orig = cur; ia.dataset.touched = "1"; ia.hidden = !cur; }
     this._updateTools();
     this.$("rEditHint").hidden = false;
     this._renderRecipeItems();
@@ -9865,13 +9904,13 @@ ${(() => {
   }
 
   // 🔒 Doppeltipp auf ✔ Speichern darf kein zweites Rezept anlegen
-  async _saveRecipe() {
+  async _saveRecipe(stay = false) {
     if (this._savingRecipe) return;
     this._savingRecipe = true;
-    try { await this._saveRecipeInner(); } finally { this._savingRecipe = false; }
+    try { await this._saveRecipeInner(stay); } finally { this._savingRecipe = false; }
   }
 
-  async _saveRecipeInner() {
+  async _saveRecipeInner(stay = false) { // stay = 💾 Zwischenspeichern: gespeichert wird alles, der Editor bleibt offen
     this._readDraft();
     const dr = this._draft;
     const items = dr.items.filter((i) => i.name).map((i) => {
@@ -9919,7 +9958,19 @@ ${(() => {
         }
         if (failed) this._toast(`📷 ${failed} Schritt-Foto(s) konnten nicht gespeichert werden – bitte nochmal am Schritt hinzufügen`);
       }
+      for (const [key, aliases] of Object.entries(dr.aliasEdits || {})) { // 🏷️ Spitznamen der Zutaten (gelten überall)
+        if (dr.items.some((i) => this._pk(i.name, i.note) === key)) await this._ws({ type: "einkaufsliste/product/update", key, aliases }).catch(() => {});
+      }
+      dr.aliasEdits = {};
       if (dr.proposalId && rid) await this._ws({ type: "einkaufsliste/proposal/accept", proposal_id: dr.proposalId, recipe_id: rid }).catch(() => {}); // ✅ freigegeben: weg von der Warteliste
+      if (stay && saved?.id) { // 💾 Zwischenspeichern: mit dem gespeicherten Stand weiter (neues Rezept hat jetzt eine Nummer – Schritt-Fotos gehen sofort)
+        this._toast(`💾 Zwischengespeichert – du kannst weitermachen`);
+        const snap = this._scrollSnap();
+        this._keepRsec = this._rsecClosed;
+        this._openRecipe(saved);
+        this._scrollRestore(snap);
+        return;
+      }
       this._toast(`Rezept „${msg.name}“ gespeichert 👨‍🍳${dr.proposalId ? " – Vorschlag freigegeben ✅" : ""}`);
       this._draft = null;
       this._view = "settings";
@@ -10337,9 +10388,15 @@ ${(() => {
     const box = this.$(boxId);
     const open = box.hidden;
     // immer nur ein Feld offen – spart Platz
-    for (const id of ["qtyBox", "inOwn", "forBox"]) if (id !== boxId) this.$(id).hidden = true;
+    for (const id of ["qtyBox", "inOwn", "forBox", "inAlias"]) if (id !== boxId) this.$(id).hidden = true;
     box.hidden = !open;
+    if (open && boxId === "inAlias" && !box.dataset.touched) { // 🏷️ vorhandene Spitznamen der getippten Zutat vorschlagen
+      const name = this.$("inName").value.trim();
+      const cur = name ? this._itemAliases({ name, note: this.$("inNote").value.trim() || null }).join(", ") : "";
+      box.value = cur; box.dataset.orig = cur; box.dataset.touched = "1";
+    }
     if (open) {
+      if (boxId === "inAlias") box.focus();
       if (boxId === "qtyBox") this._renderQtyChips();
       if (boxId === "forBox") this._renderForChips();
       if (boxId === "inOwn") box.focus();
@@ -10353,11 +10410,12 @@ ${(() => {
   }
 
   _clearForm() {
-    for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat"]) this.$(id).value = "";
+    for (const id of ["inName", "inQty", "inNote", "inOwn", "inFor", "inCat", "inAlias"]) this.$(id).value = "";
+    const ia = this.$("inAlias"); ia.dataset.orig = ""; delete ia.dataset.touched;
     this._refreshExamples();
     this._setBasic(false);
     this._renderSuggest();
-    for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox"]) this.$(id).hidden = true;
+    for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox", "inAlias"]) this.$(id).hidden = true;
     const tab = this._activeTab;
     this.$("inStore").value = tab === "none" ? "~none" : tab !== "all" ? tab : "";
     this._newPhoto = null;
@@ -10496,17 +10554,18 @@ ${(() => {
       ["tQty", "qtyBox", this.$("inQty")?.value.trim(), "mdi:numeric"],
       ["tOwn", "inOwn", this.$("inOwn")?.value.trim() ? "✓" : "", "mdi:pencil-outline"],
       ["tFor", "forBox", this.$("inFor")?.value, "mdi:account-outline"],
+      ["tAlias", "inAlias", this.$("inAlias")?.value.trim() ? "✓" : "", "mdi:tag-outline"],
     ];
     for (const [tool, boxId, value, icon] of tools) {
       const btn = this.$(tool);
       const box = this.$(boxId);
       if (!btn || !box) continue;
       btn.classList.toggle("on", !box.hidden);
-      btn.classList.toggle("filled", !!value && tool === "tOwn"); // ✏️ Notiz: kleiner blauer Punkt (wie Foto und Barcode)
+      btn.classList.toggle("filled", !!value && (tool === "tOwn" || tool === "tAlias")); // ✏️ Notiz: kleiner blauer Punkt (wie Foto und Barcode)
       const label = tool === "tQty" && value ? ((String(value).match(/\d+(?:[.,]\d+)?/) || [String(value).slice(0, 4)])[0]) : ""; // 🔢 Menge: nur die Zahl, in Blau, statt „123“
-      btn.classList.toggle("blue", !!value && tool !== "tOwn"); // 🔢 Menge, 👤 Für wen: Symbol blau, ohne Text dahinter
+      btn.classList.toggle("blue", !!value && tool !== "tOwn" && tool !== "tAlias"); // 🔢 Menge, 👤 Für wen: Symbol blau, ohne Text dahinter
       btn.classList.toggle("hasval", !!label);
-      const lblTxt = {tQty: "Menge", tOwn: "Notiz", tFor: "Für wen"}[tool] || "";
+      const lblTxt = {tQty: "Menge", tOwn: "Notiz", tFor: "Für wen", tAlias: "Spitzname"}[tool] || "";
       const key = icon + "|" + label;
       if (btn._key !== key) {
         btn._key = key;
@@ -15070,6 +15129,9 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       }
       case "recipe-save":
         this._saveRecipe();
+        break;
+      case "recipe-save-stay":
+        this._saveRecipe(true);
         break;
       case "recipe-delete": {
         if (!await elConfirm(`Rezept „${this._draft.name}“ wirklich löschen?`)) return;
