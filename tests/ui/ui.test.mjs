@@ -761,6 +761,22 @@ check("⚠️ Editor sagt, welche Zutat in keinem Schritt vorkommt", /Zucker/.te
 check("✔️ Zutat antippen = durchgestrichen, HA bekommt es mit, TV streicht durch", r.struck && JSON.stringify(r.done)==='[0]' && /Butterschmalz/.test(r.tvStruck), JSON.stringify(r));
 check("🟢 Kochmütze: grüner Rand + „Wird gerade gekocht · Schritt 3 von 4 · Jamila“, Punkt oben", /gerade gekocht/.test(r.join) && /3 von 4/.test(r.join) && /Jamila/.test(r.join) && r.dot, JSON.stringify(r));
 
+// 41) ▶️ „Weitermachen“: keine Personen-Auswahl mehr, gleich beim gemerkten Schritt, gemerkte Personenzahl
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const old=c._hass.callWS; c._hass.callWS=async()=>({}); const w=(ms)=>new Promise(r=>setTimeout(r,ms));
+  document.querySelectorAll("[data-elcook]").forEach(o=>o._elClose?.());
+  const r={id:"rres",name:"Weiter",items:[{name:"Mehl",quantity:"100 g"}],steps:"Eins Mehl\nZwei\nDrei\nVier",heat:[],servings:2,servings_unit:"persons"};
+  c._data.recipes=[r]; c._cookMode(r); await w(200); let ov=document.querySelector("[data-elcook]");
+  [...ov.querySelectorAll("[data-elintro] button")].find(b=>/^\+$|＋/.test(b.textContent.trim()))?.click(); await w(50);
+  [...ov.querySelectorAll("[data-elintro] button")].find(b=>/Los geht/.test(b.textContent))?.click(); await w(100);
+  for (let i=0;i<2;i++){ [...ov.querySelectorAll("button")].find(b=>/Weiter ›/.test(b.textContent))?.click(); await w(80); }
+  ov._elClose(); await w(80); delete c._cookPers[r.id];
+  c._cookMode(r); await w(250);
+  [...document.querySelectorAll("button")].find(b=>/^Weitermachen$/.test(b.textContent.trim()))?.click(); await w(250);
+  ov=document.querySelector("[data-elcook]");
+  const res={ intro: !!ov?.querySelector("[data-elintro]"), pos: ov?.textContent.match(/Schritt \d von \d/)?.[0], pers: ov?.textContent.match(/für (\d+) Personen/)?.[1] };
+  ov?._elClose(); c._hass.callWS=old; return res; });
+check("▶️ Weitermachen: ohne Personen-Auswahl direkt bei Schritt 3, Personenzahl gemerkt", !r.intro && r.pos === "Schritt 3 von 5" && r.pers === "3", JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

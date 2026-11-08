@@ -426,6 +426,8 @@ const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-M
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", year: "#e91e63", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
 const EL_NEWS = [
+  ["▶️ <b>Weitermachen ohne Umweg:</b> Wer beim Kochen rausgeht und später „Weitermachen“ wählt, landet direkt beim gemerkten Schritt – ohne nochmal die Personen-Auswahl. Die Personenzahl wird mit gemerkt.",
+   "▶️ <b>Continue without a detour:</b> if you leave cook mode and later choose “Continue”, you land right at the remembered step – without the people selection again. The number of people is remembered too."],
   ["🟢 <b>Wird gerade gekocht:</b> Kocht jemand (egal an welchem Gerät), hat das Rezept in der Kochmütze einen grünen Rand und darunter „👨‍🍳 Wird gerade gekocht · Schritt 3 von 8 · Name“. Antippen = mitkochen an derselben Stelle. Oben an der Kochmütze zeigt ein grüner Punkt, dass gerade gekocht wird.",
    "🟢 <b>Being cooked right now:</b> when someone is cooking (on any device), the recipe in the chef's hat has a green border and below it “👨‍🍳 Being cooked right now · Step 3 of 8 · name”. Tap = cook along at the same step. A green dot on the chef's hat at the top shows that someone is cooking."],
   ["🥕 <b>Kochmodus zeigt nur die Zutaten für den Schritt:</b> Beim Kochen stehen rechts nur noch die Zutaten, die du gerade brauchst (auch auf der TV-Anzeige). „📋 Alle Zutaten“ zeigt bei Bedarf alles. Die Karte erkennt die Zutaten selbst im Schritt-Text (auch „Hack“ für „Hackfleisch“). Dazu kennt sie Koch-Wörter: „würzen“ = Salz &amp; Pfeffer, „panieren“ = Mehl, Eier &amp; Paniermehl, „anbraten“ = Öl/Butter, „ablöschen“ = Wein/Brühe, „Nudeln kochen“ = Salz, „restliche Zutaten“ = alles, was noch nicht dran war. Passt es nicht, tippst du im Rezept-Editor unter dem Schritt auf die 🥕 und wählst die richtigen aus. Der Editor sagt auch, welche Zutat in keinem Schritt vorkommt. ✔️ Beim Kochen eine Zutat antippen = durchgestrichen (schon drin) – auch auf dem Fernseher.",
@@ -11421,11 +11423,14 @@ ${(() => {
     nSteps = steps.length;
     // 📌 Nr. 31: pro Rezept merken, bei welchem Schritt man war – beim nächsten Start Weitermachen anbieten (30 Tage)
     const memGet = () => { try { const m = (JSON.parse(localStorage.getItem("einkaufsliste_cookstep") || "{}") || {})[r.id]; return m && Date.now() - (m.t || 0) < 30 * 864e5 ? Number(m.idx) | 0 : 0; } catch (_) { return 0; } };
-    const memSet = (n) => { if (!r.id) return; try { const all = JSON.parse(localStorage.getItem("einkaufsliste_cookstep") || "{}") || {}; if (n > 0) all[r.id] = { idx: n, t: Date.now() }; else delete all[r.id]; const keep = Object.entries(all).sort((a, b) => b[1].t - a[1].t).slice(0, 40); localStorage.setItem("einkaufsliste_cookstep", JSON.stringify(Object.fromEntries(keep))); } catch (_) { /* geht auch ohne */ } };
+    const memSet = (n) => { if (!r.id) return; try { const all = JSON.parse(localStorage.getItem("einkaufsliste_cookstep") || "{}") || {}; if (n > 0) all[r.id] = { idx: n, t: Date.now(), pers: typeof pers === "number" ? pers : null }; else delete all[r.id]; const keep = Object.entries(all).sort((a, b) => b[1].t - a[1].t).slice(0, 40); localStorage.setItem("einkaufsliste_cookstep", JSON.stringify(Object.fromEntries(keep))); } catch (_) { /* geht auch ohne */ } };
+    let resumed = false; // ▶️ „Weitermachen“: keine Personen-Auswahl mehr, gleich beim gemerkten Schritt (mit der gemerkten Personenzahl)
     if (ask && !startIdx && r.id) {
       const m = memGet();
-      if (m > 0 && m < steps.length && await elConfirm(EL_LANG === "de" ? `Beim letzten Mal warst du bei Schritt ${m + 1} von ${total}. Dort weitermachen?` : `Last time you were at step ${m + 1} of ${total}. Continue there?`, { danger: false, yes: elT("Weitermachen"), no: elT("Von vorn") })) startIdx = m;
-      else memSet(0);
+      if (m > 0 && m < steps.length && await elConfirm(EL_LANG === "de" ? `Beim letzten Mal warst du bei Schritt ${m + 1} von ${total}. Dort weitermachen?` : `Last time you were at step ${m + 1} of ${total}. Continue there?`, { danger: false, yes: elT("Weitermachen"), no: elT("Von vorn") })) {
+        startIdx = m; resumed = true;
+        try { const p = Number((JSON.parse(localStorage.getItem("einkaufsliste_cookstep") || "{}") || {})[r.id]?.pers); if (p >= 1 && p <= 99 && r.servings) (this._cookPers ||= {})[r.id] = p; } catch (_) { /* dann wie zuletzt */ }
+      } else memSet(0);
     }
     idx = Math.max(0, Math.min(Number(startIdx) | 0, total - 1));
     const ov = makeOverlay({ full: true });
@@ -11808,7 +11813,7 @@ ${(() => {
     };
     ov._elRefresh = refresh;
     this._cookTabs();
-    if (ask && (r.servings || freeIdx().length > 1)) { // 👥 Vor dem Start: für wie viele Personen wird gekocht? (die Zutaten rechnen sich danach um) · 🔥 und womit gegart wird
+    if (ask && !resumed && (r.servings || freeIdx().length > 1)) { // 👥 Vor dem Start: für wie viele Personen wird gekocht? (die Zutaten rechnen sich danach um) · 🔥 und womit gegart wird
       const intro = document.createElement("div");
       intro.dataset.elintro = "1";
       bWish.style.display = "none"; // ✏️ Änderungswunsch gibt es erst bei den Schritten, nicht bei der Personen-/Geräte-Auswahl
