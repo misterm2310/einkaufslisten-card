@@ -5122,3 +5122,95 @@ async def test_kochmodus_anzeige(hass, setup, hass_ws_client, freezer) -> None:
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert hass.states.get("sensor.einkaufsliste_kochmodus").state == "aus" and m.cooking is None
+
+
+# ---------------------------------------------------------------- 🆕 Beta 2.76.28
+async def test_offers_get_country(hass, setup):
+    """🌍 Angebote merken sich ihr Land: am Angebot, am Aufruf oder aus der Währung (CHF = Schweiz)."""
+    m = mgr(hass)
+    m.report_offers([
+        {"name": "Milch", "price": 1.2, "store": "Aldi", "country": "ch"},
+        {"name": "Käse", "price": 3.5, "store": "Aldi", "currency": "CHF"},
+        {"name": "Brot", "price": 2.0, "store": "Aldi"},
+    ], source="test")
+    by = {o["n"]: o for o in m.offers_ext["test"]}
+    assert by["Milch"]["ctry"] == "CH"
+    assert by["Käse"]["ctry"] == "CH"
+    assert "ctry" not in by["Brot"]  # ohne Land gilt es überall
+    m.report_offers([{"name": "Brot", "price": 2.0, "store": "Aldi"}], source="de", country="DE")
+    assert m.offers_ext["de"][0]["ctry"] == "DE"
+
+
+async def test_basics_list(hass, setup):
+    """🧂 Grundvorrat-Liste wird gespeichert und als Einstellung geliefert."""
+    m = mgr(hass)
+    m.set_basics(True, ["Salz", "Pfeffer", "Salz", ""])
+    assert m.basics_on is True
+    assert m.basics == ["Salz", "Pfeffer"]
+    m.set_basics(False)
+    assert m.basics_on is False and m.basics == ["Salz", "Pfeffer"]
+
+
+def test_mealie_zip_and_schema_json():
+    """🍲 Mealie-Export (.zip mit Bild) und schema.org-JSON werden gelesen."""
+    import io, json, zipfile
+    from custom_components.einkaufsliste.recipe_import import OwnFormat, parse_recipe_file
+
+    mealie = {
+        "name": "Ofenkartoffeln", "recipeServings": 4, "totalTime": "PT45M",
+        "recipeIngredient": [
+            {"title": "Für die Kartoffeln"},
+            {"quantity": 1, "unit": {"name": "kg"}, "food": {"name": "Kartoffeln"}, "note": ""},
+            {"note": "Salz"},
+        ],
+        "recipeInstructions": [
+            {"text": "Backofen auf 200 °C Umluft vorheizen."},
+            {"text": "Kartoffeln 35 Minuten backen."},
+        ],
+    }
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("ofenkartoffeln/ofenkartoffeln.json", json.dumps(mealie))
+        zf.writestr("ofenkartoffeln/images/original.webp", b"RIFF0000WEBP")
+    recs = parse_recipe_file(buf.getvalue(), "mealie.zip")
+    assert len(recs) == 1
+    r = recs[0]
+    assert r["name"] == "Ofenkartoffeln" and r["minutes"] == 45 and r["servings"] == 4
+    names = [i["name"] for i in r["items"]]
+    assert "Kartoffeln" in names and "Salz" in names and len(names) == 2
+    assert len(r["steps"].split("\n")) == 2
+    assert r["image"].startswith("data:image/webp;base64,")
+
+    schema = {"@context": "https://schema.org", "@graph": [
+        {"@type": "WebPage"},
+        {"@type": "Recipe", "name": "Pfannkuchen", "recipeIngredient": ["200 g Mehl", "2 Eier"],
+         "recipeInstructions": [{"@type": "HowToStep", "text": "Alles verrühren."}]},
+    ]}
+    recs = parse_recipe_file(json.dumps(schema).encode(), "rezept.json")
+    assert recs[0]["name"] == "Pfannkuchen" and len(recs[0]["items"]) == 2
+
+    with pytest.raises(OwnFormat):
+        parse_recipe_file(json.dumps({"einkaufsliste_rezepte": 1, "recipes": []}).encode(), "x.json")
+    with pytest.raises(ValueError):
+        parse_recipe_file(b"", "x.json")
+
+
+def test_heat_from_steps():
+    """🔥 Backofen & Airfryer aus den Schritten herauslesen."""
+    from custom_components.einkaufsliste.recipe_heat import guess_heat
+
+    rows = guess_heat([
+        "Backofen auf 180 °C Umluft vorheizen.",
+        "Teig schichten.",
+        "30-35 Minuten backen.",
+        "Pommes in der Heißluftfritteuse bei 200 Grad 15 Min garen.",
+        "Fritteuse sauber machen.",
+    ])
+    assert len(rows) == 2
+    oven, fryer = rows
+    assert oven["device"] == "Backofen" and oven["mode"] == "Umluft" and oven["temp"] == 180
+    assert oven["preheat"] is True and oven["minutes"] == 30 and oven["minutes_to"] == 35
+    assert oven["steps"] == [1, 3]
+    assert fryer["device"] == "Heißluftfritteuse" and fryer["temp"] == 200 and fryer["minutes"] == 15
+    assert fryer["steps"] == [4]
+    assert guess_heat("") == []

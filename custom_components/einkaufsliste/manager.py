@@ -410,6 +410,18 @@ def _clean_branches(value: Any) -> list[dict[str, Any]] | None:
     return out or None
 
 
+# 🌍 Währungen, die eindeutig ein Land verraten (EUR gilt in vielen Ländern → kein Hinweis)
+CURRENCY_COUNTRY = {"CHF": "CH", "GBP": "GB", "DKK": "DK", "PLN": "PL", "CZK": "CZ", "SEK": "SE", "NOK": "NO", "HUF": "HU"}
+
+
+def _offer_country(value: Any) -> str | None:
+    """🌍 Land eines gemeldeten Angebots als ISO-Kürzel – Unfug wird still ignoriert (dann gilt es überall)."""
+    try:
+        return _clean_country(value)
+    except ValueError:
+        return None
+
+
 def _clean_currency(value: Any) -> str | None:
     """💱 Währung: höchstens 5 Zeichen, nichts, was in einer Webseite Unfug anstellen kann."""
     text = re.sub(r"[<>\"'&`\s]", "", str(value or ""))[:5].upper() if isinstance(value, str) else ""
@@ -587,6 +599,8 @@ class EinkaufslisteManager:
         self.ai_agent: str | None = None  # 🤖 KI-Kochen: gewählter Home-Assistant-Assistent (bleibt gemerkt, auch wenn aus)
         self.ai_on: bool = False  # 🤖 KI-Kochen an/aus (Standard aus)
         self.ai_pantry: list[str] = []  # 🧂 „Immer im Haus“ – geht bei jeder KI-Kochen-Anfrage mit
+        self.basics: list[str] = []  # 🧂 Zentrale Grundvorrat-Liste: gilt in ALLEN Rezepten als „haben wir immer“
+        self.basics_on = False
         self.ai_avoid: list[str] = []  # 🚫 „Das nie vorschlagen“ (Allergien, Abneigungen)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
         self.plan_reset_on: bool = True  # 📅 Wochenplan: eingeplante Rezepte am Wochentag automatisch zurücksetzen
@@ -831,6 +845,8 @@ class EinkaufslisteManager:
         self.ai_on = bool(data.get("ai_on", False)) and self.ai_agent is not None
         self.ai_pantry = _name_list(data.get("ai_pantry"))
         self.ai_avoid = _name_list(data.get("ai_avoid"))
+        self.basics = _name_list(data.get("basics"), limit=80)
+        self.basics_on = bool(data.get("basics_on", False))
         self.privacy = bool(data.get("privacy", False))
         self.spend = bool(data.get("spend", False))
         self.spend_auto = bool(data.get("spend_auto", False))
@@ -928,6 +944,8 @@ class EinkaufslisteManager:
             "ai_on": self.ai_on,
             "ai_pantry": self.ai_pantry,
             "ai_avoid": self.ai_avoid,
+            "basics": self.basics,
+            "basics_on": self.basics_on,
             "privacy": self.privacy,
             "spend": self.spend,
             "spend_auto": self.spend_auto,
@@ -1042,6 +1060,8 @@ class EinkaufslisteManager:
                 "ai_on": self.ai_on,
                 "ai_pantry": self.ai_pantry,
                 "ai_avoid": self.ai_avoid,
+                "basics": self.basics,
+                "basics_on": self.basics_on,
                 "privacy": self.privacy,
                 "cards_on": self.cards_on,
                 "spend": self.spend,
@@ -1128,12 +1148,14 @@ class EinkaufslisteManager:
     EXT_MAX = 300  # je Quelle höchstens so viele Angebote merken
 
     def report_offers(self, offers: list[dict[str, Any]], source: str | None = None,
-                      replace: bool = True, now: datetime | None = None) -> dict[str, Any]:
+                      replace: bool = True, now: datetime | None = None,
+                      country: str | None = None) -> dict[str, Any]:
         """📬 Dienst „angebote_melden“: eine eigene Automation (z. B. AppDaemon, REST, Scraper) meldet Angebote.
         Die Karte zeigt sie wie die Marktguru-Angebote (🏷️ am Artikel, „🛒 Hier kaufen“).
         Es geht dabei nichts ins Internet – die Liste nimmt nur an, was ihr geschickt wird."""
         now = now or dt_util.utcnow()
         src = re.sub(r"\s+", " ", str(source or "").strip())[:40] or "extern"
+        call_country = _offer_country(country)
         new: list[dict[str, Any]] = []
         skipped = 0
         for raw in offers or []:
@@ -1154,6 +1176,10 @@ class EinkaufslisteManager:
             off = {"n": name, "r": store, "p": round(float(price), 2), "from": frm, "to": to,
                    "d": title, "q": (str(raw.get("description") or "").strip()[:200] or None), "img": None,
                    "cur": _clean_currency(raw.get("currency")), "src": src}
+            # 🌍 Land: am Angebot → am Aufruf → aus der Währung (CHF = Schweiz). Sonst gilt es überall.
+            ctry = _offer_country(raw.get("country")) or call_country or CURRENCY_COUNTRY.get(off["cur"] or "")
+            if ctry:
+                off["ctry"] = ctry
             if reg is not None and float(reg) > off["p"]:
                 off["op"] = round(float(reg), 2)
             url = self._offer_url(raw.get("url"))
@@ -1617,6 +1643,14 @@ class EinkaufslisteManager:
             self.ai_pantry = _name_list(pantry)
         if avoid is not None:
             self.ai_avoid = _name_list(avoid)
+        self._changed()
+
+    def set_basics(self, on: Any = None, names: Any = None) -> None:
+        """🧂 Zentrale Grundvorrat-Liste (Salz, Pfeffer, Olivenöl …) und ihr Schalter; None = nicht ändern."""
+        if on is not None:
+            self.basics_on = bool(on)
+        if names is not None:
+            self.basics = _name_list(names, limit=80)
         self._changed()
 
     def set_cards_on(self, on: bool) -> None:
@@ -4602,6 +4636,8 @@ class EinkaufslisteManager:
                 "category_id": self._check_category(raw.get("category_id")),
                 "basic": bool(raw.get("basic")),  # 🧂 Grundvorrat („haben wir immer“)
             }
+            if raw.get("no_basic") and not entry["basic"]:
+                entry["no_basic"] = True  # 🧂 steht auf der Grundvorrat-Liste, hier aber ausdrücklich abgewählt
             key = _key(entry["name"], entry["note"], entry["for_whom"], entry["store_id"])
             if key in seen:
                 raise ValueError(f"„{name}“ steht doppelt im Rezept.")

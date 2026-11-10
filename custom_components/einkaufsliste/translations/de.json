@@ -129,7 +129,7 @@
       "fields": {
         "offers": {
           "name": "Angebote",
-          "description": "Liste mit Einträgen: name (Pflicht, Artikelname), price (Pflicht), store, title, regular_price, valid_from, valid_until, description, currency (z. B. CHF), url (https-Link zur Produktseite)."
+          "description": "Liste mit Einträgen: name (Pflicht, Artikelname), price (Pflicht), store, title, regular_price, valid_from, valid_until, description, currency (z. B. CHF), url (https-Link zur Produktseite), country (z. B. CH, Land des Angebots)."
         },
         "source": {
           "name": "Quelle",
@@ -138,6 +138,10 @@
         "replace": {
           "name": "Ersetzen",
           "description": "An = alte Angebote dieser Quelle fallen weg. Aus = dazulegen. Leere Liste + an = Quelle leeren."
+        },
+        "country": {
+          "name": "Land",
+          "description": "Freiwillig: Land aller Angebote dieses Aufrufs (z. B. CH). Reihenfolge: Land am Angebot → dieses Feld → Währung (CHF = Schweiz). Angebote mit Land erscheinen nur bei Artikeln, deren Geschäft in diesem Land liegt (oder die noch kein Geschäft haben)."
         }
       }
     }

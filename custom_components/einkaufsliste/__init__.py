@@ -79,6 +79,7 @@ SCHEMA_OFFER = vol.Schema(
         vol.Optional("description"): vol.Any(None, _txt),
         vol.Optional("currency"): vol.Any(None, _txt),
         vol.Optional("url"): vol.Any(None, _txt),
+        vol.Optional("country"): vol.Any(None, _txt),  # 🌍 Land des Angebots (z. B. CH)
     },
     extra=vol.REMOVE_EXTRA,
 )
@@ -87,6 +88,7 @@ SCHEMA_REPORT_OFFERS = vol.Schema(
         vol.Required("offers"): vol.All(cv.ensure_list, [SCHEMA_OFFER]),
         vol.Optional("source", default="extern"): cv.string,
         vol.Optional("replace", default=True): cv.boolean,
+        vol.Optional("country"): vol.Any(None, _txt),  # 🌍 Land für alle Angebote dieses Aufrufs
     }
 )
 SCHEMA_CLEANUP = vol.Schema(
@@ -248,7 +250,8 @@ def _register_services(hass: HomeAssistant) -> None:
         """📬 Angebote aus einer eigenen Automation annehmen (nichts geht ins Internet)."""
         try:
             return _get_manager(hass).report_offers(
-                call.data["offers"], call.data.get("source"), call.data["replace"]
+                call.data["offers"], call.data.get("source"), call.data["replace"],
+                country=call.data.get("country"),
             )
         except (ValueError, TypeError) as err:
             raise HomeAssistantError(str(err)) from err

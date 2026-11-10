@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.27";
+const EL_VERSION = "2.76.28-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -260,7 +260,7 @@ const EL_HELP = {
     "<b>Delete shopping list products</b> removes items from the list for good (barcode and suggestion stay). <b>🗓️ Not bought for 3 months</b> shows old products, with “Delete all” if you like.",
   ]],
   recipes: ["list", [
-    "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json; US-Maße werden umgerechnet – nur Admins).",
+    "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json, 🍲 Mealie-.zip/.json und schema.org; US-Maße werden umgerechnet – nur Admins). Dazu <b>🔗 Rezept aus Link</b> (ganzes Rezept auf einmal) und <b>🧂 Grundvorrat</b> (zentrale Liste: Salz, Pfeffer … gelten in allen Rezepten als „haben wir immer“).",
     "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, <b>⏱️ Dauer ca.</b> (Minuten; steht in der Kochmütze neben der Personenzahl, ohne Eintrag geschätzt mit „≈“, beim Rezept-Link automatisch), Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Rezept aus Fotos“</b> oben rechts bei „Eingaben“ (eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. <b>🥕 Zutaten pro Schritt:</b> der Knopf mit der Möhre unter jedem Schritt zeigt, welche Zutaten dazugehören – automatisch aus dem Text erkannt (≈), antippen legt sie fest. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
     "<b>🔗 Quelle &amp; Original:</b> Beim Import per Link merkt sich das Rezept die Adresse (im Editor unter dem Namen änderbar, auch von Hand eintragbar). In der Rezeptliste öffnet „Original öffnen“ die Seite. <b>👨‍🍳 Kochmodus:</b> Er merkt sich pro Rezept den Schritt und fragt beim nächsten Start, ob du dort weitermachen willst.",
     "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (für alle, mit Airfryer Control ab Beta 17) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
@@ -418,6 +418,24 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["📍 <b>Wer ist gerade im Laden?</b> Geschäft oben antippen – über der Liste steht „📍 Gerade dort: Marco, Jamila“. Der dicke Rand bleibt jetzt auch beim ausgewählten Reiter sichtbar.",
+   "📍 <b>Who's at the store?</b> Tap a store at the top – above the list it says “📍 There right now: Marco, Jamila”. The thick border now also stays visible on the selected tab.", "beta.1"],
+  ["🌍 <b>Angebote nur im richtigen Land:</b> Gemeldete Angebote können ein Land haben (<code>country</code>, pro Angebot oder für den ganzen Aufruf, sonst aus der Währung CHF = Schweiz). 🏷️ und „🛒 Hier kaufen“ gibt es dann nur bei Geschäften aus diesem Land, genauer Name zuerst („Aldi Suisse“ vor „Aldi“).",
+   "🌍 <b>Offers only in the right country:</b> reported offers can carry a country (<code>country</code>, per offer or for the whole call, otherwise from the currency CHF = Switzerland). 🏷️ and “🛒 Buy here” then only show for stores in that country, exact name first.", "beta.1"],
+  ["📱 <b>Offline-App richtig installieren:</b> Deutlicher Hinweis in ⚙️ → Offline-App und in der Anleitung: nicht das Dashboard speichern, die Adresse muss auf /einkaufsliste/app/ enden. Ohne hinterlegte Adresse steht dort, wie man sie selbst eintippt.",
+   "📱 <b>Install the offline app the right way:</b> clear hint in ⚙️ → Offline app and in the guide: don't save the dashboard, the address must end in /einkaufsliste/app/. Without a stored address it explains how to type it yourself.", "beta.1"],
+  ["🔗 <b>Rezept aus Link in einem Rutsch:</b> ⚙️ → Rezepte → „Rezept aus Link“: Name, Zutaten, Schritte, Foto, Dauer und Quelle auf einmal, danach Editor zum Prüfen. Auch im Editor holt ein Link jetzt gleich die Schritte mit.",
+   "🔗 <b>Recipe from link in one go:</b> ⚙️ → Recipes → “Recipe from link”: name, ingredients, steps, photo, time and source at once, then the editor for checking. In the editor a link now fetches the steps too.", "beta.1"],
+  ["🍲 <b>Mealie-Import:</b> Unter „Rezepte aus Datei“ die .zip (mit Foto) oder die .json aus Mealie einlesen – auch das allgemeine schema.org-Format. Menge, Einheit, Zutat und Bemerkung bleiben getrennt.",
+   "🍲 <b>Mealie import:</b> under “Recipes from file” read the .zip (with photo) or the .json from Mealie – the general schema.org format works too. Quantity, unit, ingredient and note stay separate.", "beta.1"],
+  ["🔥 <b>Backofen & Airfryer automatisch:</b> Beim Import (Link, Datei, Mealie, Foto) werden Gerät, Grad, Minuten und Modus aus den Schritten in „Backofen & Co.“ eingetragen, verknüpft mit dem Schritt. Beim Airfryer kommt im Kochmodus der 🍟-Knopf. Bitte kurz prüfen.",
+   "🔥 <b>Oven & air fryer automatically:</b> when importing (link, file, Mealie, photo), appliance, degrees, minutes and mode are taken from the steps into “Oven & co.”, linked to the step. For the air fryer, cook mode shows the 🍟 button. Please check.", "beta.1"],
+  ["🧂 <b>Zentrale Grundvorrat-Liste:</b> ⚙️ → Rezepte → Grundvorrat (mit Schalter): Salz, Pfeffer, Olivenöl … gelten in allen Rezepten als „haben wir immer“, auch bei neu importierten. Der Schalter am Rezept geht vor.",
+   "🧂 <b>Central pantry list:</b> ⚙️ → Recipes → Pantry staples (with a switch): salt, pepper, olive oil … count as “always at home” in all recipes, also newly imported ones. The switch in the recipe wins.", "beta.1"],
+  ["📷 <b>Rezept aus Fotos sortiert selbst:</b> Zutaten und Zubereitung werden auch ohne Überschriften erkannt, Unwichtiges (Folgen, Likes, @Namen, #Tags, Uhrzeit – z. B. TikTok-Screenshots) fliegt raus.",
+   "📷 <b>Recipe from photos sorts by itself:</b> ingredients and steps are recognised even without headings, clutter (follow, likes, @names, #tags, clock – e.g. TikTok screenshots) is dropped.", "beta.1"],
+  ["📷 <b>Produktfotos offline:</b> Die Offline-App merkt sich die Fotos aller offenen Artikel – im Funkloch sind sie da. Abgehakt = Foto wieder weg aus dem Speicher.",
+   "📷 <b>Product photos offline:</b> the offline app keeps the photos of all open items – they are there in a dead zone. Checked off = photo gone from the storage again.", "beta.1"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
@@ -623,7 +641,7 @@ const VIEW_OPTS = [
   ["new", "✨ Neu-Zeichen", "neu seit deinem letzten Blick"],
   ["cat_color", "🎨 Farbe der Kategorie", "farbiger Streifen links"],
   ["tabs", "🏪 Geschäfte-Leiste oben", "die Reiter Alle · Netto · Aldi …"],
-  ["zone_here", "📍 Jemand ist gerade dort", "Reiter oben bekommt einen dicken Rand, solange jemand in einer Zone des Geschäfts ist (aus bei Datenschutz an)"],
+  ["zone_here", "📍 Jemand ist gerade dort", "Reiter oben bekommt einen dicken Rand, solange jemand in einer Zone des Geschäfts ist; beim ausgewählten Geschäft steht oben, wer dort ist (aus bei Datenschutz an)"],
   ["in_name", "✍️ Eingabefeld „Was brauchen wir?“", "mit Häkchen zum Eintragen"],
   ["in_store", "🏪 Geschäft-Auswahl beim Eintragen", ""],
   ["in_cat", "🗂️ Kategorie-Auswahl beim Eintragen", ""],
@@ -2994,6 +3012,8 @@ ha-card.labels .tool { padding:4px 6px; }
 .tab { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; --c: var(--primary-color,#03a9f4); flex:0 0 auto; border:1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background:transparent; border-radius:999px; padding:5px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.9em; }
 .tab.closed:not(.active) { opacity:.45; filter:grayscale(1); } /* 🕒 Geschäft hat gerade zu */
 .tab.here { border-width:3px; box-shadow:0 0 0 2px var(--c); } /* 📍 gerade ist jemand dort */
+.tab.active.here { box-shadow:0 0 0 2px var(--card-background-color, #fff), 0 0 0 4.5px var(--c); } /* 📍 auch beim ausgewählten (eingefärbten) Reiter sichtbar: Ring mit Abstand */
+.herebar { --c: var(--primary-color,#03a9f4); margin:0 2px 8px; padding:6px 12px; border-radius:12px; font-size:.9em; border-left:4px solid var(--c); background:color-mix(in srgb, var(--c) 12%, transparent); } /* 📍 Gerade dort: Namen */
 .tab.closed.active { filter:grayscale(.8); opacity:.8; }
 .tab .tclock { --mdc-icon-size:17px; color:var(--c); flex:0 0 auto; display:inline-flex; }
 .tab.active .tclock { color:var(--tc, #fff); }
@@ -3961,9 +3981,30 @@ function elShrinkData(data, max = 900, q = 0.8) {
   });
 }
 // 🍳 Rezept-Seite lesen: Name, Zutaten und Schritte trennen (an den Überschriften „Zutaten“ / „Zubereitung“)
+// 🧹 Unwichtiges aus Foto-Text (z. B. Screenshot von TikTok, Instagram, YouTube): Knöpfe, Zähler, @Namen, #Tags, Uhrzeit, Akku, Links
+const EL_OCR_NOISE = /^(?:folgen|follow|gefällt mir|like[sd]?|teilen|share|kommentar(?:e|en)?|comments?|speichern|gespeichert|save[d]?|antworten|reply|mehr anzeigen|see more|more|weniger|original(?:ton|-?sound)|sound|musik|music|abonnieren|subscribe|für dich|for you|live|entdecken|discover|startseite|home|posteingang|inbox|profil|profile|freunde|friends|übersetzung anzeigen|see translation|gesponsert|sponsored|anzeige|werbung|link in bio|rezept unten|recipe below|repost|duett|duet|stitch|remix|vor \d+ (?:std|min|tag(?:en)?|wochen?)\.?|\d+\s*(?:std|min|h|d|w)\.?)$/i;
+function elOcrNoise(l) {
+  const t = String(l || "").trim();
+  if (t.length < 2) return true;
+  if (!/[\p{L}]{2}/u.test(t)) return !/^\d+\s*(?:g|kg|ml|l|el|tl|stk|stück|prise)\b/i.test(t); // nur Zahlen/Zeichen/Emojis (12,3K · 4:21 · 87 %)
+  if (EL_OCR_NOISE.test(t.replace(/[^\p{L}\p{N}\s.-]/gu, "").trim())) return true;
+  if (/^[@#]\S+$/.test(t) || /^(?:[@#]\S+\s*){2,}$/.test(t)) return true; // @kochprofi, #rezept #lecker
+  if (/^(?:https?:\/\/|www\.)\S+$/i.test(t)) return true;
+  if (/^\d{1,2}:\d{2}(?:\s*[\/|]\s*\d{1,2}:\d{2})?$/.test(t)) return true; // Uhrzeit / Video-Länge
+  if (/^[\d.,]+\s*[kKmM]?\s*(?:likes?|views?|aufrufe|kommentare|comments|mal geteilt|shares?)?$/i.test(t)) return true;
+  return false;
+}
+// 🥕 oder 👨‍🍳? Kurze Zeile mit Menge/Einheit vorn = Zutat; ganzer Satz oder „1.“ vorn = Schritt
+function elOcrIsStep(l) {
+  const t = String(l || "").trim();
+  if (/^\d+\s*[.)]\s+\S/.test(t) && !/^\d+\s*[.)]\s*\d/.test(t)) return true; // „1. Zwiebeln schneiden“
+  if (/^(?:\d+[.,/]?\d*|½|¼|¾|ein(?:e|en)?|eine?\s+prise)\s*(?:g|kg|ml|l|el|tl|cl|dl|stk\.?|stück|prise|bund|dose|becher|pck\.?|päckchen|zehe[n]?|scheibe[n]?|tasse[n]?|cup|tbsp|tsp|oz)?\b/i.test(t) && t.split(/\s+/).length <= 7) return false;
+  const words = t.split(/\s+/).length;
+  return words >= 8 || (words >= 5 && /[.!]$/.test(t));
+}
 function elOcrRecipeParts(text) {
   const raw = String(text || "").replace(/\r/g, "");
-  const lines = raw.split("\n");
+  const lines = raw.split("\n").filter((l) => !elOcrNoise(l)); // 🧹 Social-Media-Kram raus
   const isIng = (l) => /^\W*zutaten\b/i.test(l.trim());
   const isSteps = (l) => /^\W*(zubereitung|zubereiten|anleitung|so geht'?s|arbeitsschritte)\b/i.test(l.trim());
   let ing = -1, st = -1;
@@ -3978,7 +4019,17 @@ function elOcrRecipeParts(text) {
     // 📱 Satzende ohne Lookbehind erkennen, sonst streikt iOS < 16.4
     stepText = (paras.length > 1 ? paras : body.replace(/([.!?])\s+(?=[A-ZÄÖÜ])/g, "$1\u0000").split("\u0000").map((x) => x.replace(/\s*\n\s*/g, " ").trim())).filter(Boolean).join("\n");
   }
-  if (ing < 0 && st < 0) ingLines = lines.filter((l) => l.trim()).slice(1);
+  if (ing < 0 && st < 0) { // 🤷 keine Überschriften (typisch Screenshot): jede Zeile selbst einordnen
+    const rest = lines.filter((l) => l.trim()).slice(1), steps = [];
+    ingLines = [];
+    for (const l of rest) (elOcrIsStep(l) ? steps : ingLines).push(l);
+    stepText = steps.map((l) => l.replace(/^\s*\d+\s*[.)]\s*/, "").trim()).join("\n");
+  } else if (st < 0 && ing >= 0) { // nur „Zutaten“ als Überschrift: lange Sätze darin sind Schritte
+    const keep = [], steps = [];
+    for (const l of ingLines) (elOcrIsStep(l) ? steps : keep).push(l);
+    ingLines = keep;
+    if (steps.length) stepText = steps.map((l) => l.replace(/^\s*\d+\s*[.)]\s*/, "").trim()).join("\n");
+  }
   return { name, ingredients: ingLines.map((l) => l.replace(/^[\s\-–—•*·|]+/, "").trim()).filter((l) => l.length > 1).join("\n"), steps: stepText };
 }
 
@@ -4470,7 +4521,7 @@ class EinkaufslisteCard extends HTMLElement {
     { const n = this._cookNow(), csig = n ? `${n.id}|${n.name}|${n.step}|${n.total}|${n.by}` : ""; // 🟢 jemand fängt an zu kochen / blättert / hört auf
       if (csig !== this._cookSig) { const first = this._cookSig === undefined; this._cookSig = csig; if (!first && this._data) { this._syncRecipesBtn(); if (this._view === "recipes") this._renderRecipeList(); } } }
     if (this._data) { // 📍 jemand kommt/geht in eine Geschäfts-Zone → Reiter neu (dicker Rand)
-      const zsig = this._data.stores.map((s) => this._someoneAt(s) ? 1 : 0).join("");
+      const zsig = this._data.stores.map((s) => (this._someoneAt(s) ? 1 : 0) + ":" + this._peopleAt(s).join(",")).join("|"); // 📍 auch wenn jemand anderes kommt
       if (zsig !== this._zoneSig) { const first = this._zoneSig === undefined; this._zoneSig = zsig; if (!first) this._renderTabs(); }
     }
   }
@@ -5087,6 +5138,7 @@ class EinkaufslisteCard extends HTMLElement {
         <div class="undobar" id="undoBar" role="status" aria-live="polite" hidden></div>
         <div id="listView">
           <div class="tabs" id="tabs"></div>
+          <div class="herebar" id="hereBar" role="status" hidden></div>
           <form class="add" id="addForm" autocomplete="off">
             <input id="inName" placeholder="Was brauchen wir/du? z. B. Milch" enterkeyhint="done">
             <button class="primary addbtn" type="submit" title="Hinzufügen"><ha-icon icon="mdi:check-bold"></ha-icon></button>
@@ -5802,16 +5854,41 @@ class EinkaufslisteCard extends HTMLElement {
   _someoneAt(s) {
     if (this._privacyOn() || this._viewPrefs().zone_here === false) return false;
     if (storeZones(s).some((z) => Number(this._hass?.states?.[z]?.state) > 0)) return true;
+    return this._peopleAt(s).length > 0;
+  }
+  // 📍 WER ist gerade dort? Namen der HA-Personen in einer Zone des Geschäfts oder nah an einer Adresse (für alle, die die Liste sehen)
+  _peopleAt(s) {
+    if (this._privacyOn() || this._viewPrefs().zone_here === false) return [];
+    const states = this._hass?.states || {};
+    const ids = new Set();
+    for (const z of storeZones(s)) for (const p of states[z]?.attributes?.persons || []) ids.add(p); // HA schreibt die Personen in die Zone
     const pts = storePoints(this._data, s);
-    if (!pts.length) return false;
-    const rad = this._data?.settings?.geo_radius || 50; // 📍 ohne Zone: ist irgendeine Person nah genug an einer Adresse?
-    return Object.values(this._hass?.states || {}).some((st) => st.entity_id.startsWith("person.") && st.attributes.latitude != null
-      && pts.some((pt) => distance(st.attributes.latitude, st.attributes.longitude, pt.lat, pt.lon) <= rad));
+    if (pts.length) {
+      const rad = this._data?.settings?.geo_radius || 50; // 📍 ohne Zone: ist eine Person nah genug an einer Adresse?
+      for (const st of Object.values(states)) {
+        if (st.entity_id.startsWith("person.") && st.attributes.latitude != null
+          && pts.some((pt) => distance(st.attributes.latitude, st.attributes.longitude, pt.lat, pt.lon) <= rad)) ids.add(st.entity_id);
+      }
+    }
+    return [...ids].map((id) => states[id]?.attributes?.friendly_name || id.replace(/^person\./, "")).sort((a, b) => a.localeCompare(b));
+  }
+  // 📍 Zeile „Gerade dort: …“ über der Liste – nur beim ausgewählten Geschäft
+  _renderHereBar() {
+    const bar = this.$("hereBar");
+    if (!bar) return;
+    const s = this._fixedStore ? this._store(this._fixedStore) : this._store(this._activeTab);
+    const names = s ? this._peopleAt(s) : [];
+    const zoneCount = s && !names.length && this._someoneAt(s); // Zone zählt jemanden, nennt aber keine Namen
+    bar.hidden = !names.length && !zoneCount;
+    if (bar.hidden) return;
+    const en = EL_LANG !== "de";
+    bar.style.setProperty("--c", s.color || "var(--primary-color)");
+    bar.innerHTML = `📍 <b>${en ? "There right now" : "Gerade dort"}:</b> ${names.length ? esc(names.join(", ")) : (en ? "someone" : "jemand")}`;
   }
   _renderTabs() {
     const tabs = this.$("tabs");
     const d = this._data;
-    if (this._fixedStore) { tabs.hidden = true; this._markSeen(); return; }
+    if (this._fixedStore) { tabs.hidden = true; this._markSeen(); this._renderHereBar(); return; }
     tabs.hidden = false;
     const openCount = (fn) => d.items.filter((i) => !i.checked && fn(i)).length;
     const active = this._activeTab;
@@ -5835,6 +5912,7 @@ class EinkaufslisteCard extends HTMLElement {
     this._markSeen();
     tabs.scrollLeft = left;
     this._tabFade();
+    this._renderHereBar();
   }
 
   // ➡️ Reiter-Leiste: am Rand sanft ausblenden, solange man noch weiter wischen kann
@@ -7445,13 +7523,15 @@ ${(() => {
           <li>Einmal mit deinem Home-Assistant-Benutzer <b>anmelden</b>.</li>
           <li>Im Browser-Menü <b>„Zum Startbildschirm hinzufügen“</b> – fertig, eigenes 🛒-Symbol.</li>
         </ol>
+        <p class="hint warnbox">⚠️ <b>Nicht das Dashboard als Verknüpfung speichern</b>, sondern diese Adresse öffnen und dann „Zum Startbildschirm hinzufügen“. Richtig ist es, wenn die Adresse auf <code>/einkaufsliste/app/</code> endet. Sonst landest du auf der Home-Assistant-Startseite und ohne Netz steht da nur „Keine Verbindung“.</p>
         <p class="hint">In der App steckt <b>genau diese Karte</b> – mit Rezepten, Koch-Modus, Gar-Zeiten und Einstellungen. Ohne Netz kannst du alles ansehen, abhaken, eintragen und Rezepte ändern; es wird nachgeschickt. Scannen geht mit der Handykamera (beim ersten Mal fragt das Handy, ob die Seite die Kamera nutzen darf); ohne Netz erkennt sie nur Barcodes, die die Liste schon kennt. Nur mit Netz: neue Barcodes nachschlagen, Produkt-Infos, Rezept-Links, neue Fotos, Sicherung. Wichtig: Es braucht eine <b>https</b>-Adresse (z. B. Nabu Casa).</p>
         ${d.settings?.app_url
           ? `<p class="hint"><b>Deine Adresse für die App:</b></p>
         <input class="full" id="appUrl" readonly value="${esc(d.settings.app_url)}" translate="no" style="width:100%;box-sizing:border-box">
         <div class="btnrow"><button class="btn primary" data-act="app-copy"><ha-icon icon="mdi:content-copy"></ha-icon>Kopieren</button></div>
         <p class="hint">Kopieren, im Handy-Browser einfügen, fertig. Die Adresse funktioniert zu Hause und unterwegs.</p>`
-          : `<p class="hint">⚠️ Home Assistant kennt keine https-Adresse für unterwegs. Mit <b>Nabu Casa</b> (Einstellungen → Home Assistant Cloud → Fernzugriff) oder einer eigenen https-Adresse (Einstellungen → System → Netzwerk) klappt es.</p>`}` },
+          : `<p class="hint">⚠️ Home Assistant kennt keine https-Adresse für unterwegs. Mit <b>Nabu Casa</b> (Einstellungen → Home Assistant Cloud → Fernzugriff) oder einer eigenen https-Adresse (Einstellungen → System → Netzwerk) klappt es.</p>
+        <p class="hint">✍️ <b>Selbst eintippen:</b> Hast du eine eigene externe Adresse (z. B. <code>https://mein-zuhause.de</code>), tippe sie im Handy-Browser ein und hänge <code>/einkaufsliste/app/</code> an – also <code>https://mein-zuhause.de/einkaufsliste/app/</code>.</p>`}` },
       { key: "notetpl", icon: "mdi:text-box-multiple-outline", title: "Notiz-Vorlagen", info: (this._data.settings?.note_templates || []).slice(0, 3).join(", ") || "keine", html: () => `
         <p class="hint">Kleine Knöpfe unter dem ✏️ <b>Eigene Notiz</b>-Feld (beim Eintragen, beim Bearbeiten und im Katalog): ein Tipp setzt den Text ein. Ein Text pro Zeile. Gilt für alle Geräte.</p>
         <textarea id="tplText" rows="8" placeholder="Bio&#10;ohne Laktose&#10;große Packung">${esc((this._data.settings?.note_templates || []).join("\n"))}</textarea>
@@ -7905,7 +7985,9 @@ ${(() => {
       box("recipe-new", "new", "mdi:plus", "#43a047", "Neues Rezept", "Ein eigenes Rezept anlegen", false),
       box("rec-tab", "recipes", "mdi:chef-hat", "#e53935", "Rezepte", nr ? (nr === 1 ? "1 Rezept" : `${nr} Rezepte`) : "noch keine", cur === "recipes"),
       box("rec-tab", "groups", "mdi:tag-multiple-outline", "#8e24aa", "Rezept-Gruppen", ng ? (ng === 1 ? "1 Gruppe" : `${ng} Gruppen`) : "noch keine", cur === "groups"),
-      box("rec-tab", "file", "mdi:file-document-outline", "#546e7a", "Rezepte aus Datei", "Aus einer Datei einlesen", cur === "file"),
+      box("rec-tab", "link", "mdi:link-variant", "#1e88e5", "Rezept aus Link", "Ganzes Rezept auf einmal holen", cur === "link", this._recLinkHtml()),
+      box("rec-tab", "file", "mdi:file-document-outline", "#546e7a", "Rezepte aus Datei", "Datei, Mealie (.zip/.json)", cur === "file"),
+      box("rec-tab", "basics", "mdi:shaker-outline", "#795548", "Grundvorrat", d.settings?.basics_on && (d.settings?.basics || []).length ? `an · ${(d.settings.basics || []).slice(0, 3).join(", ")}${d.settings.basics.length > 3 ? " …" : ""}` : "aus", cur === "basics", this._basicsHtml()),
       box("rec-tab", "wait", "mdi:timer-sand", "#fb8c00", "Wartet auf OK", [nw ? (nw === 1 ? "1 Vorschlag wartet" : `${nw} Vorschläge warten`) : "", nn ? (nn === 1 ? "1 Notiz" : `${nn} Notizen`) : ""].filter(Boolean).join(" · ") || "nichts offen", cur === "wait"),
       box("rec-tab", "plan", "mdi:calendar-week", "#43a047", "Wochenplan", d.settings?.plan_reset_on === false ? "Zurücksetzen aus" : `Zurücksetzen jeden ${WD_LONG[d.settings?.plan_reset_day ?? 0]}`, cur === "plan", this._planSetHtml()),
     ].join("")}</div>`;
@@ -7920,9 +8002,93 @@ ${(() => {
           <li><b>.txt / .md</b>: jedes Rezept beginnt mit <code># Name</code>, danach „Zutaten“ (eine pro Zeile) und „Zubereitung“.</li>
           <li><b>.csv</b>: Spalten <code>Rezept;Menge;Einheit;Zutat;Notiz;Zubereitung</code> – eine Zeile pro Zutat.</li>
           <li><b>.json</b>: Rezepte aus einer Sicherung oder im gleichen Aufbau.</li>
+          <li><b>🍲 Mealie</b>: die <b>.zip</b> aus Mealie (Rezept → ⋮ → Herunterladen, mit Foto) oder nur die <b>.json</b> darin. Menge, Einheit, Zutat und Bemerkung bleiben getrennt.</li>
+          <li><b>schema.org</b> (<code>recipeIngredient</code>, <code>recipeInstructions</code> …): klappt auch mit vielen anderen Rezept-Apps.</li>
         </ul>
-        ${admin ? `<div class="btnrow"><label class="btn primary"><ha-icon icon="mdi:file-upload-outline"></ha-icon>Datei auswählen<input type="file" id="xferRecipeFile" accept=".txt,.md,.csv,.json,text/*,application/json" hidden></label></div>` : `<p class="hint">🔒 Rezepte einlesen darf nur ein Admin.</p>`}
-        <div id="xferRes"></div>`;
+        <p class="hint">Bei einem Rezept öffnet sich danach der Editor zum Prüfen – erst „Speichern“ legt es an. 🔥 Backofen und 🍟 Airfryer aus den Schritten werden dabei automatisch eingetragen (bitte kurz prüfen, das klappt nicht bei jedem Rezept).</p>
+        ${admin ? `<div class="btnrow"><label class="btn primary"><ha-icon icon="mdi:file-upload-outline"></ha-icon>Datei auswählen<input type="file" id="xferRecipeFile" accept=".txt,.md,.csv,.json,.zip,text/*,application/json,application/zip" hidden></label></div>` : `<p class="hint">🔒 Rezepte einlesen darf nur ein Admin.</p>`}
+        <div id="xferRes"></div>
+        ${this._recLinkHtml()}`;
+  }
+
+  // 🧂 Steht diese Zutat auf der zentralen Grundvorrat-Liste? Spitznamen und Mehrzahl zählen mit („Olivenöl“ trifft „2 EL Olivenöl“, „Zwiebel“ trifft „Zwiebeln“)
+  _basicHit(name) {
+    const st = this._data?.settings;
+    if (!st?.basics_on || !(st.basics || []).length) return false;
+    const norm = (x) => String(x || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+    const stem = (w) => w.replace(/(?:en|n|e|s)$/u, "");
+    const words = norm(name).split(" ").filter(Boolean);
+    const names = [norm(name), ...this._itemAliases?.({ name }).map(norm) || []];
+    return st.basics.some((b) => {
+      const nb = norm(b);
+      if (!nb) return false;
+      if (names.includes(nb)) return true;
+      const bw = nb.split(" ");
+      if (bw.length === 1) return words.some((w) => w === nb || stem(w) === stem(nb)); // ein Wort: als ganzes Wort (auch Mehrzahl)
+      return (" " + words.join(" ") + " ").includes(" " + nb + " "); // mehrere Wörter: genau so drin
+    });
+  }
+  // 🧂 Gilt die Zutat als Grundvorrat? Der Schalter am Rezept geht vor (an = immer, abgewählt = nie), sonst die zentrale Liste
+  _isBasic(it) {
+    if (!it) return false;
+    if (it.basic) return true;
+    if (it.no_basic) return false;
+    return this._basicHit(it.name);
+  }
+  // 🧂 ⚙️ → Rezepte → Grundvorrat
+  _basicsHtml() {
+    const st = this._data?.settings || {};
+    const pantry = (st.ai_pantry || []).filter((x) => !(st.basics || []).some((b) => b.toLowerCase() === x.toLowerCase()));
+    return `
+        <p class="hint">🧂 Zutaten, die ihr <b>immer im Haus</b> habt (Salz, Pfeffer, Olivenöl, Zucker …). Steht eine Zutat hier, gilt sie in <b>allen</b> Rezepten als Grundvorrat – auch bei neu importierten (Link, Datei, Mealie, Foto). Bei „Auf die Liste“ steht sie dann mit „🧂 haben wir immer“ da und ist nicht vorausgewählt. Spitznamen und Mehrzahl zählen mit („Olivenöl“ trifft „2 EL Olivenöl“). Der Schalter 🧂 an der Zutat im Rezept geht vor – dort kannst du sie auch abwählen.</p>
+        ${this._swHtml("basics-toggle", !!st.basics_on, "Grundvorrat-Liste benutzen")}
+        <textarea class="full" id="basicsText" rows="4" maxlength="3000" placeholder="Salz, Pfeffer, Olivenöl, Zucker, Mehl">${esc((st.basics || []).join(", "))}</textarea>
+        <div class="btnrow"><button class="btn primary" data-act="basics-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>${pantry.length ? `<button class="btn" data-act="basics-pantry" title="${esc(pantry.join(", "))}"><ha-icon icon="mdi:robot-happy-outline"></ha-icon>Aus „🧂 Immer im Haus“ übernehmen</button>` : ""}</div>
+        <p class="hint">Gilt für alle. Ein Name pro Komma oder Zeile.</p>`;
+  }
+
+  // 🔗 Rezept aus Link: das ganze Rezept auf einmal (Name, Zutaten, Schritte, Foto, Dauer, Quelle) – danach Editor zum Prüfen
+  _recLinkHtml() {
+    return `
+        <div class="reclink">
+        <p class="hint"><b>🔗 Rezept aus Link</b>: Link einer Rezeptseite einfügen (z. B. Chefkoch) – Name, Zutaten, Schritte, Foto, Dauer und Quelle kommen auf einmal, 🔥 Backofen &amp; 🍟 Airfryer aus den Schritten gleich mit. Danach öffnet sich der Editor zum Prüfen.</p>
+        <div class="srow"><ha-icon class="prev" icon="mdi:link-variant"></ha-icon><input class="grow" id="recLinkUrl" type="url" inputmode="url" placeholder="https://www.chefkoch.de/rezepte/…" translate="no"></div>
+        <div class="btnrow"><button class="btn primary" data-act="rec-link-go"><ha-icon icon="mdi:download-outline"></ha-icon>Rezept holen</button></div>
+        </div>`;
+  }
+
+  // 🔗 Link holen → neues Rezept im Editor (nichts gespeichert, bis du „Speichern“ drückst)
+  async _recipeFromLink(url) {
+    const u = String(url || "").trim();
+    const inp = this.$("recLinkUrl");
+    if (!/^https?:\/\/\S+$/i.test(u)) { inp?.classList.remove("shake"); void inp?.offsetWidth; inp?.classList.add("shake"); return; }
+    const btn = this.shadowRoot.querySelector('[data-act="rec-link-go"]');
+    btn?.classList.add("busy");
+    try {
+      const res = await this._ws({ type: "einkaufsliste/recipe/import", text: u });
+      this._openRecipeDraft({ name: res.name, items: res.items, steps: res.steps, heat: res.heat, minutes: res.minutes, source: res.source_url || u, image: res.image });
+      this._toast(EL_LANG === "de" ? `🔗 ${res.items.length} Zutaten${res.steps ? ", Schritte" : ""}${res.image ? ", Foto" : ""}${(res.heat || []).length ? ", 🔥 Backofen & Co." : ""} geholt – bitte prüfen, dann Speichern!`
+        : `🔗 ${res.items.length} ingredients${res.steps ? ", steps" : ""}${res.image ? ", photo" : ""} fetched – please check, then Save!`);
+    } catch (_) { /* Meldung kam schon */ }
+    btn?.classList.remove("busy");
+  }
+
+  // 📝 Neues Rezept mit fertigen Werten öffnen (Link, Mealie, Datei) – gespeichert wird erst mit „Speichern“
+  _openRecipeDraft(rec) {
+    if (this._view === "settings") this._recipeSnap = this._scrollSnap();
+    const items = [];
+    for (const it of rec.items || []) {
+      const ing = { name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null, store_id: it.store_id || null, category_id: it.category_id || null };
+      if (!items.some((a) => this._gkey(a) === this._gkey(ing))) items.push(ing);
+    }
+    this._draft = { id: null, name: rec.name || "", icon: "mdi:silverware-fork-knife", items: abcSort(items),
+      steps: rec.steps || "", stepRows: this._stepLines(rec.steps).map((t) => ({ k: ++this._stepSeq, t, o: null })),
+      servings: rec.servings || null, servings_unit: "persons", minutes: rec.minutes || null, source: rec.source || "",
+      heat: (rec.heat || []).map((h) => ({ ...h })), newPhotos: rec.image ? [rec.image] : [] };
+    this._view = "recipe";
+    this._draftRendered = false;
+    this._renderAll();
+    this._autoGroup?.();
   }
 
   // 📧 Per E-Mail auf die Liste (über die IMAP-Integration von Home Assistant)
@@ -8405,6 +8571,16 @@ ${(() => {
   }
 
   async _xferRecipeFile(file) {
+    const lower = String(file.name || "").toLowerCase();
+    if (lower.endsWith(".zip") || lower.endsWith(".json")) { // 🍲 Mealie / schema.org?
+      if (file.size > 2.8 * 1024 * 1024) { this._toast("📦 Die Datei ist zu groß (höchstens ca. 2,8 MB). Tipp: nur die .json aus der .zip nehmen."); return; }
+      const data = await new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.onerror = bad; r.readAsDataURL(file); }).catch(() => null);
+      if (!data) { this._toast("Die Datei konnte nicht gelesen werden 🙈"); return; }
+      let res = null;
+      try { res = await this._ws({ type: "einkaufsliste/recipe/parse_file", data, filename: file.name }); } catch (_) { return; }
+      if (res && !res.own) { await this._takeFileRecipes(res.recipes || []); return; }
+      if (lower.endsWith(".zip")) { this._toast("In der .zip habe ich kein Rezept gefunden 🤔"); return; }
+    }
     const text = await file.text();
     try {
       const res = await this._ws({ type: "einkaufsliste/recipe/import_file", text, filename: file.name });
@@ -8414,6 +8590,29 @@ ${(() => {
         ? `<p class="hint">✅ Eingelesen:</p><ul class="hint">${res.names.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`
         : `<p class="hint">🤔 Keine Rezepte gefunden. Passt der Aufbau (siehe oben)?</p>`);
     } catch (_) { /* Meldung kam schon */ }
+  }
+
+  // 🍲 Rezepte aus Mealie/schema.org: eins = Editor zum Prüfen, mehrere = alle anlegen (mit Foto und 🔥 Backofen & Co.)
+  async _takeFileRecipes(list) {
+    if (!list.length) { this._toast("Keine Rezepte in der Datei gefunden 🤔"); return; }
+    if (list.length === 1) {
+      this._openRecipeDraft(list[0]);
+      this._toast("🍲 Rezept eingelesen – bitte prüfen, dann Speichern!");
+      return;
+    }
+    const names = [], existing = new Set((this._data.recipes || []).map((r) => r.name.toLowerCase()));
+    for (const rec of list) {
+      let name = String(rec.name || "Rezept").slice(0, 60);
+      while (existing.has(name.toLowerCase())) name = `${name.slice(0, 50)} (Import)${name.includes("(Import)") ? "+" : ""}`;
+      try {
+        const items = (rec.items || []).filter((i) => i.name).map((i) => ({ name: i.name, ...(i.quantity ? { quantity: i.quantity } : {}), ...(i.note ? { note: i.note } : {}), ...(i.store_id ? { store_id: i.store_id } : {}), ...(i.category_id ? { category_id: i.category_id } : {}) }));
+        const saved = await this._ws({ type: "einkaufsliste/recipe/add", name, items, steps: rec.steps || null, heat: rec.heat || [], servings: rec.servings || null, minutes: rec.minutes || null, source: rec.source || null });
+        if (saved?.id && rec.image) await this._ws({ type: "einkaufsliste/photo/set", name: this._recipePhotoKey(saved.id), data: rec.image, add: false }).catch(() => {});
+        existing.add(name.toLowerCase()); names.push(name);
+      } catch (_) { /* einzelnes kaputtes Rezept überspringen */ }
+    }
+    this._toast(`👨‍🍳 ${names.length} Rezepte eingelesen`);
+    this._xferResult(`<p class="hint">✅ Eingelesen:</p><ul class="hint">${names.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`);
   }
 
   // 🚦 Daten-Gesundheit: Ampel oben in den Einstellungen (prüft im Hintergrund, repariert nichts)
@@ -9204,7 +9403,7 @@ ${(() => {
     this._pickRecipe = r.id;
     this._pickPers = r.servings || null;
     this._pickStores = {};
-    this._pickSel = new Set(r.items.map((it, n) => (open.has(this._pickKey(it)) || it.basic ? -1 : n)).filter((n) => n >= 0));
+    this._pickSel = new Set(r.items.map((it, n) => (open.has(this._pickKey(it)) || this._isBasic(it) ? -1 : n)).filter((n) => n >= 0));
     this._renderRecipes();
     setTimeout(() => this.shadowRoot.querySelector(".rpick")?.scrollIntoView({ block: "center", behavior: "smooth" }), 60);
   }
@@ -9221,10 +9420,10 @@ ${(() => {
       const info = [this._noteChip(it.name, it.note), this._ownChip(it), it.for_whom ? esc("für " + it.for_whom) : ""].filter(Boolean).join(" · ");
       const ask = on && stores.length && this._pickNeedsStore(it);
       const chosen = this._pickStores[String(n)];
-      return `<div class="pickrow ${on ? "on" : ""} ${it.basic ? "basic" : ""}" data-act="pick-toggle" data-n="${n}">
+      return `<div class="pickrow ${on ? "on" : ""} ${this._isBasic(it) ? "basic" : ""}" data-act="pick-toggle" data-n="${n}">
         <ha-icon icon="${on ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"}"></ha-icon>
         <span class="pname">${qchip}${esc(it.name)}${info ? `<small>${info}</small>` : ""}</span>
-        ${open.has(this._pickKey(it)) ? `<span class="phint">steht schon drauf</span>` : it.basic ? `<span class="pbasic">🧂 haben wir immer</span>` : ""}
+        ${open.has(this._pickKey(it)) ? `<span class="phint">steht schon drauf</span>` : this._isBasic(it) ? `<span class="pbasic">🧂 haben wir immer</span>` : ""}
       </div>${ask ? `<div class="pstore ${chosen === undefined ? "need" : ""}">
         <span>🛒 Noch nie gekauft – wo kaufen?</span>
         <select data-act="pick-store" data-n="${n}">
@@ -9724,6 +9923,9 @@ ${(() => {
         added++;
       }
       abcSort(dr.items);
+      let extra = "";
+      if (res.steps && !(dr.stepRows || []).some((r) => r.t.trim())) { this._setStepsText(res.steps); extra += " + Schritte"; } // 🔗 ganzes Rezept in einem Rutsch
+      if ((res.heat || []).length && !(dr.heat || []).length) { dr.heat = res.heat.map((h) => ({ ...h })); this._renderHeat(); extra += " + 🔥 Backofen & Co."; }
       const nameEl = this.$("rName");
       if (res.name && !nameEl.value.trim()) { nameEl.value = res.name; this._autoGroup(); }
       const hasPhoto = (dr.newPhotos || []).length || this._recipeSavedPhotos();
@@ -9732,7 +9934,7 @@ ${(() => {
       this.$("rImport").hidden = true;
       this._renderRecipeItems();
       this._renderRecipePhoto();
-      this._toast(`📋 ${added} Zutaten übernommen${res.image && !hasPhoto ? " – samt Foto 📷" : ""}. Kurz drüberschauen, dann Speichern!`);
+      this._toast(`📋 ${added} Zutaten${extra} übernommen${res.image && !hasPhoto ? " – samt Foto 📷" : ""}. Kurz drüberschauen, dann Speichern!`);
     } catch (_) { /* Meldung kam schon */ }
     btn?.classList.remove("busy");
   }
@@ -9949,7 +10151,7 @@ ${(() => {
         this._noteChip(it.name, it.note),
         this._ownChip(it),
         it.barcode || this._barcodesOf(pk).length ? `<span class="bc">▥</span>` : "",
-        it.basic ? `<span>🧂 Grundvorrat</span>` : "",
+        this._isBasic(it) ? `<span>🧂 Grundvorrat${!it.basic ? " (Liste)" : ""}</span>` : "",
         cat ? `<span>${esc(cat.name)}</span>` : "",
       ].filter(Boolean).join("");
       return `<div class="item rrow ${this._rEditIdx === n ? "editing" : ""}" data-n="${n}" style="--cc:${esc(cat?.color || "transparent")}">
@@ -9983,6 +10185,7 @@ ${(() => {
       category_id: this.$("inCat").value || null,
       basic: !!this._rBasic,
     };
+    if (!ing.basic && this._basicHit(ing.name)) ing.no_basic = true; // 🧂 steht auf der Grundvorrat-Liste, hier abgewählt
     // ✏️ Eigene Notiz gehört zum Produkt (Name + Notiz): nur mitschicken, wenn sie sich geändert hat ("" = löschen)
     const ownVal = (this.$("inOwn")?.value || "").trim();
     if (ownVal !== (this._ownNote(ing.name, ing.note) || "")) ing.own_note = ownVal;
@@ -10035,7 +10238,7 @@ ${(() => {
     this.$("inStore").value = it.store_id || "";
     this.$("inCat").value = it.category_id || "";
     this._catManual = !!it.category_id;
-    this._setBasic(it.basic);
+    this._setBasic(this._isBasic(it));
     this._renderQtyChips();
     this._renderForChips();
     { const ia = this.$("inAlias"), cur = this._itemAliases(it).join(", "); ia.value = cur; ia.dataset.orig = cur; ia.dataset.touched = "1"; ia.hidden = !cur; }
@@ -10072,6 +10275,7 @@ ${(() => {
       for (const k of ["quantity", "note", "for_whom", "store_id", "category_id", "barcode"]) if (i[k]) o[k] = i[k];
       if (i.own_note != null) o.own_note = i.own_note; // ✏️ Eigene Notiz mitschicken (auch leer = löschen)
       if (i.basic) o.basic = true;
+      if (i.no_basic && !i.basic) o.no_basic = true; // 🧂 trotz Grundvorrat-Liste abgewählt
       return o;
     });
     if (this.$("inName").value.trim() && !await elConfirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
@@ -10431,7 +10635,13 @@ ${(() => {
       const parts = elOcrRecipeParts(text);
       const nameEl = this.$("rName"), ta = this.$("rImportText");
       if (nameEl && parts.name && !nameEl.value.trim()) { nameEl.value = parts.name; this._autoGroup?.(); }
-      if (parts.steps && !(dr.stepRows || []).some((r) => r.t.trim())) this._setStepsText(parts.steps);
+      if (parts.steps && !(dr.stepRows || []).some((r) => r.t.trim())) {
+        this._setStepsText(parts.steps);
+        if (!(dr.heat || []).length) { // 🔥 Backofen & Airfryer aus den gelesenen Schritten
+          const hg = await this._ws({ type: "einkaufsliste/recipe/heat_guess", steps: parts.steps }).catch(() => null);
+          if (hg?.heat?.length && this._draft === dr) { dr.heat = hg.heat; this._renderHeat(); }
+        }
+      }
       // 📷 die Seiten auch als Rezept-Fotos (zusammen höchstens 6)
       const room = Math.max(0, 6 - this._recipeSavedPhotos() - (dr.newPhotos || []).length);
       for (const p of pages.slice(0, room)) (dr.newPhotos ||= []).push(await elShrinkData(p, 900, 0.8));
@@ -11320,8 +11530,8 @@ ${(() => {
     return `<div translate="no">
       ${sw}
       <p class="hint">📍 <b>${t("Jemand ist gerade dort", "Someone is there right now")}</b>: ${t(
-        "Ist jemand in einer Zone eines Geschäfts, bekommt dessen Reiter oben einen dicken Rand – für alle, die die Liste sehen. Wer genau dort ist, steht nirgends. Das kommt aus deinem Home Assistant und bleibt im Haus. Abschalten: 👁️ Ansicht → „Jemand ist gerade dort“. Bei Datenschutz an ist es immer aus.",
-        "If someone is in a zone of a store, its tab at the top gets a thick border – for everyone who sees the list. Who exactly is there is not shown. It comes from your Home Assistant and stays at home. Switch off: 👁️ View → “Someone is there right now”. With privacy on it is always off.")}</p>
+        "Ist jemand in einer Zone eines Geschäfts, bekommt dessen Reiter oben einen dicken Rand. Tippst du das Geschäft an, steht über der Liste, wer gerade dort ist (z. B. „📍 Gerade dort: Marco“) – für alle, die die Liste sehen. Das kommt aus deinem Home Assistant und bleibt im Haus. Abschalten: 👁️ Ansicht → „Jemand ist gerade dort“. Bei Datenschutz an ist es immer aus.",
+        "If someone is in a zone of a store, its tab at the top gets a thick border. Tap the store and the line above the list shows who is there right now (e.g. “📍 There right now: Marco”) – for everyone who sees the list. It comes from your Home Assistant and stays at home. Switch off: 👁️ View → “Someone is there right now”. With privacy on it is always off.")}</p>
       <p class="hint">🗺️ <b>${t("Geschäfte ohne Zone", "Stores without a zone")}</b>: ${t(
         "Trägst du bei einem Geschäft oder einer Filiale eine Adresse ein, schlägt Home Assistant einmal bei OpenStreetMap nach, wo sie liegt. Dabei geht nur die Adresse des Geschäfts raus, nichts über dich. Ob jemand in der Nähe ist, rechnet die Karte zu Hause aus. Bei Datenschutz an wird nichts nachgeschlagen.",
         "If you enter an address for a store or branch, Home Assistant looks up once at OpenStreetMap where it is. Only the store's address is sent, nothing about you. Whether someone is nearby is worked out at home. With privacy on nothing is looked up.")}</p>
@@ -11388,17 +11598,17 @@ ${(() => {
     const url = this._data?.settings?.app_url;
     const box = url
       ? `<input class="elg-url" readonly value="${esc(url)}"><button type="button" class="elg-copy">📋 ${en ? "Copy" : "Kopieren"}</button>`
-      : `<p>${en ? "⚠️ Home Assistant has no https address yet (e.g. Nabu Casa). Ask whoever set it up."
-        : "⚠️ Home Assistant hat noch keine https-Adresse (z. B. Nabu Casa). Frag den, der Home Assistant eingerichtet hat."}</p>`;
+      : `<p>${en ? "⚠️ Home Assistant has no https address yet (e.g. Nabu Casa). Ask whoever set it up. Got your own external address? Type it in your phone's browser and add <code>/einkaufsliste/app/</code>."
+        : "⚠️ Home Assistant hat noch keine https-Adresse (z. B. Nabu Casa). Frag den, der Home Assistant eingerichtet hat. Hast du eine eigene externe Adresse? Dann im Handy-Browser eintippen und <code>/einkaufsliste/app/</code> anhängen."}</p>`;
     return en
       ? sec("📱", "As an app on your phone", `<ul>
         <li>The shopping list also comes as its <b>own app</b> on your home screen. It even opens <b>without a connection</b>.</li></ul>
         <ol><li>Copy the address</li><li>Paste it into your phone's <b>browser</b> (Chrome/Safari, not the HA app)</li>
-        <li>Log in with your Home Assistant user</li><li>Browser menu → <b>“Add to Home screen”</b></li></ol>${box}`)
+        <li>Log in with your Home Assistant user</li><li>Browser menu → <b>“Add to Home screen”</b></li></ol>${box}<p>⚠️ <b>Don't save the dashboard as a shortcut</b> – open this address and then choose “Add to Home screen”. It's right when the address ends in <code>/einkaufsliste/app/</code>. Otherwise you land on the Home Assistant start page, and without a connection it only says “No connection”.</p>`)
       : sec("📱", "Als App aufs Handy", `<ul>
         <li>Die Einkaufsliste gibt's auch als <b>eigene App</b> auf dem Startbildschirm. Die öffnet sogar <b>ohne Netz</b>.</li></ul>
         <ol><li>Adresse kopieren</li><li>Im Handy-<b>Browser</b> einfügen (Chrome/Safari, nicht die HA-App)</li>
-        <li>Mit deinem Home-Assistant-Benutzer anmelden</li><li>Browser-Menü → <b>„Zum Startbildschirm hinzufügen“</b></li></ol>${box}`);
+        <li>Mit deinem Home-Assistant-Benutzer anmelden</li><li>Browser-Menü → <b>„Zum Startbildschirm hinzufügen“</b></li></ol>${box}<p>⚠️ <b>Nicht das Dashboard als Verknüpfung speichern</b>, sondern diese Adresse öffnen und dann „Zum Startbildschirm hinzufügen“. Richtig ist es, wenn die Adresse auf <code>/einkaufsliste/app/</code> endet. Sonst landest du auf der Home-Assistant-Startseite und ohne Netz steht da nur „Keine Verbindung“.</p>`);
   }
 
   // 👨‍🍳 Koch-Modus: Schritt für Schritt, groß, Bildschirm bleibt an
@@ -12418,7 +12628,23 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
   }
 
   _offersFor(item) {
-    return (this._data?.offers || {})[String(item?.name || "").toLowerCase()] || [];
+    const all = (this._data?.offers || {})[String(item?.name || "").toLowerCase()] || [];
+    // 🌍 Angebote mit Land (z. B. CH) nur an Artikeln, deren Geschäft in diesem Land liegt – oder die noch kein Geschäft haben
+    const st = item?.store_id ? this._store(item.store_id) : null;
+    if (!st || !all.some((o) => o.ctry)) return all;
+    const lands = this._storeCountries(st);
+    return all.filter((o) => !o.ctry || lands.has(String(o.ctry).toUpperCase()));
+  }
+  // 🌍 In welchen Ländern liegt ein Geschäft? 🌍 Land beim Geschäft und bei den Filialen – leer = Land aus Home Assistant
+  _storeCountries(st) {
+    const ha = String(this._hass?.config?.country || "").toUpperCase();
+    const set = new Set();
+    const own = String(st?.country || "").toUpperCase();
+    const branches = st?.branches || [];
+    if (own) set.add(own);
+    for (const b of branches) { const c = String(b.country || own || ha).toUpperCase(); if (c) set.add(c); }
+    if (!set.size && ha) set.add(ha);
+    return set;
   }
 
   // 🏷️ „🏷️ 1,19 € bis Sa.“ – liegt der Start in der Zukunft: „ab Mo.“
@@ -12500,12 +12726,18 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
   }
 
-  // 🏪 „ALDI SÜD“ -> dein Geschäft „Aldi“
-  _storeForRetailer(r) {
+  // 🏪 „ALDI SÜD“ -> dein Geschäft „Aldi“. 🌍 Mit Land (ctry) nur Geschäfte aus diesem Land, genauer Name zuerst („Aldi Suisse“ vor „Aldi“)
+  _storeForRetailer(r, ctry = null) {
     const norm = (x) => String(x || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
     const rn = norm(r);
     if (!rn) return null;
-    return this._data.stores.find((st) => { const n = norm(st.name); return n && (n === rn || rn.split(" ").includes(n) || rn.startsWith(n + " ") || n.startsWith(rn + " ")); }) || null;
+    const land = String(ctry || "").toUpperCase();
+    const pool = this._data.stores.filter((st) => !land || this._storeCountries(st).has(land));
+    const exact = pool.find((st) => norm(st.name) === rn);
+    if (exact) return exact;
+    const hits = pool.filter((st) => { const n = norm(st.name); return n && (rn.split(" ").includes(n) || rn.startsWith(n + " ") || n.startsWith(rn + " ")); });
+    hits.sort((a, b) => norm(b.name).length - norm(a.name).length); // 🎯 längster (= genauester) Name zuerst
+    return hits[0] || null;
   }
 
   // 🛒 Angebot übernehmen: Geschäft zuordnen (sonst fragen: anlegen oder „Egal wo“), Preis als Notiz
@@ -12519,7 +12751,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       if (!how) return false;
       extra = how === "extra";
     }
-    let store = this._storeForRetailer(o.r);
+    let store = this._storeForRetailer(o.r, o.ctry);
     if (!store) {
       const how = await askChoice(`„${o.r}“ gibt es bei dir noch nicht als Geschäft.`, [["new", `➕ „${o.r}“ anlegen`], ["none", "🤷 Egal wo"]]);
       if (!how) return false;
@@ -14765,6 +14997,28 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       case "recipe-new":
         this._openRecipe(null);
         break;
+      case "basics-toggle": { // 🧂 Grundvorrat-Liste an/aus (für alle)
+        const on = !this._data.settings?.basics_on;
+        this._ws({ type: "einkaufsliste/recipe/basics", on, names: this.$("basicsText")?.value ?? undefined })
+          .then(() => { this._toast(on ? "🧂 Grundvorrat-Liste: an – gilt in allen Rezepten" : "🧂 Grundvorrat-Liste: aus"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+        break;
+      }
+      case "basics-save":
+        this._ws({ type: "einkaufsliste/recipe/basics", names: this.$("basicsText")?.value || "" })
+          .then(() => { this._toast("🧂 Grundvorrat gespeichert"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+        break;
+      case "basics-pantry": { // 🧂 Vorschlag: die Liste aus KI-Kochen „Immer im Haus“
+        const ta = this.$("basicsText");
+        if (!ta) break;
+        const have = ta.value.split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean);
+        for (const p of this._data.settings?.ai_pantry || []) if (!have.some((h) => h.toLowerCase() === p.toLowerCase())) have.push(p);
+        ta.value = have.join(", ");
+        this._toast("🧂 Übernommen – jetzt noch „Speichern“");
+        break;
+      }
+      case "rec-link-go": // 🔗 Rezept aus Link
+        this._recipeFromLink(this.$("recLinkUrl")?.value);
+        break;
       case "autoshop-toggle": {
         const on = !this._data.settings?.auto_shop; // 📍 gilt für alle Geräte (wie das Maskottchen)
         this._ws({ type: "einkaufsliste/autoshop/set", on })
@@ -15131,7 +15385,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._pickRecipe = r.id;
         this._pickPers = r.servings || null; // 👥 Standard: immer erst wie im Rezept
         this._pickStores = {};
-        this._pickSel = new Set(r.items.map((it, n) => (open.has(this._pickKey(it)) || it.basic ? -1 : n)).filter((n) => n >= 0));
+        this._pickSel = new Set(r.items.map((it, n) => (open.has(this._pickKey(it)) || this._isBasic(it) ? -1 : n)).filter((n) => n >= 0));
         this._renderRecipes();
         break;
       }

@@ -129,7 +129,7 @@
       "fields": {
         "offers": {
           "name": "Offers",
-          "description": "List of entries: name (required, item name), price (required), store, title, regular_price, valid_from, valid_until, description, currency (e.g. CHF), url (https link to the product page)."
+          "description": "List of entries: name (required, item name), price (required), store, title, regular_price, valid_from, valid_until, description, currency (e.g. CHF), url (https link to the product page), country (e.g. CH, the offer's country)."
         },
         "source": {
           "name": "Source",
@@ -138,6 +138,10 @@
         "replace": {
           "name": "Replace",
           "description": "On = old offers of this source are dropped. Off = add. Empty list + on = clear the source."
+        },
+        "country": {
+          "name": "Country",
+          "description": "Optional: country of all offers in this call (e.g. CH). Order: country on the offer → this field → currency (CHF = Switzerland). Offers with a country only show at items whose store is in that country (or that have no store yet)."
         }
       }
     }

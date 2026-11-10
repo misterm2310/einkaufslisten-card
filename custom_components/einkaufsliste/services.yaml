@@ -96,3 +96,7 @@ angebote_melden:
       default: true
       selector:
         boolean:
+    country:
+      example: "CH"
+      selector:
+        text:

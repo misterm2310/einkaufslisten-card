@@ -22,6 +22,7 @@ from .const import VERSION
 from .convert import convert_line, convert_temps
 from .netutil import read_limited
 from .quantity import NUM, UNIT_WORDS, norm_qty
+from .recipe_heat import guess_heat
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -291,9 +292,199 @@ async def async_import(hass: HomeAssistant, manager: Any, text: str) -> dict[str
         result["items"] = parse_text(text)
         if not result["items"]:
             raise ValueError("Ich habe keine Zutaten erkannt. Am besten eine Zutat pro Zeile, z. B. „200 g Mehl“.")
-    for item in result["items"]:
+    enrich_items(manager, result["items"])
+    if result.get("steps"):
+        result["heat"] = guess_heat(result["steps"])  # 🔥 Backofen & Airfryer aus den Schritten
+    return result
+
+
+def enrich_items(manager: Any, items: list[dict[str, Any]]) -> None:
+    """Geschäft und Kategorie wie beim letzten Mal (sonst geraten) an die Zutaten hängen."""
+    for item in items:
         hist = manager.history_for(item["name"]) or {}
         item["store_id"] = hist.get("store_id") if manager.store_by_id(hist.get("store_id")) else None
         cat = hist.get("category_id") or manager.guess_category(item["name"])
         item["category_id"] = cat if manager.category_by_id(cat) else None
-    return result
+
+
+def prepare_file_recipes(manager: Any, recipes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """🍲 Rezepte aus einer Datei für den Editor fertig machen (Geschäft/Kategorie, 🔥 Backofen & Co.)."""
+    for rec in recipes:
+        enrich_items(manager, rec["items"])
+        rec["heat"] = guess_heat(rec.get("steps")) if rec.get("steps") else []
+        rec.pop("image_url", None)  # Bilder aus Dateien kommen nur aus der .zip, nie aus dem Internet
+    return recipes
+
+
+# ------------------------------------------------------------------ 🍲 Mealie & schema.org aus Dateien
+
+MAX_FILE = 25 * 1024 * 1024  # .zip aus Mealie (Bild darin) – mehr braucht kein Rezept
+MAX_FILE_RECIPES = 50
+_IMG_EXT = {".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png"}
+
+
+class OwnFormat(ValueError):
+    """Die Datei ist kein Mealie/schema.org-Rezept – das eigene Format nimmt der normale Import."""
+
+
+def _num_text(value: Any) -> str | None:
+    """600.0 -> „600“, 0.5 -> „0,5“, 0/None -> None."""
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return None
+    if n <= 0:
+        return None
+    return str(int(n)) if n == int(n) else f"{n:g}".replace(".", ",")
+
+
+def _text_minutes(value: Any) -> int | None:
+    """⏱️ „PT1H30M“, „1 Stunde 30 Minuten“, „45 min“ oder 45 -> Minuten."""
+    if isinstance(value, (int, float)) and 0 < value <= 1440:
+        return int(value)
+    iso = _iso_minutes(value)
+    if iso:
+        return iso
+    text = str(value or "").lower()
+    h = re.search(r"(\d+)\s*(?:h\b|std|stunde|hour)", text)
+    m = re.search(r"(\d+)\s*(?:m\b|min)", text)
+    n = (int(h.group(1)) * 60 if h else 0) + (int(m.group(1)) if m else 0)
+    return n if 1 <= n <= 1440 else None
+
+
+def _servings_of(value: Any) -> int | None:
+    if isinstance(value, list):
+        value = value[0] if value else None
+    m = re.search(r"\d+", str(value or ""))
+    n = int(m.group(0)) if m else 0
+    return n if 1 <= n <= 99 else None
+
+
+def _ingredient(raw: Any) -> dict[str, Any] | None:
+    """Eine Zutat: Text („600 g Hackfleisch“) oder Mealie-Feld (Menge, Einheit, Zutat, Bemerkung getrennt)."""
+    if isinstance(raw, str):
+        return parse_line(raw)
+    if not isinstance(raw, dict):
+        return None
+    food = raw.get("food") if isinstance(raw.get("food"), dict) else None
+    food_name = str((food or {}).get("name") or "").strip()
+    note = str(raw.get("note") or "").strip()
+    if not food_name:  # Mealie ohne „Lebensmittel“: steht alles im Text
+        text = raw.get("display") or raw.get("originalText") or note
+        return parse_line(str(text or "")) if text else None
+    unit = raw.get("unit") if isinstance(raw.get("unit"), dict) else {}
+    unit_txt = str(unit.get("abbreviation") or unit.get("name") or "").strip()
+    qty = _num_text(raw.get("quantity"))
+    parsed = parse_line(f"{qty} {unit_txt} {food_name}".strip()) if qty else None
+    out = {"name": _nice(food_name)[:80], "quantity": (parsed or {}).get("quantity") if qty else (unit_txt or None), "note": note[:120] or None}
+    if qty and not out["quantity"]:
+        out["quantity"] = f"{qty} {unit_txt}".strip()
+    return out
+
+
+def recipe_from_schema(node: dict[str, Any]) -> dict[str, Any]:
+    """schema.org-„Recipe“ (Webseite, Rezept-App) oder Mealie-Rezept -> Rezept für den Editor."""
+    items = []
+    for raw in node.get("recipeIngredient") or node.get("ingredients") or []:
+        if isinstance(raw, dict) and raw.get("title") and not raw.get("food") and not raw.get("note"):
+            continue  # nur eine Zwischen-Überschrift
+        it = _ingredient(raw)
+        if it and it.get("name"):
+            items.append(it)
+    steps = _steps(node.get("recipeInstructions"))
+    minutes = _text_minutes(node.get("totalTime")) or _total_minutes(node) or (
+        (_text_minutes(node.get("prepTime")) or 0) + (_text_minutes(node.get("performTime")) or _text_minutes(node.get("cookTime")) or 0) or None
+    )
+    source = node.get("orgURL") or node.get("url")
+    return {
+        "name": _nice(html.unescape(str(node.get("name") or "")))[:60] or None,
+        "items": items,
+        "steps": steps,
+        "minutes": minutes if minutes and minutes <= 1440 else None,
+        "servings": _servings_of(node.get("recipeServings") or node.get("recipeYield")),
+        "source": source if isinstance(source, str) and source.startswith("http") else None,
+        "image_url": _image_url(node.get("image")) if isinstance(node.get("image"), (dict, list)) or str(node.get("image") or "").startswith("http") else None,
+    }
+
+
+def _recipes_in_json(data: Any) -> list[dict[str, Any]]:
+    """Alle schema.org/Mealie-Rezepte in einer JSON-Datei (ein Rezept, Liste oder @graph)."""
+    nodes: list[dict[str, Any]] = []
+
+    def walk(n: Any, depth: int = 0) -> None:
+        if depth > 6 or len(nodes) >= MAX_FILE_RECIPES:
+            return
+        if isinstance(n, list):
+            for sub in n:
+                walk(sub, depth + 1)
+        elif isinstance(n, dict):
+            kind = n.get("@type")
+            kinds = kind if isinstance(kind, list) else [kind]
+            if "Recipe" in kinds or ("recipeIngredient" in n and n.get("name")):
+                nodes.append(n)
+                return
+            for key in ("@graph", "mainEntity", "itemListElement", "recipes", "items", "data"):
+                if key in n:
+                    walk(n[key], depth + 1)
+
+    walk(data)
+    return [recipe_from_schema(n) for n in nodes]
+
+
+def _data_url(raw: bytes, name: str) -> str | None:
+    ext = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    mime = _IMG_EXT.get(ext)
+    if not mime or not raw or len(raw) > MAX_IMAGE:
+        return None
+    return f"data:{mime};base64,{base64.b64encode(raw).decode()}"
+
+
+def parse_recipe_file(data: bytes, filename: str | None = None) -> list[dict[str, Any]]:
+    """🍲 Mealie-Export (.zip mit .json + Bild, oder nur die .json) bzw. schema.org-JSON lesen.
+
+    Gibt die Rezepte zurück (nichts gespeichert). Eigenes Format -> OwnFormat (dann nimmt
+    der normale Datei-Import). Kaputt/leer -> ValueError mit verständlicher Meldung.
+    """
+    import io
+    import zipfile
+
+    if not data:
+        raise ValueError("Die Datei ist leer.")
+    if len(data) > MAX_FILE:
+        raise ValueError("Die Datei ist zu groß (höchstens 25 MB).")
+    name = (filename or "").lower()
+    if data[:2] == b"PK" or name.endswith(".zip"):
+        try:
+            zf = zipfile.ZipFile(io.BytesIO(data))
+        except zipfile.BadZipFile as err:
+            raise ValueError("Die .zip-Datei ist kaputt.") from err
+        recipes: list[dict[str, Any]] = []
+        images = [i for i in zf.infolist() if not i.is_dir() and i.file_size <= MAX_IMAGE and ("." + i.filename.rsplit(".", 1)[-1].lower()) in _IMG_EXT]
+        for info in zf.infolist():
+            if info.is_dir() or not info.filename.lower().endswith(".json") or info.file_size > 5 * 1024 * 1024:
+                continue
+            try:
+                found = _recipes_in_json(json.loads(zf.read(info).decode("utf-8-sig")))
+            except (ValueError, UnicodeDecodeError):
+                continue
+            folder = info.filename.rsplit("/", 1)[0] if "/" in info.filename else ""
+            for rec in found:
+                # 📷 Bild aus der .zip: „original“ im selben Ordner zuerst (so legt Mealie es ab)
+                near = sorted(
+                    (i for i in images if not folder or i.filename.startswith(folder)),
+                    key=lambda i: (0 if "original" in i.filename.lower() and "min-" not in i.filename.lower() and "tiny" not in i.filename.lower() else 1, -i.file_size),
+                )
+                if near:
+                    rec["image"] = _data_url(zf.read(near[0]), near[0].filename)
+                recipes.append(rec)
+        if not recipes:
+            raise ValueError("In der .zip habe ich kein Rezept gefunden (es fehlt die .json von Mealie).")
+        return recipes[:MAX_FILE_RECIPES]
+    try:
+        parsed = json.loads(data.decode("utf-8-sig"))
+    except (ValueError, UnicodeDecodeError) as err:
+        raise OwnFormat("kein JSON") from err
+    recipes = _recipes_in_json(parsed)
+    if not recipes:
+        raise OwnFormat("kein schema.org/Mealie-Rezept")
+    return recipes[:MAX_FILE_RECIPES]

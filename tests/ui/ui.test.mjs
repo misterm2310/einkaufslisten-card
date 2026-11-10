@@ -777,6 +777,25 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   ov?._elClose(); c._hass.callWS=old; return res; });
 check("▶️ Weitermachen: ohne Personen-Auswahl direkt bei Schritt 3, Personenzahl gemerkt", !r.intro && r.pos === "Schritt 3 von 5" && r.pers === "3", JSON.stringify(r));
 
+// 🆕 Beta 2.76.28: Wer ist im Laden, Angebote je Land, Grundvorrat
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const d=c._data; const st=d.stores[1]; const states=c._hass.states;
+  const keepZones=st.zones, keepZone=st.zone, keepCtry=st.country, keepTab=c._tab, keepSet={...d.settings}, keepOffers=d.offers;
+  states["zone.testladen"]={entity_id:"zone.testladen", state:"2", attributes:{persons:["person.anna","person.ben"]}};
+  states["person.anna"]={entity_id:"person.anna", state:"Testladen", attributes:{friendly_name:"Anna"}};
+  states["person.ben"]={entity_id:"person.ben", state:"Testladen", attributes:{friendly_name:"Ben"}};
+  st.zones=["zone.testladen"]; st.zone="zone.testladen"; c._tab=st.id; c._view="list"; c._renderAll(); await new Promise(r=>setTimeout(r,60));
+  const bar=c.shadowRoot.querySelector("#hereBar"); const here={ hidden:bar?.hidden, text:bar?.textContent||"", ring:!!c.shadowRoot.querySelector(".tab.active.here") };
+  st.country="DE"; d.offers={ milch:[{n:"Milch",r:"Aldi",p:1.1,ctry:"CH"},{n:"Milch",r:"Aldi",p:1.2,ctry:"DE"},{n:"Milch",r:"Aldi",p:1.3}] };
+  const offers=c._offersFor({name:"Milch", store_id:st.id}).map(o=>o.p); const noStore=c._offersFor({name:"Milch"}).length;
+  d.settings.basics_on=true; d.settings.basics=["Salz","Olivenöl"];
+  const basic={ salz:c._isBasic({name:"Salz"}), oel:c._isBasic({name:"Olivenöl extra"}), mehl:c._isBasic({name:"Mehl"}), off:c._isBasic({name:"Salz", no_basic:true}) };
+  delete states["zone.testladen"]; delete states["person.anna"]; delete states["person.ben"];
+  st.zones=keepZones; st.zone=keepZone; st.country=keepCtry; c._tab=keepTab; d.settings=keepSet; d.offers=keepOffers; c._renderAll();
+  return { here, offers, noStore, basic }; });
+check("📍 Gerade dort: Namen über der Liste, Rand am Reiter", !r.here.hidden && /Anna, Ben/.test(r.here.text) && r.here.ring, JSON.stringify(r.here));
+check("🌍 Angebote: CH-Angebot nicht beim deutschen Geschäft, ohne Geschäft alles", r.offers.join() === "1.2,1.3" && r.noStore === 3, JSON.stringify(r));
+check("🧂 Grundvorrat-Liste: Salz/Olivenöl ja, Mehl nein, abgewählt nie", r.basic.salz && r.basic.oel && !r.basic.mehl && !r.basic.off, JSON.stringify(r.basic));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

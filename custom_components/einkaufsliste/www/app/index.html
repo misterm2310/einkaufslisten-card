@@ -410,6 +410,37 @@ const cacheKey = (msg) => BASE + "__ws/" + encodeURIComponent(JSON.stringify(msg
 async function cachePut(msg, res) { try { const c = await caches.open("einkaufsliste-daten"); await c.put(cacheKey(msg), new Response(JSON.stringify(res), { headers: { "Content-Type": "application/json" } })); } catch (_) { /* egal */ } }
 async function cacheGet(msg) { try { const c = await caches.open("einkaufsliste-daten"); const r = await c.match(cacheKey(msg)); return r ? r.json() : undefined; } catch (_) { return undefined; } }
 
+// ---------------------------------------------------------------- 📷 Fotos der Artikel auf der Liste auch ohne Netz
+// Für Doofe: Solange Netz da ist, holt die App die Fotos aller offenen Artikel schon mal in den Speicher.
+// Im Funkloch im Laden sind sie dann trotzdem da. Abgehakt (oder von der Liste weg) = Foto fliegt wieder raus.
+const PHOTO_KEY = "elapp_photos", PHOTO_MAX = 80;
+let photoSyncT = null, photoSyncBusy = false;
+function schedulePhotoSync(data) { clearTimeout(photoSyncT); photoSyncT = setTimeout(() => photoSync(data).catch(() => {}), 4000); }
+async function photoSync(data) {
+  if (!ready || !data || photoSyncBusy) return;
+  photoSyncBusy = true;
+  try {
+    const photos = data.photos || {};
+    const pk = (n, t) => { const a = String(n || "").trim().toLowerCase(), b = String(t || "").trim().toLowerCase(); return b ? `${a}|${b}` : a; };
+    const want = new Map();
+    for (const it of data.items || []) {
+      if (it.checked || want.size >= PHOTO_MAX) continue;
+      for (const k of [pk(it.name, it.note), pk(it.name)]) if (photos[k] && photos[k] !== "queued") { want.set(k, photos[k]); break; }
+    }
+    const have = get(PHOTO_KEY, {});
+    const c = await caches.open("einkaufsliste-daten");
+    for (const k of Object.keys(have)) { // ✔️ abgehakt oder weg: aus dem Offline-Speicher löschen
+      if (!want.has(k)) { await c.delete(cacheKey({ type: "einkaufsliste/photo/get", name: k, index: 0 })).catch(() => {}); delete have[k]; }
+    }
+    for (const [k, upd] of want) {
+      if (have[k] === upd || !ready) continue; // schon da (und nicht geändert) – oder Netz weg
+      const msg = { type: "einkaufsliste/photo/get", name: k, index: 0 };
+      try { const res = await raw(msg); await cachePut(msg, res); have[k] = upd; } catch (_) { /* nächstes Mal */ }
+    }
+    put(PHOTO_KEY, have);
+  } finally { photoSyncBusy = false; }
+}
+
 // ---------------------------------------------------------------- 📷 Barcode-Scanner mit der Handykamera
 // Die Karte kennt den Scanner der Home-Assistant-App. Diese Seite spielt genau diesen Scanner nach –
 // so funktionieren alle Scan-Sachen der Karte (eintragen, mehrere scannen, im Laden abhaken, zuordnen).
@@ -631,7 +662,7 @@ function makeHass() {
     connection: {
       async subscribeMessage(cb, msg) {
         const key = "s" + msgId++;
-        const s = { msg, onEvent: (data) => { if (msg.type === "einkaufsliste/subscribe") { lastData = data; put(K.data, data); } cb(data); } };
+        const s = { msg, onEvent: (data) => { if (msg.type === "einkaufsliste/subscribe") { lastData = data; put(K.data, data); schedulePhotoSync(data); } cb(data); } };
         subs.set(key, s);
         if (msg.type === "einkaufsliste/subscribe" && lastData) setTimeout(() => cb(lastData), 0); // letzter Stand sofort – auch ohne Netz
         if (ready) sendSub(s);

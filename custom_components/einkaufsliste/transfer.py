@@ -21,6 +21,7 @@ from .netutil import read_limited
 
 from .const import DOMAIN, VERSION
 from .recipe_import import parse_line
+from .recipe_heat import guess_heat
 
 if TYPE_CHECKING:
     from .manager import EinkaufslisteManager
@@ -225,7 +226,8 @@ def _recipes_from_json(data: Any) -> list[dict[str, Any]]:
         if isinstance(steps, list):
             steps = "\n".join(str(s) for s in steps)
         out.append({"name": str(r["name"]), "items": items, "steps": steps or None,
-                    "servings": r.get("servings"), "minutes": r.get("minutes")})
+                    "servings": r.get("servings"), "minutes": r.get("minutes"),
+                    "heat": r.get("heat") if isinstance(r.get("heat"), list) else None})
     return out
 
 
@@ -335,6 +337,7 @@ def import_recipe_file(manager: EinkaufslisteManager, text: str, filename: str |
             name = f"{rec['name'][:50]} (Import)" if "(Import)" not in name else name + "+"
         try:
             manager.add_recipe(name, rec["items"], steps=rec.get("steps"),
+                               heat=rec.get("heat") or (guess_heat(rec["steps"]) if rec.get("steps") else None),  # 🔥 aus den Schritten
                                servings=rec.get("servings") if isinstance(rec.get("servings"), int) else None,
                                minutes=rec.get("minutes") if isinstance(rec.get("minutes"), int) else None)
         except ValueError as err:

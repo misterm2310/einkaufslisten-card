@@ -16,7 +16,8 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from .barcode import async_auto_photo, async_lookup, async_product_info, async_refresh_photo
 from .ai_cook import async_cook
 from .grocy_import import async_fetch, clean_base, import_rows, parse_catalog_text
-from .recipe_import import async_import
+from .recipe_import import OwnFormat, async_import, parse_recipe_file, prepare_file_recipes
+from .recipe_heat import guess_heat
 from .const import DOMAIN, PUSH_DELAY, SIGNAL_UPDATED
 from .mail_import import mail_sources
 from .osm_hours import async_search_hours
@@ -70,6 +71,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_item_out,
         ws_item_gone,
         ws_recipe_import_file,
+        ws_recipe_parse_file,
+        ws_recipe_heat_guess,
         ws_import_text,
         ws_import_todo_lists,
         ws_import_todo,
@@ -95,6 +98,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_note_templates,
         ws_ai_agent,
         ws_ai_prefs,
+        ws_recipe_basics,
         ws_ai_cook,
         ws_grocy_set,
         ws_grocy_clear,
@@ -492,6 +496,7 @@ RECIPE_ITEM = vol.Schema(
         vol.Optional("category_id"): OPT_STR,
         vol.Optional("barcode"): OPT_STR,
         vol.Optional("basic"): bool,
+        vol.Optional("no_basic"): bool,  # 🧂 trotz Grundvorrat-Liste hier abgewählt
         vol.Optional("own_note"): OPT_STR,  # ✏️ Eigene Notiz (beim Produkt)
     }
 )
@@ -754,6 +759,42 @@ def ws_load(hass, connection, msg):
 async def ws_factory_reset(hass, connection, msg):
     # 💣 Werkseinstellungen: alles zurück auf Anfang (nur Admins; nur die PIN bleibt)
     await _run_async(hass, connection, msg, lambda m: m.async_factory_reset())
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/recipe/parse_file", vol.Required("data"): str,
+     vol.Optional("filename"): OPT_STR}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_recipe_parse_file(hass, connection, msg):
+    """🍲 Mealie-.zip/.json oder schema.org lesen – nichts wird gespeichert, der Editor zeigt es zum Prüfen."""
+    import base64
+    import binascii
+
+    try:
+        raw = base64.b64decode(msg["data"].split(",", 1)[-1], validate=False)
+    except (binascii.Error, ValueError):
+        connection.send_error(msg["id"], "invalid", "Die Datei konnte nicht gelesen werden.")
+        return
+
+    async def go(m):
+        try:  # 📦 Entpacken im Hintergrund (blockiert Home Assistant nicht), Zuordnen danach
+            recipes = await hass.async_add_executor_job(parse_recipe_file, raw, msg.get("filename"))
+        except OwnFormat:
+            return {"own": True}
+        return {"recipes": prepare_file_recipes(m, recipes)}
+
+    await _run_async(hass, connection, msg, go)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/recipe/heat_guess", vol.Required("steps"): str}
+)
+@callback
+def ws_recipe_heat_guess(hass, connection, msg):
+    """🔥 Backofen & Airfryer aus Schritten herauslesen (z. B. nach „Rezept aus Fotos“)."""
+    connection.send_result(msg["id"], {"heat": guess_heat(msg["steps"][:20000])})
 
 
 @websocket_api.websocket_command(
@@ -1671,6 +1712,19 @@ def ws_note_templates(hass, connection, msg):
 def ws_ai_agent(hass, connection, msg):
     """🤖 KI-Assistent fürs Kochen wählen (null = aus)."""
     _run(hass, connection, msg, lambda m: m.set_ai_agent(msg["entity_id"] or None, msg.get("on")))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/recipe/basics",
+        vol.Optional("on"): bool,
+        vol.Optional("names"): vol.All(str, vol.Length(max=3000)),
+    }
+)
+@callback
+def ws_recipe_basics(hass, connection, msg):
+    """🧂 Zentrale Grundvorrat-Liste speichern (gilt für alle Rezepte)."""
+    _run(hass, connection, msg, lambda m: m.set_basics(msg.get("on"), msg.get("names")))
 
 
 @websocket_api.websocket_command(
