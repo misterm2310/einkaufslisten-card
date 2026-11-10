@@ -788,26 +788,32 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   st.country="DE"; d.offers={ milch:[{n:"Milch",r:"Aldi",p:1.1,ctry:"CH"},{n:"Milch",r:"Aldi",p:1.2,ctry:"DE"},{n:"Milch",r:"Aldi",p:1.3}] };
   const offers=c._offersFor({name:"Milch", store_id:st.id}).map(o=>o.p); const noStore=c._offersFor({name:"Milch"}).length;
   d.settings.basics_on=true; d.settings.basics=["Salz","Olivenöl"];
-  const basic={ salz:c._isBasic({name:"Salz"}), oel:c._isBasic({name:"Olivenöl extra"}), mehl:c._isBasic({name:"Mehl"}), off:c._isBasic({name:"Salz", no_basic:true}) };
+  const basic={ salz:c._isBasic({name:"Salz"}), oel:c._isBasic({name:"Olivenöl extra"}), mehl:c._isBasic({name:"Mehl"}) };
   delete states["zone.testladen"]; delete states["person.anna"]; delete states["person.ben"];
   st.zones=keepZones; st.zone=keepZone; st.country=keepCtry; c._tab=keepTab; d.settings=keepSet; d.offers=keepOffers; c._renderAll();
   return { here, offers, noStore, basic }; });
 check("📍 Gerade dort: Namen über der Liste, Rand am Reiter", !r.here.hidden && /Anna, Ben/.test(r.here.text) && r.here.ring, JSON.stringify(r.here));
 check("🌍 Angebote: CH-Angebot nicht beim deutschen Geschäft, ohne Geschäft alles", r.offers.join() === "1.2,1.3" && r.noStore === 3, JSON.stringify(r));
-check("🧂 Grundvorrat-Liste: Salz/Olivenöl ja, Mehl nein, abgewählt nie", r.basic.salz && r.basic.oel && !r.basic.mehl && !r.basic.off, JSON.stringify(r.basic));
+check("🧂 Grundvorrat-Liste: Salz/Olivenöl ja, Mehl nein", r.basic.salz && r.basic.oel && !r.basic.mehl, JSON.stringify(r.basic));
 
-// 🧂 beta.2: neue Zutat ohne 🧂-Knopf anzufassen = Grundvorrat-Liste gilt (kein versehentliches „abgewählt“)
-r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const d=c._data; const keepSet={...d.settings};
-  d.settings.basics_on=true; d.settings.basics=["Pfeffer"]; c._ws=async()=>({});
+// 🧂 beta.3: nur EIN Grundvorrat – 🧂-Knopf im Editor ändert die zentrale Liste
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const d=c._data; const keepSet={...d.settings}; const sent=[];
+  d.settings.basics_on=true; d.settings.basics=["Pfeffer","Salz"]; c._ws=async(m)=>{ sent.push(m); return {}; };
   c._openRecipe(null); await new Promise(r=>setTimeout(r,80));
   c.$("inName").value="Pfeffer"; await c._addRecipeIngredient(); await new Promise(r=>setTimeout(r,30));
-  const a={...c._draft.items.find(i=>i.name==="Pfeffer")}; const aBasic=c._isBasic(a);
-  c.$("inName").value="Pfefferkörner Mühle"; c._setBasic(false, true); c.$("inName").value="Pfeffer schwarz"; await c._addRecipeIngredient(); await new Promise(r=>setTimeout(r,30));
-  const b={...c._draft.items.find(i=>i.name==="Pfeffer schwarz")};
+  const a={...c._draft.items.find(i=>i.name==="Pfeffer")}; const aBasic=c._isBasic(a); const sentA=sent.filter(m=>m.type==="einkaufsliste/recipe/basics").length;
+  const meta=c.$("rItems")?.textContent || "";
+  c.$("inName").value="Zimt"; c._setBasic(true, true); await c._addRecipeIngredient(); await new Promise(r=>setTimeout(r,30));
+  const zimt=[...d.settings.basics];
+  c.$("inName").value="Pfeffer schwarz"; c._setBasic(false, true); await c._addRecipeIngredient(); await new Promise(r=>setTimeout(r,30));
+  const after=[...d.settings.basics]; const pBasic=c._isBasic({name:"Pfeffer"});
+  const last=sent.filter(m=>m.type==="einkaufsliste/recipe/basics").pop();
   d.settings=keepSet; let n=0; while(c._page && n++<6) c._pageBack(); c._view="list"; c._renderAll();
-  return { a, aBasic, b }; });
-check("🧂 Neue Zutat „Pfeffer“ ohne 🧂-Knopf: Grundvorrat aus der Liste", r.aBasic && !r.a.no_basic, JSON.stringify(r));
-check("🧂 🧂-Knopf selbst ausgeschaltet: ausdrücklich abgewählt", r.b.no_basic === true, JSON.stringify(r.b));
+  return { a, aBasic, sentA, label:/Grundvorrat/.test(meta) && !/\(Liste\)/.test(meta), zimt, after, pBasic, last }; });
+check("🧂 Neue Zutat „Pfeffer“ ohne Knopf: Grundvorrat aus der Liste, nichts geändert", r.aBasic && !r.a.basic && !r.a.no_basic && r.sentA === 0, JSON.stringify(r));
+check("🧂 Überall dasselbe „🧂 Grundvorrat“ (kein „(Liste)“)", r.label, JSON.stringify(r));
+check("🧂 Knopf an bei „Zimt“ = kommt auf die zentrale Liste", r.zimt.join() === "Pfeffer,Salz,Zimt", JSON.stringify(r.zimt));
+check("🧂 Knopf aus bei „Pfeffer schwarz“ = Pfeffer fliegt überall raus", r.after.join() === "Salz,Zimt" && !r.pBasic && r.last?.names?.join() === "Salz,Zimt", JSON.stringify(r));
 
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();

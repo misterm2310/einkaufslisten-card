@@ -1322,7 +1322,7 @@ async def test_quantity_in_name_and_units(hass, setup):
     assert a["quantity"] == "2x"
     r = m.add_recipe("Kuchen", items=[{"name": "250g Butter"}, {"name": "Salz", "basic": True}], steps="Teig rühren\n\n Backen  ")
     assert r["items"][0]["name"] == "Butter" and r["items"][0]["quantity"] == "250 g"
-    assert r["items"][1]["basic"] is True and r["steps"] == "Teig rühren\nBacken"
+    assert "Salz" in m.basics and r["steps"] == "Teig rühren\nBacken"  # 🧂 steht jetzt auf der zentralen Liste
     assert m.as_dict()["version"]
 
 
@@ -5216,14 +5216,14 @@ def test_heat_from_steps():
     assert guess_heat("") == []
 
 
-async def test_basics_fix_removes_accidental_no_basic(hass, hass_storage):
-    """🧂 beta.1 hat „kein Grundvorrat“ aus Versehen gespeichert – wird beim Laden einmal gelöscht, danach bleibt eine echte Abwahl."""
+async def test_basics_one_list_moves_old_marks(hass, hass_storage):
+    """🧂 Nur noch EIN Grundvorrat: alte 🧂-Haken in Rezepten wandern einmal auf die zentrale Liste, „abgewählt“ fällt weg."""
     await hass.config.async_set_time_zone(TZ)
-    rec = {"id": "r1", "name": "Suppe", "items": [{"name": "Pfeffer", "no_basic": True}, {"name": "Lauch"}], "steps": None}
+    rec = {"id": "r1", "name": "Suppe", "items": [{"name": "Pfeffer", "no_basic": True}, {"name": "Lauch", "basic": True}], "steps": None}
     hass_storage["einkaufsliste.data"] = {
         "version": 1, "key": "einkaufsliste.data",
         "data": {"stores": [], "categories": [], "history": {}, "items": [], "recipes": [rec],
-                 "last_cleanup": dt_util.utcnow().isoformat(), "basics": ["Pfeffer"], "basics_on": True},
+                 "last_cleanup": dt_util.utcnow().isoformat(), "basics": ["Salz"], "basics_on": False},
     }
     assert await async_setup_component(hass, "http", {})
     hass.config.components.update({"frontend", "lovelace"})
@@ -5232,5 +5232,15 @@ async def test_basics_fix_removes_accidental_no_basic(hass, hass_storage):
     with patch("custom_components.einkaufsliste.frontend.add_extra_js_url"):
         assert await hass.config_entries.async_setup(entry.entry_id)
     m = mgr(hass)
-    assert "no_basic" not in m.recipes[0]["items"][0]
-    assert m.basics_fix is True
+    items = {i["name"]: i for i in m.recipes[0]["items"]}
+    assert "no_basic" not in items["Pfeffer"] and items["Lauch"]["basic"] is False
+    assert m.basics == ["Salz", "Lauch"] and m.basics_on is True and m.basics_one is True
+
+
+async def test_recipe_basic_mark_goes_to_central_list(hass, setup):
+    """🧂 Zutat im Rezept als Grundvorrat markiert = steht auf der zentralen Liste (gilt in allen Rezepten)."""
+    m = mgr(hass)
+    m.set_basics(False, [])
+    m.add_recipe("Nudeln", [{"name": "Nudeln"}, {"name": "Olivenöl", "basic": True}])
+    assert m.basics == ["Olivenöl"] and m.basics_on is True
+    assert all(i["basic"] is False for i in m.recipes[-1]["items"])

@@ -601,7 +601,7 @@ class EinkaufslisteManager:
         self.ai_pantry: list[str] = []  # 🧂 „Immer im Haus“ – geht bei jeder KI-Kochen-Anfrage mit
         self.basics: list[str] = []  # 🧂 Zentrale Grundvorrat-Liste: gilt in ALLEN Rezepten als „haben wir immer“
         self.basics_on = False
-        self.basics_fix = True  # 🧂 neue Installation: nichts zu reparieren
+        self.basics_one = True  # 🧂 neue Installation: nichts umzuziehen
         self.ai_avoid: list[str] = []  # 🚫 „Das nie vorschlagen“ (Allergien, Abneigungen)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
         self.plan_reset_on: bool = True  # 📅 Wochenplan: eingeplante Rezepte am Wochentag automatisch zurücksetzen
@@ -848,14 +848,21 @@ class EinkaufslisteManager:
         self.ai_avoid = _name_list(data.get("ai_avoid"))
         self.basics = _name_list(data.get("basics"), limit=80)
         self.basics_on = bool(data.get("basics_on", False))
-        # 🧂 Einmalige Reparatur (2.76.28-beta.2): beta.1 hat neue Zutaten versehentlich als „kein Grundvorrat“ gespeichert,
-        # wenn der 🧂-Knopf nur nicht angefasst war. Das falsche „abgewählt“ einmal löschen – danach entscheidet die Liste.
-        self.basics_fix = bool(data.get("basics_fix", False))
-        if not self.basics_fix:
+        # 🧂 Einmalig (2.76.28-beta.3): Es gibt nur noch EINEN Grundvorrat. Alte 🧂-Haken in einzelnen Rezepten wandern auf die
+        # zentrale Liste (gelten dann überall), das „hier abgewählt“ aus beta.1/beta.2 fällt weg.
+        self.basics_one = bool(data.get("basics_one", False))
+        if not self.basics_one:
+            moved = False
             for rec in self.recipes:
                 for ri in rec.get("items") or []:
                     ri.pop("no_basic", None)
-            self.basics_fix = True
+                    if ri.get("basic"):
+                        self._add_basic(ri.get("name"))
+                        ri["basic"] = False
+                        moved = True
+            if moved:
+                self.basics_on = True
+            self.basics_one = True
             tidied = True  # gleich dauerhaft speichern
         self.privacy = bool(data.get("privacy", False))
         self.spend = bool(data.get("spend", False))
@@ -956,7 +963,7 @@ class EinkaufslisteManager:
             "ai_avoid": self.ai_avoid,
             "basics": self.basics,
             "basics_on": self.basics_on,
-            "basics_fix": self.basics_fix,
+            "basics_one": self.basics_one,
             "privacy": self.privacy,
             "spend": self.spend,
             "spend_auto": self.spend_auto,
@@ -1655,6 +1662,12 @@ class EinkaufslisteManager:
         if avoid is not None:
             self.ai_avoid = _name_list(avoid)
         self._changed()
+
+    def _add_basic(self, name: Any) -> None:
+        """🧂 Einen Namen auf die zentrale Grundvorrat-Liste setzen (ohne Doppelte)."""
+        n = " ".join(str(name or "").split())[:60]
+        if n and n.lower() not in [b.lower() for b in self.basics] and len(self.basics) < 80:
+            self.basics.append(n)
 
     def set_basics(self, on: Any = None, names: Any = None) -> None:
         """🧂 Zentrale Grundvorrat-Liste (Salz, Pfeffer, Olivenöl …) und ihr Schalter; None = nicht ändern."""
@@ -4645,10 +4658,11 @@ class EinkaufslisteManager:
                 "for_whom": _clean(raw.get("for_whom")),
                 "store_id": self._check_store(raw.get("store_id")),
                 "category_id": self._check_category(raw.get("category_id")),
-                "basic": bool(raw.get("basic")),  # 🧂 Grundvorrat („haben wir immer“)
+                "basic": False,  # 🧂 Grundvorrat steht nur noch auf der zentralen Liste (gilt in allen Rezepten)
             }
-            if raw.get("no_basic") and not entry["basic"]:
-                entry["no_basic"] = True  # 🧂 steht auf der Grundvorrat-Liste, hier aber ausdrücklich abgewählt
+            if raw.get("basic"):  # 🧂 im Rezept (oder Import) als Grundvorrat markiert -> auf die zentrale Liste
+                self._add_basic(name)
+                self.basics_on = True
             key = _key(entry["name"], entry["note"], entry["for_whom"], entry["store_id"])
             if key in seen:
                 raise ValueError(f"„{name}“ steht doppelt im Rezept.")

@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.2";
+const EL_VERSION = "2.76.28-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -418,6 +418,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["🧂 <b>Nur noch EIN Grundvorrat:</b> Der 🧂-Knopf an einer Zutat im Rezept-Editor setzt sie auf die zentrale Grundvorrat-Liste (bzw. nimmt sie runter) – sie gilt dann in <b>allen</b> Rezepten, überall mit demselben „🧂 Grundvorrat“. Alte Haken aus einzelnen Rezepten wurden einmal auf die Liste übernommen.",
+   "🧂 <b>Just ONE pantry list:</b> the 🧂 button on an ingredient in the recipe editor puts it on the central pantry list (or takes it off) – it then counts in <b>all</b> recipes, everywhere with the same “🧂 pantry staple”. Old marks from single recipes were moved to the list once.", "beta.3"],
   ["🧂 <b>Grundvorrat repariert:</b> Neue Zutaten wie „Pfeffer“ gelten jetzt wirklich als Grundvorrat, wenn sie auf der Liste stehen – abgewählt ist nur, was du am 🧂-Knopf selbst ausschaltest. Schon betroffene Rezepte werden automatisch repariert. „Speichern“ schaltet die Liste gleich mit ein.",
    "🧂 <b>Basics fixed:</b> new ingredients like “pepper” now really count as basics when they are on the list – only what you switch off yourself at the 🧂 button is excluded. Affected recipes are repaired automatically. “Save” also switches the list on.", "beta.2"],
   ["📍 <b>Wer ist gerade im Laden?</b> Geschäft oben antippen – über der Liste steht „📍 Gerade dort: Marco, Jamila“. Der dicke Rand bleibt jetzt auch beim ausgewählten Reiter sichtbar.",
@@ -432,8 +434,8 @@ const EL_BETA_NEWS = [
    "🍲 <b>Mealie import:</b> under “Recipes from file” read the .zip (with photo) or the .json from Mealie – the general schema.org format works too. Quantity, unit, ingredient and note stay separate.", "beta.1"],
   ["🔥 <b>Backofen & Airfryer automatisch:</b> Beim Import (Link, Datei, Mealie, Foto) werden Gerät, Grad, Minuten und Modus aus den Schritten in „Backofen & Co.“ eingetragen, verknüpft mit dem Schritt. Beim Airfryer kommt im Kochmodus der 🍟-Knopf. Bitte kurz prüfen.",
    "🔥 <b>Oven & air fryer automatically:</b> when importing (link, file, Mealie, photo), appliance, degrees, minutes and mode are taken from the steps into “Oven & co.”, linked to the step. For the air fryer, cook mode shows the 🍟 button. Please check.", "beta.1"],
-  ["🧂 <b>Zentrale Grundvorrat-Liste:</b> ⚙️ → Rezepte → Grundvorrat (mit Schalter): Salz, Pfeffer, Olivenöl … gelten in allen Rezepten als „haben wir immer“, auch bei neu importierten. Der Schalter am Rezept geht vor.",
-   "🧂 <b>Central pantry list:</b> ⚙️ → Recipes → Pantry staples (with a switch): salt, pepper, olive oil … count as “always at home” in all recipes, also newly imported ones. The switch in the recipe wins.", "beta.1"],
+  ["🧂 <b>Zentrale Grundvorrat-Liste:</b> ⚙️ → Rezepte → Grundvorrat (mit Schalter): Salz, Pfeffer, Olivenöl … gelten in allen Rezepten als „haben wir immer“, auch bei neu importierten. Der 🧂-Knopf im Rezept-Editor ändert dieselbe Liste.",
+   "🧂 <b>Central pantry list:</b> ⚙️ → Recipes → Pantry staples (with a switch): salt, pepper, olive oil … count as “always at home” in all recipes, also newly imported ones. The 🧂 button in the recipe editor changes the same list.", "beta.1"],
   ["📷 <b>Rezept aus Fotos sortiert selbst:</b> Zutaten und Zubereitung werden auch ohne Überschriften erkannt, Unwichtiges (Folgen, Likes, @Namen, #Tags, Uhrzeit – z. B. TikTok-Screenshots) fliegt raus.",
    "📷 <b>Recipe from photos sorts by itself:</b> ingredients and steps are recognised even without headings, clutter (follow, likes, @names, #tags, clock – e.g. TikTok screenshots) is dropped.", "beta.1"],
   ["📷 <b>Produktfotos offline:</b> Die Offline-App merkt sich die Fotos aller offenen Artikel – im Funkloch sind sie da. Abgehakt = Foto wieder weg aus dem Speicher.",
@@ -8017,32 +8019,45 @@ ${(() => {
   _basicHit(name) {
     const st = this._data?.settings;
     if (!st?.basics_on || !(st.basics || []).length) return false;
+    return st.basics.some((b) => this._basicMatch(b, name));
+  }
+  // 🧂 Passt der Listen-Eintrag b zur Zutat name? (ganzes Wort, Mehrzahl, Spitznamen)
+  _basicMatch(b, name) {
     const norm = (x) => String(x || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
     const stem = (w) => w.replace(/(?:en|n|e|s)$/u, "");
     const words = norm(name).split(" ").filter(Boolean);
     const names = [norm(name), ...this._itemAliases?.({ name }).map(norm) || []];
-    return st.basics.some((b) => {
-      const nb = norm(b);
-      if (!nb) return false;
-      if (names.includes(nb)) return true;
-      const bw = nb.split(" ");
-      if (bw.length === 1) return words.some((w) => w === nb || stem(w) === stem(nb)); // ein Wort: als ganzes Wort (auch Mehrzahl)
-      return (" " + words.join(" ") + " ").includes(" " + nb + " "); // mehrere Wörter: genau so drin
-    });
+    const nb = norm(b);
+    if (!nb) return false;
+    if (names.includes(nb)) return true;
+    const bw = nb.split(" ");
+    if (bw.length === 1) return words.some((w) => w === nb || stem(w) === stem(nb)); // ein Wort: als ganzes Wort (auch Mehrzahl)
+    return (" " + words.join(" ") + " ").includes(" " + nb + " "); // mehrere Wörter: genau so drin
   }
-  // 🧂 Gilt die Zutat als Grundvorrat? Der Schalter am Rezept geht vor (an = immer, abgewählt = nie), sonst die zentrale Liste
+  // 🧂 🧂-Knopf im Rezept = zentrale Liste ändern (nur EIN Grundvorrat für alle Rezepte)
+  _setBasicFor(name, on) {
+    const st = this._data.settings || (this._data.settings = {});
+    const list = [...(st.basics || [])];
+    const now = on
+      ? (st.basics_on && list.some((b) => this._basicMatch(b, name)) ? list : [...list, name])
+      : list.filter((b) => !this._basicMatch(b, name));
+    const turnOn = on && !st.basics_on;
+    if (now.length === list.length && now.every((x, i) => x === list[i]) && !turnOn) return; // nichts geändert
+    st.basics = now; if (turnOn) st.basics_on = true; // sofort sichtbar, HA bestätigt gleich
+    this._ws({ type: "einkaufsliste/recipe/basics", names: now, ...(turnOn ? { on: true } : {}) })
+      .catch((e) => this._toast("⚠️ Grundvorrat nicht gespeichert: " + (e?.message || e)));
+  }
+  // 🧂 Gilt die Zutat als Grundvorrat? Es gibt nur die zentrale Liste (der 🧂-Knopf im Rezept ändert sie)
   _isBasic(it) {
     if (!it) return false;
-    if (it.basic) return true;
-    if (it.no_basic) return false;
-    return this._basicHit(it.name);
+    return !!it.basic || this._basicHit(it.name);
   }
   // 🧂 ⚙️ → Rezepte → Grundvorrat
   _basicsHtml() {
     const st = this._data?.settings || {};
     const pantry = (st.ai_pantry || []).filter((x) => !(st.basics || []).some((b) => b.toLowerCase() === x.toLowerCase()));
     return `
-        <p class="hint">🧂 Zutaten, die ihr <b>immer im Haus</b> habt (Salz, Pfeffer, Olivenöl, Zucker …). Steht eine Zutat hier, gilt sie in <b>allen</b> Rezepten als Grundvorrat – auch bei neu importierten (Link, Datei, Mealie, Foto). Bei „Auf die Liste“ steht sie dann mit „🧂 haben wir immer“ da und ist nicht vorausgewählt. Spitznamen und Mehrzahl zählen mit („Olivenöl“ trifft „2 EL Olivenöl“). Der Schalter 🧂 an der Zutat im Rezept geht vor – dort kannst du sie auch abwählen.</p>
+        <p class="hint">🧂 Zutaten, die ihr <b>immer im Haus</b> habt (Salz, Pfeffer, Olivenöl, Zucker …). Steht eine Zutat hier, gilt sie in <b>allen</b> Rezepten als Grundvorrat – auch bei neu importierten (Link, Datei, Mealie, Foto). Bei „Auf die Liste“ steht sie dann mit „🧂 haben wir immer“ da und ist nicht vorausgewählt. Spitznamen und Mehrzahl zählen mit („Olivenöl“ trifft „2 EL Olivenöl“). Der 🧂-Knopf an einer Zutat im Rezept-Editor ist dasselbe: an = kommt hier auf die Liste, aus = fliegt hier raus (gilt dann überall).</p>
         ${this._swHtml("basics-toggle", !!st.basics_on, "Grundvorrat-Liste benutzen")}
         <textarea class="full" id="basicsText" rows="4" maxlength="3000" placeholder="Salz, Pfeffer, Olivenöl, Zucker, Mehl">${esc((st.basics || []).join(", "))}</textarea>
         <div class="btnrow"><button class="btn primary" data-act="basics-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>${pantry.length ? `<button class="btn" data-act="basics-pantry" title="${esc(pantry.join(", "))}"><ha-icon icon="mdi:robot-happy-outline"></ha-icon>Aus „🧂 Immer im Haus“ übernehmen</button>` : ""}</div>
@@ -10153,7 +10168,7 @@ ${(() => {
         this._noteChip(it.name, it.note),
         this._ownChip(it),
         it.barcode || this._barcodesOf(pk).length ? `<span class="bc">▥</span>` : "",
-        this._isBasic(it) ? `<span>🧂 Grundvorrat${!it.basic ? " (Liste)" : ""}</span>` : "",
+        this._isBasic(it) ? `<span>🧂 Grundvorrat</span>` : "",
         cat ? `<span>${esc(cat.name)}</span>` : "",
       ].filter(Boolean).join("");
       return `<div class="item rrow ${this._rEditIdx === n ? "editing" : ""}" data-n="${n}" style="--cc:${esc(cat?.color || "transparent")}">
@@ -10185,11 +10200,9 @@ ${(() => {
       for_whom: this.$("inFor").value || null,
       store_id: this._inStore(),
       category_id: this.$("inCat").value || null,
-      // 🧂 Nur was du am 🧂-Knopf SELBST umgeschaltet hast, zählt. Sonst bleibt es, wie es war (neu: die Grundvorrat-Liste entscheidet)
-      basic: this._rBasicTouched ? !!this._rBasic : !!(this._rEditIdx != null && dr.items[this._rEditIdx]?.basic),
+      basic: false, // 🧂 Grundvorrat steht nur auf der zentralen Liste
     };
-    if (this._rBasicTouched ? !ing.basic && this._basicHit(ing.name) : this._rEditIdx != null && dr.items[this._rEditIdx]?.no_basic && !ing.basic)
-      ing.no_basic = true; // 🧂 steht auf der Grundvorrat-Liste, hier aber ausdrücklich abgewählt
+    if (this._rBasicTouched) this._setBasicFor(name, this._rBasic); // 🧂 selbst umgeschaltet → zentrale Liste ändern (gilt in allen Rezepten)
     // ✏️ Eigene Notiz gehört zum Produkt (Name + Notiz): nur mitschicken, wenn sie sich geändert hat ("" = löschen)
     const ownVal = (this.$("inOwn")?.value || "").trim();
     if (ownVal !== (this._ownNote(ing.name, ing.note) || "")) ing.own_note = ownVal;
@@ -10278,8 +10291,7 @@ ${(() => {
       const o = { name: i.name };
       for (const k of ["quantity", "note", "for_whom", "store_id", "category_id", "barcode"]) if (i[k]) o[k] = i[k];
       if (i.own_note != null) o.own_note = i.own_note; // ✏️ Eigene Notiz mitschicken (auch leer = löschen)
-      if (i.basic) o.basic = true;
-      if (i.no_basic && !i.basic) o.no_basic = true; // 🧂 trotz Grundvorrat-Liste abgewählt
+      if (i.basic) o.basic = true; // 🧂 alter Haken → HA setzt ihn auf die zentrale Liste
       return o;
     });
     if (this.$("inName").value.trim() && !await elConfirm("Oben steht noch eine Zutat, die nicht mit ✔ übernommen wurde. Trotzdem speichern?")) return;
@@ -14178,7 +14190,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         break;
       case "basic-toggle":
         this._setBasic(!this._rBasic, true);
-        this._toast(this._rBasic ? "🧂 Grundvorrat: wird bei „Auf die Liste“ nicht vorausgewählt" : "🧂 Kein Grundvorrat");
+        this._toast(this._rBasic ? "🧂 Grundvorrat – gilt mit ✔ in allen Rezepten, bei „Auf die Liste“ nicht vorausgewählt" : "🧂 Kein Grundvorrat – mit ✔ in allen Rezepten");
         break;
       case "recipe-source": {
         const r = this._recipe(el.closest(".rtools").dataset.id);
