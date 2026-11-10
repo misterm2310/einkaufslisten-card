@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.1";
+const EL_VERSION = "2.76.28-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -418,6 +418,8 @@ function elVerCmp(a, b) {
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
 const EL_BETA_NEWS = [
+  ["🧂 <b>Grundvorrat repariert:</b> Neue Zutaten wie „Pfeffer“ gelten jetzt wirklich als Grundvorrat, wenn sie auf der Liste stehen – abgewählt ist nur, was du am 🧂-Knopf selbst ausschaltest. Schon betroffene Rezepte werden automatisch repariert. „Speichern“ schaltet die Liste gleich mit ein.",
+   "🧂 <b>Basics fixed:</b> new ingredients like “pepper” now really count as basics when they are on the list – only what you switch off yourself at the 🧂 button is excluded. Affected recipes are repaired automatically. “Save” also switches the list on.", "beta.2"],
   ["📍 <b>Wer ist gerade im Laden?</b> Geschäft oben antippen – über der Liste steht „📍 Gerade dort: Marco, Jamila“. Der dicke Rand bleibt jetzt auch beim ausgewählten Reiter sichtbar.",
    "📍 <b>Who's at the store?</b> Tap a store at the top – above the list it says “📍 There right now: Marco, Jamila”. The thick border now also stays visible on the selected tab.", "beta.1"],
   ["🌍 <b>Angebote nur im richtigen Land:</b> Gemeldete Angebote können ein Land haben (<code>country</code>, pro Angebot oder für den ganzen Aufruf, sonst aus der Währung CHF = Schweiz). 🏷️ und „🛒 Hier kaufen“ gibt es dann nur bei Geschäften aus diesem Land, genauer Name zuerst („Aldi Suisse“ vor „Aldi“).",
@@ -10183,9 +10185,11 @@ ${(() => {
       for_whom: this.$("inFor").value || null,
       store_id: this._inStore(),
       category_id: this.$("inCat").value || null,
-      basic: !!this._rBasic,
+      // 🧂 Nur was du am 🧂-Knopf SELBST umgeschaltet hast, zählt. Sonst bleibt es, wie es war (neu: die Grundvorrat-Liste entscheidet)
+      basic: this._rBasicTouched ? !!this._rBasic : !!(this._rEditIdx != null && dr.items[this._rEditIdx]?.basic),
     };
-    if (!ing.basic && this._basicHit(ing.name)) ing.no_basic = true; // 🧂 steht auf der Grundvorrat-Liste, hier abgewählt
+    if (this._rBasicTouched ? !ing.basic && this._basicHit(ing.name) : this._rEditIdx != null && dr.items[this._rEditIdx]?.no_basic && !ing.basic)
+      ing.no_basic = true; // 🧂 steht auf der Grundvorrat-Liste, hier aber ausdrücklich abgewählt
     // ✏️ Eigene Notiz gehört zum Produkt (Name + Notiz): nur mitschicken, wenn sie sich geändert hat ("" = löschen)
     const ownVal = (this.$("inOwn")?.value || "").trim();
     if (ownVal !== (this._ownNote(ing.name, ing.note) || "")) ing.own_note = ownVal;
@@ -10747,8 +10751,9 @@ ${(() => {
     box.innerHTML = list.map((e) => `<button type="button" class="chip2" data-act="note-chip" data-v="${esc(e.text)}">📝 ${esc(e.text)}</button>`).join("");
   }
 
-  _setBasic(on) {
+  _setBasic(on, touched = false) {
     this._rBasic = !!on;
+    this._rBasicTouched = touched; // 🧂 true = selbst am Knopf umgeschaltet
     const b = this.$("tBasic");
     if (b) b.classList.toggle("on", this._rBasic);
   }
@@ -14172,7 +14177,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         this._renderHeat();
         break;
       case "basic-toggle":
-        this._setBasic(!this._rBasic);
+        this._setBasic(!this._rBasic, true);
         this._toast(this._rBasic ? "🧂 Grundvorrat: wird bei „Auf die Liste“ nicht vorausgewählt" : "🧂 Kein Grundvorrat");
         break;
       case "recipe-source": {
@@ -15000,13 +15005,18 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       case "basics-toggle": { // 🧂 Grundvorrat-Liste an/aus (für alle)
         const on = !this._data.settings?.basics_on;
         this._ws({ type: "einkaufsliste/recipe/basics", on, names: this.$("basicsText")?.value ?? undefined })
-          .then(() => { this._toast(on ? "🧂 Grundvorrat-Liste: an – gilt in allen Rezepten" : "🧂 Grundvorrat-Liste: aus"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+          .then(() => { this._toast(on ? "🧂 Grundvorrat-Liste: an – gilt in allen Rezepten" : "🧂 Grundvorrat-Liste: aus"); setTimeout(() => this._renderSettings(), 150); })
+          .catch((e) => this._toast("⚠️ Grundvorrat nicht gespeichert: " + (e?.message || e)));
         break;
       }
-      case "basics-save":
-        this._ws({ type: "einkaufsliste/recipe/basics", names: this.$("basicsText")?.value || "" })
-          .then(() => { this._toast("🧂 Grundvorrat gespeichert"); setTimeout(() => this._renderSettings(), 150); }).catch(() => {});
+      case "basics-save": { // 🧂 Wer Wörter einträgt, will die Liste auch benutzen → gleich einschalten
+        const names = this.$("basicsText")?.value || "";
+        const on = names.trim() ? true : undefined;
+        this._ws({ type: "einkaufsliste/recipe/basics", names, ...(on ? { on } : {}) })
+          .then(() => { this._toast(on && !this._data.settings?.basics_on ? "🧂 Grundvorrat gespeichert und eingeschaltet" : "🧂 Grundvorrat gespeichert"); setTimeout(() => this._renderSettings(), 150); })
+          .catch((e) => this._toast("⚠️ Grundvorrat nicht gespeichert: " + (e?.message || e)));
         break;
+      }
       case "basics-pantry": { // 🧂 Vorschlag: die Liste aus KI-Kochen „Immer im Haus“
         const ta = this.$("basicsText");
         if (!ta) break;

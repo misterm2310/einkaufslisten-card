@@ -796,6 +796,19 @@ check("📍 Gerade dort: Namen über der Liste, Rand am Reiter", !r.here.hidden 
 check("🌍 Angebote: CH-Angebot nicht beim deutschen Geschäft, ohne Geschäft alles", r.offers.join() === "1.2,1.3" && r.noStore === 3, JSON.stringify(r));
 check("🧂 Grundvorrat-Liste: Salz/Olivenöl ja, Mehl nein, abgewählt nie", r.basic.salz && r.basic.oel && !r.basic.mehl && !r.basic.off, JSON.stringify(r.basic));
 
+// 🧂 beta.2: neue Zutat ohne 🧂-Knopf anzufassen = Grundvorrat-Liste gilt (kein versehentliches „abgewählt“)
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const d=c._data; const keepSet={...d.settings};
+  d.settings.basics_on=true; d.settings.basics=["Pfeffer"]; c._ws=async()=>({});
+  c._openRecipe(null); await new Promise(r=>setTimeout(r,80));
+  c.$("inName").value="Pfeffer"; await c._addRecipeIngredient(); await new Promise(r=>setTimeout(r,30));
+  const a={...c._draft.items.find(i=>i.name==="Pfeffer")}; const aBasic=c._isBasic(a);
+  c.$("inName").value="Pfefferkörner Mühle"; c._setBasic(false, true); c.$("inName").value="Pfeffer schwarz"; await c._addRecipeIngredient(); await new Promise(r=>setTimeout(r,30));
+  const b={...c._draft.items.find(i=>i.name==="Pfeffer schwarz")};
+  d.settings=keepSet; let n=0; while(c._page && n++<6) c._pageBack(); c._view="list"; c._renderAll();
+  return { a, aBasic, b }; });
+check("🧂 Neue Zutat „Pfeffer“ ohne 🧂-Knopf: Grundvorrat aus der Liste", r.aBasic && !r.a.no_basic, JSON.stringify(r));
+check("🧂 🧂-Knopf selbst ausgeschaltet: ausdrücklich abgewählt", r.b.no_basic === true, JSON.stringify(r.b));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

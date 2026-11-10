@@ -601,6 +601,7 @@ class EinkaufslisteManager:
         self.ai_pantry: list[str] = []  # 🧂 „Immer im Haus“ – geht bei jeder KI-Kochen-Anfrage mit
         self.basics: list[str] = []  # 🧂 Zentrale Grundvorrat-Liste: gilt in ALLEN Rezepten als „haben wir immer“
         self.basics_on = False
+        self.basics_fix = True  # 🧂 neue Installation: nichts zu reparieren
         self.ai_avoid: list[str] = []  # 🚫 „Das nie vorschlagen“ (Allergien, Abneigungen)
         self.mascot: bool = False  # 🛒😊 Maskottchen an/aus – gilt für alle Karten und Handys
         self.plan_reset_on: bool = True  # 📅 Wochenplan: eingeplante Rezepte am Wochentag automatisch zurücksetzen
@@ -847,6 +848,15 @@ class EinkaufslisteManager:
         self.ai_avoid = _name_list(data.get("ai_avoid"))
         self.basics = _name_list(data.get("basics"), limit=80)
         self.basics_on = bool(data.get("basics_on", False))
+        # 🧂 Einmalige Reparatur (2.76.28-beta.2): beta.1 hat neue Zutaten versehentlich als „kein Grundvorrat“ gespeichert,
+        # wenn der 🧂-Knopf nur nicht angefasst war. Das falsche „abgewählt“ einmal löschen – danach entscheidet die Liste.
+        self.basics_fix = bool(data.get("basics_fix", False))
+        if not self.basics_fix:
+            for rec in self.recipes:
+                for ri in rec.get("items") or []:
+                    ri.pop("no_basic", None)
+            self.basics_fix = True
+            tidied = True  # gleich dauerhaft speichern
         self.privacy = bool(data.get("privacy", False))
         self.spend = bool(data.get("spend", False))
         self.spend_auto = bool(data.get("spend_auto", False))
@@ -946,6 +956,7 @@ class EinkaufslisteManager:
             "ai_avoid": self.ai_avoid,
             "basics": self.basics,
             "basics_on": self.basics_on,
+            "basics_fix": self.basics_fix,
             "privacy": self.privacy,
             "spend": self.spend,
             "spend_auto": self.spend_auto,

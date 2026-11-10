@@ -5214,3 +5214,23 @@ def test_heat_from_steps():
     assert fryer["device"] == "Heißluftfritteuse" and fryer["temp"] == 200 and fryer["minutes"] == 15
     assert fryer["steps"] == [4]
     assert guess_heat("") == []
+
+
+async def test_basics_fix_removes_accidental_no_basic(hass, hass_storage):
+    """🧂 beta.1 hat „kein Grundvorrat“ aus Versehen gespeichert – wird beim Laden einmal gelöscht, danach bleibt eine echte Abwahl."""
+    await hass.config.async_set_time_zone(TZ)
+    rec = {"id": "r1", "name": "Suppe", "items": [{"name": "Pfeffer", "no_basic": True}, {"name": "Lauch"}], "steps": None}
+    hass_storage["einkaufsliste.data"] = {
+        "version": 1, "key": "einkaufsliste.data",
+        "data": {"stores": [], "categories": [], "history": {}, "items": [], "recipes": [rec],
+                 "last_cleanup": dt_util.utcnow().isoformat(), "basics": ["Pfeffer"], "basics_on": True},
+    }
+    assert await async_setup_component(hass, "http", {})
+    hass.config.components.update({"frontend", "lovelace"})
+    entry = MockConfigEntry(domain=DOMAIN, options={"cleanup_weekday": 6, "cleanup_time": "03:00:00", "min_age_days": 7})
+    entry.add_to_hass(hass)
+    with patch("custom_components.einkaufsliste.frontend.add_extra_js_url"):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+    m = mgr(hass)
+    assert "no_basic" not in m.recipes[0]["items"][0]
+    assert m.basics_fix is True
