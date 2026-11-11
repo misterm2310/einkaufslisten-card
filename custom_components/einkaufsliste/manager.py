@@ -812,7 +812,7 @@ class EinkaufslisteManager:
                 tidied |= new_qty != entry.get("quantity")
                 entry["quantity"] = new_qty
                 entry.setdefault("basic", False)
-            recipe["items"] = sorted(recipe.get("items", []), key=_abc)  # 🔤 Zutaten A–Z
+            # 🔀 Reihenfolge der Zutaten bleibt so, wie sie gespeichert wurde (kein A–Z mehr beim Start)
         self.photos = data.get("photos", {})
         self.seen = data.get("seen", {})
         for mine in self.seen.values():  # älter als v2.2.0: Blasen-Zeiten („b:…“) nachrüsten
@@ -2683,7 +2683,6 @@ class EinkaufslisteManager:
                 if product_key(ri["name"], ri.get("note")) == from_key:
                     ri["name"], ri["note"] = name, note
                     moved += 1
-            recipe["items"] = sorted(recipe["items"], key=_abc)
         for bc in self.barcodes.values():
             if bc.get("name") and product_key(bc["name"], bc.get("note")) == from_key:
                 bc["name"], bc["note"] = name, note
@@ -4674,7 +4673,7 @@ class EinkaufslisteManager:
             code = "".join(ch for ch in str(raw.get("barcode") or "") if ch.isdigit())
             if code:  # im Rezept gescannt -> Barcode gehört ab jetzt zu diesem Produkt
                 self.learn_barcode(code, name, entry["store_id"], entry["category_id"], entry["note"])
-        return sorted(out, key=_abc)  # 🔤 Zutaten immer A–Z
+        return out  # 🔀 Reihenfolge wie übergeben (Import = wie im Rezept, Eintippen sortiert die Karte selbst)
 
     def _group(self, value: Any) -> str | None:
         """🏷️ Rezept-Gruppe – nur eine, die es in der Liste gibt, sonst leer."""

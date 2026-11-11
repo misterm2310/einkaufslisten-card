@@ -2469,11 +2469,19 @@
 "💾 Zwischengespeichert – du kannst weitermachen": "💾 Saved – you can keep going",
 "Nährwerte pro Portion": "Nutrition per serving",
 "Erklärung: Nährwerte": "Explanation: nutrition",
-"🧮 Nährwerte für eine Portion. Beim Import (Link, Datei, Mealie, Foto) werden sie übernommen, wenn das Rezept welche hat. Von Hand geht auch, leere Felder sind egal. Stehen in der Rezeptliste unter dem Namen.": "🧮 Nutrition for one serving. On import (link, file, Mealie, photo) they are taken over if the recipe has them. You can also enter them by hand, empty fields are fine. Shown in the recipe list under the name.",
+"🧮 Nährwerte für eine Portion. Antippen klappt die Felder auf und zu. Beim Import (Link, Datei, Mealie, Foto) werden sie übernommen, wenn das Rezept welche hat. Von Hand geht auch, leere Felder sind egal. Mit „🤖 Nährwerte schätzen“ rechnet dein KI-Assistent sie aus den Zutaten grob aus (nur wenn KI-Kochen an ist). Stehen in der Rezeptliste unter dem Namen.": "🧮 Nutrition for one serving. Tap to fold the fields open and closed. On import (link, file, Mealie, photo) they are taken over if the recipe has them. You can also enter them by hand, empty fields are fine. With “🤖 Estimate nutrition” your AI assistant roughly works them out from the ingredients (only if AI cooking is on). Shown in the recipe list under the name.",
 "Eiweiß": "Protein",
 "Fett": "Fat",
 "Kohlenhydrate": "Carbs",
 "davon Zucker": "of which sugar",
 "Ballaststoffe": "Fibre",
-"Salz": "Salt"
+"Salz": "Salt",
+"Nährwerte schätzen": "Estimate nutrition",
+"≈ geschätzt von der KI – bitte grob nachsehen": "≈ estimated by the AI – please give it a quick check",
+"leer – antippen zum Eintragen": "empty – tap to fill in",
+"Trag erst Zutaten ein – sonst kann die KI nichts schätzen.": "Add ingredients first – otherwise the AI has nothing to estimate.",
+"Die eingetragenen Nährwerte durch die Schätzung der KI ersetzen?": "Replace the entered nutrition values with the AI's estimate?",
+"🤖 Die KI rechnet …": "🤖 The AI is calculating …",
+"🧮 Nährwerte geschätzt (≈) – bitte kurz drüberschauen": "🧮 Nutrition estimated (≈) – please take a quick look",
+"Die KI hat keine Nährwerte geliefert 🙈": "The AI didn't return any nutrition values 🙈"
 }

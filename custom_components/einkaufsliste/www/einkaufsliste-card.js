@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.5";
+const EL_VERSION = "2.76.28-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -421,6 +421,10 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🔀 <b>Reihenfolge bleibt jetzt wirklich:</b> Zutaten werden auch beim Speichern und nach einem Neustart nicht mehr A–Z sortiert (vorher nur im Entwurf). Schon gespeicherte Rezepte bleiben sortiert – einmal neu importieren. · ✂️ <b>Foto zuschneiden repariert:</b> Ist die Karte schmaler als das Browserfenster, war der Rahmen größer als das Bild und der grüne Punkt außer Sicht – jetzt passt der Rahmen genau aufs Bild (betraf jedes Bildformat, nicht nur .webp).",
+   "🔀 <b>Order really stays now:</b> ingredients are no longer sorted A–Z when saving or after a restart (before it only worked in the draft). Recipes already saved stay sorted – import them once more. · ✂️ <b>Photo cropping fixed:</b> when the card was narrower than the browser window, the frame was bigger than the image and the green dot out of sight – now the frame fits the image exactly (any image format, not just .webp).", "beta.6"],
+  ["🧮 <b>Nährwerte zum Einklappen:</b> Im Rezept-Editor sind die Nährwerte zugeklappt, die Zeile zeigt die Kurzfassung (z. B. „898 kcal · Eiweiß 44,8 g …“) – antippen klappt auf. · 🤖 <b>Nährwerte schätzen:</b> Ist KI-Kochen an, rechnet dein KI-Assistent die Nährwerte pro Portion grob aus den Zutaten aus (≈, bitte kurz prüfen).",
+   "🧮 <b>Foldable nutrition:</b> in the recipe editor the nutrition fields are folded, the row shows a summary (e.g. “898 kcal · Protein 44.8 g …”) – tap to open. · 🤖 <b>Estimate nutrition:</b> if AI cooking is on, your AI assistant roughly works out the nutrition per serving from the ingredients (≈, please check).", "beta.6"],
   ["🧮 <b>Nährwerte pro Portion:</b> Neues Feld im Rezept-Editor (kcal, Eiweiß, Fett, Kohlenhydrate, Zucker, Ballaststoffe, Salz). Beim Import über Link (Chefkoch & Co.), Datei, Mealie und Foto werden sie mitgenommen, in der Rezeptliste stehen sie unter dem Namen.",
    "🧮 <b>Nutrition per serving:</b> new field in the recipe editor (kcal, protein, fat, carbs, sugar, fibre, salt). Imports via link, file, Mealie and photo take them along, the recipe list shows them under the name.", "beta.5"],
   ["🍲 <b>Mealie-Import repariert:</b> Die .json aus Mealie (Felder mit Unterstrich, z. B. „recipe_ingredient“) wird jetzt richtig gelesen – Zutaten, Schritte, Portionen, Dauer, Quelle und Nährwerte. · 🍽️ Beim Rezept-Link kommen die <b>Portionen</b> mit („4 Portionen“). · 🔀 Importierte Zutaten bleiben in der <b>Reihenfolge des Rezepts</b> (vorher ABC). · 🦊 Foto zuschneiden: Bilder (z. B. .webp in Firefox) bleiben beim Drehen nicht mehr leer.",
@@ -1462,7 +1466,7 @@ const elMinText = (m) => { const n = Math.round(Number(m) || 0), h = Math.floor(
   return h ? `${h} ${en ? "h" : "Std"}${r ? ` ${r} ${en ? "min" : "Min"}` : ""}` : `${n} ${en ? "min" : "Min"}`; };
 const servLabel = (unit, n) => (unit === "trays" ? (n === 1 ? "Blech" : "Bleche") : unit === "forms" ? (n === 1 ? "Form" : "Formen") : (n === 1 ? "Person" : "Personen"));
 
-// 🔤 Zutaten A–Z (Ä wie A, groß/klein egal) – genau wie im Backend
+// 🔤 Zutaten A–Z (Ä wie A, groß/klein egal) – nur noch beim Eintippen, wenn das Rezept schon A–Z steht
 const elIsAbc = (list) => list.every((x, i) => !i || (list[i - 1].name || "").localeCompare(x.name || "", "de", { sensitivity: "base" }) <= 0); // 🔀 schon nach ABC?
 const abcSort = (list) => list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "de", { sensitivity: "base" })
   || (a.note || "").localeCompare(b.note || "", "de", { sensitivity: "base" }));
@@ -2901,7 +2905,10 @@ async function editImage(file, max = 900, quality = 0.8) {
       c.translate(src.width / 2, src.height / 2);
       c.rotate((rot * Math.PI) / 2);
       c.drawImage(img, -sw / 2, -sh / 2, sw, sh);
-      const maxW = Math.min(window.innerWidth - 32, 700), maxH = Math.max(150, Math.min(window.innerHeight * 0.62, window.innerHeight - (ov.dataset.elpage ? 400 : 300))); // Platz für Titel, Hinweis und zwei Knopfzeilen lassen
+      // 📐 Breite aus dem Platz, den das Fenster in der Karte WIRKLICH hat (nicht aus dem ganzen Browserfenster) –
+      // sonst wird das Bild per CSS verkleinert, der Rahmen bleibt groß und der grüne Punkt liegt außer Sicht
+      const cs = getComputedStyle(ov), room = ov.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+      const maxW = Math.min(room > 80 ? room : window.innerWidth - 32, 700), maxH = Math.max(150, Math.min(window.innerHeight * 0.62, window.innerHeight - (ov.dataset.elpage ? 400 : 300))); // Platz für Titel, Hinweis und zwei Knopfzeilen lassen
       const k = Math.min(maxW / src.width, maxH / src.height, 1);
       canvas.width = Math.round(src.width * k);
       canvas.height = Math.round(src.height * k);
@@ -2909,7 +2916,8 @@ async function editImage(file, max = 900, quality = 0.8) {
       crop = { x: 0, y: 0, w: canvas.width, h: canvas.height };
       place();
     };
-    const place = () => Object.assign(box.style, { left: `${crop.x}px`, top: `${crop.y}px`, width: `${crop.w}px`, height: `${crop.h}px` });
+    const zoom = () => (canvas.clientWidth && canvas.width ? canvas.clientWidth / canvas.width : 1); // 📐 falls das Bild doch verkleinert angezeigt wird
+    const place = () => { const z = zoom(); Object.assign(box.style, { left: `${crop.x * z}px`, top: `${crop.y * z}px`, width: `${crop.w * z}px`, height: `${crop.h * z}px` }); };
     const clamp = () => {
       crop.w = Math.max(40, Math.min(crop.w, canvas.width));
       crop.h = Math.max(40, Math.min(crop.h, canvas.height));
@@ -2927,7 +2935,7 @@ async function editImage(file, max = 900, quality = 0.8) {
     handle.addEventListener("pointerdown", down("size"));
     const moveFn = (e) => {
       if (!drag) return;
-      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      const z = zoom(), dx = (e.clientX - drag.x) / z, dy = (e.clientY - drag.y) / z;
       if (drag.mode === "move") { crop.x = drag.start.x + dx; crop.y = drag.start.y + dy; }
       else { crop.w = Math.min(drag.start.w + dx, canvas.width - drag.start.x); crop.h = Math.min(drag.start.h + dy, canvas.height - drag.start.y); }
       clamp();
@@ -3431,6 +3439,13 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .rserv select { width:auto; flex:none; }
 .rserv .grow { white-space:nowrap; min-width:0; }
 .rmin .rminunit { flex:none; opacity:.75; }
+.nuttog { flex:1; display:flex; align-items:center; gap:8px; min-width:0; background:none; border:0; padding:4px 0; color:inherit; font:inherit; cursor:pointer; text-align:left; }
+.nuttog .nutt { flex:none; }
+.nuttog .nutsum { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:.7; }
+.nuttog .nutchev { flex:none; --mdc-icon-size:20px; opacity:.7; transition:transform .2s; }
+.nuttog[aria-expanded="true"] .nutchev { transform:rotate(180deg); }
+.nuttog[aria-expanded="true"] .nutsum { visibility:hidden; }
+.nutai { margin:0 0 10px 34px; align-items:center; flex-wrap:wrap; gap:8px; }
 .nutgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:6px 10px; margin:2px 0 10px 34px; }
 .nutf { display:flex; flex-direction:column; gap:2px; font-size:12px; opacity:.9; min-width:0; }
 .nutin { display:flex; align-items:center; gap:4px; }
@@ -9382,7 +9397,7 @@ ${(() => {
     const dr = this._draft;
     dr.name = pr.name;
     dr.proposalId = pr.id;
-    dr.items = abcSort(items.map((it) => ({ name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null, store_id: it.store_id || null, category_id: it.category_id || null })));
+    dr.items = items.map((it) => ({ name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null, store_id: it.store_id || null, category_id: it.category_id || null })); // 🔀 Reihenfolge wie im Vorschlag
     dr.stepRows = this._stepLines(steps).map((t) => ({ k: ++this._stepSeq, t, o: null }));
     dr.heat = heat;
     if (this._hasPhoto(`vorschlag#${pr.id}`)) { try { dr.newPhotos = [await this._photoData(`vorschlag#${pr.id}`, 0)]; } catch (_) { /* ohne Foto weiter */ } }
@@ -9624,11 +9639,14 @@ ${(() => {
         <p class="hint fhint" hidden>⏱️ Wie lange dauert das Rezept ungefähr, von Anfang bis Ende (in Minuten)? Steht in der Kochmütze neben der Personenzahl. Leer lassen geht auch – dann schätzt die Karte die Zeit aus den Schritten und Backofen &amp; Co. (mit „≈“).</p>
         <div class="srow rserv rnut">
           <ha-icon class="prev" icon="mdi:nutrition"></ha-icon>
-          <span class="grow">Nährwerte pro Portion</span>
+          <button type="button" class="nuttog grow" data-act="nut-toggle" aria-expanded="${dr.nutOpen ? "true" : "false"}"><span class="nutt">${elT("Nährwerte pro Portion")}</span><small class="nutsum" id="rNutSum">${esc(this._nutSum(dr.nutrition))}</small><ha-icon class="nutchev" icon="mdi:chevron-down"></ha-icon></button>
           <button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="Was ist das?" aria-label="Erklärung: Nährwerte">i</button>
         </div>
-        <p class="hint fhint" hidden>🧮 Nährwerte für eine Portion. Beim Import (Link, Datei, Mealie, Foto) werden sie übernommen, wenn das Rezept welche hat. Von Hand geht auch, leere Felder sind egal. Stehen in der Rezeptliste unter dem Namen.</p>
-        <div class="nutgrid">${EL_NUT_FIELDS.map(([k, de, en, u]) => `<label class="nutf"><span>${esc(EL_LANG === "de" ? de : en)}</span><span class="nutin"><input data-nut="${k}" type="number" inputmode="decimal" min="0" step="${k === "kcal" ? "1" : "0.1"}" value="${esc(dr.nutrition?.[k] ?? "")}"><small>${u}</small></span></label>`).join("")}</div>
+        <p class="hint fhint" hidden>🧮 Nährwerte für eine Portion. Antippen klappt die Felder auf und zu. Beim Import (Link, Datei, Mealie, Foto) werden sie übernommen, wenn das Rezept welche hat. Von Hand geht auch, leere Felder sind egal. Mit „🤖 Nährwerte schätzen“ rechnet dein KI-Assistent sie aus den Zutaten grob aus (nur wenn KI-Kochen an ist). Stehen in der Rezeptliste unter dem Namen.</p>
+        <div class="nutbox" id="rNutBox" ${dr.nutOpen ? "" : "hidden"}>
+          <div class="nutgrid">${EL_NUT_FIELDS.map(([k, de, en, u]) => `<label class="nutf"><span>${esc(EL_LANG === "de" ? de : en)}</span><span class="nutin"><input data-nut="${k}" type="number" inputmode="decimal" min="0" step="${k === "kcal" ? "1" : "0.1"}" value="${esc(dr.nutrition?.[k] ?? "")}"><small>${u}</small></span></label>`).join("")}</div>
+          ${this._data.settings?.ai_on && this._data.settings?.ai_agent && !this._privacyOn() ? `<div class="btnrow nutai"><button type="button" class="btn" data-act="nut-ai"><ha-icon icon="mdi:robot-happy-outline"></ha-icon>${elT("Nährwerte schätzen")}</button><small class="hint">${elT("≈ geschätzt von der KI – bitte grob nachsehen")}</small></div>` : ""}
+        </div>
         <div class="photorow" id="rPhotoRow"></div>
         `)}
         ${this._rsec("zut", "mdi:food-apple-outline", "#43a047", "Zutaten", "Was kommt rein?", `<button class="btn rimportbtn" type="button" data-act="rimport-toggle" title="Zutaten einfügen" aria-label="Zutaten einfügen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon><span class="lbl">Zutaten einfügen</span></button>`, `
@@ -10178,6 +10196,36 @@ ${(() => {
   }
 
   // 🧮 Nährwerte aus den Feldern im Editor lesen (leer = keine)
+  // 🧮 Kurzfassung für die zugeklappte Nährwert-Zeile
+  _nutSum(n) { return elNutLine(n) || elT("leer – antippen zum Eintragen"); }
+  _nutRefresh() {
+    const sum = this.$("rNutSum");
+    if (sum) sum.textContent = this._nutSum(this._readNut());
+  }
+  async _nutAi() {
+    const dr = this._draft;
+    if (!dr) return;
+    const items = (dr.items || []).map((i) => [i.quantity, i.name, i.note ? `(${i.note})` : ""].filter(Boolean).join(" ")).filter(Boolean);
+    if (!items.length) { this._toast("Trag erst Zutaten ein – sonst kann die KI nichts schätzen."); return; }
+    if (this._readNut() && !await elConfirm("Die eingetragenen Nährwerte durch die Schätzung der KI ersetzen?")) return;
+    const btn = this.shadowRoot.querySelector('[data-act="nut-ai"]');
+    if (btn) btn.disabled = true;
+    this._toast("🤖 Die KI rechnet …");
+    try {
+      const serv = Number(this.$("rServings")?.value) || dr.servings || null;
+      const res = await this._ws({ type: "einkaufsliste/ai/nutrition", items, servings: serv && serv <= 99 ? serv : null });
+      const nut = res?.nutrition || null;
+      if (!nut) throw new Error("leer");
+      dr.nutrition = { ...nut };
+      for (const inp of this.shadowRoot.querySelectorAll("[data-nut]")) inp.value = nut[inp.dataset.nut] ?? "";
+      this._nutRefresh();
+      this._toast("🧮 Nährwerte geschätzt (≈) – bitte kurz drüberschauen");
+    } catch (err) {
+      this._toast(err?.message && err.message !== "leer" ? err.message : "Die KI hat keine Nährwerte geliefert 🙈");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
   _readNut() {
     const out = {};
     for (const inp of this.shadowRoot.querySelectorAll("[data-nut]")) {
@@ -10196,6 +10244,7 @@ ${(() => {
       if (!cur) {
         dr.nutrition = { ...res.nutrition };
         for (const inp of this.shadowRoot.querySelectorAll("[data-nut]")) inp.value = dr.nutrition[inp.dataset.nut] ?? "";
+        this._nutRefresh();
       }
     }
   }
@@ -15679,6 +15728,18 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         if (!this._draft || !await elConfirm("Die neuen, noch nicht gespeicherten Fotos verwerfen?")) break;
         this._draft.newPhotos = [];
         this._renderRecipePhoto();
+        break;
+      case "nut-toggle": { // 🧮 Nährwerte auf-/zuklappen (ohne neu zu zeichnen, Eingaben bleiben)
+        const box = this.$("rNutBox");
+        if (!box) break;
+        box.hidden = !box.hidden;
+        if (this._draft) this._draft.nutOpen = !box.hidden;
+        el.setAttribute("aria-expanded", String(!box.hidden));
+        this._nutRefresh();
+        break;
+      }
+      case "nut-ai":
+        this._nutAi();
         break;
       case "rimport-toggle": {
         const box = this.$("rImport");

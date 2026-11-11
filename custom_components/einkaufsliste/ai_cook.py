@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.exceptions import HomeAssistantError
 
+from .nutrition import clean_nutrition
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -112,6 +114,11 @@ async def async_cook(hass: HomeAssistant, manager: EinkaufslisteManager, ingredi
                  + (f"Wünsche: {wish}\n" if wish else "")
                  + (f"Rechne die Mengen für {people} Personen.\n" if 1 <= people <= 20 else ""))
     text = PROMPT.format(items="\n".join(f"- {n}" for n in names), wishes=wish_line, n=max(1, min(int(count), 5)))
+    return parse_ideas(await _ask(hass, agent, text))
+
+
+async def _ask(hass: HomeAssistant, agent: str, text: str) -> str:
+    """Frage an den KI-Assistenten schicken, Antwort-Text zurück (Fehler als verständliche ValueError)."""
     try:
         async with asyncio.timeout(TIMEOUT):
             result = await hass.services.async_call(
@@ -126,4 +133,45 @@ async def async_cook(hass: HomeAssistant, manager: EinkaufslisteManager, ingredi
     speech = (((resp.get("speech") or {}).get("plain") or {}).get("speech")) or ""
     if resp.get("response_type") == "error" and not speech.strip().startswith(("{", "[", "`")):
         raise ValueError(f"Der KI-Assistent meldet einen Fehler: {speech[:120] or 'unbekannt'}")
-    return parse_ideas(speech)
+    return speech
+
+
+NUT_PROMPT = (
+    "Du bist Ernährungsberater. Schätze die Nährwerte PRO PORTION für dieses Rezept ({servings} Portionen):\n{items}\n"
+    "Antworte NUR mit JSON, ohne Text davor oder danach, genau in dieser Form (Zahlen ohne Einheit):\n"
+    '{{"kcal":0,"protein":0,"fat":0,"carbs":0,"sugar":0,"fiber":0,"salt":0}}\n'
+    "kcal in Kilokalorien, alles andere in Gramm."
+)
+
+
+def parse_nutrition(text: str) -> dict[str, float]:
+    """🧮 Aus der KI-Antwort die Nährwerte holen (auch mit ```json … ``` drumherum)."""
+    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", str(text or "").strip(), flags=re.I)
+    a, b = text.find("{"), text.rfind("}")
+    try:
+        data = json.loads(text[a : b + 1]) if 0 <= a < b else None
+    except ValueError:
+        data = None
+    nut = clean_nutrition(data.get("nutrition", data) if isinstance(data, dict) else None)
+    if not nut:
+        raise ValueError("Die KI hat keine lesbaren Nährwerte geliefert. Bitte nochmal versuchen.")
+    return nut
+
+
+async def async_nutrition(hass: HomeAssistant, manager: EinkaufslisteManager, items: list[str],
+                          servings: int | None = None) -> dict[str, float]:
+    """🤖🧮 Nährwerte pro Portion vom KI-Assistenten schätzen lassen (Rezept-Editor)."""
+    agent = manager.ai_agent if manager.ai_on else None
+    if not agent:
+        raise ValueError("KI-Kochen ist aus. Ein Admin kann es in den ⚙️ Einstellungen → Extras einschalten.")
+    if manager.privacy:
+        raise ValueError("🔒 Der Datenschutz ist an – deshalb wird nichts an eine KI geschickt.")
+    lines = _clean_list(list(items), MAX_INGREDIENTS, 120)
+    if not lines:
+        raise ValueError("Trag erst Zutaten ein – sonst kann die KI nichts schätzen.")
+    try:
+        people = int(servings) if servings else 0
+    except (TypeError, ValueError):
+        people = 0
+    text = NUT_PROMPT.format(servings=people if 1 <= people <= 99 else 1, items="\n".join(f"- {n}" for n in lines))
+    return parse_nutrition(await _ask(hass, agent, text))

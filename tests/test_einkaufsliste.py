@@ -990,7 +990,7 @@ async def test_recipe_apply_only_selected(hass, setup, hass_ws_client):
     await client.send_json({"id": 1, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"], "items": [0, 2]})
     res = await client.receive_json()
     assert res["success"] and res["result"]["added"] == 2
-    assert sorted(i["name"] for i in m.items if i["recipe_id"]) == ["Eier", "Milch"]  # A–Z: Eier, Mehl, Milch
+    assert sorted(i["name"] for i in m.items if i["recipe_id"]) == ["Mehl", "Milch"]  # 🔀 Reihenfolge wie gespeichert: Mehl, Eier, Milch
     await client.send_json({"id": 2, "type": "einkaufsliste/recipe/apply", "recipe_id": recipe["id"], "items": []})
     assert not (await client.receive_json())["success"]
 
@@ -1373,7 +1373,7 @@ async def test_old_quantities_tidied_on_load(hass, hass_storage):
         assert await hass.config_entries.async_setup(entry.entry_id)
     m = mgr(hass)
     assert m.items[0]["quantity"] == "1x"
-    assert [i["quantity"] for i in m.recipes[0]["items"]] == ["0,5 TL", "3 EL"]  # Salz, Zucker (A–Z)
+    assert [i["quantity"] for i in m.recipes[0]["items"]] == ["3 EL", "0,5 TL"]  # 🔀 Zucker, Salz – Reihenfolge bleibt
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(minutes=5))
     await hass.async_block_till_done()
     saved = hass_storage["einkaufsliste.data"]["data"]
@@ -1453,14 +1453,24 @@ async def test_recipe_heat(hass, setup, hass_ws_client):
     assert m.recipe_by_id(rid)["heat"] == []
 
 
-async def test_recipe_items_sorted_abc(hass, setup):
-    """🔤 Rezept-Zutaten stehen immer A–Z (Ä wie A, groß/klein egal)."""
+async def test_recipe_items_keep_order(hass, setup):
+    """🔀 Rezept-Zutaten bleiben in der Reihenfolge, in der sie kommen (Import wie im Rezept; A–Z macht die Karte beim Eintippen)."""
     m = mgr(hass)
     r = m.add_recipe("Auflauf", [{"name": "zwiebel"}, {"name": "Äpfel"}, {"name": "Käse", "note": "Gouda"}, {"name": "Käse", "note": "Emmentaler"}, {"name": "Butter"}])
     assert [(i["name"], i["note"]) for i in r["items"]] == [
-        ("Äpfel", None), ("Butter", None), ("Käse", "Emmentaler"), ("Käse", "Gouda"), ("Zwiebel", None)]
+        ("Zwiebel", None), ("Äpfel", None), ("Käse", "Gouda"), ("Käse", "Emmentaler"), ("Butter", None)]
     m.update_recipe(r["id"], items=[{"name": "Salz"}, {"name": "Mehl"}])
-    assert [i["name"] for i in r["items"]] == ["Mehl", "Salz"]
+    assert [i["name"] for i in r["items"]] == ["Salz", "Mehl"]
+
+
+async def test_recipe_order_survives_save(hass, setup):
+    """🔀 Rudis Zwetschgendatschi: Reihenfolge bleibt auch nach dem Speichern."""
+    m = mgr(hass)
+    names = ["Weizenmehl", "Zucker", "Hefe", "Milch", "Zwetschgen", "Vanillezucker", "Ei", "Salz", "Butter", "Zitronenabrieb", "Zimt"]
+    r = m.add_recipe("Zwetschgendatschi", [{"name": n} for n in names])
+    assert [i["name"] for i in r["items"]] == names
+    m.update_recipe(r["id"], name="Zwetschgendatschi vom Blech")  # Speichern ohne Zutaten-Änderung
+    assert [i["name"] for i in r["items"]] == names  # (Laden beim Start: test_old_quantities_tidied_on_load)
 
 
 async def test_recipe_multiple_photos(hass, setup):
@@ -1908,7 +1918,7 @@ In der Pfanne backen.
     assert res["success"], res
     assert res["result"]["added"] == 2
     pf = next(r for r in m.recipes if r["name"] == "Pfannkuchen")
-    assert [i["name"] for i in pf["items"]] == ["Eier", "Mehl", "Milch"] and pf["steps"] == "Alles verrühren.\nIn der Pfanne backen."
+    assert [i["name"] for i in pf["items"]] == ["Mehl", "Eier", "Milch"] and pf["steps"] == "Alles verrühren.\nIn der Pfanne backen."
     us = next(r for r in m.recipes if r["name"] == "Pancakes (US)")
     assert {i["name"]: i["quantity"] for i in us["items"]} == {"Flour": "125 g", "Sugar": "2 EL"}
     # CSV – gleicher Name bekommt „(Import)“
@@ -5308,3 +5318,38 @@ async def test_recipe_nutrition_saved(hass: HomeAssistant, setup) -> None:
     assert m.recipe_by_id(r["id"])["nutrition"] == {"fat": 55.2}
     m.update_recipe(r["id"], nutrition=None)
     assert "nutrition" not in m.recipe_by_id(r["id"])
+
+
+async def test_ai_nutrition(hass, setup, hass_ws_client):
+    """🤖🧮 Rezept-Editor: Nährwerte von der KI schätzen – Antwort aufgeräumt, aus/Datenschutz/Müll verständlich."""
+    from homeassistant.core import SupportsResponse
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    seen = {}
+    reply = {"text": '```json\n{"kcal": 412.6, "protein": "18,4", "fat": 15, "carbs": 52.25, "sugar": 0, "salt": 1.234, "quatsch": 9}\n```'}
+
+    async def process(call):
+        seen.update(call.data)
+        return {"response": {"response_type": "action_done", "speech": {"plain": {"speech": reply["text"]}}}}
+
+    hass.services.async_register("conversation", "process", process, supports_response=SupportsResponse.ONLY)
+    hass.states.async_set("conversation.test_ki", "unknown")
+    msg = {"type": "einkaufsliste/ai/nutrition", "items": ["250 g Mehl", "3 Eier", "500 ml Milch"], "servings": 4}
+    await client.send_json({"id": 1, **msg})
+    assert "aus" in (await client.receive_json())["error"]["message"]
+    await client.send_json({"id": 2, "type": "einkaufsliste/ai/agent", "entity_id": "conversation.test_ki"})
+    assert (await client.receive_json())["success"]
+    await client.send_json({"id": 3, **msg})
+    res = await client.receive_json()
+    assert res["success"], res
+    assert res["result"]["nutrition"] == {"kcal": 413, "protein": 18.4, "fat": 15.0, "carbs": 52.2, "salt": 1.23}
+    assert "250 g Mehl" in seen["text"] and "4 Portionen" in seen["text"]
+    await client.send_json({"id": 4, **msg, "items": []})
+    assert "Zutaten" in (await client.receive_json())["error"]["message"]
+    reply["text"] = "Keine Ahnung"
+    await client.send_json({"id": 5, **msg})
+    assert "lesbaren" in (await client.receive_json())["error"]["message"]
+    m.set_privacy(True)
+    seen.clear()
+    await client.send_json({"id": 6, **msg})
+    assert "Datenschutz" in (await client.receive_json())["error"]["message"] and not seen

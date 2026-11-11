@@ -864,6 +864,39 @@ check("🧮 Editor zeigt die Nährwerte und speichert die Änderung", /kcal=898/
 check("🧮 Rezeptliste zeigt die Nährwerte unter dem Namen", r.line === "🧮 898 kcal · Eiweiß 44,8 g · Fett 55,2 g · KH 46,7 g", r.line);
 check("🧮 Foto-Text: Nährwert-Tabelle wird erkannt und nicht zu Zutaten", r.ocrNut?.kcal === 898 && r.ocrNut?.carbs === 46.7 && !/Brennwert|Eiweiß/.test(r.ocrIng) && /Salz/.test(r.ocrIng), JSON.stringify(r));
 
+// 42) 🧮 Nährwerte zugeklappt mit Kurzfassung, 🤖 KI schätzt, ✂️ Zuschneide-Rahmen passt zur Kartenbreite
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const calls=[]; const oldWs=c._ws; const oldAi={...(c._data.settings||{})};
+  c._data.settings={...(c._data.settings||{}), ai_on:true, ai_agent:"conversation.test", privacy:false};
+  c._ws=async(m)=>{ calls.push(m); return m.type==="einkaufsliste/ai/nutrition"?{nutrition:{kcal:410,protein:18.4}}:{}; };
+  c._openRecipeDraft({ name:"Pfannkuchen", items:[{name:"Mehl",quantity:"250 g"},{name:"Eier",quantity:"3"}], servings:4, nutrition:{kcal:898,protein:44.8} });
+  await new Promise(r=>setTimeout(r,80));
+  const box=c.$("rNutBox"), tog=c.shadowRoot.querySelector('[data-act="nut-toggle"]');
+  const closed=box.hidden, sum=c.$("rNutSum").textContent;
+  tog.click(); await new Promise(r=>setTimeout(r,30));
+  const opened=!box.hidden, aiBtn=!!c.shadowRoot.querySelector('[data-act="nut-ai"]');
+  const oldConfirm=window.elConfirm; 
+  c.shadowRoot.querySelector('[data-act="nut-ai"]').click(); await new Promise(r=>setTimeout(r,150));
+  document.querySelectorAll("[data-elconfirm] button").forEach(b=>{ if(/Ja|OK|Ersetzen|ersetzen/i.test(b.textContent)) b.click(); });
+  [...document.querySelectorAll("[data-elconfirm] button")].pop()?.click();
+  await new Promise(r=>setTimeout(r,200));
+  const sent=calls.find(m=>m.type==="einkaufsliste/ai/nutrition");
+  const kc=c.shadowRoot.querySelector('[data-nut="kcal"]').value;
+  tog.click(); await new Promise(r=>setTimeout(r,30)); const sum2=c.$("rNutSum").textContent;
+  // ✂️ Zuschneiden: Rahmen = angezeigtes Bild (Karte schmaler als das Fenster)
+  const cv0=document.createElement("canvas"); cv0.width=768; cv0.height=432; cv0.getContext("2d").fillRect(0,0,768,432);
+  const blob=await new Promise(ok=>cv0.toBlob(ok,"image/webp",0.8)); const file=new File([blob],"original.webp",{type:"image/webp"});
+  let got=null; c._photoTarget={ ocr:(d)=>{got=d;} };
+  const pr=c._onPhotoFile({target:{files:[file]}}); await new Promise(r=>setTimeout(r,600));
+  const all=(q)=>[...document.querySelectorAll(q),...c.shadowRoot.querySelectorAll(q)];
+  const cv=all("canvas").find(x=>x.nextElementSibling?.firstElementChild); const R=(e)=>e.getBoundingClientRect();
+  const fit=cv ? Math.abs(R(cv).width-R(cv.nextElementSibling).width)<2 && Math.abs(R(cv).height-R(cv.nextElementSibling).height)<2 : false;
+  const oks=all("button").filter(b=>/Übernehmen/.test(b.textContent)); oks[oks.length-1]?.click(); await Promise.race([pr,new Promise(r=>setTimeout(r,800))]);
+  c._ws=oldWs; c._data.settings=oldAi; document.querySelectorAll("[data-elov],[data-elconfirm]").forEach(e=>e.remove()); c._view="list"; c._renderAll();
+  return { closed, sum, opened, aiBtn, sent, kc, sum2, fit, got: !!got }; });
+check("🧮 Nährwerte sind zugeklappt und zeigen die Kurzfassung", r.closed && /898 kcal/.test(r.sum) && r.opened, JSON.stringify(r));
+check("🤖 Nährwerte schätzen: Zutaten mit Menge + Portionen gehen an die KI, Werte landen in den Feldern", r.aiBtn && r.sent?.items?.join("|") === "250 g Mehl|3 Eier" && r.sent?.servings === 4 && r.kc === "410" && /410 kcal/.test(r.sum2), JSON.stringify(r));
+check("✂️ Zuschneide-Rahmen ist genau so groß wie das angezeigte Bild", r.fit && r.got, JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

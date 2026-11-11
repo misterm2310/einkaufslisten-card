@@ -14,7 +14,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .barcode import async_auto_photo, async_lookup, async_product_info, async_refresh_photo
-from .ai_cook import async_cook
+from .ai_cook import async_cook, async_nutrition
 from .grocy_import import async_fetch, clean_base, import_rows, parse_catalog_text
 from .recipe_import import OwnFormat, async_import, parse_recipe_file, prepare_file_recipes
 from .recipe_heat import guess_heat
@@ -100,6 +100,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_ai_prefs,
         ws_recipe_basics,
         ws_ai_cook,
+        ws_ai_nutrition,
         ws_grocy_set,
         ws_grocy_clear,
         ws_grocy_run,
@@ -1765,3 +1766,25 @@ async def ws_ai_cook(hass, connection, msg):
         connection.send_error(msg["id"], "invalid", str(err))
         return
     connection.send_result(msg["id"], {"ideas": ideas})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/ai/nutrition",
+        vol.Required("items"): [vol.All(str, vol.Length(max=160))],
+        vol.Optional("servings"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=99))),
+    }
+)
+@websocket_api.async_response
+async def ws_ai_nutrition(hass, connection, msg):
+    """🤖🧮 Rezept-Editor: Nährwerte pro Portion von der KI schätzen lassen."""
+    manager = _manager(hass)
+    if manager is None:
+        connection.send_error(msg["id"], "not_ready", "Die Einkaufsliste ist noch nicht bereit.")
+        return
+    try:
+        nutrition = await async_nutrition(hass, manager, msg["items"], msg.get("servings"))
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], {"nutrition": nutrition})
