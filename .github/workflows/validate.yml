@@ -43,7 +43,9 @@ jobs:
         working-directory: tests/ui
         run: |
           npm install --no-audit --no-fund
-          npx playwright install --with-deps chromium
+          # 🧪 Ist der Ubuntu-Server mal nicht erreichbar, klappt „--with-deps“ nicht – dann den Browser ohne Zusatz-Pakete
+          # (die meisten sind auf dem GitHub-Rechner schon da). Der Test selbst bleibt genau gleich streng.
+          npx playwright install --with-deps chromium || { echo "::warning::Ubuntu-Pakete nicht erreichbar – Browser ohne Zusatz-Pakete"; npx playwright install chromium; }
       - name: Oberflächen-Test
         working-directory: tests/ui
         run: node ui.test.mjs
