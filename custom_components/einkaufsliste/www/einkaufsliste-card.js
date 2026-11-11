@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.9";
+const EL_VERSION = "2.76.28-beta.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -421,6 +421,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🤖 <b>KI liest das Rezeptfoto:</b> Ist „KI-Kochen“ an, fragt die Karte beim „Rezept lesen“, ob die KI das Foto lesen soll – genauer, auch bei verspielter Schrift und Handschrift. Das Foto geht dann an deinen KI-Anbieter (braucht eine „KI-Aufgabe“ in Home Assistant, die Bilder versteht); klappt es nicht, liest die Karte selbst.",
+   "🤖 <b>AI reads the recipe photo:</b> with “AI cooking” on, the card asks when reading a recipe whether the AI should read the photo – more accurate, also for fancy fonts and handwriting. The photo then goes to your AI provider (needs an image-capable AI task in Home Assistant); if it fails, the card reads it itself."],
   ["🧱 <b>Rezeptfotos von TikTok &amp; Co. – jetzt auch der ganze Screenshot:</b> Die Texterkennung liest Rezeptfotos jetzt mit „automatischen Spalten“ (vorher als ein Textblock quer über beide Spalten, deshalb kamen die Zutaten leer und die Schritte durcheinander). Bei zwei Spalten steht die Spalte mit den Mengen als Zutaten, die andere als Zubereitung. Fehlen lesbare Überschriften (oft stehen sie auf dunklen Bändern), sortiert die Karte nach Inhalt. Die App-Leiste von TikTok („LIVE · Gefolgt · Shop · Für dich“, „Home · Posteingang · Profil“) wird nicht mehr zum Rezeptnamen, „4 Personen“, „ca. 25 Minuten“, Aufbewahrung, Tipp und der Benutzername kommen nicht mehr in die Zutaten oder Schritte.",
    "🧱 <b>Recipe photos from TikTok &amp; co. – now the whole screenshot too:</b> text recognition now reads recipe photos with “automatic columns” (before, as one text block straight across both columns, so the ingredients came out empty and the steps mixed up). With two columns, the one with the amounts is taken as ingredients and the other as method. If there are no readable headings (they are often on dark ribbons), the card sorts by content. TikTok’s app bar (“LIVE · Following · Shop · For you”, “Home · Inbox · Profile”) no longer becomes the recipe name, and “4 servings”, “about 25 minutes”, storage, tip and the user name no longer end up in the ingredients or steps.", "beta.9"],
   ["🧱 <b>Rezeptkarten aus TikTok &amp; Co. richtig lesen:</b> Hat das Foto zwei Spalten (links Zutaten, rechts Zubereitung), erkennt die Karte das selbst und liest links und rechts getrennt – vorher verschmolzen die Zeilen zu Buchstabensalat und jede Zeile wurde ein Schritt. Überschriften mit Symbol („ZUTATEN“ auf einem Band) werden erkannt, „400 g Nudeln · 500 g Brokkoli“ wird zu zwei Zutaten, zusammengehörige Zeilen bleiben EIN Schritt, und Nährwerte in einer Zeile werden übernommen. Kästen wie „Aufbewahrung“ und „Tipp“ landen nicht mehr in den Zutaten. 🍲 Steht ein Thermomix-Block auf dem Foto, fragt die Karte, ob er mit in die Schritte soll (Standard: nein). · 📄 Das Symbol „Ansehen“ ist ein Blatt (kein Auge), „Drucken &amp; Teilen“ hat das Symbol Blatt mit Pfeil.",
@@ -11032,13 +11034,26 @@ ${(() => {
         : `Page ${pages.length} is in 👍\nDoes the recipe have another page?`,
       { danger: false, title: "📷 Rezept aus Fotos", yes: elT("➕ Noch eine Seite"), no: elT("✔ Fertig") });
       if (more) { this._recipeFromPhotos(pages, apply, onDish); return; }
+      let aiParts = null; // 🤖 Ist KI-Kochen an, darf die KI das Foto lesen (genauer, auch bei Handschrift) – nur nach Nachfrage
+      if (this._data.settings?.ai_on && this._data.settings?.ai_agent && !this._privacyOn() && await elConfirm(EL_LANG === "de"
+        ? "Soll die KI das Foto lesen?\nDas ist genauer (auch bei Handschrift). Das Foto geht dann an deinen KI-Anbieter."
+        : "Should the AI read the photo?\nIt is more accurate (also for handwriting). The photo is then sent to your AI provider.",
+      { danger: false, title: "🤖 KI", yes: elT("🤖 KI liest das Foto"), no: elT("📖 Normal lesen") })) {
+        this._toast("🤖 Die KI liest das Foto …");
+        try {
+          const images = await Promise.all(pages.map((p) => elShrinkData(p, 1600, 0.85)));
+          const res = await this._ws({ type: "einkaufsliste/ai/photo", images });
+          const r = res?.recipe;
+          if (r) aiParts = { name: r.name || "", ingredients: (r.ingredients || []).join("\n"), steps: (r.steps || []).join("\n"), nutrition: null, thermomix: "" };
+        } catch (_) { this._toast("🤖 Das ging nicht – ich lese das Foto selbst"); }
+      }
       let text = "";
-      for (let i = 0; i < pages.length; i++) {
+      for (let i = 0; !aiParts && i < pages.length; i++) {
         const t = i === 0 && pages.first != null ? pages.first : await this._ocrText(pages[i], pages.length > 1 ? (EL_LANG === "de" ? `🔎 Seite ${i + 1} von ${pages.length} wird gelesen` : `🔎 Reading page ${i + 1} of ${pages.length}`) : "🔎 Rezept wird gelesen", 3);
         if (t == null) return; // Texterkennung ging schief – Meldung kam schon
         text += t + "\n";
       }
-      const parts = elOcrRecipeParts(text);
+      const parts = aiParts || elOcrRecipeParts(text);
       if (parts.thermomix && await elConfirm(EL_LANG === "de" // 🍲 Thermomix-Block auf dem Foto: nur auf Wunsch übernehmen
         ? "Auf dem Foto steht auch ein Thermomix-Block.\nSoll er mit in die Schritte?"
         : "There is also a Thermomix block on the photo.\nShould it go into the steps too?",

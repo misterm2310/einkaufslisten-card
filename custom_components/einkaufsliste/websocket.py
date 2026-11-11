@@ -14,7 +14,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .barcode import async_auto_photo, async_lookup, async_product_info, async_refresh_photo
-from .ai_cook import async_cook, async_nutrition
+from .ai_cook import PHOTO_MAX_BYTES, async_cook, async_nutrition, async_photo_recipe
 from .grocy_import import async_fetch, clean_base, import_rows, parse_catalog_text
 from .recipe_import import OwnFormat, async_import, parse_recipe_file, prepare_file_recipes
 from .recipe_heat import guess_heat
@@ -101,6 +101,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_recipe_basics,
         ws_ai_cook,
         ws_ai_nutrition,
+        ws_ai_photo,
         ws_grocy_set,
         ws_grocy_clear,
         ws_grocy_run,
@@ -1788,3 +1789,33 @@ async def ws_ai_nutrition(hass, connection, msg):
         connection.send_error(msg["id"], "invalid", str(err))
         return
     connection.send_result(msg["id"], {"nutrition": nutrition})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/ai/photo",
+        vol.Required("images"): vol.All([vol.All(str, vol.Length(max=9_000_000))], vol.Length(min=1, max=6)),
+    }
+)
+@websocket_api.async_response
+async def ws_ai_photo(hass, connection, msg):
+    """📷🤖 Rezeptfoto(s) vom KI-Assistenten lesen lassen (Name, Zutaten, Schritte)."""
+    manager = _manager(hass)
+    if manager is None:
+        connection.send_error(msg["id"], "not_ready", "Die Einkaufsliste ist noch nicht bereit.")
+        return
+    import base64
+    import binascii
+
+    raws: list[bytes] = []
+    try:
+        for img in msg["images"]:
+            raw = base64.b64decode(img.split(",", 1)[-1], validate=False)
+            if not raw.startswith(b"\xff\xd8") or len(raw) > PHOTO_MAX_BYTES:
+                raise ValueError("Das Foto ist kein gültiges (oder zu großes) JPEG-Bild.")
+            raws.append(raw)
+        recipe = await async_photo_recipe(hass, manager, raws)
+    except (ValueError, binascii.Error) as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], {"recipe": recipe})

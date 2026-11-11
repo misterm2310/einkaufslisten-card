@@ -175,3 +175,120 @@ async def async_nutrition(hass: HomeAssistant, manager: EinkaufslisteManager, it
         people = 0
     text = NUT_PROMPT.format(servings=people if 1 <= people <= 99 else 1, items="\n".join(f"- {n}" for n in lines))
     return parse_nutrition(await _ask(hass, agent, text))
+
+
+PHOTO_MAX_BYTES = 6 * 1024 * 1024
+PHOTO_INSTRUCTIONS = (
+    "Das Bild zeigt ein Rezept (gedruckt, Screenshot oder Handschrift). Lies es genau ab und gib es auf Deutsch zurück: "
+    "Name des Gerichts (nur die echte Überschrift, keine App-Leisten oder Benutzernamen), Portionen, Dauer in Minuten, "
+    "Zutaten (eine Zeile pro Zutat mit Menge, z. B. \"400 g Nudeln\"), Zubereitungsschritte (ein Eintrag pro Schritt, "
+    "ohne Nummerierung). Erfinde nichts dazu; was du nicht lesen kannst, lässt du weg."
+)
+PHOTO_STRUCTURE = {
+    "name": {"description": "Name des Gerichts", "selector": {"text": None}, "required": True},
+    "servings": {"description": "Portionen (Zahl)", "selector": {"number": {"min": 1, "max": 99}}},
+    "minutes": {"description": "Dauer in Minuten", "selector": {"number": {"min": 0, "max": 1440}}},
+    "ingredients": {"description": "Zutaten mit Menge, eine pro Eintrag", "selector": {"text": {"multiple": True}}, "required": True},
+    "steps": {"description": "Zubereitungsschritte, einer pro Eintrag", "selector": {"text": {"multiple": True}}, "required": True},
+}
+
+
+def pick_ai_task(hass: HomeAssistant, agent: str | None) -> str | None:
+    """Passenden ai_task-Eintrag wählen: derselbe Anbieter wie der gewählte Assistent, sonst der erste."""
+    from homeassistant.helpers import entity_registry as er
+
+    ents = sorted(s.entity_id for s in hass.states.async_all("ai_task"))
+    if not ents:
+        return None
+    reg = er.async_get(hass)
+    want = reg.async_get(agent) if agent else None
+    if want and want.config_entry_id:
+        for eid in ents:
+            e = reg.async_get(eid)
+            if e and e.config_entry_id == want.config_entry_id:
+                return eid
+    return ents[0]
+
+
+def parse_photo_recipe(data: Any) -> dict[str, Any]:
+    """Antwort von ai_task.generate_data in feste Felder bringen (alles geprüft und gekürzt)."""
+    if not isinstance(data, dict):
+        raise ValueError("Die KI hat das Foto nicht lesen können. Bitte nochmal versuchen.")
+
+    def lines(v: Any, limit: int, size: int) -> list[str]:
+        if isinstance(v, str):
+            v = v.splitlines()
+        return _clean_list(v if isinstance(v, list) else [], limit, size)
+
+    def num(v: Any, lo: int, hi: int) -> int | None:
+        try:
+            n = int(float(v))
+        except (TypeError, ValueError):
+            return None
+        return n if lo <= n <= hi else None
+
+    out = {
+        "name": " ".join(str(data.get("name") or "").split())[:80],
+        "ingredients": lines(data.get("ingredients"), MAX_INGREDIENTS, 120),
+        "steps": lines(data.get("steps"), 60, 600),
+        "servings": num(data.get("servings"), 1, 99),
+        "minutes": num(data.get("minutes"), 0, 1440),
+    }
+    if not out["ingredients"] and not out["steps"]:
+        raise ValueError("Die KI hat auf dem Foto kein Rezept erkannt. Bitte nochmal versuchen (gerade und hell fotografieren).")
+    return out
+
+
+async def async_photo_recipe(hass: HomeAssistant, manager: EinkaufslisteManager, images: list[bytes]) -> dict[str, Any]:
+    """📷🤖 Rezeptfoto(s) vom KI-Assistenten lesen lassen (ai_task.generate_data mit Bild)."""
+    import uuid
+    from pathlib import Path
+
+    agent = manager.ai_agent if manager.ai_on else None
+    if not agent:
+        raise ValueError("KI-Kochen ist aus. Ein Admin kann es in den ⚙️ Einstellungen → Extras einschalten.")
+    if manager.privacy:
+        raise ValueError("🔒 Der Datenschutz ist an – deshalb wird nichts an eine KI geschickt.")
+    task = pick_ai_task(hass, agent)
+    if not task:
+        raise ValueError("In Home Assistant gibt es keine „KI-Aufgabe“ (ai_task). Sie wird für Fotos gebraucht – bitte beim KI-Anbieter einrichten.")
+    base = (getattr(hass.config, "media_dirs", None) or {}).get("local")
+    if not base:
+        raise ValueError("Home Assistant hat keinen lokalen Medien-Ordner – der wird gebraucht, um das Foto an die KI zu geben.")
+    folder = Path(base) / ".einkaufsliste_tmp"
+    files: list[Path] = []
+    try:
+        def write() -> list[Path]:
+            folder.mkdir(parents=True, exist_ok=True)
+            for raw in images:
+                p = folder / f"{uuid.uuid4().hex}.jpg"
+                p.write_bytes(raw)
+                files.append(p)
+            return files
+
+        await hass.async_add_executor_job(write)
+        attachments = [{"media_content_id": f"media-source://media_source/local/.einkaufsliste_tmp/{p.name}",
+                        "media_content_type": "image/jpeg"} for p in files]
+        try:
+            async with asyncio.timeout(TIMEOUT * 2):
+                result = await hass.services.async_call(
+                    "ai_task", "generate_data",
+                    {"entity_id": task, "task_name": "Rezept aus Foto", "instructions": PHOTO_INSTRUCTIONS,
+                     "structure": PHOTO_STRUCTURE, "attachments": attachments},
+                    blocking=True, return_response=True)
+        except TimeoutError as err:
+            raise ValueError("Die KI hat zu lange gebraucht. Bitte nochmal versuchen.") from err
+        except HomeAssistantError as err:
+            _LOGGER.warning("KI-Foto: %s antwortet nicht: %s", task, err)
+            raise ValueError("Die KI-Aufgabe in Home Assistant hat nicht geantwortet – kann der Anbieter Bilder lesen?") from err
+    finally:
+        def cleanup() -> None:
+            for p in files:
+                p.unlink(missing_ok=True)
+            try:
+                folder.rmdir()
+            except OSError:
+                pass
+
+        await hass.async_add_executor_job(cleanup)
+    return parse_photo_recipe((result or {}).get("data"))

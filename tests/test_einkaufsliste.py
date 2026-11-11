@@ -3797,6 +3797,52 @@ async def test_ai_cook(hass, setup, hass_ws_client, hass_read_only_access_token)
     assert "Datenschutz" in (await client.receive_json())["error"]["message"] and not seen
 
 
+async def test_ai_photo(hass, setup, hass_ws_client, tmp_path):
+    """📷🤖 Rezeptfoto per ai_task lesen: Bild geht als Medien-Datei raus und wird danach gelöscht, Antwort wird geprüft."""
+    import base64
+    from pathlib import Path
+    from homeassistant.core import SupportsResponse
+    m = mgr(hass)
+    client = await hass_ws_client(hass)
+    hass.config.media_dirs = {"local": str(tmp_path)}
+    seen = {}
+    reply = {"data": {"name": "  Brokkoli-Nudeln ", "servings": "4", "minutes": 25,
+                      "ingredients": ["400 g Nudeln", "500 g Brokkoli", ""], "steps": ["Kochen", "Mischen"]}}
+
+    async def gen(call):
+        seen.update(call.data)
+        seen["existed"] = [Path(tmp_path, ".einkaufsliste_tmp", a["media_content_id"].rsplit("/", 1)[-1]).exists() for a in call.data["attachments"]]
+        return reply
+
+    hass.services.async_register("ai_task", "generate_data", gen, supports_response=SupportsResponse.ONLY)
+    jpg = "data:image/jpeg;base64," + base64.b64encode(b"\xff\xd8\xff\xe0fake").decode()
+    await client.send_json({"id": 1, "type": "einkaufsliste/ai/photo", "images": [jpg]})
+    assert "aus" in (await client.receive_json())["error"]["message"]
+    hass.states.async_set("conversation.test_ki", "unknown")
+    await client.send_json({"id": 2, "type": "einkaufsliste/ai/agent", "entity_id": "conversation.test_ki"})
+    assert (await client.receive_json())["success"] and m.ai_on
+    await client.send_json({"id": 3, "type": "einkaufsliste/ai/photo", "images": [jpg]})
+    assert "ai_task" in (await client.receive_json())["error"]["message"]
+    hass.states.async_set("ai_task.test", "unknown")
+    await client.send_json({"id": 4, "type": "einkaufsliste/ai/photo", "images": ["data:image/png;base64,AAAA"]})
+    assert "JPEG" in (await client.receive_json())["error"]["message"]
+    await client.send_json({"id": 5, "type": "einkaufsliste/ai/photo", "images": [jpg]})
+    res = await client.receive_json()
+    assert res["success"], res
+    r = res["result"]["recipe"]
+    assert r["name"] == "Brokkoli-Nudeln" and r["ingredients"] == ["400 g Nudeln", "500 g Brokkoli"]
+    assert r["servings"] == 4 and r["minutes"] == 25 and r["steps"] == ["Kochen", "Mischen"]
+    assert seen["entity_id"] == "ai_task.test" and seen["existed"] == [True] and "structure" in seen
+    assert not list(Path(tmp_path).rglob("*.jpg")) and not Path(tmp_path, ".einkaufsliste_tmp").exists()
+    reply["data"] = {"name": "x"}
+    await client.send_json({"id": 6, "type": "einkaufsliste/ai/photo", "images": [jpg]})
+    assert "kein Rezept" in (await client.receive_json())["error"]["message"]
+    m.set_privacy(True)
+    seen.clear()
+    await client.send_json({"id": 7, "type": "einkaufsliste/ai/photo", "images": [jpg]})
+    assert "Datenschutz" in (await client.receive_json())["error"]["message"] and not seen
+
+
 async def test_recipe_ai_flag(hass, setup, hass_ws_client):
     """🤖 Rezepte von der KI tragen ein Kennzeichen, das auch nach dem Bearbeiten bleibt."""
     client = await hass_ws_client(hass)
