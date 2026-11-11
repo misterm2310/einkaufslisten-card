@@ -828,7 +828,9 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   c._pickFile=async()=>{ const t=c._photoTarget; setTimeout(()=>t.ocr("data:image/png;base64,iVBORw0KGgo="),10); };
   c._proposeRecipe(); await new Promise(r=>setTimeout(r,120));
   const root=document.querySelector("[data-elpage]")||c.shadowRoot; const q=(s)=>root.querySelector(s)||c.shadowRoot.querySelector(s)||document.querySelector(s);
-  q("[data-pocr]").click(); await new Promise(r=>setTimeout(r,150));
+  q("[data-pocr]").click(); await new Promise(r=>setTimeout(r,250));
+  [...document.querySelectorAll("[data-elconfirm] button")].find(b=>/Rezept lesen/.test(b.textContent))?.click(); // 📷 Text zu sehen → immer fragen
+  await new Promise(r=>setTimeout(r,250));
   const fertig=[...document.querySelectorAll("[data-elconfirm] button")].find(b=>/Fertig/.test(b.textContent)); fertig?.click();
   await new Promise(r=>setTimeout(r,400));
   const out={ hasBtn:true, fertig:!!fertig, name:q("[data-pn]")?.value, ing:q("[data-pi]")?.value, steps:q("[data-ps]")?.value, heat:q("[data-ph]")?.value, hint:q("[data-pphint]")?.textContent, calls };
@@ -852,7 +854,9 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   c._openRecipe(null); await new Promise(r=>setTimeout(r,80));
   const oldOcr=c._ocrText; c._ocrText=async()=>"Lasagne\nZutaten\n200 g Mehl\n1 Prise Salz\nNährwerte pro Portion\nBrennwert 898 kcal\nEiweiß 44,8 g\nFett 55,2 g\nKohlenhydrate 46,7 g\nZubereitung\nAlles schichten und backen.";
   c._pickFile=async()=>{ const t=c._photoTarget; setTimeout(()=>t.ocr("data:image/png;base64,iVBORw0KGgo="),10); };
-  c._recipeFromPhotos([]); await new Promise(r=>setTimeout(r,150));
+  c._recipeFromPhotos([]); await new Promise(r=>setTimeout(r,250));
+  [...document.querySelectorAll("[data-elconfirm] button")].find(b=>/Rezept lesen/.test(b.textContent))?.click();
+  await new Promise(r=>setTimeout(r,250));
   [...document.querySelectorAll("[data-elconfirm] button")].find(b=>/Fertig/.test(b.textContent))?.click();
   await new Promise(r=>setTimeout(r,400));
   const ocrNut=c._readNut(), ocrIng=c.$("rImportText")?.value||"";
@@ -896,6 +900,64 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
 check("🧮 Nährwerte sind zugeklappt und zeigen die Kurzfassung", r.closed && /898 kcal/.test(r.sum) && r.opened, JSON.stringify(r));
 check("🤖 Nährwerte schätzen: Zutaten mit Menge + Portionen gehen an die KI, Werte landen in den Feldern", r.aiBtn && r.sent?.items?.join("|") === "250 g Mehl|3 Eier" && r.sent?.servings === 4 && r.kc === "410" && /410 kcal/.test(r.sum2), JSON.stringify(r));
 check("✂️ Zuschneide-Rahmen ist genau so groß wie das angezeigte Bild", r.fit && r.got, JSON.stringify(r));
+
+// 43) 📷 EIN Foto-Knopf: kein Text → gleich Rezept-Foto · Text → immer fragen (Gericht oder Rezept lesen) · Vorschlag genauso
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const oldWs=c._ws, oldOcr=c._ocrText, oldPick=c._pickFile; c._ws=async()=>({});
+  const click=(re)=>[...document.querySelectorAll("[data-elconfirm] button")].find(b=>re.test(b.textContent))?.click();
+  const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+  const png="data:image/png;base64,iVBORw0KGgo=";
+  c._pickFile=async()=>{ const t=c._photoTarget; setTimeout(()=>t.ocr(png),10); };
+  c._openRecipe(null); await wait(150);
+  const btns=[...c.shadowRoot.querySelectorAll('[data-act="rphotos-read"],[data-act="rphoto-take"]')].map(b=>b.dataset.act);
+  // a) Kuchenfoto: nur Buchstabensalat → ohne Frage Rezept-Foto, nichts bei den Zutaten
+  c._ocrText=async()=>"De * Fa 7. A er\n2 SD A. ZEN | A\nAI EA\nN ya Pe\nA EN K N } A\n&E Gy N ER WO\nR WO a BROS N za";
+  c._recipeFromPhotos([]); await wait(400);
+  const asked1=!!document.querySelector("[data-elconfirm]"); const photos1=(c._draft.newPhotos||[]).length; const ing1=c.$("rImportText")?.value||"";
+  // b) Foto mit Text → fragen; „Foto vom Gericht“ → Rezept-Foto, keine Zutaten
+  c._ocrText=async()=>"Omas Apfelkuchen\nZutaten\n200 g Mehl\n3 Eier\nZubereitung\nBackofen auf 180 Grad vorheizen und alles backen.";
+  c._recipeFromPhotos([]); await wait(400);
+  const asked2=!!document.querySelector("[data-elconfirm]"); click(/Foto vom Gericht/); await wait(300);
+  const photos2=(c._draft.newPhotos||[]).length; const ing2=c.$("rImportText")?.value||"";
+  // c) Vorschlag: Kuchenfoto → Foto geht mit dem Vorschlag mit
+  c._ocrText=async()=>"A er\nZEN | A";
+  c._proposeRecipe(); await wait(150);
+  const root=document.querySelector("[data-elpage]")||c.shadowRoot; const q=(s)=>root.querySelector(s)||c.shadowRoot.querySelector(s)||document.querySelector(s);
+  const pBtn=[!!q("[data-pocr]"), !!q("[data-pphoto]")];
+  q("[data-pocr]").click(); await wait(400);
+  const asked3=!!document.querySelector("[data-elconfirm]"); const hint=q("[data-pphint]")?.textContent, has=!!c._propPhoto;
+  c._propPhoto=null; let n=0; while(c._page && n++<6) c._pageBack(); document.querySelectorAll("[data-elov],[data-elconfirm]").forEach(e=>e.remove());
+  c._ws=oldWs; c._ocrText=oldOcr; c._pickFile=oldPick; c._view="list"; c._renderAll();
+  return { btns, asked1, photos1, ing1, asked2, photos2, ing2, pBtn, asked3, hint, has }; });
+check("📷 Editor hat nur noch EINEN Foto-Knopf", r.btns.length === 1 && r.btns[0] === "rphotos-read", JSON.stringify(r));
+check("📷 Kuchenfoto ohne lesbaren Text: keine Frage, Rezept-Foto, kein Buchstabensalat bei den Zutaten", !r.asked1 && r.photos1 === 1 && r.ing1 === "", JSON.stringify(r));
+check("📷 Foto mit Text: immer fragen; „Foto vom Gericht“ → Rezept-Foto, Zutaten bleiben leer", r.asked2 && r.photos2 === 2 && r.ing2 === "", JSON.stringify(r));
+check("📷 Vorschlag: ein Foto-Knopf, Kuchenfoto geht ohne Frage mit dem Vorschlag mit", r.pBtn[0] && !r.pBtn[1] && !r.asked3 && r.has && /Foto ist dabei/.test(r.hint || ""), JSON.stringify(r));
+
+// 44) 🖨️ „Drucken & Teilen“ unter dem Rezept · Blatt mit Foto, Zeiten, Nährwerten, Quelle, Zutaten in 2 Spalten · passt auf EINE A4-Seite
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+  const cv=document.createElement("canvas"); cv.width=400; cv.height=300; cv.getContext("2d").fillRect(0,0,400,300); const photo=cv.toDataURL("image/jpeg",.8);
+  const oldPD=c._photoData, oldHP=c._hasPhoto; c._photoData=async()=>photo; c._hasPhoto=()=>true;
+  const names=["Weizenmehl","Zucker","Hefe","Milch","Zwetschgen","Vanillezucker","Ei","Salz","Butter","Zitronenabrieb","Zimt","Lasagneplatten"];
+  const mk=(n)=>({ id:"rp1", name:"Zwetschgendatschi", items:names.map((x,i)=>({name:x,quantity:(i+1)*10+" g"})), servings:20, servings_unit:"persons", minutes:160, source:"https://www.rewe.de/rezepte/zwetschgendatschi/", nutrition:{kcal:266,protein:4.2}, heat:[],
+    steps:Array.from({length:n},(_,i)=>`Schritt ${i+1}: Zwetschgen waschen, halbieren, entkernen und vierteln. Den Teig mit dem Knethaken solange kneten, bis er Blasen wirft und danach zugedeckt gehen lassen, bis sich sein Volumen verdoppelt hat.`).join("\n") });
+  const out={}; c._data.recipes=[mk(6)]; c._view="recipes"; c._renderAll(); await wait(120);
+  const btn=c.shadowRoot.querySelector('.rtools [data-act="recipe-share"]'); const first=c.shadowRoot.querySelector(".rtools .btn"); out.firstAct=first?.dataset.act;
+  out.icon=btn?.querySelector("ha-icon")?.getAttribute("icon"); out.title=btn?.title;
+  for (const n of [6, 22]) {
+    c._printRecipePage(mk(n)); await wait(500);
+    const sheet=document.querySelector(".prsheet")||c.shadowRoot.querySelector(".prsheet");
+    if (n === 6) { out.img=!!sheet.querySelector(".rzimg"); out.chips=sheet.querySelectorAll(".rzchip").length; out.cols=getComputedStyle(sheet.querySelector(".rzcols")).columnCount; out.nut=/266 kcal/.test(sheet.textContent); out.src=/rewe\.de/.test(sheet.textContent); }
+    (document.querySelector("[data-prgo]")||c.shadowRoot.querySelector("[data-prgo]")).click(); await wait(1200);
+    const doc=document.querySelector("iframe")?.contentDocument; const h=doc?.body.getBoundingClientRect().height||0;
+    out["h"+n]=Math.round(h); out["z"+n]=doc?.body.style.zoom||"";
+    document.querySelectorAll("iframe").forEach(e=>e.remove()); let k=0; while(c._page && k++<6) c._pageBack();
+  }
+  out.avail=Math.round(263*96/25.4);
+  c._photoData=oldPD; c._hasPhoto=oldHP; c._data.recipes=[]; document.querySelectorAll("[data-elov],[data-elconfirm]").forEach(e=>e.remove()); c._view="list"; c._renderAll();
+  return out; });
+check("🖨️ Unter dem Rezept: erstes Symbol „Ansehen“, der Teilen-Knopf heißt „Drucken & Teilen“ mit Drucker-Symbol", r.firstAct === "recipe-view" && r.icon === "mdi:printer-outline" && /Drucken/.test(r.title || ""), JSON.stringify(r));
+check("🖨️ Blatt: Foto, Dauer/Portionen, Nährwerte, Quelle und Zutaten in zwei Spalten", r.img && r.chips === 2 && r.nut && r.src && r.cols === "2", JSON.stringify(r));
+check("🖨️ Kurzes Rezept bleibt in Originalgröße, langes wird passend verkleinert und passt auf EINE Seite", r.z6 === "" && r.h6 <= r.avail && Number(r.z22) < 1 && r.h22 <= r.avail, JSON.stringify(r));
 
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();

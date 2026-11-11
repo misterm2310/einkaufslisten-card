@@ -2483,5 +2483,18 @@
 "Die eingetragenen Nährwerte durch die Schätzung der KI ersetzen?": "Replace the entered nutrition values with the AI's estimate?",
 "🤖 Die KI rechnet …": "🤖 The AI is calculating …",
 "🧮 Nährwerte geschätzt (≈) – bitte kurz drüberschauen": "🧮 Nutrition estimated (≈) – please take a quick look",
-"Die KI hat keine Nährwerte geliefert 🙈": "The AI didn't return any nutrition values 🙈"
+"Die KI hat keine Nährwerte geliefert 🙈": "The AI didn't return any nutrition values 🙈",
+"Foto machen: Rezept aus dem Foto lesen (auch mehrere Seiten) oder als Foto zum Rezept speichern": "Take a photo: read the recipe from it (several pages too) or save it as the recipe's photo",
+"Foto machen: Rezept aus dem Foto lesen (auch mehrere Seiten) oder als Foto zum Vorschlag mitschicken": "Take a photo: read the recipe from it (several pages too) or send it along as the suggestion's photo",
+"Foto zum Rezept oder Rezept aus Foto": "Photo for the recipe or recipe from photo",
+"Foto zum Vorschlag oder Rezept aus Foto": "Photo for the suggestion or recipe from photo",
+"📖 Rezept lesen": "📖 Read recipe",
+"🍽️ Foto vom Gericht": "🍽️ Photo of the dish",
+"🔎 Foto wird angeschaut": "🔎 Looking at the photo",
+"Das Rezept hat schon 6 Fotos 🙈": "The recipe already has 6 photos 🙈",
+"📷 Foto ist dabei – geht mit dem Vorschlag mit": "📷 Photo is attached – it goes along with the suggestion",
+"📷 Foto ist dabei": "📷 Photo is attached",
+"📷 Foto": "📷 Photo",
+"Rezept ansehen": "View recipe",
+"Ansehen – das ganze Rezept auf einer Seite, so wie es gedruckt wird": "View – the whole recipe on one page, just as it gets printed"
 }

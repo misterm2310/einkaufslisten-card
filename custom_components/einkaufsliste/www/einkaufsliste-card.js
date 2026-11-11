@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.6";
+const EL_VERSION = "2.76.28-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -169,7 +169,7 @@ const EL_GUIDE = [
       "<b>📺 Auf dem Fernseher mitlesen:</b> Hat jemand die Karte „Einkaufsliste – Kochmodus-Anzeige“ auf einem Dashboard (z. B. Fire TV in der Küche), steht dort groß, was du gerade kochst – Schritt, Zutaten, Foto und Timer. Blätterst du weiter, blättert der Fernseher mit.",
       "<b>📅 Essensplan:</b> Bei jedem Rezept steht der Knopf <b>„Planen“</b>. Antippen wechselt: nichts → <b>💭 Wunsch</b> (das möchte jemand mal essen) → <b>📅 Diese Woche</b> (wird diese Woche gekocht) → wieder nichts. Oben stehen dann zuerst „Diese Woche“, danach die Wünsche. <b>„Alle Zutaten auf die Liste“</b> geht die eingeplanten Rezepte nacheinander durch – du wählst nur ab, was du nicht brauchst. An welchem Wochentag „Diese Woche“ wieder leer wird, stellt ein Admin in ⚙️ → Rezepte → Wochenplan ein. Wer den Plan nicht mag: unten unter <b>👁️ Ansicht → Essensplan</b> nur für sich abschalten.",
       "<b>⏲️ Gar-Zeiten:</b> Spickzettel nach Gerät (🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse).",
-      "<b>📖 Rezept vorschlagen</b> (Buch mit ＋ oben bei den Rezepten): Jeder kann ein Rezept einreichen – auch per <b>📷 Rezept aus Fotos</b> (wird gelesen und in die Felder geschrieben). Es wartet in ⚙️ → Rezepte auf ein OK, ein 🟠 Punkt an der Kochmütze zeigt, wie viele warten.",
+      "<b>📖 Rezept vorschlagen</b> (Buch mit ＋ oben bei den Rezepten): Jeder kann ein Rezept einreichen – auch per <b>📷 Foto</b> (ein Knopf für alles: Steht Text drauf, fragt die Liste „Rezept lesen“ oder „Foto vom Gericht“; ohne Text wird es gleich das Foto). Es wartet in ⚙️ → Rezepte auf ein OK, ein 🟠 Punkt an der Kochmütze zeigt, wie viele warten.",
       "<b>🤖 KI-Kochen</b> (wenn ein Admin es in ⚙️ → Extras eingeschaltet hat): „Was kann ich kochen?“ – Zutaten eintippen, der KI-Assistent schlägt Rezepte vor, die du übernehmen kannst.",
     ],
     en: [
@@ -261,7 +261,7 @@ const EL_HELP = {
   ]],
   recipes: ["list", [
     "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json, 🍲 Mealie-.zip/.json und schema.org; US-Maße werden umgerechnet – nur Admins). Dazu <b>🔗 Rezept aus Link</b> (ganzes Rezept auf einmal) und <b>🧂 Grundvorrat</b> (zentrale Liste: Salz, Pfeffer … gelten in allen Rezepten als „haben wir immer“).",
-    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, <b>⏱️ Dauer ca.</b> (Minuten; steht in der Kochmütze neben der Personenzahl, ohne Eintrag geschätzt mit „≈“, beim Rezept-Link automatisch), <b>🧮 Nährwerte pro Portion</b> (kcal, Eiweiß, Fett …; beim Import automatisch, stehen in der Rezeptliste unter dem Namen), Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Rezept aus Fotos“</b> oben rechts bei „Eingaben“ (eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. <b>🥕 Zutaten pro Schritt:</b> der Knopf mit der Möhre unter jedem Schritt zeigt, welche Zutaten dazugehören – automatisch aus dem Text erkannt (≈), antippen legt sie fest. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
+    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, <b>⏱️ Dauer ca.</b> (Minuten; steht in der Kochmütze neben der Personenzahl, ohne Eintrag geschätzt mit „≈“, beim Rezept-Link automatisch), <b>🧮 Nährwerte pro Portion</b> (kcal, Eiweiß, Fett …; beim Import automatisch, stehen in der Rezeptliste unter dem Namen), Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Foto“</b> oben rechts bei „Eingaben“ (ein Knopf für alles: ohne Text wird es gleich das Rezept-Foto, bei Text fragt die Liste „📖 Rezept lesen“ oder „🍽️ Foto vom Gericht“; Rezept lesen = eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. <b>🥕 Zutaten pro Schritt:</b> der Knopf mit der Möhre unter jedem Schritt zeigt, welche Zutaten dazugehören – automatisch aus dem Text erkannt (≈), antippen legt sie fest. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
     "<b>🔗 Quelle &amp; Original:</b> Beim Import per Link merkt sich das Rezept die Adresse (im Editor unter dem Namen änderbar, auch von Hand eintragbar). In der Rezeptliste öffnet „Original öffnen“ die Seite. <b>👨‍🍳 Kochmodus:</b> Er merkt sich pro Rezept den Schritt und fragt beim nächsten Start, ob du dort weitermachen willst.",
     "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (für alle, mit Airfryer Control ab Beta 17) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
   ], [
@@ -421,6 +421,10 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["📷 <b>Ein Foto-Knopf für alles:</b> Im Rezept-Editor und bei „Rezept vorschlagen“ gibt es nur noch „📷 Foto“. Steht kein Text auf dem Bild (z. B. ein Kuchenfoto), wird es gleich das Rezept-Foto – kein Buchstabensalat mehr bei den Zutaten. Steht Text drauf, fragt die Liste immer: „📖 Rezept lesen“ oder „🍽️ Foto vom Gericht“.",
+   "📷 <b>One photo button for everything:</b> in the recipe editor and in “Suggest a recipe” there is only “📷 Photo” now. If the image has no text (e.g. a cake photo), it simply becomes the recipe photo – no more letter soup in the ingredients. If there is text, the list always asks: “📖 Read recipe” or “🍽️ Photo of the dish”.", "beta.7"],
+  ["👁️ <b>Rezept ansehen &amp; schön drucken:</b> Unter jedem Rezept steht als erstes Symbol „Ansehen“ – das ganze Rezept auf einer Seite, genau wie es gedruckt wird: Foto, Portionen, Dauer, Nährwerte, Quelle, Zutaten in zwei Spalten, nummerierte Schritte mit Backofen-Angaben. Der Knopf „Teilen“ heißt jetzt „Drucken &amp; Teilen“ (Drucker-Symbol), „Drucken / als PDF“ steht vorn. Das Blatt passt von selbst auf eine A4-Seite (die Schrift wird bei langen Rezepten kleiner, bis 60 %).",
+   "👁️ <b>View &amp; nicely print a recipe:</b> under every recipe the first icon is “View” – the whole recipe on one page, exactly as it gets printed: photo, servings, time, nutrition, source, ingredients in two columns, numbered steps with oven details. The “Share” button is now “Print &amp; share” (printer icon), “Print / save as PDF” comes first. The sheet fits one A4 page by itself (long recipes get a smaller font, down to 60 %).", "beta.7"],
   ["🔀 <b>Reihenfolge bleibt jetzt wirklich:</b> Zutaten werden auch beim Speichern und nach einem Neustart nicht mehr A–Z sortiert (vorher nur im Entwurf). Schon gespeicherte Rezepte bleiben sortiert – einmal neu importieren. · ✂️ <b>Foto zuschneiden repariert:</b> Ist die Karte schmaler als das Browserfenster, war der Rahmen größer als das Bild und der grüne Punkt außer Sicht – jetzt passt der Rahmen genau aufs Bild (betraf jedes Bildformat, nicht nur .webp).",
    "🔀 <b>Order really stays now:</b> ingredients are no longer sorted A–Z when saving or after a restart (before it only worked in the draft). Recipes already saved stay sorted – import them once more. · ✂️ <b>Photo cropping fixed:</b> when the card was narrower than the browser window, the frame was bigger than the image and the green dot out of sight – now the frame fits the image exactly (any image format, not just .webp).", "beta.6"],
   ["🧮 <b>Nährwerte zum Einklappen:</b> Im Rezept-Editor sind die Nährwerte zugeklappt, die Zeile zeigt die Kurzfassung (z. B. „898 kcal · Eiweiß 44,8 g …“) – antippen klappt auf. · 🤖 <b>Nährwerte schätzen:</b> Ist KI-Kochen an, rechnet dein KI-Assistent die Nährwerte pro Portion grob aus den Zutaten aus (≈, bitte kurz prüfen).",
@@ -3471,6 +3475,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .recipe .rnut { display:block; margin-top:2px; opacity:.75; }
 .recipe .rnote { display:block; margin-top:2px; background:rgba(249,168,37,.18); border-radius:8px; padding:1px 8px; width:fit-content; max-width:100%; }
 .rtools [data-act="recipe-share"] ha-icon { color:var(--success-color,#43a047); }
+.rtools [data-act="recipe-view"] ha-icon { color:#e65100; }
 .plansec { margin:12px 4px 4px; font-size:14px; color:var(--secondary-text-color); }
 .planset { margin:8px 0 12px; padding:8px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 8%, transparent); }
 .plantag { font-size:13px; }
@@ -3784,7 +3789,7 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .zadd { flex:1 1 140px; min-width:0; }
 :host([privacy]) [data-act="scan"], :host([privacy]) [data-act="new-barcode"], :host([privacy]) [data-act="barcode-assign"], :host([privacy]) [data-act="new-photo"],
 :host([privacy]) [data-act="photo-take"], :host([privacy]) [data-act="ocr-list"], :host([privacy]) [data-act="rphotos-read"], :host([privacy]) [data-act="prod-add-bc"],
-:host([privacy]) [data-act="sphoto-take"], :host([privacy]) [data-act="rphoto-take"] { opacity:.35; filter:grayscale(1); }
+:host([privacy]) [data-act="sphoto-take"], :host([privacy]) [data-act="rphotos-read"] { opacity:.35; filter:grayscale(1); }
 .privrow { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0 12px; }
 .mascotprev { display:flex; gap:14px; align-items:center; margin:8px 0; color:var(--primary-text-color); }
 .mascotprev svg { width:48px; height:43px; }
@@ -3885,6 +3890,12 @@ async function elOcrRead(dataUrl, onProgress) {
   } finally {
     elOcr.timer = setTimeout(() => { elOcr.worker?.terminate?.().catch?.(() => {}); elOcr.worker = null; }, 120000); // Speicher wieder freigeben
   }
+}
+
+// 🔎 Steht auf dem Foto lesbarer Text? Zählt echte Wörter (4+ Buchstaben, mit Vokal und Kleinbuchstaben) – Streusel & Co. ergeben nur Buchstabensalat
+function elOcrHasText(text) {
+  const words = String(text || "").split(/[^A-Za-zÄÖÜäöüß]+/).filter((w) => w.length >= 4 && /[aeiouäöüAEIOUÄÖÜ]/.test(w) && /[a-zäöüß]/.test(w));
+  return words.length >= 3;
 }
 
 // 🧾 Kassenbon lesen: Betrag („zu zahlen“, „Summe“ …), Datum und Geschäft herausfischen
@@ -9279,7 +9290,7 @@ ${(() => {
         ${sec("in", "mdi:pencil-outline", "#546e7a", "Eingaben", "Name, von wem, Foto", `
           <input data-pn maxlength="60" placeholder="Name des Rezepts, z. B. Omas Apfelkuchen">
           <input data-pb maxlength="40" placeholder="Von wem? (dein Name)">
-          <div class="btnrow" style="justify-content:flex-start"><button type="button" class="btn" data-pphoto title="Foto vom Rezept oder Produkt" aria-label="Foto vom Rezept oder Produkt"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto vom Rezept oder Produkt</span></button><button type="button" class="btn" data-pocr title="Rezept aus Fotos einlesen (auch mehrere Seiten)" aria-label="Rezept aus Fotos"><ha-icon icon="mdi:camera-outline"></ha-icon><span class="lbl">Rezept aus Fotos</span></button><span class="hint" data-pphint></span></div>`)}
+          <div class="btnrow" style="justify-content:flex-start"><button type="button" class="btn" data-pocr title="Foto machen: Rezept aus dem Foto lesen (auch mehrere Seiten) oder als Foto zum Vorschlag mitschicken" aria-label="Foto zum Vorschlag oder Rezept aus Foto"><ha-icon icon="mdi:camera-outline"></ha-icon><span class="lbl">Foto</span></button><span class="hint" data-pphint></span></div>`)}
         ${sec("zut", "mdi:food-apple-outline", "#43a047", "Zutaten", "Was kommt rein?", `<textarea data-pi rows="6" placeholder="Eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;&#10;…oder einfach einen Rezept-Link"></textarea>`)}
         ${sec("ofen", "mdi:stove", "#ef6c00", "Backofen &amp; Co.", "Grad, Minuten, Modus", `<textarea data-ph rows="2" placeholder="z. B. Umluft 180 °C, 25 Min"></textarea>`)}
         ${sec("zub", "mdi:chef-hat", "#e53935", "Zubereitung", "Die Schritte", `<textarea data-ps rows="6" placeholder="Ein Schritt pro Zeile, z. B.&#10;Zwiebeln schneiden&#10;Fleisch anbraten&#10;&#10;…oder einfach einen Rezept-Link"></textarea>`)}
@@ -9291,8 +9302,7 @@ ${(() => {
     const mirror = (from, to) => from.addEventListener("input", () => { const v = from.value.trim(); if (isUrl(v) && (!to.value.trim() || isUrl(to.value))) to.value = v; }); // Link nur einmal tippen
     mirror($("[data-pi]"), $("[data-ps]")); mirror($("[data-ps]"), $("[data-pi]"));
     $("[data-pb]").value = this._myName() || "";
-    $("[data-pphoto]").onclick = () => { this._photoTarget = { proposalDraft: true, onData: (d) => { this._propPhoto = d; $("[data-pphint]").textContent = "📷 Foto ist dabei"; } }; this._pickFile("photoFile", "📷 Foto zum Vorschlag"); };
-    // 📷 Rezept aus Fotos – wie im Editor: lesen, in die Tippfelder schreiben (alles bleibt änderbar), erste Seite als Foto
+    // 📷 Ein Foto-Knopf – wie im Editor: Text lesen (alles bleibt änderbar, erste Seite als Foto) oder gleich Foto vom Gericht
     $("[data-pocr]").onclick = () => this._recipeFromPhotos([], async (parts, pages) => {
       if (!ov.isConnected) return; // Vorschlag inzwischen zu
       const open = (k) => { const h = $(`.rsec[data-k="${k}"] .rsec-h`); if (h?.getAttribute("aria-expanded") === "false") h.click(); };
@@ -9307,6 +9317,11 @@ ${(() => {
       }
       if (pages[0] && !this._propPhoto) { this._propPhoto = await elShrinkData(pages[0], 900, 0.8); $("[data-pphint]").textContent = "📷 Foto ist dabei"; }
       this._toast("📷 Gelesen – bitte kurz prüfen und dann „Vorschlagen“");
+    }, async (d) => { // 🍽️ Foto vom Gericht: geht mit dem Vorschlag mit
+      if (!ov.isConnected) return;
+      this._propPhoto = await elShrinkData(d, 900, 0.8);
+      $("[data-pphint]").textContent = "📷 Foto ist dabei";
+      this._toast("📷 Foto ist dabei – geht mit dem Vorschlag mit");
     });
     $("[data-pcancel]").onclick = () => this._closePage();
     $("[data-psend]").onclick = async () => {
@@ -9432,13 +9447,14 @@ ${(() => {
           <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${planOn && pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}${this._cookNowHtml(r)}${r.cook_note ? `<small class="rnote">📝 ${esc(r.cook_note)}</small>` : ""}${elNutLine(r.nutrition) ? `<small class="rnut" title="${esc(elT("Nährwerte pro Portion"))}">🧮 ${esc(elNutLine(r.nutrition))}</small>` : ""}</div>
         </div>
         <div class="rtools" data-id="${r.id}">
+          <button class="btn" data-act="recipe-view" title="Ansehen – das ganze Rezept auf einer Seite, so wie es gedruckt wird"><ha-icon icon="mdi:file-document-outline"></ha-icon><span class="lbl">Ansehen</span></button>
           ${planOn ? `<button class="btn plan ${r.plan || ""}" data-act="recipe-plan" title="Essensplan: antippen = nichts → 💭 Wunsch → 📅 Diese Woche"><ha-icon icon="${pl[0]}"></ha-icon><span class="lbl">${pl[1]}</span></button>` : ""}
           <button class="btn" data-act="recipe-apply" title="Auf die Liste – Zutaten auswählen"><ha-icon icon="mdi:cart-plus"></ha-icon><span class="lbl">Auf die Liste</span></button>
           ${onList(r) ? `<button class="btn" data-act="recipe-unapply" title="Von der Liste – alle offenen Zutaten dieses Rezepts (${onList(r)}) von der Liste nehmen"><ha-icon icon="mdi:cart-remove"></ha-icon><span class="lbl">Von Liste (${onList(r)})</span></button>` : ""}
           ${this._recipePhotoToolBtn(r)}
           ${(r.steps || "").trim() ? `<button class="btn" data-act="recipe-cook" title="Kochen"><ha-icon icon="mdi:fire"></ha-icon><span class="lbl">Kochen</span></button>` : ""}
           ${r.source ? `<button class="btn" data-act="recipe-source" title="Original-Rezept im Browser öffnen"><ha-icon icon="mdi:open-in-new"></ha-icon><span class="lbl">Original öffnen</span></button>` : ""}
-          <button class="btn" data-act="recipe-share" title="Teilen"><ha-icon icon="mdi:share-variant-outline"></ha-icon><span class="lbl">Teilen</span></button>
+          <button class="btn" data-act="recipe-share" title="Drucken &amp; Teilen"><ha-icon icon="mdi:printer-outline"></ha-icon><span class="lbl">Drucken &amp; Teilen</span></button>
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`;
     };
     // 📅 Essensplan: oben „Diese Woche“, dann „Wünsche“, dann der Rest (nur wenn überhaupt etwas geplant ist)
@@ -9600,7 +9616,7 @@ ${(() => {
     this.$("otherView").innerHTML = `
       <div class="sec">
         <h3><ha-icon icon="mdi:chef-hat"></ha-icon>${dr.id ? "Rezept bearbeiten" : "Neues Rezept"}</h3>
-        ${this._rsec("in", "mdi:pencil-outline", "#546e7a", "Eingaben", "Name, Gruppe, Mengen, Foto", `<button class="btn rimportbtn always" type="button" data-act="rphotos-read" title="Rezept aus Fotos einlesen (auch mehrere Seiten)" aria-label="Rezept aus Fotos"><ha-icon icon="mdi:camera-outline"></ha-icon><span class="lbl">Rezept aus Fotos</span></button>`, `
+        ${this._rsec("in", "mdi:pencil-outline", "#546e7a", "Eingaben", "Name, Gruppe, Mengen, Foto", `<button class="btn rimportbtn always" type="button" data-act="rphotos-read" title="Foto machen: Rezept aus dem Foto lesen (auch mehrere Seiten) oder als Foto zum Rezept speichern" aria-label="Foto zum Rezept oder Rezept aus Foto"><ha-icon icon="mdi:camera-outline"></ha-icon><span class="lbl">Foto</span></button>`, `
         <div class="srow recipehead">
           <ha-icon class="prev" id="rIconPrev" icon="${esc(this._recipeIcon(dr))}"></ha-icon>
           <input class="grow" id="rName" value="${esc(dr.name)}" placeholder="Name, z. B. Freitags Fisch">
@@ -9992,7 +10008,6 @@ ${(() => {
     const fresh = (dr.newPhotos || []).length;
     const total = saved + fresh;
     box.innerHTML = `
-      <button type="button" class="btn ${total ? "on" : ""}" data-act="rphoto-take" title="Foto zum Rezept" aria-label="Foto zum Rezept" ${total >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto zum Rezept</span></button>
       ${saved ? `<button type="button" class="btn" data-act="rphoto-view"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Ansehen (${saved})</button>` : ""}
       ${fresh ? `<button type="button" class="btn" data-act="rphoto-view-new"><ha-icon icon="mdi:image-outline"></ha-icon>${fresh} neu</button>
       <button type="button" class="btn danger" data-act="rphoto-remove"><ha-icon icon="mdi:image-remove-outline"></ha-icon>Neue verwerfen</button>` : ""}
@@ -10792,17 +10807,30 @@ ${(() => {
   }
 
   // 📷 Rezept aus Fotos: ein oder mehrere Seiten abfotografieren → Name, Zutaten (zum Prüfen) und Schritte; die Fotos kommen ans Rezept
-  _recipeFromPhotos(pages, apply = null) { // apply(parts, pages) = eigenes Ziel (z. B. 💡 Rezept vorschlagen), sonst der Editor
+  // 📷 EIN Foto-Knopf für alles: beim ersten Foto wird geschaut, ob Text zu sehen ist.
+  // Kein Text → gleich Foto zum Rezept. Text → IMMER fragen: „Foto vom Gericht“ oder „Rezept lesen“.
+  // onDish(data) = eigenes Ziel für „Foto vom Gericht“ (z. B. 💡 Rezept vorschlagen), sonst die Rezept-Fotos im Editor
+  _recipeFromPhotos(pages, apply = null, onDish = null) { // apply(parts, pages) = eigenes Ziel für „Rezept lesen“, sonst der Editor
     this._photoTarget = { ocr: async (data) => {
+      if (!pages.length) {
+        const first = await this._ocrText(data, "🔎 Foto wird angeschaut");
+        if (first == null) return; // Texterkennung ging schief – Meldung kam schon
+        const read = elOcrHasText(first) && await elConfirm(EL_LANG === "de"
+          ? "Auf dem Foto steht Text. Was ist das?"
+          : "There is text on the photo. What is it?",
+        { danger: false, title: "📷 Foto", yes: elT("📖 Rezept lesen"), no: elT("🍽️ Foto vom Gericht") });
+        if (!read) { await this._dishPhoto(data, onDish); return; }
+        pages.first = first; // gleich weiterverwenden, nicht noch einmal lesen
+      }
       pages.push(data);
       const more = pages.length < 6 && await elConfirm(EL_LANG === "de"
         ? `Seite ${pages.length} ist drin 👍\nHat das Rezept noch eine Seite?`
         : `Page ${pages.length} is in 👍\nDoes the recipe have another page?`,
       { danger: false, title: "📷 Rezept aus Fotos", yes: elT("➕ Noch eine Seite"), no: elT("✔ Fertig") });
-      if (more) { this._recipeFromPhotos(pages, apply); return; }
+      if (more) { this._recipeFromPhotos(pages, apply, onDish); return; }
       let text = "";
       for (let i = 0; i < pages.length; i++) {
-        const t = await this._ocrText(pages[i], pages.length > 1 ? (EL_LANG === "de" ? `🔎 Seite ${i + 1} von ${pages.length} wird gelesen` : `🔎 Reading page ${i + 1} of ${pages.length}`) : "🔎 Rezept wird gelesen");
+        const t = i === 0 && pages.first != null ? pages.first : await this._ocrText(pages[i], pages.length > 1 ? (EL_LANG === "de" ? `🔎 Seite ${i + 1} von ${pages.length} wird gelesen` : `🔎 Reading page ${i + 1} of ${pages.length}`) : "🔎 Rezept wird gelesen");
         if (t == null) return; // Texterkennung ging schief – Meldung kam schon
         text += t + "\n";
       }
@@ -10832,6 +10860,18 @@ ${(() => {
       this._toast("📷 Gelesen – bitte die Zutaten prüfen und auf „Übernehmen“ tippen");
     } };
     this._pickFile("photoFile", pages.length ? (EL_LANG === "de" ? `📷 Seite ${pages.length + 1} abfotografieren` : `📷 Photograph page ${pages.length + 1}`) : "🍳 Rezept abfotografieren");
+  }
+
+  // 🍽️ Foto vom fertigen Gericht: wird Rezept-Foto (Editor) oder Foto zum Vorschlag
+  async _dishPhoto(data, onDish = null) {
+    if (onDish) { await onDish(data); return; }
+    const dr = this._draft;
+    if (!dr || this._view !== "recipe") return; // Editor inzwischen zu
+    const room = Math.max(0, 6 - this._recipeSavedPhotos() - (dr.newPhotos || []).length);
+    if (!room) { this._toast("Das Rezept hat schon 6 Fotos 🙈"); return; }
+    (dr.newPhotos ||= []).push(await elShrinkData(data, 900, 0.8));
+    this._renderRecipePhoto();
+    this._toast("📷 Foto dazu – wird beim Speichern mitgespeichert");
   }
 
   // 🛒 Liste aus einem Foto (handgeschrieben oder gedruckt): Text prüfen, dann auf die Liste
@@ -12679,14 +12719,19 @@ ${(() => {
   }
 
   // 🖨️ Rezept als Blatt (Vorschau und Druck/PDF) – gleiche Optik wie „Liste drucken“
-  _recipeSheet(r) {
+  _recipeSheet(r, photo = null) {
     const steps = String(r.steps || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
     const stepsOf = (h) => (Array.isArray(h.steps) ? h.steps : []).map(Number).filter((n) => n > 0);
     const free = (r.heat || []).filter((h) => !stepsOf(h).length || !steps.length);
     const sub = r.servings ? `${r.servings} ${esc(elT(servLabel(r.servings_unit, r.servings)))}` : "";
-    let html = `<div class="ph"><div><div class="pt">${esc(r.name)}</div>${sub ? `<div class="ps">${sub}</div>` : ""}</div></div><div class="pbar" style="background:#e65100"></div>`;
+    const mins = Number(r.minutes) > 0 ? (r.minutes >= 60 ? `${Math.floor(r.minutes / 60)} ${elT("Std.")}${r.minutes % 60 ? ` ${r.minutes % 60} ${elT("Min")}` : ""}` : `${r.minutes} ${elT("Min")}`) : "";
+    const chips = [sub && `🍽️ ${sub}`, mins && `⏱️ ${esc(mins)}`].filter(Boolean).map((c) => `<span class="rzchip">${c}</span>`).join("");
+    const nut = elNutLine(r.nutrition);
+    const src = String(r.source || "").trim();
+    const srcShow = /^https?:\/\//i.test(src) ? (() => { try { return new URL(src).hostname.replace(/^www\./, ""); } catch (_) { return src; } })() : src;
+    let html = `<div class="rzhead">${photo ? `<img class="rzimg" src="${esc(photo)}" alt="">` : ""}<div class="rzmeta"><div class="pt">${esc(r.name)}</div>${chips ? `<div class="rzchips">${chips}</div>` : ""}${nut ? `<div class="rzn2">🧮 ${esc(elT("Nährwerte pro Portion"))}: ${esc(nut)}</div>` : ""}${srcShow ? `<div class="rzn2">🔗 ${esc(srcShow)}</div>` : ""}</div></div><div class="pbar" style="background:#e65100"></div>`;
     if (r.items?.length) {
-      html += `<section class="rzs"><h3>${esc(elT("Zutaten"))}</h3>${r.items.map((i) => `<div class="rzi"><span class="pq">${esc(i.quantity || "")}</span><span>${esc(i.name)}${i.note ? ` <span class="pnt">(${esc(i.note)})</span>` : ""}</span></div>`).join("")}</section>`;
+      html += `<section class="rzs"><h3>${esc(elT("Zutaten"))}</h3><div class="rzcols">${r.items.map((i) => `<div class="rzi"><span class="pq">${esc(i.quantity || "")}</span><span>${esc(i.name)}${i.note ? ` <span class="pnt">(${esc(i.note)})</span>` : ""}</span></div>`).join("")}</div></section>`;
     }
     if (free.length) html += `<section class="rzs"><h3>${esc(elT("Garen"))}</h3>${free.map((h) => `<div class="rzi rzh"><span>${esc(heatText(h))}</span></div>`).join("")}</section>`;
     if (steps.length) {
@@ -12707,19 +12752,38 @@ ${(() => {
     return `${S(".rzs")}{margin-top:14px}${S(".rzs h3")}{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#555;margin:0 0 4px;padding-bottom:3px;border-bottom:1px solid #ccc}
 ${S(".rzi")}{display:flex;gap:8px;padding:3px 4px;break-inside:avoid}${S(".rzi .pq")}{min-width:64px;text-align:right}
 ${S(".rzp")}{display:flex;gap:10px;padding:5px 4px;break-inside:avoid}${S(".rzn")}{flex:none;width:22px;height:22px;border-radius:50%;background:#111;color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
-${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
+${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}
+${S(".rzhead")}{display:flex;gap:16px;align-items:flex-start}${S(".rzimg")}{width:40%;max-height:60mm;object-fit:cover;border-radius:8px;flex:none}
+${S(".rzmeta")}{flex:1;min-width:0;overflow-wrap:anywhere}${S(".rzchips")}{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+${S(".rzchip")}{border:1px solid #ccc;border-radius:12px;padding:2px 10px;font-size:11.5px;color:#333}${S(".rzn2")}{font-size:11.5px;color:#555;margin-top:6px}
+${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside:avoid}`;
   }
 
   _printRecipePage(r) {
-    this._openPage({ key: "print", title: elT("Rezept drucken"), icon: "mdi:printer-outline", color: "#e65100", build: (body) => {
-      const { html, by } = this._recipeSheet(r);
-      body.innerHTML = `<style>${this._printCss(".prsheet", false)}${this._recipeCss(".prsheet")}</style><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" data-prgo><ha-icon icon="mdi:printer-outline"></ha-icon>${esc(elT("Drucken / als PDF"))}</button></div><div class="prsheet">${html}</div>`;
+    this._openPage({ key: "print", title: elT("Rezept ansehen"), icon: "mdi:file-document-outline", color: "#e65100", build: (body) => {
+      let sheet = this._recipeSheet(r);
+      body.innerHTML = `<style>${this._printCss(".prsheet", false)}${this._recipeCss(".prsheet")}</style><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" data-prgo><ha-icon icon="mdi:printer-outline"></ha-icon>${esc(elT("Drucken / als PDF"))}</button></div><div class="prsheet">${sheet.html}</div>`;
+      const key = this._recipePhotoKey(r.id);
+      if (r.id && this._hasPhoto(key)) { // 🖼️ erstes Rezept-Foto kommt oben aufs Blatt
+        this._photoData(key, 0).then((photo) => {
+          if (!photo || !body.isConnected) return;
+          sheet = this._recipeSheet(r, photo);
+          const box = body.querySelector(".prsheet");
+          if (box) box.innerHTML = sheet.html;
+        }).catch(() => {});
+      }
       body.querySelector("[data-prgo]").onclick = () => {
         const fr = document.createElement("iframe");
         fr.style.cssText = "position:fixed;left:-10000px;top:0;width:182mm;height:263mm;border:0;visibility:hidden;";
-        fr.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(r.name)}</title><style>${this._printCss("body", true, by)}${this._recipeCss("body")}</style></head><body>${html}</body></html>`;
+        fr.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(r.name)}</title><style>${this._printCss("body", true, sheet.by)}${this._recipeCss("body")}</style></head><body>${sheet.html}</body></html>`;
         fr.onload = () => {
-          try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (_) { this._toast(elT("Drucken geht hier nicht – mach ein Bildschirmfoto der Vorschau.")); }
+          try {
+            // 📐 Passt das Rezept nicht auf eine A4-Seite, wird die Schrift schrittweise kleiner (bis 60 %) – kein Verkleinern von Hand nötig
+            const doc = fr.contentDocument, avail = (263 * 96) / 25.4; // nutzbare Höhe in Pixeln
+            let z = 1;
+            for (let i = 0; i < 12 && doc.body.getBoundingClientRect().height > avail && z > 0.6; i++) { z = Math.max(0.6, z - 0.04); doc.body.style.zoom = String(z); }
+            fr.contentWindow.focus(); fr.contentWindow.print();
+          } catch (_) { this._toast(elT("Drucken geht hier nicht – mach ein Bildschirmfoto der Vorschau.")); }
           setTimeout(() => fr.remove(), 60000);
         };
         document.body.append(fr);
@@ -12735,7 +12799,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     const card = document.createElement("div");
     Object.assign(card.style, { background: "#1e1e1e", borderRadius: "16px", padding: "18px", maxWidth: "460px", width: "100%" });
     const h = document.createElement("div");
-    h.textContent = `📤 „${r.name}“ weitergeben`;
+    h.textContent = `🖨️ „${r.name}“ – ${elT("Drucken & Teilen")}`;
     Object.assign(h.style, { font: "600 18px Roboto,sans-serif", marginBottom: "10px" });
     const pre = document.createElement("textarea");
     pre.value = text;
@@ -12749,7 +12813,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
     wa.rel = "noopener";
     wa.textContent = "WhatsApp";
     wa.style.cssText = OV_BTN_MAIN + "text-decoration:none;display:inline-block;";
-    const bPdf = ovButton("🖨️ Drucken / als PDF"), bShare = ovButton("Teilen …"), bCopy = ovButton("Kopieren"), bClose = ovButton("Schließen");
+    const bPdf = ovButton("🖨️ Drucken / als PDF", true), bShare = ovButton("Teilen …"), bCopy = ovButton("Kopieren"), bClose = ovButton("Schließen");
     bPdf.onclick = () => { ov.remove(); this._printRecipePage(r); }; // 🖨️ wie „Liste drucken“: Vorschau, dann Drucken / als PDF
     if (!navigator.share) bShare.style.display = "none";
     bShare.onclick = () => navigator.share({ title: r.name, text }).catch(() => {});
@@ -12762,7 +12826,7 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
       this._toast(ok ? "📋 Rezept kopiert – jetzt einfach einfügen" : "Kopieren ging nicht – bitte Text markieren und kopieren");
     };
     bClose.onclick = () => ov.remove();
-    row.append(wa, bPdf, bShare, bCopy, bClose);
+    row.append(bPdf, wa, bShare, bCopy, bClose); // 🖨️ Drucken steht vorn
     card.append(h, pre, row);
     ov.appendChild(card);
     ov.addEventListener("click", (e) => { if (e.target === ov) ov.remove(); });
@@ -14369,6 +14433,11 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         if (r) this._cookMode(r);
         break;
       }
+      case "recipe-view": { // 👁️ ganzes Rezept ansehen = die Druck-Seite (Drucken / als PDF steht oben darin)
+        const r = this._recipe(el.closest(".rtools").dataset.id);
+        if (r) this._printRecipePage(r);
+        break;
+      }
       case "recipe-share": {
         const r = this._recipe(el.closest(".rtools").dataset.id);
         if (r) this._shareRecipe(r);
@@ -15709,10 +15778,6 @@ ${S(".rzh")}{margin-top:3px;color:#e65100;font-size:12px}`;
         if (dr?.id) this._openPhoto(this._stepPhotoKey(dr.id, el.dataset.n), `${dr.name || "Rezept"} – Schritt ${Number(el.dataset.pos ?? el.dataset.n) + 1}`, 0, () => this._renderSteps());
         break;
       }
-      case "rphoto-take":
-        this._photoTarget = { recipeDraft: true };
-        this._pickFile("photoFile", "🍳 Foto zum Rezept");
-        break;
       case "rphoto-view": {
         const dr = this._draft;
         if (dr?.id) this._openPhoto(this._recipePhotoKey(dr.id), this.$("rName")?.value || dr.name, 0, () => this._renderRecipePhoto());
