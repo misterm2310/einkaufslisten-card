@@ -992,6 +992,33 @@ check("🧱 Schritte: 3 echte Schritte (Zeilen gehören zusammen), Nährwerte au
 check("🍲 Thermomix mit „Ja, dazu“: Block hängt hinten an den Schritten", r.yes.steps.length === 7 && /^🍲 Nudeln und Brokkoli/.test(r.yes.steps[3]) && /Stufe 1\.$/.test(r.yes.steps[4]), JSON.stringify(r.yes));
 check("🧱 Spalten-Erkennung: zweispaltig → Trennlinie in der Mitte, Fließtext → keine", r.two && r.two.x > 450 && r.two.x < 560 && r.one === null, JSON.stringify({two:r.two, one:r.one}));
 
+// 46) 🧱 Ganzer TikTok-Screenshot: App-Leiste wird nicht zum Namen, Spalten (Marke) → Zutaten links, Schritte rechts, Thermomix-Block extra, Nährwerte aus einer Zeile
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const oldWs=c._ws, oldOcr=c._ocrText, oldPick=c._pickFile; c._ws=async()=>({});
+  const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+  const click=(re)=>[...document.querySelectorAll("[data-elconfirm] button")].find(b=>re.test(b.textContent))?.click();
+  const png="data:image/png;base64,iVBORw0KGgo=";
+  c._pickFile=async()=>{ const t=c._photoTarget; setTimeout(()=>t.ocr(png),10); };
+  const M="‖SPALTE‖";
+  const TXT="LIVE\nSteinfurt Gefolgt Shop Für dich Q\n\nCremige BroKKOl Schinken-Nudeln\n\nI 4 Personen -\n\nca. 25 Minuten ©\n\n"
+   +"400 g kurze Nudeln +\n200 g Kochschinken - 1 Zwiebel\n10 g Öl - 200 g Frischkäse natur\n250 ml Milch +\n\n500 g Brokkoli\n\n%\n\n100 ml Nudelwasser /\n\nSalz, Pfeffer, Muskat\n\n"
+   +"Nudeln und Brokkoli wie oben im Topf garen.\n\nZwiebel halbiert 5 Sek./Stufe 5 zerkleinern,\nherunterschieben. Öl zugeben: 3 Min./120 °C/\nStufe 1.\n\nW Sauce in einer großen Schüssel mit Nudeln,\nBrokkoli und Nudelwasser mischen.\n\nx\n\n"+M+"\n\n"
+   +"3 Nudeln nach Packung garen. Brokkoliröschen\n=” die letzten 5-6 Min. mitkochen. 100 ml\nNudelwasser auffangen.\n\nZwiebel fein würfeln, in Öl glasig dünsten.\nMilch und Frischkäse einrühren, 3-4 Min.\nsanft erhitzen.\n\nGewürfeliten Schinken, Nudeln und Brokkoli\nunterheben. Mit Nudelwasser cremig rühren\nund würzen.\n\n650 kcal - 34 g Eiweiß - 84 g Kohlenhydrate + 19 g Fett\n\nZügig abkühlen und kalt stellen. Im Kühlschrank\nbis 2 Tage. Einfrieren möglich.\n\nTipp: Brokkoli am Vorabend schneiden.\n\ndanisfamilienkueche\n\nHome Freund*innen Posteingang Profil\n";
+  c._ocrText=async()=>TXT;
+  c._openRecipe(null); await wait(150);
+  c._recipeFromPhotos([]); await wait(500);
+  click(/Rezept lesen/); await wait(500); click(/Fertig/); await wait(500);
+  const asked=!!document.querySelector("[data-elconfirm]"); click(/^Nein/); await wait(700);
+  const name=c.$("rName")?.value, ing=c.$("rImportText")?.value||"", steps=(c._draft.stepRows||[]).map(r=>r.t), nut=c._readNut?.();
+  document.querySelectorAll("[data-elov],[data-elconfirm]").forEach(e=>e.remove()); c._view="list"; c._renderAll();
+  // 🧱 Absätze nach Spalten ordnen (Tesseract-Absätze mit Position): links 3, rechts 3, ein Titel über alles
+  const mk=(t,x0,x1,y0)=>({text:t,bbox:{x0,x1,y0,y1:y0+60}});
+  const arranged=elOcrArrange([mk("Titel quer",30,1000,10),mk("A links",40,400,100),mk("B links",40,420,200),mk("C links",40,380,300),mk("D rechts",560,1000,100),mk("E rechts",560,990,200),mk("F rechts",560,980,300)]);
+  const single=elOcrArrange([mk("A",40,900,100),mk("B",40,900,200),mk("C",40,900,300),mk("D",40,900,400)]);
+  c._data.recipes=[]; c._ws=oldWs; c._ocrText=oldOcr; c._pickFile=oldPick; return { asked, name, ing, steps, kcal: nut?.kcal, protein: nut?.protein, arranged, single }; });
+check("🧱 Ganzer Screenshot: App-Leiste wird nicht der Name, Zutaten links sauber, Kopf-Reste (4 Personen, 25 Minuten) weg", r.name === "Cremige BroKKOl Schinken-Nudeln" && r.ing === "400 g kurze Nudeln\n200 g Kochschinken\n1 Zwiebel\n10 g Öl\n200 g Frischkäse natur\n250 ml Milch\n500 g Brokkoli\n100 ml Nudelwasser\nSalz, Pfeffer, Muskat", JSON.stringify(r));
+check("🧱 Schritte nur rechts (3), ohne Thermomix, Aufbewahrung, Tipp, Benutzername und App-Menü; Nährwerte da", r.asked && r.steps.length === 3 && /^Nudeln nach Packung garen\. Brokkoliröschen die letzten/.test(r.steps[0]) && !/=”/.test(r.steps[0]) && r.kcal === 650 && r.protein === 34, JSON.stringify(r));
+check("🧱 Absätze nach Spalten geordnet (Titel, links, Marke, rechts), einspaltig bleibt wie es ist", r.arranged === "Titel quer\n\nA links\n\nB links\n\nC links\n\n‖SPALTE‖\n\nD rechts\n\nE rechts\n\nF rechts" && !r.single.includes("SPALTE"), JSON.stringify({a:r.arranged, s:r.single}));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

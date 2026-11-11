@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.8";
+const EL_VERSION = "2.76.28-beta.9";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -421,6 +421,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🧱 <b>Rezeptfotos von TikTok &amp; Co. – jetzt auch der ganze Screenshot:</b> Die Texterkennung liest Rezeptfotos jetzt mit „automatischen Spalten“ (vorher als ein Textblock quer über beide Spalten, deshalb kamen die Zutaten leer und die Schritte durcheinander). Bei zwei Spalten steht die Spalte mit den Mengen als Zutaten, die andere als Zubereitung. Fehlen lesbare Überschriften (oft stehen sie auf dunklen Bändern), sortiert die Karte nach Inhalt. Die App-Leiste von TikTok („LIVE · Gefolgt · Shop · Für dich“, „Home · Posteingang · Profil“) wird nicht mehr zum Rezeptnamen, „4 Personen“, „ca. 25 Minuten“, Aufbewahrung, Tipp und der Benutzername kommen nicht mehr in die Zutaten oder Schritte.",
+   "🧱 <b>Recipe photos from TikTok &amp; co. – now the whole screenshot too:</b> text recognition now reads recipe photos with “automatic columns” (before, as one text block straight across both columns, so the ingredients came out empty and the steps mixed up). With two columns, the one with the amounts is taken as ingredients and the other as method. If there are no readable headings (they are often on dark ribbons), the card sorts by content. TikTok’s app bar (“LIVE · Following · Shop · For you”, “Home · Inbox · Profile”) no longer becomes the recipe name, and “4 servings”, “about 25 minutes”, storage, tip and the user name no longer end up in the ingredients or steps.", "beta.9"],
   ["🧱 <b>Rezeptkarten aus TikTok &amp; Co. richtig lesen:</b> Hat das Foto zwei Spalten (links Zutaten, rechts Zubereitung), erkennt die Karte das selbst und liest links und rechts getrennt – vorher verschmolzen die Zeilen zu Buchstabensalat und jede Zeile wurde ein Schritt. Überschriften mit Symbol („ZUTATEN“ auf einem Band) werden erkannt, „400 g Nudeln · 500 g Brokkoli“ wird zu zwei Zutaten, zusammengehörige Zeilen bleiben EIN Schritt, und Nährwerte in einer Zeile werden übernommen. Kästen wie „Aufbewahrung“ und „Tipp“ landen nicht mehr in den Zutaten. 🍲 Steht ein Thermomix-Block auf dem Foto, fragt die Karte, ob er mit in die Schritte soll (Standard: nein). · 📄 Das Symbol „Ansehen“ ist ein Blatt (kein Auge), „Drucken &amp; Teilen“ hat das Symbol Blatt mit Pfeil.",
    "🧱 <b>Reading recipe cards from TikTok &amp; co. properly:</b> if the photo has two columns (ingredients on the left, method on the right), the card detects it itself and reads left and right separately – before, the lines merged into letter soup and every line became a step. Headings with a symbol (“ZUTATEN” on a ribbon) are recognised, “400 g pasta · 500 g broccoli” becomes two ingredients, lines that belong together stay ONE step, and nutrition in a single line is taken over. Boxes like “storage” and “tip” no longer end up in the ingredients. 🍲 If there is a Thermomix block on the photo, the card asks whether it should go into the steps (default: no). · 📄 The “View” icon is a sheet (not an eye), “Print &amp; share” has the sheet-with-arrow icon.", "beta.8"],
   ["📷 <b>Ein Foto-Knopf für alles:</b> Im Rezept-Editor und bei „Rezept vorschlagen“ gibt es nur noch „📷 Foto“. Steht kein Text auf dem Bild (z. B. ein Kuchenfoto), wird es gleich das Rezept-Foto – kein Buchstabensalat mehr bei den Zutaten. Steht Text drauf, fragt die Liste immer: „📖 Rezept lesen“ oder „🍽️ Foto vom Gericht“.",
@@ -3874,6 +3876,36 @@ function elOcrLib() {
     document.head.append(sc);
   }));
 }
+// 🧱 Zwei Spalten? Die Texterkennung liefert Absätze mit Position. Stehen mindestens zwei links und zwei rechts nebeneinander (und keiner geht
+// über die Mitte), ist es eine zweispaltige Karte (typisch: Rezeptkarten aus TikTok/Instagram): erst Titel, dann die linke Spalte, die Marke
+// EL_COLBREAK, dann die rechte Spalte. Sonst bleibt die Reihenfolge, wie sie ist. Ergebnis: Text mit Leerzeile zwischen den Absätzen.
+const EL_COLBREAK = "\u2016SPALTE\u2016"; // Marke zwischen linker und rechter Spalte (nur intern)
+function elOcrArrange(paras) {
+  const ps = (paras || []).map((p) => ({ x0: p.bbox?.x0 ?? 0, x1: p.bbox?.x1 ?? 0, y0: p.bbox?.y0 ?? 0, h: Math.max(1, (p.bbox?.y1 ?? 0) - (p.bbox?.y0 ?? 0)), text: String(p.text || "").trim() })).filter((p) => p.text);
+  const plain = () => ps.map((p) => p.text).join("\n\n");
+  if (ps.length < 4) return plain();
+  const minX = Math.min(...ps.map((p) => p.x0)), maxX = Math.max(...ps.map((p) => p.x1)), W = maxX - minX;
+  if (W < 50) return plain();
+  const wide = ps.filter((p) => p.x1 - p.x0 > W * 0.6), rest = ps.filter((p) => p.x1 - p.x0 <= W * 0.6);
+  const mass = (arr) => arr.reduce((s, p) => s + p.h, 0), total = mass(rest);
+  if (mass(wide) > total * 0.35) return plain(); // viele Absätze gehen quer über beide Spalten → so nicht zu trennen
+  let best = null; // 🔍 Trennlinie suchen: links und rechts davon liegt zusammen fast alles, kaum etwas liegt quer drüber
+  for (let g = minX + W * 0.35; g <= minX + W * 0.65; g += W / 100) {
+    const L = rest.filter((p) => p.x1 <= g), R = rest.filter((p) => p.x0 >= g);
+    if (L.length < 2 || R.length < 2) continue;
+    const covered = mass(L) + mass(R);
+    if (mass(L) < total * 0.25 || mass(R) < total * 0.25 || covered < total * 0.8) continue;
+    if (!best || covered > best.covered + 1) best = { covered, gs: [g] };
+    else if (Math.abs(covered - best.covered) <= 1) best.gs.push(g);
+  }
+  if (!best) return plain();
+  const g = best.gs[Math.floor(best.gs.length / 2)];
+  const left = rest.filter((p) => p.x1 <= g), right = rest.filter((p) => p.x0 >= g), cross = rest.filter((p) => p.x1 > g && p.x0 < g);
+  const top = Math.min(...left.concat(right).map((p) => p.y0)), by = (a2, b2) => a2.y0 - b2.y0;
+  const head = wide.concat(cross).filter((p) => p.y0 < top).sort(by), foot = wide.concat(cross).filter((p) => p.y0 >= top).sort(by);
+  return [...head, ...left.sort(by)].map((p) => p.text).join("\n\n") + "\n\n" + EL_COLBREAK + "\n\n" + [...right.sort(by), ...foot].map((p) => p.text).join("\n\n");
+}
+window.elOcrArrange = elOcrArrange; // (auch für die Tests)
 // 🧱 Zwei Spalten erkennen: aus den Wort-Rahmen der Texterkennung. Gibt es eine senkrechte Linie, an der in den meisten Zeilen
 // links UND rechts Wörter stehen, aber keines die Linie berührt, ist es eine zweispaltige Karte (typisch: Rezeptkarten aus TikTok/Instagram).
 // Ergebnis: { x: Trennlinie, y: Oberkante der ersten zweispaltigen Zeile } oder null. Unsichere Wörter (< 60 %) zählen nicht mit.
@@ -3906,7 +3938,8 @@ function elOcrCrop(img, x, y, w, h) {
   c.getContext("2d").drawImage(img, x, y, w, h, 0, 0, c.width, c.height);
   return c.toDataURL("image/png");
 }
-async function elOcrRead(dataUrl, onProgress) {
+// 🔎 psm: Seitenaufbau der Texterkennung. Standard „6“ (ein Textblock, gut für Zettel/Bons), „3“ = automatisch mit Spalten (Rezeptseiten, Rezeptkarten)
+async function elOcrRead(dataUrl, onProgress, psm) {
   const T = await elOcrLib();
   elOcr.log = onProgress || null;
   clearTimeout(elOcr.timer);
@@ -3919,25 +3952,30 @@ async function elOcrRead(dataUrl, onProgress) {
     });
   }
   try {
+    await elOcr.worker.setParameters({ tessedit_pageseg_mode: String(psm || 6) });
+    if (!psm) { const { data } = await elOcr.worker.recognize(dataUrl); return String(data?.text || ""); }
     const { data } = await elOcr.worker.recognize(dataUrl, {}, { blocks: true });
-    const text = String(data?.text || "");
-    // 🧱 Zweispaltige Karte? Dann oben (Titel) wie gelesen, darunter links und rechts getrennt – sonst verschmelzen die Zeilen beider Spalten
+    const paras = [];
+    for (const b of data?.blocks || []) for (const p of b.paragraphs || []) paras.push(p);
+    const arranged = elOcrArrange(paras);
+    if (arranged.includes(EL_COLBREAK)) return arranged;
+    // 🧱 Ausweichweg: die Absätze waren quer über beide Spalten, aber die Wörter zeigen zwei Spalten → links und rechts getrennt lesen
     try {
       const lines = [];
-      for (const b of data?.blocks || []) for (const p of b.paragraphs || []) for (const l of p.lines || []) lines.push(l);
+      for (const p of paras) for (const l of p.lines || []) lines.push(l);
       const img = await elLoadImg(dataUrl), sp = elOcrSplit(lines, img.naturalWidth);
       if (sp) {
         const y0 = Math.max(0, sp.y - 6), head = lines.filter((l) => l.bbox && l.bbox.y1 <= sp.y + 2).map((l) => String(l.text || "").trim()).filter(Boolean).join("\n");
         await elOcr.worker.setParameters({ tessedit_pageseg_mode: "6" }); // ein Block pro Spalte
         const left = await elOcr.worker.recognize(elOcrCrop(img, 0, y0, sp.x, img.naturalHeight - y0));
         const right = await elOcr.worker.recognize(elOcrCrop(img, sp.x, y0, img.naturalWidth - sp.x, img.naturalHeight - y0));
-        await elOcr.worker.setParameters({ tessedit_pageseg_mode: "3" });
-        const both = String(left.data?.text || "") + "\n" + String(right.data?.text || "");
-        if (both.replace(/\s/g, "").length > 20) return (head ? head + "\n" : "") + both;
+        const lt = String(left.data?.text || ""), rt = String(right.data?.text || "");
+        if ((lt + rt).replace(/\s/g, "").length > 20) return (head ? head + "\n\n" : "") + lt + "\n" + EL_COLBREAK + "\n" + rt;
       }
-    } catch (_) { try { await elOcr.worker.setParameters({ tessedit_pageseg_mode: "3" }); } catch (e) { /* egal */ } }
-    return text;
+    } catch (_) { /* dann der normale Text */ }
+    return arranged.replace(/\s/g, "").length > 10 ? arranged : String(data?.text || "");
   } finally {
+    try { await elOcr.worker?.setParameters({ tessedit_pageseg_mode: "6" }); } catch (_) { /* egal */ }
     elOcr.timer = setTimeout(() => { elOcr.worker?.terminate?.().catch?.(() => {}); elOcr.worker = null; }, 120000); // Speicher wieder freigeben
   }
 }
@@ -4083,9 +4121,12 @@ function elShrinkData(data, max = 900, q = 0.8) {
 // 🍳 Rezept-Seite lesen: Name, Zutaten und Schritte trennen (an den Überschriften „Zutaten“ / „Zubereitung“)
 // 🧹 Unwichtiges aus Foto-Text (z. B. Screenshot von TikTok, Instagram, YouTube): Knöpfe, Zähler, @Namen, #Tags, Uhrzeit, Akku, Links
 const EL_OCR_NOISE = /^(?:folgen|follow|gefällt mir|like[sd]?|teilen|share|kommentar(?:e|en)?|comments?|speichern|gespeichert|save[d]?|antworten|reply|mehr anzeigen|see more|more|weniger|original(?:ton|-?sound)|sound|musik|music|abonnieren|subscribe|für dich|for you|live|entdecken|discover|startseite|home|posteingang|inbox|profil|profile|freunde|friends|übersetzung anzeigen|see translation|gesponsert|sponsored|anzeige|werbung|link in bio|rezept unten|recipe below|repost|duett|duet|stitch|remix|vor \d+ (?:std|min|tag(?:en)?|wochen?)\.?|\d+\s*(?:std|min|h|d|w)\.?)$/i;
+const EL_OCR_UI = new Set(["live", "gefolgt", "folge", "folgen", "shop", "für", "dich", "for", "you", "home", "freund", "freunde", "innen", "freundinnen", "posteingang", "profil", "entdecken", "community", "suchen", "q", "following", "inbox", "profile", "friends", "reels", "mehr", "abonnements", "videos"]);
 function elOcrNoise(l) {
   const t = String(l || "").trim();
   if (t.length < 2) return true;
+  const toks = t.toLowerCase().split(/[^a-zäöüß]+/).filter(Boolean); // 📱 App-Leiste oben/unten („LIVE · Steinfurt · Gefolgt · Shop · Für dich“, „Home · Freund*innen · Posteingang · Profil“)
+  if (toks.length && toks.length <= 8 && toks.filter((w) => EL_OCR_UI.has(w)).length >= Math.max(2, toks.length * 0.5)) return true;
   if (!/[\p{L}]{2}/u.test(t)) return !/^\d+\s*(?:g|kg|ml|l|el|tl|stk|stück|prise)\b/i.test(t); // nur Zahlen/Zeichen/Emojis (12,3K · 4:21 · 87 %)
   if (EL_OCR_NOISE.test(t.replace(/[^\p{L}\p{N}\s.-]/gu, "").trim())) return true;
   if (/^[@#]\S+$/.test(t) || /^(?:[@#]\S+\s*){2,}$/.test(t)) return true; // @kochprofi, #rezept #lecker
@@ -4137,19 +4178,32 @@ function elOcrNutrition(lines) {
   return { nutrition: null, rest: lines.filter((l) => !(head && /^\W*(nährwerte|naehrwerte|nährwertangaben|nutrition)\b/i.test(l.trim()))) };
 }
 
-// 🔖 Ist die Zeile eine Überschrift? „ZUTATEN“ auch mit Symbol davor („{3 ZUTATEN“), „ZUBEREITUNG · NORMAL“, „So geht's:“.
-// Ergebnis: "ing" (Zutaten) · "steps" (Zubereitung) · "tm" (Thermomix) · "other" (Nährwerte, Aufbewahrung, Tipp … – wird nicht übernommen) · ""
+// 🔖 Ist die Zeile eine Überschrift? „ZUTATEN“ auch mit Symbol davor („{3 ZUTATEN“) oder schlecht gelesen („iD _ZUTATE! ZUBEREITUNG“), „So geht's:“.
+// Ergebnis: "ing" (Zutaten) · "steps" (Zubereitung) · "ingst" (beides in einer Zeile) · "tm" (Thermomix) · "other" (Nährwerte, Aufbewahrung, Tipp …) · ""
 function elOcrHead(l) {
   const raw = String(l || "").trim().replace(/\s+/g, " ");
+  if (raw === EL_COLBREAK) return "col";
   const t = raw.replace(/^[^A-Za-zÄÖÜäöü]+/, "");
   if (/^zutaten\b/i.test(t)) return "ing";
   if (/^(zubereitung|zubereiten|anleitung|so geht['’]?s|arbeitsschritte)\b/i.test(t)) return "steps";
   if (raw.length > 42) return "";
+  const hasIng = /z[uü]tat/i.test(raw), hasSt = /zuberei|anleitu/i.test(raw);
+  if (hasIng && hasSt) return "ingst";
+  if (hasIng) return "ing";
+  if (hasSt) return "steps";
   if (/^(thermomix|tm\s?[3456]\b|bimby)/i.test(t)) return "tm";
-  if (/^(tipps?|notizen?|hinweise?|aufbewahrung|nährwerte|naehrwerte)\b/i.test(t) && t.split(" ").length <= 5) return "other";
-  const letters = t.replace(/[^A-Za-zÄÖÜäöüß]/g, "");
-  if (letters.length >= 6 && t.split(" ").length >= 2 && t.split(" ").length <= 6 && letters.replace(/[^A-ZÄÖÜ]/g, "").length / letters.length >= 0.75 && !/\d/.test(t.slice(0, 3))) return "other"; // VERSALIEN-Band
+  if (/^(tipps?|notizen?|hinweise?|aufbewahrung|meal prep|nährwerte|naehrwerte)\b/i.test(t) && t.split(" ").length <= 6) return "other";
   return "";
+}
+// 🗑️ Zeile ohne brauchbaren Text (Rest vom Foto: „\\ -- N 3800 Bd ® x“) oder nur Angaben wie „4 Personen“, „ca. 25 Minuten“?
+function elOcrJunk(l) {
+  const s = String(l || ""), letters = s.replace(/[^A-Za-zÄÖÜäöüß]/g, "").length;
+  if (/^\W*[A-Za-z]?\s*\d+\s*(?:personen|portionen)\b|^\W*(?:ca\.?\s*)?\d+\s*(?:min|minuten|std)\b/i.test(s)) return true;
+  if (/^\W*\d+(?:[.,]\d+)?\s*(?:g|kg|ml|l|el|tl|stk|stück|prise)\b/i.test(s)) return false; // „200 g …“ ist immer eine Zutat
+  if (letters < 3) return true;
+  if (/^\s*[a-zäöüß]{12,}\s*$/.test(s)) return true; // Benutzername/Wasserzeichen („danisfamilienkueche“)
+  const words = (s.match(/[A-Za-zÄÖÜäöüß]{3,}/g) || []).length, toks = s.trim().split(/\s+/).length;
+  return words / toks < 0.4 && letters < 14;
 }
 // 👨‍🍳 Schritte zusammenfügen: Beginnt eine Zeile mit „1.“, „(1)“, „[2]“ oder einem Zeichen wie ©/®/@ (so liest die Texterkennung die Zahlen im Kreis),
 // ist es ein neuer Schritt; Zeilen ohne Marke gehören zum Schritt davor. Gibt es keine Marken: an Leerzeilen bzw. Satzenden trennen.
@@ -4169,29 +4223,88 @@ function elOcrSteps(lines) {
   // 📱 Satzende ohne Lookbehind erkennen, sonst streikt iOS < 16.4
   return (paras.length > 1 ? paras : body.replace(/([.!?])\s+(?=[A-ZÄÖÜ])/g, "$1\u0000").split("\u0000").map((x) => x.replace(/\s*\n\s*/g, " ").trim())).filter(Boolean);
 }
+// 🥕 Zutaten aufräumen: „400 g Nudeln · 500 g Brokkoli“ in zwei Zeilen, Reste weg, „250 mi“ = „250 ml“
+function elOcrIngLines(lines) {
+  return lines.filter((l) => l.trim() && !elOcrJunk(l)).flatMap((l) => l.split(/\s+[·•+\-–]\s+(?=\d)/))
+    .map((l) => l.replace(/^[\s\-–—•*·|]+/, "").replace(/\s+[^\p{L}\p{N})]{1,2}$/u, "").replace(/^(\d+(?:[.,]\d+)?)\s*mi\b/, "$1 ml").trim()).filter((l) => l.length > 1);
+}
+const EL_OCR_AMOUNT = /^\W*(?:\d+[.,/]?\d*|½|¼|¾)\s*(?:g|kg|ml|l|el|tl|stk\.?|stück|prise|bund|dose|becher|pck\.?|packung|päckchen|zehe[n]?|scheibe[n]?|tasse[n]?|cup|tbsp|tsp|oz)\b/i;
+const EL_OCR_STORE = /kühlschrank|einfrier|aufbewahr|meal prep|haltbar|^\W*tipps?\b/i;
+const EL_OCR_TM = /\bstufe\s*\d|linkslauf|\bsek\.|\bthermomix|\d+\s*min\.?\s*\/\s*\d+\s*°/i;
+// 🧱 Zweispaltige Karte (Marke zwischen linker und rechter Spalte): die Spalte mit den Mengen ist die Zutaten-Spalte, die andere die Zubereitung.
+// In der Zutaten-Spalte sind Absätze nach den Zutaten ein eigener Block (z. B. „Thermomix“). Überschriften werden nicht gebraucht – sie stehen oft auf dunklen Bändern.
+function elOcrByColumns(lines, nameLine) {
+  const at = lines.findIndex((l) => l.trim() === EL_COLBREAK), nm = (nameLine || "\u0000").trim();
+  // Abschnitte einer Spalte: neue Leerzeile oder Überschrift = neuer Abschnitt; Überschrift sagt, was folgt (ing/steps/tm/other), sonst entscheidet der Inhalt
+  const segs = (arr) => {
+    const out = []; let cur = null, kind = "", skip = false;
+    const open = () => { cur = { kind, lines: [] }; out.push(cur); };
+    out.titleAt = -1;
+    for (const l of arr) {
+      const hk = l.trim() ? elOcrHead(l) : "";
+      if (!l.trim()) { cur = null; skip = false; continue; }
+      if (hk) { kind = hk === "ingst" ? "ing" : hk; cur = null; skip = false; continue; }
+      if (l.trim() === nm) { cur = null; skip = true; out.titleAt = out.length; continue; } // Titel: er und der Rest seines Absatzes (Personen, Dauer …) gehören zum Kopf
+      if (skip) continue;
+      if (!cur) open();
+      cur.lines.push(l);
+    }
+    const res = out.filter((s) => s.lines.length);
+    res.titleAt = out.titleAt < 0 ? -1 : out.slice(0, out.titleAt).filter((s) => s.lines.length).length;
+    return res;
+  };
+  const isIng = (s) => s.lines.filter((l) => EL_OCR_AMOUNT.test(l) || (l.trim().split(/\s+/).length <= 4 && !/[.!?]$/.test(l.trim()))).length / s.lines.length >= 0.6 && !EL_OCR_TM.test(s.lines.join(" "));
+  const cut = (arr, upTo) => (upTo > 0 ? arr.slice(upTo) : arr);
+  let Ls = segs(lines.slice(0, at)), Rs = segs(lines.slice(at + 1));
+  // 🧹 alles vor und mit dem Titel (Kopf: Wochentag, Personen, Dauer …) weg
+  if (Ls.titleAt >= 0) Ls = Ls.slice(Ls.titleAt);
+  const rate = (ss) => ss.filter((s) => s.kind === "ing" || (s.kind === "" && isIng(s))).length / Math.max(1, ss.length);
+  if (rate(Rs) > rate(Ls)) [Ls, Rs] = [Rs, Ls]; // Zutaten rechts, Zubereitung links
+  const ing = [], tm = [], st = [];
+  let afterIng = false;
+  for (const s of Ls) {
+    if (s.kind === "other" || EL_OCR_STORE.test(s.lines.join(" "))) continue;
+    if (s.kind === "ing" || (s.kind === "" && isIng(s) && !afterIng)) { ing.push(...s.lines); continue; }
+    afterIng = true;
+    (s.kind === "steps" ? st : tm).push(...s.lines, "");
+  }
+  for (const s of Rs) {
+    if (s.kind === "other" || EL_OCR_STORE.test(s.lines.join(" "))) continue;
+    if (s.kind === "tm") tm.push(...s.lines, ""); else st.push(...s.lines, "");
+  }
+  const tidy = (arr) => arr.filter((l) => !l.trim() || (!elOcrJunk(l) && l.trim().split(/\s+/).length > 1)).map((l) => l.replace(/^[1-9A-Za-z]\s+(?=[A-ZÄÖÜ][a-zäöüß]{3,})/, "").replace(/^[^\p{L}\p{N}\s@®©●•▪◆▶➤(\[{]{1,3}\s+/u, "").replace(/\s[^\p{L}\p{N}\s]{1,3}(?=\s|$)/gu, ""));
+  const tmHas = EL_OCR_TM.test(tm.join(" "));
+  const tmArr = elOcrSteps(tidy(tm)), stArr = elOcrSteps(tidy(st));
+  return { ingLines: ing, steps: tmHas ? stArr : stArr.concat(tmArr), thermomix: tmHas ? tmArr : [] };
+}
 function elOcrRecipeParts(text) {
   const raw = String(text || "").replace(/\r/g, "");
-  const nutCut = elOcrNutrition(raw.split("\n").filter((l) => !elOcrNoise(l))); // 🧹 Social-Media-Kram raus, 🧮 Nährwerte heraus
+  const src = raw.split("\n").map((l) => (l.trim() === EL_COLBREAK ? l : l.trim() && elOcrNoise(l) ? "" : l)); // 🧹 Social-Media-Kram raus (Leerzeilen bleiben als Absatzgrenze)
+  const nutCut = elOcrNutrition(src); // 🧮 Nährwerte heraus
   const lines = nutCut.rest;
   const kinds = lines.map(elOcrHead);
+  const letterCount = (l) => l.replace(/[^A-Za-zÄÖÜäöüß]/g, "").length;
+  const wordish = (l) => { const ws = l.match(/[A-Za-zÄÖÜäöüß]+/g) || [], good = ws.filter((w) => w.length >= 4).join("").length; return letterCount(l) >= 6 && good / Math.max(1, letterCount(l)) >= 0.7 && l.replace(/[^A-ZÄÖÜ]/g, "").length < letterCount(l) * 0.7 && !/\d{2}/.test(l); };
+  const nameLine = lines.find((l, n) => !kinds[n] && wordish(l)) || lines.find((l, n) => !kinds[n] && l.trim()) || "";
+  const name = nameLine.trim().replace(/^[^A-Za-zÄÖÜäöü0-9]+|[^A-Za-zÄÖÜäöü0-9)!?.]+$/g, "");
+  const fin = (ingLines, stepArr, tm) => ({ name, ingredients: elOcrIngLines(ingLines.filter((l) => l.trim() !== nameLine.trim())).join("\n"), steps: stepArr.join("\n"), nutrition: nutCut.nutrition, thermomix: (tm || []).join("\n") });
+  if (lines.some((l) => l.trim() === EL_COLBREAK)) { // 🧱 zweispaltig
+    const c = elOcrByColumns(lines, nameLine);
+    return fin(c.ingLines, c.steps, c.thermomix);
+  }
+  const keepLines = lines.filter((l, n) => l.trim() && !kinds[n]);
   // 📦 Kästen: jeder endet an der nächsten Überschrift (Zutaten, Zubereitung, Thermomix, Nährwerte, Aufbewahrung …)
   const blocks = [];
   let from = 0, kind = "";
-  lines.forEach((l, n) => { if (kinds[n]) { blocks.push({ kind, lines: lines.slice(from, n) }); kind = kinds[n]; from = n + 1; } });
-  blocks.push({ kind, lines: lines.slice(from) });
-  const first = (k) => blocks.find((b) => b.kind === k);
+  lines.forEach((l, n) => { if (kinds[n]) { blocks.push({ kind, lines: lines.slice(from, n).filter((x) => x.trim()) }); kind = kinds[n] === "ingst" ? "ing" : kinds[n]; from = n + 1; } });
+  blocks.push({ kind, lines: lines.slice(from).filter((x) => x.trim()) });
+  const first = (k) => blocks.find((b) => b.kind === k && b.lines.length);
   const ingB = first("ing"), stB = first("steps"), tmB = first("tm");
-  const letterCount = (l) => l.replace(/[^A-Za-zÄÖÜäöüß]/g, "").length;
-  const nameLine = lines.find((l, n) => !kinds[n] && letterCount(l) >= 6 && l.replace(/[^A-ZÄÖÜ]/g, "").length < letterCount(l) * 0.7) // Titel: Groß-/Kleinschrift gemischt
-    || lines.find((l, n) => l.trim() && !kinds[n]) || "";
-  const name = nameLine.trim().replace(/^[^A-Za-zÄÖÜäöü0-9]+|[^A-Za-zÄÖÜäöü0-9)!?.]+$/g, "");
-  const keep = (l) => l.trim() && l.trim() !== nameLine.trim();
   let ingLines = [], stepArr = [];
-  if (ingB) ingLines = ingB.lines.filter((l) => l.trim());
+  if (ingB) ingLines = ingB.lines;
   if (stB) stepArr = elOcrSteps(stB.lines);
   if (!ingB && !stB) { // 🤷 keine Überschriften (typisch Screenshot): jede Zeile selbst einordnen
-    const rest = lines.filter((l, n) => l.trim() && !kinds[n]).slice(1), steps = [];
-    ingLines = [];
+    const rest = keepLines.slice(1), steps = [];
     for (const l of rest) (elOcrIsStep(l) ? steps : ingLines).push(l);
     stepArr = steps.map((l) => l.replace(/^\s*\d+\s*[.)]\s*/, "").trim());
   } else if (!stB && ingB) { // nur „Zutaten“ als Überschrift: lange Sätze darin sind Schritte
@@ -4200,9 +4313,7 @@ function elOcrRecipeParts(text) {
     ingLines = kp;
     if (steps.length) stepArr = steps.map((l) => l.replace(/^\s*\d+\s*[.)]\s*/, "").trim());
   }
-  // 🥕 „400 g Nudeln · 500 g Brokkoli“ (zwei Zutaten in einer Zeile) auseinandernehmen
-  ingLines = ingLines.filter(keep).flatMap((l) => l.split(/\s+[·•+\-–]\s+(?=\d)/)).map((l) => l.replace(/^[\s\-–—•*·|]+/, "").replace(/\s+[^\p{L}\p{N})]{1,2}$/u, "").replace(/^(\d+(?:[.,]\d+)?)\s*mi\b/, "$1 ml").trim()); // „250 mi“ = 250 ml (Texterkennung)
-  return { name, ingredients: ingLines.filter((l) => l.length > 1).join("\n"), steps: stepArr.join("\n"), nutrition: nutCut.nutrition, thermomix: tmB ? elOcrSteps(tmB.lines).join("\n") : "" };
+  return fin(ingLines, stepArr, tmB ? elOcrSteps(tmB.lines) : []);
 }
 
 // 🧮 Nährwerte pro Portion als kurze Zeile: „898 kcal · Eiweiß 44,8 g · Fett 55,2 g · KH 46,7 g“
@@ -10875,7 +10986,7 @@ ${(() => {
     this._pickFile("photoFile", heading);
   }
 
-  async _ocrText(data, title) {
+  async _ocrText(data, title, psm = 0) { // psm 3 = Rezeptseiten/-karten mit Spalten
     const ov = makeOverlay();
     ov.innerHTML = `<div style="max-width:340px;width:100%;text-align:center"><div style="font:600 18px Roboto,sans-serif;margin-bottom:10px">${esc(elT(title))}</div>
       <div class="ocrstat" style="color:#ccc;margin-bottom:10px">${esc(elT("Einen Moment …"))}</div>
@@ -10889,7 +11000,7 @@ ${(() => {
         if (!ov.isConnected) return;
         stat.textContent = elT(names[m.status] || "Einen Moment …") + (m.status === "recognizing text" ? ` ${Math.round((m.progress || 0) * 100)} %` : "");
         bar.style.width = `${Math.max(3, Math.round((m.progress || 0) * 100))}%`;
-      });
+      }, psm);
     } catch (err) {
       this._toast("🔎 Die Texterkennung hat nicht geklappt 🙈");
       this._hass?.callWS?.({ type: "einkaufsliste/errors/report", where: "Karte: Text aus Foto", message: String(err?.message || err).slice(0, 380) }).catch(() => {});
@@ -10906,7 +11017,7 @@ ${(() => {
   _recipeFromPhotos(pages, apply = null, onDish = null) { // apply(parts, pages) = eigenes Ziel für „Rezept lesen“, sonst der Editor
     this._photoTarget = { ocr: async (data) => {
       if (!pages.length) {
-        const first = await this._ocrText(data, "🔎 Foto wird angeschaut");
+        const first = await this._ocrText(data, "🔎 Foto wird angeschaut", 3);
         if (first == null) return; // Texterkennung ging schief – Meldung kam schon
         const read = elOcrHasText(first) && await elConfirm(EL_LANG === "de"
           ? "Auf dem Foto steht Text. Was ist das?"
@@ -10923,7 +11034,7 @@ ${(() => {
       if (more) { this._recipeFromPhotos(pages, apply, onDish); return; }
       let text = "";
       for (let i = 0; i < pages.length; i++) {
-        const t = i === 0 && pages.first != null ? pages.first : await this._ocrText(pages[i], pages.length > 1 ? (EL_LANG === "de" ? `🔎 Seite ${i + 1} von ${pages.length} wird gelesen` : `🔎 Reading page ${i + 1} of ${pages.length}`) : "🔎 Rezept wird gelesen");
+        const t = i === 0 && pages.first != null ? pages.first : await this._ocrText(pages[i], pages.length > 1 ? (EL_LANG === "de" ? `🔎 Seite ${i + 1} von ${pages.length} wird gelesen` : `🔎 Reading page ${i + 1} of ${pages.length}`) : "🔎 Rezept wird gelesen", 3);
         if (t == null) return; // Texterkennung ging schief – Meldung kam schon
         text += t + "\n";
       }
