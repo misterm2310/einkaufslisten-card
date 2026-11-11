@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.7";
+const EL_VERSION = "2.76.28-beta.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -421,10 +421,12 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🧱 <b>Rezeptkarten aus TikTok &amp; Co. richtig lesen:</b> Hat das Foto zwei Spalten (links Zutaten, rechts Zubereitung), erkennt die Karte das selbst und liest links und rechts getrennt – vorher verschmolzen die Zeilen zu Buchstabensalat und jede Zeile wurde ein Schritt. Überschriften mit Symbol („ZUTATEN“ auf einem Band) werden erkannt, „400 g Nudeln · 500 g Brokkoli“ wird zu zwei Zutaten, zusammengehörige Zeilen bleiben EIN Schritt, und Nährwerte in einer Zeile werden übernommen. Kästen wie „Aufbewahrung“ und „Tipp“ landen nicht mehr in den Zutaten. 🍲 Steht ein Thermomix-Block auf dem Foto, fragt die Karte, ob er mit in die Schritte soll (Standard: nein). · 📄 Das Symbol „Ansehen“ ist ein Blatt (kein Auge), „Drucken &amp; Teilen“ hat das Symbol Blatt mit Pfeil.",
+   "🧱 <b>Reading recipe cards from TikTok &amp; co. properly:</b> if the photo has two columns (ingredients on the left, method on the right), the card detects it itself and reads left and right separately – before, the lines merged into letter soup and every line became a step. Headings with a symbol (“ZUTATEN” on a ribbon) are recognised, “400 g pasta · 500 g broccoli” becomes two ingredients, lines that belong together stay ONE step, and nutrition in a single line is taken over. Boxes like “storage” and “tip” no longer end up in the ingredients. 🍲 If there is a Thermomix block on the photo, the card asks whether it should go into the steps (default: no). · 📄 The “View” icon is a sheet (not an eye), “Print &amp; share” has the sheet-with-arrow icon.", "beta.8"],
   ["📷 <b>Ein Foto-Knopf für alles:</b> Im Rezept-Editor und bei „Rezept vorschlagen“ gibt es nur noch „📷 Foto“. Steht kein Text auf dem Bild (z. B. ein Kuchenfoto), wird es gleich das Rezept-Foto – kein Buchstabensalat mehr bei den Zutaten. Steht Text drauf, fragt die Liste immer: „📖 Rezept lesen“ oder „🍽️ Foto vom Gericht“.",
    "📷 <b>One photo button for everything:</b> in the recipe editor and in “Suggest a recipe” there is only “📷 Photo” now. If the image has no text (e.g. a cake photo), it simply becomes the recipe photo – no more letter soup in the ingredients. If there is text, the list always asks: “📖 Read recipe” or “🍽️ Photo of the dish”.", "beta.7"],
-  ["👁️ <b>Rezept ansehen &amp; schön drucken:</b> Unter jedem Rezept steht als erstes Symbol „Ansehen“ – das ganze Rezept auf einer Seite, genau wie es gedruckt wird: Foto, Portionen, Dauer, Nährwerte, Quelle, Zutaten in zwei Spalten, nummerierte Schritte mit Backofen-Angaben. Der Knopf „Teilen“ heißt jetzt „Drucken &amp; Teilen“ (Drucker-Symbol), „Drucken / als PDF“ steht vorn. Das Blatt passt von selbst auf eine A4-Seite (die Schrift wird bei langen Rezepten kleiner, bis 60 %).",
-   "👁️ <b>View &amp; nicely print a recipe:</b> under every recipe the first icon is “View” – the whole recipe on one page, exactly as it gets printed: photo, servings, time, nutrition, source, ingredients in two columns, numbered steps with oven details. The “Share” button is now “Print &amp; share” (printer icon), “Print / save as PDF” comes first. The sheet fits one A4 page by itself (long recipes get a smaller font, down to 60 %).", "beta.7"],
+  ["📄 <b>Rezept ansehen &amp; schön drucken:</b> Unter jedem Rezept steht als erstes Symbol „Ansehen“ – das ganze Rezept auf einer Seite, genau wie es gedruckt wird: Foto, Portionen, Dauer, Nährwerte, Quelle, Zutaten in zwei Spalten, nummerierte Schritte mit Backofen-Angaben. Der Knopf „Teilen“ heißt jetzt „Drucken &amp; Teilen“ (Blatt mit Pfeil), „Drucken / als PDF“ steht vorn. Das Blatt passt von selbst auf eine A4-Seite (die Schrift wird bei langen Rezepten kleiner, bis 60 %).",
+   "📄 <b>View &amp; nicely print a recipe:</b> under every recipe the first icon is “View” – the whole recipe on one page, exactly as it gets printed: photo, servings, time, nutrition, source, ingredients in two columns, numbered steps with oven details. The “Share” button is now “Print &amp; share” (sheet with arrow), “Print / save as PDF” comes first. The sheet fits one A4 page by itself (long recipes get a smaller font, down to 60 %).", "beta.7"],
   ["🔀 <b>Reihenfolge bleibt jetzt wirklich:</b> Zutaten werden auch beim Speichern und nach einem Neustart nicht mehr A–Z sortiert (vorher nur im Entwurf). Schon gespeicherte Rezepte bleiben sortiert – einmal neu importieren. · ✂️ <b>Foto zuschneiden repariert:</b> Ist die Karte schmaler als das Browserfenster, war der Rahmen größer als das Bild und der grüne Punkt außer Sicht – jetzt passt der Rahmen genau aufs Bild (betraf jedes Bildformat, nicht nur .webp).",
    "🔀 <b>Order really stays now:</b> ingredients are no longer sorted A–Z when saving or after a restart (before it only worked in the draft). Recipes already saved stay sorted – import them once more. · ✂️ <b>Photo cropping fixed:</b> when the card was narrower than the browser window, the frame was bigger than the image and the green dot out of sight – now the frame fits the image exactly (any image format, not just .webp).", "beta.6"],
   ["🧮 <b>Nährwerte zum Einklappen:</b> Im Rezept-Editor sind die Nährwerte zugeklappt, die Zeile zeigt die Kurzfassung (z. B. „898 kcal · Eiweiß 44,8 g …“) – antippen klappt auf. · 🤖 <b>Nährwerte schätzen:</b> Ist KI-Kochen an, rechnet dein KI-Assistent die Nährwerte pro Portion grob aus den Zutaten aus (≈, bitte kurz prüfen).",
@@ -3872,6 +3874,38 @@ function elOcrLib() {
     document.head.append(sc);
   }));
 }
+// 🧱 Zwei Spalten erkennen: aus den Wort-Rahmen der Texterkennung. Gibt es eine senkrechte Linie, an der in den meisten Zeilen
+// links UND rechts Wörter stehen, aber keines die Linie berührt, ist es eine zweispaltige Karte (typisch: Rezeptkarten aus TikTok/Instagram).
+// Ergebnis: { x: Trennlinie, y: Oberkante der ersten zweispaltigen Zeile } oder null. Unsichere Wörter (< 60 %) zählen nicht mit.
+function elOcrSplit(lines, W) {
+  const rows = (lines || []).map((ln) => ({ y: ln.bbox ? ln.bbox.y0 : 0, ws: (ln.words || []).filter((w) => w.bbox && String(w.text || "").trim() && (w.confidence == null || w.confidence >= 60)).map((w) => w.bbox) })).filter((r) => r.ws.length);
+  if (rows.length < 6) return null;
+  const m = W * 0.012;
+  let best = null;
+  for (let x = Math.round(W * 0.3); x <= Math.round(W * 0.7); x += Math.max(2, Math.round(W / 200))) {
+    let clean = 0, bad = 0, top = Infinity;
+    for (const r of rows) {
+      const hasL = r.ws.some((b) => b.x1 <= x - m), hasR = r.ws.some((b) => b.x0 >= x + m), touch = r.ws.some((b) => b.x0 < x + m && b.x1 > x - m);
+      if (hasL && hasR) { if (touch) bad++; else { clean++; top = Math.min(top, r.y); } }
+      else if (touch && r.ws.length >= 4) bad++; // lange Zeile mitten durch
+    }
+    if (clean >= 6 && clean >= rows.length * 0.45 && bad <= clean * 0.3) {
+      const score = clean - bad * 2;
+      if (!best || score > best.score) best = { score, xs: [x], y: top };
+      else if (score === best.score) best.xs.push(x);
+    }
+  }
+  return best ? { x: Math.round(best.xs[Math.floor(best.xs.length / 2)]), y: best.y } : null;
+}
+function elLoadImg(src) { return new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => fail(new Error("Bild")); i.src = src; }); }
+window.elOcrSplit = elOcrSplit; // (auch für die Tests)
+// ✂️ Ausschnitt eines Fotos als Data-URL (für die getrennte Spalten-Erkennung)
+function elOcrCrop(img, x, y, w, h) {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h));
+  c.getContext("2d").drawImage(img, x, y, w, h, 0, 0, c.width, c.height);
+  return c.toDataURL("image/png");
+}
 async function elOcrRead(dataUrl, onProgress) {
   const T = await elOcrLib();
   elOcr.log = onProgress || null;
@@ -3885,8 +3919,24 @@ async function elOcrRead(dataUrl, onProgress) {
     });
   }
   try {
-    const { data } = await elOcr.worker.recognize(dataUrl);
-    return String(data?.text || "");
+    const { data } = await elOcr.worker.recognize(dataUrl, {}, { blocks: true });
+    const text = String(data?.text || "");
+    // 🧱 Zweispaltige Karte? Dann oben (Titel) wie gelesen, darunter links und rechts getrennt – sonst verschmelzen die Zeilen beider Spalten
+    try {
+      const lines = [];
+      for (const b of data?.blocks || []) for (const p of b.paragraphs || []) for (const l of p.lines || []) lines.push(l);
+      const img = await elLoadImg(dataUrl), sp = elOcrSplit(lines, img.naturalWidth);
+      if (sp) {
+        const y0 = Math.max(0, sp.y - 6), head = lines.filter((l) => l.bbox && l.bbox.y1 <= sp.y + 2).map((l) => String(l.text || "").trim()).filter(Boolean).join("\n");
+        await elOcr.worker.setParameters({ tessedit_pageseg_mode: "6" }); // ein Block pro Spalte
+        const left = await elOcr.worker.recognize(elOcrCrop(img, 0, y0, sp.x, img.naturalHeight - y0));
+        const right = await elOcr.worker.recognize(elOcrCrop(img, sp.x, y0, img.naturalWidth - sp.x, img.naturalHeight - y0));
+        await elOcr.worker.setParameters({ tessedit_pageseg_mode: "3" });
+        const both = String(left.data?.text || "") + "\n" + String(right.data?.text || "");
+        if (both.replace(/\s/g, "").length > 20) return (head ? head + "\n" : "") + both;
+      }
+    } catch (_) { try { await elOcr.worker.setParameters({ tessedit_pageseg_mode: "3" }); } catch (e) { /* egal */ } }
+    return text;
   } finally {
     elOcr.timer = setTimeout(() => { elOcr.worker?.terminate?.().catch?.(() => {}); elOcr.worker = null; }, 120000); // Speicher wieder freigeben
   }
@@ -4064,6 +4114,13 @@ function elOcrNutrition(lines) {
   for (const l of lines) {
     const t = l.trim();
     if (/^\W*(nährwerte|naehrwerte|nährwertangaben|nutrition)\b/i.test(t)) { head = true; found.push(l); continue; }
+    // 🧮 alles in einer Zeile: „650 kcal · 34 g Eiweiß · 84 g Kohlenhydrate · 19 g Fett“
+    const multi = [...t.matchAll(/(\d+(?:[.,]\d+)?)\s*(kcal|kj|g)\b\s*(eiweiß|eiweiss|protein|fett|kohlenhydrate|kohlehydrate|zucker|ballaststoffe|salz)?/gi)]
+      .map((m) => { const k = /^(kcal|kj)$/i.test(m[2]) ? "kcal" : (EL_NUT_WORDS.find(([, re]) => re.test(m[3] || "")) || [])[0]; return k ? [k, parseFloat(m[1].replace(",", ".")), m[2].toLowerCase()] : null; }).filter(Boolean);
+    if (multi.length >= 2) {
+      for (const [k, n, u] of multi) if (!(k in nut)) { const v = k === "kcal" && u === "kj" ? n / 4.184 : n; if (v > 0) { nut[k] = k === "kcal" ? Math.round(v) : Math.round(v * 10) / 10; hits++; } }
+      found.push(l); continue;
+    }
     const m = t.match(/^\W*(?:davon\s+)?([A-Za-zÄÖÜäöüß]+)\W*?(\d+(?:[.,]\d+)?)\s*(kcal|kj|g)?\b/i)
       || t.match(/^\W*(\d+(?:[.,]\d+)?)\s*(kcal)\b/i);
     let key = null, val = null, unit = "";
@@ -4080,36 +4137,72 @@ function elOcrNutrition(lines) {
   return { nutrition: null, rest: lines.filter((l) => !(head && /^\W*(nährwerte|naehrwerte|nährwertangaben|nutrition)\b/i.test(l.trim()))) };
 }
 
+// 🔖 Ist die Zeile eine Überschrift? „ZUTATEN“ auch mit Symbol davor („{3 ZUTATEN“), „ZUBEREITUNG · NORMAL“, „So geht's:“.
+// Ergebnis: "ing" (Zutaten) · "steps" (Zubereitung) · "tm" (Thermomix) · "other" (Nährwerte, Aufbewahrung, Tipp … – wird nicht übernommen) · ""
+function elOcrHead(l) {
+  const raw = String(l || "").trim().replace(/\s+/g, " ");
+  const t = raw.replace(/^[^A-Za-zÄÖÜäöü]+/, "");
+  if (/^zutaten\b/i.test(t)) return "ing";
+  if (/^(zubereitung|zubereiten|anleitung|so geht['’]?s|arbeitsschritte)\b/i.test(t)) return "steps";
+  if (raw.length > 42) return "";
+  if (/^(thermomix|tm\s?[3456]\b|bimby)/i.test(t)) return "tm";
+  if (/^(tipps?|notizen?|hinweise?|aufbewahrung|nährwerte|naehrwerte)\b/i.test(t) && t.split(" ").length <= 5) return "other";
+  const letters = t.replace(/[^A-Za-zÄÖÜäöüß]/g, "");
+  if (letters.length >= 6 && t.split(" ").length >= 2 && t.split(" ").length <= 6 && letters.replace(/[^A-ZÄÖÜ]/g, "").length / letters.length >= 0.75 && !/\d/.test(t.slice(0, 3))) return "other"; // VERSALIEN-Band
+  return "";
+}
+// 👨‍🍳 Schritte zusammenfügen: Beginnt eine Zeile mit „1.“, „(1)“, „[2]“ oder einem Zeichen wie ©/®/@ (so liest die Texterkennung die Zahlen im Kreis),
+// ist es ein neuer Schritt; Zeilen ohne Marke gehören zum Schritt davor. Gibt es keine Marken: an Leerzeilen bzw. Satzenden trennen.
+const EL_STEP_MARK = /^[\s{(\[<]*(?:\d{1,2}[)\]}>.]|[@®©●•▪◆▶➤])\s*(?=\S)/;
+function elOcrSteps(lines) {
+  const ls = lines.map((l) => String(l || "").trim()).filter(Boolean);
+  if (ls.filter((l) => EL_STEP_MARK.test(l)).length >= 2) {
+    const out = [];
+    for (const l of ls) {
+      if (EL_STEP_MARK.test(l) || !out.length) out.push(l.replace(EL_STEP_MARK, "").trim());
+      else out[out.length - 1] += " " + l;
+    }
+    return out.filter(Boolean);
+  }
+  const body = lines.join("\n").trim();
+  const paras = body.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
+  // 📱 Satzende ohne Lookbehind erkennen, sonst streikt iOS < 16.4
+  return (paras.length > 1 ? paras : body.replace(/([.!?])\s+(?=[A-ZÄÖÜ])/g, "$1\u0000").split("\u0000").map((x) => x.replace(/\s*\n\s*/g, " ").trim())).filter(Boolean);
+}
 function elOcrRecipeParts(text) {
   const raw = String(text || "").replace(/\r/g, "");
   const nutCut = elOcrNutrition(raw.split("\n").filter((l) => !elOcrNoise(l))); // 🧹 Social-Media-Kram raus, 🧮 Nährwerte heraus
   const lines = nutCut.rest;
-  const isIng = (l) => /^\W*zutaten\b/i.test(l.trim());
-  const isSteps = (l) => /^\W*(zubereitung|zubereiten|anleitung|so geht'?s|arbeitsschritte)\b/i.test(l.trim());
-  let ing = -1, st = -1;
-  lines.forEach((l, n) => { if (ing < 0 && isIng(l)) ing = n; if (st < 0 && isSteps(l)) st = n; });
-  const name = (lines.find((l) => l.trim() && !isIng(l) && !isSteps(l)) || "").trim().replace(/^[^A-Za-zÄÖÜäöü0-9]+|[^A-Za-zÄÖÜäöü0-9)!?.]+$/g, "");
-  const cut = (from, to) => lines.slice(from, to < 0 ? undefined : to).filter((l) => l.trim());
-  let ingLines = [], stepText = "";
-  if (ing >= 0) ingLines = cut(ing + 1, st > ing ? st : -1);
-  if (st >= 0) {
-    const body = lines.slice(st + 1).join("\n").trim();
-    const paras = body.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
-    // 📱 Satzende ohne Lookbehind erkennen, sonst streikt iOS < 16.4
-    stepText = (paras.length > 1 ? paras : body.replace(/([.!?])\s+(?=[A-ZÄÖÜ])/g, "$1\u0000").split("\u0000").map((x) => x.replace(/\s*\n\s*/g, " ").trim())).filter(Boolean).join("\n");
-  }
-  if (ing < 0 && st < 0) { // 🤷 keine Überschriften (typisch Screenshot): jede Zeile selbst einordnen
-    const rest = lines.filter((l) => l.trim()).slice(1), steps = [];
+  const kinds = lines.map(elOcrHead);
+  // 📦 Kästen: jeder endet an der nächsten Überschrift (Zutaten, Zubereitung, Thermomix, Nährwerte, Aufbewahrung …)
+  const blocks = [];
+  let from = 0, kind = "";
+  lines.forEach((l, n) => { if (kinds[n]) { blocks.push({ kind, lines: lines.slice(from, n) }); kind = kinds[n]; from = n + 1; } });
+  blocks.push({ kind, lines: lines.slice(from) });
+  const first = (k) => blocks.find((b) => b.kind === k);
+  const ingB = first("ing"), stB = first("steps"), tmB = first("tm");
+  const letterCount = (l) => l.replace(/[^A-Za-zÄÖÜäöüß]/g, "").length;
+  const nameLine = lines.find((l, n) => !kinds[n] && letterCount(l) >= 6 && l.replace(/[^A-ZÄÖÜ]/g, "").length < letterCount(l) * 0.7) // Titel: Groß-/Kleinschrift gemischt
+    || lines.find((l, n) => l.trim() && !kinds[n]) || "";
+  const name = nameLine.trim().replace(/^[^A-Za-zÄÖÜäöü0-9]+|[^A-Za-zÄÖÜäöü0-9)!?.]+$/g, "");
+  const keep = (l) => l.trim() && l.trim() !== nameLine.trim();
+  let ingLines = [], stepArr = [];
+  if (ingB) ingLines = ingB.lines.filter((l) => l.trim());
+  if (stB) stepArr = elOcrSteps(stB.lines);
+  if (!ingB && !stB) { // 🤷 keine Überschriften (typisch Screenshot): jede Zeile selbst einordnen
+    const rest = lines.filter((l, n) => l.trim() && !kinds[n]).slice(1), steps = [];
     ingLines = [];
     for (const l of rest) (elOcrIsStep(l) ? steps : ingLines).push(l);
-    stepText = steps.map((l) => l.replace(/^\s*\d+\s*[.)]\s*/, "").trim()).join("\n");
-  } else if (st < 0 && ing >= 0) { // nur „Zutaten“ als Überschrift: lange Sätze darin sind Schritte
-    const keep = [], steps = [];
-    for (const l of ingLines) (elOcrIsStep(l) ? steps : keep).push(l);
-    ingLines = keep;
-    if (steps.length) stepText = steps.map((l) => l.replace(/^\s*\d+\s*[.)]\s*/, "").trim()).join("\n");
+    stepArr = steps.map((l) => l.replace(/^\s*\d+\s*[.)]\s*/, "").trim());
+  } else if (!stB && ingB) { // nur „Zutaten“ als Überschrift: lange Sätze darin sind Schritte
+    const kp = [], steps = [];
+    for (const l of ingLines) (elOcrIsStep(l) ? steps : kp).push(l);
+    ingLines = kp;
+    if (steps.length) stepArr = steps.map((l) => l.replace(/^\s*\d+\s*[.)]\s*/, "").trim());
   }
-  return { name, ingredients: ingLines.map((l) => l.replace(/^[\s\-–—•*·|]+/, "").trim()).filter((l) => l.length > 1).join("\n"), steps: stepText, nutrition: nutCut.nutrition };
+  // 🥕 „400 g Nudeln · 500 g Brokkoli“ (zwei Zutaten in einer Zeile) auseinandernehmen
+  ingLines = ingLines.filter(keep).flatMap((l) => l.split(/\s+[·•+\-–]\s+(?=\d)/)).map((l) => l.replace(/^[\s\-–—•*·|]+/, "").replace(/\s+[^\p{L}\p{N})]{1,2}$/u, "").replace(/^(\d+(?:[.,]\d+)?)\s*mi\b/, "$1 ml").trim()); // „250 mi“ = 250 ml (Texterkennung)
+  return { name, ingredients: ingLines.filter((l) => l.length > 1).join("\n"), steps: stepArr.join("\n"), nutrition: nutCut.nutrition, thermomix: tmB ? elOcrSteps(tmB.lines).join("\n") : "" };
 }
 
 // 🧮 Nährwerte pro Portion als kurze Zeile: „898 kcal · Eiweiß 44,8 g · Fett 55,2 g · KH 46,7 g“
@@ -9454,7 +9547,7 @@ ${(() => {
           ${this._recipePhotoToolBtn(r)}
           ${(r.steps || "").trim() ? `<button class="btn" data-act="recipe-cook" title="Kochen"><ha-icon icon="mdi:fire"></ha-icon><span class="lbl">Kochen</span></button>` : ""}
           ${r.source ? `<button class="btn" data-act="recipe-source" title="Original-Rezept im Browser öffnen"><ha-icon icon="mdi:open-in-new"></ha-icon><span class="lbl">Original öffnen</span></button>` : ""}
-          <button class="btn" data-act="recipe-share" title="Drucken &amp; Teilen"><ha-icon icon="mdi:printer-outline"></ha-icon><span class="lbl">Drucken &amp; Teilen</span></button>
+          <button class="btn" data-act="recipe-share" title="Drucken &amp; Teilen"><ha-icon icon="mdi:file-send-outline"></ha-icon><span class="lbl">Drucken &amp; Teilen</span></button>
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`;
     };
     // 📅 Essensplan: oben „Diese Woche“, dann „Wünsche“, dann der Rest (nur wenn überhaupt etwas geplant ist)
@@ -10834,10 +10927,14 @@ ${(() => {
         if (t == null) return; // Texterkennung ging schief – Meldung kam schon
         text += t + "\n";
       }
-      if (apply) { await apply(elOcrRecipeParts(text), pages); return; }
+      const parts = elOcrRecipeParts(text);
+      if (parts.thermomix && await elConfirm(EL_LANG === "de" // 🍲 Thermomix-Block auf dem Foto: nur auf Wunsch übernehmen
+        ? "Auf dem Foto steht auch ein Thermomix-Block.\nSoll er mit in die Schritte?"
+        : "There is also a Thermomix block on the photo.\nShould it go into the steps too?",
+      { danger: false, title: "🍲 Thermomix", yes: elT("🍲 Ja, dazu"), no: elT("Nein") })) parts.steps = (parts.steps ? parts.steps + "\n" : "") + parts.thermomix.split("\n").map((s) => "🍲 " + s).join("\n");
+      if (apply) { await apply(parts, pages); return; }
       const dr = this._draft;
       if (!dr || this._view !== "recipe") return; // Editor inzwischen zu
-      const parts = elOcrRecipeParts(text);
       const nameEl = this.$("rName"), ta = this.$("rImportText");
       if (nameEl && parts.name && !nameEl.value.trim()) { nameEl.value = parts.name; this._autoGroup?.(); }
       if (parts.nutrition) this._takeServNut({ nutrition: parts.nutrition }); // 🧮 Nährwert-Tabelle vom Foto

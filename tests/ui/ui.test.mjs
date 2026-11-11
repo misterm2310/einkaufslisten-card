@@ -955,9 +955,42 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   out.avail=Math.round(263*96/25.4);
   c._photoData=oldPD; c._hasPhoto=oldHP; c._data.recipes=[]; document.querySelectorAll("[data-elov],[data-elconfirm]").forEach(e=>e.remove()); c._view="list"; c._renderAll();
   return out; });
-check("🖨️ Unter dem Rezept: erstes Symbol „Ansehen“, der Teilen-Knopf heißt „Drucken & Teilen“ mit Drucker-Symbol", r.firstAct === "recipe-view" && r.icon === "mdi:printer-outline" && /Drucken/.test(r.title || ""), JSON.stringify(r));
+check("🖨️ Unter dem Rezept: erstes Symbol „Ansehen“, der Teilen-Knopf heißt „Drucken & Teilen“ mit Symbol Blatt mit Pfeil", r.firstAct === "recipe-view" && r.icon === "mdi:file-send-outline" && /Drucken/.test(r.title || ""), JSON.stringify(r));
 check("🖨️ Blatt: Foto, Dauer/Portionen, Nährwerte, Quelle und Zutaten in zwei Spalten", r.img && r.chips === 2 && r.nut && r.src && r.cols === "2", JSON.stringify(r));
 check("🖨️ Kurzes Rezept bleibt in Originalgröße, langes wird passend verkleinert und passt auf EINE Seite", r.z6 === "" && r.h6 <= r.avail && Number(r.z22) < 1 && r.h22 <= r.avail, JSON.stringify(r));
+
+// 45) 🧱 Zweispaltige Rezeptkarte (TikTok): Spalten getrennt gelesen, Überschrift mit Symbol, Kästen enden an der nächsten Überschrift, Thermomix nur auf Wunsch
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const oldWs=c._ws, oldOcr=c._ocrText, oldPick=c._pickFile; c._ws=async()=>({});
+  const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+  const click=(re)=>[...document.querySelectorAll("[data-elconfirm] button")].find(b=>re.test(b.textContent))?.click();
+  const png="data:image/png;base64,iVBORw0KGgo=";
+  c._pickFile=async()=>{ const t=c._photoTarget; setTimeout(()=>t.ocr(png),10); };
+  const TXT="A\nVE\nvn FE MONTAG - KW 44 DOM\nCremige Brokkoli-Schinken-Nudeln\na {1 4 Personen - ca. 25 Minuten © DZ\n"
+   +"{3 ZUTATEN E\n400 g kurze Nudeln + 500 g Brokkoli\n200 g Kochschinken + 1 Zwiebel\n10 g Öl - 200 g Frischkäse natur $\n250 mi Milch + 100 ml Nudelwasser\nSalz, Pfeffer, Muskat\n©) THERMOMIX + TM6\n[1] Nudeln und Brokkoli wie oben im Topf garen.\n[2] Zwiebel halbiert 5 Sek./Stufe 5 zerkleinern,\nherunterschieben. Öl zugeben: 3 Min./120 °C/\nStufe 1.\n© Milch, Frischkäse und Gewürze: 5 Min./90 °C/\nStufe 2. Schinken gewürfelt: 2 Min./90 °C/\nLinkslauf/Stufe 1.\n[4] Sauce in einer großen Schüssel mit Nudeln,\nBrokkoli und Nudelwasser mischen.\n"
+   +"{ ZUBEREITUNG - NORMAL\n\n(1) Nudeln nach Packung garen. Brokkoliröschen\ndie letzten 5-6 Min. mitkochen. 100 ml\nNudelwasser auffangen.\n\n@ Zwiebel fein würfeln, in Öl glasig dünsten.\nMilch und Frischkäse einrühren, 3-4 Min.\nsanft erhitzen.\n\n® Gewürfeliten Schinken, Nudeln und Brokkoli\nunterheben. Mit Nudelwasser cremig rühren\nund würzen.\n\n1] NÄHRWERTE PRO PORTION - CA.\n650 kcal + 34 g Eiweiß + 84 g Kohlenhydrate + 19 g Fett\nT—\n\nTI AUFBEWAHRUNG & MEAL PREP\n\nZügig abkühlen und kalt stellen. Im Kühlschrank\nbis 2 Tage. Einfrieren möglich, Sauce kann sich\netwas trennen. Mit etwas Milch in Topf oder\nMikrowelle gründlich erhitzen.\n\nTipp: Brokkoli am Vorabend schneiden.\n";
+  c._ocrText=async()=>TXT;
+  const run=async(tm)=>{
+    c._openRecipe(null); await wait(150);
+    c._recipeFromPhotos([]); await wait(500);
+    click(/Rezept lesen/); await wait(500);   // Text drauf → „Rezept lesen“
+    click(/Fertig/); await wait(500);          // keine weitere Seite
+    const asked=!!document.querySelector("[data-elconfirm]");
+    click(tm ? /Ja, dazu/ : /^Nein/); await wait(700);
+    const name=c.$("rName")?.value, ing=c.$("rImportText")?.value||"", steps=(c._draft.stepRows||[]).map(r=>r.t), nut=c._readNut?.();
+    document.querySelectorAll("[data-elov],[data-elconfirm]").forEach(e=>e.remove());
+    return { asked, name, ing, steps, kcal: nut?.kcal, protein: nut?.protein, carbs: nut?.carbs, fat: nut?.fat };
+  };
+  const no=await run(false); c._view="list"; c._renderAll();
+  const yes=await run(true);
+  // 🧱 Spalten-Erkennung selbst: zweispaltig → Trennlinie, einspaltig → keine
+  const mk=(n,cols)=>Array.from({length:n},(_,i)=>({bbox:{x0:40,y0:i*30,x1:1000,y1:i*30+24},words:cols?[{text:"Nudeln",bbox:{x0:40,x1:200,y0:i*30,y1:i*30+24},confidence:90},{text:"kochen",bbox:{x0:210,x1:420,y0:i*30,y1:i*30+24},confidence:90},{text:"Zwiebel",bbox:{x0:560,x1:700,y0:i*30,y1:i*30+24},confidence:90},{text:"würfeln",bbox:{x0:710,x1:980,y0:i*30,y1:i*30+24},confidence:90}]:[{text:"Ein",bbox:{x0:40,x1:100,y0:i*30,y1:i*30+24},confidence:90},{text:"langer",bbox:{x0:110,x1:300,y0:i*30,y1:i*30+24},confidence:90},{text:"Satz",bbox:{x0:310,x1:520,y0:i*30,y1:i*30+24},confidence:90},{text:"mitten",bbox:{x0:530,x1:700,y0:i*30,y1:i*30+24},confidence:90},{text:"durch",bbox:{x0:710,x1:980,y0:i*30,y1:i*30+24},confidence:90}]}));
+  const two=elOcrSplit(mk(10,true),1080), one=elOcrSplit(mk(10,false),1080);
+  c._data.recipes=[]; c._ws=oldWs; c._ocrText=oldOcr; c._pickFile=oldPick; document.querySelectorAll("[data-elov],[data-elconfirm]").forEach(e=>e.remove()); c._view="list"; c._renderAll();
+  return { no, yes, two, one }; });
+check("🧱 Zweispaltige Karte: Name und Zutaten sauber (zwei Zutaten pro Zeile getrennt, kein Thermomix/Nährwerte/Aufbewahrung darin)", r.no.name === "Cremige Brokkoli-Schinken-Nudeln" && /^400 g kurze Nudeln\n500 g Brokkoli\n200 g Kochschinken\n1 Zwiebel\n10 g Öl\n200 g Frischkäse natur\n250 ml Milch\n100 ml Nudelwasser\nSalz, Pfeffer, Muskat$/.test(r.no.ing||"") , JSON.stringify(r.no));
+check("🧱 Schritte: 3 echte Schritte (Zeilen gehören zusammen), Nährwerte aus EINER Zeile, Thermomix auf Nachfrage mit „Nein“ nicht dabei", r.no.asked && r.no.steps.length === 3 && /^Nudeln nach Packung garen\. Brokkoliröschen die letzten 5-6 Min\. mitkochen\. 100 ml Nudelwasser auffangen\.$/.test(r.no.steps[0]) && r.no.kcal === 650 && r.no.protein === 34 && r.no.carbs === 84 && r.no.fat === 19, JSON.stringify(r.no));
+check("🍲 Thermomix mit „Ja, dazu“: Block hängt hinten an den Schritten", r.yes.steps.length === 7 && /^🍲 Nudeln und Brokkoli/.test(r.yes.steps[3]) && /Stufe 1\.$/.test(r.yes.steps[4]), JSON.stringify(r.yes));
+check("🧱 Spalten-Erkennung: zweispaltig → Trennlinie in der Mitte, Fließtext → keine", r.two && r.two.x > 450 && r.two.x < 560 && r.one === null, JSON.stringify({two:r.two, one:r.one}));
 
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
