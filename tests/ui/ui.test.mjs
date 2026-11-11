@@ -815,6 +815,27 @@ check("🧂 Überall dasselbe „🧂 Grundvorrat“ (kein „(Liste)“)", r.la
 check("🧂 Knopf an bei „Zimt“ = kommt auf die zentrale Liste", r.zimt.join() === "Pfeffer,Salz,Zimt", JSON.stringify(r.zimt));
 check("🧂 Knopf aus bei „Pfeffer schwarz“ = Pfeffer fliegt überall raus", r.after.join() === "Salz,Zimt" && !r.pBasic && r.last?.names?.join() === "Salz,Zimt", JSON.stringify(r));
 
+// 🧪 beta.4: „Neu in dieser Beta“ – höchste Beta-Nummer oben
+r = await p.evaluate(() => { const c=document.querySelector('#c1'); const h=c._newsHtml(false); const box=document.createElement("div"); box.innerHTML=h;
+  const nos=[...box.querySelectorAll("ul li > b")].map(b=>b.textContent).filter(t=>/^beta\.\d+$/.test(t)).map(t=>+t.split(".")[1]);
+  return { nos }; });
+check("🧪 Beta-Kasten: neueste Beta oben", r.nos.length > 1 && r.nos.every((n,i)=>i===0 || n<=r.nos[i-1]), JSON.stringify(r));
+
+// 📷 beta.4: „Rezept vorschlagen“ liest ein Rezept-Foto wie der Editor
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const calls=[];
+  c._ws=async(m)=>{ calls.push(m.type); return m.type==="einkaufsliste/recipe/heat_guess" ? { heat:[{device:"Backofen",mode:"Umluft",temp:180,minutes:25}] } : {}; };
+  c._ocrText=async()=>"Omas Apfelkuchen\nZutaten\n200 g Mehl\n3 Eier\nZubereitung\nBackofen auf 180 °C Umluft vorheizen.\nTeig rühren und 25 Minuten backen.";
+  c._pickFile=async()=>{ const t=c._photoTarget; setTimeout(()=>t.ocr("data:image/png;base64,iVBORw0KGgo="),10); };
+  c._proposeRecipe(); await new Promise(r=>setTimeout(r,120));
+  const root=document.querySelector("[data-elpage]")||c.shadowRoot; const q=(s)=>root.querySelector(s)||c.shadowRoot.querySelector(s)||document.querySelector(s);
+  q("[data-pocr]").click(); await new Promise(r=>setTimeout(r,150));
+  const fertig=[...document.querySelectorAll("[data-elconfirm] button")].find(b=>/Fertig/.test(b.textContent)); fertig?.click();
+  await new Promise(r=>setTimeout(r,400));
+  const out={ hasBtn:true, fertig:!!fertig, name:q("[data-pn]")?.value, ing:q("[data-pi]")?.value, steps:q("[data-ps]")?.value, heat:q("[data-ph]")?.value, hint:q("[data-pphint]")?.textContent, calls };
+  c._propPhoto=null; let n=0; while(c._page && n++<6) c._pageBack(); document.querySelectorAll("[data-elov],[data-elconfirm]").forEach(e=>e.remove()); c._view="list"; c._renderAll();
+  return out; });
+check("📷 Vorschlag: Rezept aus Fotos füllt Name, Zutaten, Schritte, Backofen und Foto", r.fertig && r.name==="Omas Apfelkuchen" && /200 g Mehl/.test(r.ing||"") && /vorheizen/.test(r.steps||"") && /Backofen Umluft 180 °C 25 Min/.test(r.heat||"") && /Foto ist dabei/.test(r.hint||""), JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

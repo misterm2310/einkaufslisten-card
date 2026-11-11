@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.3";
+const EL_VERSION = "2.76.28-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -169,7 +169,7 @@ const EL_GUIDE = [
       "<b>📺 Auf dem Fernseher mitlesen:</b> Hat jemand die Karte „Einkaufsliste – Kochmodus-Anzeige“ auf einem Dashboard (z. B. Fire TV in der Küche), steht dort groß, was du gerade kochst – Schritt, Zutaten, Foto und Timer. Blätterst du weiter, blättert der Fernseher mit.",
       "<b>📅 Essensplan:</b> Bei jedem Rezept steht der Knopf <b>„Planen“</b>. Antippen wechselt: nichts → <b>💭 Wunsch</b> (das möchte jemand mal essen) → <b>📅 Diese Woche</b> (wird diese Woche gekocht) → wieder nichts. Oben stehen dann zuerst „Diese Woche“, danach die Wünsche. <b>„Alle Zutaten auf die Liste“</b> geht die eingeplanten Rezepte nacheinander durch – du wählst nur ab, was du nicht brauchst. An welchem Wochentag „Diese Woche“ wieder leer wird, stellt ein Admin in ⚙️ → Rezepte → Wochenplan ein. Wer den Plan nicht mag: unten unter <b>👁️ Ansicht → Essensplan</b> nur für sich abschalten.",
       "<b>⏲️ Gar-Zeiten:</b> Spickzettel nach Gerät (🍲 Herd, 🔥 Backofen, 💨 Heißluftfritteuse).",
-      "<b>📖 Rezept vorschlagen</b> (Buch mit ＋ oben bei den Rezepten): Jeder kann ein Rezept einreichen. Es wartet in ⚙️ → Rezepte auf ein OK, ein 🟠 Punkt an der Kochmütze zeigt, wie viele warten.",
+      "<b>📖 Rezept vorschlagen</b> (Buch mit ＋ oben bei den Rezepten): Jeder kann ein Rezept einreichen – auch per <b>📷 Rezept aus Fotos</b> (wird gelesen und in die Felder geschrieben). Es wartet in ⚙️ → Rezepte auf ein OK, ein 🟠 Punkt an der Kochmütze zeigt, wie viele warten.",
       "<b>🤖 KI-Kochen</b> (wenn ein Admin es in ⚙️ → Extras eingeschaltet hat): „Was kann ich kochen?“ – Zutaten eintippen, der KI-Assistent schlägt Rezepte vor, die du übernehmen kannst.",
     ],
     en: [
@@ -417,7 +417,14 @@ function elVerCmp(a, b) {
 }
 // 🧪 Nur für Testversionen (Version mit „-beta“): Das ist neu in genau dieser Beta – steht als eigener Kasten über „Was ist neu“.
 // Bei der normalen Veröffentlichung diese Liste leeren ([]); echte neue Funktionen wandern dann nach EL_NEWS.
+// 🧪 „Neu in dieser Beta“: immer die höchste Beta-Nummer oben – egal, ob ein Eintrag oben oder unten eingefügt wurde
+const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
+const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["📷 <b>Rezept vorschlagen liest Fotos:</b> In der Kochmütze → 📖 Rezept vorschlagen gibt es jetzt „📷 Rezept aus Fotos“ wie im Editor – Name, Zutaten, Zubereitung und Backofen landen gleich in den Feldern, die erste Seite geht als Foto mit.",
+   "📷 <b>Suggest a recipe reads photos:</b> chef hat → 📖 Suggest a recipe now has “📷 Recipe from photos” like the editor – name, ingredients, steps and oven land in the fields, the first page goes along as photo.", "beta.4"],
+  ["🧪 <b>„Neu in dieser Beta“:</b> Die neueste Beta steht jetzt immer oben.",
+   "🧪 <b>“New in this beta”:</b> the newest beta is now always at the top.", "beta.4"],
   ["🧂 <b>Nur noch EIN Grundvorrat:</b> Der 🧂-Knopf an einer Zutat im Rezept-Editor setzt sie auf die zentrale Grundvorrat-Liste (bzw. nimmt sie runter) – sie gilt dann in <b>allen</b> Rezepten, überall mit demselben „🧂 Grundvorrat“. Alte Haken aus einzelnen Rezepten wurden einmal auf die Liste übernommen.",
    "🧂 <b>Just ONE pantry list:</b> the 🧂 button on an ingredient in the recipe editor puts it on the central pantry list (or takes it off) – it then counts in <b>all</b> recipes, everywhere with the same “🧂 pantry staple”. Old marks from single recipes were moved to the list once.", "beta.3"],
   ["🧂 <b>Grundvorrat repariert:</b> Neue Zutaten wie „Pfeffer“ gelten jetzt wirklich als Grundvorrat, wenn sie auf der Liste stehen – abgewählt ist nur, was du am 🧂-Knopf selbst ausschaltest. Schon betroffene Rezepte werden automatisch repariert. „Speichern“ schaltet die Liste gleich mit ein.",
@@ -9204,7 +9211,7 @@ ${(() => {
         ${sec("in", "mdi:pencil-outline", "#546e7a", "Eingaben", "Name, von wem, Foto", `
           <input data-pn maxlength="60" placeholder="Name des Rezepts, z. B. Omas Apfelkuchen">
           <input data-pb maxlength="40" placeholder="Von wem? (dein Name)">
-          <div class="btnrow" style="justify-content:flex-start"><button type="button" class="btn" data-pphoto title="Foto vom Rezept oder Produkt" aria-label="Foto vom Rezept oder Produkt"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto vom Rezept oder Produkt</span></button><span class="hint" data-pphint></span></div>`)}
+          <div class="btnrow" style="justify-content:flex-start"><button type="button" class="btn" data-pphoto title="Foto vom Rezept oder Produkt" aria-label="Foto vom Rezept oder Produkt"><ha-icon icon="mdi:camera-plus-outline"></ha-icon><span class="lbl">Foto vom Rezept oder Produkt</span></button><button type="button" class="btn" data-pocr title="Rezept aus Fotos einlesen (auch mehrere Seiten)" aria-label="Rezept aus Fotos"><ha-icon icon="mdi:camera-outline"></ha-icon><span class="lbl">Rezept aus Fotos</span></button><span class="hint" data-pphint></span></div>`)}
         ${sec("zut", "mdi:food-apple-outline", "#43a047", "Zutaten", "Was kommt rein?", `<textarea data-pi rows="6" placeholder="Eine Zutat pro Zeile, z. B.&#10;200 g Mehl&#10;3 Eier&#10;&#10;…oder einfach einen Rezept-Link"></textarea>`)}
         ${sec("ofen", "mdi:stove", "#ef6c00", "Backofen &amp; Co.", "Grad, Minuten, Modus", `<textarea data-ph rows="2" placeholder="z. B. Umluft 180 °C, 25 Min"></textarea>`)}
         ${sec("zub", "mdi:chef-hat", "#e53935", "Zubereitung", "Die Schritte", `<textarea data-ps rows="6" placeholder="Ein Schritt pro Zeile, z. B.&#10;Zwiebeln schneiden&#10;Fleisch anbraten&#10;&#10;…oder einfach einen Rezept-Link"></textarea>`)}
@@ -9217,6 +9224,22 @@ ${(() => {
     mirror($("[data-pi]"), $("[data-ps]")); mirror($("[data-ps]"), $("[data-pi]"));
     $("[data-pb]").value = this._myName() || "";
     $("[data-pphoto]").onclick = () => { this._photoTarget = { proposalDraft: true, onData: (d) => { this._propPhoto = d; $("[data-pphint]").textContent = "📷 Foto ist dabei"; } }; this._pickFile("photoFile", "📷 Foto zum Vorschlag"); };
+    // 📷 Rezept aus Fotos – wie im Editor: lesen, in die Tippfelder schreiben (alles bleibt änderbar), erste Seite als Foto
+    $("[data-pocr]").onclick = () => this._recipeFromPhotos([], async (parts, pages) => {
+      if (!ov.isConnected) return; // Vorschlag inzwischen zu
+      const open = (k) => { const h = $(`.rsec[data-k="${k}"] .rsec-h`); if (h?.getAttribute("aria-expanded") === "false") h.click(); };
+      const fill = (sel, v) => { const el = $(sel); if (el && v && !el.value.trim()) el.value = v; };
+      fill("[data-pn]", parts.name);
+      if (parts.ingredients) { fill("[data-pi]", parts.ingredients); open("zut"); }
+      if (parts.steps) {
+        fill("[data-ps]", parts.steps); open("zub");
+        const hg = await this._ws({ type: "einkaufsliste/recipe/heat_guess", steps: parts.steps }).catch(() => null); // 🔥 Backofen & Airfryer
+        const rows = (hg?.heat || []).map((h) => [h.device, h.mode, h.temp ? `${h.temp} °C` : "", h.minutes ? `${h.minutes}${h.minutes_to ? "–" + h.minutes_to : ""} Min` : ""].filter(Boolean).join(" "));
+        if (rows.length && ov.isConnected) { fill("[data-ph]", rows.join("\n")); open("ofen"); }
+      }
+      if (pages[0] && !this._propPhoto) { this._propPhoto = await elShrinkData(pages[0], 900, 0.8); $("[data-pphint]").textContent = "📷 Foto ist dabei"; }
+      this._toast("📷 Gelesen – bitte kurz prüfen und dann „Vorschlagen“");
+    });
     $("[data-pcancel]").onclick = () => this._closePage();
     $("[data-psend]").onclick = async () => {
       const name = $("[data-pn]").value.trim(), by = $("[data-pb]").value.trim();
@@ -10632,20 +10655,21 @@ ${(() => {
   }
 
   // 📷 Rezept aus Fotos: ein oder mehrere Seiten abfotografieren → Name, Zutaten (zum Prüfen) und Schritte; die Fotos kommen ans Rezept
-  _recipeFromPhotos(pages) {
+  _recipeFromPhotos(pages, apply = null) { // apply(parts, pages) = eigenes Ziel (z. B. 💡 Rezept vorschlagen), sonst der Editor
     this._photoTarget = { ocr: async (data) => {
       pages.push(data);
       const more = pages.length < 6 && await elConfirm(EL_LANG === "de"
         ? `Seite ${pages.length} ist drin 👍\nHat das Rezept noch eine Seite?`
         : `Page ${pages.length} is in 👍\nDoes the recipe have another page?`,
       { danger: false, title: "📷 Rezept aus Fotos", yes: elT("➕ Noch eine Seite"), no: elT("✔ Fertig") });
-      if (more) { this._recipeFromPhotos(pages); return; }
+      if (more) { this._recipeFromPhotos(pages, apply); return; }
       let text = "";
       for (let i = 0; i < pages.length; i++) {
         const t = await this._ocrText(pages[i], pages.length > 1 ? (EL_LANG === "de" ? `🔎 Seite ${i + 1} von ${pages.length} wird gelesen` : `🔎 Reading page ${i + 1} of ${pages.length}`) : "🔎 Rezept wird gelesen");
         if (t == null) return; // Texterkennung ging schief – Meldung kam schon
         text += t + "\n";
       }
+      if (apply) { await apply(elOcrRecipeParts(text), pages); return; }
       const dr = this._draft;
       if (!dr || this._view !== "recipe") return; // Editor inzwischen zu
       const parts = elOcrRecipeParts(text);
@@ -11530,7 +11554,7 @@ ${(() => {
     // 🆕 höchstens 15 Neuerungen – das Neueste oben, Älteres fällt hinten raus
     const items = EL_NEWS.flatMap((n) => (en ? n[1] : n[0]).split(" · ")).slice(0, EL_NEWS_MAX);
     const beta = /-beta/i.test(EL_VERSION) && EL_BETA_NEWS.length
-      ? `<div style="border:1px solid #fb8c00;border-radius:12px;padding:10px 12px;margin:0 0 12px;background:rgba(251,140,0,.1)"><b>🧪 ${en ? "You are in the beta" : "Du bist in der Beta"} ${esc(EL_VERSION)}</b><p class="hint" style="margin:4px 0 2px">${en ? "New in this beta:" : "Neu in dieser Beta:"}</p><ul style="margin:0">${EL_BETA_NEWS.slice().reverse().map((n) => `<li><b>${esc(n[2] || "")}</b> · ${en ? n[1] : n[0]}</li>`).join("")}</ul></div>` : "";
+      ? `<div style="border:1px solid #fb8c00;border-radius:12px;padding:10px 12px;margin:0 0 12px;background:rgba(251,140,0,.1)"><b>🧪 ${en ? "You are in the beta" : "Du bist in der Beta"} ${esc(EL_VERSION)}</b><p class="hint" style="margin:4px 0 2px">${en ? "New in this beta:" : "Neu in dieser Beta:"}</p><ul style="margin:0">${elBetaNewsSorted().map((n) => `<li><b>${esc(n[2] || "")}</b> · ${en ? n[1] : n[0]}</li>`).join("")}</ul></div>` : "";
     return `<div ${en ? 'translate="no"' : ""}>${beta}<p class="hint">${en ? "The latest new features up to version" : "Die letzten Neuerungen bis Version"} <b>${EL_NEWS_VERSION}</b> – ${en ? "the newest is at the top" : "das Neueste steht oben"}</p><ul>${items.map((x) => `<li>${x}</li>`).join("")}</ul></div>`;
   }
 
