@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.4";
+const EL_VERSION = "2.76.28-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -261,12 +261,12 @@ const EL_HELP = {
   ]],
   recipes: ["list", [
     "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json, 🍲 Mealie-.zip/.json und schema.org; US-Maße werden umgerechnet – nur Admins). Dazu <b>🔗 Rezept aus Link</b> (ganzes Rezept auf einmal) und <b>🧂 Grundvorrat</b> (zentrale Liste: Salz, Pfeffer … gelten in allen Rezepten als „haben wir immer“).",
-    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, <b>⏱️ Dauer ca.</b> (Minuten; steht in der Kochmütze neben der Personenzahl, ohne Eintrag geschätzt mit „≈“, beim Rezept-Link automatisch), Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Rezept aus Fotos“</b> oben rechts bei „Eingaben“ (eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. <b>🥕 Zutaten pro Schritt:</b> der Knopf mit der Möhre unter jedem Schritt zeigt, welche Zutaten dazugehören – automatisch aus dem Text erkannt (≈), antippen legt sie fest. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
+    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, <b>⏱️ Dauer ca.</b> (Minuten; steht in der Kochmütze neben der Personenzahl, ohne Eintrag geschätzt mit „≈“, beim Rezept-Link automatisch), <b>🧮 Nährwerte pro Portion</b> (kcal, Eiweiß, Fett …; beim Import automatisch, stehen in der Rezeptliste unter dem Namen), Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Rezept aus Fotos“</b> oben rechts bei „Eingaben“ (eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. <b>🥕 Zutaten pro Schritt:</b> der Knopf mit der Möhre unter jedem Schritt zeigt, welche Zutaten dazugehören – automatisch aus dem Text erkannt (≈), antippen legt sie fest. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
     "<b>🔗 Quelle &amp; Original:</b> Beim Import per Link merkt sich das Rezept die Adresse (im Editor unter dem Namen änderbar, auch von Hand eintragbar). In der Rezeptliste öffnet „Original öffnen“ die Seite. <b>👨‍🍳 Kochmodus:</b> Er merkt sich pro Rezept den Schritt und fragt beim nächsten Start, ob du dort weitermachen willst.",
     "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (für alle, mit Airfryer Control ab Beta 17) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
   ], [
     "Tabs <b>Recipes</b> (button “New recipe”, search, ✏️ per row), <b>Groups</b> (fish, meat, pastry …; a list like the categories: tap a group = change name, colour and icon, ⌃⌄ = order; icon and colour tint the recipes) and <b>Recipes from file</b> (.txt, .md, .csv, .json; US units are converted – admins only).",
-    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, <b>⏱️ time approx.</b> (minutes; shown in the chef's hat next to the number of people, estimated with “≈” if empty, filled automatically from a recipe link), recipe photo, <b>🏷️ nicknames</b> for each ingredient, <b>💾 Save &amp; continue</b> (editor stays open) or “Save &amp; done”, <b>“📷 Recipe from photos”</b> top right at “Inputs” (photograph one or more pages → name, ingredients to check and steps; the photos are added to the recipe), ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text or recipe link), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. <b>🥕 Ingredients per step:</b> the carrot button below each step shows which ingredients belong to it – detected from the text automatically (≈), tapping sets them. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
+    "<b>Recipe editor:</b> name and group (suggested), “quantities for N people/trays”, <b>⏱️ time approx.</b> (minutes; shown in the chef's hat next to the number of people, estimated with “≈” if empty, filled automatically from a recipe link), <b>🧮 nutrition per serving</b> (kcal, protein, fat …; filled in automatically on import, shown in the recipe list under the name), recipe photo, <b>🏷️ nicknames</b> for each ingredient, <b>💾 Save &amp; continue</b> (editor stays open) or “Save &amp; done”, <b>“📷 Recipe from photos”</b> top right at “Inputs” (photograph one or more pages → name, ingredients to check and steps; the photos are added to the recipe), ingredients (like in the list, with units and 🧂 “always at home”), <b>“Paste ingredients”</b> (ingredient text or recipe link), <b>oven &amp; co.</b> (degrees, minutes) and the preparation – one line per step. <b>🥕 Ingredients per step:</b> the carrot button below each step shows which ingredients belong to it – detected from the text automatically (≈), tapping sets them. Every saved step can have a <b>photo</b> that appears at exactly that step in cook mode. Move steps with the <b>⠿</b> (or with ↑ ↓).",
     "<b>🔗 Source &amp; original:</b> when importing by link the recipe remembers the address (editable under the name in the editor, can also be typed in). In the recipe list “Open original” opens the page. <b>👨‍🍳 Cook mode:</b> it remembers the step per recipe and asks at the next start whether you want to continue there.",
     "<b>🍟 Air fryer:</b> if a step has “Heißluftfritteuse” with a mode (air fry, bake, grill or reheat), temperature and minutes and <b>Airfryer Control</b> is installed, cook mode shows the button “Send to Airfryer Control” (for everyone, with Airfryer Control from beta 17). You pick the basket (it always asks); the fryer is prepared, <b>you press Start on the device</b>.",
   ]],
@@ -421,6 +421,10 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🧮 <b>Nährwerte pro Portion:</b> Neues Feld im Rezept-Editor (kcal, Eiweiß, Fett, Kohlenhydrate, Zucker, Ballaststoffe, Salz). Beim Import über Link (Chefkoch & Co.), Datei, Mealie und Foto werden sie mitgenommen, in der Rezeptliste stehen sie unter dem Namen.",
+   "🧮 <b>Nutrition per serving:</b> new field in the recipe editor (kcal, protein, fat, carbs, sugar, fibre, salt). Imports via link, file, Mealie and photo take them along, the recipe list shows them under the name.", "beta.5"],
+  ["🍲 <b>Mealie-Import repariert:</b> Die .json aus Mealie (Felder mit Unterstrich, z. B. „recipe_ingredient“) wird jetzt richtig gelesen – Zutaten, Schritte, Portionen, Dauer, Quelle und Nährwerte. · 🍽️ Beim Rezept-Link kommen die <b>Portionen</b> mit („4 Portionen“). · 🔀 Importierte Zutaten bleiben in der <b>Reihenfolge des Rezepts</b> (vorher ABC). · 🦊 Foto zuschneiden: Bilder (z. B. .webp in Firefox) bleiben beim Drehen nicht mehr leer.",
+   "🍲 <b>Mealie import fixed:</b> the .json from Mealie (fields with underscores, e.g. “recipe_ingredient”) is read correctly now – ingredients, steps, servings, time, source and nutrition. · 🍽️ Recipe links now bring the <b>servings</b>. · 🔀 Imported ingredients keep the <b>recipe's order</b> (was A–Z). · 🦊 Cropping photos: images (e.g. .webp in Firefox) no longer go blank when rotating.", "beta.5"],
   ["📷 <b>Rezept vorschlagen liest Fotos:</b> In der Kochmütze → 📖 Rezept vorschlagen gibt es jetzt „📷 Rezept aus Fotos“ wie im Editor – Name, Zutaten, Zubereitung und Backofen landen gleich in den Feldern, die erste Seite geht als Foto mit.",
    "📷 <b>Suggest a recipe reads photos:</b> chef hat → 📖 Suggest a recipe now has “📷 Recipe from photos” like the editor – name, ingredients, steps and oven land in the fields, the first page goes along as photo.", "beta.4"],
   ["🧪 <b>„Neu in dieser Beta“:</b> Die neueste Beta steht jetzt immer oben.",
@@ -1459,6 +1463,7 @@ const elMinText = (m) => { const n = Math.round(Number(m) || 0), h = Math.floor(
 const servLabel = (unit, n) => (unit === "trays" ? (n === 1 ? "Blech" : "Bleche") : unit === "forms" ? (n === 1 ? "Form" : "Formen") : (n === 1 ? "Person" : "Personen"));
 
 // 🔤 Zutaten A–Z (Ä wie A, groß/klein egal) – genau wie im Backend
+const elIsAbc = (list) => list.every((x, i) => !i || (list[i - 1].name || "").localeCompare(x.name || "", "de", { sensitivity: "base" }) <= 0); // 🔀 schon nach ABC?
 const abcSort = (list) => list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "de", { sensitivity: "base" })
   || (a.note || "").localeCompare(b.note || "", "de", { sensitivity: "base" }));
 
@@ -1589,12 +1594,14 @@ async function loadImage(file) {
   try {
     return await new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve(img);
+      img.onload = () => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()).then(() => resolve(img)); // ganz fertig entpackt
       img.onerror = reject;
       img.src = url;
     });
   } finally {
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // 🦊 Firefox entpackt große Bilder (z. B. .webp) später noch einmal neu – beim Drehen/Zuschneiden. Ist die Adresse dann schon weg,
+    // bleibt das Bild leer. Deshalb die Adresse lange genug behalten.
+    setTimeout(() => URL.revokeObjectURL(url), 5 * 60 * 1000);
   }
 }
 
@@ -3424,6 +3431,11 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .rserv select { width:auto; flex:none; }
 .rserv .grow { white-space:nowrap; min-width:0; }
 .rmin .rminunit { flex:none; opacity:.75; }
+.nutgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:6px 10px; margin:2px 0 10px 34px; }
+.nutf { display:flex; flex-direction:column; gap:2px; font-size:12px; opacity:.9; min-width:0; }
+.nutin { display:flex; align-items:center; gap:4px; }
+.nutin input { width:100%; min-width:0; box-sizing:border-box; }
+.nutin small { flex:none; opacity:.7; }
 .servtag { font-weight:400; opacity:.75; }
 .rgrouprow select { width:auto; min-width:150px; }
 #titleIcon { cursor:pointer; }
@@ -3441,6 +3453,7 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 /* 👨‍🍳 Knöpfe unter der Kochmütze: Foto blau, Kochen rot, Teilen grün (nur das Symbol) */
 .rtools [data-act="photo-view"] ha-icon { color:var(--primary-color,#03a9f4); }
 .rtools [data-act="recipe-cook"] ha-icon { color:var(--error-color,#e53935); }
+.recipe .rnut { display:block; margin-top:2px; opacity:.75; }
 .recipe .rnote { display:block; margin-top:2px; background:rgba(249,168,37,.18); border-radius:8px; padding:1px 8px; width:fit-content; max-width:100%; }
 .rtools [data-act="recipe-share"] ha-icon { color:var(--success-color,#43a047); }
 .plansec { margin:12px 4px 4px; font-size:14px; color:var(--secondary-text-color); }
@@ -4013,9 +4026,38 @@ function elOcrIsStep(l) {
   const words = t.split(/\s+/).length;
   return words >= 8 || (words >= 5 && /[.!]$/.test(t));
 }
+// 🧮 Nährwerte aus einem Text (Foto vom Kochbuch, Rezeptseite): „Eiweiß 44,8 g“, „898 kcal“ …
+// Gibt { nutrition, rest } zurück – rest = Zeilen ohne die Nährwert-Zeilen. Erst ab 2 Treffern (oder „Nährwerte“ als Überschrift),
+// damit eine Zutat wie „Salz 1 TL“ nicht aus Versehen verschwindet.
+const EL_NUT_WORDS = [["kcal", /^(?:brennwert|energie|kalorien|kcal|calories|energy)$/i], ["protein", /^(?:eiweiß|eiweiss|protein)$/i], ["fat", /^(?:fett|fat)$/i],
+  ["carbs", /^(?:kohlenhydrate|kohlehydrate|carbs|carbohydrates?)$/i], ["sugar", /^(?:zucker|sugar)$/i], ["fiber", /^(?:ballaststoffe|fiber|fibre)$/i], ["salt", /^(?:salz|salt)$/i]];
+function elOcrNutrition(lines) {
+  const nut = {}, rest = [];
+  let head = false, hits = 0;
+  const found = [];
+  for (const l of lines) {
+    const t = l.trim();
+    if (/^\W*(nährwerte|naehrwerte|nährwertangaben|nutrition)\b/i.test(t)) { head = true; found.push(l); continue; }
+    const m = t.match(/^\W*(?:davon\s+)?([A-Za-zÄÖÜäöüß]+)\W*?(\d+(?:[.,]\d+)?)\s*(kcal|kj|g)?\b/i)
+      || t.match(/^\W*(\d+(?:[.,]\d+)?)\s*(kcal)\b/i);
+    let key = null, val = null, unit = "";
+    if (m && m[2] && /kcal/i.test(m[2]) && !m[3]) { key = "kcal"; val = m[1]; unit = "kcal"; }
+    else if (m) { const w = EL_NUT_WORDS.find(([, re]) => re.test(m[1])); if (w) { key = w[0]; val = m[2]; unit = (m[3] || "").toLowerCase(); } }
+    if (key && val != null && !(key in nut)) {
+      let n = parseFloat(String(val).replace(",", "."));
+      if (key === "kcal" && unit === "kj") n = n / 4.184;
+      if (n > 0) { nut[key] = key === "kcal" ? Math.round(n) : Math.round(n * 10) / 10; hits++; found.push(l); continue; }
+    }
+    rest.push(l);
+  }
+  if (hits >= 2 || (head && hits >= 1)) return { nutrition: nut, rest };
+  return { nutrition: null, rest: lines.filter((l) => !(head && /^\W*(nährwerte|naehrwerte|nährwertangaben|nutrition)\b/i.test(l.trim()))) };
+}
+
 function elOcrRecipeParts(text) {
   const raw = String(text || "").replace(/\r/g, "");
-  const lines = raw.split("\n").filter((l) => !elOcrNoise(l)); // 🧹 Social-Media-Kram raus
+  const nutCut = elOcrNutrition(raw.split("\n").filter((l) => !elOcrNoise(l))); // 🧹 Social-Media-Kram raus, 🧮 Nährwerte heraus
+  const lines = nutCut.rest;
   const isIng = (l) => /^\W*zutaten\b/i.test(l.trim());
   const isSteps = (l) => /^\W*(zubereitung|zubereiten|anleitung|so geht'?s|arbeitsschritte)\b/i.test(l.trim());
   let ing = -1, st = -1;
@@ -4041,7 +4083,17 @@ function elOcrRecipeParts(text) {
     ingLines = keep;
     if (steps.length) stepText = steps.map((l) => l.replace(/^\s*\d+\s*[.)]\s*/, "").trim()).join("\n");
   }
-  return { name, ingredients: ingLines.map((l) => l.replace(/^[\s\-–—•*·|]+/, "").trim()).filter((l) => l.length > 1).join("\n"), steps: stepText };
+  return { name, ingredients: ingLines.map((l) => l.replace(/^[\s\-–—•*·|]+/, "").trim()).filter((l) => l.length > 1).join("\n"), steps: stepText, nutrition: nutCut.nutrition };
+}
+
+// 🧮 Nährwerte pro Portion als kurze Zeile: „898 kcal · Eiweiß 44,8 g · Fett 55,2 g · KH 46,7 g“
+const EL_NUT_FIELDS = [["kcal", "kcal", "kcal", "kcal"], ["protein", "Eiweiß", "Protein", "g"], ["fat", "Fett", "Fat", "g"], ["carbs", "Kohlenhydrate", "Carbs", "g"],
+  ["sugar", "davon Zucker", "of which sugar", "g"], ["fiber", "Ballaststoffe", "Fibre", "g"], ["salt", "Salz", "Salt", "g"]];
+function elNutLine(n) {
+  if (!n || typeof n !== "object") return "";
+  const de = EL_LANG === "de", num = (x) => (de ? String(x).replace(".", ",") : String(x));
+  const short = { protein: de ? "Eiweiß" : "Protein", fat: de ? "Fett" : "Fat", carbs: de ? "KH" : "Carbs", sugar: de ? "Zucker" : "Sugar", fiber: de ? "Ballastst." : "Fibre", salt: de ? "Salz" : "Salt" };
+  return EL_NUT_FIELDS.filter(([k]) => Number(n[k]) > 0).map(([k]) => (k === "kcal" ? `${num(n.kcal)} kcal` : `${short[k]} ${num(n[k])} g`)).join(" · ");
 }
 
 // 📋 Text kopieren – mit Ersatzweg, falls das Handy die Zwischenablage sperrt (z. B. ohne https)
@@ -8090,7 +8142,7 @@ ${(() => {
     btn?.classList.add("busy");
     try {
       const res = await this._ws({ type: "einkaufsliste/recipe/import", text: u });
-      this._openRecipeDraft({ name: res.name, items: res.items, steps: res.steps, heat: res.heat, minutes: res.minutes, source: res.source_url || u, image: res.image });
+      this._openRecipeDraft({ name: res.name, items: res.items, steps: res.steps, heat: res.heat, minutes: res.minutes, servings: res.servings, nutrition: res.nutrition, source: res.source_url || u, image: res.image });
       this._toast(EL_LANG === "de" ? `🔗 ${res.items.length} Zutaten${res.steps ? ", Schritte" : ""}${res.image ? ", Foto" : ""}${(res.heat || []).length ? ", 🔥 Backofen & Co." : ""} geholt – bitte prüfen, dann Speichern!`
         : `🔗 ${res.items.length} ingredients${res.steps ? ", steps" : ""}${res.image ? ", photo" : ""} fetched – please check, then Save!`);
     } catch (_) { /* Meldung kam schon */ }
@@ -8105,7 +8157,8 @@ ${(() => {
       const ing = { name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null, store_id: it.store_id || null, category_id: it.category_id || null };
       if (!items.some((a) => this._gkey(a) === this._gkey(ing))) items.push(ing);
     }
-    this._draft = { id: null, name: rec.name || "", icon: "mdi:silverware-fork-knife", items: abcSort(items),
+    this._draft = { id: null, name: rec.name || "", icon: "mdi:silverware-fork-knife", items, // 🔀 Reihenfolge wie im Original (nicht ABC)
+      nutrition: rec.nutrition && typeof rec.nutrition === "object" ? { ...rec.nutrition } : null,
       steps: rec.steps || "", stepRows: this._stepLines(rec.steps).map((t) => ({ k: ++this._stepSeq, t, o: null })),
       servings: rec.servings || null, servings_unit: "persons", minutes: rec.minutes || null, source: rec.source || "",
       heat: (rec.heat || []).map((h) => ({ ...h })), newPhotos: rec.image ? [rec.image] : [] };
@@ -8630,7 +8683,7 @@ ${(() => {
       while (existing.has(name.toLowerCase())) name = `${name.slice(0, 50)} (Import)${name.includes("(Import)") ? "+" : ""}`;
       try {
         const items = (rec.items || []).filter((i) => i.name).map((i) => ({ name: i.name, ...(i.quantity ? { quantity: i.quantity } : {}), ...(i.note ? { note: i.note } : {}), ...(i.store_id ? { store_id: i.store_id } : {}), ...(i.category_id ? { category_id: i.category_id } : {}) }));
-        const saved = await this._ws({ type: "einkaufsliste/recipe/add", name, items, steps: rec.steps || null, heat: rec.heat || [], servings: rec.servings || null, minutes: rec.minutes || null, source: rec.source || null });
+        const saved = await this._ws({ type: "einkaufsliste/recipe/add", name, items, steps: rec.steps || null, heat: rec.heat || [], servings: rec.servings || null, minutes: rec.minutes || null, source: rec.source || null, ...(rec.nutrition ? { nutrition: rec.nutrition } : {}) });
         if (saved?.id && rec.image) await this._ws({ type: "einkaufsliste/photo/set", name: this._recipePhotoKey(saved.id), data: rec.image, add: false }).catch(() => {});
         existing.add(name.toLowerCase()); names.push(name);
       } catch (_) { /* einzelnes kaputtes Rezept überspringen */ }
@@ -9361,7 +9414,7 @@ ${(() => {
       return `
         <div class="recipe rv ${this._knMarked === r.id ? "marked" : ""}${this._cookNowFor(r) ? " cooking" : ""}" tabindex="0" data-id="${r.id}" style="--rc:${esc(this._rgroup(r.group)?.color || SET_COLORS.recipes)}">
           <ha-icon icon="${esc(this._recipeIcon(r))}"></ha-icon>
-          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${planOn && pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}${this._cookNowHtml(r)}${r.cook_note ? `<small class="rnote">📝 ${esc(r.cook_note)}</small>` : ""}</div>
+          <div class="rname" lang="de"><b>${via || fuzzy ? esc(r.name) : this._markHit(r.name, q)}${this._servTag(r)} ${this._recipeAiMark(r)}${planOn && pl[2] ? ` <span class="plantag" title="${pl[1]}">${pl[2]}</span>` : ""}</b>${sub ? `<small>${sub}</small>` : ""}${this._cookNowHtml(r)}${r.cook_note ? `<small class="rnote">📝 ${esc(r.cook_note)}</small>` : ""}${elNutLine(r.nutrition) ? `<small class="rnut" title="${esc(elT("Nährwerte pro Portion"))}">🧮 ${esc(elNutLine(r.nutrition))}</small>` : ""}</div>
         </div>
         <div class="rtools" data-id="${r.id}">
           ${planOn ? `<button class="btn plan ${r.plan || ""}" data-act="recipe-plan" title="Essensplan: antippen = nichts → 💭 Wunsch → 📅 Diese Woche"><ha-icon icon="${pl[0]}"></ha-icon><span class="lbl">${pl[1]}</span></button>` : ""}
@@ -9510,7 +9563,7 @@ ${(() => {
   _openRecipe(recipe) {
     if (this._view === "settings") this._recipeSnap = this._scrollSnap(); // merken, wie weit die Rezeptliste gescrollt war
     this._draft = recipe
-      ? { id: recipe.id, name: recipe.name, group: recipe.group || null, steps: recipe.steps || "", stepRows: this._stepLines(recipe.steps).map((t, i) => ({ k: ++this._stepSeq, t, o: i, ing: Array.isArray(recipe.step_items?.[i]) ? [...recipe.step_items[i]] : null })), servings: recipe.servings || null, servings_unit: recipe.servings_unit || "persons", minutes: recipe.minutes || null, source: recipe.source || "", heat: (recipe.heat || []).map((h) => ({ ...h })), items: abcSort(recipe.items.map((i) => ({ ...i }))) }
+      ? { id: recipe.id, name: recipe.name, group: recipe.group || null, steps: recipe.steps || "", stepRows: this._stepLines(recipe.steps).map((t, i) => ({ k: ++this._stepSeq, t, o: i, ing: Array.isArray(recipe.step_items?.[i]) ? [...recipe.step_items[i]] : null })), servings: recipe.servings || null, servings_unit: recipe.servings_unit || "persons", minutes: recipe.minutes || null, source: recipe.source || "", heat: (recipe.heat || []).map((h) => ({ ...h })), nutrition: recipe.nutrition ? { ...recipe.nutrition } : null, items: recipe.items.map((i) => ({ ...i })) } // 🔀 gespeicherte Reihenfolge
       : { id: null, name: "", icon: "mdi:silverware-fork-knife", items: [], heat: [], stepRows: [] };
     this._view = "recipe";
     this._draftRendered = false;
@@ -9569,6 +9622,13 @@ ${(() => {
           <span class="rminunit">Min</span>
         </div>
         <p class="hint fhint" hidden>⏱️ Wie lange dauert das Rezept ungefähr, von Anfang bis Ende (in Minuten)? Steht in der Kochmütze neben der Personenzahl. Leer lassen geht auch – dann schätzt die Karte die Zeit aus den Schritten und Backofen &amp; Co. (mit „≈“).</p>
+        <div class="srow rserv rnut">
+          <ha-icon class="prev" icon="mdi:nutrition"></ha-icon>
+          <span class="grow">Nährwerte pro Portion</span>
+          <button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="Was ist das?" aria-label="Erklärung: Nährwerte">i</button>
+        </div>
+        <p class="hint fhint" hidden>🧮 Nährwerte für eine Portion. Beim Import (Link, Datei, Mealie, Foto) werden sie übernommen, wenn das Rezept welche hat. Von Hand geht auch, leere Felder sind egal. Stehen in der Rezeptliste unter dem Namen.</p>
+        <div class="nutgrid">${EL_NUT_FIELDS.map(([k, de, en, u]) => `<label class="nutf"><span>${esc(EL_LANG === "de" ? de : en)}</span><span class="nutin"><input data-nut="${k}" type="number" inputmode="decimal" min="0" step="${k === "kcal" ? "1" : "0.1"}" value="${esc(dr.nutrition?.[k] ?? "")}"><small>${u}</small></span></label>`).join("")}</div>
         <div class="photorow" id="rPhotoRow"></div>
         `)}
         ${this._rsec("zut", "mdi:food-apple-outline", "#43a047", "Zutaten", "Was kommt rein?", `<button class="btn rimportbtn" type="button" data-act="rimport-toggle" title="Zutaten einfügen" aria-label="Zutaten einfügen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon><span class="lbl">Zutaten einfügen</span></button>`, `
@@ -9929,6 +9989,7 @@ ${(() => {
       const res = await this._ws({ type: "einkaufsliste/recipe/import", text: url });
       if (res.source_url && this._draft && !this._draft.source) { this._draft.source = res.source_url; const se = this.$("rSource"); if (se) se.value = res.source_url; }
       if (res.minutes && this._draft && !this._draft.minutes) { this._draft.minutes = res.minutes; const me = this.$("rMinutes"); if (me && !me.value) me.value = String(res.minutes); } // ⏱️ Gesamtzeit von der Rezeptseite
+      this._takeServNut(res);
       const lines = this._stepLines(res.steps || "").map((x) => x.replace(/^\s*(?:\d+[.)]|[-•*])\s+/, "").trim()).filter(Boolean);
       if (!lines.length) { this._toast(EL_LANG === "de" ? "Auf der Seite habe ich keine Schritte gefunden 🤷" : "I found no steps on that page 🤷"); }
       else {
@@ -9954,6 +10015,8 @@ ${(() => {
       const dr = this._draft;
       if (res.source_url && !dr.source) { dr.source = res.source_url; const se = this.$("rSource"); if (se) se.value = res.source_url; } // 🔗 Nr. 33: Herkunft merken
       if (res.minutes && !dr.minutes) { dr.minutes = res.minutes; const me = this.$("rMinutes"); if (me && !me.value) me.value = String(res.minutes); } // ⏱️ Gesamtzeit von der Rezeptseite
+      this._takeServNut(res);
+      const wasEmpty = !dr.items.length, wasAbc = elIsAbc(dr.items);
       let added = 0;
       for (const it of res.items) {
         const ing = { name: it.name, quantity: it.quantity || null, note: it.note || null, for_whom: null,
@@ -9962,7 +10025,7 @@ ${(() => {
         dr.items.push(ing);
         added++;
       }
-      abcSort(dr.items);
+      if (!wasEmpty && wasAbc) abcSort(dr.items); // 🔀 leer = Reihenfolge wie im Rezept, sonst wie bisher sortiert
       let extra = "";
       if (res.steps && !(dr.stepRows || []).some((r) => r.t.trim())) { this._setStepsText(res.steps); extra += " + Schritte"; } // 🔗 ganzes Rezept in einem Rutsch
       if ((res.heat || []).length && !(dr.heat || []).length) { dr.heat = res.heat.map((h) => ({ ...h })); this._renderHeat(); extra += " + 🔥 Backofen & Co."; }
@@ -10114,6 +10177,29 @@ ${(() => {
     });
   }
 
+  // 🧮 Nährwerte aus den Feldern im Editor lesen (leer = keine)
+  _readNut() {
+    const out = {};
+    for (const inp of this.shadowRoot.querySelectorAll("[data-nut]")) {
+      const n = parseFloat(String(inp.value).replace(",", "."));
+      if (n > 0) out[inp.dataset.nut] = n;
+    }
+    return Object.keys(out).length ? out : null;
+  }
+  // 🍽️ Portionen und 🧮 Nährwerte aus einem Import übernehmen – nur in leere Felder
+  _takeServNut(res) {
+    const dr = this._draft;
+    if (!dr || !res) return;
+    if (res.servings && !dr.servings) { dr.servings = res.servings; const se = this.$("rServings"); if (se && !se.value) se.value = String(res.servings); }
+    if (res.nutrition && typeof res.nutrition === "object") {
+      const cur = this.shadowRoot.querySelector("[data-nut]") ? this._readNut() : dr.nutrition;
+      if (!cur) {
+        dr.nutrition = { ...res.nutrition };
+        for (const inp of this.shadowRoot.querySelectorAll("[data-nut]")) inp.value = dr.nutrition[inp.dataset.nut] ?? "";
+      }
+    }
+  }
+
   _readHeat() {
     const box = this.$("rHeat");
     if (!box || !this._draft) return;
@@ -10244,9 +10330,10 @@ ${(() => {
     if (ia && ia.dataset.touched && this._capAliases(ia.value.split(/[,;]/)).join(", ") !== (ia.dataset.orig || "")) {
       (dr.aliasEdits ||= {})[this._pk(ing.name, ing.note)] = this._capAliases(ia.value.split(/[,;]/));
     }
+    const wasAbc = elIsAbc(dr.items);
     if (idx != null && dr.items[idx]) dr.items[idx] = ing;
     else dr.items.push(ing);
-    abcSort(dr.items);
+    if (wasAbc) abcSort(dr.items); // 🔀 eigene Reihenfolge (z. B. aus einem Import) bleibt
     const photo = this._newPhoto;
     this._rEditIdx = null;
     this.$("rEditHint").hidden = true;
@@ -10296,6 +10383,7 @@ ${(() => {
     dr.steps = this._stepRowsOf(dr).map((r) => r.t.replace(/\s*\n+\s*/g, " ").trim()).filter(Boolean).join("\n");
     if (this.$("rServings")) { const n = parseInt(this.$("rServings").value, 10); dr.servings = n >= 1 && n <= 99 ? n : null; }
     if (this.$("rMinutes")) { const n = parseInt(this.$("rMinutes").value, 10); dr.minutes = n >= 1 && n <= 1440 ? n : null; } // ⏱️ Dauer ca.
+    if (this.shadowRoot.querySelector("[data-nut]")) dr.nutrition = this._readNut(); // 🧮 Nährwerte pro Portion
     if (this.$("rServUnit")) dr.servings_unit = ["trays", "forms"].includes(this.$("rServUnit").value) ? this.$("rServUnit").value : "persons";
     this._readHeat();
   }
@@ -10322,7 +10410,7 @@ ${(() => {
     const heat = (dr.heat || []).filter((h) => h.mode || h.temp || h.minutes || h.note)
       .map((h) => ({ device: h.device || "Backofen", mode: h.mode || null, temp: h.temp ? Number(h.temp) : null,
         minutes: h.minutes ? Number(h.minutes) : null, minutes_to: h.minutes_to ? Number(h.minutes_to) : null, preheat: !!h.preheat, steps: h._sk ? sr.map((r, i) => (h._sk.includes(r.k) ? i + 1 : 0)).filter(Boolean) : (h.steps || []).map(Number).filter((n) => n > 0), note: h.note || null }));
-    const msg = { name: dr.name.trim(), group: dr.group || null, items, steps: (dr.steps || "").trim() || null, heat, servings: dr.servings || null, servings_unit: dr.servings_unit || "persons", minutes: dr.minutes || null, source: /^https?:\/\/\S+$/i.test(dr.source || "") ? dr.source : null };
+    const msg = { name: dr.name.trim(), group: dr.group || null, items, steps: (dr.steps || "").trim() || null, heat, servings: dr.servings || null, servings_unit: dr.servings_unit || "persons", minutes: dr.minutes || null, nutrition: dr.nutrition || null, source: /^https?:\/\/\S+$/i.test(dr.source || "") ? dr.source : null };
     { const names = new Set(items.map((i) => String(i.name).toLowerCase())); // 🥕 Zutaten pro Schritt (nur festgelegte; null = automatisch)
       const si = sr.map((r) => (Array.isArray(r.ing) ? r.ing.filter((n) => names.has(n)) : null));
       msg.step_items = si.some((x) => x) ? si : null; }
@@ -10675,6 +10763,7 @@ ${(() => {
       const parts = elOcrRecipeParts(text);
       const nameEl = this.$("rName"), ta = this.$("rImportText");
       if (nameEl && parts.name && !nameEl.value.trim()) { nameEl.value = parts.name; this._autoGroup?.(); }
+      if (parts.nutrition) this._takeServNut({ nutrition: parts.nutrition }); // 🧮 Nährwert-Tabelle vom Foto
       if (parts.steps && !(dr.stepRows || []).some((r) => r.t.trim())) {
         this._setStepsText(parts.steps);
         if (!(dr.heat || []).length) { // 🔥 Backofen & Airfryer aus den gelesenen Schritten

@@ -31,6 +31,7 @@ from homeassistant.util import dt as dt_util
 from .categories import category_hints, guess_category
 from .geocode import async_geocode, geo_key
 from .netutil import photo_file_complete
+from .nutrition import clean_nutrition
 from .quantity import UNIT_CHOICES, apply_unit, is_bare, norm_qty, split_qty, split_qty_ex, unit_of
 from .const import (
     CATEGORY_COLORS,
@@ -4703,6 +4704,7 @@ class EinkaufslisteManager:
         source: str | None = None,
         minutes: int | None = None,
         step_items: list[Any] | None = None,
+        nutrition: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         recipe = {
             "id": _new_id(),
@@ -4724,6 +4726,9 @@ class EinkaufslisteManager:
         si = _step_items(step_items, recipe_step_count(recipe))
         if si:  # 🥕 Zutaten pro Schritt (im Editor festgelegt)
             recipe["step_items"] = si
+        nut = clean_nutrition(nutrition)
+        if nut:  # 🧮 Nährwerte pro Portion
+            recipe["nutrition"] = nut
         if ai:  # 🤖 von der KI vorgeschlagen – bleibt für immer dran, auch nach dem Bearbeiten
             recipe["ai"] = True
         self.recipes.append(recipe)
@@ -4876,6 +4881,12 @@ class EinkaufslisteManager:
                 recipe["source"] = src
             else:
                 recipe.pop("source", None)
+        if "nutrition" in fields:  # 🧮 Nährwerte pro Portion, leer = weg
+            nut = clean_nutrition(fields["nutrition"])
+            if nut:
+                recipe["nutrition"] = nut
+            else:
+                recipe.pop("nutrition", None)
         if "minutes" in fields:  # ⏱️ Dauer ca., leer = weg
             mins = _minutes(fields["minutes"])
             if mins:

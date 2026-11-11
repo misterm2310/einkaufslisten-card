@@ -23,6 +23,7 @@ from .convert import convert_line, convert_temps
 from .netutil import read_limited
 from .quantity import NUM, UNIT_WORDS, norm_qty
 from .recipe_heat import guess_heat
+from .nutrition import nutrition_from_schema
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -149,8 +150,10 @@ def parse_html(page: str) -> dict[str, Any]:
             "image_url": _image_url(recipe.get("image")),
             "steps": _steps(recipe.get("recipeInstructions")),
             "minutes": _total_minutes(recipe),
+            "servings": _servings_of(recipe.get("recipeYield")),  # 🍽️ „4 Portionen“ (Chefkoch & Co.)
+            "nutrition": nutrition_from_schema(recipe.get("nutrition")),  # 🧮 Nährwerte pro Portion
         }
-    return {"name": None, "items": [], "image_url": None, "steps": None, "minutes": None}
+    return {"name": None, "items": [], "image_url": None, "steps": None, "minutes": None, "servings": None, "nutrition": None}
 
 
 def _iso_minutes(value: Any) -> int | None:
@@ -281,7 +284,8 @@ async def async_import(hass: HomeAssistant, manager: Any, text: str) -> dict[str
         info = parse_html(page)
         if not info["items"]:
             raise ValueError("Auf der Seite habe ich keine Zutaten-Liste gefunden. Kopier sie lieber als Text rein.")
-        result.update(source="link", name=info["name"], items=info["items"], steps=info.get("steps"), source_url=first[:500], minutes=info.get("minutes"))
+        result.update(source="link", name=info["name"], items=info["items"], steps=info.get("steps"), source_url=first[:500], minutes=info.get("minutes"),
+                      servings=info.get("servings"), nutrition=info.get("nutrition"))
         img_url = info.get("image_url")
         if isinstance(img_url, str) and img_url.startswith("http"):
             img = await _download(hass, session, img_url, MAX_IMAGE)
@@ -370,7 +374,7 @@ def _ingredient(raw: Any) -> dict[str, Any] | None:
     food_name = str((food or {}).get("name") or "").strip()
     note = str(raw.get("note") or "").strip()
     if not food_name:  # Mealie ohne „Lebensmittel“: steht alles im Text
-        text = raw.get("display") or raw.get("originalText") or note
+        text = raw.get("display") or raw.get("originalText") or raw.get("original_text") or note
         return parse_line(str(text or "")) if text else None
     unit = raw.get("unit") if isinstance(raw.get("unit"), dict) else {}
     unit_txt = str(unit.get("abbreviation") or unit.get("name") or "").strip()
@@ -382,26 +386,44 @@ def _ingredient(raw: Any) -> dict[str, Any] | None:
     return out
 
 
+def _pick(node: dict[str, Any], *keys: str) -> Any:
+    """Erstes vorhandene Feld – schema.org schreibt „recipeIngredient“, der Mealie-Export „recipe_ingredient“."""
+    for key in keys:
+        if node.get(key) not in (None, "", [], 0):  # 0 = Mealie „nicht angegeben“
+            return node[key]
+    return None
+
+
+def _seconds_minutes(value: Any) -> int | None:
+    """⏱️ Mealie „total_time_seconds“: 7200 -> 120 Minuten."""
+    try:
+        n = round(float(value) / 60)
+    except (TypeError, ValueError):
+        return None
+    return n if 1 <= n <= 1440 else None
+
+
 def recipe_from_schema(node: dict[str, Any]) -> dict[str, Any]:
     """schema.org-„Recipe“ (Webseite, Rezept-App) oder Mealie-Rezept -> Rezept für den Editor."""
     items = []
-    for raw in node.get("recipeIngredient") or node.get("ingredients") or []:
+    for raw in _pick(node, "recipeIngredient", "recipe_ingredient", "ingredients") or []:
         if isinstance(raw, dict) and raw.get("title") and not raw.get("food") and not raw.get("note"):
             continue  # nur eine Zwischen-Überschrift
         it = _ingredient(raw)
         if it and it.get("name"):
             items.append(it)
-    steps = _steps(node.get("recipeInstructions"))
-    minutes = _text_minutes(node.get("totalTime")) or _total_minutes(node) or (
-        (_text_minutes(node.get("prepTime")) or 0) + (_text_minutes(node.get("performTime")) or _text_minutes(node.get("cookTime")) or 0) or None
-    )
-    source = node.get("orgURL") or node.get("url")
+    steps = _steps(_pick(node, "recipeInstructions", "recipe_instructions"))
+    minutes = _text_minutes(_pick(node, "totalTime", "total_time")) or _total_minutes(node) or _seconds_minutes(node.get("total_time_seconds")) or (
+        (_text_minutes(_pick(node, "prepTime", "prep_time")) or 0) + (_text_minutes(_pick(node, "performTime", "perform_time", "cookTime", "cook_time")) or 0) or None
+    ) or ((_seconds_minutes(node.get("prep_time_seconds")) or 0) + (_seconds_minutes(node.get("perform_time_seconds")) or 0) or None)
+    source = _pick(node, "orgURL", "org_url", "url")
     return {
         "name": _nice(html.unescape(str(node.get("name") or "")))[:60] or None,
         "items": items,
         "steps": steps,
         "minutes": minutes if minutes and minutes <= 1440 else None,
-        "servings": _servings_of(node.get("recipeServings") or node.get("recipeYield")),
+        "servings": _servings_of(_pick(node, "recipeServings", "recipe_servings", "recipeYield", "recipe_yield")),
+        "nutrition": nutrition_from_schema(node.get("nutrition")),  # 🧮 Nährwerte pro Portion
         "source": source if isinstance(source, str) and source.startswith("http") else None,
         "image_url": _image_url(node.get("image")) if isinstance(node.get("image"), (dict, list)) or str(node.get("image") or "").startswith("http") else None,
     }
@@ -420,7 +442,7 @@ def _recipes_in_json(data: Any) -> list[dict[str, Any]]:
         elif isinstance(n, dict):
             kind = n.get("@type")
             kinds = kind if isinstance(kind, list) else [kind]
-            if "Recipe" in kinds or ("recipeIngredient" in n and n.get("name")):
+            if "Recipe" in kinds or (("recipeIngredient" in n or "recipe_ingredient" in n) and n.get("name")):
                 nodes.append(n)
                 return
             for key in ("@graph", "mainEntity", "itemListElement", "recipes", "items", "data"):

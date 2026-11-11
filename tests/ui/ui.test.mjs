@@ -836,6 +836,34 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   return out; });
 check("📷 Vorschlag: Rezept aus Fotos füllt Name, Zutaten, Schritte, Backofen und Foto", r.fertig && r.name==="Omas Apfelkuchen" && /200 g Mehl/.test(r.ing||"") && /vorheizen/.test(r.steps||"") && /Backofen Umluft 180 °C 25 Min/.test(r.heat||"") && /Foto ist dabei/.test(r.hint||""), JSON.stringify(r));
 
+// 41) 🧮 Nährwerte + 🔀 Reihenfolge beim Import: Entwurf behält die Reihenfolge, Editor zeigt/speichert Nährwerte, Liste zeigt sie, Foto-Text liefert sie
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const calls=[]; const oldWs=c._ws; c._ws=async(m)=>{ calls.push(m); return m.type==="einkaufsliste/recipe/add"?{id:"rnew"}:{}; };
+  c._openRecipeDraft({ name:"Lasagne Bolognese", items:[{name:"Lasagneplatte"},{name:"Hackfleisch",quantity:"600 g"},{name:"Butter"},{name:"Milch"}], servings:4, nutrition:{kcal:898,protein:44.8,fat:55.2,carbs:46.7} });
+  await new Promise(r=>setTimeout(r,80));
+  const order=c._draft.items.map(i=>i.name).join(","), serv=c.$("rServings")?.value;
+  const nut=[...c.shadowRoot.querySelectorAll("[data-nut]")].map(i=>i.dataset.nut+"="+i.value).join(",");
+  const kc=c.shadowRoot.querySelector('[data-nut="kcal"]'); if (kc) kc.value="900";
+  try { await c._saveRecipe(); } catch (err) {} await new Promise(r=>setTimeout(r,80));
+  const sent=calls.find(m=>m.type==="einkaufsliste/recipe/add");
+  c._data.recipes=[{id:"rn1",name:"Lasagne",items:[{name:"Hack"}],steps:"Backen",heat:[],nutrition:{kcal:898,protein:44.8,fat:55.2,carbs:46.7}}];
+  c._view="recipes"; c._renderAll(); await new Promise(r=>setTimeout(r,80));
+  const line=c.shadowRoot.querySelector('.recipe[data-id="rn1"] .rnut')?.textContent||"";
+  // 📷 Foto im Editor: Text mit Nährwert-Tabelle
+  c._openRecipe(null); await new Promise(r=>setTimeout(r,80));
+  const oldOcr=c._ocrText; c._ocrText=async()=>"Lasagne\nZutaten\n200 g Mehl\n1 Prise Salz\nNährwerte pro Portion\nBrennwert 898 kcal\nEiweiß 44,8 g\nFett 55,2 g\nKohlenhydrate 46,7 g\nZubereitung\nAlles schichten und backen.";
+  c._pickFile=async()=>{ const t=c._photoTarget; setTimeout(()=>t.ocr("data:image/png;base64,iVBORw0KGgo="),10); };
+  c._recipeFromPhotos([]); await new Promise(r=>setTimeout(r,150));
+  [...document.querySelectorAll("[data-elconfirm] button")].find(b=>/Fertig/.test(b.textContent))?.click();
+  await new Promise(r=>setTimeout(r,400));
+  const ocrNut=c._readNut(), ocrIng=c.$("rImportText")?.value||"";
+  c._ocrText=oldOcr; c._ws=oldWs; document.querySelectorAll("[data-elov],[data-elconfirm]").forEach(e=>e.remove()); c._view="list"; c._data.recipes=[]; c._renderAll();
+  return { order, serv, nut, sentNut: sent?.nutrition, sentOrder: (sent?.items||[]).map(i=>i.name).join(","), line, ocrNut, ocrIng }; });
+check("🔀 Import-Entwurf behält die Reihenfolge des Rezepts", r.order === "Lasagneplatte,Hackfleisch,Butter,Milch" && r.sentOrder === r.order, JSON.stringify(r));
+check("🍽️ Portionen aus dem Import stehen im Editor", r.serv === "4", JSON.stringify(r));
+check("🧮 Editor zeigt die Nährwerte und speichert die Änderung", /kcal=898/.test(r.nut) && /protein=44.8/.test(r.nut) && r.sentNut?.kcal === 900 && r.sentNut?.fat === 55.2, JSON.stringify(r));
+check("🧮 Rezeptliste zeigt die Nährwerte unter dem Namen", r.line === "🧮 898 kcal · Eiweiß 44,8 g · Fett 55,2 g · KH 46,7 g", r.line);
+check("🧮 Foto-Text: Nährwert-Tabelle wird erkannt und nicht zu Zutaten", r.ocrNut?.kcal === 898 && r.ocrNut?.carbs === 46.7 && !/Brennwert|Eiweiß/.test(r.ocrIng) && /Salz/.test(r.ocrIng), JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

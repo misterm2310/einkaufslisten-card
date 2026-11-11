@@ -5244,3 +5244,67 @@ async def test_recipe_basic_mark_goes_to_central_list(hass, setup):
     m.add_recipe("Nudeln", [{"name": "Nudeln"}, {"name": "Olivenöl", "basic": True}])
     assert m.basics == ["Olivenöl"] and m.basics_on is True
     assert all(i["basic"] is False for i in m.recipes[-1]["items"])
+
+
+def test_mealie_export_with_underscores():
+    """🍲 Echter Mealie-Export (Felder mit Unterstrich, z. B. „recipe_ingredient“) – Rudis Lasagne aus Issue #24."""
+    import json
+    from custom_components.einkaufsliste.recipe_import import parse_recipe_file
+
+    unit = lambda name, abbr="": {"name": name, "abbreviation": abbr}  # noqa: E731
+    ing = lambda q, u, food, note="": {"quantity": q, "unit": u, "food": {"name": food}, "note": note, "display": "", "title": None, "original_text": None}  # noqa: E731
+    mealie = {
+        "name": "Lasagne Bolognese", "recipe_servings": 4.0, "recipe_yield_quantity": 0.0, "recipe_yield": "",
+        "total_time": None, "total_time_seconds": 7200, "prep_time_seconds": 3600, "perform_time_seconds": 3600,
+        "org_url": "https://www.chefkoch.de/rezepte/1112181217260303/Lasagne-Bolognese.html",
+        "recipe_ingredient": [
+            ing(8.0, unit("Stück"), "Lasagne-Platte", "(vorgegarte)"),
+            ing(600.0, unit("Gramm", "g"), "gemischtes Hackfleisch"),
+            ing(2.0, unit("Esslöffel", "EL"), "Butter"),
+            ing(500.0, unit("Milliliter", "ml"), "Milch"),
+        ],
+        "recipe_instructions": [{"title": "Zubereitung", "text": "Gemüse würfeln und anbraten."},
+                                {"title": "", "text": "Im vorgeheizten Backofen bei 180 °C Ober-/Unterhitze ca. 20 Minuten überbacken."}],
+        "nutrition": {"calories": "898", "carbohydrate_content": "46.7", "fat_content": "55.2", "protein_content": "44.8",
+                      "fiber_content": None, "sodium_content": None, "sugar_content": None},
+    }
+    r = parse_recipe_file(json.dumps(mealie).encode(), "lasagne-bolognese.json")[0]
+    assert [i["name"] for i in r["items"]] == ["Lasagne-Platte", "Gemischtes Hackfleisch", "Butter", "Milch"]  # 🔀 Reihenfolge bleibt
+    assert len(r["steps"].split("\n")) == 2
+    assert r["servings"] == 4 and r["minutes"] == 120
+    assert r["source"].startswith("https://www.chefkoch.de/")
+    assert r["nutrition"] == {"kcal": 898, "protein": 44.8, "fat": 55.2, "carbs": 46.7}
+
+
+def test_link_import_servings_and_nutrition():
+    """🍽️ Chefkoch & Co.: Portionen und 🧮 Nährwerte aus dem schema.org-Rezept der Seite."""
+    from custom_components.einkaufsliste.recipe_import import parse_html
+
+    page = """<script type="application/ld+json">{"@type":"Recipe","name":"Lasagne Bolognese","recipeYield":"4 Portionen",
+      "recipeIngredient":["8 Lasagneplatte(n)","600 g Hackfleisch, gemischtes","2 EL Butter"],
+      "nutrition":{"@type":"NutritionInformation","calories":"898 kcal","proteinContent":"44,8g","fatContent":"55,2g",
+                   "carbohydrateContent":"46,7g","sodiumContent":"400 mg"}}</script>"""
+    info = parse_html(page)
+    assert info["servings"] == 4
+    assert [i["name"] for i in info["items"]][0].startswith("Lasagneplatte")  # 🔀 nicht ABC
+    assert info["nutrition"] == {"kcal": 898, "protein": 44.8, "fat": 55.2, "carbs": 46.7, "salt": 1.0}
+
+
+def test_clean_nutrition():
+    """🧮 Nährwerte: nur bekannte Felder, Zahlen im sinnvollen Bereich, kJ werden zu kcal."""
+    from custom_components.einkaufsliste.nutrition import clean_nutrition, nutrition_from_schema
+
+    assert clean_nutrition({"kcal": "898,4", "fat": 55.25, "foo": 3, "protein": -1, "salt": "abc"}) == {"kcal": 898, "fat": 55.2}
+    assert clean_nutrition({}) is None and clean_nutrition("x") is None
+    assert nutrition_from_schema({"calories": "3757 kJ"}) == {"kcal": 898}
+
+
+async def test_recipe_nutrition_saved(hass: HomeAssistant, setup) -> None:
+    """🧮 Nährwerte am Rezept speichern, ändern und wieder leeren."""
+    m = mgr(hass)
+    r = m.add_recipe("Lasagne", [{"name": "Nudeln"}], nutrition={"kcal": 898, "protein": "44.8", "bla": 1})
+    assert r["nutrition"] == {"kcal": 898, "protein": 44.8}
+    m.update_recipe(r["id"], nutrition={"fat": 55.2})
+    assert m.recipe_by_id(r["id"])["nutrition"] == {"fat": 55.2}
+    m.update_recipe(r["id"], nutrition=None)
+    assert "nutrition" not in m.recipe_by_id(r["id"])

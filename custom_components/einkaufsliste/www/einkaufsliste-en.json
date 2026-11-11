@@ -2466,5 +2466,14 @@
 "Speichern & fertig": "Save & done",
 "Speichern und im Editor weitermachen": "Save and keep editing",
 "Speichern und den Editor schließen": "Save and close the editor",
-"💾 Zwischengespeichert – du kannst weitermachen": "💾 Saved – you can keep going"
+"💾 Zwischengespeichert – du kannst weitermachen": "💾 Saved – you can keep going",
+"Nährwerte pro Portion": "Nutrition per serving",
+"Erklärung: Nährwerte": "Explanation: nutrition",
+"🧮 Nährwerte für eine Portion. Beim Import (Link, Datei, Mealie, Foto) werden sie übernommen, wenn das Rezept welche hat. Von Hand geht auch, leere Felder sind egal. Stehen in der Rezeptliste unter dem Namen.": "🧮 Nutrition for one serving. On import (link, file, Mealie, photo) they are taken over if the recipe has them. You can also enter them by hand, empty fields are fine. Shown in the recipe list under the name.",
+"Eiweiß": "Protein",
+"Fett": "Fat",
+"Kohlenhydrate": "Carbs",
+"davon Zucker": "of which sugar",
+"Ballaststoffe": "Fibre",
+"Salz": "Salt"
 }
