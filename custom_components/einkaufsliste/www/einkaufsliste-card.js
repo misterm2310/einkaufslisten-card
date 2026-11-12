@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.11";
+const EL_VERSION = "2.76.28-beta.12";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -261,7 +261,7 @@ const EL_HELP = {
   ]],
   recipes: ["list", [
     "Reiter <b>Rezepte</b> (Knopf „Neues Rezept“, Suche, pro Zeile ✏️), <b>Gruppen</b> (Fisch, Fleisch, Gebäck …; Liste wie bei den Kategorien: Gruppe antippen = Name, Farbe und Icon ändern, ⌃⌄ = Reihenfolge; Icon und Farbe färben die Rezepte) und <b>Rezepte aus Datei</b> (.txt, .md, .csv, .json, 🍲 Mealie-.zip/.json und schema.org; US-Maße werden umgerechnet – nur Admins). Dazu <b>🔗 Rezept aus Link</b> (ganzes Rezept auf einmal) und <b>🧂 Grundvorrat</b> (zentrale Liste: Salz, Pfeffer … gelten in allen Rezepten als „haben wir immer“).",
-    "<b>Rezept-Editor:</b> Name und Gruppe (wird vorgeschlagen), „Mengen für N Personen/Bleche“, <b>⏱️ Dauer ca.</b> (Minuten; steht in der Kochmütze neben der Personenzahl, ohne Eintrag geschätzt mit „≈“, beim Rezept-Link automatisch), <b>🧮 Nährwerte pro Portion</b> (kcal, Eiweiß, Fett …; beim Import automatisch, stehen in der Rezeptliste unter dem Namen), Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Foto“</b> oben rechts bei „Eingaben“ (ein Knopf für alles: ohne Text wird es gleich das Rezept-Foto, bei Text fragt die Liste „📖 Rezept lesen“ oder „🍽️ Foto vom Gericht“; Rezept lesen = eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. <b>🥕 Zutaten pro Schritt:</b> der Knopf mit der Möhre unter jedem Schritt zeigt, welche Zutaten dazugehören – automatisch aus dem Text erkannt (≈), antippen legt sie fest. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
+    "<b>Rezept-Editor:</b> Oben der Name, darunter ein Raster mit Gruppe (wird vorgeschlagen), Mengen, Dauer und Quelle; Nährwerte und Fotos unter „Mehr“. „Mengen für N Personen/Bleche“, <b>⏱️ Dauer ca.</b> (Minuten; steht in der Kochmütze neben der Personenzahl, ohne Eintrag geschätzt mit „≈“, beim Rezept-Link automatisch), <b>🧮 Nährwerte pro Portion</b> (kcal, Eiweiß, Fett …; beim Import automatisch, stehen in der Rezeptliste unter dem Namen), Rezept-Foto, <b>🏷️ Spitznamen</b> zu jeder Zutat, <b>💾 Zwischenspeichern</b> (Editor bleibt offen) oder „Speichern &amp; fertig“, <b>„📷 Foto“</b> oben rechts bei „Eingaben“ (ein Knopf für alles: ohne Text wird es gleich das Rezept-Foto, bei Text fragt die Liste „📖 Rezept lesen“ oder „🍽️ Foto vom Gericht“; Rezept lesen = eine oder mehrere Seiten abfotografieren → Name, Zutaten zum Prüfen und Schritte; die Fotos kommen ans Rezept), Zutaten (wie in der Liste, mit Einheiten und 🧂 „haben wir immer“), <b>„Zutaten einfügen“</b> (Zutaten-Text oder Rezept-Link), <b>Backofen &amp; Co.</b> (Grad, Minuten) und die Zubereitung – eine Zeile pro Schritt. <b>🥕 Zutaten pro Schritt:</b> der Knopf mit der Möhre unter jedem Schritt zeigt, welche Zutaten dazugehören – automatisch aus dem Text erkannt (≈), antippen legt sie fest. Jeder gespeicherte Schritt kann ein <b>Foto</b> haben, das im Koch-Modus bei genau diesem Schritt erscheint. Schritte verschiebst du am <b>⠿</b> (oder mit ↑ ↓).",
     "<b>🔗 Quelle &amp; Original:</b> Beim Import per Link merkt sich das Rezept die Adresse (im Editor unter dem Namen änderbar, auch von Hand eintragbar). In der Rezeptliste öffnet „Original öffnen“ die Seite. <b>👨‍🍳 Kochmodus:</b> Er merkt sich pro Rezept den Schritt und fragt beim nächsten Start, ob du dort weitermachen willst.",
     "<b>🍟 Fritteuse:</b> Hat ein Schritt „Heißluftfritteuse“ mit Programm (Heißluft, Backen, Grillen oder Aufwärmen), Temperatur und Minuten und ist <b>Airfryer Control</b> installiert, steht im Kochmodus (für alle, mit Airfryer Control ab Beta 17) der Knopf „An Airfryer Control schicken“. Du wählst den Korb (es wird immer gefragt); die Fritteuse wird vorbereitet, <b>den Start drückst du am Gerät</b>.",
   ], [
@@ -421,6 +421,7 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🧩 <b>Rezept-Editor aufgeräumt:</b> Im Kasten „Eingaben“ stehen Gruppe, Mengen für, Dauer und Quelle jetzt als Raster mit kleiner Überschrift (Handy 2 Spalten, PC eine Reihe). Nährwerte und Fotos stecken unter „Mehr“ – ein neues Foto klappt „Mehr“ von selbst auf.", "🧩 <b>Recipe editor tidied up:</b> In the “Inputs” box, group, servings, duration and source now sit in a grid with small labels (2 columns on phones, one row on PC). Nutrition and photos live under “More” – a new photo opens “More” by itself.", "beta.12"],
   ["🔒 <b>Datenschutz-Hinweis zur KI-Foto-Lesung:</b> Unter ⚙️ → Datenschutz und bei den KI-Kochen-Einstellungen steht jetzt ehrlich, dass bei „🤖 KI liest das Foto“ das ganze Foto an den KI-Anbieter geht (nur auf Wunsch, kurz im Medien-Ordner, danach gelöscht). Dazu übernimmt die KI auch Portionen und Dauer, und die Anleitung nennt die KI-Foto-Lesung.",
    "🔒 <b>Privacy note for AI photo reading:</b> ⚙️ → Privacy and the AI cooking settings now say honestly that with “🤖 AI reads the photo” the whole photo goes to the AI provider (only on request, kept briefly in the media folder, then deleted). The AI also fills servings and duration, and the guide mentions AI photo reading.", "beta.11"],
   ["🤖 <b>KI liest das Rezeptfoto:</b> Ist „KI-Kochen“ an, fragt die Karte beim „Rezept lesen“, ob die KI das Foto lesen soll – genauer, auch bei verspielter Schrift und Handschrift. Das Foto geht dann an deinen KI-Anbieter (braucht eine „KI-Aufgabe“ in Home Assistant, die Bilder versteht); klappt es nicht, liest die Karte selbst.",
@@ -3763,6 +3764,17 @@ ha-card.labels .rsub button.btn, ha-card.labels .rsec-h button.btn, ha-card.labe
 .rimport textarea { width:100%; box-sizing:border-box; font:inherit; font-size:.95em; color:var(--primary-text-color); background:var(--card-background-color, var(--ha-card-background, #fff)); border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; padding:9px 10px; resize:vertical; }
 .rimport .btnrow { justify-content:flex-end; }
 #rPhotoRow { margin:4px 2px 2px; }
+/* 🧩 Rezept-Editor „Eingaben“: Raster mit kleiner Überschrift über jedem Feld (wie die Nährwerte) */
+.rgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px 10px; margin:6px 0 6px; } /* Handy: 2 Spalten, PC: alle 4 nebeneinander */
+.rgf { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.rgl { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--secondary-text-color); --mdc-icon-size:16px; min-height:20px; }
+.rgl .finfo { margin-left:auto; }
+.rgl .hint { margin-left:auto; font-size:11px; }
+.rgf > select, .rgf > input { width:100%; min-width:0; box-sizing:border-box; }
+.rgin { display:flex; gap:6px; min-width:0; }
+.rgin input { width:48px; flex:none; text-align:center; box-sizing:border-box; }
+.rgin select { flex:1 1 auto; min-width:0; width:auto; }
+.rmore { margin:8px 0 2px; }
 #rPhotoRow .btn.on { color:var(--primary-color,#03a9f4); }
 .redithint { font-size:.85em; padding:6px 10px; border-radius:12px; background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, transparent); margin:4px 2px; }
 .rrow .iconbtn { align-self:center; }
@@ -9829,38 +9841,24 @@ ${(() => {
           <ha-icon class="prev" id="rIconPrev" icon="${esc(this._recipeIcon(dr))}"></ha-icon>
           <input class="grow" id="rName" value="${esc(dr.name)}" placeholder="Name, z. B. Freitags Fisch">
         </div>
-        <div class="srow">
-          <ha-icon class="prev" icon="mdi:link-variant"></ha-icon>
-          <input class="grow" id="rSource" type="url" inputmode="url" value="${esc(dr.source || "")}" placeholder="Quelle (Link zum Originalrezept, kann leer bleiben)">
-        </div>
-        <div class="srow rgrouprow">
-          <ha-icon class="prev" icon="mdi:tag-outline"></ha-icon>
-          <span class="grow">Gruppe</span>
-          <small id="rGroupHint" class="hint" hidden>✨ vorgeschlagen</small>
-          <select id="rGroup">
+        <div class="rgrid">
+          <label class="rgf"><span class="rgl"><ha-icon icon="mdi:tag-outline"></ha-icon>Gruppe<small id="rGroupHint" class="hint" hidden>✨ vorgeschlagen</small></span>
+            <select id="rGroup">
             <option value="">– keine –</option>
             ${(this._data.recipe_groups || []).map((g) => `<option value="${esc(g.id)}" ${dr.group === g.id ? "selected" : ""}>${esc(g.name)}</option>`).join("")}
           </select>
-        </div>
-        <div class="picker" hidden></div>
-        <div class="srow rserv">
-          <ha-icon class="prev" icon="${dr.servings_unit === "trays" ? "mdi:tray" : dr.servings_unit === "forms" ? "mdi:cake-variant-outline" : "mdi:account-group-outline"}"></ha-icon>
-          <span class="grow">Mengen für</span>
-          <input id="rServings" type="number" inputmode="numeric" min="1" max="99" value="${dr.servings || ""}" placeholder="z. B. 4">
-          <select id="rServUnit">
+          </label>
+          <div class="rgf rserv"><span class="rgl"><ha-icon class="prev" icon="${dr.servings_unit === "trays" ? "mdi:tray" : dr.servings_unit === "forms" ? "mdi:cake-variant-outline" : "mdi:account-group-outline"}"></ha-icon>Mengen für</span><span class="rgin"><input id="rServings" type="number" inputmode="numeric" min="1" max="99" value="${dr.servings || ""}" placeholder="z. B. 4"><select id="rServUnit">
             <option value="persons" ${dr.servings_unit !== "trays" && dr.servings_unit !== "forms" ? "selected" : ""}>👥 Personen</option>
             <option value="trays" ${dr.servings_unit === "trays" ? "selected" : ""}>🍕🍰 Bleche</option>
             <option value="forms" ${dr.servings_unit === "forms" ? "selected" : ""}>🥧 Formen</option>
-          </select>
-        </div>
-        <div class="srow rserv rmin">
-          <ha-icon class="prev" icon="mdi:timer-sand"></ha-icon>
-          <span class="grow">Dauer ca.</span>
-          <button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="Was ist das?" aria-label="Erklärung: Dauer ca.">i</button>
-          <input id="rMinutes" type="number" inputmode="numeric" min="1" max="1440" value="${dr.minutes || ""}" placeholder="z. B. 45">
-          <span class="rminunit">Min</span>
+          </select></span></div>
+          <div class="rgf rmin"><span class="rgl"><ha-icon icon="mdi:timer-sand"></ha-icon>Dauer ca. (Min)<button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="Was ist das?" aria-label="Erklärung: Dauer ca.">i</button></span><input id="rMinutes" type="number" inputmode="numeric" min="1" max="1440" value="${dr.minutes || ""}" placeholder="z. B. 45"></div>
+          <label class="rgf"><span class="rgl"><ha-icon icon="mdi:link-variant"></ha-icon>Quelle</span><input id="rSource" type="url" inputmode="url" value="${esc(dr.source || "")}" placeholder="Quelle (Link zum Originalrezept, kann leer bleiben)"></label>
         </div>
         <p class="hint fhint" hidden>⏱️ Wie lange dauert das Rezept ungefähr, von Anfang bis Ende (in Minuten)? Steht in der Kochmütze neben der Personenzahl. Leer lassen geht auch – dann schätzt die Karte die Zeit aus den Schritten und Backofen &amp; Co. (mit „≈“).</p>
+        <div class="picker" hidden></div>
+        <div class="lgbox xacc rmore ${dr.moreOpen ? "open" : ""}"><button type="button" class="lgroup xacc-h" data-act="rmore-toggle" aria-expanded="${!!dr.moreOpen}"><span class="gem" style="--gc:#8e24aa"><ha-icon icon="mdi:dots-horizontal"></ha-icon></span><span class="grow"><b>Mehr</b><small id="rMoreSub">Nährwerte · Fotos</small></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button><div class="xacc-b" ${dr.moreOpen ? "" : "hidden"}>
         <div class="srow rserv rnut">
           <ha-icon class="prev" icon="mdi:nutrition"></ha-icon>
           <button type="button" class="nuttog grow" data-act="nut-toggle" aria-expanded="${dr.nutOpen ? "true" : "false"}"><span class="nutt">${elT("Nährwerte pro Portion")}</span><small class="nutsum" id="rNutSum">${esc(this._nutSum(dr.nutrition))}</small><ha-icon class="nutchev" icon="mdi:chevron-down"></ha-icon></button>
@@ -9872,6 +9870,7 @@ ${(() => {
           ${this._data.settings?.ai_on && this._data.settings?.ai_agent && !this._privacyOn() ? `<div class="btnrow nutai"><button type="button" class="btn" data-act="nut-ai"><ha-icon icon="mdi:robot-happy-outline"></ha-icon>${elT("Nährwerte schätzen")}</button><small class="hint">${elT("≈ geschätzt von der KI – bitte grob nachsehen")}</small></div>` : ""}
         </div>
         <div class="photorow" id="rPhotoRow"></div>
+        </div></div>
         `)}
         ${this._rsec("zut", "mdi:food-apple-outline", "#43a047", "Zutaten", "Was kommt rein?", `<button class="btn rimportbtn" type="button" data-act="rimport-toggle" title="Zutaten einfügen" aria-label="Zutaten einfügen"><ha-icon icon="mdi:clipboard-text-outline"></ha-icon><span class="lbl">Zutaten einfügen</span></button>`, `
         <div class="rimport" id="rImport" hidden>
@@ -10215,6 +10214,13 @@ ${(() => {
     const saved = this._recipeSavedPhotos();
     const fresh = (dr.newPhotos || []).length;
     const total = saved + fresh;
+    { // ➕ Untertitel von „Mehr“: was drin ist; neues Foto? Dann „Mehr“ aufklappen, damit man es sieht
+      const sub = this.$("rMoreSub"), nut = Object.values(dr.nutrition || {}).some((v) => v != null && v !== "");
+      const de = EL_LANG === "de";
+      if (sub) sub.textContent = `${de ? "Nährwerte" : "Nutrition"}${nut ? " ✓" : ""} · ${de ? "Fotos" : "Photos"}${total ? ` (${total})` : ""}`;
+      if (fresh > (dr._freshSeen || 0) && !dr.moreOpen) this.shadowRoot.querySelector('[data-act="rmore-toggle"]')?.click();
+      dr._freshSeen = fresh;
+    }
     box.innerHTML = `
       ${saved ? `<button type="button" class="btn" data-act="rphoto-view"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Ansehen (${saved})</button>` : ""}
       ${fresh ? `<button type="button" class="btn" data-act="rphoto-view-new"><ha-icon icon="mdi:image-outline"></ha-icon>${fresh} neu</button>
@@ -15768,7 +15774,7 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
         this._renderSettings();
         break;
       case "finfo": { // ⓘ neben einer Feld-Überschrift: Erklärung darunter auf-/zuklappen
-        const h = el.closest(".flab, .srow")?.nextElementSibling; // auch in Editor-Zeilen (z. B. ⏱️ Dauer im Rezept-Editor)
+        const h = el.closest(".flab, .srow, .rgrid")?.nextElementSibling; // auch in Editor-Zeilen (z. B. ⏱️ Dauer im Rezept-Editor)
         if (h?.classList.contains("fhint")) { h.hidden = !h.hidden; el.setAttribute("aria-expanded", String(!h.hidden)); }
         break;
       }
@@ -16105,6 +16111,15 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
       case "recipe-save":
         this._saveRecipe();
         break;
+      case "rmore-toggle": { // ➕ „Mehr“ im Rezept-Editor (Nährwerte, Fotos) auf-/zuklappen – ohne neu zu zeichnen
+        const box = el.closest(".rmore"), dr = this._draft;
+        if (!box || !dr) break;
+        dr.moreOpen = !dr.moreOpen;
+        box.classList.toggle("open", dr.moreOpen);
+        el.setAttribute("aria-expanded", String(dr.moreOpen));
+        box.querySelector(":scope > .xacc-b").hidden = !dr.moreOpen;
+        break;
+      }
       case "recipe-save-stay":
         this._saveRecipe(true);
         break;
@@ -16138,7 +16153,7 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
       return;
     }
     if (t.id === "rServUnit") {
-      t.closest(".srow")?.querySelector(".prev")?.setAttribute("icon", t.value === "trays" ? "mdi:tray" : t.value === "forms" ? "mdi:cake-variant-outline" : "mdi:account-group-outline");
+      t.closest(".srow, .rgf")?.querySelector(".prev")?.setAttribute("icon", t.value === "trays" ? "mdi:tray" : t.value === "forms" ? "mdi:cake-variant-outline" : "mdi:account-group-outline");
       return;
     }
     if (t.dataset?.act === "pick-store") {
