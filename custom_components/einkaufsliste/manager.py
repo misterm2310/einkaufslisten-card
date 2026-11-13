@@ -344,7 +344,7 @@ def _name_list(value: Any, limit: int = 40, size: int = 60) -> list[str]:
 # 👁️ Listenansicht: was beim Artikel zu sehen ist (an/aus) – für alle ("_all") und pro Benutzer (Benutzer-ID)
 VIEW_KEYS = (
     "qty", "note", "own_note", "for_whom", "added_by", "added_at", "checked_by", "cleanup", "store",
-    "recipe", "barcode", "photo", "fav", "offer", "out", "gone", "zone_here", "move", "new", "cat_color",
+    "recipe", "barcode", "photo", "fav", "offer", "offer_price", "out", "gone", "zone_here", "move", "new", "cat_color",
     "tabs", "in_name", "in_store", "in_cat", "in_icons",  # 🧩 Leiste/Eingabe-Felder oben (an/aus)
     "done", "done_open",  # ✔️ Bereich „Erledigt“ zeigen / aufgeklappt starten (Standard beides an)
     "anim",  # ✔️ Abhak-Animation – pro Benutzer (Standard an)
@@ -5059,6 +5059,49 @@ class EinkaufslisteManager:
         self._list(kind).append(entry)
         self._changed()
         return entry
+
+    def ensure_group(self, kind: str, name: str, color: str | None = None, icon: str | None = None) -> dict[str, Any]:
+        """🆕 Für die Aktionen add_store/add_category: anlegen, nur wenn es den Namen (Groß/klein egal) noch nicht gibt."""
+        wanted = (_clean(name) or "").lower()
+        if not wanted:
+            raise ValueError("Ohne Namen geht's nicht.")
+        for entry in self._list(kind):
+            if entry["name"].lower() == wanted:
+                return {"created": False, "id": entry["id"], "name": entry["name"]}
+        entry = self.add_group(kind, name, color, icon)
+        return {"created": True, "id": entry["id"], "name": entry["name"]}
+
+    def service_items(self, status: str, store_id: str | None = None) -> list[dict[str, Any]]:
+        """📋 Für die Aktion get_items: die Liste in lesbarer Form (Namen statt IDs) – nichts wird geändert."""
+        def store_name(sid: str | None) -> str | None:
+            return (self.store_by_id(sid) or {}).get("name")
+
+        def cat_name(cid: str | None) -> str | None:
+            return (self.category_by_id(cid) or {}).get("name")
+
+        if status == "history":
+            out = []
+            for p in self.products():
+                if not p.get("count") and not p.get("last_bought"):
+                    continue  # nur, was wirklich schon mal auf der Liste war
+                if store_id and p.get("store_id") != store_id:
+                    continue
+                out.append({
+                    "name": p["name"], "note": p.get("note"), "store": store_name(p.get("store_id")),
+                    "category": cat_name(p.get("category_id")), "count": p.get("count", 0),
+                    "last_bought": p.get("last_bought"), "last_used": p.get("last_used"),
+                })
+            return out
+        want_checked = status == "checked"
+        return [
+            {
+                "name": i["name"], "store": store_name(i.get("store_id")), "category": cat_name(i.get("category_id")),
+                "quantity": i.get("quantity"), "note": i.get("note"), "for_whom": i.get("for_whom"),
+                "added_by": i.get("added_by"), "added_at": i.get("added_at"), "checked_at": i.get("checked_at"),
+            }
+            for i in self.items
+            if bool(i["checked"]) == want_checked and (store_id is None or i.get("store_id") == store_id)
+        ]
 
     @callback
     def update_group(self, kind: str, group_id: str, **fields: Any) -> dict[str, Any]:

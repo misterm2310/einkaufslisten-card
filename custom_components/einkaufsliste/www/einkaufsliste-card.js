@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.12";
+const EL_VERSION = "2.76.28-beta.13";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -421,6 +421,10 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["💶 <b>Angebotspreis am 🏷️:</b> Fährst du mit der Maus über das 🏷️ an einem Artikel, steht dort das günstigste Angebot, z. B. „Lidl: 0,99 € (statt 1,99 €) · bis Sa. 14.11. · +2 weitere“. Wer den Preis immer sehen will (Handy, Tablet, Fire TV): ⚙️ → Listenansicht → „💶 Angebotspreis neben 🏷️“ – dann steht „ab 0,99 €“ direkt daneben (Standard aus).",
+   "💶 <b>Offer price at the 🏷️:</b> hover over the 🏷️ at an item and you see the cheapest offer, e.g. “Lidl: €0.99 (instead of €1.99) · until Sat 14.11. · +2 more”. Want to see the price all the time (phone, tablet, Fire TV)? ⚙️ → List view → “💶 Offer price next to 🏷️” – then “from €0.99” sits right next to it (off by default).", "beta.13"],
+  ["🤖 <b>Neue Aktionen für Automationen, Assist und KI:</b> <code>einkaufsliste.get_items</code> liest die Liste aus (offen, abgehakt oder alles schon mal Gekaufte mit Anzahl), <code>einkaufsliste.update_item</code> ändert nur die mitgegebenen Felder eines Artikels (Menge, Notiz, für wen, Kategorie, Geschäft über <code>new_store</code>) – der Platz bleibt. <code>einkaufsliste.add_store</code> und <code>add_category</code> legen Geschäfte und Kategorien an (gibt es den Namen schon, passiert nichts), und <code>add_item</code> kann mit <code>create_missing: true</code> Fehlendes gleich mit anlegen.",
+   "🤖 <b>New actions for automations, Assist and AI:</b> <code>einkaufsliste.get_items</code> reads the list (open, checked or everything ever bought with count), <code>einkaufsliste.update_item</code> changes only the given fields of an item (quantity, note, for whom, category, store via <code>new_store</code>) – it keeps its place. <code>einkaufsliste.add_store</code> and <code>add_category</code> create stores and categories (if the name exists, nothing happens), and <code>add_item</code> can create missing ones with <code>create_missing: true</code>.", "beta.13"],
   ["🧩 <b>Rezept-Editor aufgeräumt:</b> Im Kasten „Eingaben“ stehen Gruppe, Mengen für, Dauer und Quelle jetzt als Raster mit kleiner Überschrift (Handy 2 Spalten, PC eine Reihe). Nährwerte und Fotos stecken unter „Mehr“ – ein neues Foto klappt „Mehr“ von selbst auf.", "🧩 <b>Recipe editor tidied up:</b> In the “Inputs” box, group, servings, duration and source now sit in a grid with small labels (2 columns on phones, one row on PC). Nutrition and photos live under “More” – a new photo opens “More” by itself.", "beta.12"],
   ["🔒 <b>Datenschutz-Hinweis zur KI-Foto-Lesung:</b> Unter ⚙️ → Datenschutz und bei den KI-Kochen-Einstellungen steht jetzt ehrlich, dass bei „🤖 KI liest das Foto“ das ganze Foto an den KI-Anbieter geht (nur auf Wunsch, kurz im Medien-Ordner, danach gelöscht). Dazu übernimmt die KI auch Portionen und Dauer, und die Anleitung nennt die KI-Foto-Lesung.",
    "🔒 <b>Privacy note for AI photo reading:</b> ⚙️ → Privacy and the AI cooking settings now say honestly that with “🤖 AI reads the photo” the whole photo goes to the AI provider (only on request, kept briefly in the media folder, then deleted). The AI also fills servings and duration, and the guide mentions AI photo reading.", "beta.11"],
@@ -651,7 +655,7 @@ const EL_NEWS = [
 ];
 const EL_START_STORE_ICONS = new Set(["mdi:cart", "mdi:lotion"]); // so bekommen Geschäfte beim Einrichten ihr Icon – zählt als „automatisch“
 // 👁️ Listenansicht: was beim Artikel zu sehen ist. Standard = alles an; einstellbar für alle und pro Benutzer (⚙️ → Listenansicht)
-const VIEW_ITEM_N = 18; // die ersten 18 Einträge gehören zum Artikel, der Rest zu „Oben & beim Eintragen“
+const VIEW_ITEM_N = 19; // die ersten 19 Einträge gehören zum Artikel, der Rest zu „Oben & beim Eintragen“
 const VIEW_OPTS = [
   ["qty", "🔢 Menge", "z. B. 2x, 500 g"],
   ["note", "📝 Notiz", "aus dem Barcode, z. B. die Marke"],
@@ -667,6 +671,7 @@ const VIEW_OPTS = [
   ["fav", "⭐ Favoriten-Stern", ""],
   ["barcode", "▥ Barcode-Zeichen", ""],
   ["offer", "🏷️ Angebote", "Preis und Schild"],
+  ["offer_price", "💶 Angebotspreis neben 🏷️", "z. B. „ab 0,99 €“ direkt neben dem Schild – sonst nur beim Drüberfahren mit der Maus"],
   ["out", "⇄ „war aus“-Hinweis", ""],
   ["gone", "❌ „War nicht da“-Knopf", "im ⇄-Fenster: bleibt 2 Tage grau stehen, dann ohne Kauf erledigt"],
   ["move", "⇄ Verschieben-Knopf", "rechts am Artikel"],
@@ -681,8 +686,10 @@ const VIEW_OPTS = [
   ["done", "✔️ Bereich „Erledigt“", "unten, was schon gekauft ist – die Vorschläge beim Eintippen kennen es trotzdem"],
   ["done_open", "📂 „Erledigt“ startet aufgeklappt", "aus = eingeklappt, Antippen klappt auf (das Gerät merkt es sich)"],
 ];
+const VIEW_DEFAULT_OFF = new Set(["offer_price"]); // 👁️ diese Häkchen sind am Anfang AUS (alles andere an)
+const elViewBase = () => Object.fromEntries(VIEW_OPTS.map(([k]) => [k, !VIEW_DEFAULT_OFF.has(k)]));
 const EL_DONE_KEY = "einkaufsliste_done_open"; // ✔️ auf diesem Gerät zuletzt auf-/zugeklappt
-const VIEW_TOP_N = 25; // Einträge ab hier gehören zu „Erledigt“
+const VIEW_TOP_N = 26; // Einträge ab hier gehören zu „Erledigt“
 // 🎨 Schrift auf einer Farbe: dunkel auf hellen Farben (Gelb, Hellgrün), sonst weiß
 function elTextOn(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
@@ -3516,6 +3523,8 @@ button:not(.primary):not(.on):not(.lgroup):not(.main):not(.sp-main) ha-icon[icon
 .item .acts .recalltag.maybe ha-icon { color:#fb8c00 !important; } /* 🏷️ Notiz passt nicht zur Marke: orange statt rot */
 .recallbrand { font-size:.85em; color:var(--secondary-text-color); }
 .recallbrand.hit { color:#e53935; font-weight:600; }
+.item .acts .offtag.withp { border-radius:12px; padding-right:8px; align-items:center; gap:2px; } /* 💶 Preis direkt neben dem 🏷️ */
+.item .acts .offtag .offp { font-size:12px; font-weight:600; line-height:1; white-space:nowrap; color:color-mix(in srgb, #e53935 70%, var(--primary-text-color)); }
 .item .acts .offtag .oi ha-icon { color:#f9a825 !important; } /* 🏷️ Angebot und 🔀 Ähnliches: beide gelb */
 .item .acts .shopphoto { color:var(--primary-color,#03a9f4); } .item .acts .shopphoto ha-icon { --mdc-icon-size:22px; display:flex; } /* 📷 so groß wie das Angebotszeichen */
 .item .acts .offtag .oi { font-size:calc(var(--mdc-icon-size, 24px) * .6); width:var(--mdc-icon-size, 24px); height:var(--mdc-icon-size, 24px); display:flex; align-items:center; justify-content:center; line-height:1; } /* 🏷️ bunt, aber klein und dezent */
@@ -6505,7 +6514,7 @@ class EinkaufslisteCard extends HTMLElement {
     const key = JSON.stringify([all._all, me && all[me]]);
     if (this._viewKey !== key) {
       this._viewKey = key;
-      this._viewCache = { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}), ...((me && all[me]) || {}) };
+      this._viewCache = { ...elViewBase(), ...(all._all || {}), ...((me && all[me]) || {}) };
     }
     return this._viewCache;
   }
@@ -6537,8 +6546,12 @@ class EinkaufslisteCard extends HTMLElement {
     let offBtn = "";
     if (!v.offer) { /* 🏷️ Angebote ausgeblendet */ } else if (!item.checked && off && off.p != null && !off.expired) meta.unshift(`<span class="offinfo" data-ecolor="#f9a825" title="${esc(off.r || "")}">${this._offerLabel(off)}</span>${this._offerLink(off, true)}`); // 🏷️ eigenes Feld: Preis und Tag, ganz vorn
     else if (!item.checked && !this._shopMode && this._offersFor(item).length) { // 🏷️ im Laden-Modus ausgeblendet; sonst eigener Knopf ganz rechts (weit weg von der Menge, größer zu treffen)
-      const alt = this._offersFor(item).every((o) => o.alt);
-      offBtn = `<button class="iconbtn offtag" data-act="offers-show" data-id="${item.id}" title="${alt ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details"}"><span class="oi">${alt ? "🔀" : "🏷️"}</span></button>`;
+      const list = this._offersFor(item);
+      const alt = list.every((o) => o.alt);
+      const best = this._bestOffer(list); // 💶 günstigstes Angebot: im Tooltip und (wenn eingeschaltet) direkt neben dem Schild
+      const tip = `${best ? this._offerTip(best, list.length - 1) + " – " : ""}${elT(alt ? "Ähnliche Angebote – antippen für Details" : "Im Angebot – antippen für Details")}`;
+      const price = best && v.offer_price ? `<span class="offp">${esc(elT("ab"))} ${elMoney(best.p, best.cur || "EUR")}</span>` : "";
+      offBtn = `<button class="iconbtn offtag${price ? " withp" : ""}" data-act="offers-show" data-id="${item.id}" title="${esc(tip)}"><span class="oi">${alt ? "🔀" : "🏷️"}</span>${price}</button>`;
     }
     else if (!item.checked && off?.expired && Date.now() - new Date(off.expired) < DAY) meta.unshift(`<span class="offgone" title="Das Angebot ist abgelaufen">⌛ Angebot vorbei</span>`);
     const rc = this._recallFor(item); // ⚠️ offene Rückruf-Warnung zu diesem Artikel: rotes ❗ links neben dem Angebotszeichen
@@ -8039,7 +8052,7 @@ ${(() => {
   _viewInfo() {
     const all = this._data?.settings?.view_prefs || {};
     const me = this._hass?.user?.id;
-    const off = VIEW_OPTS.filter(([k]) => this._viewPrefs()[k] === false).length;
+    const off = VIEW_OPTS.filter(([k]) => !VIEW_DEFAULT_OFF.has(k) && this._viewPrefs()[k] === false).length; // Standard-aus zählt nicht als „ausgeblendet“
     const f = this._viewPrefs().font;
     return `${off ? `${off} ausgeblendet` : "alles sichtbar"}${f === "s" ? " · Schrift kleiner" : f === "l" ? " · Schrift größer" : ""}${me && all[me] ? " · eigene Ansicht" : ""}`;
   }
@@ -8048,7 +8061,7 @@ ${(() => {
   _viewHtml(mine = false) {
     const all = this._data?.settings?.view_prefs || {};
     const me = this._hass?.user?.id;
-    const base = { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
+    const base = { ...elViewBase(), ...(all._all || {}) };
     const cur = mine ? { ...base, ...((me && all[me]) || {}) } : base;
     const scope = mine ? "me" : "all";
     const g = mine ? "viewme" : "viewall";
@@ -13123,6 +13136,25 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
     return set;
   }
 
+  // 💶 Günstigstes Angebot (echte Treffer vor „🔀 Ähnlich“), ohne Preis zählt nicht
+  _bestOffer(list) {
+    const priced = (list || []).filter((o) => o && o.p != null && !Number.isNaN(Number(o.p)));
+    const real = priced.filter((o) => !o.alt);
+    return (real.length ? real : priced).reduce((a, o) => (!a || Number(o.p) < Number(a.p) ? o : a), null);
+  }
+
+  // 💶 Tooltip am 🏷️: „Lidl: 0,99 € (statt 1,99 €) · bis Sa. 14.11. · +2 weitere“ (statt nur, wenn ein Normalpreis gemeldet ist)
+  _offerTip(o, more = 0) {
+    const cur = o.cur || "EUR";
+    const day = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : `${WD_SHORT[pyWd(d)]}. ${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`; };
+    let t = `${o.r ? `${o.r}: ` : ""}${elMoney(o.p, cur)}`;
+    if (o.op != null && Number(o.op) > Number(o.p)) t += ` (${elT("statt")} ${elMoney(o.op, cur)})`;
+    if (o.from && new Date(o.from) > new Date()) t += ` · ${elT("ab")} ${day(o.from)}`;
+    else if (o.to) t += ` · ${elT("bis")} ${day(o.to)}`;
+    if (more > 0) t += ` · +${more} ${elT("weitere")}`;
+    return t;
+  }
+
   // 🏷️ „🏷️ 1,19 € bis Sa.“ – liegt der Start in der Zukunft: „ab Mo.“
   _offerLabel(off) {
     const day = (iso) => { const d = new Date(iso); return `${WD_SHORT[pyWd(d)]}.`; };
@@ -14379,7 +14411,7 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
         const all = this._data.settings?.view_prefs || {};
         const me = this._hass?.user?.id;
         const prefs = { ...(mine ? (me && all[me]) || {} : all._all || {}) };
-        const shown = mine ? this._viewPrefs() : { ...Object.fromEntries(VIEW_OPTS.map(([k]) => [k, true])), ...(all._all || {}) };
+        const shown = mine ? this._viewPrefs() : { ...elViewBase(), ...(all._all || {}) };
         prefs[el.dataset.key] = shown[el.dataset.key] === false;
         if (el.dataset.key === "done_open") { this._doneOpen = null; try { localStorage.removeItem(EL_DONE_KEY); } catch (_) { /* egal */ } } // neue Wahl gilt sofort
         this._ws({ type: "einkaufsliste/view/set", scope: mine ? "me" : "all", prefs })

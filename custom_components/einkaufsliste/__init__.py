@@ -43,6 +43,33 @@ SCHEMA_ADD = vol.Schema(
         vol.Optional("note"): cv.string,
         vol.Optional("for_whom"): cv.string,
         vol.Optional("added_by"): cv.string,
+        # 🆕 Fehlendes Geschäft / fehlende Kategorie gleich mit anlegen (nur auf Wunsch – sonst bleibt der Tippfehler-Schutz)
+        vol.Optional("create_missing", default=False): cv.boolean,
+    }
+)
+SCHEMA_GET = vol.Schema(
+    {
+        vol.Optional("status", default="open"): vol.In(["open", "checked", "history"]),
+        vol.Optional("store"): cv.string,
+    }
+)
+SCHEMA_UPDATE = vol.Schema(
+    {
+        vol.Required("name"): cv.string,
+        vol.Optional("store"): cv.string,
+        vol.Optional("new_name"): cv.string,
+        vol.Optional("new_store"): vol.Any(None, cv.string),
+        vol.Optional("category"): vol.Any(None, cv.string),
+        vol.Optional("quantity"): vol.Any(None, cv.string),
+        vol.Optional("note"): vol.Any(None, cv.string),
+        vol.Optional("for_whom"): vol.Any(None, cv.string),
+    }
+)
+SCHEMA_GROUP = vol.Schema(
+    {
+        vol.Required("name"): cv.string,
+        vol.Optional("icon"): cv.string,
+        vol.Optional("color"): cv.string,
     }
 )
 SCHEMA_BY_NAME = vol.Schema(
@@ -175,6 +202,11 @@ def _register_services(hass: HomeAssistant) -> None:
         try:
             name = call.data["name"]
             hist = m.history_for(name) or {}
+            if call.data["create_missing"]:  # 🆕 fehlende Geschäfte/Kategorien anlegen
+                if "store" in call.data:
+                    m.ensure_group("stores", call.data["store"])
+                if "category" in call.data:
+                    m.ensure_group("categories", call.data["category"])
             store_id = (
                 m.find_store(call.data["store"]) if "store" in call.data else hist.get("store_id")
             )
@@ -200,6 +232,53 @@ def _register_services(hass: HomeAssistant) -> None:
         except ValueError as err:
             raise HomeAssistantError(str(err)) from err
         return {"item": item}
+
+    async def get_items(call: ServiceCall) -> ServiceResponse:
+        """📋 Liste auslesen (nur lesen): offen, abgehakt oder alles je gekaufte (Verlauf)."""
+        m = _get_manager(hass)
+        try:
+            store_id = m.find_store(call.data.get("store"))
+        except ValueError as err:
+            raise HomeAssistantError(str(err)) from err
+        items = m.service_items(call.data["status"], store_id)
+        return {"status": call.data["status"], "count": len(items), "items": items}
+
+    async def update_item(call: ServiceCall) -> ServiceResponse:
+        """✏️ Artikel per Name (+ Geschäft) finden und nur die mitgegebenen Felder ändern – Platz bleibt."""
+        m = _get_manager(hass)
+        try:
+            item = m.find_item(call.data["name"], m.find_store(call.data.get("store")))
+            fields: dict = {}
+            if "new_name" in call.data:
+                fields["name"] = call.data["new_name"]
+            if "new_store" in call.data:
+                fields["store_id"] = m.find_store(call.data["new_store"])
+            if "category" in call.data:
+                fields["category_id"] = m.find_category(call.data["category"])
+            for key in ("quantity", "note", "for_whom"):
+                if key in call.data:
+                    fields[key] = call.data[key] or ""
+            return {"item": m.update_item(item["id"], **fields)}
+        except ValueError as err:
+            raise HomeAssistantError(str(err)) from err
+
+    async def add_store(call: ServiceCall) -> ServiceResponse:
+        """🏪 Geschäft anlegen (gibt es den Namen schon, passiert nichts)."""
+        try:
+            return _get_manager(hass).ensure_group(
+                "stores", call.data["name"], call.data.get("color"), call.data.get("icon")
+            )
+        except ValueError as err:
+            raise HomeAssistantError(str(err)) from err
+
+    async def add_category(call: ServiceCall) -> ServiceResponse:
+        """🗂️ Kategorie anlegen (gibt es den Namen schon, passiert nichts)."""
+        try:
+            return _get_manager(hass).ensure_group(
+                "categories", call.data["name"], call.data.get("color"), call.data.get("icon")
+            )
+        except ValueError as err:
+            raise HomeAssistantError(str(err)) from err
 
     async def check_item(call: ServiceCall) -> None:
         m = _get_manager(hass)
@@ -237,6 +316,16 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, "add_item", add_item, SCHEMA_ADD, supports_response=SupportsResponse.OPTIONAL
     )
+    hass.services.async_register(
+        DOMAIN, "get_items", get_items, SCHEMA_GET, supports_response=SupportsResponse.ONLY
+    )
+    hass.services.async_register(
+        DOMAIN, "update_item", update_item, SCHEMA_UPDATE, supports_response=SupportsResponse.OPTIONAL
+    )
+    for svc, func in (("add_store", add_store), ("add_category", add_category)):
+        hass.services.async_register(
+            DOMAIN, svc, func, SCHEMA_GROUP, supports_response=SupportsResponse.OPTIONAL
+        )
     hass.services.async_register(DOMAIN, "check_item", check_item, SCHEMA_BY_NAME)
     hass.services.async_register(DOMAIN, "remove_item", remove_item, SCHEMA_BY_NAME)
     hass.services.async_register(

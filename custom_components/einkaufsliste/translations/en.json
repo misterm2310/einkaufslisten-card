@@ -64,6 +64,98 @@
         "added_by": {
           "name": "Added by",
           "description": "Empty = the calling user."
+        },
+        "create_missing": {
+          "name": "Create missing",
+          "description": "On = a store or category that does not exist yet is created. Off (default) = error, so a typo does not create a new store."
+        }
+      }
+    },
+    "get_items": {
+      "name": "Get items",
+      "description": "Reads the shopping list (changes nothing) and returns it as a response – for automations, Assist and AI.",
+      "fields": {
+        "status": {
+          "name": "Which items",
+          "description": "open = still to buy, checked = checked off, history = everything ever bought (with count)."
+        },
+        "store": {
+          "name": "Store",
+          "description": "Only items of this store (empty = all)."
+        }
+      }
+    },
+    "update_item": {
+      "name": "Update item",
+      "description": "Changes an item on the list. Only the given fields change, the item keeps its place.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Which item (as it is on the list)."
+        },
+        "store": {
+          "name": "Store",
+          "description": "Only look in this store (if the item exists more than once)."
+        },
+        "new_name": {
+          "name": "New name",
+          "description": "Empty = name stays."
+        },
+        "new_store": {
+          "name": "New store",
+          "description": "Move to this store (empty text = anywhere)."
+        },
+        "category": {
+          "name": "Category",
+          "description": "New category (empty text = no category)."
+        },
+        "quantity": {
+          "name": "Quantity",
+          "description": "New quantity (empty text = none)."
+        },
+        "note": {
+          "name": "Note",
+          "description": "New note (empty text = none)."
+        },
+        "for_whom": {
+          "name": "For whom",
+          "description": "For whom (empty text = nobody)."
+        }
+      }
+    },
+    "add_store": {
+      "name": "Add store",
+      "description": "Creates a new store. If the name already exists, nothing happens.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Store name."
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "e.g. mdi:cart (empty = cart)."
+        },
+        "color": {
+          "name": "Color",
+          "description": "e.g. #e53935 (empty = grey)."
+        }
+      }
+    },
+    "add_category": {
+      "name": "Add category",
+      "description": "Creates a new category. If the name already exists, nothing happens.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Category name."
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "e.g. mdi:dog (empty = tag)."
+        },
+        "color": {
+          "name": "Color",
+          "description": "e.g. #8e24aa (empty = next color)."
         }
       }
     },
@@ -173,6 +265,15 @@
     "binary_sensor": {
       "etwas_zu_kaufen": {
         "name": "Something to buy"
+      }
+    }
+  },
+  "selector": {
+    "get_status": {
+      "options": {
+        "open": "Still to buy",
+        "checked": "Checked off",
+        "history": "Bought before (history)"
       }
     }
   }

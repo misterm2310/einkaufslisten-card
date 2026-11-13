@@ -64,6 +64,98 @@
         "added_by": {
           "name": "Hinzugefügt von",
           "description": "Name in Klammern hinter dem Artikel. Leer = wer die Aktion auslöst."
+        },
+        "create_missing": {
+          "name": "Fehlendes anlegen",
+          "description": "An = gibt es Geschäft oder Kategorie noch nicht, werden sie neu angelegt. Aus (Standard) = Fehler, damit ein Tippfehler kein neues Geschäft macht."
+        }
+      }
+    },
+    "get_items": {
+      "name": "Artikel auslesen",
+      "description": "Liest die Einkaufsliste aus (ändert nichts) und gibt sie als Antwort zurück – für Automationen, Assist und KI.",
+      "fields": {
+        "status": {
+          "name": "Welche Artikel",
+          "description": "open = noch zu kaufen, checked = abgehakt, history = alles, was schon mal gekauft wurde (mit Anzahl)."
+        },
+        "store": {
+          "name": "Geschäft",
+          "description": "Nur Artikel dieses Geschäfts (leer = alle)."
+        }
+      }
+    },
+    "update_item": {
+      "name": "Artikel ändern",
+      "description": "Ändert einen Artikel auf der Liste. Nur die mitgegebenen Felder ändern sich, der Platz in der Liste bleibt.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Welcher Artikel (so wie er auf der Liste steht)."
+        },
+        "store": {
+          "name": "Geschäft",
+          "description": "Nur suchen in diesem Geschäft (wenn es den Artikel mehrfach gibt)."
+        },
+        "new_name": {
+          "name": "Neuer Name",
+          "description": "Leer lassen = Name bleibt."
+        },
+        "new_store": {
+          "name": "Neues Geschäft",
+          "description": "In dieses Geschäft verschieben (leerer Text = Egal wo)."
+        },
+        "category": {
+          "name": "Kategorie",
+          "description": "Neue Kategorie (leerer Text = ohne Kategorie)."
+        },
+        "quantity": {
+          "name": "Menge",
+          "description": "Neue Menge (leerer Text = keine)."
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Neue Notiz (leerer Text = keine)."
+        },
+        "for_whom": {
+          "name": "Für wen",
+          "description": "Für wen (leerer Text = niemand)."
+        }
+      }
+    },
+    "add_store": {
+      "name": "Geschäft anlegen",
+      "description": "Legt ein neues Geschäft an. Gibt es den Namen schon, passiert nichts.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name des Geschäfts."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "z. B. mdi:cart (leer = Einkaufswagen)."
+        },
+        "color": {
+          "name": "Farbe",
+          "description": "z. B. #e53935 (leer = Grau)."
+        }
+      }
+    },
+    "add_category": {
+      "name": "Kategorie anlegen",
+      "description": "Legt eine neue Kategorie an. Gibt es den Namen schon, passiert nichts.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name der Kategorie."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "z. B. mdi:dog (leer = Etikett)."
+        },
+        "color": {
+          "name": "Farbe",
+          "description": "z. B. #8e24aa (leer = nächste Farbe)."
         }
       }
     },
@@ -173,6 +265,15 @@
     "binary_sensor": {
       "etwas_zu_kaufen": {
         "name": "Etwas zu kaufen"
+      }
+    }
+  },
+  "selector": {
+    "get_status": {
+      "options": {
+        "open": "Noch zu kaufen",
+        "checked": "Abgehakt",
+        "history": "Schon mal gekauft (Verlauf)"
       }
     }
   }

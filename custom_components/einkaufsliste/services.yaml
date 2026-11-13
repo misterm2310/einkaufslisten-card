@@ -29,6 +29,94 @@ add_item:
       example: "Oma"
       selector:
         text:
+    create_missing:
+      default: false
+      selector:
+        boolean:
+
+get_items:
+  fields:
+    status:
+      default: "open"
+      selector:
+        select:
+          options:
+            - "open"
+            - "checked"
+            - "history"
+          translation_key: get_status
+    store:
+      example: "Aldi"
+      selector:
+        text:
+
+update_item:
+  fields:
+    name:
+      required: true
+      example: "Milch"
+      selector:
+        text:
+    store:
+      example: "Aldi"
+      selector:
+        text:
+    new_name:
+      example: "Hafermilch"
+      selector:
+        text:
+    new_store:
+      example: "Lidl"
+      selector:
+        text:
+    category:
+      example: "Kühlregal & Milch"
+      selector:
+        text:
+    quantity:
+      example: "2 Liter"
+      selector:
+        text:
+    note:
+      example: "Bio"
+      selector:
+        text:
+    for_whom:
+      example: "Oma"
+      selector:
+        text:
+
+add_store:
+  fields:
+    name:
+      required: true
+      example: "Edeka"
+      selector:
+        text:
+    icon:
+      example: "mdi:cart"
+      selector:
+        icon:
+    color:
+      example: "#e53935"
+      selector:
+        text:
+
+add_category:
+  fields:
+    name:
+      required: true
+      example: "Tierbedarf"
+      selector:
+        text:
+    icon:
+      example: "mdi:dog"
+      selector:
+        icon:
+    color:
+      example: "#8e24aa"
+      selector:
+        text:
 
 check_item:
   fields:

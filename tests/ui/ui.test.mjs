@@ -1019,6 +1019,22 @@ check("🧱 Ganzer Screenshot: App-Leiste wird nicht der Name, Zutaten links sau
 check("🧱 Schritte nur rechts (3), ohne Thermomix, Aufbewahrung, Tipp, Benutzername und App-Menü; Nährwerte da", r.asked && r.steps.length === 3 && /^Nudeln nach Packung garen\. Brokkoliröschen die letzten/.test(r.steps[0]) && !/=”/.test(r.steps[0]) && r.kcal === 650 && r.protein === 34, JSON.stringify(r));
 check("🧱 Absätze nach Spalten geordnet (Titel, links, Marke, rechts), einspaltig bleibt wie es ist", r.arranged === "Titel quer\n\nA links\n\nB links\n\nC links\n\n‖SPALTE‖\n\nD rechts\n\nE rechts\n\nF rechts" && !r.single.includes("SPALTE"), JSON.stringify({a:r.arranged, s:r.single}));
 
+// 💶 Angebotspreis am 🏷️: Tooltip mit günstigstem Angebot, Preis daneben nur mit Schalter (Standard aus)
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const root=c.shadowRoot; const d=c._data;
+  const it=d.items.find((i)=>!i.checked && !i.offer); const keepOff=d.offers; const vp=d.settings.view_prefs||{}; const keepVp={...vp};
+  const to=new Date(Date.now()+2*864e5).toISOString();
+  d.offers={ [it.name.toLowerCase()]: [{p:1.49, r:"Aldi", to}, {p:0.99, op:1.99, r:"Lidl", to}, {p:0.5, r:"Netto", alt:"Ähnlich", to}] };
+  c._tab="all"; c._view="list"; c._viewKey=null; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  const btn=()=>root.querySelector('.item[data-id="'+it.id+'"] .offtag');
+  const off={ title:btn()?.getAttribute("title")||"", price:!!btn()?.querySelector(".offp") };
+  const tmp=document.createElement("div"); tmp.innerHTML=c._viewHtml(); const sw=tmp.querySelector('[data-key="offer_price"]');
+  d.settings.view_prefs={ ...vp, _all:{ ...(vp._all||{}), offer_price:true } }; c._viewKey=null; c._renderList(); await new Promise(r=>setTimeout(r,30));
+  const on={ txt:btn()?.querySelector(".offp")?.textContent||"" };
+  d.settings.view_prefs=keepVp; d.offers=keepOff; c._viewKey=null; c._renderAll();
+  return { off, on, sw:{ there:!!sw, pressed:sw?.getAttribute("aria-pressed") }, info:c._viewInfo() }; });
+check("💶 Tooltip am 🏷️: günstigstes echtes Angebot mit statt, bis und +2 weitere", /^Lidl: 0,99\s€ \(statt 1,99\s€\) · bis .+ · \+2 weitere – Im Angebot/.test(r.off.title) && !r.off.price, JSON.stringify(r));
+check("💶 Schalter „Angebotspreis neben 🏷️“ Standard aus, an = „ab 0,99 €“ daneben", r.sw.there && r.sw.pressed === "false" && /^ab 0,99\s€$/.test(r.on.txt) && !/ausgeblendet/.test(r.info), JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

@@ -5399,3 +5399,57 @@ async def test_ai_nutrition(hass, setup, hass_ws_client):
     seen.clear()
     await client.send_json({"id": 6, **msg})
     assert "Datenschutz" in (await client.receive_json())["error"]["message"] and not seen
+
+
+async def test_service_get_update_and_groups(hass, setup):
+    """📋 get_items, ✏️ update_item, 🏪 add_store/add_category und create_missing (Issues #37–#39)."""
+    m = mgr(hass)
+    await hass.services.async_call(DOMAIN, "add_item", {"name": "Milch", "store": "Aldi", "quantity": "2"}, blocking=True)
+    await hass.services.async_call(DOMAIN, "add_item", {"name": "Brot"}, blocking=True)
+    first = [i["id"] for i in m.items]
+
+    res = await hass.services.async_call(DOMAIN, "get_items", {}, blocking=True, return_response=True)
+    assert res["status"] == "open" and res["count"] == 2
+    milch = next(i for i in res["items"] if i["name"] == "Milch")
+    assert milch["store"] == "Aldi" and milch["quantity"]
+
+    res = await hass.services.async_call(DOMAIN, "get_items", {"store": "aldi"}, blocking=True, return_response=True)
+    assert [i["name"] for i in res["items"]] == ["Milch"]
+
+    # ✏️ nur die Menge und das Geschäft ändern – Notiz bleibt, Platz in der Liste bleibt
+    res = await hass.services.async_call(
+        DOMAIN, "update_item", {"name": "milch", "quantity": "3 Liter", "new_store": "Lidl", "note": "Bio"},
+        blocking=True, return_response=True,
+    )
+    assert res["item"]["quantity"].startswith("3") and m.store_by_id(res["item"]["store_id"])["name"] == "Lidl"
+    assert [i["id"] for i in m.items] == first
+    await hass.services.async_call(DOMAIN, "update_item", {"name": "Milch", "store": "Lidl", "quantity": "1"}, blocking=True)
+    assert m.find_item("Milch")["note"] == "Bio"
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(DOMAIN, "update_item", {"name": "Gibtsnicht", "quantity": "1"}, blocking=True)
+
+    await hass.services.async_call(DOMAIN, "check_item", {"name": "Brot"}, blocking=True)
+    res = await hass.services.async_call(DOMAIN, "get_items", {"status": "checked"}, blocking=True, return_response=True)
+    assert [i["name"] for i in res["items"]] == ["Brot"] and res["items"][0]["checked_at"]
+    res = await hass.services.async_call(DOMAIN, "get_items", {"status": "history"}, blocking=True, return_response=True)
+    assert {"Milch", "Brot"} <= {i["name"] for i in res["items"]}
+    assert all("count" in i for i in res["items"])
+
+    # 🏪 Geschäft/Kategorie anlegen – doppelt = nichts passiert
+    n = len(m.stores)
+    res = await hass.services.async_call(DOMAIN, "add_store", {"name": "Edeka", "icon": "mdi:cart"}, blocking=True, return_response=True)
+    assert res["created"] and len(m.stores) == n + 1
+    res = await hass.services.async_call(DOMAIN, "add_store", {"name": "edeka"}, blocking=True, return_response=True)
+    assert not res["created"] and len(m.stores) == n + 1
+    res = await hass.services.async_call(DOMAIN, "add_category", {"name": "Tierbedarf", "icon": "dog"}, blocking=True, return_response=True)
+    assert res["created"] and m.category_by_id(res["id"])["icon"] == "mdi:dog"
+
+    # 🆕 create_missing: nur auf Wunsch wird Unbekanntes angelegt
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(DOMAIN, "add_item", {"name": "Futter", "store": "Fressnapf"}, blocking=True)
+    res = await hass.services.async_call(
+        DOMAIN, "add_item", {"name": "Futter", "store": "Fressnapf", "category": "Haustier", "create_missing": True},
+        blocking=True, return_response=True,
+    )
+    assert m.store_by_id(res["item"]["store_id"])["name"] == "Fressnapf"
+    assert m.category_by_id(res["item"]["category_id"])["name"] == "Haustier"
