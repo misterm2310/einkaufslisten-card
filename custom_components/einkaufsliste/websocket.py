@@ -13,7 +13,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .barcode import async_auto_photo, async_lookup, async_product_info, async_refresh_photo
+from .barcode import (
+    async_auto_photo,
+    async_lookup,
+    async_product_info,
+    async_refresh_photo,
+    async_search_photos,
+    async_take_search_photo,
+)
 from .ai_cook import PHOTO_MAX_BYTES, async_cook, async_nutrition, async_photo_recipe
 from .grocy_import import async_fetch, clean_base, import_rows, parse_catalog_text
 from .recipe_import import OwnFormat, async_import, parse_recipe_file, prepare_file_recipes
@@ -143,6 +150,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_recalls_dismiss,
         ws_product_add,
         ws_product_refresh,
+        ws_photo_search,
+        ws_photo_take,
         ws_photos_refresh_plan,
         ws_stats,
         ws_errors_get,
@@ -1319,6 +1328,25 @@ def ws_product_add(hass, connection, msg):
 async def ws_product_refresh(hass, connection, msg):
     """🔄 Foto zu einem Produkt neu aus der Barcode-Datenbank holen."""
     await _run_async(hass, connection, msg, lambda m: async_refresh_photo(hass, m, msg["key"], bool(msg.get("only_missing")), bool(msg.get("replace"))))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/photo/search", vol.Required("query"): vol.All(str, vol.Length(max=200))}
+)
+@websocket_api.async_response
+async def ws_photo_search(hass, connection, msg):
+    """🔎 Produktfotos per Name in Open Food Facts & Co. suchen (bis zu 4 zur Auswahl)."""
+    await _run_async(hass, connection, msg, lambda m: async_search_photos(hass, m, msg["query"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/photo/take", vol.Required("name"): str,
+     vol.Required("url"): vol.All(str, vol.Length(max=1000))}
+)
+@websocket_api.async_response
+async def ws_photo_take(hass, connection, msg):
+    """🔎 Ausgesuchtes Foto aus der Suche zum Produkt speichern (kommt dazu, eigene bleiben)."""
+    await _run_async(hass, connection, msg, lambda m: async_take_search_photo(hass, m, msg["name"], msg["url"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/photos/refresh_plan"})

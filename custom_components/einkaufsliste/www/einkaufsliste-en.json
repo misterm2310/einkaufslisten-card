@@ -2503,5 +2503,17 @@
 "🍲 Ja, dazu": "🍲 Yes, add it",
 "Nein": "No",
 "🤖 KI liest das Foto": "🤖 AI reads the photo",
-"📖 Normal lesen": "📖 Read normally"
+"📖 Normal lesen": "📖 Read normally",
+"🔎 Foto suchen (Open Food Facts)": "🔎 Search photo (Open Food Facts)",
+"🔎 Foto suchen": "🔎 Search photo",
+"Foto suchen": "Search photo",
+"Suchen": "Search",
+"Fotos aus Open Food Facts & Co. (frei nutzbar). Das Foto kommt dazu – deine eigenen bleiben.": "Photos from Open Food Facts & co. (free to use). The photo is added – your own ones stay.",
+"Bitte mindestens 2 Buchstaben eingeben": "Please enter at least 2 letters",
+"🔎 Suche läuft …": "🔎 Searching …",
+"📡 Die Produkt-Datenbank ist gerade nicht erreichbar – später nochmal probieren": "📡 The product database can't be reached right now – please try again later",
+"🤷 Nichts gefunden – probier einen anderen Namen (z. B. mit Marke)": "🤷 Nothing found – try another name (e.g. with the brand)",
+"Antippen zum Übernehmen:": "Tap to take it:",
+"📴 Ohne Netz geht die Suche nicht – später nochmal probieren": "📴 The search needs a connection – please try again later",
+"Kein Barcode? Foto per Name bei Open Food Facts suchen – du suchst eins aus": "No barcode? Search a photo by name at Open Food Facts – you pick one"
 }

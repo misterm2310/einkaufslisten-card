@@ -410,6 +410,111 @@ async def async_refresh_photo(hass: HomeAssistant, manager: Any, key: str, only_
     return {"key": key, "count": result.get("count", 1), "fixed": dropped, "added": True}
 
 
+# 🔎 Produktfoto per Name suchen (für Produkte ohne Barcode) – nur auf Knopfdruck, nie automatisch
+SEARCH_FIELDS = "code,product_name,product_name_de,brands,image_front_small_url,image_front_url"
+SEARCH_LIMIT = 4  # so viele Fotos zur Auswahl
+MAX_THUMB = 300 * 1024  # Vorschaubild (klein) – größere werden verworfen
+
+
+def _image_ok(url: Any) -> bool:
+    """Nur https und nur von den offiziellen Bild-Servern der Datenbanken."""
+    return isinstance(url, str) and url.startswith("https://") and urlparse(url).hostname in IMAGE_HOSTS
+
+
+async def _fetch_image(session: aiohttp.ClientSession, url: str, limit: int) -> bytes | None:
+    """Ein Bild ganz laden – None, wenn es nicht geht, zu groß oder unvollständig ist."""
+    try:
+        async with asyncio.timeout(20):
+            resp = await session.get(url, headers={"User-Agent": USER_AGENT})
+            if resp.status != 200:
+                return None
+            raw = await read_limited(resp.content, limit)
+    except (TimeoutError, aiohttp.ClientError) as err:
+        _LOGGER.debug("Bild nicht ladbar: %s", err)
+        return None
+    if not raw or not photo_complete(raw):
+        return None
+    return raw
+
+
+def _mime(raw: bytes) -> str:
+    return "image/png" if raw[:4] == b"\x89PNG" else "image/webp" if raw[8:12] == b"WEBP" else "image/jpeg"
+
+
+async def async_search_photos(hass: HomeAssistant, manager: Any, query: str) -> dict[str, Any]:
+    """🔎 Bis zu 4 Produktfotos zum Namen aus Open Food Facts & Co. holen (zum Aussuchen).
+
+    Die kleinen Vorschaubilder lädt Home Assistant selbst und schickt sie mit – so fragt das Handy
+    nicht selbst bei der Datenbank an. Gibt {"results": [{url, thumb, name, brand}], "reached": bool} zurück."""
+    _check_privacy(manager)
+    query = " ".join(str(query or "").replace("|", " ").split())[:80]
+    if len(query) < 2:
+        raise ValueError("Bitte mindestens 2 Buchstaben zum Suchen eingeben.")
+    session = async_get_clientsession(hass)
+    found: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    reached = False
+    for source, base in SOURCES:
+        if len(found) >= SEARCH_LIMIT:
+            break
+        try:
+            async with asyncio.timeout(12):
+                resp = await session.get(
+                    f"{base}/cgi/search.pl",
+                    params={"search_terms": query, "search_simple": "1", "action": "process", "json": "1",
+                            "page_size": "12", "fields": SEARCH_FIELDS, "lc": "de"},
+                    headers={"User-Agent": USER_AGENT},
+                )
+                if resp.status != 200:
+                    _LOGGER.debug("%s Suche antwortet mit %s", source, resp.status)
+                    continue
+                data = await resp.json(content_type=None)
+        except (TimeoutError, aiohttp.ClientError, ValueError) as err:
+            _LOGGER.debug("%s Suche nicht erreichbar: %s", source, err)
+            continue
+        reached = True
+        products = data.get("products") if isinstance(data, dict) else None
+        for product in products if isinstance(products, list) else []:
+            if len(found) >= SEARCH_LIMIT:
+                break
+            if not isinstance(product, dict):
+                continue
+            big, small = product.get("image_front_url"), product.get("image_front_small_url")
+            if not _image_ok(big) or big in seen:
+                continue
+            seen.add(big)
+            raw = await _fetch_image(session, small if _image_ok(small) else big, MAX_THUMB)
+            if raw is None:
+                continue
+            name, brand = _product_name(product)
+            found.append({
+                "url": big,
+                "thumb": f"data:{_mime(raw)};base64,{base64.b64encode(raw).decode()}",
+                "name": name or "",
+                "brand": brand or "",
+                "source": source,
+            })
+    return {"results": found, "reached": reached}
+
+
+async def async_take_search_photo(hass: HomeAssistant, manager: Any, name: str, url: str) -> dict[str, Any]:
+    """🔎 Ausgesuchtes Foto zum Produkt speichern – kommt immer DAZU, eigene Fotos bleiben.
+
+    name = wie bei einkaufsliste/photo/set (Name bzw. „Name|Notiz“ in Originalschreibweise)."""
+    _check_privacy(manager)
+    name = " ".join(str(name or "").split())
+    if not name:
+        raise ValueError("Zu welchem Produkt gehört das Foto?")
+    if not _image_ok(url):
+        raise ValueError("Dieses Foto kommt nicht von der Produkt-Datenbank.")
+    raw = await _fetch_image(async_get_clientsession(hass), url, MAX_IMAGE)
+    if raw is None:
+        raise ValueError("Das Foto ließ sich nicht (vollständig) laden – bitte nochmal probieren.")
+    has = bool(manager.photos.get(name.lower()))
+    result = await manager.async_set_photo(name, base64.b64encode(raw).decode(), add=has, db=True)
+    return {"name": name, "count": result.get("count", 1)}
+
+
 # ℹ️ Produkt-Infos (nur auf Nachfrage: beim Draufdrücken aufs Produkt)
 INFO_FIELDS = "product_name,product_name_de,brands,quantity,nutriscore_grade,nova_group,allergens_tags,traces_tags,labels_tags,ingredients_text_de,ingredients_text"
 ALLERGENS_DE = {

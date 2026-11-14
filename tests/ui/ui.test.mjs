@@ -1035,6 +1035,34 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
 check("💶 Tooltip am 🏷️: günstigstes echtes Angebot mit statt, bis und +2 weitere", /^Lidl: 0,99\s€ \(statt 1,99\s€\) · bis .+ · \+2 weitere – Im Angebot/.test(r.off.title) && !r.off.price, JSON.stringify(r));
 check("💶 Schalter „Angebotspreis neben 🏷️“ Standard aus, an = „ab 0,99 €“ daneben", r.sw.there && r.sw.pressed === "false" && /^ab 0,99\s€$/.test(r.on.txt) && !/ausgeblendet/.test(r.info), JSON.stringify(r));
 
+// 🔎 Foto suchen (ohne Barcode): Auswahl nur bei Produkten, Fenster mit Treffern, antippen = übernehmen
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const keepWs=c._ws; const sent=[];
+  const px="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23f9a825'/></svg>";
+  c._ws=async(m)=>{ sent.push(m); if(m.type==="einkaufsliste/photo/search") return {reached:true, results:[{url:"https://images.openfoodfacts.org/a.jpg",thumb:px,name:"Laugenbrezel",brand:"Bäcker"},{url:"https://images.openfoodfacts.org/b.jpg",thumb:px,name:"Brezel",brand:""}]}; return {count:1}; };
+  const able={ prod:c._photoSearchable({name:"Brezel"}), recipe:c._photoSearchable({name:"rezept#r1"}), bon:c._photoSearchable({name:"bon#1"}), ocr:c._photoSearchable({name:"x", ocr:()=>{}}) };
+  c._searchPhoto({ name:"Brezel|Bäcker", onDone:()=>{ sent.push({done:true}); } }); await new Promise(r=>setTimeout(r,120));
+  const root=c.shadowRoot; const host=root.querySelector(".pagehost")||document;
+  const q=host.querySelector("[data-q]")?.value; const tiles=[...host.querySelectorAll("[data-res] button")];
+  const cap=tiles.map(t=>t.textContent.trim());
+  tiles[0]?.click(); await new Promise(r=>setTimeout(r,80));
+  c._ws=keepWs;
+  return { able, q, cap, sent:sent.map(m=>m.type||(m.done?"done":"")), take:sent.find(m=>m.type==="einkaufsliste/photo/take") }; });
+check("🔎 Foto suchen nur bei Produkten (nicht Rezept, Bon, Texterkennung)", r.able.prod && !r.able.recipe && !r.able.bon && !r.able.ocr, JSON.stringify(r.able));
+check("🔎 Suchfeld mit Name + Notiz, 2 Treffer mit Beschriftung", r.q === "Brezel Bäcker" && r.cap.length === 2 && r.cap[0] === "Laugenbrezel · Bäcker", JSON.stringify(r));
+check("🔎 Antippen schickt photo/take mit Adresse und schließt", r.take?.url === "https://images.openfoodfacts.org/a.jpg" && r.take?.name === "Brezel|Bäcker" && r.sent.includes("done"), JSON.stringify(r));
+await back();
+
+// 🗑️ Löschen im lange-drücken-Menü: springt zu „Einkaufsliste Produkte löschen“ mit Namen in der Suche
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const d=c._data; const it=d.items.find(i=>!i.checked);
+  const keepPin=d.settings.pin; d.settings.pin=false;
+  c._view="list"; c._tab="all"; c._menuId=it.id; c._renderAll(); await new Promise(r=>setTimeout(r,40));
+  const btn=c.shadowRoot.querySelector('.menurow [data-act="menu-del"]'); const txt=btn?.textContent.trim();
+  btn?.click(); await new Promise(r=>setTimeout(r,150));
+  const res={ txt, view:c._view, sec:c._setSec, tab:c._prodTab, search:c.shadowRoot.querySelector("#delSearch")?.value, name:it.name };
+  d.settings.pin=keepPin; c._view="list"; c._prodTab=null; c._delFilter=""; c._renderAll();
+  return res; });
+check("🗑️ Menü hat „Löschen“ und springt zu „Einkaufsliste Produkte löschen“ mit Suche", r.txt === "Löschen" && r.view === "settings" && r.sec === "products" && r.tab === "delete" && r.search === r.name, JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

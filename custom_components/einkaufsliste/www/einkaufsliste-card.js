@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28-beta.13";
+const EL_VERSION = "2.76.28-beta.14";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.27"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -67,7 +67,7 @@ const EL_GUIDE = [
     ] },
   { id: "edit", icon: "👆", c: "#5e35b1", t: ["Ändern & lange drücken", "Editing & long-press"], s: ["Menü, Notizen, Spitznamen, ⭐", "Menu, notes, nicknames, ⭐"],
     de: [
-      "Artikel <b>lange drücken</b> (am PC: rechte Maustaste) = Menü: Bearbeiten, Verschieben, Menge, Kategorie, Foto, Barcode, Angebote und <b>ℹ️ Infos</b> (Nutri-Score, Allergene, Zutaten aus der Produkt-Datenbank, ohne Gewähr). Was angeboten wird, hängt vom Artikel ab.",
+      "Artikel <b>lange drücken</b> (am PC: rechte Maustaste) = Menü: Bearbeiten, Verschieben, Menge, Kategorie, Foto, Barcode, Angebote, <b>ℹ️ Infos</b> (Nutri-Score, Allergene, Zutaten aus der Produkt-Datenbank, ohne Gewähr) und <b>🗑️ Löschen</b> (führt nach der ⚙️-PIN zu „Einkaufsliste Produkte löschen“, der Name steht schon in der Suche). Was angeboten wird, hängt vom Artikel ab.",
       "Menge direkt ändern: auf die Menge tippen, dann <span class=\"elg-k\">−</span> und <span class=\"elg-k\">＋</span>.",
       "<b>📝 Notiz</b> kommt nur aus dem Barcode (Marke, Sorte). <b>✏️ Eigene Notiz</b> schreibst du selbst („nur die große Packung“): Sie bleibt beim Produkt und kommt beim nächsten Eintragen von selbst wieder. Kleine Knöpfe mit „Bio“, „ohne Laktose“ & Co. gibt es unter dem Feld (Vorlagen pflegst du in ⚙️ → Extras).",
       "<b>🏷️ Spitznamen:</b> „Tempos“ meint dasselbe wie „Taschentücher“. Anlegen beim Bearbeiten (Feld 🏷️ Spitznamen, mehrere mit Komma).",
@@ -76,7 +76,7 @@ const EL_GUIDE = [
       "<b>⌨️ Am PC:</b> mit <b>↓</b> aus dem Suchfeld in die Liste, <b>↑ ↓</b> eine Zeile wählen, <b>Enter</b> öffnet, <b>Leertaste</b> hakt ab, <b>Esc</b> schließt.",
     ],
     en: [
-      "<b>Press and hold</b> an item (on a PC: right mouse button) = menu: Edit, Move, Quantity, Category, Photo, Barcode, Offers and <b>ℹ️ Info</b> (Nutri-Score, allergens, ingredients from the product database, without guarantee). What is offered depends on the item.",
+      "<b>Press and hold</b> an item (on a PC: right mouse button) = menu: Edit, Move, Quantity, Category, Photo, Barcode, Offers, <b>ℹ️ Info</b> (Nutri-Score, allergens, ingredients from the product database, without guarantee) and <b>🗑️ Delete</b> (after the ⚙️ PIN it takes you to “Delete shopping list products” with the name already in the search). What is offered depends on the item.",
       "Change the quantity directly: tap the quantity, then <span class=\"elg-k\">−</span> and <span class=\"elg-k\">＋</span>.",
       "<b>📝 Note</b> only comes from the barcode (brand, variety). <b>✏️ Own note</b> you write yourself (“only the large pack”): it stays with the product and comes back by itself next time. Small buttons with “organic”, “lactose-free” & co. are under the field (you maintain the templates in ⚙️ → Extras).",
       "<b>🏷️ Nicknames:</b> “Tempos” means the same as “tissues”. Create them when editing (field 🏷️ Nicknames, several with commas).",
@@ -116,14 +116,14 @@ const EL_GUIDE = [
   { id: "photo", icon: "📷", c: "#00acc1", t: ["Fotos", "Photos"], s: ["Produkt-Fotos, drehen, mehrere", "Product photos, rotate, several"],
     de: [
       "<b>Produkt-Foto:</b> Beim Eintragen auf das <b>📷</b> unter dem Feld tippen – oder später den Artikel <b>lange drücken → Foto</b>. Das Foto gehört zum Produkt und ist beim nächsten Mal wieder da. Am Artikel zeigt das kleine 📷 es groß, wischen = blättern. Bis zu <b>6 Fotos</b> pro Produkt.",
-      "<b>Woher?</b> Am Handy: <b>📷 Kamera</b> · <b>🖼️ Galerie</b> · <b>📋 Einfügen</b>. Am PC: Bild <b>reinziehen</b>, <b>Strg + V</b> oder klicken. Vor dem Speichern kannst du <b>drehen und zuschneiden</b>.",
+      "<b>Woher?</b> Am Handy: <b>📷 Kamera</b> · <b>🖼️ Galerie</b> · <b>📋 Einfügen</b> · <b>🔎 Foto suchen</b>. Am PC: Bild <b>reinziehen</b>, <b>Strg + V</b>, klicken oder <b>🔎 Foto suchen</b>. Vor dem Speichern kannst du <b>drehen und zuschneiden</b>.", "<b>🔎 Foto suchen</b> (nur bei Produkten): Home Assistant sucht bei Open Food Facts nach dem Namen und zeigt bis zu 4 Fotos – antippen = übernehmen. Praktisch für Produkte ohne Barcode. Findet es nichts, den Namen ändern (z. B. mit Marke) und nochmal 🔍.",
       "<b>Ohne Netz:</b> Fotos aus der Offline-App werden vorgemerkt und hochgeladen, sobald wieder Netz da ist (sehr große Fotos, über ca. 3 MB, gehen nur mit Netz).",
       "<b>Verwalten:</b> Reihenfolge, Hauptfoto und einzeln löschen geht in ⚙️ → Produkte.",
       "Ist <b>🔒 Datenschutz</b> an (⚙️ → Datenschutz), gibt es keine Kamera und keine Fotos.",
     ],
     en: [
       "<b>Product photo:</b> when adding, tap the <b>📷</b> under the field – or later <b>press and hold the item → Photo</b>. The photo belongs to the product and is there again next time. On the item the small 📷 shows it large, swipe = browse. Up to <b>6 photos</b> per product.",
-      "<b>Where from?</b> On a phone: <b>📷 Camera</b> · <b>🖼️ Gallery</b> · <b>📋 Paste</b>. On a PC: <b>drag in</b> an image, <b>Ctrl + V</b> or click. Before saving you can <b>rotate and crop</b>.",
+      "<b>Where from?</b> On a phone: <b>📷 Camera</b> · <b>🖼️ Gallery</b> · <b>📋 Paste</b> · <b>🔎 Search photo</b>. On a PC: <b>drag in</b> an image, <b>Ctrl + V</b>, click or <b>🔎 Search photo</b>. Before saving you can <b>rotate and crop</b>.", "<b>🔎 Search photo</b> (products only): Home Assistant searches Open Food Facts by name and shows up to 4 photos – tap = take it. Handy for products without a barcode. Nothing found? Change the name (e.g. add the brand) and 🔍 again.",
       "<b>Offline:</b> photos taken in the offline app are queued and uploaded when the network is back (very large photos, over about 3 MB, need a connection).",
       "<b>Managing:</b> order, main photo and deleting single ones is in ⚙️ → Products.",
       "If <b>🔒 Privacy</b> is on (⚙️ → Privacy), there is no camera and no photos.",
@@ -421,6 +421,10 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🔎 <b>Foto suchen (ohne Barcode):</b> Kein Foto beim Produkt, weil es keinen Barcode hat (z. B. Obst, Brötchen, Sachen von der Theke)? Beim 📷 gibt es jetzt <b>🔎 Foto suchen</b>: Home Assistant fragt Open Food Facts nach dem Namen, du bekommst bis zu 4 Fotos zur Auswahl und tippst eins an. Im Katalog steht beim Produkt ohne Barcode der Knopf <b>„Foto suchen“</b>. Eigene Fotos bleiben immer, das neue kommt dazu. Nur auf Knopfdruck, nie automatisch; bei Datenschutz an ist es aus.",
+   "🔎 <b>Search photo (no barcode):</b> No photo for a product because it has no barcode (e.g. fruit, bread rolls, things from the counter)? The 📷 now offers <b>🔎 Search photo</b>: Home Assistant asks Open Food Facts by name, you get up to 4 photos to choose from and tap one. In the catalogue, products without a barcode have a <b>“Search photo”</b> button. Your own photos always stay, the new one is added. Only on request, never automatically; off when privacy is on.", "beta.14"],
+  ["🗑️ <b>Löschen im „lange drücken“-Menü:</b> Ein falscher Artikel auf der Liste (z. B. vom Sprachassistenten falsch verstanden)? Artikel lange drücken → <b>🗑️ Löschen</b>. Gelöscht wird nicht sofort: Nach der ⚙️-PIN (falls eine gesetzt ist) landest du in ⚙️ → Produkte → <b>„Einkaufsliste Produkte löschen“</b>, der Name steht schon in der Suche. Wer einkauft, kann so nicht aus Versehen etwas löschen.",
+   "🗑️ <b>Delete in the long-press menu:</b> A wrong item on the list (e.g. misheard by the voice assistant)? Long-press the item → <b>🗑️ Delete</b>. It is not deleted right away: after the ⚙️ PIN (if one is set) you land in ⚙️ → Products → <b>“Delete shopping list products”</b> with the name already in the search. That way shoppers can't delete anything by accident.", "beta.14"],
   ["💶 <b>Angebotspreis am 🏷️:</b> Fährst du mit der Maus über das 🏷️ an einem Artikel, steht dort das günstigste Angebot, z. B. „Lidl: 0,99 € (statt 1,99 €) · bis Sa. 14.11. · +2 weitere“. Wer den Preis immer sehen will (Handy, Tablet, Fire TV): ⚙️ → Listenansicht → „💶 Angebotspreis neben 🏷️“ – dann steht „ab 0,99 €“ direkt daneben (Standard aus).",
    "💶 <b>Offer price at the 🏷️:</b> hover over the 🏷️ at an item and you see the cheapest offer, e.g. “Lidl: €0.99 (instead of €1.99) · until Sat 14.11. · +2 more”. Want to see the price all the time (phone, tablet, Fire TV)? ⚙️ → List view → “💶 Offer price next to 🏷️” – then “from €0.99” sits right next to it (off by default).", "beta.13"],
   ["🤖 <b>Neue Aktionen für Automationen, Assist und KI:</b> <code>einkaufsliste.get_items</code> liest die Liste aus (offen, abgehakt oder alles schon mal Gekaufte mit Anzahl), <code>einkaufsliste.update_item</code> ändert nur die mitgegebenen Felder eines Artikels (Menge, Notiz, für wen, Kategorie, Geschäft über <code>new_store</code>) – der Platz bleibt. <code>einkaufsliste.add_store</code> und <code>add_category</code> legen Geschäfte und Kategorien an (gibt es den Namen schon, passiert nichts), und <code>add_item</code> kann mit <code>create_missing: true</code> Fehlendes gleich mit anlegen.",
@@ -2360,11 +2364,12 @@ const EL_PAGE_ICONS = [
   [/^✏️?\s*Änderungswunsch/u, "mdi:message-draw", "#f9a825"], // Änderungswunsch im Kochmodus
   [/^📷\s*Einscannen/u, "mdi:barcode-scan", "#43a047"],
   [/^📷\s*Foto machen/u, "mdi:camera-outline", "#1e88e5"],
+  [/^🔎\s*Foto suchen/u, "mdi:image-search-outline", "#1e88e5"], // 🔎 Produktfoto per Name suchen
   [/^📷/u, "mdi:image-multiple-outline", "#1e88e5"], // Foto-Seiten (Galerie)
   [/^✂️?/u, "mdi:crop", "#1e88e5"],
 ];
 
-// 📷 Woher kommt das Foto? Kamera · Galerie · Einfügen (Zwischenablage) – gibt "camera" | "gallery" | "paste" | null
+// 📷 Woher kommt das Foto? Kamera · Galerie · Einfügen (Zwischenablage) · 🔎 Suchen – gibt "camera" | "gallery" | "paste" | "search" | null
 const elCanPaste = () => !!(window.isSecureContext && navigator.clipboard?.read);
 // 📱 Läuft die Karte in der HA-App (Android/iPhone)? Mehrere Wege, weil die Apps das je nach Version anders verraten
 const elInHaApp = (hass) => !!(
@@ -2383,7 +2388,7 @@ function elVibrate(ms) { try { const f = EL_HAPTIC[elHapticLevel()]; if (f > 0) 
 const elIsPc = () => !!window.matchMedia?.("(hover: hover) and (pointer: fine)").matches && !(navigator.maxTouchPoints > 0);
 
 // 🖥️ Am PC: Fenster mit großer Fläche – Bild reinziehen, Strg + V oder klicken. Gibt eine Datei, "browse" oder null
-function askPhotoDrop(title = "🖼️ Foto hinzufügen") {
+function askPhotoDrop(title = "🖼️ Foto hinzufügen", search = false) {
   return new Promise((resolve) => {
     const ov = makeOverlay();
     if (!ov.dataset.elpage) ov.style.background = "rgba(0,0,0,.7)";
@@ -2400,6 +2405,11 @@ function askPhotoDrop(title = "🖼️ Foto hinzufügen") {
     const box = ov.firstElementChild;
     const zone = ov.querySelector("[data-zone]");
     const msg = ov.querySelector("[data-msg]");
+    if (search) { // 🔎 Produktfoto per Name in der Produkt-Datenbank suchen
+      const sb = ovButton("🔎 Foto suchen (Open Food Facts)");
+      sb.onclick = (e) => { e.stopPropagation(); done("search"); };
+      box.appendChild(sb);
+    }
     const cancel = ovButton("Abbrechen");
     box.appendChild(cancel);
     let over = false;
@@ -2438,7 +2448,7 @@ function askPhotoDrop(title = "🖼️ Foto hinzufügen") {
   });
 }
 
-function askPhotoSource(camera = true, heading = "Foto – woher?") {
+function askPhotoSource(camera = true, heading = "Foto – woher?", search = false) {
   return new Promise((resolve) => {
     const ov = makeOverlay();
     ov.style.justifyContent = ov.dataset.elpage ? "flex-start" : "flex-end";
@@ -2452,6 +2462,7 @@ function askPhotoSource(camera = true, heading = "Foto – woher?") {
     const done = (v) => { ov.remove(); resolve(v); };
     const opts = camera ? [["camera", "📷 Kamera"], ["gallery", "🖼️ Galerie"]] : [["gallery", "🖼️ Galerie"]];
     if (elCanPaste()) opts.push(["paste", "📋 Einfügen (Zwischenablage)"]);
+    if (search) opts.push(["search", "🔎 Foto suchen (Open Food Facts)"]); // nur bei Produkten
     for (const [v, label] of opts) {
       const b = ovButton(label, v === "camera");
       b.style.width = "100%";
@@ -6612,6 +6623,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", codes ? "Barcode ✓" : "Barcode", codes ? "#8e24aa" : "") : ""}
         ${codes ? b("menu-info", "mdi:information-outline", "Infos", "#00acc1") : ""}
         ${this._offersFor(item).length ? b("menu-offers", "mdi:tag-outline", "Angebote", "#f9a825") : ""}
+        ${b("menu-del", "mdi:delete-outline", "Löschen")}
         <button class="iconbtn" data-act="menu-close" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></span>
       </div>`;
   }
@@ -9388,6 +9400,7 @@ ${(() => {
           <div class="btnrow">
             <button class="btn" data-act="photo-take" data-name="${esc(this._pk(p.name, p.note))}" ${p.photos >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>Foto</button>
             ${p.photos ? `<button class="btn" data-act="prod-photos"><ha-icon icon="mdi:image-multiple-outline"></ha-icon>Fotos</button>` : ""}
+            ${!p.barcodes.length && p.photos < 6 && !this._privacyOn() ? `<button class="btn" data-act="prod-photosearch" data-name="${esc(this._pk(p.name, p.note))}" title="Kein Barcode? Foto per Name bei Open Food Facts suchen – du suchst eins aus"><ha-icon icon="mdi:image-search-outline"></ha-icon>Foto suchen</button>` : ""}
             ${p.barcodes.length ? `<button class="btn" data-act="prod-dbdata" title="Name, Notiz und Foto aus der Produkt-Datenbank neu laden – du wählst einzeln. Nutri-Score und Allergene stehen zum Ansehen dabei"><ha-icon icon="mdi:database-refresh-outline"></ha-icon>Daten neu laden</button>` : ""}
             <button class="btn" data-act="prod-bc-add" title="Barcode nachtragen – scannen oder von Hand eingeben"><ha-icon icon="mdi:barcode-scan"></ha-icon>Barcode nachtragen</button>
             <button class="btn" data-act="prod-merge" title="Dieses Produkt in ein anderes aufgehen lassen (z. B. Tomaten → Tomate)"><ha-icon icon="mdi:call-merge"></ha-icon>Zusammenführen</button>
@@ -10948,17 +10961,21 @@ ${(() => {
     if (this._privacyBlock()) return;
     const input = this.$(id);
     const browse = () => { input.removeAttribute("capture"); input.value = ""; input.click(); };
+    const target = this._photoTarget;
+    const search = id === "photoFile" && this._photoSearchable(target); // 🔎 nur bei Produkten
     if (elIsPc()) { // 🖥️ PC: Fenster zum Reinziehen / Strg + V / Auswählen
-      const r = await askPhotoDrop(heading || undefined);
-      if (r === "browse") browse();
+      const r = await askPhotoDrop(heading || undefined, search);
+      if (r === "search") this._searchPhoto(target);
+      else if (r === "browse") browse();
       else if (r) this._photoFromFile(id, r);
       return;
     }
     // 📱 HA-App über http (zu Hause im WLAN): Kamera geht da nicht – also gleich die Galerie, ohne Menü
     const camera = window.isSecureContext || !elInHaApp(this._hass);
-    if (!camera && !elCanPaste()) { browse(); return; }
-    const how = await askPhotoSource(camera, heading || undefined);
+    if (!camera && !elCanPaste() && !search) { browse(); return; }
+    const how = await askPhotoSource(camera, heading || undefined, search);
     if (!how) return;
+    if (how === "search") { this._searchPhoto(target); return; }
     if (how === "paste") {
       let file = null;
       try { file = await elClipboardImage(); } catch (_) { /* nicht erlaubt */ }
@@ -10974,6 +10991,84 @@ ${(() => {
     } else input.removeAttribute("capture");
     input.value = "";
     input.click();
+  }
+
+  // 🔎 Darf hier nach einem Foto gesucht werden? Nur bei Produkten – nicht bei Rezept, Schritt, Bon, Vorschlag, Kundenkarte, Texterkennung
+  _photoSearchable(t) {
+    if (!t || !t.name || t.ocr || t.recipeDraft || t.stepRow || t.proposalDraft || this._privacyOn()) return false;
+    return !/^(rezept|bon|vorschlag)#/i.test(String(t.name));
+  }
+
+  // 🔎 Produktfoto per Name suchen: Home Assistant fragt Open Food Facts & Co., bis zu 4 Fotos zur Auswahl, antippen = übernehmen
+  async _searchPhoto(target) {
+    if (!target?.name || this._privacyBlock()) return;
+    if (this._hass?.connected === false) { this._toast("📴 Ohne Netz geht die Suche nicht – später nochmal probieren"); return; }
+    if (this._photoCount(target.name) >= 6) { this._toast("📷 Schon 6 Fotos – voll. Erst eins in den ⚙️ Einstellungen löschen."); return; }
+    const ov = makeOverlay();
+    if (!ov.dataset.elpage) ov.style.background = "rgba(0,0,0,.8)";
+    ov.innerHTML = `<div style="width:100%;max-width:460px;display:flex;flex-direction:column;gap:12px;padding:16px;box-sizing:border-box;background:#222;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.5)">
+      <div style="font:600 16px Roboto,sans-serif;text-align:center">${esc(elT("🔎 Foto suchen"))}</div>
+      <div style="display:flex;gap:8px"><input data-q enterkeyhint="search" style="flex:1;min-width:0;box-sizing:border-box;font:16px Roboto,sans-serif;padding:10px 12px;border-radius:12px;border:1px solid #555;background:#1e1e1e;color:#eee"><span data-go></span></div>
+      <div data-msg style="opacity:.8;text-align:center;min-height:1.2em"></div>
+      <div data-res style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"></div>
+      <div style="font-size:.85em;opacity:.65;text-align:center">${esc(elT("Fotos aus Open Food Facts & Co. (frei nutzbar). Das Foto kommt dazu – deine eigenen bleiben."))}</div>
+      <div data-btns style="display:flex;justify-content:flex-end"></div></div>`;
+    const inp = ov.querySelector("[data-q]"), msg = ov.querySelector("[data-msg]"), res = ov.querySelector("[data-res]");
+    inp.value = this._pkLabel(target.name).replace(/\s*·\s*/g, " ");
+    const go = ovIconButton("mdi:magnify", elT("Suchen"));
+    ov.querySelector("[data-go]").append(go);
+    const cancel = ovButton("Abbrechen");
+    ov.querySelector("[data-btns]").append(cancel);
+    let open = true, run = 0, busy = false;
+    const done = () => { open = false; ov.remove(); };
+    cancel.onclick = done;
+    ov.onclick = (e) => { if (e.target === ov) done(); };
+    const take = async (r) => {
+      if (busy) return;
+      busy = true;
+      msg.textContent = elT("📸 Foto wird gespeichert …");
+      try {
+        await this._ws({ type: "einkaufsliste/photo/take", name: target.name, url: r.url });
+        done();
+        for (const k of [...this._photoCache.keys()]) if (k.startsWith(target.name.toLowerCase())) this._photoCache.delete(k);
+        this._afterPhotoSaved(target);
+      } catch (_) { busy = false; msg.textContent = ""; /* Meldung kam schon */ }
+    };
+    const search = async () => {
+      const q = inp.value.trim();
+      if (q.length < 2) { msg.textContent = elT("Bitte mindestens 2 Buchstaben eingeben"); return; }
+      const my = ++run;
+      res.innerHTML = "";
+      msg.textContent = elT("🔎 Suche läuft …");
+      let out;
+      try { out = await this._ws({ type: "einkaufsliste/photo/search", query: q }); } catch (_) { if (open && my === run) msg.textContent = ""; return; }
+      if (!open || my !== run) return; // inzwischen zu oder neu gesucht
+      const list = out?.results || [];
+      if (!list.length) {
+        msg.textContent = elT(out?.reached === false ? "📡 Die Produkt-Datenbank ist gerade nicht erreichbar – später nochmal probieren" : "🤷 Nichts gefunden – probier einen anderen Namen (z. B. mit Marke)");
+        return;
+      }
+      msg.textContent = elT("Antippen zum Übernehmen:");
+      for (const r of list) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border:0;border-radius:12px;background:rgba(255,255,255,.1);color:inherit;cursor:pointer;font:13px Roboto,sans-serif;min-width:0";
+        const img = document.createElement("img");
+        img.src = r.thumb;
+        img.alt = "";
+        img.style.cssText = "width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border-radius:8px";
+        const cap = document.createElement("span");
+        cap.textContent = [r.name, r.brand].filter(Boolean).join(" · ") || "–";
+        cap.style.cssText = "width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center";
+        b.title = cap.textContent;
+        b.append(img, cap);
+        b.onclick = () => take(r);
+        res.append(b);
+      }
+    };
+    go.onclick = search;
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") search(); else if (e.key === "Escape") done(); });
+    search();
   }
 
   _photoFromFile(id, file) {
@@ -11459,20 +11554,25 @@ ${(() => {
       await this._ws({ type: "einkaufsliste/photo/set", name: target.name, data, add: !!add });
       for (const k of [...this._photoCache.keys()]) if (k.startsWith(target.name.toLowerCase())) this._photoCache.delete(k);
       if (this._hass?.connected === false) this._toast("📴 Foto vorgemerkt – wird hochgeladen, sobald wieder Netz da ist");
-      if (target.onDone) { target.onDone(); return; }
-      this._toast(`📸 Foto für „${this._pkLabel(target.name)}“ gespeichert`);
-      if (target.button) {
-        target.button.classList.add("on");
-        target.button.querySelector("ha-icon")?.setAttribute("icon", "mdi:image");
-      } else if (target.keepEdit) {
-        /* Rezept-Editor bleibt offen */
-      } else if (this._view === "settings" && this._setSec === "products") {
-        this._loadProducts(); // 📦 Katalog: Produkt bleibt offen, Foto-Anzahl neu
-      } else {
-        this._editing = null;
-        this._renderList();
-      }
+      this._afterPhotoSaved(target);
     } catch (_) { /* Meldung kam schon */ }
+  }
+
+  // 📸 Nach dem Speichern (eigenes oder 🔎 gesuchtes Foto): Hinweis und die passende Ansicht auffrischen
+  _afterPhotoSaved(target) {
+    if (target.onDone) { target.onDone(); return; }
+    this._toast(`📸 Foto für „${this._pkLabel(target.name)}“ gespeichert`);
+    if (target.button) {
+      target.button.classList.add("on");
+      target.button.querySelector("ha-icon")?.setAttribute("icon", "mdi:image");
+    } else if (target.keepEdit) {
+      /* Rezept-Editor bleibt offen */
+    } else if (this._view === "settings" && this._setSec === "products") {
+      this._loadProducts(); // 📦 Katalog: Produkt bleibt offen, Foto-Anzahl neu
+    } else {
+      this._editing = null;
+      this._renderList();
+    }
   }
 
   _photoCount(name) {
@@ -12006,6 +12106,9 @@ ${(() => {
       <p class="hint">▥ <b>${t("Barcode nachschlagen", "Barcode lookup")}</b>: ${t(
         "Es geht nur die Barcode-Nummer an die offene Datenbank Open Food Facts (Name, Marke, Foto und Produkttyp kommen zurück). Das passiert nur, wenn ein Barcode gescannt oder neu geholt wird.",
         "Only the barcode number goes to the open database Open Food Facts (name, brand, photo and product type come back). This only happens when a barcode is scanned or fetched again.")}</p>
+      <p class="hint">🔎 <b>${t("Foto suchen", "Search photo")}</b>: ${t(
+        "Nur wenn du beim 📷 auf „🔎 Foto suchen“ tippst: Dann geht der Suchtext (der Produktname) an Open Food Facts. Home Assistant lädt die Vorschaubilder selbst, dein Handy fragt dort nicht an. Bei Datenschutz an ist die Suche aus.",
+        "Only when you tap “🔎 Search photo” at the 📷: then the search text (the product name) goes to Open Food Facts. Home Assistant loads the previews itself, your phone does not contact them. With privacy on the search is off.")}</p>
       <p class="hint">🏷️ <b>${t("Angebote", "Offers")}</b> (${t("nur wenn eingeschaltet", "only if switched on")}): ${t(
         "Es gehen die Namen offener Artikel und deine Postleitzahl an Marktguru. Sonst nichts – keine Namen von Personen, keine Fotos. Inoffiziell, kann jederzeit aufhören zu funktionieren.",
         "The names of open items and your postcode go to Marktguru. Nothing else – no names of people, no photos. Unofficial, can stop working at any time.")}</p>
@@ -14897,6 +15000,20 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
         if (item) this._showProductInfo(item);
         break;
       }
+      case "menu-del": { // 🗑️ kein direktes Löschen: nach der ⚙️-PIN zu „Einkaufsliste Produkte löschen“, der Name steht schon in der Suche
+        const item = this._data.items.find((i) => i.id === el.dataset.id);
+        this._menuId = null;
+        this._renderList();
+        if (!item) { this._toast("Den Artikel gibt es nicht mehr."); break; }
+        if (this._hass?.connected === false) { this._toast("📴 Die Einstellungen gehen nur mit Netz"); break; }
+        this._prodTab = "delete";
+        this._delFilter = item.name;
+        if (this._data?.settings?.pin && !pinUnlocked()) { this._unlockSettings("products"); break; }
+        this._closePage?.(true);
+        this._view = "settings"; this._setOpen = "📋 Meine Liste"; this._setSec = "products"; this._draft = null;
+        this._renderAll();
+        break;
+      }
       case "menu-photo": {
         const item = this._data.items.find((i) => i.id === el.dataset.id);
         this._menuId = null;
@@ -15025,6 +15142,9 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
         break;
       case "photo-take":
         this._takePhoto(el.dataset.name, null);
+        break;
+      case "prod-photosearch": // 🔎 Katalog: Produkt ohne Barcode – Foto per Name suchen
+        this._searchPhoto({ name: el.dataset.name });
         break;
       case "photo-remove":
         if (!await elConfirm(`Foto von „${this._pkLabel(el.dataset.name)}“ löschen?`)) return;

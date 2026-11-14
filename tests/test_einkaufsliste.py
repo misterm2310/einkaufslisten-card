@@ -2812,6 +2812,66 @@ async def test_read_limited_reads_all_chunks() -> None:
     assert await read_limited(Stream([b"abc", b"def"]), 4) is None  # zu groß
 
 
+async def test_photo_search_by_name(hass, setup, hass_ws_client, aioclient_mock):
+    """🔎 Foto per Name suchen (ohne Barcode): bis zu 4 Treffer mit Vorschaubild, antippen = übernehmen, eigene bleiben."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    base = "https://images.openfoodfacts.org/images/products/"
+    products = [
+        {"code": "1", "product_name": "Laugenbrezel", "brands": "Bäcker", "image_front_url": base + "1/front.400.jpg", "image_front_small_url": base + "1/front.200.jpg"},
+        {"code": "2", "product_name": "Böse", "image_front_url": "https://evil.example.com/x.jpg"},  # fremder Server: fliegt raus
+        {"code": "3", "product_name": "Ohne Bild"},
+        {"code": "4", "product_name": "Brezel", "image_front_url": base + "4/front.400.jpg"},
+        {"code": "5", "product_name": "Doppelt", "image_front_url": base + "1/front.400.jpg"},  # gleiches Bild nur einmal
+    ]
+    aioclient_mock.get("https://world.openfoodfacts.org/cgi/search.pl", json={"products": products})
+    for db in ("openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{db}.org/cgi/search.pl", json={"products": []})
+    aioclient_mock.get(base + "1/front.200.jpg", content=JPEG)
+    aioclient_mock.get(base + "4/front.400.jpg", content=JPEG)
+    aioclient_mock.get(base + "1/front.400.jpg", content=JPEG)
+    await client.send_json({"id": 1, "type": "einkaufsliste/photo/search", "query": "Brezel"})
+    res = await client.receive_json()
+    assert res["success"], res
+    found = res["result"]["results"]
+    assert [r["url"] for r in found] == [base + "1/front.400.jpg", base + "4/front.400.jpg"]
+    assert found[0]["thumb"].startswith("data:image/jpeg;base64,") and found[0]["name"] == "Laugenbrezel"
+    assert res["result"]["reached"] is True
+
+    # zu kurz
+    await client.send_json({"id": 2, "type": "einkaufsliste/photo/search", "query": "B"})
+    assert not (await client.receive_json())["success"]
+
+    # übernehmen: kommt zum Produkt (ohne Barcode), zweites Foto kommt DAZU
+    await client.send_json({"id": 3, "type": "einkaufsliste/photo/take", "name": "Brezel", "url": found[1]["url"]})
+    res = await client.receive_json()
+    assert res["success"] and res["result"]["count"] == 1
+    first = m.photos["brezel"]["id"]
+    await client.send_json({"id": 4, "type": "einkaufsliste/photo/take", "name": "Brezel", "url": found[0]["url"]})
+    assert (await client.receive_json())["result"]["count"] == 2
+    assert m.photos["brezel"]["id"] == first  # das erste bleibt Hauptfoto
+
+    # fremde Adresse wird nicht geladen
+    await client.send_json({"id": 5, "type": "einkaufsliste/photo/take", "name": "Brezel", "url": "https://evil.example.com/x.jpg"})
+    assert not (await client.receive_json())["success"]
+
+    # 🔒 Datenschutz an: keine Suche, kein Laden
+    m.privacy = True
+    await client.send_json({"id": 6, "type": "einkaufsliste/photo/search", "query": "Brezel"})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 7, "type": "einkaufsliste/photo/take", "name": "Brezel", "url": found[0]["url"]})
+    assert not (await client.receive_json())["success"]
+    m.privacy = False
+
+    # Datenbank nicht erreichbar: leere Liste, reached False
+    aioclient_mock.clear_requests()
+    for db in ("openfoodfacts", "openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{db}.org/cgi/search.pl", status=503)
+    await client.send_json({"id": 8, "type": "einkaufsliste/photo/search", "query": "Brezel"})
+    res = await client.receive_json()
+    assert res["success"] and res["result"] == {"results": [], "reached": False}
+
+
 async def test_cut_photos_found_and_refreshed(hass: HomeAssistant, setup, monkeypatch) -> None:
     import base64
 
