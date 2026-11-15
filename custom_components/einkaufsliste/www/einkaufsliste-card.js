@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.28";
+const EL_VERSION = "2.76.29-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.28"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -277,15 +277,24 @@ const EL_HELP = {
   ]],
   offers: ["extras", [
     "Braucht eine <b>Postleitzahl</b> (nur Admins). Dazu: „Nur diese Geschäfte“ (leer = alle), wie oft nachgeschaut wird (alle 3/6/12/24 Std.), <b>Speichern</b>, <b>Jetzt nachschauen</b>, <b>Ausschalten</b>. Die Statuszeile zeigt Zahl und letzte Prüfung. Die Angebote kommen inoffiziell von Marktguru und können jederzeit ausfallen.",
+    "🌍 <b>Geschäft im Nachbarland</b> (Grenzregion Deutschland/Österreich): beim Geschäft bzw. der Filiale <b>🌍 Land</b> (DE oder AT) und <b>📍 Adresse</b> mit Postleitzahl eintragen. Dann wird für dieses Geschäft zusätzlich auf marktguru.de bzw. .at gesucht, mit der Postleitzahl aus der Adresse. Die Statuszeile zeigt „🌍 Auch im Nachbarland“.",
     "📬 <b>Eigene Angebote</b> (z. B. Schweiz): Eine eigene Automation kann mit der Aktion <code>einkaufsliste.angebote_melden</code> Angebote schicken (Name, Geschäft, Preis, gültig bis, Währung wie CHF, Link zur Produktseite). Sie erscheinen wie diese hier am Artikel – auch wenn Marktguru aus ist. Beispiel in der README unter „🤖 Für Automationen“.",
   ], [
     "Needs a <b>postcode</b> (admins only). Also: “Only these stores” (empty = all), how often to check (every 3/6/12/24 h), <b>Save</b>, <b>Check now</b>, <b>Switch off</b>. The status line shows the count and the last check. The offers come unofficially from Marktguru and can stop at any time.",
+    "🌍 <b>Store in the neighbouring country</b> (border region Germany/Austria): set <b>🌍 Country</b> (DE or AT) and an <b>📍 address</b> with postcode on the store or branch. Offers for this store are then also searched on marktguru.de or .at, using the postcode from the address. The status line shows “🌍 Also across the border”.",
     "📬 <b>Your own offers</b> (e.g. Switzerland): your own automation can send offers with the action <code>einkaufsliste.angebote_melden</code> (name, store, price, valid until, currency like CHF, link to the product page). They show up at the item like these – even when Marktguru is off. Example in the README under “🤖 For automations”.",
   ]],
   recalls: ["extras", [
     "<b>Einschalten</b> (nur Admins). Alle 6 Stunden werden die offiziellen Warnungen von lebensmittelwarnung.de mit allem verglichen, was in den letzten 30 Tagen abgehakt wurde. Treffer kommen als Meldung in Home Assistant, stehen hier mit Link und lassen sich mit ✔ wegklicken. In der Liste bekommt der Artikel ein rotes ❗. Treffer verschwinden von selbst, wenn der Kauf über 30 Tage her ist oder die Warnung älter als 60 Tage. Steht beim Artikel eine Notiz (z. B. die Marke), schaut die Liste, ob sie in der Warnung vorkommt: rot „Eure Marke steht in der Warnung“, sonst ein oranges ❗ „vielleicht eine andere Marke“. Im Link trotzdem prüfen, ob eure Packung betroffen ist. Die Warnungen umfassen auch Kosmetik, Spielzeug, Geschirr und Kleidung – Tierfutter leider nicht.",
   ], [
     "<b>Turn on</b> (admins only). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything checked off in the last 30 days. Matches arrive as a Home Assistant notification, are listed here with a link and can be dismissed with ✔. In the list the item gets a red ❗. Matches disappear on their own when the purchase is more than 30 days ago or the warning is older than 60 days. If the item has a note (e.g. the brand), the list checks whether it appears in the warning: red “Your brand is in the warning”, otherwise an orange ❗ “maybe a different brand”. Still check the link to see whether your pack is affected. The warnings also cover cosmetics, toys, dishes and clothing – sadly not pet food.",
+  ]],
+  timernotify: ["extras", [
+    "<b>⏰ Kochtimer fertig → Meldung aufs Handy</b>, auch wenn keine Karte offen ist (die Timer laufen sowieso in Home Assistant). Häkchen bei den Handys setzen (die Liste zeigt alle Melde-Dienste, die Home-Assistant-App heißt <code>mobile_app_…</code>), <b>Speichern</b>. Leer = aus (Standard). Nur Admins.",
+    "<b>📱 Nur an den, der gestartet hat:</b> Die Meldung geht nur an die Handys der Person, die den Timer gestartet hat (über ihre Person in Home Assistant und deren App-Gerät). Ist so ein Handy nicht unter den Häkchen, bekommen alle ausgewählten die Meldung. Wer mehr will (Alexa-Ansage, Licht blinken): das Ereignis <code>einkaufsliste_timer_fertig</code> gibt es weiterhin.",
+  ], [
+    "<b>⏰ Cooking timer done → alert on the phone</b>, even when no card is open (the timers run in Home Assistant anyway). Tick the phones (the list shows all notify services, the Home Assistant app is called <code>mobile_app_…</code>), <b>Save</b>. Empty = off (default). Admins only.",
+    "<b>📱 Only to whoever started it:</b> the alert only goes to the phones of the person who started the timer (via their person in Home Assistant and its app device). If none of their phones is ticked, all ticked phones get it. Want more (Alexa announcement, flashing light)? The event <code>einkaufsliste_timer_fertig</code> is still there.",
   ]],
   spend: ["extras", [
     "Eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist). Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert. Gilt für alle Geräte.",
@@ -390,7 +399,7 @@ const EL_HELP = {
 };
 const EL_HELP_GROUPS = [ // Kapitel der Einstellungs-Anleitung: [Schlüssel, Icon, Titel de, Titel en, [Zeilen], Farbe]
   ["list", "📋", "Meine Liste", "My list", ["stores", "categories", "persons", "products", "recipes"], "#43a047"],
-  ["extras", "🎛️", "Extras", "Extras", ["offers", "recalls", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"], "#f9a825"],
+  ["extras", "🎛️", "Extras", "Extras", ["offers", "recalls", "timernotify", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"], "#f9a825"],
   ["data", "💾", "Daten", "Data", ["transfer", "log", "cleanup"], "#1e88e5"],
   ["health", "🩺", "Gesundheit", "Health", ["check", "errors", "stats"], "#00897b"],
   ["view", "👁️", "Ansicht", "View", ["listview", "labels", "theme"], "#1e88e5"],
@@ -399,7 +408,7 @@ const EL_HELP_GROUPS = [ // Kapitel der Einstellungs-Anleitung: [Schlüssel, Ico
 
 const EL_HELP_TITLES = { // [Titel de, Titel en, Icon]
   stores: ["Geschäfte", "Stores", "🏪"], categories: ["Kategorien", "Categories", "🗂️"], persons: ["Personen", "People", "👤"], products: ["Produkte/Katalog", "Products/catalog", "📦"], recipes: ["Rezepte", "Recipes", "👨‍🍳"],
-  offers: ["Angebote", "Offers", "🏷️"], recalls: ["Rückruf-Warnung", "Recall warning", "⚠️"], spend: ["Einkaufs-Protokoll", "Purchase log", "🧾"], cards: ["Kundenkarten", "Loyalty cards", "💳"], notetpl: ["Notiz-Vorlagen", "Note templates", "📝"], aicook: ["KI-Kochen", "AI cooking", "🤖"], autoshop: ["Laden-Modus automatisch", "Store mode automatic", "📍"], mascot: ["Maskottchen", "Mascot", "🛒"], labels: ["Beschriftungen", "Labels", "🏷️"],
+  offers: ["Angebote", "Offers", "🏷️"], recalls: ["Rückruf-Warnung", "Recall warning", "⚠️"], timernotify: ["Timer-Meldung", "Timer alert", "⏰"], spend: ["Einkaufs-Protokoll", "Purchase log", "🧾"], cards: ["Kundenkarten", "Loyalty cards", "💳"], notetpl: ["Notiz-Vorlagen", "Note templates", "📝"], aicook: ["KI-Kochen", "AI cooking", "🤖"], autoshop: ["Laden-Modus automatisch", "Store mode automatic", "📍"], mascot: ["Maskottchen", "Mascot", "🛒"], labels: ["Beschriftungen", "Labels", "🏷️"],
   transfer: ["Import & Sicherung", "Import & backup", "📥"], log: ["Verlauf", "History", "🕘"], cleanup: ["Aufräumen", "Tidy up", "🧹"],
   check: ["Alles ok?", "All OK?", "✅"], errors: ["Fehler-Protokoll", "Error log", "🐞"], stats: ["Ressourcen", "Resources", "📊"],
   listview: ["Listenansicht – für alle", "List view – for everyone", "👁️"], app: ["Offline-App", "Offline app", "📱"], theme: ["Hell / Dunkel", "Light / dark", "🌓"], pin: ["Schutz (PIN)", "Protection (PIN)", "🔒"], privacy: ["Datenschutz", "Privacy", "🛡️"], year: ["Euer Jahr in Einkäufen", "Your year in shopping", "🎁"],
@@ -421,10 +430,16 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🌍 <b>Angebote im Nachbarland:</b> Wohnst du an der Grenze und kaufst auch drüben ein (z. B. in Österreich wohnen, bei Kaufland in Lindau einkaufen)? Beim Geschäft bzw. der Filiale unter <b>🌍 Land</b> DE oder AT wählen und die <b>📍 Adresse</b> mit Postleitzahl eintragen. Dann sucht 🏷️ Angebote für dieses Geschäft zusätzlich im anderen Land, mit der Postleitzahl aus der Adresse. Alle anderen Geschäfte bleiben wie bisher.",
+   "🌍 <b>Offers across the border:</b> live near the border and shop on the other side too (e.g. live in Austria, shop at Kaufland in Lindau)? On the store or branch pick DE or AT under <b>🌍 Country</b> and enter the <b>📍 address</b> with postcode. 🏷️ Offers then also searches the other country for this store, with the postcode from the address. All other stores stay as before.", "beta.1"],
+  ["⏰ <b>Timer-Meldung aufs Handy:</b> Ist ein Kochtimer fertig, kommt eine Meldung aufs Handy, auch wenn keine Karte offen ist, ohne eigene Automation. ⚙️ → Extras → <b>Timer-Meldung</b>: Handys ankreuzen, Speichern. Auf Wunsch nur an den, der den Timer gestartet hat. Standard: aus.",
+   "⏰ <b>Timer alert on the phone:</b> when a cooking timer is done, an alert goes to the phone, even when no card is open, without your own automation. ⚙️ → Extras → <b>Timer alert</b>: tick the phones, Save. Optionally only to whoever started the timer. Default: off.", "beta.1"],
+  ["🔎 <b>Foto suchen findet mehr:</b> Die Suche fragt jetzt zuerst die neue Open-Food-Facts-Suche, sucht erst nach dem Namen allein (Marke/Notiz nur zusätzlich) und schaut doppelt so viele Treffer nach Fotos durch.",
+   "🔎 <b>Search photo finds more:</b> the search now asks the new Open Food Facts search first, looks for the name alone first (brand/note only in addition) and checks twice as many hits for photos.", "beta.1"],
 ];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
-  offers: "#d81b60", recalls: "#e65100", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
+  offers: "#d81b60", recalls: "#e65100", timernotify: "#00897b", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
   transfer: "#1e88e5", log: "#757575", cleanup: "#8d6e63", check: "#43a047", errors: "#e53935", stats: "#00897b",
   listview: "#1e88e5", app: "#3949ab", theme: "#424242", pin: "#f4511e", privacy: "#455a64", news: "#fb8c00", year: "#e91e63", credits: "#ec407a",
 }; // 🆕 „Was ist neu“ zeigt höchstens so viele Neuerungen (Punkte)
@@ -7664,7 +7679,7 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
           const place = `
         ${hasBr ? `<p class="hint">🏬 Dieses Geschäft hat Filialen: Adresse, Telefon und Tipps stehen bei jeder Filiale unter „Zeiten &amp; Filialen“. Die Webseite hier gilt für alle Filialen.</p>` : ""}
         ${!hasBr || e.address ? `${lab("Adresse", "Steht hier etwas, zeigt das Fenster mit den Öffnungszeiten (Reiter gedrückt halten) neben dem Namen ein ℹ️ – antippen klappt alles auf. Holst du die Zeiten bei 🌐 OpenStreetMap, kommen Adresse, Telefon und Webseite meist gleich mit (nur in leere Felder).")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" data-field="address" value="${esc(e.address || "")}" placeholder="z. B. Hauptstraße 5, 48565 Steinfurt" maxlength="120"></div>` : ""}
-        ${lab("Land")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:earth"></ha-icon>${this._countrySel(e.country || "", 'class="grow" data-field="country"')}</div>
+        ${lab("Land", "Leer = Land aus Home Assistant. Liegt das Geschäft in einem anderen Land (z. B. Kaufland in Lindau, wenn du in Österreich wohnst), hier DE bzw. AT wählen und oben die Adresse mit Postleitzahl eintragen: Dann sucht 🏷️ Angebote für dieses Geschäft zusätzlich auf marktguru.de bzw. .at – mit der Postleitzahl aus der Adresse. Bei Filialen gilt Land und Adresse der Filiale.")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:earth"></ha-icon>${this._countrySel(e.country || "", 'class="grow" data-field="country"')}</div>
         ${!hasBr || e.phone ? `${lab("Telefon")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:phone-outline"></ha-icon><input class="grow" type="tel" inputmode="tel" data-field="phone" value="${esc(e.phone || "")}" placeholder="z. B. 02552 1234" maxlength="40"></div>` : ""}
         ${lab("Webseite")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:web"></ha-icon><input class="grow" type="url" inputmode="url" data-field="website" value="${esc(e.website || "")}" placeholder="https://…"></div>
         ${!hasBr || e.tips ? `${lab("Eure Tipps")}<div class="srow" data-kind="stores" data-id="${e.id}"><ha-icon class="prev" icon="mdi:lightbulb-on-outline"></ha-icon><textarea class="grow" data-field="tips" rows="2" maxlength="300" placeholder="z. B. Parkplatz hinten ist frei, Pfandautomat streikt oft">${esc(e.tips || "")}</textarea></div>` : ""}
@@ -7829,6 +7844,7 @@ ${(() => {
       { key: "privacy", icon: "mdi:shield-lock-outline", title: "Datenschutz", info: this._privacyOn() ? "an – keine Kamera/Fotos" : "aus", html: () => this._privacyHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
       { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
+      { key: "timernotify", icon: "mdi:timer-alert-outline", title: "Timer-Meldung", info: this._data.settings?.timer_notify?.services?.length ? `an · ${this._data.settings.timer_notify.services.length} 📱` : "aus", html: () => this._timerNotifyHtml() },
       { key: "recalls", icon: "mdi:alert-octagon-outline", title: "Rückruf-Warnung", info: this._data.settings?.recalls?.enabled ? (this._data.settings.recalls.ok === false ? "⚠️ gerade nicht erreichbar" : `an · ${(this._data.settings.recalls.hits || []).length} Treffer`) : "aus", html: () => this._recallsHtml() },
       { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher, Umfang & Last", html: () => {
         this._accOpen = this._accOpen || {};
@@ -8017,7 +8033,7 @@ ${(() => {
   _settingsListHtml(sections) {
     const groups = [
       ["📋 Meine Liste", ["stores", "categories", "persons", "products", "recipes"]],
-      ["🎛️ Extras", ["offers", "recalls", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"]],
+      ["🎛️ Extras", ["offers", "recalls", "timernotify", "spend", "cards", "notetpl", "aicook", "autoshop", "mascot"]],
       ["💾 Daten", ["transfer", "log", "cleanup"]],
       ["🩺 Gesundheit", ["check", "errors", "stats"]],
       ["👁️ Ansicht", ["listview", "labels", "theme"]],
@@ -8026,7 +8042,7 @@ ${(() => {
     const kw = {
       stores: "laden markt zone standort icon eigenmarken", categories: "kategorie farbe reihenfolge", persons: "für wen namen familie",
       products: "katalog barcode foto löschen zusammenführen scan alt monate", recipes: "rezept gruppen kochen zutaten datei import txt csv json",
-      offers: "angebote marktguru preise plz", spend: "protokoll bon kasse kosten einkauf",
+      offers: "angebote marktguru preise plz land nachbarland österreich", timernotify: "timer kochtimer handy meldung benachrichtigung notify wecker", spend: "protokoll bon kasse kosten einkauf",
       notetpl: "notiz vorlagen eigene notiz bio laktose chips", aicook: "ki kochen assistent chatgpt openai gemini ollama rezept idee",
       autoshop: "laden-modus automatisch zone", mascot: "maskottchen wagen gesicht", transfer: "import export sicherung backup mail e-mail alexa todo csv bring",
       log: "verlauf wer wann", listview: "ansicht anzeigen ausblenden einblenden menge notiz foto stern datum wer liste", cleanup: "aufräumen abhaken", check: "alles ok reparieren gesundheit ampel sensor", errors: "fehler protokoll kopieren",
@@ -11012,7 +11028,10 @@ ${(() => {
       <div style="font-size:.85em;opacity:.65;text-align:center">${esc(elT("Fotos aus Open Food Facts & Co. (frei nutzbar). Das Foto kommt dazu – deine eigenen bleiben."))}</div>
       <div data-btns style="display:flex;justify-content:flex-end"></div></div>`;
     const inp = ov.querySelector("[data-q]"), msg = ov.querySelector("[data-msg]"), res = ov.querySelector("[data-res]");
-    inp.value = this._pkLabel(target.name).replace(/\s*·\s*/g, " ");
+    // 🔎 Suchfeld startet mit dem Namen allein; die Notiz (z. B. Marke) probiert Home Assistant danach zusätzlich
+    const [pkName, ...pkNote] = String(target.name || "").split("|");
+    inp.value = this._pkLabel(pkName).trim();
+    const pkExtra = pkNote.join(" ").trim();
     const go = ovIconButton("mdi:magnify", elT("Suchen"));
     ov.querySelector("[data-go]").append(go);
     const cancel = ovButton("Abbrechen");
@@ -11039,7 +11058,7 @@ ${(() => {
       res.innerHTML = "";
       msg.textContent = elT("🔎 Suche läuft …");
       let out;
-      try { out = await this._ws({ type: "einkaufsliste/photo/search", query: q }); } catch (_) { if (open && my === run) msg.textContent = ""; return; }
+      try { out = await this._ws({ type: "einkaufsliste/photo/search", query: q, ...(pkExtra ? { extra: pkExtra } : {}) }); } catch (_) { if (open && my === run) msg.textContent = ""; return; }
       if (!open || my !== run) return; // inzwischen zu oder neu gesucht
       const list = out?.results || [];
       if (!list.length) {
@@ -13384,10 +13403,12 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
     const status = !on ? "" : o.ok === false ? `<p><b>⚠️ Angebote gerade nicht verfügbar.</b> <span>${esc(o.error || "")}</span></p>`
       : last ? `<p><b>✅ An</b> <span>· zuletzt</span> ${WD_SHORT[pyWd(last)]}. ${String(last.getHours()).padStart(2, "0")}:${String(last.getMinutes()).padStart(2, "0")} <span>·</span> ${o.count || 0} <span>Angebote gefunden</span></p>`
       : `<p><b>✅ An</b> <span>– die ersten Angebote kommen in ein paar Minuten.</span></p>`;
+    const foreign = on && o.foreign?.length ? `<p><b>🌍 Auch im Nachbarland:</b> <span translate="no">${esc(o.foreign.join(" · "))}</span></p>` : "";
     return `
       <p class="hint"><b>🏷️ Angebote aus den Prospekten</b>: Steht etwas von deiner Liste gerade im Angebot, bekommt der Artikel rechts in der Zeile einen 🏷️-Knopf. Lange drücken → <b>Angebote</b> zeigt Geschäft, Preis und wie lange es gilt. Gibt es nichts Genaues, aber Ähnliches (z. B. „Milch“ für „H-Milch“), steht stattdessen ein blaues <b>🔀</b> – höchstens 4 Treffer.</p>
       <p class="hint warnbox">⚠️ <b>Inoffiziell.</b> Die Angebote kommen von Marktguru – ohne Absprache mit Marktguru, so wie die Webseite sie auch jedem Browser zeigt. Das kann <b>jederzeit ohne Vorwarnung aufhören</b> zu funktionieren. Die Einkaufsliste selbst läuft dann ganz normal weiter. Nachgeschaut werden nur die Namen offener Artikel und deine Postleitzahl – sonst nichts.</p>
-      ${status}
+      ${status}${foreign}
+      <p class="hint">🌍 Geschäft im Nachbarland? (z. B. Kaufland in Lindau, wenn du in Österreich wohnst) Beim Geschäft bzw. der Filiale unter 🌍 Land DE oder AT wählen und unter 📍 Adresse die Adresse mit Postleitzahl eintragen. Dann sucht die Liste für dieses Geschäft zusätzlich im anderen Land – mit der Postleitzahl aus der Adresse. Alle anderen Geschäfte bleiben bei deiner Postleitzahl hier.</p>
       ${admin ? `
       <div class="srow"><ha-icon class="prev" icon="mdi:map-marker-outline"></ha-icon><input class="grow" id="offZip" inputmode="numeric" maxlength="5" placeholder="Postleitzahl, z. B. 48565" value="${esc(o?.zip || "")}"></div>
       <div class="pestores">🏪 <span>Nur diese Geschäfte (leer = alle):</span> ${this._data.stores.map((st) =>
@@ -13398,6 +13419,29 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
         <button class="btn primary" data-act="${on ? "offers-save" : "offers-on"}"><ha-icon icon="mdi:tag-outline"></ha-icon>${on ? "Speichern" : "Einschalten"}</button>
         ${on ? `<button class="btn" data-act="offers-refresh"><ha-icon icon="mdi:refresh"></ha-icon>Jetzt nachschauen</button><button class="btn" data-act="offers-off"><ha-icon icon="mdi:close"></ha-icon>Ausschalten</button>` : ""}
       </div>` : `<p class="hint">🔒 Einschalten oder ändern kann das nur ein Admin.</p>`}`;
+  }
+
+  // ⏰ Kochtimer fertig → Handy-Meldung (ohne eigene Automation). Läuft in Home Assistant, auch wenn keine Karte offen ist.
+  _timerNotifyHtml() {
+    const t = this._data.settings?.timer_notify;
+    const chosen = t?.services || [];
+    const admin = !!this._hass?.user?.is_admin;
+    const all = Object.keys(this._hass?.services?.notify || {}).filter((n) => n !== "persistent_notification" && n !== "send_message");
+    for (const c of chosen) if (!all.includes(c)) all.push(c); // gespeichert, aber gerade nicht da (Handy weg?) – trotzdem zeigen
+    all.sort((a, b) => (b.startsWith("mobile_app_") - a.startsWith("mobile_app_")) || a.localeCompare(b));
+    const nice = (n) => n.replace(/^mobile_app_/, "📱 ").replace(/_/g, " ");
+    return `
+      <p class="hint">⏰ Timer fertig – Meldung aufs Handy. Die Kochtimer laufen in Home Assistant. Ist die Zeit um, kommt eine Meldung aufs Handy – auch wenn keine Karte offen ist. Standard: aus.</p>
+      ${chosen.length ? `<p><b>✅ An</b> <span>· meldet an</span> <span translate="no">${esc(chosen.map(nice).join(", "))}</span></p>` : ""}
+      ${admin ? (all.length ? `
+      <div class="pestores">🔔 <span>Melden an:</span> ${all.map((n) =>
+        `<label class="stck" style="--c:#00897b"><input type="checkbox" class="tnsvc" value="${esc(n)}" ${chosen.includes(n) ? "checked" : ""}><span translate="no" style="white-space:nowrap">${esc(nice(n))}</span></label>`).join("")}</div>
+      ${chosen.length ? this._swHtml("tn-starter", !!t?.starter, "📱 Nur an den, der den Timer gestartet hat", "sonst an alle angekreuzten Handys") : ""}
+      <div class="btnrow">
+        <button class="btn primary" data-act="tn-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
+        ${chosen.length ? `<button class="btn" data-act="tn-off"><ha-icon icon="mdi:close"></ha-icon>Ausschalten</button>` : ""}
+      </div>` : `<p class="hint">🤷 In Home Assistant gibt es noch keinen Melde-Dienst. Installiere die Home-Assistant-App auf dem Handy und melde dich an – dann steht es hier als 📱.</p>`)
+      : `<p class="hint">🔒 Einschalten oder ändern kann das nur ein Admin.</p>`}`;
   }
 
   // ⚠️ Rückruf-Warnung: offizielle Warnungen (lebensmittelwarnung.de) gegen die Einkäufe der letzten 30 Tage
@@ -14959,6 +15003,17 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
         const hours = Number(this.$("offHours")?.value || 6);
         this._ws({ type: "einkaufsliste/offers/set", enabled: true, zip, stores, hours })
           .then(() => { this._toast("🏷️ Angebote sind an – die ersten kommen in ein paar Minuten"); setTimeout(() => this._renderSettings(), 150); })
+          .catch(() => {});
+        break;
+      }
+      case "tn-save":
+      case "tn-off":
+      case "tn-starter": {
+        const cur = this._data.settings?.timer_notify || {};
+        const services = act === "tn-off" ? [] : act === "tn-starter" ? (cur.services || []) : [...this.shadowRoot.querySelectorAll(".tnsvc:checked")].map((x) => x.value);
+        const starter = act === "tn-starter" ? !cur.starter : !!cur.starter;
+        this._ws({ type: "einkaufsliste/timer_notify/set", services, starter })
+          .then(() => { this._toast(services.length ? "⏰ Timer-Meldung ist an" : "⏰ Timer-Meldung ist aus"); setTimeout(() => this._renderSettings(), 150); })
           .catch(() => {});
         break;
       }

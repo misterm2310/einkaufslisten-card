@@ -2824,7 +2824,8 @@ async def test_photo_search_by_name(hass, setup, hass_ws_client, aioclient_mock)
         {"code": "4", "product_name": "Brezel", "image_front_url": base + "4/front.400.jpg"},
         {"code": "5", "product_name": "Doppelt", "image_front_url": base + "1/front.400.jpg"},  # gleiches Bild nur einmal
     ]
-    aioclient_mock.get("https://world.openfoodfacts.org/cgi/search.pl", json={"products": products})
+    aioclient_mock.get("https://search.openfoodfacts.org/search", json={"hits": products})  # neue Suche zuerst
+    aioclient_mock.get("https://world.openfoodfacts.org/api/v2/product/3.json", json={"product": {}})  # ohne Bild: nachschlagen
     for db in ("openbeautyfacts", "openproductsfacts"):
         aioclient_mock.get(f"https://world.{db}.org/cgi/search.pl", json={"products": []})
     aioclient_mock.get(base + "1/front.200.jpg", content=JPEG)
@@ -2865,6 +2866,7 @@ async def test_photo_search_by_name(hass, setup, hass_ws_client, aioclient_mock)
 
     # Datenbank nicht erreichbar: leere Liste, reached False
     aioclient_mock.clear_requests()
+    aioclient_mock.get("https://search.openfoodfacts.org/search", status=503)
     for db in ("openfoodfacts", "openbeautyfacts", "openproductsfacts"):
         aioclient_mock.get(f"https://world.{db}.org/cgi/search.pl", status=503)
     await client.send_json({"id": 8, "type": "einkaufsliste/photo/search", "query": "Brezel"})
@@ -5513,3 +5515,101 @@ async def test_service_get_update_and_groups(hass, setup):
     )
     assert m.store_by_id(res["item"]["store_id"])["name"] == "Fressnapf"
     assert m.category_by_id(res["item"]["category_id"])["name"] == "Haustier"
+
+
+# ---------------------------------------------------------------- 🆕 Beta 2.76.29
+async def test_offers_foreign_store(hass, setup, aioclient_mock) -> None:
+    """🌍 #43: Geschäft im Nachbarland (Land + PLZ aus der Adresse) wird zusätzlich auf marktguru.<land> gesucht."""
+    from custom_components.einkaufsliste import offers as mod
+    m = mgr(hass)
+    hass.config.country = "AT"
+    kauf = m.store_by_id(m.ensure_group("stores", "Kaufland")["id"])
+    spar = m.store_by_id(m.ensure_group("stores", "Spar")["id"])
+    kauf.update(country="DE", address="Kemptener Str. 1, 88131 Lindau")
+    # ohne Adresse oder mit Land = HA-Land: keine zweite Suche
+    assert mod.foreign_spots(m, "at") == {("de", "88131"): ["kaufland"]}
+    spar["country"] = "AT"
+    spar["address"] = "Hauptstr. 1, 6900 Bregenz"
+    assert mod.foreign_spots(m, "at") == {("de", "88131"): ["kaufland"]}
+    assert mod.foreign_spots(m, "at", [spar["id"]]) == {}  # „Nur diese Geschäfte“ ohne Kaufland
+    m.add_item("Butter")
+    def off(i, who, price):
+        return {"id": i, "price": price, "product": {"name": "Butter"}, "advertisers": [{"name": who}],
+                "validityDates": [{"from": "2026-01-01T00:00:00Z", "to": "2099-01-01T00:00:00Z"}], "description": ""}
+    aioclient_mock.get("https://api.marktguru.at/api/v1/offers/search", json={"results": [off(1, "Spar", 2.29)]})
+    aioclient_mock.get("https://api.marktguru.de/api/v1/offers/search",
+                       json={"results": [off(2, "Kaufland", 1.49), off(3, "Lidl", 1.39)]})
+    m.offers_cfg = {"enabled": True, "zip": "6900", "stores": [], "hours": 6, "key": "KEYAT", "keys": {"de": "KEYDE"}}
+    with patch("custom_components.einkaufsliste.offers.asyncio.sleep"):
+        res = await m.offers.run()
+    assert res["ok"]
+    butter = m.offers_data["butter"]
+    assert [(o["r"], o.get("ctry")) for o in butter] == [("Kaufland", "DE"), ("Spar", None)]  # Lidl DE gehört zu keinem Geschäft
+    assert butter[0]["img"].startswith("https://cdn.marktguru.de/")
+    assert m.as_dict()["settings"]["offers"]["foreign"] == ["Kaufland (DE 88131)"]
+    de_calls = [c for c in aioclient_mock.mock_calls if "api.marktguru.de" in str(c[1]) and "q=Butter" in str(c[1])]
+    assert de_calls and all("88131" in str(c[1]) for c in de_calls)
+    # Foto übernehmen geht auch von marktguru.de, obwohl HA auf AT steht
+    assert mod.trusted_url("https://cdn.marktguru.de/x.webp", "de")
+
+
+async def test_timer_notify(hass, setup) -> None:
+    """⏰ Kochtimer fertig → Handy-Meldung ohne eigene Automation; „nur an den Starter“ über Person + App-Gerät."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+    m = mgr(hass)
+    calls_a = async_mock_service(hass, "notify", "mobile_app_marco")
+    calls_b = async_mock_service(hass, "notify", "mobile_app_jana")
+    hass.states.async_set("person.marco", "home", {"user_id": "u1", "device_trackers": ["device_tracker.marco"]})
+    assert m.set_timer_notify(["notify.mobile_app_marco", "mobile_app_jana", "bös artig!"]) == {
+        "services": ["mobile_app_marco", "mobile_app_jana"], "starter": False}
+    t = m.start_timer(60, "Ei", by_id="u1")
+    m._timer_due(t["id"])
+    await hass.async_block_till_done()
+    assert len(calls_a) == 1 and len(calls_b) == 1
+    assert calls_a[0].data["title"] == "⏲️ Timer fertig" and calls_a[0].data["message"] == "Ei"
+    # nur an den Starter
+    m.set_timer_notify(["mobile_app_marco", "mobile_app_jana"], starter=True)
+    t = m.start_timer(60, "Nudeln", by_id="u1")
+    m._timer_due(t["id"])
+    await hass.async_block_till_done()
+    assert len(calls_a) == 2 and len(calls_b) == 1
+    # Starter ohne angekreuztes Handy: alle bekommen es
+    t = m.start_timer(60, "Reis", by_id="u9")
+    m._timer_due(t["id"])
+    await hass.async_block_till_done()
+    assert len(calls_a) == 3 and len(calls_b) == 2
+    # leer = aus, gespeichert
+    assert m.set_timer_notify([]) is None and m.as_dict()["settings"]["timer_notify"] is None
+    t = m.start_timer(60, "Tee")
+    m._timer_due(t["id"])
+    await hass.async_block_till_done()
+    assert len(calls_a) == 3
+
+
+async def test_photo_search_new_then_old(hass, setup, aioclient_mock):
+    """🔎 Neue OFF-Suche ohne Bild-Adresse → Foto über den Barcode; neue Suche kaputt → alte als Ersatz; Name + Notiz zusätzlich."""
+    from custom_components.einkaufsliste.barcode import async_search_photos
+    m = mgr(hass)
+    base = "https://images.openfoodfacts.org/images/products/"
+    aioclient_mock.get("https://search.openfoodfacts.org/search", json={"hits": [{"code": "42", "product_name": "Brezel"}]})
+    aioclient_mock.get("https://world.openfoodfacts.org/api/v2/product/42.json",
+                       json={"product": {"image_front_url": base + "42/front.400.jpg"}})
+    aioclient_mock.get(base + "42/front.400.jpg", content=JPEG)
+    for db in ("openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{db}.org/cgi/search.pl", json={"products": []})
+    res = await async_search_photos(hass, m, "Brezel", "Bäcker Max")
+    assert [r["url"] for r in res["results"]] == [base + "42/front.400.jpg"] and res["reached"]
+    queries = [c[1].query.get("q") for c in aioclient_mock.mock_calls if "search.openfoodfacts.org" in str(c[1])]
+    assert queries == ["Brezel", "Brezel Bäcker Max"]  # erst der Name allein, dann mit Notiz
+    # neue Suche kaputt: alte cgi/search.pl springt ein
+    aioclient_mock.clear_requests()
+    aioclient_mock.get("https://search.openfoodfacts.org/search", status=500)
+    aioclient_mock.get("https://world.openfoodfacts.org/cgi/search.pl",
+                       json={"products": [{"code": "7", "product_name": "Brezel", "image_front_url": base + "7/f.jpg"}]})
+    for db in ("openbeautyfacts", "openproductsfacts"):
+        aioclient_mock.get(f"https://world.{db}.org/cgi/search.pl", json={"products": []})
+    aioclient_mock.get(base + "7/f.jpg", content=JPEG)
+    res = await async_search_photos(hass, m, "Brezel")
+    assert [r["url"] for r in res["results"]] == [base + "7/f.jpg"]
+    old = [c for c in aioclient_mock.mock_calls if "cgi/search.pl" in str(c[1]) and "openfoodfacts" in str(c[1])]
+    assert old and old[0][1].query.get("page_size") == "24"

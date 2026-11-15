@@ -101,6 +101,27 @@ r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=asyn
   return { href:a?.getAttribute("href"), rel:a?.getAttribute("rel"), prod:host.querySelector(".recallhit b")?.textContent, check:!!host.querySelector('[data-act="recalls-check"]'), calls }; })()`);
 check("Rückruf-Warnung: Treffer mit sicherem Link", r.href === "https://www.lebensmittelwarnung.de/x.html" && /noopener/.test(r.rel) && r.prod === "Kaffee" && r.check, JSON.stringify(r));
 check("Rückruf-Warnung: ✔ schickt „dismiss“", r.calls.some((m) => m.type === "einkaufsliste/recalls/dismiss" && m.recall_id === "w1"), JSON.stringify(r.calls));
+
+// ⏰ Timer-Meldung (2.76.29-beta.1): Handys ankreuzen, Speichern schickt timer_notify/set
+r = await p.evaluate(`(async () => { const c=${card}; const keepWs=c._ws, keepSvc=c._hass.services, keepAdm=c._hass.user?.is_admin; const sent=[];
+  c._hass.services={...(keepSvc||{}), notify:{mobile_app_marcos_handy:{}, persistent_notification:{}, alexa_kueche:{}}}; c._hass.user={...(c._hass.user||{}), is_admin:true};
+  c._ws=async(m)=>{ sent.push(m); return {}; };
+  c._data.settings.timer_notify={services:["mobile_app_marcos_handy"], starter:false};
+  const host=c.shadowRoot.querySelector("ha-card"); const d=document.createElement("div"); d.id="tnTest"; d.innerHTML=c._timerNotifyHtml(); host.append(d);
+  const boxes=[...d.querySelectorAll(".tnsvc")].map(x=>({v:x.value, on:x.checked}));
+  const sw=!!d.querySelector('[data-act="tn-starter"]');
+  d.querySelector('.tnsvc[value="alexa_kueche"]').checked=true;
+  d.querySelector('[data-act="tn-save"]').click(); await new Promise(r=>setTimeout(r,50));
+  d.querySelector('[data-act="tn-starter"]').click(); await new Promise(r=>setTimeout(r,50));
+  d.remove(); c._ws=keepWs; c._hass.services=keepSvc; c._hass.user={...c._hass.user, is_admin:keepAdm};
+  return { boxes, sent, sw }; })()`);
+check("⏰ Timer-Meldung: App-Handys zuerst, persistent_notification nicht dabei, Haken gesetzt",
+  r.boxes.length === 2 && r.boxes[0].v === "mobile_app_marcos_handy" && r.boxes[0].on && !r.boxes.some((x) => x.v === "persistent_notification"), JSON.stringify(r.boxes));
+check("⏰ Timer-Meldung: Speichern schickt beide Dienste, Schalter „nur Starter“ schaltet um", r.sw && r.sent[0]?.type === "einkaufsliste/timer_notify/set" && r.sent[0].services.length === 2 && r.sent[0].starter === false && r.sent[1]?.starter === true, JSON.stringify(r.sent));
+// 🌍 Angebote im Nachbarland (#43): Statuszeile zeigt „Auch im Nachbarland“
+r = await p.evaluate(`(() => { const c=${card}; const was=c._data.settings.offers; c._data.settings.offers={enabled:true, ok:true, zip:"6900", stores:[], hours:6, last:new Date().toISOString(), count:3, foreign:["Kaufland (DE 88131)"]};
+  const h=c._offersHtml(); c._data.settings.offers=was; return { foreign:h.includes("Auch im Nachbarland:") && h.includes("Kaufland (DE 88131)"), hint:h.includes("Geschäft im Nachbarland?") }; })()`);
+check("🌍 Angebote: „Auch im Nachbarland“ + Hinweis", r.foreign && r.hint, JSON.stringify(r));
 r = await p.evaluate(`(() => { const c=${card}; const was=c._data.settings.privacy; c._data.settings.privacy=true; const blocked=/Gesperrt/.test(c._recallsHtml()); const priv=/Rückruf-Warnung/.test(c._privacyHtml(false)) && /Recall warning/.test(c._privacyHtml(true)); c._data.settings.privacy=was; return { blocked, priv, privOn: c._privacyOn.toString().slice(0,80) }; })()`);
 check("Rückruf-Warnung: Datenschutz an = „🔒 Gesperrt“, und sie steht auf der Datenschutz-Seite", r.blocked && r.priv, JSON.stringify(r));
 
@@ -1049,9 +1070,9 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   const cap=tiles.map(t=>t.textContent.trim());
   tiles[0]?.click(); await new Promise(r=>setTimeout(r,80));
   c._ws=keepWs;
-  return { able, q, cap, sent:sent.map(m=>m.type||(m.done?"done":"")), take:sent.find(m=>m.type==="einkaufsliste/photo/take") }; });
+  return { able, q, cap, sent:sent.map(m=>m.type||(m.done?"done":"")), take:sent.find(m=>m.type==="einkaufsliste/photo/take"), search:sent.find(m=>m.type==="einkaufsliste/photo/search") }; });
 check("🔎 Foto suchen nur bei Produkten (nicht Rezept, Bon, Texterkennung)", r.able.prod && !r.able.recipe && !r.able.bon && !r.able.ocr, JSON.stringify(r.able));
-check("🔎 Suchfeld mit Name + Notiz, 2 Treffer mit Beschriftung", r.q === "Brezel Bäcker" && r.cap.length === 2 && r.cap[0] === "Laugenbrezel · Bäcker", JSON.stringify(r));
+check("🔎 Suchfeld startet mit dem Namen allein, Notiz geht als extra mit, 2 Treffer mit Beschriftung", r.q === "Brezel" && r.search?.extra === "Bäcker" && r.cap.length === 2 && r.cap[0] === "Laugenbrezel · Bäcker", JSON.stringify(r));
 check("🔎 Antippen schickt photo/take mit Adresse und schließt", r.take?.url === "https://images.openfoodfacts.org/a.jpg" && r.take?.name === "Brezel|Bäcker" && r.sent.includes("done"), JSON.stringify(r));
 await back();
 

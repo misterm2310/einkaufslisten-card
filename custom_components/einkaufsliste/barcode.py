@@ -441,45 +441,59 @@ def _mime(raw: bytes) -> str:
     return "image/png" if raw[:4] == b"\x89PNG" else "image/webp" if raw[8:12] == b"WEBP" else "image/jpeg"
 
 
-async def async_search_photos(hass: HomeAssistant, manager: Any, query: str) -> dict[str, Any]:
+NEW_SEARCH = "https://search.openfoodfacts.org/search"  # 🔎 neue Open-Food-Facts-Suche (findet deutlich mehr als cgi/search.pl)
+SEARCH_PAGE = 24  # so viele Treffer pro Suche durchsehen (die mit Foto werden herausgesucht)
+MAX_CODE_LOOKUPS = 6  # Treffer ohne Bild-Adresse: so oft das Foto über den Barcode nachschlagen
+
+
+async def _get_json(session: aiohttp.ClientSession, url: str, params: dict[str, str], what: str) -> Any:
+    """GET + JSON. None = nicht erreichbar oder Fehler (wird nur im Debug-Log vermerkt)."""
+    try:
+        async with asyncio.timeout(12):
+            resp = await session.get(url, params=params, headers={"User-Agent": USER_AGENT})
+            if resp.status != 200:
+                _LOGGER.debug("%s antwortet mit %s", what, resp.status)
+                return None
+            return await resp.json(content_type=None)
+    except (TimeoutError, aiohttp.ClientError, ValueError) as err:
+        _LOGGER.debug("%s nicht erreichbar: %s", what, err)
+        return None
+
+
+async def async_search_photos(hass: HomeAssistant, manager: Any, query: str, extra: str | None = None) -> dict[str, Any]:
     """🔎 Bis zu 4 Produktfotos zum Namen aus Open Food Facts & Co. holen (zum Aussuchen).
 
-    Die kleinen Vorschaubilder lädt Home Assistant selbst und schickt sie mit – so fragt das Handy
-    nicht selbst bei der Datenbank an. Gibt {"results": [{url, thumb, name, brand}], "reached": bool} zurück."""
+    Reihenfolge: erst der Name allein, dann (falls noch Platz) Name + Notiz/Marke (extra).
+    Pro Suche: zuerst die neue Open-Food-Facts-Suche, die alte cgi/search.pl nur als Ersatz,
+    danach Open Beauty/Products Facts. Die kleinen Vorschaubilder lädt Home Assistant selbst und schickt sie mit –
+    so fragt das Handy nicht selbst bei der Datenbank an. Gibt {"results": [{url, thumb, name, brand}], "reached": bool} zurück."""
     _check_privacy(manager)
     query = " ".join(str(query or "").replace("|", " ").split())[:80]
     if len(query) < 2:
         raise ValueError("Bitte mindestens 2 Buchstaben zum Suchen eingeben.")
+    extra = " ".join(str(extra or "").replace("|", " ").split())[:60]
+    queries = [query] + ([f"{query} {extra}"] if extra and extra.lower() not in query.lower() else [])
     session = async_get_clientsession(hass)
     found: list[dict[str, Any]] = []
     seen: set[str] = set()
     reached = False
-    for source, base in SOURCES:
-        if len(found) >= SEARCH_LIMIT:
-            break
-        try:
-            async with asyncio.timeout(12):
-                resp = await session.get(
-                    f"{base}/cgi/search.pl",
-                    params={"search_terms": query, "search_simple": "1", "action": "process", "json": "1",
-                            "page_size": "12", "fields": SEARCH_FIELDS, "lc": "de"},
-                    headers={"User-Agent": USER_AGENT},
-                )
-                if resp.status != 200:
-                    _LOGGER.debug("%s Suche antwortet mit %s", source, resp.status)
-                    continue
-                data = await resp.json(content_type=None)
-        except (TimeoutError, aiohttp.ClientError, ValueError) as err:
-            _LOGGER.debug("%s Suche nicht erreichbar: %s", source, err)
-            continue
-        reached = True
-        products = data.get("products") if isinstance(data, dict) else None
+    lookups = [0]
+
+    async def collect(products: Any, source: str, base: str) -> None:
         for product in products if isinstance(products, list) else []:
             if len(found) >= SEARCH_LIMIT:
-                break
+                return
             if not isinstance(product, dict):
                 continue
             big, small = product.get("image_front_url"), product.get("image_front_small_url")
+            code = str(product.get("code") or "")
+            if not big and code.isdigit() and lookups[0] < MAX_CODE_LOOKUPS:  # neue Suche liefert manchmal keine Bild-Adresse
+                lookups[0] += 1
+                data = await _get_json(session, f"{base}/api/v2/product/{code}.json",
+                                       {"fields": "image_front_url,image_front_small_url"}, f"{source} Produkt")
+                prod = data.get("product") if isinstance(data, dict) else None
+                if isinstance(prod, dict):
+                    big, small = prod.get("image_front_url"), prod.get("image_front_small_url")
             if not _image_ok(big) or big in seen:
                 continue
             seen.add(big)
@@ -494,6 +508,27 @@ async def async_search_photos(hass: HomeAssistant, manager: Any, query: str) -> 
                 "brand": brand or "",
                 "source": source,
             })
+
+    for q in queries:
+        for source, base in SOURCES:
+            if len(found) >= SEARCH_LIMIT:
+                break
+            data = None
+            if base == SOURCES[0][1]:  # Open Food Facts: zuerst die neue Suche
+                data = await _get_json(session, NEW_SEARCH, {"q": q, "page_size": str(SEARCH_PAGE), "fields": SEARCH_FIELDS,
+                                                             "langs": "de"}, f"{source} neue Suche")
+                hits = data.get("hits") if isinstance(data, dict) else None
+                if isinstance(hits, list):
+                    reached = True
+                    await collect(hits, source, base)
+                    continue
+            data = await _get_json(session, f"{base}/cgi/search.pl",
+                                   {"search_terms": q, "search_simple": "1", "action": "process", "json": "1",
+                                    "page_size": str(SEARCH_PAGE), "fields": SEARCH_FIELDS, "lc": "de"}, f"{source} Suche")
+            if data is None:
+                continue
+            reached = True
+            await collect(data.get("products") if isinstance(data, dict) else None, source, base)
     return {"results": found, "reached": reached}
 
 

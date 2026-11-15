@@ -2515,5 +2515,17 @@
 "🤷 Nichts gefunden – probier einen anderen Namen (z. B. mit Marke)": "🤷 Nothing found – try another name (e.g. with the brand)",
 "Antippen zum Übernehmen:": "Tap to take it:",
 "📴 Ohne Netz geht die Suche nicht – später nochmal probieren": "📴 The search needs a connection – please try again later",
-"Kein Barcode? Foto per Name bei Open Food Facts suchen – du suchst eins aus": "No barcode? Search a photo by name at Open Food Facts – you pick one"
+"Kein Barcode? Foto per Name bei Open Food Facts suchen – du suchst eins aus": "No barcode? Search a photo by name at Open Food Facts – you pick one",
+"🌍 Geschäft im Nachbarland? (z. B. Kaufland in Lindau, wenn du in Österreich wohnst) Beim Geschäft bzw. der Filiale unter 🌍 Land DE oder AT wählen und unter 📍 Adresse die Adresse mit Postleitzahl eintragen. Dann sucht die Liste für dieses Geschäft zusätzlich im anderen Land – mit der Postleitzahl aus der Adresse. Alle anderen Geschäfte bleiben bei deiner Postleitzahl hier.": "🌍 Store in the neighbouring country? (e.g. Kaufland in Lindau while you live in Austria) On the store or branch pick DE or AT under 🌍 Country and enter the address with postcode under 📍 Address. The list then also searches the other country for this store – with the postcode from the address. All other stores stay with your postcode here.",
+"🌍 Auch im Nachbarland:": "🌍 Also across the border:",
+"Leer = Land aus Home Assistant. Liegt das Geschäft in einem anderen Land (z. B. Kaufland in Lindau, wenn du in Österreich wohnst), hier DE bzw. AT wählen und oben die Adresse mit Postleitzahl eintragen: Dann sucht 🏷️ Angebote für dieses Geschäft zusätzlich auf marktguru.de bzw. .at – mit der Postleitzahl aus der Adresse. Bei Filialen gilt Land und Adresse der Filiale.": "Empty = country from Home Assistant. If the store is in another country (e.g. Kaufland in Lindau while you live in Austria), pick DE or AT here and enter the address with postcode above: 🏷️ Offers then also searches marktguru.de or .at for this store – with the postcode from the address. With branches, the branch's country and address count.",
+"⏰ Timer fertig – Meldung aufs Handy. Die Kochtimer laufen in Home Assistant. Ist die Zeit um, kommt eine Meldung aufs Handy – auch wenn keine Karte offen ist. Standard: aus.": "⏰ Timer done – alert on the phone. The cooking timers run in Home Assistant. When time is up, an alert goes to the phone – even when no card is open. Default: off.",
+"· meldet an": "· alerts",
+"Melden an:": "Alert:",
+"📱 Nur an den, der den Timer gestartet hat": "📱 Only to whoever started the timer",
+"🤷 In Home Assistant gibt es noch keinen Melde-Dienst. Installiere die Home-Assistant-App auf dem Handy und melde dich an – dann steht es hier als 📱.": "🤷 Home Assistant has no notify service yet. Install the Home Assistant app on your phone and sign in – then it shows up here as 📱.",
+"⏰ Timer-Meldung ist an": "⏰ Timer alert is on",
+"⏰ Timer-Meldung ist aus": "⏰ Timer alert is off",
+"Timer-Meldung": "Timer alert",
+"sonst an alle angekreuzten Handys": "otherwise to all ticked phones"
 }

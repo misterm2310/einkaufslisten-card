@@ -146,6 +146,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_offers_search,
         ws_offers_take,
         ws_recalls_set,
+        ws_timer_notify_set,
         ws_recalls_check,
         ws_recalls_dismiss,
         ws_product_add,
@@ -1331,12 +1332,13 @@ async def ws_product_refresh(hass, connection, msg):
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "einkaufsliste/photo/search", vol.Required("query"): vol.All(str, vol.Length(max=200))}
+    {vol.Required("type"): "einkaufsliste/photo/search", vol.Required("query"): vol.All(str, vol.Length(max=200)),
+     vol.Optional("extra"): vol.Any(None, vol.All(str, vol.Length(max=200)))}
 )
 @websocket_api.async_response
 async def ws_photo_search(hass, connection, msg):
     """🔎 Produktfotos per Name in Open Food Facts & Co. suchen (bis zu 4 zur Auswahl)."""
-    await _run_async(hass, connection, msg, lambda m: async_search_photos(hass, m, msg["query"]))
+    await _run_async(hass, connection, msg, lambda m: async_search_photos(hass, m, msg["query"], msg.get("extra")))
 
 
 @websocket_api.websocket_command(
@@ -1385,6 +1387,18 @@ async def ws_offers_refresh(hass, connection, msg):
 def ws_recalls_set(hass, connection, msg):
     """⚠️ Rückruf-Warnung ein-/ausschalten (nur Admins)."""
     _run(hass, connection, msg, lambda m: m.set_recalls(msg["enabled"]))
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "einkaufsliste/timer_notify/set",
+    vol.Required("services"): [str],
+    vol.Optional("starter", default=False): bool,
+})
+@websocket_api.require_admin
+@callback
+def ws_timer_notify_set(hass, connection, msg):
+    """⏰ Kochtimer-Meldung aufs Handy einstellen (nur Admins). Leere Liste = aus."""
+    _run(hass, connection, msg, lambda m: m.set_timer_notify(msg["services"], msg["starter"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/recalls/check"})

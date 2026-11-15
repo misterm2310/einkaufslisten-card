@@ -53,6 +53,42 @@ def domain(country: str | None) -> str:
     return "at" if str(country or "").upper() == "AT" else "de"
 
 
+# 🌍 Marktguru gibt es nur in diesen Ländern; PLZ-Länge je Land
+MG_ZIP_LEN = {"de": 5, "at": 4}
+
+
+def foreign_spots(manager: Any, home_dom: str, store_ids: list[str] | None = None) -> dict[tuple[str, str], list[str]]:
+    """🌍 Geschäfte/Filialen in einem ANDEREN Marktguru-Land als Home Assistant (z. B. Vorarlberg → Kaufland Lindau).
+    Land = 🌍 Land der Filiale bzw. des Geschäfts, PLZ = aus der 📍 Adresse. Ergebnis: {(Land, PLZ): [Geschäftsnamen klein]}.
+    Ohne Land, ohne Adresse oder mit Land außerhalb DE/AT: nichts – dann bleibt alles wie bisher."""
+    from .manager import split_address  # noqa: PLC0415
+
+    ha = str(getattr(manager.hass.config, "country", None) or "").upper()
+    out: dict[tuple[str, str], list[str]] = {}
+    for st in manager.stores:
+        if store_ids and st["id"] not in store_ids:
+            continue
+        for b in (st.get("branches") or [None]):
+            ctry = str((b or {}).get("country") or st.get("country") or ha).upper()
+            if ctry not in ("DE", "AT") or domain(ctry) == home_dom:
+                continue
+            dom = domain(ctry)
+            plz, _ort = split_address((b or {}).get("address") or st.get("address"))
+            if not plz or len(plz) != MG_ZIP_LEN[dom]:
+                continue
+            names = out.setdefault((dom, plz), [])
+            name = st["name"].strip().lower()
+            if name not in names:
+                names.append(name)
+    return out
+
+
+def store_hit(retailer: str, wanted: list[str]) -> bool:
+    """Passt der Händler des Angebots zu einem der Geschäfte? (leer = alle)"""
+    r = (retailer or "").lower()
+    return not wanted or any(w in r or r in w for w in wanted)
+
+
 def trusted_url(url: str, dom: str) -> bool:
     """Nur https-Adressen von marktguru.<dom> (und Unter-Domains) – der Rechnername wird wirklich geparst."""
     try:
@@ -228,6 +264,37 @@ class Offers:
                 return cand
         return None
 
+    async def _key_for(self, session: aiohttp.ClientSession, cfg: dict[str, Any], dom: str, test: bool = True) -> str | None:
+        """🔑 Schlüssel für ein anderes Marktguru-Land (marktguru.de ↔ .at) – gemerkt in cfg["keys"]."""
+        keys = cfg.setdefault("keys", {})
+        key = keys.get(dom)
+        if key and (not test or await self._search(session, dom, key, "milch", "10115" if dom == "de" else "1010", 1) is not None):
+            return key
+        keys[dom] = key = await self._find_key(session, dom)
+        return key
+
+    async def _foreign_offers(self, session: aiohttp.ClientSession, groups: dict[tuple[str, str], list[str]],
+                              keys: dict[str, str | None], name: str, now: Any, limit: int = 20) -> list[dict[str, Any]]:
+        """🌍 Dasselbe nochmal im anderen Land suchen – nur für die Geschäfte, die dort liegen."""
+        out: list[dict[str, Any]] = []
+        for (dom, plz), names in groups.items():
+            key = keys.get(dom)
+            if not key:
+                continue
+            await asyncio.sleep(1)  # sparsam: eine Anfrage pro Sekunde
+            for raw in await self._search(session, dom, key, name, plz, limit) or []:
+                if not matches(name, raw):
+                    continue
+                o = slim(raw, dom)
+                if not o or not store_hit(o["r"], names):
+                    continue
+                to = dt_util.parse_datetime(o["to"]) if o.get("to") else None
+                if to and to < now:
+                    continue
+                o["ctry"] = dom.upper()
+                out.append(o)
+        return out
+
     async def _search(self, session: aiohttp.ClientSession, dom: str, key: str, query: str, zip_code: str,
                       limit: int = 20) -> list[dict[str, Any]] | None:
         url = f"https://api.marktguru.{dom}/api/v1/offers/search"
@@ -261,12 +328,14 @@ class Offers:
             raise ValueError("Marktguru ist gerade nicht erreichbar oder hat etwas geändert.")
         now = dt_util.utcnow()
         wanted = [s["name"].strip().lower() for s in self.manager.stores if s["id"] in (cfg.get("stores") or [])]
-        out = []
+        groups = foreign_spots(self.manager, dom, cfg.get("stores"))
+        keys = {d: await self._key_for(session, cfg, d, test=False) for d in {g[0] for g in groups}}
+        out = await self._foreign_offers(session, groups, keys, query, now, 30)
         for raw in results:
             if not matches(query, raw):
                 continue
             o = slim(raw, dom)
-            if not o or (wanted and not any(w in o["r"].lower() or o["r"].lower() in w for w in wanted)):
+            if not o or not store_hit(o["r"], wanted):
                 continue
             to = dt_util.parse_datetime(o["to"]) if o.get("to") else None
             if to and to < now:
@@ -379,6 +448,10 @@ class Offers:
                 names.append(item["name"])
                 first[item["name"].lower()] = item
         wanted_stores = [s["name"].strip().lower() for s in m.stores if s["id"] in (cfg.get("stores") or [])]
+        # 🌍 Geschäfte im anderen Land (eigene PLZ aus der Adresse) – nur dann gibt es eine zweite Suche
+        groups = foreign_spots(m, dom, cfg.get("stores"))
+        keys = {d: await self._key_for(session, cfg, d) for d in {g[0] for g in groups}}
+        cfg["foreign"] = [f"{', '.join(n.title() for n in names)} ({d.upper()} {plz})" for (d, plz), names in groups.items()] or None
         found: dict[str, list[dict[str, Any]]] = {}
         lookups = [0]
         for name in names[:MAX_ITEMS]:
@@ -398,6 +471,8 @@ class Offers:
                 if to and to < now:
                     continue
                 offers.append(o)
+            if groups:
+                offers += await self._foreign_offers(session, groups, keys, name, now)
             if offers:
                 offers.sort(key=lambda o: o["p"])
                 found[name.lower()] = offers[:MAX_OFFERS]
@@ -425,7 +500,7 @@ async def async_offer_photo(hass: HomeAssistant, manager: Any, url: str | None, 
     key = (key or "").strip().lower()
     if not url or not key or getattr(manager, "privacy", False) or manager.photos.get(key):
         return False
-    if not trusted_url(url, domain(getattr(hass.config, "country", None))):
+    if not (trusted_url(url, "de") or trusted_url(url, "at")):  # 🌍 Angebote können aus beiden Ländern kommen
         return False
     session = async_get_clientsession(hass)
     try:

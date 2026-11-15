@@ -631,6 +631,7 @@ class EinkaufslisteManager:
         self.offers_cfg: dict[str, Any] | None = None  # 🏷️ {"enabled", "zip", "stores", "hours", "key", "last", "ok", "error", "count"}
         self.offers_data: dict[str, list[dict[str, Any]]] = {}  # 🏷️ Artikelname klein -> Angebote
         self.offers_ext: dict[str, list[dict[str, Any]]] = {}  # 📬 Quelle -> Angebote aus eigenen Automationen (Dienst angebote_melden)
+        self.timer_notify: dict[str, Any] | None = None  # ⏰ Kochtimer fertig → Handy {"services": [notify-Dienste], "starter": nur an den Starter}
         self.recalls_cfg: dict[str, Any] | None = None  # ⚠️ Rückruf-Warnung {"enabled", "last", "ok", "error", "checked"}
         self.recalls_hits: list[dict[str, Any]] = []  # ⚠️ Treffer {"id","title","link","date","products","found"} – das Neueste vorn
         self.recalls_seen: list[str] = []  # ⚠️ schon gemeldete Warnungen (gegen doppelte Meldungen)
@@ -895,6 +896,8 @@ class EinkaufslisteManager:
         self.offers_ext = {str(k): [o for o in v if isinstance(o, dict)] for k, v in raw_ext.items()
                            if isinstance(v, list)} if isinstance(raw_ext, dict) else {}
         self.recalls_cfg = data.get("recalls_cfg") or None
+        tn = data.get("timer_notify")
+        self.timer_notify = tn if isinstance(tn, dict) and tn.get("services") else None
         self.recalls_hits = [h for h in (data.get("recalls_hits") or []) if isinstance(h, dict)]
         self.recalls_seen = [str(k) for k in (data.get("recalls_seen") or [])]
         for store in self.stores:  # 📍 früher eine Zone pro Geschäft, jetzt beliebig viele
@@ -985,6 +988,7 @@ class EinkaufslisteManager:
             "offers_data": self.offers_data,
             "offers_ext": self.offers_ext,
             "recalls_cfg": self.recalls_cfg,
+            "timer_notify": self.timer_notify,
             "recalls_hits": self.recalls_hits,
             "recalls_seen": self.recalls_seen,
             "last_cleanup": self.last_cleanup,
@@ -1092,6 +1096,7 @@ class EinkaufslisteManager:
                 "mail_import": self._mail_import_info(),
                 "offers": self._offers_info(),
                 "recalls": self.recalls_info(),
+                "timer_notify": self.timer_notify,
                 "grocy": self.grocy_info(),
                 "errors": len(self.errors),
                 "errors_24h": self._errors_since(timedelta(hours=24)),
@@ -1398,7 +1403,7 @@ class EinkaufslisteManager:
         cfg = self.offers_cfg
         if not cfg:
             return None
-        return {k: cfg.get(k) for k in ("enabled", "zip", "stores", "hours", "last", "ok", "error", "count")}
+        return {k: cfg.get(k) for k in ("enabled", "zip", "stores", "hours", "last", "ok", "error", "count", "foreign")}
 
     def set_offers(self, enabled: bool, zip_code: str | None = None, stores: list[str] | None = None,
                    hours: int | None = None) -> dict[str, Any] | None:
@@ -1423,6 +1428,60 @@ class EinkaufslisteManager:
             self.offers.start()
         self._changed()
         return self._offers_info()
+
+    def set_timer_notify(self, services: list[str] | None, starter: bool = False) -> dict[str, Any] | None:
+        """⏰ Kochtimer fertig: an diese Handys melden (notify-Dienste, z. B. mobile_app_marcos_handy). Leer = aus."""
+        clean: list[str] = []
+        for svc in services or []:
+            name = str(svc or "").strip().lower().removeprefix("notify.")
+            if re.fullmatch(r"[a-z0-9_]{1,80}", name) and name not in clean:
+                clean.append(name)
+        self.timer_notify = {"services": clean[:10], "starter": bool(starter)} if clean else None
+        self._changed()
+        return self.timer_notify
+
+    def _starter_services(self, user_id: str | None) -> list[str]:
+        """📱 Handys der Person, die den Timer gestartet hat (Person → Geräte-Tracker der HA-App → notify.mobile_app_…)."""
+        if not user_id:
+            return []
+        out: list[str] = []
+        for st in self.hass.states.async_all("person"):
+            if st.attributes.get("user_id") != user_id:
+                continue
+            for tracker in st.attributes.get("device_trackers") or []:
+                obj = str(tracker).split(".", 1)[-1]
+                if obj and f"mobile_app_{obj}" not in out:
+                    out.append(f"mobile_app_{obj}")
+        return out
+
+    def timer_notify_targets(self, timer: dict[str, Any]) -> list[str]:
+        """⏰ Wohin die Meldung geht: alle ausgewählten – oder (Schalter an) nur die Handys des Starters, falls darunter."""
+        cfg = self.timer_notify or {}
+        chosen = [s for s in cfg.get("services") or [] if self.hass.services.has_service("notify", s)]
+        if cfg.get("starter"):
+            mine = [s for s in chosen if s in self._starter_services(timer.get("by_id"))]
+            if mine:
+                return mine
+        return chosen
+
+    async def _send_timer_notify(self, timer: dict[str, Any], recipe: dict[str, Any] | None) -> None:
+        """⏰ Handy-Meldung „Timer fertig“ – klappt auch, wenn keine Karte offen ist. Fehler stören den Timer nie."""
+        parts = [timer["label"]]
+        if recipe and recipe["name"] != timer["label"]:
+            parts.append(recipe["name"])
+        if timer.get("step"):
+            parts.append(f"Schritt {timer['step']}")
+        payload = {
+            "title": "⏲️ Timer fertig",
+            "message": " · ".join(parts),
+            "data": {"tag": f"einkaufsliste_timer_{timer['id']}", "ttl": 0, "priority": "high",
+                     "push": {"interruption-level": "time-sensitive"}},
+        }
+        for svc in self.timer_notify_targets(timer):
+            try:
+                await self.hass.services.async_call("notify", svc, payload, blocking=True)
+            except Exception as err:  # noqa: BLE001 – ein kaputtes Handy darf die anderen nicht aufhalten
+                _LOGGER.warning("Timer-Meldung an notify.%s ging nicht: %s", svc, err)
 
     def recalls_info(self) -> dict[str, Any] | None:
         """⚠️ Rückruf-Warnung für die Karte: Schalter, letzter Stand und Treffer."""
@@ -4472,6 +4531,8 @@ class EinkaufslisteManager:
                     "by": timer.get("by"),
                 },
             )
+            if (self.timer_notify or {}).get("services"):
+                self.hass.async_create_task(self._send_timer_notify(timer, recipe))
         self._changed()
 
     @callback
