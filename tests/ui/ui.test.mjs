@@ -819,7 +819,10 @@ check("🧂 Knopf aus bei „Pfeffer schwarz“ = Pfeffer fliegt überall raus",
 r = await p.evaluate(() => { const c=document.querySelector('#c1'); const h=c._newsHtml(false); const box=document.createElement("div"); box.innerHTML=h;
   const nos=[...box.querySelectorAll("ul li > b")].map(b=>b.textContent).filter(t=>/^beta\.\d+$/.test(t)).map(t=>+t.split(".")[1]);
   return { nos }; });
-check("🧪 Beta-Kasten: neueste Beta oben", r.nos.length > 1 && r.nos.every((n,i)=>i===0 || n<=r.nos[i-1]), JSON.stringify(r));
+r.beta = /const EL_VERSION = "[^"]*-beta/.test(fs.readFileSync(path.join(root, "custom_components/einkaufsliste/www/einkaufsliste-card.js"), "utf8"));
+// Offizielle Version (ohne „-beta“): kein Beta-Kasten, dann nur prüfen, dass auch keine Beta-Nummern auftauchen
+if (r.beta) check("🧪 Beta-Kasten: neueste Beta oben", r.nos.length > 1 && r.nos.every((n,i)=>i===0 || n<=r.nos[i-1]), JSON.stringify(r));
+else check("🧪 Offizielle Version: kein Beta-Kasten, keine Beta-Nummern", r.nos.length === 0, JSON.stringify(r));
 
 // 📷 beta.4: „Rezept vorschlagen“ liest ein Rezept-Foto wie der Editor
 r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const calls=[];
