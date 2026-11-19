@@ -161,6 +161,10 @@ def async_register(hass: HomeAssistant) -> None:
         ws_product_merge,
         ws_hours_search,
         ws_pdf_store,
+        ws_item_partial,
+        ws_stats_summary,
+        ws_guest_create,
+        ws_guest_revoke,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -594,11 +598,12 @@ async def ws_proposal_reject(hass, connection, msg):
         vol.Optional("plan"): vol.In(["", "wish", "week"]),
         vol.Optional("source"): OPT_STR,
         vol.Optional("cook_note"): OPT_STR,
+        vol.Optional("stars"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=5))),  # ⭐ 0 = keine
     }
 )
 @callback
 def ws_recipe_update(hass, connection, msg):
-    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan", "source", "cook_note", "minutes", "step_items", "nutrition")
+    fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan", "source", "cook_note", "minutes", "step_items", "nutrition", "stars")
     _run(hass, connection, msg, lambda m: m.update_recipe(msg["recipe_id"], **fields))
 
 
@@ -1861,3 +1866,54 @@ async def ws_ai_photo(hass, connection, msg):
         connection.send_error(msg["id"], "invalid", str(err))
         return
     connection.send_result(msg["id"], {"recipe": recipe})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/item/partial",
+        vol.Required("item_id"): str,
+        vol.Required("got"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000)),
+        vol.Optional("store_id"): OPT_STR,
+    }
+)
+@callback
+def ws_item_partial(hass, connection, msg):
+    """🧺 Teilweise gekauft: „2 von 3 bekommen“ – Gekauftes ist erledigt, der Rest bleibt offen."""
+    who = _user_name(hass, connection)
+    _run(hass, connection, msg, lambda m: m.check_partial(
+        msg["item_id"], msg["got"], who, connection.user.id if connection.user else None, msg.get("store_id") or None))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/stats/summary"})
+@callback
+def ws_stats_summary(hass, connection, msg):
+    """📊 Statistik: meistgekauft, je Geschäft, je Person, je Monat."""
+    _run(hass, connection, msg, lambda m: m.stats_summary())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/guest/create",
+        vol.Required("pin"): str,
+        vol.Optional("hours", default=24): vol.Coerce(int),
+        vol.Optional("store_id"): OPT_STR,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_guest_create(hass, connection, msg):
+    """🎫 Gast-Link erstellen (nur Admins). Der Schlüssel kommt nur in dieser einen Antwort vor."""
+    from .guest import async_create  # noqa: PLC0415
+
+    who = _user_name(hass, connection)
+    await _run_async(hass, connection, msg, lambda m: async_create(m, msg["pin"], msg["hours"], msg.get("store_id") or None, who))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "einkaufsliste/guest/revoke"})
+@websocket_api.require_admin
+@callback
+def ws_guest_revoke(hass, connection, msg):
+    """🔒 Gast-Link sofort sperren (nur Admins)."""
+    from .guest import revoke  # noqa: PLC0415
+
+    _run(hass, connection, msg, lambda m: revoke(m, _user_name(hass, connection)) or {"ok": True})

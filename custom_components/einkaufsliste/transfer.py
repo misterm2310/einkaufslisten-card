@@ -188,11 +188,15 @@ def async_register_views(hass: HomeAssistant) -> None:
     if not hass.data[DOMAIN].get("views_registered"):
         from .app_view import AppRedirectView, AppView  # noqa: PLC0415 – 📱 Offline-App
         from .pdf_share import PdfView  # noqa: PLC0415 – 📄 PDF für die HA-App
+        from .guest import GuestApiView, GuestPageView, GuestRedirectView  # noqa: PLC0415 – 🎫 Gast-Link
 
         hass.http.register_view(BackupView())
         hass.http.register_view(AppView())
         hass.http.register_view(AppRedirectView())
         hass.http.register_view(PdfView())
+        hass.http.register_view(GuestPageView())
+        hass.http.register_view(GuestRedirectView())
+        hass.http.register_view(GuestApiView())
         hass.data[DOMAIN]["views_registered"] = True
 
 

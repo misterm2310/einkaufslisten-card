@@ -32,7 +32,9 @@ from .categories import category_hints, guess_category
 from .geocode import async_geocode, geo_key
 from .netutil import photo_file_complete
 from .nutrition import clean_nutrition
-from .quantity import UNIT_CHOICES, apply_unit, is_bare, norm_qty, split_qty, split_qty_ex, unit_of
+from .repairs import sync_issues
+from .guest import info as guest_info
+from .quantity import UNIT_CHOICES, amount_of, apply_unit, is_bare, norm_qty, split_qty, split_qty_ex, unit_of, with_amount
 from .const import (
     CATEGORY_COLORS,
     CONF_CLEANUP_TIME,
@@ -551,6 +553,7 @@ def _clean_year_stats(raw: Any) -> dict[str, dict[str, Any]]:
             "added": int(s.get("added") or 0),
             "bought": int(s.get("bought") or 0),
             "who": counts(s.get("who"), 30),
+            "buyers": counts(s.get("buyers"), 30),
             "items": counts(s.get("items"), 400),
             "stores": counts(s.get("stores"), 60),
             "months": [int(v) for v in months],
@@ -593,6 +596,8 @@ class EinkaufslisteManager:
         self.cards_on: bool = False  # 💳 Kundenkarten-Funktion an/aus (standardmäßig aus) – gilt für alle
         self.cat_words: dict[str, dict[str, int]] = {}  # 🧠 Kategorie lernt mit: Wortteil (klein) -> {Kategorie-ID: wie oft dorthin verschoben}
         self.typos: dict[str, dict[str, Any]] = {}  # 🧠 Tippfehler (klein) -> {"right": Name, "n": wie oft korrigiert}
+        self._repair_cache: dict[str, Any] = {}  # 🩺 zuletzt gesetzte Reparatur-Hinweise (nur im Speicher)
+        self.guest: dict[str, Any] | None = None  # 🎫 Gast-Link {"th","ph","salt","until","store_id","by"} – Link und PIN nur als Prüfsumme
         self._pin_fails = 0  # 🛡️ falsche PIN-Eingaben in Folge (nur im Speicher)
         self._pin_locked_until = 0.0
         self.pin_hash: str | None = None  # 🔒 PIN für die Einstellungen (nur als Prüfsumme gespeichert)
@@ -899,6 +904,8 @@ class EinkaufslisteManager:
         tn = data.get("timer_notify")
         self.timer_notify = tn if isinstance(tn, dict) and tn.get("services") else None
         self.recalls_hits = [h for h in (data.get("recalls_hits") or []) if isinstance(h, dict)]
+        g = data.get("guest")
+        self.guest = g if isinstance(g, dict) and isinstance(g.get("th"), str) and isinstance(g.get("ph"), str) else None
         self.recalls_seen = [str(k) for k in (data.get("recalls_seen") or [])]
         for store in self.stores:  # 📍 früher eine Zone pro Geschäft, jetzt beliebig viele
             if "zones" not in store:
@@ -990,6 +997,7 @@ class EinkaufslisteManager:
             "recalls_cfg": self.recalls_cfg,
             "timer_notify": self.timer_notify,
             "recalls_hits": self.recalls_hits,
+            "guest": self.guest,
             "recalls_seen": self.recalls_seen,
             "last_cleanup": self.last_cleanup,
             "log": self.log,
@@ -1008,6 +1016,10 @@ class EinkaufslisteManager:
     def _changed(self) -> None:
         self.stat_changes += 1
         self._schedule_save()
+        try:  # 🩺 Reparatur-Hinweise in HA aktuell halten (schreibt nur bei einer Änderung)
+            sync_issues(self.hass, self, self._repair_cache)
+        except Exception:  # noqa: BLE001 – ein Hinweis darf nie die Liste aufhalten
+            _LOGGER.debug("Reparatur-Hinweise ließen sich nicht setzen", exc_info=True)
         async_dispatcher_send(self.hass, SIGNAL_UPDATED)
 
     # ------------------------------------------------------------------ Ausgabe
@@ -1098,6 +1110,7 @@ class EinkaufslisteManager:
                 "recalls": self.recalls_info(),
                 "timer_notify": self.timer_notify,
                 "grocy": self.grocy_info(),
+                "guest": guest_info(self),  # 🎫 läuft ein Gast-Link? (nie Schlüssel oder PIN)
                 "errors": len(self.errors),
                 "errors_24h": self._errors_since(timedelta(hours=24)),
             },
@@ -3142,6 +3155,9 @@ class EinkaufslisteManager:
             return
         s["bought"] += 1
         s["months"][now.month - 1] += 1
+        buyers = s.setdefault("buyers", {})  # 📊 Statistik: wer hakt ab (= kauft)?
+        if who and (who in buyers or len(buyers) < 30):
+            buyers[who] = buyers.get(who, 0) + 1
         if name:
             s["items"][name] = s["items"].get(name, 0) + 1
             if len(s["items"]) > 400:  # klein halten: die seltensten Produkte fallen raus
@@ -3176,6 +3192,61 @@ class EinkaufslisteManager:
             "stores": stores,
             "months": months,
             "best_month": best,
+        }
+
+    def stats_summary(self) -> dict[str, Any]:
+        """📊 Statistik-Reiter: meistgekaufte Artikel, Einkäufe je Geschäft, Person und Monat (die letzten 12 Monate).
+
+        Nutzt die Zähler vom Jahresrückblick (nur Anzahlen, bleiben in Home Assistant) und – falls an –
+        die Beträge aus dem Einkaufs-Protokoll 🧾.
+        """
+        now = dt_util.now()
+        items: dict[str, int] = {}
+        stores: dict[str, int] = {}
+        buyers: dict[str, int] = {}
+        adders: dict[str, int] = {}
+        for y in (str(now.year - 1), str(now.year)):  # dieses und letztes Jahr zusammen
+            s = self.year_stats.get(y) or {}
+            for src, dst in ((s.get("items"), items), (s.get("stores"), stores), (s.get("buyers"), buyers), (s.get("who"), adders)):
+                for k, v in (src or {}).items():
+                    dst[k] = dst.get(k, 0) + int(v or 0)
+        months: list[dict[str, Any]] = []
+        for back in range(11, -1, -1):  # 12 Monate bis heute, ältester zuerst
+            y, mo = now.year, now.month - back
+            while mo < 1:
+                y, mo = y - 1, mo + 12
+            row = (self.year_stats.get(str(y)) or {}).get("months") or [0] * 12
+            months.append({"y": y, "m": mo, "n": int(row[mo - 1] or 0), "eur": 0.0})
+        money: dict[str, float] = {}
+        trips: dict[str, int] = {}
+        if self.spend:
+            first = f"{months[0]['y']:04d}-{months[0]['m']:02d}"
+            for e in self.purchases:
+                t = str(e.get("t") or "")[:7]
+                if t < first:
+                    continue
+                for row in months:
+                    if t == f"{row['y']:04d}-{row['m']:02d}":
+                        row["eur"] = round(row["eur"] + float(e.get("a") or 0), 2)
+                sid = e.get("s")
+                money[sid] = round(money.get(sid, 0.0) + float(e.get("a") or 0), 2)
+                trips[sid] = trips.get(sid, 0) + 1
+        top = lambda d, n: [[k, v] for k, v in sorted(d.items(), key=lambda kv: (-kv[1], str(kv[0])))[:n]]  # noqa: E731
+        store_rows = []
+        for sid in sorted(set(stores) | set(money), key=lambda k: (-stores.get(k, 0), -money.get(k, 0))):
+            st = self.store_by_id(sid)
+            if st:
+                store_rows.append({"name": st["name"], "color": st.get("color"), "n": stores.get(sid, 0),
+                                   "eur": money.get(sid), "trips": trips.get(sid)})
+        return {
+            "on": self.year_on,
+            "spend": self.spend,
+            "since": self.year_since,
+            "items": top(items, 10),
+            "stores": store_rows[:12],
+            "buyers": top(buyers, 8),
+            "adders": top(adders, 8),
+            "months": months,
         }
 
     def set_year_on(self, on: bool) -> None:
@@ -3523,6 +3594,38 @@ class EinkaufslisteManager:
             self._fire_added(item, True)
         self._changed()
         return item
+
+    @callback
+    def check_partial(self, item_id: str, got: Any, by: str | None = None, by_id: str | None = None,
+                      at_store: str | None = None) -> dict[str, Any]:
+        """🧺 Teilweise gekauft: „2 von 3 bekommen“.
+
+        Das Gekaufte zählt wie abgehakt (Verlauf, Jahresrückblick, Ereignis einkaufsliste_item_bought mit der
+        gekauften Menge), der Rest bleibt offen auf der Liste – mit gleicher Einheit („3 Pck.“ -> „1 Pck.“).
+        Alles bekommen? Dann ist es ganz normales Abhaken.
+        """
+        item = self.get_item(item_id)
+        if item["checked"]:
+            raise ValueError("Der Artikel ist schon abgehakt.")
+        total = amount_of(item.get("quantity"))
+        if total is None:
+            raise ValueError("Bei dieser Menge kann ich nicht rechnen – bitte einfach abhaken.")
+        try:
+            value = float(str(got).replace(",", "."))
+        except (TypeError, ValueError) as err:
+            raise ValueError("Wie viele hast du bekommen? Bitte eine Zahl.") from err
+        if value <= 0:
+            raise ValueError("Wie viele hast du bekommen? Bitte mehr als 0.")
+        if value >= total:
+            return self.set_checked(item_id, True, by, by_id, at_store)
+        bought_qty, rest_qty = with_amount(item.get("quantity"), value), with_amount(item.get("quantity"), total - value)
+        old = item.get("quantity")
+        item["quantity"] = rest_qty
+        self._log("partial", item, f"{bought_qty} von {old} bekommen · Rest {rest_qty}", who=by)
+        self._learn_store(item["name"], item.get("store_id") or (at_store if self.store_by_id(at_store) else None))
+        self._fire_bought({**item, "quantity": bought_qty}, by)
+        self._changed()
+        return {**item, "bought": bought_qty}
 
     @callback
     def move_item(
@@ -4947,6 +5050,15 @@ class EinkaufslisteManager:
                 recipe["nutrition"] = nut
             else:
                 recipe.pop("nutrition", None)
+        if "stars" in fields:  # ⭐ 1–5 Sterne (Familienliebling), 0/leer = keine Bewertung
+            try:
+                stars = int(fields["stars"] or 0)
+            except (TypeError, ValueError):
+                stars = 0
+            if 1 <= stars <= 5:
+                recipe["stars"] = stars
+            else:
+                recipe.pop("stars", None)
         if "minutes" in fields:  # ⏱️ Dauer ca., leer = weg
             mins = _minutes(fields["minutes"])
             if mins:

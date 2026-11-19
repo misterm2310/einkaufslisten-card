@@ -195,3 +195,17 @@ def split_qty_ex(name: str | None) -> tuple[str | None, str | None, bool]:
             continue
         return rest, qty, not m.group("unit")
     return text, None, False
+
+
+def amount_of(qty: str | None) -> float | None:
+    """🔢 Wie viel ist es? „3x“ -> 3, „2 Pck.“ -> 2, „500 g“ -> 500. Bereiche („2-3“) und Text („etwas“) -> None."""
+    m = _QTY.match(qty or "")
+    if not m or not _RANGE.match(m.group("num").strip()) or _RANGE.match(m.group("num").strip()).group("b"):
+        return None
+    return _value(m.group("num"))
+
+
+def with_amount(qty: str | None, value: float) -> str | None:
+    """🔢 Gleiche Einheit, andere Zahl: („3 Pck.“, 1) -> „1 Pck.“, („3x“, 2) -> „2x“."""
+    unit = unit_of(qty)
+    return _fmt(_num_text(value).replace(",", "."), None if unit in (None, "x") else unit)

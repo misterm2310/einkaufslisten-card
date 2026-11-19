@@ -276,5 +276,23 @@
         "history": "Bought before (history)"
       }
     }
+  },
+  "issues": {
+    "grocy_key": {
+      "title": "Shopping list: Grocy rejects the API key",
+      "description": "The shopping list cannot sync with Grocy ({url}) because Grocy rejects the API key.\n\nFix: in Grocy open your user → API keys, create a new key and enter it in the card under ⚙️ → Import & backup → Grocy.\n\nThis notice disappears on its own once the sync works again (or Grocy sync is switched off)."
+    },
+    "grocy_unreachable": {
+      "title": "Shopping list: Grocy is not reachable",
+      "description": "The shopping list cannot reach Grocy ({url}).\n\nMessage: {error}\n\nCheck address, port and network. This notice disappears on its own once the sync works again (or Grocy sync is switched off)."
+    },
+    "offers_down": {
+      "title": "Shopping list: offers (Marktguru) not available",
+      "description": "The offers search could not fetch any offers from Marktguru.\n\nMessage: {error}\n\nUsually this is temporary – the list tries again by itself. The service is unofficial and may change. This notice disappears on its own once offers load again (or offers are switched off under ⚙️ → Extras → Offers)."
+    },
+    "recalls_down": {
+      "title": "Shopping list: recall warning not reachable",
+      "description": "The recall warning could not reach lebensmittelwarnung.de.\n\nMessage: {error}\n\nUsually this is temporary – the list tries again by itself. This notice disappears on its own once the check works again (or the recall warning is switched off)."
+    }
   }
 }

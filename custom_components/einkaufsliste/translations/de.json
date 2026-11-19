@@ -276,5 +276,23 @@
         "history": "Schon mal gekauft (Verlauf)"
       }
     }
+  },
+  "issues": {
+    "grocy_key": {
+      "title": "Einkaufsliste: Grocy lehnt den API-Schlüssel ab",
+      "description": "Die Einkaufsliste kann nicht mit Grocy ({url}) abgleichen, weil Grocy den API-Schlüssel ablehnt.\n\nSo geht's: In Grocy beim Benutzer → API-Schlüssel einen neuen anlegen und in der Karte unter ⚙️ → Import & Sicherung → Grocy eintragen.\n\nDer Hinweis verschwindet von selbst, sobald der Abgleich wieder klappt (oder der Grocy-Abgleich aus ist)."
+    },
+    "grocy_unreachable": {
+      "title": "Einkaufsliste: Grocy ist nicht erreichbar",
+      "description": "Die Einkaufsliste erreicht Grocy ({url}) nicht.\n\nMeldung: {error}\n\nAdresse, Port und Netzwerk prüfen. Der Hinweis verschwindet von selbst, sobald der Abgleich wieder klappt (oder der Grocy-Abgleich aus ist)."
+    },
+    "offers_down": {
+      "title": "Einkaufsliste: Angebote (Marktguru) nicht abrufbar",
+      "description": "Die Angebote-Suche konnte bei Marktguru gerade keine Angebote holen.\n\nMeldung: {error}\n\nMeist ist das nur vorübergehend – die Liste versucht es von selbst wieder. Der Dienst ist inoffiziell und kann sich ändern. Der Hinweis verschwindet von selbst, sobald wieder Angebote kommen (oder die Angebote unter ⚙️ → Extras → Angebote aus sind)."
+    },
+    "recalls_down": {
+      "title": "Einkaufsliste: Rückruf-Warnung nicht erreichbar",
+      "description": "Die Rückruf-Warnung erreicht lebensmittelwarnung.de gerade nicht.\n\nMeldung: {error}\n\nMeist ist das nur vorübergehend – die Liste versucht es von selbst wieder. Der Hinweis verschwindet von selbst, sobald die Prüfung wieder klappt (oder die Rückruf-Warnung aus ist)."
+    }
   }
 }
