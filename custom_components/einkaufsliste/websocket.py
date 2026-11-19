@@ -165,6 +165,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_stats_summary,
         ws_guest_create,
         ws_guest_revoke,
+        ws_recipe_rate,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -605,6 +606,21 @@ async def ws_proposal_reject(hass, connection, msg):
 def ws_recipe_update(hass, connection, msg):
     fields = _pick(msg, "name", "icon", "items", "steps", "heat", "servings", "servings_unit", "group", "step_map", "plan", "source", "cook_note", "minutes", "step_items", "nutrition", "stars")
     _run(hass, connection, msg, lambda m: m.update_recipe(msg["recipe_id"], **fields))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "einkaufsliste/recipe/rate",
+        vol.Required("recipe_id"): str,
+        vol.Required("stars"): vol.All(vol.Coerce(int), vol.Range(min=0, max=5)),
+    }
+)
+@callback
+def ws_recipe_rate(hass, connection, msg):
+    """⭐ Eigene Sterne für ein Rezept (pro Person), 0 = eigene Bewertung weg."""
+    who = _user_name(hass, connection)
+    _run(hass, connection, msg, lambda m: m.rate_recipe(
+        msg["recipe_id"], connection.user.id if connection.user else None, who, msg["stars"]))
 
 
 @websocket_api.websocket_command(

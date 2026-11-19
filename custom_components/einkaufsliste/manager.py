@@ -571,6 +571,40 @@ def _money_value(amount: Any) -> float:
         t = t.replace(",", ".")
     return float(t)
 
+
+def _ratings_of(recipe: dict[str, Any]) -> dict[str, Any]:
+    """⭐ Bewertungen eines Rezepts (pro Person); alte Rezepte mit nur „stars“ werden zu einer Stimme „_alt“."""
+    raw = recipe.get("ratings")
+    out: dict[str, Any] = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            try:
+                s = int((v or {}).get("s") or 0) if isinstance(v, dict) else 0
+            except (TypeError, ValueError):
+                s = 0
+            if 1 <= s <= 5:
+                out[str(k)[:64]] = {"s": s, **({"n": str(v["n"])[:40]} if v.get("n") else {})}
+    elif recipe.get("stars"):
+        try:
+            s = int(round(float(recipe["stars"])))
+        except (TypeError, ValueError):
+            s = 0
+        if 1 <= s <= 5:
+            out["_alt"] = {"s": s}
+    return out
+
+
+def _recipe_stars(recipe: dict[str, Any]) -> None:
+    """⭐ Durchschnitt (eine Nachkommastelle) + Anzahl neu ausrechnen; keine Bewertung = Felder weg."""
+    ratings = _ratings_of(recipe)
+    if ratings:
+        recipe["ratings"] = ratings
+        recipe["stars"] = round(sum(v["s"] for v in ratings.values()) / len(ratings), 1)
+        recipe["stars_n"] = len(ratings)
+    else:
+        for k in ("ratings", "stars", "stars_n"):
+            recipe.pop(k, None)
+
 class EinkaufslisteManager:
     """Verwaltet alle Daten der Einkaufsliste."""
 
@@ -4996,6 +5030,31 @@ class EinkaufslisteManager:
             self._schedule_save()
 
     @callback
+    def rate_recipe(self, recipe_id: str, user_id: str | None, name: str | None, stars: Any) -> dict[str, Any]:
+        """⭐ Sterne pro Person: jeder vergibt eigene 1–5 Sterne, am Rezept steht der Durchschnitt.
+
+        0 = eigene Bewertung weg. Gibt es noch eine alte Einzel-Bewertung (ohne Person, vor 2.76.29-beta.4),
+        übernimmt die erste persönliche Bewertung deren Platz.
+        """
+        recipe = self.recipe_by_id(recipe_id)
+        if recipe is None:
+            raise ValueError("Dieses Rezept gibt es nicht (mehr).")
+        try:
+            stars = int(stars or 0)
+        except (TypeError, ValueError):
+            stars = 0
+        key = str(user_id or name or "?")[:64]
+        ratings = _ratings_of(recipe)
+        ratings.pop("_alt", None)
+        if 1 <= stars <= 5:
+            ratings[key] = {"s": stars, **({"n": str(name)[:40]} if name else {})}
+        else:
+            ratings.pop(key, None)
+        recipe["ratings"] = ratings
+        _recipe_stars(recipe)
+        self._changed()
+        return recipe
+
     def update_recipe(self, recipe_id: str, **fields: Any) -> dict[str, Any]:
         recipe = self.recipe_by_id(recipe_id)
         if recipe is None:
@@ -5050,15 +5109,13 @@ class EinkaufslisteManager:
                 recipe["nutrition"] = nut
             else:
                 recipe.pop("nutrition", None)
-        if "stars" in fields:  # ⭐ 1–5 Sterne (Familienliebling), 0/leer = keine Bewertung
+        if "stars" in fields:  # ⭐ alte Einzel-Bewertung (ohne Person): gilt als eine Stimme „früher“, 0/leer = weg
             try:
                 stars = int(fields["stars"] or 0)
             except (TypeError, ValueError):
                 stars = 0
-            if 1 <= stars <= 5:
-                recipe["stars"] = stars
-            else:
-                recipe.pop("stars", None)
+            recipe["ratings"] = {"_alt": {"s": stars}} if 1 <= stars <= 5 else {}
+            _recipe_stars(recipe)
         if "minutes" in fields:  # ⏱️ Dauer ca., leer = weg
             mins = _minutes(fields["minutes"])
             if mins:

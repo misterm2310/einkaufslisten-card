@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.29-beta.3";
+const EL_VERSION = "2.76.29-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.28"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -440,16 +440,22 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🕒 <b>Ladenschluss als orange Uhr:</b> In der letzten Stunde vor Ladenschluss wird nur noch die kleine 🕒 Uhr im Reiter <b>orange</b> statt des Textes „schließt 19:30“ (die Uhrzeit steht beim Draufzeigen). Hat das Geschäft zu, ist der Reiter wieder <b>grau wie früher</b>, das rote „zu“ ist weg.",
+   "🕒 <b>Closing time as an orange clock:</b> in the last hour before closing only the small 🕒 clock in the tab turns <b>orange</b> instead of the text “closes 19:30” (the time shows on hover). When the store is closed, the tab is <b>grey like before</b>, the red “closed” is gone.", "beta.4"],
+  ["⭐ <b>Sterne pro Person:</b> Jeder vergibt seine <b>eigenen</b> Sterne (mit dem Home-Assistant-Benutzer), am Rezept steht der <b>Durchschnitt</b>, z. B. ★★★★☆ <b>4,3</b>, beim Draufzeigen wer wie viele Sterne gab. Nochmal auf den eigenen Stern tippen = nur die eigene Bewertung weg. „Familienliebling“ sortiert nach dem Durchschnitt. Alte Sterne zählen, bis der Erste selbst bewertet.",
+   "⭐ <b>Stars per person:</b> everyone gives their <b>own</b> stars (by Home Assistant user), the recipe shows the <b>average</b>, e.g. ★★★★☆ <b>4.3</b>, on hover who gave how many. Tapping your own star again removes only your rating. “Family favourite” sorts by the average. Old stars count until the first person rates.", "beta.4"],
+  ["✏️ <b>Neuer Sterne-Text:</b> Im Kochmützen-Modus steht neben den Sternen jetzt <b>„Bewerte das letzte Essen“</b> statt „Wie gut kommt's an?“ – solange du selbst noch nicht bewertet hast.",
+   "✏️ <b>New star text:</b> in recipe mode the stars now say <b>“Rate your last meal”</b> instead of “How well does it go down?” – as long as you have not rated yourself.", "beta.4"],
   ["🎫 <b>Gast-Link unter „Drucken & Teilen“:</b> Unter der Liste → <b>Drucken & Teilen</b> → <b>🎫 Gast-Link</b> (nur Admins). Geht nur mit der <b>Einstellungen-PIN</b>: erst PIN eingeben, dann Dauer, Gast-PIN und Geschäft wählen (das offene Geschäft ist schon vorausgewählt), Link kopieren oder teilen – oder sperren. Ohne Einstellungen-PIN bleibt der Knopf zu.",
    "🎫 <b>Guest link under “Print & share”:</b> below the list → <b>Print & share</b> → <b>🎫 Guest link</b> (admins only). Only works with the <b>settings PIN</b>: enter the PIN first, then pick duration, guest PIN and store (the open store is preselected), copy or share the link – or lock it. Without a settings PIN the button stays locked.", "beta.3"],
   ["🧺 <b>Teilweise gekauft:</b> Nur 2 von 3 bekommen? Artikel lange drücken → <b>Teilweise</b> → „2x“ antippen. Das Gekaufte zählt wie abgehakt (Verlauf, Statistik, Ereignis für Automationen), der Rest bleibt mit „1x“ offen auf der Liste. Geht bei ganzen Stückzahlen (3x, 4 Dosen …), auch ohne Netz.",
    "🧺 <b>Partly bought:</b> only got 2 of 3? Press and hold the item → <b>Partly</b> → tap “2x”. What you bought counts as checked off (history, statistics, event for automations), the rest stays open on the list as “1x”. Works with whole numbers (3x, 4 cans …), offline too.", "beta.2"],
-  ["🕒 <b>Ladenschluss im Reiter:</b> In der letzten Stunde vor Ladenschluss steht im Reiter des Geschäfts <b>„schließt 19:30“</b> in Orange, ist es zu, steht dort <b>„zu“</b> in Rot. Nutzt die Öffnungszeiten, die du beim Geschäft hinterlegt hast (mit Filialen und Feiertagen).",
-   "🕒 <b>Closing time in the tab:</b> in the last hour before closing the store tab shows <b>“closes 19:30”</b> in orange, once it is closed <b>“closed”</b> in red. Uses the opening hours you set for the store (with branches and holidays).", "beta.2"],
+  ["🕒 <b>Ladenschluss im Reiter:</b> In der letzten Stunde vor Ladenschluss wird die 🕒 Uhr im Reiter des Geschäfts <b>orange</b> (Uhrzeit beim Draufzeigen), ist es zu, wird der Reiter grau. Nutzt die Öffnungszeiten, die du beim Geschäft hinterlegt hast (mit Filialen und Feiertagen).",
+   "🕒 <b>Closing time in the tab:</b> in the last hour before closing the 🕒 clock in the store tab turns <b>orange</b> (time on hover), once it is closed the tab turns grey. Uses the opening hours you set for the store (with branches and holidays).", "beta.2"],
   ["🤔 <b>Mengen-Check klüger:</b> Bei „30 Milch“ fragt die Karte jetzt „Wirklich 30?“ – vorher erst ab 50 Stück. Nur eine Zahl bekommt die gemerkte Einheit, und wer sonst 2 kauft, wird bei 10 oder mehr gefragt (mit „Zuletzt waren es 2x“). Fängt Tippfehler und Quatsch-Diktate in der Karte ab.",
    "🤔 <b>Smarter quantity check:</b> for “30 milk” the card now asks “Really 30?” – before only from 50 pieces. A plain number gets the remembered unit, and if you usually buy 2 you are asked at 10 or more (with “Last time it was 2x”). Catches typos and silly dictations in the card.", "beta.2"],
-  ["⭐ <b>Rezept-Sterne:</b> Bei jedem Rezept (Rezepte antippen) 1–5 Sterne vergeben, nochmal tippen = weg. Der ⭐-Knopf neben der Suche sortiert nach <b>Familienliebling</b> – die Lieblinge stehen oben.",
-   "⭐ <b>Recipe stars:</b> give every recipe 1–5 stars (tap the recipe), tap again = remove. The ⭐ button next to the search sorts by <b>family favourite</b> – the favourites come first.", "beta.2"],
+  ["⭐ <b>Rezept-Sterne:</b> Bei jedem Rezept (Rezepte antippen) 1–5 Sterne vergeben – jeder seine eigenen, angezeigt wird der Durchschnitt –, nochmal tippen = weg. Der ⭐-Knopf neben der Suche sortiert nach <b>Familienliebling</b> – die Lieblinge stehen oben.",
+   "⭐ <b>Recipe stars:</b> give every recipe 1–5 stars (tap the recipe) – everyone their own, the average is shown –, tap again = remove. The ⭐ button next to the search sorts by <b>family favourite</b> – the favourites come first.", "beta.2"],
   ["📊 <b>Statistik:</b> ⚙️ → Daten → <b>Statistik</b> mit Reitern wie bei Fixkosten und Kegelclub: meistgekaufte Artikel, Einkäufe je Geschäft (mit 🧾 Protokoll auch in €), wer kauft und wer einträgt, und die letzten 12 Monate.",
    "📊 <b>Statistics:</b> ⚙️ → Data → <b>Statistics</b> with tabs like in Fixed costs and Bowling club: items bought most, purchases per store (with the 🧾 log also in €), who shops and who adds, and the last 12 months.", "beta.2"],
   ["🩺 <b>Reparatur-Hinweise in Home Assistant:</b> Lehnt Grocy den API-Schlüssel ab, ist Grocy nicht erreichbar oder kommen von Marktguru bzw. der Rückruf-Warnung gerade keine Daten, steht das jetzt auch unter <b>Einstellungen → System → Reparaturen</b>. Klappt es wieder, verschwindet der Hinweis von selbst.",
@@ -847,6 +853,14 @@ function elStoreClosed(st, now = new Date()) {
 }
 // 🕒 Ladenschluss im Reiter: schließt das Geschäft in der nächsten Stunde? Dann die Uhrzeit („19:30“), sonst null.
 // Mit Filialen: nur wenn ALLE offenen Filialen bald schließen (dann die späteste Zeit).
+// ⭐ Sterne pro Person lokal nachziehen (gleiche Rechnung wie im Server: Durchschnitt mit einer Nachkommastelle)
+function elRateLocal(r, uid, name, n) {
+  const rt = { ...(r.ratings || (r.stars ? { _alt: { s: Math.round(r.stars) } } : {})) };
+  delete rt._alt;
+  if (n >= 1 && n <= 5) rt[uid || name || "?"] = { s: n, ...(name ? { n: name } : {}) }; else delete rt[uid || name || "?"];
+  const v = Object.values(rt);
+  if (v.length) { r.ratings = rt; r.stars = Math.round((v.reduce((a, x) => a + x.s, 0) / v.length) * 10) / 10; r.stars_n = v.length; } else { delete r.ratings; delete r.stars; delete r.stars_n; }
+}
 function elStoreSoon(st, now = new Date()) {
   const cur = now.getHours() * 60 + now.getMinutes();
   const soon = (info) => { if (!info?.open) return null; const left = elMin(info.until) - cur; return left > 0 && left <= 60 ? info.until : false; };
@@ -3126,15 +3140,13 @@ ha-card.labels .tool { padding:4px 6px; }
 .tabs::-webkit-scrollbar-thumb { background:var(--divider-color, rgba(127,127,127,.35)); border-radius:4px; }
 @media (hover:none) { .tabs { scrollbar-width:none; } .tabs::-webkit-scrollbar { display:none; } }
 .tab { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; --c: var(--primary-color,#03a9f4); flex:0 0 auto; border:1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background:transparent; border-radius:999px; padding:5px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.9em; }
-.tab.closed:not(.active) { opacity:.6; } /* 🕒 Geschäft hat gerade zu (dazu rot „zu“) */
-.tab .tsoon { font-size:.75em; font-weight:700; color:#ef6c00; white-space:nowrap; } /* 🕒 schließt in der nächsten Stunde */
-.tab .tsoon.zu { color:var(--error-color,#db4437); }
-.tab.active .tsoon { color:var(--tc, #fff); background:color-mix(in srgb, #ef6c00 75%, transparent); border-radius:6px; padding:0 5px; }
-.tab.active .tsoon.zu { background:color-mix(in srgb, var(--error-color,#db4437) 80%, transparent); }
+.tab.closed:not(.active) { opacity:.45; filter:grayscale(1); } /* 🕒 Geschäft hat gerade zu */
+.tab.soon .tclock { color:#ef6c00; } /* 🕒 schließt in der nächsten Stunde: Uhr in Orange */
+.tab.active.soon .tclock { color:#fff; background:#ef6c00; border-radius:50%; box-shadow:0 0 0 1.5px #ef6c00; }
 .tab.here { border-width:3px; box-shadow:0 0 0 2px var(--c); } /* 📍 gerade ist jemand dort */
 .tab.active.here { box-shadow:0 0 0 2px var(--card-background-color, #fff), 0 0 0 4.5px var(--c); } /* 📍 auch beim ausgewählten (eingefärbten) Reiter sichtbar: Ring mit Abstand */
 .herebar { --c: var(--primary-color,#03a9f4); margin:0 2px 8px; padding:6px 12px; border-radius:12px; font-size:.9em; border-left:4px solid var(--c); background:color-mix(in srgb, var(--c) 12%, transparent); } /* 📍 Gerade dort: Namen */
-.tab.closed.active { opacity:.85; }
+.tab.closed.active { filter:grayscale(.8); opacity:.8; }
 .tab .tclock { --mdc-icon-size:17px; color:var(--c); flex:0 0 auto; display:inline-flex; }
 .tab.active .tclock { color:var(--tc, #fff); }
 .tab .dot { width:9px; height:9px; border-radius:50%; background:var(--c); }
@@ -3775,7 +3787,7 @@ label.btn { cursor:pointer; }
 .recipe .rname b { display:block; word-break:normal; overflow-wrap:break-word; hyphens:auto; -webkit-hyphens:auto; }
 .recipe .rname small { color:var(--secondary-text-color); font-size:.78em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .recipe .primary { padding:8px 10px; font-size:.85em; }
-.rstars { color:#f9a825; font-size:.85em; letter-spacing:1px; white-space:nowrap; } .rstars .off { opacity:.25; } /* ⭐ Familienliebling */
+.rstars { color:#f9a825; font-size:.85em; letter-spacing:1px; white-space:nowrap; } .recipe .rname .rstars small, .rstars small { display:inline; color:#f9a825; font-size:1em; letter-spacing:0; font-weight:600; } .rstars .off { opacity:.25; } /* ⭐ Familienliebling */
 .rstarset { grid-column:1/-1; display:flex; align-items:center; gap:2px; flex-wrap:wrap; } .rstarset .iconbtn { color:#f9a825; } .rstarset .iconbtn:not(.on) { opacity:.55; } .rstarset .hint { margin:0 0 0 6px; }
 .rstarsort.on { color:#f9a825; }
 .rtools { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; margin:0 2px 10px; padding:6px 10px 10px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-top:0; border-radius:0 0 12px 12px; background:var(--card-background-color, var(--ha-card-background, #fff)); }
@@ -4722,7 +4734,7 @@ const storePoints = (data, store) => (data?.geo?.[store?.id]?.points || []).filt
 // ⏳ Warteschlange für Funklöcher: wird im Handy gespeichert, damit auch ein Neustart der App nichts verliert
 const QUEUE_TYPES = new Set(["einkaufsliste/item/toggle", "einkaufsliste/item/partial", "einkaufsliste/item/add", "einkaufsliste/item/update",
   "einkaufsliste/item/remove", "einkaufsliste/item/move", "einkaufsliste/item/out", "einkaufsliste/item/gone",
-  "einkaufsliste/recipe/add", "einkaufsliste/recipe/update", "einkaufsliste/recipe/remove",
+  "einkaufsliste/recipe/add", "einkaufsliste/recipe/update", "einkaufsliste/recipe/rate", "einkaufsliste/recipe/remove",
   "einkaufsliste/recipe/apply", "einkaufsliste/recipe/unapply", "einkaufsliste/barcode/assign",
   "einkaufsliste/photo/set"]); // 📸 Fotos werden vorgemerkt, wenn kein Netz da ist (siehe PHOTO_QUEUE_MAX)
 const PHOTO_QUEUE_MAX = 3 * 1024 * 1024; // so viele Foto-Daten (Zeichen) dürfen höchstens vorgemerkt warten
@@ -4842,6 +4854,11 @@ function applyQueued(data, list, hass) {
       case "einkaufsliste/recipe/update": {
         const r = (data.recipes || []).find((x) => x.id === m.recipe_id);
         if (r) { for (const k of ["name", "icon", "items", "steps", "heat", "servings", "servings_unit", "minutes", "step_items", "group", "plan", "source", "stars"]) if (k in m) r[k] = m[k]; r._queued = true; }
+        break;
+      }
+      case "einkaufsliste/recipe/rate": { // ⭐ offline: eigene Sterne gleich anzeigen
+        const r = (data.recipes || []).find((x) => x.id === m.recipe_id);
+        if (r) { elRateLocal(r, hass?.user?.id, hass?.user?.name, m.stars); r._queued = true; }
         break;
       }
       case "einkaufsliste/recipe/remove":
@@ -6304,9 +6321,8 @@ class EinkaufslisteCard extends HTMLElement {
     const parts = [`<button class="tab ${active === "all" ? "active" : ""}" data-act="tab" data-tab="all">Alle <span class="n">${openCount(inAll)}</span>${bubble(inAll, active === "all")}</button>`];
     for (const s of d.stores) {
       const closed = elStoreClosed(s), here = this._someoneAt(s), soon = !closed && elStoreSoon(s);
-      // 🕒 letzte Stunde: „schließt 19:30“ in Orange · zu: „zu“ in Rot
-      const shut = closed ? `<span class="tsoon zu">${elT("zu")}</span>` : soon ? `<span class="tsoon">${elT("schließt")} ${esc(soon)}</span>` : "";
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""} ${here ? "here" : ""}" ${closed ? 'title="Geschlossen"' : here ? 'title="Gerade ist jemand dort 📍"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || (!i.store_id && !s.no_any))}</span>${shut}${bubble((i) => i.store_id === s.id || (!i.store_id && !s.no_any), active === s.id)}</button>`);
+      // 🕒 letzte Stunde: die Uhr im Reiter wird orange (Uhrzeit im Tooltip) · zu: grau wie immer
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""} ${soon && elHasTimes(s) ? "soon" : ""} ${here ? "here" : ""}" ${closed ? 'title="Geschlossen"' : soon ? `title="${esc(elT("schließt"))} ${esc(soon)}"` : here ? 'title="Gerade ist jemand dort 📍"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || (!i.store_id && !s.no_any))}</span>${bubble((i) => i.store_id === s.id || (!i.store_id && !s.no_any), active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
@@ -9699,8 +9715,19 @@ ${(() => {
     return this._recStars;
   }
 
-  _starsTag(r) {
-    return r.stars ? ` <span class="rstars" title="${r.stars} von 5 Sternen" aria-label="${r.stars} von 5 Sternen">${"★".repeat(r.stars)}<span class="off">${"★".repeat(5 - r.stars)}</span></span>` : "";
+  _starsTag(r) { // ⭐ Durchschnitt aller Bewertungen: ★★★★☆ + „4,3“, im Tooltip wer wie viele Sterne gab
+    if (!r.stars) return "";
+    const full = Math.round(r.stars), avg = this._starsAvg(r);
+    const who = Object.values(r.ratings || {}).filter((x) => x.n).map((x) => `${x.n} ${x.s}★`).join(", ");
+    const t = `Ø ${avg} von 5 Sternen${r.stars_n > 1 ? ` · ${r.stars_n} Bewertungen` : ""}${who ? ` (${who})` : ""}`;
+    return ` <span class="rstars" title="${esc(t)}" aria-label="${esc(t)}">${"★".repeat(full)}<span class="off">${"★".repeat(5 - full)}</span>${r.stars_n > 1 || r.stars !== full ? ` <small>${avg}</small>` : ""}</span>`;
+  }
+
+  _starsAvg(r) { return (r.stars || 0).toLocaleString(EL_LANG === "de" ? "de-DE" : "en-GB", { maximumFractionDigits: 1 }); }
+
+  _myStars(r) { // ⭐ meine eigenen Sterne (pro HA-Benutzer)
+    const me = this._hass?.user?.id;
+    return (me && r.ratings?.[me]?.s) || 0;
   }
 
   _markHit(name, q) {
@@ -9917,7 +9944,7 @@ ${(() => {
           ${(r.steps || "").trim() ? `<button class="btn" data-act="recipe-cook" title="Kochen"><ha-icon icon="mdi:fire"></ha-icon><span class="lbl">Kochen</span></button>` : ""}
           ${r.source ? `<button class="btn" data-act="recipe-source" title="Original-Rezept im Browser öffnen"><ha-icon icon="mdi:open-in-new"></ha-icon><span class="lbl">Original öffnen</span></button>` : ""}
           <button class="btn" data-act="recipe-share" title="Drucken &amp; Teilen"><ha-icon icon="mdi:file-send-outline"></ha-icon><span class="lbl">Drucken &amp; Teilen</span></button>
-          <div class="rstarset" role="group" aria-label="Sterne">${[1, 2, 3, 4, 5].map((n) => `<button class="iconbtn${n <= (r.stars || 0) ? " on" : ""}" data-act="recipe-star" data-n="${n}" title="${n} ${n === 1 ? "Stern" : "Sterne"}${n === r.stars ? " – nochmal tippen = weg" : ""}" aria-label="${n} ${n === 1 ? "Stern" : "Sterne"}"><ha-icon icon="${n <= (r.stars || 0) ? "mdi:star" : "mdi:star-outline"}"></ha-icon></button>`).join("")}${r.stars ? "" : `<span class="hint">Wie gut kommt's an?</span>`}</div>
+          ${(() => { const mine = this._myStars(r); return `<div class="rstarset" role="group" aria-label="Meine Sterne">${[1, 2, 3, 4, 5].map((n) => `<button class="iconbtn${n <= mine ? " on" : ""}" data-act="recipe-star" data-n="${n}" title="${n} ${n === 1 ? "Stern" : "Sterne"}${n === mine ? " – nochmal tippen = weg" : ""}" aria-label="${n} ${n === 1 ? "Stern" : "Sterne"}"><ha-icon icon="${n <= mine ? "mdi:star" : "mdi:star-outline"}"></ha-icon></button>`).join("")}${mine ? (r.stars_n > 1 ? `<span class="hint">Ø ${esc(this._starsAvg(r))} · ${r.stars_n} <span>Bewertungen</span></span>` : "") : `<span class="hint">Bewerte das letzte Essen</span>`}</div>`; })()}
         </div>${this._pickRecipe === r.id ? this._pickHtml(r) : ""}`;
     };
     // 📅 Essensplan: oben „Diese Woche“, dann „Wünsche“, dann der Rest (nur wenn überhaupt etwas geplant ist)
@@ -16169,9 +16196,9 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
       case "recipe-star": { // ⭐ 1–5 Sterne, gleicher Stern nochmal = weg
         const rec = this._recipe(el.closest(".rtools")?.dataset.id);
         if (!rec) break;
-        const n = Number(el.dataset.n), next = rec.stars === n ? 0 : n;
-        this._ws({ type: "einkaufsliste/recipe/update", recipe_id: rec.id, stars: next })
-          .then(() => { if (next) rec.stars = next; else delete rec.stars; this._toast(next ? `⭐ ${next} von 5 Sternen` : "Sterne entfernt"); this._renderRecipeList(); }).catch(() => {});
+        const n = Number(el.dataset.n), next = this._myStars(rec) === n ? 0 : n; // ⭐ pro Person: nur MEINE Sterne
+        this._ws({ type: "einkaufsliste/recipe/rate", recipe_id: rec.id, stars: next })
+          .then(() => { elRateLocal(rec, this._hass?.user?.id, this._hass?.user?.name, next); this._toast(next ? `⭐ ${next} von 5 Sternen` : "Sterne entfernt"); this._renderRecipeList(); }).catch(() => {});
         break;
       }
       case "recipe-star-sort": { // ⭐ Familienliebling zuerst an/aus

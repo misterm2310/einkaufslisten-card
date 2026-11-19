@@ -1115,6 +1115,28 @@ check("🎫 Drucken & Teilen: Gast-Link nur für Admins", r.noAdmin, JSON.string
 check("🎫 Drucken & Teilen: ohne Einstellungen-PIN bleibt der Gast-Link zu", r.noPinStays, JSON.stringify(r));
 check("🎫 Drucken & Teilen: erst PIN, dann Gast-Link-Formular, Link wird angezeigt", r.askPin && r.title === "Drucken & Teilen" && r.form && r.url.endsWith("/einkaufsliste/gast/#abc") && r.calls === "einkaufsliste/pin/check,einkaufsliste/guest/create", JSON.stringify(r));
 
+// 🕒 beta.4: letzte Stunde = orange Uhr (Klasse soon, kein Text), zu = grau (closed), kein „schließt“/„zu“-Text mehr
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const d=c._data; const pad=(n)=>String(n).padStart(2,"0");
+  const keep=d.stores.map((s)=>s.hours); const t=new Date(Date.now()+35*60000);
+  d.stores[0].hours=Array(7).fill(["00:01", `${pad(t.getHours())}:${pad(t.getMinutes())}`]); d.stores[1].hours=Array(7).fill(null);
+  c._view="list"; c._renderAll(); await new Promise(r=>setTimeout(r,60));
+  const tabs=[...c.shadowRoot.querySelectorAll(".tabs .tab")];
+  const res={ soon:tabs[1].classList.contains("soon") && !!tabs[1].querySelector(".tclock") && /schließt/.test(tabs[1].title), closed:tabs[2].classList.contains("closed") && !tabs[2].classList.contains("soon"), noText:!c.shadowRoot.querySelector(".tabs .tsoon") };
+  d.stores.forEach((s,i)=>{ s.hours=keep[i]; }); c._renderAll(); return res; });
+check("🕒 Ladenschluss: orange Uhr statt Text, zu = grau", r.soon && r.closed && r.noText, JSON.stringify(r));
+
+// ⭐ beta.4: Sterne pro Person – eigene Sterne leuchten, Durchschnitt am Namen, Text „Bewerte das letzte Essen“
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const keepR=c._data.recipes, keepWs=c._ws, keepU=c._hass.user, calls=[];
+  c._hass={...c._hass, user:{...keepU, id:"me", name:"Ich"}}; c._ws=async(m)=>{ calls.push(m); return {}; };
+  c._data.recipes=[{id:"r1",name:"Lasagne",items:[{name:"Nudeln"}],ratings:{u2:{s:4,n:"Jamila"}},stars:4,stars_n:1}];
+  c._view="recipes"; c._renderAll(); await new Promise(r=>setTimeout(r,80)); const h=c.shadowRoot;
+  const before={ hint:h.querySelector(".rstarset .hint")?.textContent, on:h.querySelectorAll(".rstarset .iconbtn.on").length };
+  h.querySelector('.rstarset [data-act="recipe-star"][data-n="1"]').click(); await new Promise(r=>setTimeout(r,120));
+  const rec=c._data.recipes[0];
+  const res={ before, call:calls[0], stars:rec.stars, n:rec.stars_n, on:h.querySelectorAll(".rstarset .iconbtn.on").length, avg:h.querySelector(".rstars small")?.textContent };
+  c._data.recipes=keepR; c._ws=keepWs; c._hass={...c._hass, user:keepU}; c._view="list"; c._renderAll(); return res; });
+check("⭐ Sterne pro Person: Text, eigene Bewertung, Durchschnitt", r.before.hint === "Bewerte das letzte Essen" && r.before.on === 0 && r.call?.type === "einkaufsliste/recipe/rate" && r.call?.stars === 1 && r.stars === 2.5 && r.n === 2 && r.on === 1 && r.avg === "2,5", JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

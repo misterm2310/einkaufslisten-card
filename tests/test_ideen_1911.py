@@ -65,6 +65,35 @@ async def test_recipe_stars(hass: HomeAssistant, setup, hass_ws_client) -> None:
     assert not (await client.receive_json())["success"]
 
 
+
+async def test_recipe_stars_per_person(hass: HomeAssistant, setup, hass_ws_client) -> None:  # noqa: F811
+    """⭐ beta.4: jeder bewertet selbst, am Rezept steht der Durchschnitt; alte Einzel-Sterne werden abgelöst."""
+    m = mgr(hass)
+    r = m.add_recipe("Pizza", [{"name": "Mehl"}])
+    m.update_recipe(r["id"], stars=4)  # alte Einzel-Bewertung
+    assert m.recipe_by_id(r["id"])["ratings"] == {"_alt": {"s": 4}}
+    m.rate_recipe(r["id"], "u1", "Marco", 5)
+    rec = m.recipe_by_id(r["id"])
+    assert "_alt" not in rec["ratings"] and rec["stars"] == 5 and rec["stars_n"] == 1
+    m.rate_recipe(r["id"], "u2", "Kind", 2)
+    m.rate_recipe(r["id"], "u3", "Oma", 5)
+    rec = m.recipe_by_id(r["id"])
+    assert rec["stars"] == 4.0 and rec["stars_n"] == 3 and rec["ratings"]["u2"] == {"s": 2, "n": "Kind"}
+    m.rate_recipe(r["id"], "u2", "Kind", 3)  # eigene Bewertung ändern, nicht doppelt
+    assert m.recipe_by_id(r["id"])["stars"] == 4.3 and m.recipe_by_id(r["id"])["stars_n"] == 3
+    m.rate_recipe(r["id"], "u1", "Marco", 0)  # eigene weg
+    assert m.recipe_by_id(r["id"])["stars_n"] == 2
+    m.rate_recipe(r["id"], "u2", None, 0)
+    m.rate_recipe(r["id"], "u3", None, 0)
+    assert not {"stars", "stars_n", "ratings"} & set(m.recipe_by_id(r["id"]))
+    # über die Websocket-Verbindung zählt der angemeldete Benutzer
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "einkaufsliste/recipe/rate", "recipe_id": r["id"], "stars": 4})
+    msg = await client.receive_json()
+    assert msg["success"] and msg["result"]["stars"] == 4 and msg["result"]["stars_n"] == 1
+    await client.send_json({"id": 2, "type": "einkaufsliste/recipe/rate", "recipe_id": r["id"], "stars": 9})
+    assert not (await client.receive_json())["success"]
+
 async def test_stats_summary(hass: HomeAssistant, setup) -> None:  # noqa: F811
     m = mgr(hass)
     aldi = m.find_store("aldi")
