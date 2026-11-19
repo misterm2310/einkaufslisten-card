@@ -2589,5 +2589,8 @@
 "🎫 Gast-Link erstellt": "🎫 Guest link created",
 "hat den % erstellt": "created the %",
 "hat den % gesperrt": "locked the %",
-"schließt {}": "closes {0}"
+"schließt {}": "closes {0}",
+"🎫 Gast-Link": "🎫 Guest link",
+"📴 Der Gast-Link geht nur mit Netz": "📴 The guest link only works online",
+"🔒 Der Gast-Link geht hier nur mit Einstellungen-PIN – leg sie in ⚙️ → App & Info → Schutz (PIN) fest.": "🔒 The guest link here only works with a settings PIN – set one in ⚙️ → App & info → Protection (PIN)."
 }

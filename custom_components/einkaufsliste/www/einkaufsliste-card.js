@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.29-beta.2";
+const EL_VERSION = "2.76.29-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.28"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -93,7 +93,7 @@ const EL_GUIDE = [
       "<b>🕒 Öffnungszeiten:</b> in ⚙️ → Geschäfte → Geschäft. Hat es zu, wird sein Reiter grau. Den Namen oben gedrückt halten zeigt die Zeiten. Mehrere Zeitfenster am Tag, „📋 auf Tage…“ und „🎌 An Feiertagen zu“ gehen auch.",
       "<b>🌐 Aus dem Netz:</b> „Zeiten aus OpenStreetMap“ holt Zeiten, Adresse und Telefon auf Knopfdruck (von Freiwilligen eingetragen, bitte kurz prüfen).",
       "<b>🏬 Filialen</b> (z. B. 3× K&K): ⚙️ → Geschäfte → „🏬 Filialen ändern“. Pro Filiale <b>✏️ Bearbeiten</b>: Name, Adresse, Telefon, Tipps und eigene Zeiten. Erst 💾 Speichern schreibt alles weg.",
-      "<b>📤 Drucken & Teilen</b> (unter der Liste): als Zettel drucken, als <b>PDF</b> speichern oder teilen (auf dem iPhone über „Teilen“) oder als <b>QR-Code</b> zum Scannen mit einem anderen Handy.",
+      "<b>📤 Drucken & Teilen</b> (unter der Liste): als Zettel drucken, als <b>PDF</b> speichern oder teilen (auf dem iPhone über „Teilen“) oder als <b>QR-Code</b> zum Scannen mit einem anderen Handy. Admins finden dort auch den <b>🎫 Gast-Link</b> – nur nach Eingabe der Einstellungen-PIN.",
       "<b>🗞️ Prospekt-Link:</b> Unter ⚙️ → Geschäfte → Geschäft kannst du die Adresse eines Prospekts eintragen (z. B. von Bofrost oder Aldi). Den Namen oben gedrückt halten, dann „🗞️ Prospekt öffnen“. Es wird nur die Adresse gespeichert, nichts selbst abgerufen.",
       "<b>💡 Bildschirm immer an:</b> Im Laden-Modus erscheint ein Glühbirnen-Icon. Antippen = der Bildschirm bleibt an. In der HA-App klappt das nur mit der App-Einstellung „Bildschirm anlassen“.",
       "<b>Automatisch (Option):</b> Ist „Laden-Modus automatisch“ in ⚙️ an, geht er von selbst an, sobald dein Handy in die Zone eines Geschäfts kommt, und wieder aus, wenn du gehst. Was du selbst ein- oder ausschaltest, lässt die Automatik in Ruhe.",
@@ -108,7 +108,7 @@ const EL_GUIDE = [
       "<b>🌐 From the internet:</b> “Times from OpenStreetMap” fetches hours, address and phone at the push of a button (entered by volunteers, please check).",
       "<b>🏬 Branches</b> (e.g. 3× the same shop): ⚙️ → Stores → “🏬 Edit branches”. Per branch <b>✏️ Edit</b>: name, address, phone, tips and own hours. Only 💾 Save stores it.",
       "<b>🗞️ Flyer link:</b> in ⚙️ → Stores → store you can save the address of a flyer. Hold the name at the top, then “🗞️ Open flyer”. Only the address is stored, nothing is fetched by itself.",
-      "<b>📤 Print & share</b> (under the list): print as a sheet, save or share as <b>PDF</b> (on iPhone via “Share”) or show a <b>QR code</b> to scan with another phone.",
+      "<b>📤 Print & share</b> (under the list): print as a sheet, save or share as <b>PDF</b> (on iPhone via “Share”) or show a <b>QR code</b> to scan with another phone. Admins also find the <b>🎫 guest link</b> there – only after entering the settings PIN.",
       "<b>💡 Screen always on:</b> in store mode a light-bulb icon appears. Tap = the screen stays on. In the HA app this needs the app setting “Keep screen on”.",
       "<b>Automatic (option):</b> If “Store mode automatic” is on in ⚙️, it switches on by itself when your phone enters a store's zone, and off when you leave. Whatever you switch yourself, the automation leaves alone.",
       "If your location says you are in a store, <b>▥ checks off the scanned product</b> (see “Barcodes”).",
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🎫 <b>Gast-Link unter „Drucken & Teilen“:</b> Unter der Liste → <b>Drucken & Teilen</b> → <b>🎫 Gast-Link</b> (nur Admins). Geht nur mit der <b>Einstellungen-PIN</b>: erst PIN eingeben, dann Dauer, Gast-PIN und Geschäft wählen (das offene Geschäft ist schon vorausgewählt), Link kopieren oder teilen – oder sperren. Ohne Einstellungen-PIN bleibt der Knopf zu.",
+   "🎫 <b>Guest link under “Print & share”:</b> below the list → <b>Print & share</b> → <b>🎫 Guest link</b> (admins only). Only works with the <b>settings PIN</b>: enter the PIN first, then pick duration, guest PIN and store (the open store is preselected), copy or share the link – or lock it. Without a settings PIN the button stays locked.", "beta.3"],
   ["🧺 <b>Teilweise gekauft:</b> Nur 2 von 3 bekommen? Artikel lange drücken → <b>Teilweise</b> → „2x“ antippen. Das Gekaufte zählt wie abgehakt (Verlauf, Statistik, Ereignis für Automationen), der Rest bleibt mit „1x“ offen auf der Liste. Geht bei ganzen Stückzahlen (3x, 4 Dosen …), auch ohne Netz.",
    "🧺 <b>Partly bought:</b> only got 2 of 3? Press and hold the item → <b>Partly</b> → tap “2x”. What you bought counts as checked off (history, statistics, event for automations), the rest stays open on the list as “1x”. Works with whole numbers (3x, 4 cans …), offline too.", "beta.2"],
   ["🕒 <b>Ladenschluss im Reiter:</b> In der letzten Stunde vor Ladenschluss steht im Reiter des Geschäfts <b>„schließt 19:30“</b> in Orange, ist es zu, steht dort <b>„zu“</b> in Rot. Nutzt die Öffnungszeiten, die du beim Geschäft hinterlegt hast (mit Filialen und Feiertagen).",
@@ -7236,18 +7238,44 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
     return { parts, full, count: pick.length };
   }
 
-  _printPage() {
+  _printPage(start = "how") { // start "guest" = gleich der Gast-Link (nur nach geprüfter PIN)
     const d = this._data;
     const open = d.items.filter((i) => !i.checked);
-    this._openPage({ key: "print", title: "Drucken & Teilen", icon: "mdi:share-variant-outline", color: "#546e7a", build: (body) => {
+    const admin = !!this._hass?.user?.is_admin;
+    this._openPage({ key: "print", title: "Drucken & Teilen", icon: "mdi:share-variant-outline", color: "#546e7a", onClose: () => { this._guestRedraw = null; }, build: (body) => {
       let mode = null;
       const how = () => { // 📤 zuerst: drucken oder aufs Handy?
         body.innerHTML = `<div style="font:600 16px Roboto,sans-serif;margin:2px 0 6px">${esc(elT("Was möchtest du?"))}</div>
           <div class="prchoice"><button type="button" class="btn" data-how="print"><span>${esc(elT("🖨️ Drucken"))}</span></button>
-          <button type="button" class="btn" data-how="qr"><span>${esc(elT("📱 QR-Code fürs Handy"))}</span></button></div>
+          <button type="button" class="btn" data-how="qr"><span>${esc(elT("📱 QR-Code fürs Handy"))}</span></button>
+          ${admin ? `<button type="button" class="btn" data-guest><span>${esc(elT("🎫 Gast-Link"))}</span><span class="n">🔒</span></button>` : ""}</div>
           <p class="hint">${esc(elT("QR-Code: Ein anderes Handy richtet einfach die Kamera darauf und sieht die Liste als Text – ohne App, ohne Anmelden. Gut für Leute, die kein Home Assistant haben."))}</p>`;
         body.querySelectorAll("[data-how]").forEach((b) => { b.onclick = () => { mode = b.dataset.how; choose(); }; });
+        const gb = body.querySelector("[data-guest]");
+        if (gb) gb.onclick = () => gate();
         body.querySelector("[data-how]")?.focus?.({ preventScroll: true });
+      };
+      // 🎫 Gast-Link: nur Admins und NUR mit der Einstellungen-PIN (auch wenn das Zahnrad gerade offen ist, gilt die 10-Minuten-Freigabe)
+      const gate = async () => {
+        if (this._hass?.connected === false) { this._toast(elT("📴 Der Gast-Link geht nur mit Netz")); return; }
+        if (!d.settings?.pin) { this._toast(elT("🔒 Der Gast-Link geht hier nur mit Einstellungen-PIN – leg sie in ⚙️ → App & Info → Schutz (PIN) fest.")); return; }
+        if (!pinUnlocked()) {
+          const pin = await askPin(undefined, this);
+          if (pin == null) return;
+          const res = await this._ws({ type: "einkaufsliste/pin/check", pin }).catch(() => null);
+          if (!res?.ok) { this._toast(elT("🔒 Falsche PIN")); return; }
+          pinRemember();
+          this._printPage("guest"); // die PIN-Abfrage war eine eigene Seite – Drucken & Teilen gleich beim Gast-Link neu öffnen
+          return;
+        }
+        guest();
+      };
+      const guest = () => {
+        const tab = this._activeTab && !["all", "none"].includes(this._activeTab) ? this._activeTab : "";
+        body.innerHTML = `<div class="prguest">${this._guestHtml(tab)}</div>
+          <div style="margin-top:8px"><button type="button" class="btn" data-prhow>${esc(elT("◀ Zurück"))}</button></div>`;
+        body.querySelector("[data-prhow]").onclick = how;
+        this._guestRedraw = () => { if (this._page?.body === body && body.querySelector(".prguest")) guest(); else this._guestRedraw = null; };
       };
       const choose = () => {
         const rows = [{ id: "all", name: elT("Alle Geschäfte"), n: open.length, color: "#546e7a" }];
@@ -7292,7 +7320,7 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
           document.body.append(fr);
         };
       };
-      how();
+      (start === "guest" && admin && d.settings?.pin && pinUnlocked() ? guest : how)();
     } });
   }
 
@@ -9198,7 +9226,7 @@ ${(() => {
     return `${elT(WD_SHORT[pyWd(d)])} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   }
 
-  _guestHtml() {
+  _guestHtml(pick = "") { // pick = vorausgewähltes Geschäft (aus „Drucken & Teilen“)
     const g = this._data.settings?.guest;
     const admin = !!this._hass?.user?.is_admin;
     const fresh = this._guestNew && g && this._guestNew.until === g.until ? this._guestNew : null;
@@ -9219,7 +9247,7 @@ ${(() => {
       <h4>${g ? "Neuen Link erstellen (der alte gilt dann nicht mehr)" : "Gast-Link erstellen"}</h4>
       <div class="srow"><ha-icon class="prev" icon="mdi:dialpad"></ha-icon><input class="grow" id="guestPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="PIN für den Gast (4–8 Ziffern)"></div>
       <div class="srow"><ha-icon class="prev" icon="mdi:timer-outline"></ha-icon><select class="grow" id="guestHours" title="Wie lange gilt der Link?">${[2, 6, 12, 24].map((h) => `<option value="${h}" ${h === 24 ? "selected" : ""}>${h} Stunden</option>`).join("")}</select></div>
-      <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="guestStore" title="Welche Artikel sieht der Gast?"><option value="">Alle Geschäfte</option>${stores.map((s) => `<option value="${esc(s.id)}">${esc(s.name)} + Egal wo</option>`).join("")}</select></div>
+      <div class="srow"><ha-icon class="prev" icon="mdi:store-outline"></ha-icon><select class="grow" id="guestStore" title="Welche Artikel sieht der Gast?"><option value="">Alle Geschäfte</option>${stores.map((s) => `<option value="${esc(s.id)}" ${s.id === pick ? "selected" : ""}>${esc(s.name)} + Egal wo</option>`).join("")}</select></div>
       <div class="btnrow"><button class="btn primary" data-act="guest-create"><ha-icon icon="mdi:ticket-confirmation-outline"></ha-icon>Gast-Link erstellen</button></div>
       <p class="hint">🛡️ Höchstens 24 Stunden · nach 5 falschen PINs 15 Minuten Pause, nach 25 gesperrt · falsche Versuche zählen wie eine falsche Anmeldung bei Home Assistant. Von unterwegs braucht der Gast deine externe Adresse (z. B. Nabu Casa).</p>`
       : `<p class="hint">🔒 Erstellen oder sperren kann das nur ein Admin.</p>`}`;
@@ -15171,7 +15199,7 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
             this._guestNew = { url: this._guestBase() + res.path, until: res.until };
             if (this._data.settings) this._data.settings.guest = { until: res.until, store_id: res.store_id, by: res.by, created: res.created };
             this._toast("🎫 Gast-Link erstellt – jetzt kopieren oder teilen");
-            this._renderSettings();
+            if (this._guestRedraw) this._guestRedraw(); else this._renderSettings();
           }).catch(() => {});
         break;
       }
@@ -15184,7 +15212,7 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
       case "guest-revoke":
         if (!await elConfirm("Gast-Link jetzt sperren? Wer ihn hat, kommt sofort nicht mehr an die Liste.", { danger: false })) break;
         this._ws({ type: "einkaufsliste/guest/revoke" })
-          .then(() => { this._guestNew = null; if (this._data.settings) this._data.settings.guest = null; this._toast("🔒 Gast-Link gesperrt"); this._renderSettings(); }).catch(() => {});
+          .then(() => { this._guestNew = null; if (this._data.settings) this._data.settings.guest = null; this._toast("🔒 Gast-Link gesperrt"); if (this._guestRedraw) this._guestRedraw(); else this._renderSettings(); }).catch(() => {});
         break;
       case "menu-part": // 🧺 „2 von 3 bekommen“
         this._menuId = null;

@@ -1087,6 +1087,34 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   return res; });
 check("🗑️ Menü hat „Löschen“ und springt zu „Einkaufsliste Produkte löschen“ mit Suche", r.txt === "Löschen" && r.view === "settings" && r.sec === "products" && r.tab === "delete" && r.search === r.name, JSON.stringify(r));
 
+// 🎫 Gast-Link unter „Drucken & Teilen“: nur Admins, nur mit Einstellungen-PIN
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const d=c._data; const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+  const keepPin=d.settings.pin, keepWs=c._ws, keepUser=c._hass.user, calls=[];
+  try { localStorage.removeItem("einkaufsliste_pin_until"); } catch (_) {}
+  c._ws=async(m)=>{ calls.push(m.type); if (m.type==="einkaufsliste/pin/check") return { ok: m.pin==="1234" }; if (m.type==="einkaufsliste/guest/create") return { path:"/einkaufsliste/gast/#abc", until:"2026-11-20T12:00:00+00:00", store_id:null, by:"Test", created:"2026-11-19T12:00:00+00:00" }; return {}; };
+  const h=c.shadowRoot, res={};
+  c._hass={...c._hass, user:{...keepUser, is_admin:false}}; c._printPage(); await sleep(60);
+  res.noAdmin=!h.querySelector(".pagehost [data-guest]");
+  c._hass={...c._hass, user:{...keepUser, is_admin:true}}; d.settings.pin=false; c._printPage(); await sleep(60);
+  h.querySelector(".pagehost [data-guest]")?.click(); await sleep(60);
+  res.noPinStays=!!h.querySelector(".pagehost [data-guest]") && !h.querySelector(".prguest");
+  d.settings.pin=true; c._printPage(); await sleep(60);
+  h.querySelector(".pagehost [data-guest]").click(); await sleep(100);
+  res.askPin=!!h.querySelector(".pagehost .ppad");
+  const pad=[...h.querySelectorAll(".pagehost .ppad button")];
+  for (const k of ["1","2","3","4"]) { pad.find(b=>b.textContent.trim()===k)?.click(); await sleep(10); }
+  pad[pad.length-1].click(); // ✔ (Symbol-Knopf ohne Text)
+  await sleep(150);
+  res.title=h.querySelector(".pagehost h3")?.textContent; res.form=!!h.querySelector(".prguest #guestPin");
+  h.querySelector("#guestPin").value="5678"; h.querySelector('.prguest [data-act="guest-create"]').click(); await sleep(150);
+  res.url=h.querySelector(".prguest #guestUrl")?.value || ""; res.calls=calls.join(",");
+  while (c._page) c._pageBack();
+  d.settings.pin=keepPin; d.settings.guest=null; c._guestNew=null; c._ws=keepWs; c._hass={...c._hass, user:keepUser}; try { localStorage.removeItem("einkaufsliste_pin_until"); } catch (_) {}
+  c._renderAll(); return res; });
+check("🎫 Drucken & Teilen: Gast-Link nur für Admins", r.noAdmin, JSON.stringify(r));
+check("🎫 Drucken & Teilen: ohne Einstellungen-PIN bleibt der Gast-Link zu", r.noPinStays, JSON.stringify(r));
+check("🎫 Drucken & Teilen: erst PIN, dann Gast-Link-Formular, Link wird angezeigt", r.askPin && r.title === "Drucken & Teilen" && r.form && r.url.endsWith("/einkaufsliste/gast/#abc") && r.calls === "einkaufsliste/pin/check,einkaufsliste/guest/create", JSON.stringify(r));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }
