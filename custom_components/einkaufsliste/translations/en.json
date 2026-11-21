@@ -68,6 +68,10 @@
         "create_missing": {
           "name": "Create missing",
           "description": "On = a store or category that does not exist yet is created. Off (default) = error, so a typo does not create a new store."
+        },
+        "not_in": {
+          "name": "Not at",
+          "description": "Only for items without a store (\"Anywhere\"): the item does not show up in these stores' tabs (list of store names, e.g. dm)."
         }
       }
     },
@@ -184,6 +188,10 @@
         "store": {
           "name": "Store",
           "description": "Optional."
+        },
+        "all": {
+          "name": "All matches",
+          "description": "On = remove every item with this name (e.g. Cola at Aldi AND Cola \"Anywhere\"). Off = only the first one."
         }
       }
     },

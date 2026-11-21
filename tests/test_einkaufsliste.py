@@ -4173,6 +4173,37 @@ async def test_cleanup_skip_stores(hass: HomeAssistant, setup) -> None:
     assert m.as_dict()["settings"]["cleanup_skip_stores"] == []
 
 
+async def test_cleanup_pin(hass: HomeAssistant, setup) -> None:
+    """📌 Anpinnen: nur mit Schalter, angepinnte Artikel bleiben beim Aufräumen offen; Schalter aus = Pins zählen nicht."""
+    m = mgr(hass)
+    m.set_cleanup(min_age_days=0)
+    assert m.as_dict()["settings"]["pin_on"] is False  # Standard aus
+    a = m.add_item("Klopapier")
+    b = m.add_item("Brot")
+    with pytest.raises(ValueError):
+        m.pin_item(a["id"], True)  # Schalter aus → kein Anpinnen
+    res = m.set_cleanup(pin_on=True)
+    assert res["on"] and m.as_dict()["settings"]["pin_on"] is True
+    assert m._to_storage()["cleanup"]["pin_on"] is True
+    m.pin_item(a["id"], True)
+    assert a["pinned"] is True and m.log[-1]["a"] == "pin"
+    m.cleanup()
+    assert not a["checked"] and b["checked"]
+    m.set_cleanup(min_age_days=3)  # andere Einstellungen lassen den Schalter stehen
+    assert m.pin_on
+    m.set_cleanup(pin_on=False, min_age_days=0)
+    assert a.get("pinned")  # Pin bleibt gemerkt …
+    m.cleanup()
+    assert a["checked"]  # … zählt aber nicht, solange der Schalter aus ist
+    m.set_cleanup(pin_on=True)
+    c = m.add_item("Salz")
+    m.pin_item(c["id"], True)
+    m.cleanup(force=True)  # „Alles abhaken“ nimmt auch Angepinntes mit
+    assert c["checked"]
+    m.pin_item(c["id"], False)
+    assert "pinned" not in c and m.log[-1]["a"] == "unpin"
+
+
 async def test_cleanup_settings_ws(hass, setup, hass_ws_client) -> None:
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "einkaufsliste/cleanup/settings", "on": False})
@@ -4782,6 +4813,59 @@ async def test_geschaeft_egal_wo_abschalten(hass, setup, hass_ws_client) -> None
     await client.send_json({"id": 2, "type": "einkaufsliste/group/update", "kind": "stores", "group_id": aldi, "no_any": False})
     assert (await client.receive_json())["success"]
     assert "no_any" not in m.store_by_id(aldi)
+
+
+async def test_nicht_bei_pro_artikel(hass, setup, hass_ws_client) -> None:
+    """🚫 „Nicht bei …“: ein „Egal wo“-Artikel fehlt nur in den abgehakten Geschäften (Issue #45)."""
+    from custom_components.einkaufsliste.guest import visible_items  # noqa: PLC0415
+
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi, netto = m.find_store("Aldi"), m.find_store("Netto")
+    # Aktion: Geschäftsnamen -> IDs
+    res = await hass.services.async_call(
+        DOMAIN, "add_item", {"name": "Cola", "not_in": ["Aldi"]}, blocking=True, return_response=True
+    )
+    cola = m.get_item(res["item"]["id"])
+    assert cola["store_id"] is None and cola["not_in"] == [aldi]
+    assert not m.shows_in_store(cola, m.store_by_id(aldi))
+    assert m.shows_in_store(cola, m.store_by_id(netto))
+    milch = m.add_item("Milch")
+    assert "not_in" not in milch and m.shows_in_store(milch, m.store_by_id(aldi))
+    # 🎫 Gast-Link für Aldi sieht Milch, aber keine Cola
+    names = [i["name"] for i in visible_items(m, {"store_id": aldi, "created": ""})]
+    assert "Milch" in names and "Cola" not in names
+    # ✏️ Bearbeiten per WebSocket: Netto dazu, Unsinn fliegt raus
+    await client.send_json({"id": 1, "type": "einkaufsliste/item/update", "item_id": cola["id"], "not_in": [netto, "gibtsnicht", aldi]})
+    assert (await client.receive_json())["success"]
+    assert cola["not_in"] == [netto, aldi]  # Reihenfolge wie die Geschäfte
+    # leer = Feld ganz weg
+    await client.send_json({"id": 2, "type": "einkaufsliste/item/update", "item_id": cola["id"], "not_in": []})
+    assert (await client.receive_json())["success"]
+    assert "not_in" not in cola
+    # festes Geschäft: „Nicht bei …“ verschwindet
+    m.update_item(cola["id"], not_in=[aldi])
+    m.update_item(cola["id"], store_id=netto)
+    assert "not_in" not in cola
+    # Geschäft gelöscht: wird aus „Nicht bei …“ gestrichen
+    m.update_item(cola["id"], store_id=None, not_in=[aldi, netto])
+    m.remove_group("stores", aldi)
+    assert cola["not_in"] == [netto]
+    # Tippfehler im Geschäftsnamen = Fehler
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(DOMAIN, "add_item", {"name": "Wasser", "not_in": ["Gibtsnicht"]}, blocking=True)
+
+
+async def test_remove_item_alle_treffer(hass, setup) -> None:
+    """🧹 remove_item mit all: true löscht jeden Artikel mit dem Namen, ohne all nur den ersten."""
+    m = mgr(hass)
+    m.add_item("Cola", store_id=m.find_store("Aldi"))
+    m.add_item("Cola")
+    m.add_item("Cola", store_id=m.find_store("Netto"))
+    await hass.services.async_call(DOMAIN, "remove_item", {"name": "Cola"}, blocking=True)
+    assert sum(i["name"] == "Cola" for i in m.items) == 2
+    await hass.services.async_call(DOMAIN, "remove_item", {"name": "cola", "all": True}, blocking=True)
+    assert not any(i["name"] == "Cola" for i in m.items)
 
 
 async def test_geschaeft_nicht_unter_alle(hass, setup, hass_ws_client) -> None:

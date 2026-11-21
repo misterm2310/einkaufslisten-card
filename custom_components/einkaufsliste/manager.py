@@ -713,13 +713,19 @@ class EinkaufslisteManager:
         ids = (self.cleanup_cfg or {}).get("skip_stores") or []
         return [s for s in ids if self.store_by_id(s)]
 
+    @property
+    def pin_on(self) -> bool:
+        """📌 Anpinnen erlaubt (Standard: aus). Aus = Pins bleiben gespeichert, zählen aber nicht."""
+        return bool((self.cleanup_cfg or {}).get("pin_on", False))
+
     def set_cleanup(
         self, on: bool | None = None, weekday: int | None = None, time: str | None = None, min_age_days: int | None = None,
-        skip_stores: list[str] | None = None,
+        skip_stores: list[str] | None = None, pin_on: bool | None = None,
     ) -> dict[str, Any]:
-        """🧹 Aufräumen in der Karte einstellen: an/aus, Wochentag, Uhrzeit, Mindestalter, ausgenommene Geschäfte (gilt für alle)."""
+        """🧹 Aufräumen in der Karte einstellen: an/aus, Wochentag, Uhrzeit, Mindestalter, ausgenommene Geschäfte, 📌 Anpinnen (gilt für alle)."""
         cfg = {
             "skip_stores": self.cleanup_skip_stores,
+            "pin_on": self.pin_on,
             "on": self.cleanup_on,
             CONF_CLEANUP_WEEKDAY: self.cleanup_weekday,
             CONF_CLEANUP_TIME: "%02d:%02d:00" % self.cleanup_time,
@@ -744,6 +750,8 @@ class EinkaufslisteManager:
             cfg[CONF_MIN_AGE_DAYS] = int(min_age_days)
         if skip_stores is not None:
             cfg["skip_stores"] = [s for s in dict.fromkeys(skip_stores) if self.store_by_id(s)]
+        if pin_on is not None:
+            cfg["pin_on"] = bool(pin_on)
         if on is not None:
             if on and not cfg["on"]:
                 self.last_cleanup = _now_iso()  # frisch eingeschaltet: nicht sofort Verpasstes nachholen
@@ -1115,6 +1123,7 @@ class EinkaufslisteManager:
                 "min_age_days": self.min_age_days,
                 "cleanup_on": self.cleanup_on,
                 "cleanup_skip_stores": self.cleanup_skip_stores,
+                "pin_on": self.pin_on,
                 "view_prefs": self.view_prefs,
                 "next_cleanup": self.next_cleanup().isoformat(),
                 "pin": bool(self.pin_hash),
@@ -2847,6 +2856,20 @@ class EinkaufslisteManager:
         self._changed()
         return item
 
+    @callback
+    def pin_item(self, item_id: str, pinned: bool) -> dict[str, Any]:
+        """📌 Anpinnen: der Artikel wird beim automatischen Aufräumen übersprungen (nur wenn ⚙️ → Aufräumen → Anpinnen an ist)."""
+        if pinned and not self.pin_on:
+            raise ValueError("Anpinnen ist aus – einschalten unter ⚙️ → Aufräumen.")
+        item = self.get_item(item_id)
+        if pinned:
+            item["pinned"] = True
+        else:
+            item.pop("pinned", None)
+        self._log("pin" if pinned else "unpin", item, "angepinnt" if pinned else "nicht mehr angepinnt")
+        self._changed()
+        return item
+
     GONE_DAYS = 2  # ❌ so viele Tage bleibt „war nicht da“ sichtbar, dann wird ohne Kauf abgehakt
 
     @callback
@@ -3063,6 +3086,31 @@ class EinkaufslisteManager:
             raise ValueError(f"„{name}“ steht nicht auf der Liste.")
         matches.sort(key=lambda i: i["checked"])  # offene zuerst
         return matches[0]
+
+    def find_items(self, name: str, store_id: str | None = None) -> list[dict[str, Any]]:
+        """🧹 Für remove_item mit all: ALLE Artikel mit diesem Namen (optional nur in einem Geschäft)."""
+        wanted = (_clean(name) or "").lower()
+        matches = [
+            i for i in self.items
+            if i["name"].lower() == wanted and (store_id is None or i["store_id"] == store_id)
+        ]
+        if not matches:
+            raise ValueError(f"„{name}“ steht nicht auf der Liste.")
+        return matches
+
+    def _clean_not_in(self, value: Any) -> list[str]:
+        """🚫 „Nicht bei …“: nur echte Geschäfts-IDs, jede nur einmal, Reihenfolge wie die Geschäfte."""
+        wanted = {str(v) for v in (value or []) if v}
+        return [st["id"] for st in self.stores if st["id"] in wanted]
+
+    def shows_in_store(self, item: dict[str, Any], store: dict[str, Any] | None) -> bool:
+        """🛒 Steht der Artikel im Reiter dieses Geschäfts? Eigenes Geschäft = ja; „Egal wo“ = ja,
+        außer das Geschäft blendet „Egal wo“ ganz aus (no_any) oder der Artikel sagt „🚫 Nicht bei …“ dieses Geschäft."""
+        if store is None:
+            return True
+        if item.get("store_id"):
+            return item["store_id"] == store["id"]
+        return not store.get("no_any") and store["id"] not in (item.get("not_in") or [])
 
     def guess_category(self, name: str) -> str | None:
         return guess_category(name, self.categories)
@@ -3355,8 +3403,11 @@ class EinkaufslisteManager:
         added_by_id: str | None = None,
         from_offer: bool = False,
         own_note: str | None = None,
+        not_in: list[str] | None = None,
     ) -> dict[str, Any]:
         """Artikel hinzufügen.
+
+        not_in: 🚫 nur bei „Egal wo“ – in diesen Geschäften (IDs) steht der Artikel nicht (None = nicht ändern).
 
         Gibt es schon einen Artikel mit gleichem Namen, gleicher Notiz, gleichem
         „für wen“ und gleichem Geschäft, wird kein zweiter angelegt: Ist er abgehakt, kommt er wieder
@@ -3423,6 +3474,8 @@ class EinkaufslisteManager:
                 )
             if category_id:
                 existing["category_id"] = category_id
+            if not_in is not None and existing.get("store_id") is None:
+                self._set_not_in(existing, not_in)
             if own_note is not None and recipe_id is None:
                 if own:
                     existing["own_note"] = own
@@ -3461,6 +3514,8 @@ class EinkaufslisteManager:
             "checked_by": None,
             "checked_at": None,
         }
+        if store_id is None and not_in:
+            self._set_not_in(item, not_in)
         self.items.append(item)
         self._log("add", item, who=added_by)
         self._remember(item)
@@ -3468,6 +3523,14 @@ class EinkaufslisteManager:
             self._changed()
         self._fire_added(item, False)
         return item
+
+    def _set_not_in(self, item: dict[str, Any], value: Any) -> None:
+        """🚫 „Nicht bei …“ setzen – leer = Feld ganz weg (alte Artikel bleiben unverändert)."""
+        clean = self._clean_not_in(value)
+        if clean:
+            item["not_in"] = clean
+        else:
+            item.pop("not_in", None)
 
     @callback
     def update_item(self, item_id: str, **fields: Any) -> dict[str, Any]:
@@ -3524,6 +3587,10 @@ class EinkaufslisteManager:
             item["quantity"] = norm_qty(_clean(fields["quantity"]))
         if "own_note" in fields:
             item["own_note"] = _own(fields["own_note"])
+        if "not_in" in fields:
+            self._set_not_in(item, fields["not_in"])
+        if item.get("store_id"):  # 🚫 festes Geschäft: „Nicht bei …“ ergibt keinen Sinn mehr
+            item.pop("not_in", None)
         key = item["name"].lower()
         if key in self.history:
             self.history[key].update(store_id=item["store_id"], category_id=item["category_id"])
@@ -3564,6 +3631,10 @@ class EinkaufslisteManager:
             return
         if moved:
             parts.append(f"Geschäft {store_name(before.get('store_id'))} → {store_name(item.get('store_id'))}")
+        if (before.get("not_in") or []) != (item.get("not_in") or []) and not item.get("store_id"):
+            def names(ids: list[str] | None) -> str:
+                return ", ".join(store_name(x) for x in ids or []) or "–"
+            parts.append(f"Nicht bei {names(before.get('not_in'))} → {names(item.get('not_in'))}")
         if parts:
             self._log("edit", item, " · ".join(parts))
 
@@ -4459,9 +4530,10 @@ class EinkaufslisteManager:
         now = _now_iso()
         keep: list[dict[str, Any]] = []
         skip = set() if force else set(self.cleanup_skip_stores)  # 🏬 ausgenommene Geschäfte bleiben (außer bei „Alles abhaken“)
+        pins = self.pin_on and not force  # 📌 angepinnte Artikel bleiben (außer bei „Alles abhaken“ oder wenn Anpinnen aus ist)
         for item in self.items:
             keep.append(item)
-            if item["checked"] or (skip and item.get("store_id") in skip):
+            if item["checked"] or (skip and item.get("store_id") in skip) or (pins and item.get("pinned")):
                 continue
             # „war aus“ startet die Frist neu: gezählt wird ab dem späteren Datum
             added = max(filter(None, (_local_date(item.get("added_at")), _local_date(item.get("out_at")))), default=ref_date)
@@ -5447,6 +5519,8 @@ class EinkaufslisteManager:
         for item in self.items:
             if item[field] == group_id:
                 item[field] = None
+            if kind == "stores" and group_id in (item.get("not_in") or []):  # 🚫 Geschäft weg: aus „Nicht bei …“ streichen
+                self._set_not_in(item, [x for x in item["not_in"] if x != group_id])
         for hist in list(self.history.values()) + list(self.barcodes.values()):
             if hist.get(field) == group_id:
                 hist[field] = None

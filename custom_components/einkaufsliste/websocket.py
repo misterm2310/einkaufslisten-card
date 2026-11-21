@@ -77,6 +77,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_pin_check,
         ws_item_out,
         ws_item_gone,
+        ws_item_pin,
         ws_recipe_import_file,
         ws_recipe_parse_file,
         ws_recipe_heat_guess,
@@ -274,6 +275,7 @@ def ws_subscribe(hass, connection, msg):
         vol.Optional("own_note"): OPT_STR,  # ✏️ Eigene Notiz
         vol.Optional("for_whom"): OPT_STR,
         vol.Optional("barcode"): OPT_STR,
+        vol.Optional("not_in"): [str],  # 🚫 „Nicht bei …“ (Geschäfts-IDs, nur bei „Egal wo“)
     }
 )
 @callback
@@ -292,6 +294,7 @@ def ws_item_add(hass, connection, msg):
             added_by=who,
             barcode=msg.get("barcode"),
             added_by_id=connection.user.id if connection.user else None,
+            not_in=msg.get("not_in"),
         )
         _auto_photo(hass, m, msg.get("barcode"), product_key(item["name"], item.get("note")))
         return item
@@ -319,13 +322,14 @@ def _auto_photo(hass, manager, code, name) -> None:
         vol.Optional("note"): OPT_STR,
         vol.Optional("own_note"): OPT_STR,  # ✏️ Eigene Notiz
         vol.Optional("for_whom"): OPT_STR,
+        vol.Optional("not_in"): [str],  # 🚫 „Nicht bei …“ (Geschäfts-IDs, nur bei „Egal wo“)
         vol.Optional("aliases"): [str],  # 🏷️ Spitznamen des Produkts
         vol.Optional("everywhere"): bool,  # 🔁 umbenennen auch in Katalog, Rezepten, Favoriten
     }
 )
 @callback
 def ws_item_update(hass, connection, msg):
-    fields = _pick(msg, "name", "store_id", "category_id", "quantity", "note", "own_note", "for_whom", "aliases", "everywhere")
+    fields = _pick(msg, "name", "store_id", "category_id", "quantity", "note", "own_note", "for_whom", "aliases", "everywhere", "not_in")
     _run(hass, connection, msg, lambda m: m.update_item(msg["item_id"], **fields))
 
 
@@ -388,12 +392,13 @@ def ws_item_remove(hass, connection, msg):
         vol.Optional("time"): str,
         vol.Optional("min_age_days"): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
         vol.Optional("skip_stores"): [str],
+        vol.Optional("pin_on"): bool,
     }
 )
 @callback
 def ws_cleanup_settings(hass, connection, msg):
-    """🧹 Aufräumen in der Karte einstellen: an/aus, Tag, Uhrzeit, Mindestalter, ausgenommene Geschäfte (gilt für alle)."""
-    _run(hass, connection, msg, lambda m: m.set_cleanup(msg.get("on"), msg.get("weekday"), msg.get("time"), msg.get("min_age_days"), msg.get("skip_stores")))
+    """🧹 Aufräumen in der Karte einstellen: an/aus, Tag, Uhrzeit, Mindestalter, ausgenommene Geschäfte, 📌 Anpinnen (gilt für alle)."""
+    _run(hass, connection, msg, lambda m: m.set_cleanup(msg.get("on"), msg.get("weekday"), msg.get("time"), msg.get("min_age_days"), msg.get("skip_stores"), msg.get("pin_on")))
 
 
 @websocket_api.websocket_command(
@@ -1112,6 +1117,15 @@ def ws_purchases_remove(hass, connection, msg):
 @callback
 def ws_item_out(hass, connection, msg):
     _run(hass, connection, msg, lambda m: m.mark_out(msg["item_id"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "einkaufsliste/item/pin", vol.Required("item_id"): str, vol.Required("pinned"): bool}
+)
+@callback
+def ws_item_pin(hass, connection, msg):
+    """📌 Artikel anpinnen/lösen – bleibt beim automatischen Aufräumen offen."""
+    _run(hass, connection, msg, lambda m: m.pin_item(msg["item_id"], msg["pinned"]))
 
 
 @websocket_api.websocket_command(

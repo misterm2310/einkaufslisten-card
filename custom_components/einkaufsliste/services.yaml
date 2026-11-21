@@ -29,6 +29,11 @@ add_item:
       example: "Oma"
       selector:
         text:
+    not_in:
+      example: "dm"
+      selector:
+        text:
+          multiple: true
     create_missing:
       default: false
       selector:
@@ -141,6 +146,10 @@ remove_item:
       example: "Aldi"
       selector:
         text:
+    all:
+      default: false
+      selector:
+        boolean:
 
 add_recipe:
   fields:

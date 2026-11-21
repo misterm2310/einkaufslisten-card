@@ -68,6 +68,10 @@
         "create_missing": {
           "name": "Fehlendes anlegen",
           "description": "An = gibt es Geschäft oder Kategorie noch nicht, werden sie neu angelegt. Aus (Standard) = Fehler, damit ein Tippfehler kein neues Geschäft macht."
+        },
+        "not_in": {
+          "name": "Nicht bei",
+          "description": "Nur bei Artikeln ohne Geschäft („Egal wo“): In den Reitern dieser Geschäfte steht der Artikel nicht (Liste von Geschäftsnamen, z. B. dm)."
         }
       }
     },
@@ -184,6 +188,10 @@
         "store": {
           "name": "Geschäft",
           "description": "Optional."
+        },
+        "all": {
+          "name": "Alle Treffer",
+          "description": "An = jeden Artikel mit diesem Namen löschen (z. B. Cola bei Aldi UND Cola „Egal wo“). Aus = nur den ersten."
         }
       }
     },

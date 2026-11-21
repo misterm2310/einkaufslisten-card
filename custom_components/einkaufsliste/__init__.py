@@ -43,6 +43,7 @@ SCHEMA_ADD = vol.Schema(
         vol.Optional("note"): cv.string,
         vol.Optional("for_whom"): cv.string,
         vol.Optional("added_by"): cv.string,
+        vol.Optional("not_in"): vol.All(cv.ensure_list, [cv.string]),  # 🚫 „Nicht bei …“ (Geschäftsnamen, nur bei „Egal wo“)
         # 🆕 Fehlendes Geschäft / fehlende Kategorie gleich mit anlegen (nur auf Wunsch – sonst bleibt der Tippfehler-Schutz)
         vol.Optional("create_missing", default=False): cv.boolean,
     }
@@ -74,6 +75,13 @@ SCHEMA_GROUP = vol.Schema(
 )
 SCHEMA_BY_NAME = vol.Schema(
     {vol.Required("name"): cv.string, vol.Optional("store"): cv.string}
+)
+SCHEMA_REMOVE = vol.Schema(
+    {
+        vol.Required("name"): cv.string,
+        vol.Optional("store"): cv.string,
+        vol.Optional("all", default=False): cv.boolean,  # 🧹 alle Treffer löschen statt nur den ersten
+    }
 )
 SCHEMA_RECIPE = vol.Schema(
     {vol.Required("name"): cv.string, vol.Optional("added_by"): cv.string}
@@ -214,6 +222,8 @@ def _register_services(hass: HomeAssistant) -> None:
                     m.ensure_group("stores", call.data["store"])
                 if "category" in call.data:
                     m.ensure_group("categories", call.data["category"])
+                for nm in call.data.get("not_in") or []:
+                    m.ensure_group("stores", nm)
             store_id = (
                 m.find_store(call.data["store"]) if "store" in call.data else hist.get("store_id")
             )
@@ -227,6 +237,8 @@ def _register_services(hass: HomeAssistant) -> None:
             if m.category_by_id(cat_id) is None:
                 cat_id = m.guess_category(name) if "category" not in call.data else None
             who = call.data.get("added_by") or await _caller_name(hass, call)
+            # 🚫 „Nicht bei …“: Geschäftsnamen -> IDs (Tippfehler = Fehlermeldung, wie beim Geschäft)
+            not_in = [m.find_store(nm) for nm in call.data["not_in"]] if "not_in" in call.data else None
             item = m.add_item(
                 name,
                 store_id=store_id,
@@ -235,6 +247,7 @@ def _register_services(hass: HomeAssistant) -> None:
                 note=call.data.get("note"),
                 for_whom=call.data.get("for_whom"),
                 added_by=who,
+                not_in=not_in,
             )
         except ValueError as err:
             raise HomeAssistantError(str(err)) from err
@@ -300,8 +313,12 @@ def _register_services(hass: HomeAssistant) -> None:
         m = _get_manager(hass)
         try:
             store_id = m.find_store(call.data.get("store"))
-            item = m.find_item(call.data["name"], store_id)
-            m.remove_item(item["id"])
+            if call.data.get("all"):  # 🧹 alle Treffer (z. B. Cola bei Aldi UND Cola „Egal wo“)
+                for item in m.find_items(call.data["name"], store_id):
+                    m.remove_item(item["id"])
+            else:
+                item = m.find_item(call.data["name"], store_id)
+                m.remove_item(item["id"])
         except ValueError as err:
             raise HomeAssistantError(str(err)) from err
 
@@ -334,7 +351,7 @@ def _register_services(hass: HomeAssistant) -> None:
             DOMAIN, svc, func, SCHEMA_GROUP, supports_response=SupportsResponse.OPTIONAL
         )
     hass.services.async_register(DOMAIN, "check_item", check_item, SCHEMA_BY_NAME)
-    hass.services.async_register(DOMAIN, "remove_item", remove_item, SCHEMA_BY_NAME)
+    hass.services.async_register(DOMAIN, "remove_item", remove_item, SCHEMA_REMOVE)
     hass.services.async_register(
         DOMAIN,
         "add_recipe",

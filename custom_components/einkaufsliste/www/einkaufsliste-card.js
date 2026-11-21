@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.29-beta.4";
+const EL_VERSION = "2.76.29-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.28"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -348,7 +348,7 @@ const EL_HELP = {
     "Who did what and when, with filters (person, store, action), search and a symbol legend. At the top <b>📈 Often not available</b> (✖ hides an entry). How long the history is kept (7/30/90/180/365 days) you set there; “Clear history” deletes it.",
   ]],
   cleanup: ["data", [
-    "Einmal pro Woche werden alte offene Sachen <b>abgehakt</b>, gelöscht wird nichts. An/Aus, Tag, Uhrzeit und Mindestalter stellst du hier ein (gilt für alle). „Jetzt aufräumen“ und „Alles abhaken“ gehen sofort. Die Seite hat <b>Kästen zum Aufklappen</b> (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) – immer nur einer ist offen.",
+    "Einmal pro Woche werden alte offene Sachen <b>abgehakt</b>, gelöscht wird nichts. An/Aus, Tag, Uhrzeit und Mindestalter stellst du hier ein (gilt für alle). Mit „📌 Anpinnen erlauben“ bleiben einzelne Artikel für immer stehen (lange drücken → 📌 Anpinnen). „Jetzt aufräumen“ und „Alles abhaken“ gehen sofort. Die Seite hat <b>Kästen zum Aufklappen</b> (Automatisch, Von Hand, Liste löschen, Alles löschen, Werkseinstellungen) – immer nur einer ist offen.",
     "<b>🧽 Liste löschen</b> (nur Admins): Geschäft wählen, dann „Erledigte löschen“ oder „Liste leeren“. Der Katalog bleibt. <b>🧹 Alles löschen</b>: Liste und ganzer Katalog mit Fotos, Barcodes, Notizen und Favoriten – nicht rückgängig. <b>💣 Werkseinstellungen</b>: wirklich alles zurück auf Anfang (auch Geschäfte, Kategorien, Rezepte, Karten, Verbindungen; nur die PIN bleibt). Alle drei mit Sicherheitsfragen – vorher lieber eine Sicherung machen.",
   ], [
     "Once a week old open things are <b>checked off</b>, nothing is deleted. On/off, day, time and minimum age you set here (applies to everyone). “Tidy up now” and “Check off all” work at once. The page has <b>boxes you open and close</b> (automatic, by hand, delete list, delete everything, factory reset) – only one is open at a time.",
@@ -440,6 +440,14 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🏬 <b>Ausgenommene Geschäfte:</b> Im Reiter eines Geschäfts, das unter ⚙️ → Aufräumen ausgenommen ist, steht unten jetzt „🏬 Hier wird nicht automatisch aufgeräumt – alles bleibt offen“ statt gar nichts.",
+   "🏬 <b>Excluded stores:</b> in the tab of a store excluded under ⚙️ → Tidy up, the bottom line now says “🏬 No automatic tidy-up here – everything stays open” instead of nothing.", "beta.5"],
+  ["📌 <b>Anpinnen:</b> Unter ⚙️ → Aufräumen → Automatisch gibt es den Schalter „📌 Anpinnen erlauben“ (Standard aus). Ist er an, steht beim langen Drücken auf einen Artikel <b>📌 Anpinnen</b> – der Artikel bleibt dann für immer stehen, das Aufräumen überspringt ihn, und statt dem 🧹-Datum steht nur ein 📌 dran. Schalter aus = Knopf weg, alles wird wieder aufgeräumt (die Pins bleiben gemerkt).",
+   "📌 <b>Pin items:</b> under ⚙️ → Tidy up → Automatic there is a new switch “📌 Allow pinning” (off by default). When it is on, long-pressing an item shows <b>📌 Pin</b> – the item then stays forever, tidying up skips it and instead of the 🧹 date it only shows a 📌. Switch off = button gone, everything is tidied up again (pins are remembered).", "beta.5"],
+  ["🚫 <b>„Nicht bei …“ pro Artikel:</b> Beim Bearbeiten eines „Egal wo“-Artikels hakst du Geschäfte an, in denen er <b>nicht</b> stehen soll – z. B. Cola überall außer bei dm, Milch aber auch bei dm. Gilt in der Karte, im Gast-Link und in der App. Am Artikel wird aus dem „Egal wo“-Fragezeichen dann ein rotes 🚫 (wo er fehlt, zeigt der Tooltip).",
+   "🚫 <b>“Not at …” per item:</b> when editing an “Anywhere” item, tick the stores where it should <b>not</b> show up – e.g. Cola everywhere except dm, but milk at dm too. Works in the card, the guest link and the app. On the item the “Anywhere” question mark then turns into a red 🚫 (the tooltip says where).", "beta.5"],
+  ["🧹 <b>Aktionen:</b> <code>einkaufsliste.add_item</code> kennt jetzt <code>not_in</code> (Geschäftsnamen für „Nicht bei …“), <code>einkaufsliste.remove_item</code> kennt <code>all: true</code> = alle Artikel mit dem Namen löschen statt nur den ersten.",
+   "🧹 <b>Actions:</b> <code>einkaufsliste.add_item</code> now knows <code>not_in</code> (store names for “Not at …”), <code>einkaufsliste.remove_item</code> knows <code>all: true</code> = remove every item with that name instead of only the first.", "beta.5"],
   ["🕒 <b>Ladenschluss als orange Uhr:</b> In der letzten Stunde vor Ladenschluss wird nur noch die kleine 🕒 Uhr im Reiter <b>orange</b> statt des Textes „schließt 19:30“ (die Uhrzeit steht beim Draufzeigen). Hat das Geschäft zu, ist der Reiter wieder <b>grau wie früher</b>, das rote „zu“ ist weg.",
    "🕒 <b>Closing time as an orange clock:</b> in the last hour before closing only the small 🕒 clock in the tab turns <b>orange</b> instead of the text “closes 19:30” (the time shows on hover). When the store is closed, the tab is <b>grey like before</b>, the red “closed” is gone.", "beta.4"],
   ["⭐ <b>Sterne pro Person:</b> Jeder vergibt seine <b>eigenen</b> Sterne (mit dem Home-Assistant-Benutzer), am Rezept steht der <b>Durchschnitt</b>, z. B. ★★★★☆ <b>4,3</b>, beim Draufzeigen wer wie viele Sterne gab. Nochmal auf den eigenen Stern tippen = nur die eigene Bewertung weg. „Familienliebling“ sortiert nach dem Durchschnitt. Alte Sterne zählen, bis der Erste selbst bewertet.",
@@ -781,6 +789,8 @@ const LOG_ACT = {
   out: { label: "⇄ war aus", verb: "hat % als „war aus“ markiert" },
   gone: { label: "❌ war nicht da", verb: "hat % als „war nicht da“ markiert" },
   gone_done: { label: "❌ ohne Kauf erledigt", verb: "hat % ohne Kauf erledigt" },
+  pin: { label: "📌 angepinnt", verb: "hat % angepinnt" },
+  unpin: { label: "📌 nicht mehr angepinnt", verb: "hat % nicht mehr angepinnt" },
   partial: { label: "🧺 teilweise gekauft", verb: "hat einen Teil von % gekauft" },
   guest_on: { label: "🎫 Gast-Link erstellt", verb: "hat den % erstellt" },
   guest_off: { label: "🔒 Gast-Link gesperrt", verb: "hat den % gesperrt" },
@@ -3173,6 +3183,11 @@ form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 #btnFavAll ha-icon { color:#f9a825; }
 .favstar { align-self:center; font-size:13px; line-height:1; margin-left:2px; }
 .favrow { display:flex; align-items:center; gap:8px; cursor:pointer; padding:4px 2px; }
+.notinbox .notinlist { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.notin { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:16px; cursor:pointer; border:1px solid color-mix(in srgb, var(--c) 45%, transparent); font-size:.9em; }
+.notin input { width:auto; flex:none; margin:0; }
+.notin .dot { width:9px; height:9px; border-radius:50%; background:var(--c); }
+.notin:has(input:checked) { background:color-mix(in srgb, #e53935 14%, transparent); border-color:#e53935; text-decoration:line-through; }
 .favrow input { width:auto; flex:none; }
 /* 🎚️ ⭐ Favorit als Schalter (Bearbeiten + Katalog) – wie in den Einstellungen */
 .favrow:has(.swchk) { justify-content:space-between; box-sizing:border-box; min-height:42px; padding:0 12px; border:1px solid color-mix(in srgb, var(--primary-text-color, #000) 22%, transparent); border-radius:12px; background:var(--card-background-color, var(--ha-card-background, #fff)); }
@@ -4733,7 +4748,7 @@ const storePoints = (data, store) => (data?.geo?.[store?.id]?.points || []).filt
 
 // ⏳ Warteschlange für Funklöcher: wird im Handy gespeichert, damit auch ein Neustart der App nichts verliert
 const QUEUE_TYPES = new Set(["einkaufsliste/item/toggle", "einkaufsliste/item/partial", "einkaufsliste/item/add", "einkaufsliste/item/update",
-  "einkaufsliste/item/remove", "einkaufsliste/item/move", "einkaufsliste/item/out", "einkaufsliste/item/gone",
+  "einkaufsliste/item/remove", "einkaufsliste/item/move", "einkaufsliste/item/out", "einkaufsliste/item/gone", "einkaufsliste/item/pin",
   "einkaufsliste/recipe/add", "einkaufsliste/recipe/update", "einkaufsliste/recipe/rate", "einkaufsliste/recipe/remove",
   "einkaufsliste/recipe/apply", "einkaufsliste/recipe/unapply", "einkaufsliste/barcode/assign",
   "einkaufsliste/photo/set"]); // 📸 Fotos werden vorgemerkt, wenn kein Netz da ist (siehe PHOTO_QUEUE_MAX)
@@ -4831,7 +4846,7 @@ function applyQueued(data, list, hass) {
         }
         break;
       case "einkaufsliste/item/update":
-        if (it) { for (const k of ["name", "quantity", "note", "own_note", "for_whom", "store_id", "category_id"]) if (k in m) it[k] = m[k]; it._queued = true; }
+        if (it) { for (const k of ["name", "quantity", "note", "own_note", "for_whom", "store_id", "category_id", "not_in"]) if (k in m) it[k] = m[k]; it._queued = true; }
         break;
       case "einkaufsliste/item/remove":
         data.items = data.items.filter((i) => i.id !== m.item_id);
@@ -4844,6 +4859,9 @@ function applyQueued(data, list, hass) {
         break;
       case "einkaufsliste/item/gone":
         if (it) { it.gone_at = now; it.out_at = null; it._queued = true; }
+        break;
+      case "einkaufsliste/item/pin": // 📌 offline: Pin gleich zeigen
+        if (it) { if (m.pinned) it.pinned = true; else delete it.pinned; it._queued = true; }
         break;
       case "einkaufsliste/recipe/add":
         if (!(data.recipes || []).some((r) => r.id === m._tmp)) {
@@ -5910,12 +5928,19 @@ class EinkaufslisteCard extends HTMLElement {
     const t = this._activeTab;
     if (t === "all") return !this._store(item.store_id)?.not_in_all; // 🔨 z. B. Baumarkt: steht nur im eigenen Reiter
     if (t === "none") return !item.store_id;
-    return item.store_id === t || (!item.store_id && !this._store(t)?.no_any); // 🤷 „Egal wo“ gibt es in jedem Geschäft (außer dort, wo es abgeschaltet ist)
+    return this._shownIn(item, this._store(t) || { id: t });
+  }
+  // 🤷 „Egal wo“ gibt es in jedem Geschäft – außer dort, wo es abgeschaltet ist (no_any) oder der Artikel „🚫 Nicht bei …“ sagt
+  _shownIn(item, st) {
+    if (!st) return true;
+    if (item.store_id) return item.store_id === st.id;
+    return !st.no_any && !(item.not_in || []).includes(st.id);
   }
   _autoCheckDate(item) {
     const s = this._data?.settings;
     if (!s || item.checked || s.cleanup_on === false) return null; // 🧹 automatisches Aufräumen aus: kein Datum
     if (item.store_id && (s.cleanup_skip_stores || []).includes(item.store_id)) return null; // 🏬 Geschäft ist vom Aufräumen ausgenommen
+    if (item.pinned && s.pin_on) return null; // 📌 angepinnt: bleibt beim Aufräumen offen
     let d = new Date(s.next_cleanup);
     const added = new Date(Math.max(new Date(item.added_at || 0), new Date(item.out_at || 0))); // „war aus“ startet die Frist neu
     for (let i = 0; i < 60 && dayDiff(d, added) < s.min_age_days; i++) d = new Date(d.getTime() + 7 * DAY);
@@ -6233,7 +6258,7 @@ class EinkaufslisteCard extends HTMLElement {
     btnR.querySelector("ha-icon").setAttribute("icon", this._view === "recipes" ? "mdi:close" : "mdi:chef-hat");
     if (!d) { this.$("listView").hidden = true; this.$("footer").hidden = true; return; }
 
-    const open = d.items.filter((i) => !i.checked && (this._fixedStore ? i.store_id === this._fixedStore || (!i.store_id && !this._store(this._fixedStore)?.no_any) : true));
+    const open = d.items.filter((i) => !i.checked && (this._fixedStore ? this._shownIn(i, this._store(this._fixedStore) || { id: this._fixedStore }) : true));
     const cnt = this.$("count");
     cnt.hidden = open.length === 0;
     cnt.textContent = open.length;
@@ -6322,7 +6347,7 @@ class EinkaufslisteCard extends HTMLElement {
     for (const s of d.stores) {
       const closed = elStoreClosed(s), here = this._someoneAt(s), soon = !closed && elStoreSoon(s);
       // 🕒 letzte Stunde: die Uhr im Reiter wird orange (Uhrzeit im Tooltip) · zu: grau wie immer
-      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""} ${soon && elHasTimes(s) ? "soon" : ""} ${here ? "here" : ""}" ${closed ? 'title="Geschlossen"' : soon ? `title="${esc(elT("schließt"))} ${esc(soon)}"` : here ? 'title="Gerade ist jemand dort 📍"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => i.store_id === s.id || (!i.store_id && !s.no_any))}</span>${bubble((i) => i.store_id === s.id || (!i.store_id && !s.no_any), active === s.id)}</button>`);
+      parts.push(`<button class="tab ${active === s.id ? "active" : ""} ${closed ? "closed" : ""} ${soon && elHasTimes(s) ? "soon" : ""} ${here ? "here" : ""}" ${closed ? 'title="Geschlossen"' : soon ? `title="${esc(elT("schließt"))} ${esc(soon)}"` : here ? 'title="Gerade ist jemand dort 📍"' : ""} style="--c:${esc(s.color)};--tc:${elTextOn(s.color)}" data-act="tab" data-tab="${s.id}">${elHasTimes(s) ? `<ha-icon class="tclock" icon="mdi:clock-outline"></ha-icon>` : `<span class="dot"></span>`}${this._lastNear === s.id ? "📍 " : ""}${esc(s.name)} <span class="n">${openCount((i) => this._shownIn(i, s))}</span>${bubble((i) => this._shownIn(i, s), active === s.id)}</button>`);
     }
     const none = d.items.filter((i) => !i.store_id).length;
     if (none || active === "none") {
@@ -6630,9 +6655,9 @@ class EinkaufslisteCard extends HTMLElement {
     const meta = [];
     const grp = this._grpMap?.get(item.id);
     if (!v.store) { /* 🏪 Geschäft ausgeblendet */ } else if (grp && grp.length > 1) {
-      for (const g of grp) { const st = this._store(g.store_id); meta.push(st ? `<span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>` : EGAL_CHIP); }
+      for (const g of grp) { const st = this._store(g.store_id); meta.push(st ? `<span class="chip" style="--c:${esc(st.color)}">${esc(st.name)}</span>` : this._egalChip(g)); }
     } else if (this._activeTab === "all" && store) meta.push(`<span class="chip" style="--c:${esc(store.color)}">${esc(store.name)}</span>`);
-    else if (!item.store_id && this._activeTab !== "none") meta.push(EGAL_CHIP); // 🤷 überall zu haben
+    else if (!item.store_id && this._activeTab !== "none") meta.push(this._egalChip(item)); // 🤷 überall zu haben
     // Reihenfolge unter dem Namen: Geschäft · Notiz · Barcode · wer eingetragen · wer abgehakt · (Rezept, Zeit)
     if (item.note && v.note) meta.push(this._noteChip(item.name, item.note));
     if (item.own_note && v.own_note) meta.push(`<span class="inote iown" title="Eigene Notiz – bleibt beim Produkt">✏️ ${esc(item.own_note)}</span>`);
@@ -6679,7 +6704,8 @@ class EinkaufslisteCard extends HTMLElement {
         // (wer abgehakt hat, steht schon oben)
       } else {
         const auto = this._autoCheckDate(item);
-        if (auto) meta.push(broomWarn(auto) // 🔴 ab einem Werktag vorher: roter Besen
+        if (item.pinned && this._data?.settings?.pin_on && this._data.settings.cleanup_on !== false) meta.push(`<span title="Angepinnt – bleibt beim Aufräumen offen">📌</span>`);
+        else if (auto) meta.push(broomWarn(auto) // 🔴 ab einem Werktag vorher: roter Besen
           ? `<span class="broomred" title="Wird bald automatisch abgehakt – am ${fmtDay(auto)}"><ha-icon icon="mdi:broom"></ha-icon> ${fmtDay(auto)}</span>`
           : `<span title="Wird an diesem Tag automatisch abgehakt">🧹 ${fmtDay(auto)}</span>`);
       }
@@ -6711,6 +6737,7 @@ class EinkaufslisteCard extends HTMLElement {
         ${!item.checked && this._data.stores.length > 1 ? b("menu-move", "mdi:swap-horizontal", "Verschieben") : ""}
         ${b("menu-qty", "mdi:numeric", "Menge", item.quantity ? "#1e88e5" : "")}
         ${this._partMax(item) ? b("menu-part", "mdi:basket-check-outline", "Teilweise", "#43a047") : ""}
+        ${!item.checked && this._data.settings?.pin_on ? b("menu-pin", item.pinned ? "mdi:pin" : "mdi:pin-outline", item.pinned ? "Angepinnt ✓" : "Anpinnen", item.pinned ? "#e53935" : "") : ""}
         ${b("menu-cat", "mdi:shape-outline", "Kategorie", cat ? (cat.color || "#43a047") : "")}
         ${b("menu-photo", "mdi:camera-plus-outline", this._hasPhoto(pk) ? "Fotos" : "Foto", this._hasPhoto(pk) ? "#00897b" : "")}
         ${this._hasAppScanner() ? b("barcode-assign", "mdi:barcode-scan", codes ? "Barcode ✓" : "Barcode", codes ? "#8e24aa" : "") : ""}
@@ -6914,6 +6941,7 @@ class EinkaufslisteCard extends HTMLElement {
         <input class="full" id="edAliases" value="${esc(this._itemAliases(item).join(", "))}" data-orig="${esc(this._itemAliases(item).join(", "))}" placeholder="🏷️ Spitznamen, z. B. Tempos, Tempo (mit Komma)" title="Wer so etwas eintippt, landet bei diesem Produkt">
         <select id="edStore">${this._selectOptions(d.stores, item.store_id, "🛒 Egal wo")}</select>
         <select id="edCat">${this._selectOptions(d.categories, item.category_id, "📦 Ohne Kategorie")}</select>
+        ${this._notInHtml(item)}
         <label class="full favrow" title="Mit dem ⭐-Knopf unter dem Eingabefeld kommen alle Favoriten auf einmal auf die Liste"><input type="checkbox" class="swchk" id="edFav" ${this._isFav(this._pk(item.name, item.note)) ? "checked" : ""} data-orig="${this._isFav(this._pk(item.name, item.note)) ? 1 : 0}"> ⭐ Favorit</label>
         <div class="full photorow">
           <button type="button" class="btn" data-act="photo-take" data-name="${esc(this._pk(item.name, item.note))}" ${this._photoCount(this._pk(item.name, item.note)) >= 6 ? "disabled" : ""}><ha-icon icon="mdi:camera-plus-outline"></ha-icon>${this._photoCount(this._pk(item.name, item.note)) >= 6 ? "Fotos voll (6/6)" : this._hasPhoto(this._pk(item.name, item.note)) ? "Foto dazu" : "Foto"}</button>
@@ -6925,6 +6953,32 @@ class EinkaufslisteCard extends HTMLElement {
           <button type="submit" class="btn primary"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
         </div>
       </form>`;
+  }
+
+  // 🤷 „Egal wo“-Schild – mit „Nicht bei …“ wird aus dem 🤷 ein rotes 🚫 (Tooltip: wo er fehlt), kein extra Schild
+  _egalChip(item) {
+    const names = (item?.not_in || []).map((x) => this._store(x)?.name).filter(Boolean);
+    if (!names.length) return EGAL_CHIP;
+    return `<span class="chip notinchip" style="--c:#e53935" title="${EL_LANG !== "de" ? "Not at" : "Nicht bei"} ${esc(names.join(", "))}">🚫 Egal wo</span>`;
+  }
+
+  // 🚫 „Nicht bei …“: nur bei „Egal wo“ – in den abgehakten Geschäften steht der Artikel nicht im Reiter
+  _notInHtml(item) {
+    const stores = this._data?.stores || [];
+    if (!stores.length) return "";
+    const en = EL_LANG !== "de", sel = item.not_in || [];
+    return `<div class="full notinbox" id="edNotIn" ${item.store_id ? "hidden" : ""}>
+      <div class="flab"><span>🚫 ${en ? "Not at …" : "Nicht bei …"}</span><button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="${en ? "What is this?" : "Was ist das?"}" aria-label="${en ? "Explanation: Not at" : "Erklärung: Nicht bei"}">i</button></div>
+      <p class="hint fhint" hidden>${en
+        ? "Items with “Anywhere” show up in every store tab. Tick the stores where this item should <b>not</b> show up – e.g. Cola everywhere except dm. Only this item is affected; the store switch “Hide ‘Anywhere’ items” hides all of them."
+        : "Artikel mit „Egal wo“ stehen in jedem Geschäft-Reiter. Hak die Geschäfte an, in denen dieser Artikel <b>nicht</b> stehen soll – z. B. Cola überall außer bei dm. Das gilt nur für diesen Artikel; der Schalter am Geschäft („Egal wo“ hier nicht zeigen) blendet dagegen alle aus."}</p>
+      <div class="notinlist">${stores.map((st) => `<label class="notin" style="--c:${esc(st.color || "#888")}"><input type="checkbox" data-notin="${esc(st.id)}" ${sel.includes(st.id) ? "checked" : ""}><span class="dot"></span><span translate="no">${esc(st.name)}</span></label>`).join("")}</div>
+    </div>`;
+  }
+  _notInValue() {
+    const box = this.$("edNotIn");
+    if (!box || box.hidden) return null;
+    return [...box.querySelectorAll("input[data-notin]:checked")].map((x) => x.dataset.notin);
   }
 
   // ⭐ Favoriten
@@ -7624,10 +7678,11 @@ ${S(".pw.l3 .pr")}{padding:1.5px 5px;gap:7px}${S(".pw.l3 .pm")}{font-size:10.5px
     }
     if (!s || this._view !== "list") { f.hidden = true; if (this.$("footBtns")) this.$("footBtns").hidden = true; return; }
     const shop = !!this._shopMode; // 🛒 Laden-Modus: unten nichts außer „🔊 Vorlesen“ (kein „Nächstes Aufräumen“, keine Knöpfe)
-    const skipTab = s.cleanup_on !== false && (s.cleanup_skip_stores || []).includes(this._activeTab); // 🏬 Reiter eines vom Aufräumen ausgenommenen Geschäfts: keine Aufräum-Zeile
-    f.hidden = !!this._page || shop || skipTab; // „Nächstes Aufräumen“ steht nur auf der Einkaufsliste selbst, auf keiner Seite sonst
+    const skipTab = s.cleanup_on !== false && (s.cleanup_skip_stores || []).includes(this._activeTab); // 🏬 Reiter eines vom Aufräumen ausgenommenen Geschäfts: Hinweis statt Aufräum-Zeile
+    f.hidden = !!this._page || shop; // „Nächstes Aufräumen“ steht nur auf der Einkaufsliste selbst, auf keiner Seite sonst
     const next = new Date(s.next_cleanup);
-    f.innerHTML = (s.cleanup_on === false ? `<ha-icon icon="mdi:broom"></ha-icon><span>Automatisches Aufräumen ist aus</span>`
+    f.innerHTML = skipTab ? `<ha-icon icon="mdi:broom"></ha-icon><span>🏬 Hier wird nicht automatisch aufgeräumt – alles bleibt offen</span>`
+      : (s.cleanup_on === false ? `<ha-icon icon="mdi:broom"></ha-icon><span>Automatisches Aufräumen ist aus</span>`
       : `<ha-icon icon="mdi:broom"></ha-icon><span>Nächstes Aufräumen: <b>${fmtDay(next)} ${s.cleanup_time}</b> – was ${s.min_age_days} Tage oder länger drauf steht, wird abgehakt</span>`);
     // 👁️ Ansicht + 📖 Anleitung unter der Karte (Offline-App: dort in ihrer eigenen Knopfreihe neben „Abmelden“)
     const fb = this.$("footBtns");
@@ -8064,6 +8119,8 @@ ${(() => {
         <div class="btnrow"><button class="btn primary" data-act="cleanup-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button></div>
         ${(this._data.stores || []).length ? `<p class="hint"><b>Geschäfte ausnehmen:</b> Was hier an ist, wird beim automatischen Aufräumen übersprungen und bleibt offen.</p>
         ${this._data.stores.map((st) => `<button class="swline" data-act="cleanup-skip" data-id="${esc(st.id)}" aria-pressed="${(s.cleanup_skip_stores || []).includes(st.id)}"><span class="grow"><b>${esc(st.name)}</b><small>nicht aufräumen</small></span><span class="tgl"><span></span></span></button>`).join("")}` : ""}
+        ${this._swHtml("pin-toggle", !!s.pin_on, "📌 Anpinnen erlauben", "einzelne Artikel bleiben für immer stehen")}
+        <p class="hint">Ist das an, steht beim langen Drücken auf einen Artikel <b>📌 Anpinnen</b>. Angepinnte Artikel werden beim automatischen Aufräumen übersprungen und zeigen statt dem 🧹-Datum nur ein 📌. Abhaken von Hand und „Alles abhaken“ gehen weiter. Ausschalten versteckt den Knopf und lässt wieder alles aufräumen – die Pins bleiben gemerkt.</p>
         <p class="hint">Jeden ${WD_LONG[s.cleanup_weekday]} um ${s.cleanup_time} Uhr werden alle offenen Artikel abgehakt, die mindestens ${s.min_age_days} Tage auf der Liste stehen (7 = eine Woche).</p>`}`)}
         ${this._acc("clean", "hand", "mdi:broom", "#1e88e5", "Von Hand aufräumen", "Jetzt aufräumen oder alles abhaken", `
         <div class="btnrow">
@@ -14389,7 +14446,7 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
         if (!open.length && !res.note) open = this._data.items.filter((i) => !i.checked && i.name.toLowerCase() === res.name.toLowerCase());
         let pool = open;
         if (manual && store) { // Reiter: dieses Geschäft und „Egal wo“
-          pool = open.filter((i) => (!i.store_id && !store.no_any) || i.store_id === store.id);
+          pool = open.filter((i) => this._shownIn(i, store));
           if (open.length && !pool.length) return `ℹ️ ${res.name} steht nur bei einem anderen Geschäft auf der Liste`;
         } else if (manual && open.length > 1 && new Set(open.map((i) => i.store_id || "")).size > 1) {
           return `❓ ${res.name} steht bei mehreren Geschäften – bitte im Reiter des Geschäfts scannen`; // nicht auf Verdacht abhaken
@@ -14940,6 +14997,13 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
           .catch(() => {});
         break;
       }
+      case "pin-toggle": { // 📌 Anpinnen für alle erlauben / verbieten
+        const on = !this._data.settings?.pin_on;
+        this._ws({ type: "einkaufsliste/cleanup/settings", pin_on: on })
+          .then(() => { this._toast(on ? "📌 Anpinnen ist an – lange auf einen Artikel drücken" : "📌 Anpinnen ist aus – alles wird wieder normal aufgeräumt"); setTimeout(() => this._renderSettings(), 150); })
+          .catch(() => {});
+        break;
+      }
       case "cleanup-skip": { // 🏬 Geschäft vom automatischen Aufräumen ausnehmen / wieder aufnehmen
         const cur = new Set(this._data.settings?.cleanup_skip_stores || []);
         const id = el.dataset.id;
@@ -15241,6 +15305,16 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
         this._ws({ type: "einkaufsliste/guest/revoke" })
           .then(() => { this._guestNew = null; if (this._data.settings) this._data.settings.guest = null; this._toast("🔒 Gast-Link gesperrt"); if (this._guestRedraw) this._guestRedraw(); else this._renderSettings(); }).catch(() => {});
         break;
+      case "menu-pin": { // 📌 Anpinnen: bleibt beim automatischen Aufräumen offen
+        const item = this._data.items.find((i) => i.id === el.dataset.id);
+        this._menuId = null;
+        if (!item) { this._renderList(); break; }
+        const pinned = !item.pinned;
+        this._ws({ type: "einkaufsliste/item/pin", item_id: item.id, pinned })
+          .then(() => this._toast(pinned ? "📌 Angepinnt – bleibt beim Aufräumen stehen" : "📌 Nicht mehr angepinnt – wird wieder normal aufgeräumt")).catch(() => {});
+        this._renderList();
+        break;
+      }
       case "menu-part": // 🧺 „2 von 3 bekommen“
         this._menuId = null;
         this._partPick = el.dataset.id;
@@ -16636,6 +16710,11 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
 
   _onChange(e) {
     const t = e.target;
+    if (t.id === "edStore") { // 🚫 „Nicht bei …“ gibt es nur bei „Egal wo“
+      const box = this.$("edNotIn");
+      if (box) box.hidden = !!t.value;
+      return;
+    }
     if (t.id === "csvFile") {
       const file = t.files?.[0];
       t.value = "";
@@ -16794,6 +16873,7 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
         for_whom: this.$("edFor").value,
         store_id: this.$("edStore").value || null,
         category_id: this.$("edCat").value || null,
+        ...(this._notInValue() ? { not_in: this._notInValue() } : {}),
       });
       this._editing = null;
       this._renderAll();

@@ -70,6 +70,21 @@ const ids = await p.evaluate("window.__data.stores.map(s=>s.id)");
 check("Aufräum-Zeile steht bei „Alle“", await foot("all") === true);
 check("Aufräum-Zeile steht bei einem Geschäft ohne Ausnahme", await foot(ids[1]) === true);
 check("Aufräum-Zeile fehlt beim ausgenommenen Geschäft", await foot(ids[0]) === false);
+const skipHint = (tab) => p.evaluate(`(() => { const c=${card}; c._tab=${JSON.stringify(tab)}; c._renderAll(); return [...c.shadowRoot.querySelectorAll("span")].some(e=>/Hier wird nicht automatisch aufgeräumt/.test(e.textContent) && e.offsetParent!==null); })()`);
+check("🏬 Hinweis steht beim ausgenommenen Geschäft", await skipHint(ids[0]) === true);
+check("🏬 Hinweis fehlt bei „Alle“", await skipHint("all") === false);
+// 📌 Anpinnen: ohne Schalter kein Menüpunkt, mit Schalter Menüpunkt und 📌 statt 🧹-Datum
+const pinState = (on, pinned) => p.evaluate(`(() => { const c=${card}; c._tab="all"; c._data.settings.pin_on=${on}; const it=c._data.items.find(i=>i.name==="Milch"); if (${pinned}) it.pinned=true; else delete it.pinned; c._menuId=it.id; c._renderAll();
+  const row=c.shadowRoot.querySelector('.item[data-id="'+it.id+'"]')?.closest("li")||c.shadowRoot.querySelector('.item[data-id="'+it.id+'"]');
+  const menu=!!c.shadowRoot.querySelector('[data-act="menu-pin"]'); const txt=c.shadowRoot.querySelector('.item[data-id="'+it.id+'"]')?.textContent||"";
+  c._menuId=null; return { menu, pin: txt.includes("📌"), broom: txt.includes("🧹") }; })()`);
+r = await pinState(false, true);
+check("📌 Schalter aus: kein Menüpunkt, 🧹-Datum statt 📌", !r.menu && !r.pin && r.broom, JSON.stringify(r));
+r = await pinState(true, false);
+check("📌 Schalter an: Menüpunkt „Anpinnen“ da", r.menu && r.broom, JSON.stringify(r));
+r = await pinState(true, true);
+check("📌 Angepinnt: 📌 statt 🧹-Datum", r.pin && !r.broom, JSON.stringify(r));
+await p.evaluate(`(() => { const c=${card}; c._data.settings.pin_on=false; delete c._data.items.find(i=>i.name==="Milch").pinned; c._renderAll(); })()`);
 
 // 6) Emojis vorn an Knöpfen/Überschriften werden zu Linien-Symbolen, Rückfragen sind ein eigenes Fenster
 await p.evaluate(`(() => { const c=${card}; c._view="settings"; c._renderAll(); })()`);

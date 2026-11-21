@@ -156,7 +156,7 @@ def visible_items(m: EinkaufslisteManager, g: dict[str, Any]) -> list[dict[str, 
     for i in m.items:
         if i["checked"] and not (i.get("checked_by") == GUEST_NAME and str(i.get("checked_at") or "") >= since):
             continue
-        if store is not None and not (i.get("store_id") == sid or (not i.get("store_id") and not store.get("no_any"))):
+        if not m.shows_in_store(i, store):  # 🤷 „Egal wo“ nur, wo es nicht abgeschaltet ist (no_any / 🚫 Nicht bei …)
             continue
         st = m.store_by_id(i.get("store_id"))
         out.append({

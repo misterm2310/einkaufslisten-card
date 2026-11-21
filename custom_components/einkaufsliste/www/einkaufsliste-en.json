@@ -2594,5 +2594,19 @@
 "schließt {}": "closes {0}",
 "🎫 Gast-Link": "🎫 Guest link",
 "📴 Der Gast-Link geht nur mit Netz": "📴 The guest link only works online",
-"🔒 Der Gast-Link geht hier nur mit Einstellungen-PIN – leg sie in ⚙️ → App & Info → Schutz (PIN) fest.": "🔒 The guest link here only works with a settings PIN – set one in ⚙️ → App & info → Protection (PIN)."
+"🔒 Der Gast-Link geht hier nur mit Einstellungen-PIN – leg sie in ⚙️ → App & Info → Schutz (PIN) fest.": "🔒 The guest link here only works with a settings PIN – set one in ⚙️ → App & info → Protection (PIN).",
+"Anpinnen": "Pin",
+"Angepinnt ✓": "Pinned ✓",
+"📌 Anpinnen erlauben": "📌 Allow pinning",
+"einzelne Artikel bleiben für immer stehen": "single items stay forever",
+"Angepinnt – bleibt beim Aufräumen offen": "Pinned – stays open when tidying up",
+"📌 Angepinnt – bleibt beim Aufräumen stehen": "📌 Pinned – stays when tidying up",
+"📌 Nicht mehr angepinnt – wird wieder normal aufgeräumt": "📌 Unpinned – tidied up as usual again",
+"📌 Anpinnen ist an – lange auf einen Artikel drücken": "📌 Pinning is on – long-press an item",
+"📌 Anpinnen ist aus – alles wird wieder normal aufgeräumt": "📌 Pinning is off – everything is tidied up as usual again",
+"📌 angepinnt": "📌 pinned",
+"hat % angepinnt": "pinned %",
+"📌 nicht mehr angepinnt": "📌 unpinned",
+"hat % nicht mehr angepinnt": "unpinned %",
+"🏬 Hier wird nicht automatisch aufgeräumt – alles bleibt offen": "🏬 No automatic tidy-up here – everything stays open"
 }
