@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.29-beta.6";
+const EL_VERSION = "2.76.29-beta.7";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.28"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🧠 <b>„Nicht bei …“ bleibt gemerkt:</b> Die Haken gehören jetzt zum Produkt – nach dem Aufräumen oder Löschen kommt die Cola beim nächsten Eintragen wieder mit „Nicht bei Aldi“. Und abgehakt in einem Geschäft bleibt so ein Artikel „Egal wo“ (ohne Haken zieht er wie gewohnt ins Geschäft um). Soll er immer in ein Geschäft? Dann beim Bearbeiten das Geschäft wählen.",
+   "🧠 <b>“Not at …” is remembered:</b> the ticks now belong to the product – after tidying up or deleting, cola comes back with “Not at Aldi” the next time you add it. And checked off in a store, such an item stays “Anywhere” (without ticks it moves to the store as usual). Always in one store? Then pick the store when editing.", "beta.7"],
   ["🔴 <b>„Nicht bei …“ besser sichtbar:</b> Das „Egal wo“-Schild eines Artikels mit ausgenommenen Geschäften hat jetzt einen dünnen <b>roten Rand</b> (dazu das 🚫 statt Fragezeichen).",
    "🔴 <b>“Not at …” easier to spot:</b> the “Anywhere” tag of an item with excluded stores now has a thin <b>red border</b> (plus the 🚫 instead of the question mark).", "beta.6"],
   ["🏬 <b>Ausgenommene Geschäfte:</b> Im Reiter eines Geschäfts, das unter ⚙️ → Aufräumen ausgenommen ist, steht unten jetzt „🏬 Hier wird nicht automatisch aufgeräumt – alles bleibt offen“ statt gar nichts.",
@@ -4837,7 +4839,7 @@ function applyQueued(data, list, hass) {
       case "einkaufsliste/item/toggle":
         if (it) {
           it.checked = typeof m.checked === "boolean" ? m.checked : !it.checked; it.checked_at = now; it.checked_by = me; it._queued = true;
-          if (it.checked && !it.store_id && m.store_id) it.store_id = m.store_id; // 🤷 „Egal wo“ hier abgehakt
+          if (it.checked && !it.store_id && m.store_id && !(it.not_in || []).length) it.store_id = m.store_id; // 🤷 „Egal wo“ hier abgehakt (🚫 mit „Nicht bei …“ bleibt es „Egal wo“)
         }
         break;
       case "einkaufsliste/item/partial": // 🧺 teilweise gekauft: der Rest bleibt offen
@@ -6973,8 +6975,8 @@ class EinkaufslisteCard extends HTMLElement {
     return `<div class="full notinbox" id="edNotIn" ${item.store_id ? "hidden" : ""}>
       <div class="flab"><span>🚫 ${en ? "Not at …" : "Nicht bei …"}</span><button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="${en ? "What is this?" : "Was ist das?"}" aria-label="${en ? "Explanation: Not at" : "Erklärung: Nicht bei"}">i</button></div>
       <p class="hint fhint" hidden>${en
-        ? "Items with “Anywhere” show up in every store tab. Tick the stores where this item should <b>not</b> show up – e.g. Cola everywhere except dm. Only this item is affected; the store switch “Hide ‘Anywhere’ items” hides all of them."
-        : "Artikel mit „Egal wo“ stehen in jedem Geschäft-Reiter. Hak die Geschäfte an, in denen dieser Artikel <b>nicht</b> stehen soll – z. B. Cola überall außer bei dm. Das gilt nur für diesen Artikel; der Schalter am Geschäft („Egal wo“ hier nicht zeigen) blendet dagegen alle aus."}</p>
+        ? "Items with “Anywhere” show up in every store tab. Tick the stores where this item should <b>not</b> show up – e.g. Cola everywhere except dm. The ticks are remembered for the product (even after tidying up), and checked off in a store the item stays “Anywhere”. Always one store? Then pick the store above. Only this item is affected; the store switch “Hide ‘Anywhere’ items” hides all of them."
+        : "Artikel mit „Egal wo“ stehen in jedem Geschäft-Reiter. Hak die Geschäfte an, in denen dieser Artikel <b>nicht</b> stehen soll – z. B. Cola überall außer bei dm. Die Haken bleiben beim Produkt gemerkt (auch nach dem Aufräumen), und abgehakt in einem Geschäft bleibt der Artikel „Egal wo“. Immer in ein Geschäft? Dann oben das Geschäft wählen. Das gilt nur für diesen Artikel; der Schalter am Geschäft („Egal wo“ hier nicht zeigen) blendet dagegen alle aus."}</p>
       <div class="notinlist">${stores.map((st) => `<label class="notin" style="--c:${esc(st.color || "#888")}"><input type="checkbox" data-notin="${esc(st.id)}" ${sel.includes(st.id) ? "checked" : ""}><span class="dot"></span><span translate="no">${esc(st.name)}</span></label>`).join("")}</div>
     </div>`;
   }

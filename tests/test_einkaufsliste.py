@@ -4856,6 +4856,37 @@ async def test_nicht_bei_pro_artikel(hass, setup, hass_ws_client) -> None:
         await hass.services.async_call(DOMAIN, "add_item", {"name": "Wasser", "not_in": ["Gibtsnicht"]}, blocking=True)
 
 
+async def test_nicht_bei_bleibt_gemerkt(hass, setup) -> None:
+    """🚫 „Nicht bei …“ hängt am Produkt (auch nach Aufräumen/Löschen); im Geschäft abgehakt bleibt er „Egal wo“."""
+    m = mgr(hass)
+    aldi, netto = m.find_store("Aldi"), m.find_store("Netto")
+    cola = m.add_item("Cola", not_in=[aldi])
+    # ganz weg und neu eingetragen: Haken kommen aus dem Gedächtnis
+    m.remove_item(cola["id"])
+    neu = m.add_item("cola")
+    assert neu["store_id"] is None and neu["not_in"] == [aldi]
+    # Haken raus beim Bearbeiten = auch vergessen
+    m.update_item(neu["id"], not_in=[])
+    m.remove_item(neu["id"])
+    assert "not_in" not in m.add_item("Cola")
+    # im Netto-Reiter abgehakt: bleibt „Egal wo, nicht bei Aldi“, Kauf zählt für „Gibt's bei“ (ohne Vorschlag)
+    saft = m.add_item("Saft", not_in=[aldi])
+    m.set_checked(saft["id"], True, at_store=netto)
+    assert saft["store_id"] is None and saft["not_in"] == [aldi]
+    hist = m.history_for("Saft")
+    assert netto in hist.get("stores", []) and "usual" not in hist
+    # ohne Haken zieht ein „Egal wo“-Artikel wie gewohnt ins Geschäft um
+    wasser = m.add_item("Wasser")
+    m.set_checked(wasser["id"], True, at_store=netto)
+    assert wasser["store_id"] == netto
+    # Geschäft gelöscht: auch aus dem Gedächtnis gestrichen
+    tee = m.add_item("Tee", not_in=[aldi, netto])
+    m.remove_group("stores", aldi)
+    assert m.history_for("Tee")["not_in"] == [netto]
+    m.remove_item(tee["id"])
+    assert m.add_item("Tee")["not_in"] == [netto]
+
+
 async def test_remove_item_alle_treffer(hass, setup) -> None:
     """🧹 remove_item mit all: true löscht jeden Artikel mit dem Namen, ohne all nur den ersten."""
     m = mgr(hass)

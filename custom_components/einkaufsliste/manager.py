@@ -2489,8 +2489,10 @@ class EinkaufslisteManager:
         self._changed()
         return next((p for p in self.products() if p["key"] == new_key), {"key": new_key})
 
-    def _learn_store(self, name: str, store_id: str | None) -> None:
-        """Wo etwas gekauft wurde, gibt es das auch – für „Gibt's bei“ (mehrere Geschäfte pro Produkt)."""
+    def _learn_store(self, name: str, store_id: str | None, usual: bool = True) -> None:
+        """Wo etwas gekauft wurde, gibt es das auch – für „Gibt's bei“ (mehrere Geschäfte pro Produkt).
+
+        usual=False: 🚫 „Egal wo“ mit „Nicht bei …“ – zählt für „Gibt's bei“, schlägt beim Eintragen aber kein Geschäft vor."""
         if not store_id or not self.store_by_id(store_id):
             return
         hist = self.history.get((name or "").lower())
@@ -2502,6 +2504,8 @@ class EinkaufslisteManager:
         # 🧠 Wo wird es wirklich gekauft? Jedes Abhaken zählt – das Geschäft mit den meisten Haken (ab 2×) ist „meist dort“
         bought = hist.setdefault("bought", {})
         bought[store_id] = int(bought.get(store_id, 0)) + 1
+        if not usual:
+            return
         best = max(bought.items(), key=lambda kv: kv[1])
         if best[1] >= 2 and sum(1 for v in bought.values() if v == best[1]) == 1 and self.store_by_id(best[0]):
             hist["usual"] = best[0]
@@ -3196,6 +3200,7 @@ class EinkaufslisteManager:
             count=entry.get("count", 0) + 1,
             last_used=_now_iso(),
         )
+        self._remember_not_in(entry, item)
         # 📏 Einheit merken („Backpulver“ -> Pck.) – nur beim direkten Eintragen, nicht aus Rezepten,
         # und nicht, wenn sie im Katalog fest eingestellt ist
         if not item.get("recipe_id") and not entry.get("unit_fixed"):
@@ -3216,6 +3221,16 @@ class EinkaufslisteManager:
             oldest = sorted(self.history.items(), key=lambda kv: kv[1].get("last_used", ""))
             for k, _ in oldest[: len(self.history) - HISTORY_LIMIT]:
                 self.history.pop(k, None)
+
+    @staticmethod
+    def _remember_not_in(entry: dict[str, Any], item: dict[str, Any]) -> None:
+        """🚫 „Nicht bei …“ beim Produkt merken (nur bei „Egal wo“) – kommt beim nächsten Eintragen wieder mit."""
+        if item.get("recipe_id"):
+            return
+        if not item.get("store_id") and item.get("not_in"):
+            entry["not_in"] = list(item["not_in"])
+        else:
+            entry.pop("not_in", None)
 
     def _year_count(self, kind: str, item: dict[str, Any], who: str | None) -> None:
         """🎁 Jahresrückblick: nur zählen (Anzahl pro Produkt, Person, Geschäft und Monat) – keine Einzelheiten, bleibt in Home Assistant."""
@@ -3514,6 +3529,10 @@ class EinkaufslisteManager:
             "checked_by": None,
             "checked_at": None,
         }
+        if store_id is None and not_in is None and recipe_id is None:  # 🚫 nichts mitgegeben: wie beim letzten Mal
+            hist = self.history_for(name) or {}
+            if not hist.get("store_id"):
+                not_in = hist.get("not_in")
         if store_id is None and not_in:
             self._set_not_in(item, not_in)
         self.items.append(item)
@@ -3594,6 +3613,8 @@ class EinkaufslisteManager:
         key = item["name"].lower()
         if key in self.history:
             self.history[key].update(store_id=item["store_id"], category_id=item["category_id"])
+            if "not_in" in fields or "store_id" in fields:
+                self._remember_not_in(self.history[key], item)
         if "own_note" in fields:
             self._set_own_note(item["name"], item.get("note"), item.get("own_note"))
         self._log_changes(before, item)
@@ -3660,7 +3681,8 @@ class EinkaufslisteManager:
             checked = not item["checked"]
         if checked == item["checked"]:
             return item
-        if checked and item["store_id"] is None and not item.get("recipe_id") and self.store_by_id(at_store):
+        # 🚫 mit „Nicht bei …“ hast du schon entschieden („überall außer …“) – dann bleibt er „Egal wo“
+        if checked and item["store_id"] is None and not item.get("recipe_id") and not item.get("not_in") and self.store_by_id(at_store):
             old = self._find_same(item["name"], item.get("note"), item.get("for_whom"), at_store, None)
             if old is not None and old is not item and old["checked"]:
                 self.items.remove(old)  # der alte abgehakte Eintrag dort wird ersetzt
@@ -3677,7 +3699,10 @@ class EinkaufslisteManager:
         if checked:
             item.update(checked=True, checked_at=_now_iso(), checked_by=by, out_at=None)
             item.pop("gone_at", None)  # ❌ doch noch bekommen = normal gekauft
-            self._learn_store(item["name"], item.get("store_id"))  # 🏪 hier gekauft = gibt's hier
+            if item.get("store_id"):
+                self._learn_store(item["name"], item["store_id"])  # 🏪 hier gekauft = gibt's hier
+            elif item.get("not_in") and self.store_by_id(at_store):  # 🚫 bleibt „Egal wo“, der Kauf zählt trotzdem
+                self._learn_store(item["name"], at_store, usual=False)
             self._fire_bought(item, by)
         elif undo:
             # ↩️ Rückgängig: nur den Haken weg – altes Datum und Eintrager bleiben
@@ -5524,6 +5549,10 @@ class EinkaufslisteManager:
         for hist in list(self.history.values()) + list(self.barcodes.values()):
             if hist.get(field) == group_id:
                 hist[field] = None
+            if kind == "stores" and group_id in (hist.get("not_in") or []):
+                hist["not_in"] = [x for x in hist["not_in"] if x != group_id]
+                if not hist["not_in"]:
+                    hist.pop("not_in")
         for recipe in self.recipes:
             for entry_item in recipe["items"]:
                 if entry_item.get(field) == group_id:
