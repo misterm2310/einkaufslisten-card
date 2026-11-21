@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.29-beta.5";
+const EL_VERSION = "2.76.29-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.28"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🔴 <b>„Nicht bei …“ besser sichtbar:</b> Das „Egal wo“-Schild eines Artikels mit ausgenommenen Geschäften hat jetzt einen dünnen <b>roten Rand</b> (dazu das 🚫 statt Fragezeichen).",
+   "🔴 <b>“Not at …” easier to spot:</b> the “Anywhere” tag of an item with excluded stores now has a thin <b>red border</b> (plus the 🚫 instead of the question mark).", "beta.6"],
   ["🏬 <b>Ausgenommene Geschäfte:</b> Im Reiter eines Geschäfts, das unter ⚙️ → Aufräumen ausgenommen ist, steht unten jetzt „🏬 Hier wird nicht automatisch aufgeräumt – alles bleibt offen“ statt gar nichts.",
    "🏬 <b>Excluded stores:</b> in the tab of a store excluded under ⚙️ → Tidy up, the bottom line now says “🏬 No automatic tidy-up here – everything stays open” instead of nothing.", "beta.5"],
   ["📌 <b>Anpinnen:</b> Unter ⚙️ → Aufräumen → Automatisch gibt es den Schalter „📌 Anpinnen erlauben“ (Standard aus). Ist er an, steht beim langen Drücken auf einen Artikel <b>📌 Anpinnen</b> – der Artikel bleibt dann für immer stehen, das Aufräumen überspringt ihn, und statt dem 🧹-Datum steht nur ein 📌 dran. Schalter aus = Knopf weg, alles wird wieder aufgeräumt (die Pins bleiben gemerkt).",
@@ -3298,6 +3300,7 @@ input:focus, select:focus, textarea:focus { border-color:var(--primary-color,#03
   background:color-mix(in srgb, var(--c) 20%, transparent); }
 .item.done .meta .chip { background:color-mix(in srgb, var(--c) 10%, transparent); font-weight:400; }
 .meta .chip::before, .pmeta .chip::before { display:none; }
+.meta .chip.notinchip { box-shadow:inset 0 0 0 1px #e53935; } /* 🚫 „Egal wo“ mit „Nicht bei …“: roter Rand (ohne die Größe zu ändern) */
 .item { border-left:4px solid var(--cc, transparent); padding-left:0; }
 .item[style*="--rc"] { box-shadow: inset -4px 0 0 var(--rc); }
 .item .txt { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
@@ -6959,7 +6962,7 @@ class EinkaufslisteCard extends HTMLElement {
   _egalChip(item) {
     const names = (item?.not_in || []).map((x) => this._store(x)?.name).filter(Boolean);
     if (!names.length) return EGAL_CHIP;
-    return `<span class="chip notinchip" style="--c:#e53935" title="${EL_LANG !== "de" ? "Not at" : "Nicht bei"} ${esc(names.join(", "))}">🚫 Egal wo</span>`;
+    return `<span class="chip notinchip" style="--c:#888" title="${EL_LANG !== "de" ? "Not at" : "Nicht bei"} ${esc(names.join(", "))}">🚫 Egal wo</span>`;
   }
 
   // 🚫 „Nicht bei …“: nur bei „Egal wo“ – in den abgehakten Geschäften steht der Artikel nicht im Reiter
