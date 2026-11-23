@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.29";
+const EL_VERSION = "2.76.30-beta.1";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.29"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.30-beta.1"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -439,7 +439,10 @@ function elVerCmp(a, b) {
 // 🧪 „Neu in dieser Beta“: immer die höchste Beta-Nummer oben – egal, ob ein Eintrag oben oder unten eingefügt wurde
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
-const EL_BETA_NEWS = [];
+const EL_BETA_NEWS = [
+  ["🚫 <b>„Nicht bei …“ schon beim Eintragen:</b> Wählst du beim neuen Artikel <b>🤷 Egal wo</b>, steht darunter <b>🚫 Nicht bei …</b> – antippen, Geschäfte anhaken, fertig. Kein Speichern und nochmal Öffnen mehr. Kennt die Liste das Produkt schon, sind die gemerkten Haken vorbelegt.",
+   "🚫 <b>“Not at …” right when adding:</b> pick <b>🤷 Anywhere</b> for a new item and <b>🚫 Not at …</b> shows up below – tap it, tick the stores, done. No more saving and reopening. If the list already knows the product, the remembered ticks are pre-selected.", "beta.1"],
+];
 const SET_COLORS = { // 🎨 Icon-Kästchen in den Einstellungen (wie im Handy-Menü)
   stores: "#43a047", categories: "#fb8c00", persons: "#8e24aa", products: "#00897b", recipes: "#e53935",
   offers: "#d81b60", recalls: "#e65100", timernotify: "#00897b", spend: "#3949ab", cards: "#00acc1", notetpl: "#6d4c41", aicook: "#5e35b1", autoshop: "#7cb342", mascot: "#f9a825", labels: "#546e7a",
@@ -3181,6 +3184,9 @@ form.add .extras:not(:has(> :not([hidden]))) { display:none; }
 .favstar { align-self:center; font-size:13px; line-height:1; margin-left:2px; }
 .favrow { display:flex; align-items:center; gap:8px; cursor:pointer; padding:4px 2px; }
 .notinbox .notinlist { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.innotin { margin-top:6px; }
+.innotin > summary { cursor:pointer; font-size:.9em; color:var(--secondary-text-color); padding:2px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.innotin.set > summary { color:var(--error-color, #db4437); }
 .notin { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:16px; cursor:pointer; border:1px solid color-mix(in srgb, var(--c) 45%, transparent); font-size:.9em; }
 .notin input { width:auto; flex:none; margin:0; }
 .notin .dot { width:9px; height:9px; border-radius:50%; background:var(--c); }
@@ -4824,7 +4830,8 @@ function applyQueued(data, list, hass) {
           same._queued = true;
         } else if (!data.items.some((i) => i.id === m._tmp)) {
           data.items.push({ id: m._tmp, name: String(m.name || "").replace(/^./, (c) => c.toUpperCase()), quantity: m.quantity || null, note: m.note || null, own_note: m.own_note || null, for_whom: m.for_whom || null,
-            store_id: m.store_id || null, category_id: m.category_id || null, checked: false, added_by: me, added_at: now, _queued: true });
+            store_id: m.store_id || null, category_id: m.category_id || null, checked: false, added_by: me, added_at: now, _queued: true,
+            ...(!m.store_id && m.not_in?.length ? { not_in: m.not_in } : {}) });
         }
         if (m.barcode) rememberCode(data, m.name, m.note, m.barcode);
         break;
@@ -5610,6 +5617,7 @@ class EinkaufslisteCard extends HTMLElement {
               <select id="inStore" title="Geschäft"></select>
               <select id="inCat" title="Kategorie"></select>
             </div>
+            <details class="notinbox innotin" id="inNotIn" hidden><summary id="inNotInSum"></summary><div class="notinlist" id="inNotInList"></div></details>
             <datalist id="hist"></datalist>
             <input type="file" id="newPhotoFile" accept="image/*" hidden>
             <input type="file" id="photoFile" accept="image/*" hidden>
@@ -6397,7 +6405,7 @@ class EinkaufslisteCard extends HTMLElement {
       st.value = this._defaultStore();
       this._lastTab = tab;
     } else if (prevStore === "~none" || d.stores.some((s) => s.id === prevStore)) st.value = prevStore;
-    if (d.categories.some((c) => c.id === prevCat)) ct.value = prevCat;
+    if (d.categories.some((c) => c.id === prevCat)) ct.value = prevCat;    this._syncInNotIn(); // 🚫 erst jetzt steht das Geschäft fest
   }
 
   // 🔎 Eigene Vorschläge beim Tippen (datalist klappt in der HA-App am Handy nicht)
@@ -6814,6 +6822,52 @@ class EinkaufslisteCard extends HTMLElement {
         </div>
         <button class="iconbtn" data-act="qty-done" title="Fertig"><ha-icon icon="mdi:check"></ha-icon></button>
       </div>`;
+  }
+
+  // 🚫 „Nicht bei …“ schon beim Eintragen – nur bei „🤷 Egal wo“, zugeklappt, Haken wie beim Bearbeiten.
+  // Nicht angefasst = nichts mitschicken (dann nimmt Home Assistant die gemerkten Haken vom Produkt).
+  _syncInNotIn() {
+    const box = this.$("inNotIn");
+    if (!box) return;
+    const stores = this._data?.stores || [];
+    const show = !this._fixedStore && this._formMode !== "recipe" && this.$("inStore")?.value === "~none" && stores.length > 0;
+    box.hidden = !show;
+    if (!show) return;
+    const list = this.$("inNotInList");
+    const key = stores.map((st) => `${st.id}:${st.name}:${st.color || ""}`).join("|");
+    if (list.dataset.key !== key) { // 🏪 Geschäfte geändert: Liste neu bauen, Haken behalten
+      const keep = new Set(this._inNotInIds());
+      list.innerHTML = stores.map((st) => `<label class="notin" style="--c:${esc(st.color || "#888")}"><input type="checkbox" data-innotin="${esc(st.id)}" ${keep.has(st.id) ? "checked" : ""}><span class="dot"></span><span translate="no">${esc(st.name)}</span></label>`).join("");
+      list.dataset.key = key;
+    }
+    if (!this._inNotInTouched) { // 🧠 bekanntes Produkt: gemerkte Haken vorbelegen
+      const name = this.$("inName")?.value.trim().toLowerCase();
+      const hist = name ? this._data?.history?.find((x) => String(x.name || "").toLowerCase() === name) : null;
+      const pre = new Set(hist && !hist.store_id ? hist.not_in || [] : []);
+      for (const cb of list.querySelectorAll("input[data-innotin]")) cb.checked = pre.has(cb.dataset.innotin);
+    }
+    this._inNotInSummary();
+  }
+
+  _inNotInIds() {
+    return [...(this.$("inNotInList")?.querySelectorAll("input[data-innotin]:checked") || [])].map((x) => x.dataset.innotin);
+  }
+
+  _inNotInSummary() {
+    const sum = this.$("inNotInSum");
+    if (!sum) return;
+    const en = EL_LANG !== "de";
+    const names = this._inNotInIds().map((x) => this._store(x)?.name).filter(Boolean);
+    sum.textContent = `🚫 ${en ? "Not at …" : "Nicht bei …"}${names.length ? ` ${names.join(", ")}` : ""}`;
+    sum.title = en ? "Tick the stores where this item should not show up" : "Hak die Geschäfte an, in denen dieser Artikel nicht stehen soll";
+    this.$("inNotIn").classList.toggle("set", names.length > 0);
+  }
+
+  _resetInNotIn() {
+    this._inNotInTouched = false;
+    const box = this.$("inNotIn");
+    if (box) box.open = false;
+    for (const cb of this.$("inNotInList")?.querySelectorAll("input[data-innotin]") || []) cb.checked = false;
   }
 
   _inStore() {
@@ -11655,6 +11709,7 @@ ${(() => {
     this._storeManual = false;
     this._qtyUnit = null;
     this._unitMore = false;
+    this._resetInNotIn();
     this._updateNewPhotoBtn();
     this._updateTools();
     this._renderList();
@@ -11765,6 +11820,7 @@ ${(() => {
   }
 
   _updateTools() {
+    this._syncInNotIn();
     this._renderLastQty();
     this._renderNoteChips();
     const clear = this.$("tClear");
@@ -14601,6 +14657,7 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
       if (v) msg[key] = v;
     }
     if (this._pendingBarcode) { msg.barcode = this._pendingBarcode; msg.via = "scan"; }
+    if (!msg.store_id && this._inNotInTouched && !this.$("inNotIn").hidden) msg.not_in = this._inNotInIds(); // 🚫 selbst angehakt
     if (!msg.quantity && this._qtyOff) msg.quantity = "1";
     this._qtyOff = false;
     if (!msg.quantity) { const sp = splitQty(name); if (sp.qty) { msg.name = sp.name; msg.quantity = sp.bare ? sp.num : sp.qty; } }
@@ -14643,6 +14700,7 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
       this._pendingBarcode = null;
       this._qtyUnit = null;
       this._unitMore = false;
+      this._resetInNotIn();
       for (const id of ["qtyBox", "inQty", "inNote", "inOwn", "forBox"]) this.$(id).hidden = true;
       this._updateTools();
       this._renderSuggest();
@@ -16708,6 +16766,11 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
 
   _onChange(e) {
     const t = e.target;
+    if (t.dataset?.innotin) { // 🚫 „Nicht bei …“ im Eintragen-Formular selbst angehakt
+      this._inNotInTouched = true;
+      this._inNotInSummary();
+      return;
+    }
     if (t.id === "edStore") { // 🚫 „Nicht bei …“ gibt es nur bei „Egal wo“
       const box = this.$("edNotIn");
       if (box) box.hidden = !!t.value;

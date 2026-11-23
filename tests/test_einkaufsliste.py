@@ -4856,6 +4856,29 @@ async def test_nicht_bei_pro_artikel(hass, setup, hass_ws_client) -> None:
         await hass.services.async_call(DOMAIN, "add_item", {"name": "Wasser", "not_in": ["Gibtsnicht"]}, blocking=True)
 
 
+async def test_nicht_bei_beim_anlegen(hass, setup, hass_ws_client) -> None:
+    """🚫 „Nicht bei …“ gleich beim Eintragen (WebSocket item/add, Nachfrage in Issue #45)."""
+    client = await hass_ws_client(hass)
+    m = mgr(hass)
+    aldi, netto = m.find_store("Aldi"), m.find_store("Netto")
+    await client.send_json({"id": 1, "type": "einkaufsliste/item/add", "name": "Cola", "store_id": None, "not_in": [aldi]})
+    res = await client.receive_json()
+    assert res["success"], res
+    cola = m.get_item(res["result"]["id"])
+    assert cola["store_id"] is None and cola["not_in"] == [aldi]
+    assert not m.shows_in_store(cola, m.store_by_id(aldi)) and m.shows_in_store(cola, m.store_by_id(netto))
+    # gelöscht und neu eingetragen ohne Haken-Angabe: gemerkte Haken kommen wieder
+    m.remove_item(cola["id"])
+    await client.send_json({"id": 2, "type": "einkaufsliste/item/add", "name": "Cola", "store_id": None})
+    res = await client.receive_json()
+    assert m.get_item(res["result"]["id"])["not_in"] == [aldi]
+    # selbst alle Haken weggenommen (leere Liste): dann wirklich überall
+    m.remove_item(res["result"]["id"])
+    await client.send_json({"id": 3, "type": "einkaufsliste/item/add", "name": "Cola", "store_id": None, "not_in": []})
+    res = await client.receive_json()
+    assert "not_in" not in m.get_item(res["result"]["id"])
+
+
 async def test_nicht_bei_bleibt_gemerkt(hass, setup) -> None:
     """🚫 „Nicht bei …“ hängt am Produkt (auch nach Aufräumen/Löschen); im Geschäft abgehakt bleibt er „Egal wo“."""
     m = mgr(hass)

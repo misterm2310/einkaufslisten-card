@@ -857,7 +857,7 @@ r = await p.evaluate(() => { const c=document.querySelector('#c1'); const h=c._n
   return { nos }; });
 r.beta = /const EL_VERSION = "[^"]*-beta/.test(fs.readFileSync(path.join(root, "custom_components/einkaufsliste/www/einkaufsliste-card.js"), "utf8"));
 // Offizielle Version (ohne „-beta“): kein Beta-Kasten, dann nur prüfen, dass auch keine Beta-Nummern auftauchen
-if (r.beta) check("🧪 Beta-Kasten: neueste Beta oben", r.nos.length > 1 && r.nos.every((n,i)=>i===0 || n<=r.nos[i-1]), JSON.stringify(r));
+if (r.beta) check("🧪 Beta-Kasten: neueste Beta oben", r.nos.length >= 1 && r.nos.every((n,i)=>i===0 || n<=r.nos[i-1]), JSON.stringify(r));
 else check("🧪 Offizielle Version: kein Beta-Kasten, keine Beta-Nummern", r.nos.length === 0, JSON.stringify(r));
 
 // 📷 beta.4: „Rezept vorschlagen“ liest ein Rezept-Foto wie der Editor
@@ -1151,6 +1151,26 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
   const res={ before, call:calls[0], stars:rec.stars, n:rec.stars_n, on:h.querySelectorAll(".rstarset .iconbtn.on").length, avg:h.querySelector(".rstars small")?.textContent };
   c._data.recipes=keepR; c._ws=keepWs; c._hass={...c._hass, user:keepU}; c._view="list"; c._renderAll(); return res; });
 check("⭐ Sterne pro Person: Text, eigene Bewertung, Durchschnitt", r.before.hint === "Bewerte das letzte Essen" && r.before.on === 0 && r.call?.type === "einkaufsliste/recipe/rate" && r.call?.stars === 1 && r.stars === 2.5 && r.n === 2 && r.on === 1 && r.avg === "2,5", JSON.stringify(r));
+
+// 🚫 2.76.30-beta.1: „Nicht bei …“ schon beim Eintragen – nur bei „Egal wo“, gemerkte Haken vorbelegt, Haken gehen mit item/add raus
+r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const h=c.shadowRoot, d=c._data, keepWs=c._ws, keepH=d.history, calls=[];
+  const [netto, aldi]=d.stores; c._ws=async(m)=>{ calls.push(m); return { id:"neu", name:m.name, store_id:m.store_id||null }; };
+  c._view="list"; c._renderAll(); await new Promise(r=>setTimeout(r,60));
+  const box=h.querySelector("#inNotIn"), st=h.querySelector("#inStore"), nm=h.querySelector("#inName");
+  st.value=netto.id; st.dispatchEvent(new Event("change",{bubbles:true,composed:true})); const hiddenStore=box.hidden;
+  st.value="~none"; st.dispatchEvent(new Event("change",{bubbles:true,composed:true})); const shownNone=!box.hidden && box.querySelectorAll("input[data-innotin]").length===2;
+  d.history=[{name:"Cola", not_in:[aldi.id]}]; nm.value="Cola"; nm.dispatchEvent(new Event("input",{bubbles:true,composed:true}));
+  const pre=[...box.querySelectorAll("input[data-innotin]:checked")].map(x=>x.dataset.innotin);
+  h.querySelector("#addForm").requestSubmit(); await new Promise(r=>setTimeout(r,80)); const untouched=calls.find(m=>m.type==="einkaufsliste/item/add");
+  calls.length=0; st.value="~none"; st.dispatchEvent(new Event("change",{bubbles:true,composed:true})); nm.value="Chips"; nm.dispatchEvent(new Event("input",{bubbles:true,composed:true}));
+  const cb=box.querySelector(`input[data-innotin="${netto.id}"]`); cb.checked=true; cb.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
+  const sum=h.querySelector("#inNotInSum").textContent;
+  h.querySelector("#addForm").requestSubmit(); await new Promise(r=>setTimeout(r,80)); const touched=calls.find(m=>m.type==="einkaufsliste/item/add");
+  const reset=!h.querySelector("#inNotIn").open && !box.querySelector("input[data-innotin]:checked");
+  d.history=keepH; c._ws=keepWs; c._clearForm(); c._renderAll();
+  return { hiddenStore, shownNone, pre, aldi:aldi.id, untouchedNotIn:untouched && "not_in" in untouched, touchedNotIn:touched?.not_in, netto:netto.id, sum, reset }; });
+check("🚫 Nicht bei … beim Eintragen: nur bei Egal wo, vorbelegt, wird mitgeschickt", r.hiddenStore && r.shownNone && r.pre.length===1 && r.pre[0]===r.aldi && r.untouchedNotIn===false
+  && JSON.stringify(r.touchedNotIn)===JSON.stringify([r.netto]) && r.sum==="🚫 Nicht bei … Netto" && r.reset, JSON.stringify(r));
 
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
