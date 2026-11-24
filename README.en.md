@@ -282,7 +282,15 @@ For this the API key is kept on the server (never on phones, never in backups). 
 
 <details><summary><b>⏲️ Timer ticker (own card)</b></summary>
 
-The integration brings a second, small card: **`custom:einkaufsliste-timer-ticker`**. It shows the running cooking timers as an endless ticker (“+++ ⏲️ Lasagne: done at 7:42 pm +++ …”), for example on a kitchen dashboard, with a coloured frame (teal) and a chef hat on each side. When a timer is finished it says “⏰ … DONE!”, the frame and chef hats turn red and pulse – until the timer is dismissed in the app (otherwise it disappears by itself after 1 hour). Without a timer the card is invisible. The card editor offers: sensor (default `sensor.einkaufsliste_kochtimer`), “Hide when no timer”, speed, language and “Dismiss finished timers by tapping” (off by default).
+The integration brings a second, small card: **`custom:einkaufsliste-timer-ticker`**. It shows the running cooking timers as an endless ticker (“+++ ⏲️ Lasagne: done at 7:42 pm +++ …”), for example on a kitchen dashboard, with a coloured frame (teal) and a chef hat on each side. When a timer is finished it says “⏰ … DONE!”, the frame and chef hats turn red and pulse – until the timer is dismissed in the app (otherwise it disappears by itself after 1 hour). Without a timer the card is invisible. The card editor offers: sensor (default `sensor.einkaufsliste_kochtimer`), “Hide when no timer”, speed, language and “Dismiss finished timers by tapping” (off by default) and “🍟 Also show the air fryer (Airfryer Control)” (on by default).
+
+**🍟 With air fryer:** if the [Airfryer Control](https://github.com/misterm2310/airfryer-control) integration is installed, the air fryer zones are added **after the cooking timers** – otherwise everything stays as above. Texts: “🍟 Air fryer Zone 1 (fries): done at 18:05”, “… preheating”, “… cooking”, “… waiting for start”, “… waiting for sync start”, “… DONE!” (red like a finished timer), “↕️ Air fryer Zone 1 (fries): SHAKE NOW!” and “⏰ Air fryer Zone 2: Forgot to press start? (waiting 7 min)”. The content (“fries”) is shown in brackets when it is entered in Airfryer Control. On shake and forgotten start the **frame blinks orange** with ↕️ arrows instead of chef hats (red = done wins). The ticker **follows the clock**: when the text changes it does not jump back to the start – nice on a Fire TV.
+
+```yaml
+type: custom:einkaufsliste-timer-ticker
+entity: sensor.einkaufsliste_kochtimer
+airfryer: true   # false = cooking timers only, even with Airfryer Control installed
+```
 
 </details>
 

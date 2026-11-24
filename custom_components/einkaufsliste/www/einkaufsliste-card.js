@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.30-beta.1";
+const EL_VERSION = "2.76.30-beta.2";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.30-beta.1"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.30-beta.2"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🍟 <b>Fritteuse im Kochtimer-Laufband:</b> Ist <b>Airfryer Control</b> installiert, zeigt das Laufband (<code>custom:einkaufsliste-timer-ticker</code>) nach den Kochtimern auch die Fritteuse – z. B. „Fritteuse Grandzone (Frikadellen): fertig um 18:05 Uhr“, „heizt vor“, „wartet auf Start“, „FERTIG!“. Bei <b>↕️ JETZT SCHÜTTELN!</b> und <b>⏰ Start am Gerät vergessen?</b> blinkt der Rahmen orange, links und rechts stehen ↕️-Pfeile. Das Band läuft nach der Uhr weiter und springt beim Neuzeichnen nicht mehr an den Anfang (Fire TV). Ohne Airfryer Control bleibt alles wie bisher; abschaltbar im Karten-Editor.",
+   "🍟 <b>Air fryer in the cooking timer ticker:</b> with <b>Airfryer Control</b> installed, the ticker (<code>custom:einkaufsliste-timer-ticker</code>) also shows the air fryer after the cooking timers – e.g. “Air fryer Grandzone (meatballs): done at 18:05”, “preheating”, “waiting for start”, “DONE!”. On <b>↕️ SHAKE NOW!</b> and <b>⏰ Forgot to press start?</b> the frame blinks orange with ↕️ arrows on both sides. The ticker follows the clock and no longer jumps back to the start when redrawn (Fire TV). Without Airfryer Control nothing changes; can be switched off in the card editor.", "beta.2"],
   ["🚫 <b>„Nicht bei …“ schon beim Eintragen:</b> Wählst du beim neuen Artikel <b>🤷 Egal wo</b>, steht darunter <b>🚫 Nicht bei …</b> – antippen, Geschäfte anhaken, fertig. Kein Speichern und nochmal Öffnen mehr. Kennt die Liste das Produkt schon, sind die gemerkten Haken vorbelegt.",
    "🚫 <b>“Not at …” right when adding:</b> pick <b>🤷 Anywhere</b> for a new item and <b>🚫 Not at …</b> shows up below – tap it, tick the stores, done. No more saving and reopening. If the list already knows the product, the remembered ticks are pre-selected.", "beta.1"],
 ];
@@ -17061,27 +17063,112 @@ function elPushGuard(state) {
 // ⏲️ Laufband für die Kochtimer: eine zweite Karte, die die Integration mitbringt (custom:einkaufsliste-timer-ticker).
 // Sieht aus wie das Laufband auf Marcos Küchen-Dashboard: farbiger Rahmen (türkis, bei „fertig“ rot), pulsierende Kochmützen links und rechts,
 // Text „+++ ⏲️ Lasagne: fertig um 19:42 Uhr +++ …“ in einer Endlos-Schleife (läuft immer durch, auch bei kurzem Text).
-// Liest sensor.einkaufsliste_kochtimer (Attribut „timer“). Ein fertiger Timer bleibt als „⏰ … FERTIG!“ stehen, bis er in der App weggedrückt wird
+// Liest sensor.einkaufsliste_kochtimer (Attribut „timer“). 🍟 Ist Airfryer Control installiert, kommen danach die Zonen der Fritteuse dazu
+// (erst Kochtimer, dann Fritteuse – Texte wie im Küchen-Ticker). Ohne Airfryer Control bleibt alles wie bisher. Ein fertiger Timer bleibt als „⏰ … FERTIG!“ stehen, bis er in der App weggedrückt wird
 // (sonst verschwindet er nach 1 Stunde von selbst). Antippen auf dem Band löscht nur, wenn „tap_dismiss: true“ gesetzt ist (Standard aus).
 const EL_TICKER_CSS = `
   :host { display:block; }
   ha-card { display:block; height:40px; padding:0; background:var(--card-background-color); border-radius:8px; border:none; box-shadow:0 5px 3px rgba(0,0,0,.1); overflow:hidden; }
   .box { display:flex; align-items:center; width:100%; height:100%; border:2px solid var(--tc,#26a69a); border-radius:8px; box-sizing:border-box; }
   .box.fertig { --tc:#e53935; }
+  .box.schuetteln { --tc:#fb8c00; animation:tkrahmen .8s ease-in-out infinite; }
   .box ha-icon { flex:none; --mdc-icon-size:22px; margin:0 10px; color:var(--tc,#26a69a); }
-  .box.fertig ha-icon { animation:tkpulse 1s ease-in-out infinite; } .box.fertig ha-icon + .win + ha-icon { animation-delay:.5s; }
+  .box.fertig ha-icon { animation:tkpulse 1s ease-in-out infinite; } .box.schuetteln ha-icon { animation:tkpulse .8s ease-in-out infinite; } .box ha-icon + .win + ha-icon { animation-delay:.5s; }
   .win { flex:1; min-width:0; overflow:hidden; display:flex; align-items:center; }
-  .wrap { white-space:nowrap; display:flex; animation:tkrun var(--gd,60s) linear infinite; }
+  .wrap { white-space:nowrap; display:flex; animation:tkrun var(--gd,60s) linear infinite; animation-delay:var(--gdel,0s); will-change:transform; }
   .tx { font-family:Roboto,sans-serif; font-size:16px; font-weight:500; color:var(--primary-text-color); line-height:20px; padding-right:20px; }
   .it.done.tap { cursor:pointer; }
   .ico { height:24px; width:24px; vertical-align:-6px; margin-right:6px; }
+  .ico.fry { height:20px; width:20px; vertical-align:-4px; border-radius:4px; }
+  .spn { display:inline-block; margin-right:4px; animation:tkblink 1s steps(2, start) infinite; }
+  @keyframes tkrahmen { 0% { border-color:#fb8c00; } 50% { border-color:#ffe0b2; } 100% { border-color:#fb8c00; } }
+  @keyframes tkblink { to { visibility:hidden; } }
   @keyframes tkpulse { 0% { opacity:1; } 50% { opacity:.3; } 100% { opacity:1; } }
-  @keyframes tkrun { from { transform:translateX(0); } to { transform:translateX(-50%); } }
-  @media (prefers-reduced-motion: reduce) { .wrap { animation:none; } .box.fertig ha-icon { animation:none; } }
+  @keyframes tkrun { from { transform:translate3d(0,0,0); } to { transform:translate3d(-50%,0,0); } }
+  @media (prefers-reduced-motion: reduce) { .wrap { animation:none; } .box.fertig ha-icon, .box.schuetteln ha-icon, .box.schuetteln, .spn { animation:none; } }
 `;
 // 🍟→ Symbol von Airfryer Control (Knopf „An Airfryer Control schicken“)
 const EL_FRYER_ICON = "data:image/png;base64,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";
 const EL_TICKER_ICON = "data:image/png;base64,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"; // 🍳 Rezepte-Symbol (Mütze mit Wecker), klein eingebettet – steht im Laufband vor jedem Timer
+// 🍟 Fritteuse im Laufband (Airfryer Control). Für Doofe: Die Karte schaut nach, ob es Entitäten der Integration „airfryer_control“ gibt
+// (Zone 1, Zone 2, Grandzone …). Gibt es keine, passiert gar nichts – das Laufband zeigt wie immer nur die Kochtimer.
+// Gefunden wird über die Integration selbst (Plattform + translation_key), damit es mit jedem Gerätenamen und in jeder Sprache klappt;
+// nur ohne Geräte-Liste die alte Namenssuche (…_zone_1_zustand). Die Liste wird gemerkt und nur neu gesucht, wenn sich die Entitäten ändern (Fire TV).
+const EL_FRY_ZONE_RE = /(?:^|_)(zone_\d+|grandzone)(?=_|$)/;
+let EL_FRY_CACHE = { ents: null, n: -1, zones: [] };
+function elFryerZones(hass) {
+  const ents = hass?.entities;
+  const n = ents ? -1 : Object.keys(hass?.states || {}).length;
+  if (EL_FRY_CACHE.ents === (ents || null) && EL_FRY_CACHE.n === n) return EL_FRY_CACHE.zones;
+  const zones = [];
+  const token = (id) => (EL_FRY_ZONE_RE.exec(String(id).split(".")[1] || "") || [])[1];
+  if (ents) {
+    const mine = Object.values(ents).filter((e) => e && e.platform === "airfryer_control" && e.entity_id && e.translation_key);
+    for (const e of mine) {
+      if (e.translation_key !== "zone_status" || !e.entity_id.startsWith("sensor.")) continue;
+      const tk = token(e.entity_id);
+      if (!tk) continue;
+      const obj = e.entity_id.split(".")[1];
+      const key = obj.slice(0, obj.indexOf(tk) + tk.length);
+      const fin = mine.find((x) => x.device_id === e.device_id && x.translation_key === "zone_fertig_um" && x.entity_id.startsWith("sensor.") && token(x.entity_id) === tk);
+      zones.push({ key, state: e.entity_id, finish: fin ? fin.entity_id : `sensor.${key}_fertig_um` });
+    }
+  } else {
+    const re = /^sensor\.(.+_(?:zone_\d+|grandzone))_(?:zustand|status)$/;
+    for (const id of Object.keys(hass?.states || {})) {
+      const m = re.exec(id);
+      if (!m) continue;
+      const fin = [`sensor.${m[1]}_fertig_um`, `sensor.${m[1]}_done_at`].find((x) => hass.states[x]) || `sensor.${m[1]}_fertig_um`;
+      zones.push({ key: m[1], state: id, finish: fin });
+    }
+  }
+  const order = (z) => (/grandzone$/.test(z.key) ? 99 : Number((/zone_(\d+)$/.exec(z.key) || [0, 50])[1]));
+  zones.sort((a, b) => order(a) - order(b));
+  zones.forEach((z) => { const m = /zone_(\d+)$/.exec(z.key); z.name = /grandzone$/.test(z.key) ? "Grandzone" : (m ? `Zone ${m[1]}` : z.key); });
+  EL_FRY_CACHE = { ents: ents || null, n, zones };
+  return zones;
+}
+// Texte wie im Küchen-Ticker: „🍟 Fritteuse Grandzone (Frikadellen): fertig um 18:05 Uhr“ usw.
+function elFryerParts(hass, lang) {
+  const out = { teile: [], fertig: false, schuetteln: false };
+  if (!hass?.states) return out;
+  const en = EL_LANG === "en";
+  const ok = (x) => x && x.state !== "unknown" && x.state !== "unavailable";
+  const img = `<img class="ico fry" src="${EL_FRYER_ICON}" alt="">`;
+  const fr = esc(elT("Fritteuse"));
+  for (const z of elFryerZones(hass)) {
+    const s = hass.states[z.state];
+    if (!ok(s)) continue;
+    const a = s.attributes || {};
+    const was = typeof a.inhalt === "string" && a.inhalt.trim() ? ` (${esc(a.inhalt.trim())})` : ""; // 🏷️ Inhalt in Klammern
+    const wer = `${fr} ${esc(z.name)}${was}`;
+    const zu = s.state;
+    if (a.jetzt_schuetteln === true) { // ↕️ hat Vorfahrt vor „fertig um“
+      out.schuetteln = true;
+      out.teile.push(`<span class="it fryit shake"><span class="spn">↕️</span>${wer}: ${esc(elT("JETZT SCHÜTTELN!"))}</span>`);
+    } else if (a.start_vergessen === true && zu === "wartet_auf_start") { // ⏰ nur solange die Zone wirklich wartet (sonst bliebe der Text hängen)
+      out.schuetteln = true;
+      const seit = Date.parse(a.wartet_seit || "");
+      const min = Number.isFinite(seit) ? Math.max(0, Math.floor((Date.now() - seit) / 60000)) : null;
+      const zus = min == null ? "" : ` (${esc(en ? `waiting ${min} min` : `wartet seit ${min} Min`)})`;
+      out.teile.push(`<span class="it fryit forgot">⏰ ${wer}: ${esc(elT("Start am Gerät vergessen?"))}${zus}</span>`);
+    } else if (zu === "gart" || zu === "vorheizen") {
+      const f = hass.states[z.finish];
+      const ts = ok(f) ? Date.parse(f.state) : NaN;
+      const uhr = Number.isFinite(ts) ? `${new Date(ts).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${en ? "" : " Uhr"}` : "";
+      const text = zu === "vorheizen" ? elT("heizt vor") : (uhr ? `${elT("fertig um")} ${uhr}` : elT("gart"));
+      out.teile.push(`<span class="it fryit">${img}${wer}: ${esc(text)}</span>`);
+    } else if (zu === "wartet_auf_sync") {
+      out.teile.push(`<span class="it fryit">${img}${wer}: ${esc(elT("wartet auf Sync-Start"))}</span>`);
+    } else if (zu === "wartet_auf_start") {
+      out.teile.push(`<span class="it fryit">${img}${wer}: ${esc(elT("wartet auf Start"))}</span>`);
+    } else if (zu === "fertig") {
+      out.fertig = true;
+      out.teile.push(`<span class="it fryit done">${img}${wer}: ${esc(elT("FERTIG!"))}</span>`);
+    }
+  }
+  return out;
+}
 class EinkaufslisteTimerTicker extends HTMLElement {
   static getStubConfig() { return { entity: "sensor.einkaufsliste_kochtimer" }; }
   static getConfigElement() { return document.createElement("einkaufsliste-timer-ticker-editor"); }
@@ -17100,7 +17187,12 @@ class EinkaufslisteTimerTicker extends HTMLElement {
   }
   set hass(hass) { this._hass = hass; this._update(); }
   getCardSize() { return 1; }
-  connectedCallback() { this._update(); }
+  connectedCallback() {
+    this._update();
+    // ⏰ „wartet seit X Min“ jede Minute weiterzählen – zeichnet nur neu, wenn sich der Text wirklich ändert
+    if (!this._tick) this._tick = setInterval(() => this._update(), 60000);
+  }
+  disconnectedCallback() { clearInterval(this._tick); this._tick = 0; }
   _update() {
     const root = this.shadowRoot;
     if (!root || !this._config) return;
@@ -17118,6 +17210,11 @@ class EinkaufslisteTimerTicker extends HTMLElement {
       const uhr = Number.isFinite(end) ? `${new Date(end).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}` : "";
       teile.push(`<span class="it"><img class="ico" src="${EL_TICKER_ICON}" alt="">${esc(t.name)}: ${esc(elT("fertig um"))} ${esc(uhr)}</span>`);
     }
+    // 🍟 Danach die Fritteuse (nur wenn Airfryer Control da ist und der Schalter nicht aus ist)
+    const fry = this._config.airfryer === false ? { teile: [], fertig: false, schuetteln: false } : elFryerParts(this._hass, lang);
+    teile.push(...fry.teile);
+    const hatFertig = fertige.length > 0 || fry.fertig;
+    const schuetteln = !hatFertig && fry.schuetteln; // 🚦 Rot (fertig) bleibt oberste Stufe, dann Orange (schütteln / Start vergessen)
     const empty = !teile.length;
     root.querySelector("ha-card").style.display = empty && this._config.hide_when_empty !== false ? "none" : "";
     const basis = empty ? `👨‍🍳 ${esc(elT("Kein Kochtimer aktiv"))}` : teile.join(" +++ ");
@@ -17126,12 +17223,17 @@ class EinkaufslisteTimerTicker extends HTMLElement {
     const n = Math.max(5, Math.ceil(320 / plain));
     const html = stueck.repeat(n);
     const dauer = Math.max(8, Math.round((plain * n * 11) / 100 * (60 / (Number(this._config.speed) || 60))));
-    const sig = `${html}|${dauer}|${fertige.length > 0}|${Number(this._config.speed) || 60}`;
+    const sig = `${html}|${dauer}|${hatFertig}|${schuetteln}|${Number(this._config.speed) || 60}`;
     if (sig === this._sig) { this._measure(); return; }
     this._sig = sig;
-    root.querySelector(".box").classList.toggle("fertig", fertige.length > 0);
+    const box = root.querySelector(".box");
+    box.classList.toggle("fertig", hatFertig);
+    box.classList.toggle("schuetteln", schuetteln);
+    const ic = schuetteln ? "mdi:arrow-up-down-bold" : "mdi:chef-hat"; // ↕️ beim Schütteln statt Kochmütze
+    box.querySelectorAll(":scope > ha-icon").forEach((x) => { if (x.getAttribute("icon") !== ic) x.setAttribute("icon", ic); });
     const wrap = root.querySelector(".wrap");
     wrap.style.setProperty("--gd", `${dauer}s`);
+    wrap.style.setProperty("--gdel", `${-((Date.now() / 1000) % dauer).toFixed(1)}s`);
     wrap.innerHTML = `<span class="tx">${html}</span><span class="tx">${html}</span>`;
     this._measured = false;
     this._tries = 0;
@@ -17144,7 +17246,10 @@ class EinkaufslisteTimerTicker extends HTMLElement {
     const w = wrap?.firstElementChild ? wrap.firstElementChild.getBoundingClientRect().width : 0;
     if (w > 0) {
       const speed = Math.min(200, Math.max(20, Number(this._config?.speed) || 60));
-      wrap.style.setProperty("--gd", `${Math.max(8, Math.round(w / speed))}s`);
+      const d = Math.max(8, Math.round(w / speed));
+      wrap.style.setProperty("--gd", `${d}s`);
+      // ⏱️ Nahtlos per Uhrzeit: die Stelle im Band ergibt sich aus Date.now – neu zeichnen springt nicht an den Anfang (wie im Küchen-Ticker)
+      wrap.style.setProperty("--gdel", `${-((Date.now() / 1000) % d).toFixed(1)}s`);
       this._measured = true;
     } else if (!this._retry && (this._tries = (this._tries || 0) + 1) <= 5) { // nur kurz erneut versuchen (versteckte Karte hat Breite 0) – danach beim nächsten Update
       this._retry = requestAnimationFrame(() => { this._retry = 0; this._measure(); });
@@ -17158,7 +17263,7 @@ class EinkaufslisteTimerTickerEditor extends HTMLElement {
     if (!this._hass || !this._config) return;
     if (!this._form) {
       this._form = document.createElement("ha-form");
-      this._form.computeLabel = (s) => elT({ entity: "Sensor der Kochtimer", hide_when_empty: "Ohne Timer ausblenden", tap_dismiss: "Fertige Timer per Antippen wegdrücken", speed: "Tempo (Pixel pro Sekunde)", language: "Sprache" }[s.name] || s.name);
+      this._form.computeLabel = (s) => elT({ entity: "Sensor der Kochtimer", hide_when_empty: "Ohne Timer ausblenden", tap_dismiss: "Fertige Timer per Antippen wegdrücken", airfryer: "🍟 Fritteuse (Airfryer Control) mitzeigen", speed: "Tempo (Pixel pro Sekunde)", language: "Sprache" }[s.name] || s.name);
       this._form.addEventListener("value-changed", (ev) => {
         this._config = ev.detail.value;
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
@@ -17166,11 +17271,12 @@ class EinkaufslisteTimerTickerEditor extends HTMLElement {
       this.appendChild(this._form);
     }
     this._form.hass = this._hass;
-    this._form.data = this._config;
+    this._form.data = { airfryer: true, ...this._config }; // 🍟 Standard an – wirkt nur, wenn Airfryer Control installiert ist
     this._form.schema = [
       { name: "entity", selector: { entity: { domain: "sensor" } } },
       { name: "hide_when_empty", selector: { boolean: {} } },
       { name: "tap_dismiss", selector: { boolean: {} } },
+      { name: "airfryer", selector: { boolean: {} } },
       { name: "speed", selector: { number: { min: 20, max: 200, step: 5, mode: "box" } } },
       { name: "language", selector: { select: { mode: "dropdown", options: [{ value: "auto", label: elT("Automatisch") + " (Home Assistant)" }, { value: "de", label: "Deutsch" }, { value: "en", label: "English" }] } } },
     ];
@@ -17408,7 +17514,7 @@ if (!window.customCards.some((c) => c.type === "einkaufsliste-timer-ticker")) {
   window.customCards.push({
     type: "einkaufsliste-timer-ticker",
     name: "Einkaufsliste – Timer-Laufband",
-    description: "Laufband mit den laufenden Kochtimern aus der Einkaufsliste (fertige bleiben stehen, bis man sie in der App wegdrückt).",
+    description: "Laufband mit den laufenden Kochtimern aus der Einkaufsliste (fertige bleiben stehen, bis man sie in der App wegdrückt) – mit Airfryer Control auch die Fritteuse.",
     preview: false,
     documentationURL: "https://github.com/misterm2310/einkaufslisten-card",
   });

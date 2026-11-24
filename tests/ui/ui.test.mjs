@@ -1172,6 +1172,32 @@ r = await p.evaluate(async () => { const c=document.querySelector('#c1'); const 
 check("🚫 Nicht bei … beim Eintragen: nur bei Egal wo, vorbelegt, wird mitgeschickt", r.hiddenStore && r.shownNone && r.pre.length===1 && r.pre[0]===r.aldi && r.untouchedNotIn===false
   && JSON.stringify(r.touchedNotIn)===JSON.stringify([r.netto]) && r.sum==="🚫 Nicht bei … Netto" && r.reset, JSON.stringify(r));
 
+// 🍟 2.76.30-beta.2: Kochtimer-Laufband zeigt auch die Fritteuse (nur mit Airfryer Control) – erst Kochtimer, dann Fritteuse
+r = await p.evaluate(async () => {
+  const t = document.createElement("einkaufsliste-timer-ticker"); document.body.append(t);
+  const iso = (m) => new Date(Date.now() + m * 60000).toISOString();
+  const timer = { state: "1", attributes: { timer: [{ id: "t1", name: "Nudeln", ende: iso(9), fertig: false }] } };
+  const z = (st, a = {}) => ({ state: st, attributes: { inhalt: null, jetzt_schuetteln: false, start_vergessen: false, wartet_seit: null, ...a } });
+  const ents = { "sensor.cosori_zone_1_zustand": { entity_id: "sensor.cosori_zone_1_zustand", platform: "airfryer_control", translation_key: "zone_status", device_id: "d1" },
+    "sensor.cosori_zone_1_fertig_um": { entity_id: "sensor.cosori_zone_1_fertig_um", platform: "airfryer_control", translation_key: "zone_fertig_um", device_id: "d1" },
+    "sensor.cosori_zone_2_zustand": { entity_id: "sensor.cosori_zone_2_zustand", platform: "airfryer_control", translation_key: "zone_status", device_id: "d1" },
+    "sensor.cosori_grandzone_zustand": { entity_id: "sensor.cosori_grandzone_zustand", platform: "airfryer_control", translation_key: "zone_status", device_id: "d1" } };
+  const run = async (states, entities, cfg = {}) => { t.setConfig({ entity: "sensor.einkaufsliste_kochtimer", ...cfg }); t.hass = { states: { "sensor.einkaufsliste_kochtimer": timer, ...states }, entities, locale: { language: "de" } }; await new Promise((ok) => setTimeout(ok, 50));
+    const h = t.shadowRoot, box = h.querySelector(".box"); const one = h.querySelector(".wrap .tx");
+    const first = one.textContent.split("+++").map((x) => x.trim()).filter(Boolean);
+    return { items: [...new Set(first)], fertig: box.classList.contains("fertig"), shake: box.classList.contains("schuetteln"), icon: box.querySelector("ha-icon").getAttribute("icon"), fry: one.querySelectorAll("img.fry").length, del: h.querySelector(".wrap").style.getPropertyValue("--gdel") }; };
+  const ohne = await run({ "sensor.cosori_zone_1_zustand": z("gart") }, {}); // fremde Sensoren ohne Airfryer Control: nur Kochtimer
+  const gart = await run({ "sensor.cosori_zone_1_zustand": z("gart", { inhalt: "Pommes" }), "sensor.cosori_zone_1_fertig_um": { state: iso(12) }, "sensor.cosori_zone_2_zustand": z("vorheizen"), "sensor.cosori_grandzone_zustand": z("bereit") }, ents);
+  const shake = await run({ "sensor.cosori_zone_1_zustand": z("gart", { inhalt: "Pommes", jetzt_schuetteln: true }), "sensor.cosori_zone_2_zustand": z("wartet_auf_start", { start_vergessen: true, wartet_seit: iso(-7) }), "sensor.cosori_grandzone_zustand": z("bereit", { start_vergessen: true, inhalt: "Alt" }) }, ents);
+  const fertig = await run({ "sensor.cosori_zone_1_zustand": z("fertig", { inhalt: "Pommes" }), "sensor.cosori_zone_2_zustand": z("gart", { jetzt_schuetteln: true }), "sensor.cosori_grandzone_zustand": z("wartet_auf_sync") }, ents);
+  const aus = await run({ "sensor.cosori_zone_1_zustand": z("fertig") }, ents, { airfryer: false });
+  t.remove(); return { ohne, gart, shake, fertig, aus }; });
+check("🍟 Ohne Airfryer Control: Laufband wie bisher (nur Kochtimer)", r.ohne.items.length === 1 && /^Nudeln: fertig um \d\d:\d\d Uhr$/.test(r.ohne.items[0]) && !r.ohne.shake && r.ohne.icon === "mdi:chef-hat", JSON.stringify(r.ohne));
+check("🍟 Erst Kochtimer, dann Fritteuse mit Inhalt in Klammern, heizt vor, bereit fehlt", r.gart.items.length === 3 && /^Nudeln/.test(r.gart.items[0]) && /^Fritteuse Zone 1 \(Pommes\): fertig um \d\d:\d\d Uhr$/.test(r.gart.items[1]) && r.gart.items[2] === "Fritteuse Zone 2: heizt vor" && r.gart.fry >= 2 && r.gart.fry % 2 === 0 && !r.gart.shake && /^-\d/.test(r.gart.del), JSON.stringify(r.gart));
+check("🍟 Schütteln + Start vergessen: Orange blinkend, ↕️-Icons, „wartet seit 7 Min“; Grandzone „bereit“ bleibt weg", r.shake.items.length === 3 && r.shake.items[1] === "↕️Fritteuse Zone 1 (Pommes): JETZT SCHÜTTELN!" && r.shake.items[2] === "⏰ Fritteuse Zone 2: Start am Gerät vergessen? (wartet seit 7 Min)" && r.shake.shake && !r.shake.fertig && r.shake.icon === "mdi:arrow-up-down-bold", JSON.stringify(r.shake));
+check("🍟 Fritteuse fertig = Rot hat Vorrang vor Orange, Sync-Start", r.fertig.fertig && !r.fertig.shake && r.fertig.icon === "mdi:chef-hat" && r.fertig.items.includes("Fritteuse Zone 1 (Pommes): FERTIG!") && r.fertig.items.includes("Fritteuse Grandzone: wartet auf Sync-Start"), JSON.stringify(r.fertig));
+check("🍟 Schalter airfryer: false = nur Kochtimer", r.aus.items.length === 1 && !r.aus.fertig, JSON.stringify(r.aus));
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

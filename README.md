@@ -281,7 +281,15 @@ Dafür liegt der API-Schlüssel auf dem Server (nie auf Handys, nie in Sicherung
 
 <details><summary><b>⏲️ Timer-Laufband (eigene Karte)</b></summary>
 
-Die Integration bringt eine zweite, kleine Karte mit: **`custom:einkaufsliste-timer-ticker`**. Sie zeigt die laufenden Kochtimer als Endlos-Laufband („+++ ⏲️ Lasagne: fertig um 19:42 Uhr +++ …“), zum Beispiel auf einem Küchen-Dashboard, mit farbigem Rahmen (türkis) und einer Kochmütze links und rechts. Ist ein Timer fertig, steht „⏰ … FERTIG!“, Rahmen und Kochmützen werden rot und pulsieren – bis der Timer in der App weggedrückt wird (sonst verschwindet er nach 1 Stunde von selbst). Ohne Timer ist die Karte unsichtbar. Im Karten-Editor gibt es: Sensor (Standard `sensor.einkaufsliste_kochtimer`), „Ohne Timer ausblenden“, Tempo, Sprache und „Fertige Timer per Antippen wegdrücken“ (Standard aus).
+Die Integration bringt eine zweite, kleine Karte mit: **`custom:einkaufsliste-timer-ticker`**. Sie zeigt die laufenden Kochtimer als Endlos-Laufband („+++ ⏲️ Lasagne: fertig um 19:42 Uhr +++ …“), zum Beispiel auf einem Küchen-Dashboard, mit farbigem Rahmen (türkis) und einer Kochmütze links und rechts. Ist ein Timer fertig, steht „⏰ … FERTIG!“, Rahmen und Kochmützen werden rot und pulsieren – bis der Timer in der App weggedrückt wird (sonst verschwindet er nach 1 Stunde von selbst). Ohne Timer ist die Karte unsichtbar. Im Karten-Editor gibt es: Sensor (Standard `sensor.einkaufsliste_kochtimer`), „Ohne Timer ausblenden“, Tempo, Sprache und „Fertige Timer per Antippen wegdrücken“ (Standard aus) und „🍟 Fritteuse (Airfryer Control) mitzeigen“ (Standard an).
+
+**🍟 Mit Fritteuse:** Ist die Integration [Airfryer Control](https://github.com/misterm2310/airfryer-control) installiert, kommen **nach den Kochtimern** die Zonen der Fritteuse dazu – sonst bleibt alles wie oben. Texte: „🍟 Fritteuse Zone 1 (Pommes): fertig um 18:05 Uhr“, „… heizt vor“, „… gart“, „… wartet auf Start“, „… wartet auf Sync-Start“, „… FERTIG!“ (rot wie ein fertiger Timer), „↕️ Fritteuse Zone 1 (Pommes): JETZT SCHÜTTELN!“ und „⏰ Fritteuse Zone 2: Start am Gerät vergessen? (wartet seit 7 Min)“. Der Inhalt („Pommes“) steht in Klammern, wenn er in Airfryer Control eingetragen ist. Bei Schütteln und vergessenem Start **blinkt der Rahmen orange**, links und rechts stehen ↕️-Pfeile statt Kochmützen (Rot = fertig hat Vorrang). Das Band läuft **nach der Uhrzeit** weiter: Ändert sich der Text, springt es nicht an den Anfang – angenehm auf dem Fire TV.
+
+```yaml
+type: custom:einkaufsliste-timer-ticker
+entity: sensor.einkaufsliste_kochtimer
+airfryer: true   # false = nur Kochtimer, auch wenn Airfryer Control da ist
+```
 
 </details>
 
