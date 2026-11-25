@@ -2,9 +2,9 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.30-beta.2";
+const EL_VERSION = "2.76.30-beta.3";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
-const EL_NEWS_VERSION = "2.76.30-beta.2"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
+const EL_NEWS_VERSION = "2.76.30-beta.3"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
 // Jeder Eintrag: icon, Farbe, [Titel de, en], Untertitel [de, en], Punkte [[de…], [en…]]
 const EL_GUIDE = [
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["⏱️ <b>Laufband und Kochmodus-Anzeige mit Restzeit:</b> Kochtimer und Fritteuse zeigen jetzt „noch 12 Min · fertig 18:05 Uhr“ statt nur der Uhrzeit · 🕒 Mit <b>Airfryer Control</b> 1.0.6-beta.4: „Start um 18:12 → fertig um 18:30 Uhr“, zur Startzeit blinkt orange „⏰ JETZT STARTEN“, und „😴 Programm verworfen – nochmal senden“, wenn die Fritteuse ein nicht gestartetes Programm weggeworfen hat",
+   "⏱️ <b>Ticker and cooking mode display with time left:</b> cooking timers and the air fryer now show “12 min left · done 18:05” instead of just the time · 🕒 With <b>Airfryer Control</b> 1.0.6-beta.4: “start at 18:12 → done at 18:30”, at start time an orange “⏰ START NOW” blinks, and “😴 program dropped – send again” when the fryer threw away a program nobody started", "beta.3"],
   ["🍟 <b>Fritteuse im Kochtimer-Laufband:</b> Ist <b>Airfryer Control</b> installiert, zeigt das Laufband (<code>custom:einkaufsliste-timer-ticker</code>) nach den Kochtimern auch die Fritteuse – z. B. „Fritteuse Grandzone (Frikadellen): fertig um 18:05 Uhr“, „heizt vor“, „wartet auf Start“, „FERTIG!“. Bei <b>↕️ JETZT SCHÜTTELN!</b> und <b>⏰ Start am Gerät vergessen?</b> blinkt der Rahmen orange, links und rechts stehen ↕️-Pfeile. Das Band läuft nach der Uhr weiter und springt beim Neuzeichnen nicht mehr an den Anfang (Fire TV). Ohne Airfryer Control bleibt alles wie bisher; abschaltbar im Karten-Editor.",
    "🍟 <b>Air fryer in the cooking timer ticker:</b> with <b>Airfryer Control</b> installed, the ticker (<code>custom:einkaufsliste-timer-ticker</code>) also shows the air fryer after the cooking timers – e.g. “Air fryer Grandzone (meatballs): done at 18:05”, “preheating”, “waiting for start”, “DONE!”. On <b>↕️ SHAKE NOW!</b> and <b>⏰ Forgot to press start?</b> the frame blinks orange with ↕️ arrows on both sides. The ticker follows the clock and no longer jumps back to the start when redrawn (Fire TV). Without Airfryer Control nothing changes; can be switched off in the card editor.", "beta.2"],
   ["🚫 <b>„Nicht bei …“ schon beim Eintragen:</b> Wählst du beim neuen Artikel <b>🤷 Egal wo</b>, steht darunter <b>🚫 Nicht bei …</b> – antippen, Geschäfte anhaken, fertig. Kein Speichern und nochmal Öffnen mehr. Kennt die Liste das Produkt schon, sind die gemerkten Haken vorbelegt.",
@@ -17152,11 +17154,24 @@ function elFryerParts(hass, lang) {
       const min = Number.isFinite(seit) ? Math.max(0, Math.floor((Date.now() - seit) / 60000)) : null;
       const zus = min == null ? "" : ` (${esc(en ? `waiting ${min} min` : `wartet seit ${min} Min`)})`;
       out.teile.push(`<span class="it fryit forgot">⏰ ${wer}: ${esc(elT("Start am Gerät vergessen?"))}${zus}</span>`);
+    } else if (zu !== "gart" && zu !== "vorheizen" && zu !== "pausiert" && Number.isFinite(Date.parse(a.fertig_wunsch || "")) && Number.isFinite(Date.parse(a.start_um || ""))) {
+      // 🕒 „Fertig um …“ aus Airfryer Control: erst „Start um 18:12 → fertig um 18:30“, zur Startzeit orange „JETZT STARTEN“
+      const hm = (iso) => `${new Date(iso).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${en ? "" : " Uhr"}`;
+      if (a.jetzt_starten === true || Date.parse(a.start_um) <= Date.now()) {
+        out.schuetteln = true;
+        out.teile.push(`<span class="it fryit forgot">⏰ ${wer}: ${esc(en ? `START NOW – done at ${hm(a.fertig_wunsch)}` : `JETZT STARTEN – fertig um ${hm(a.fertig_wunsch)}`)}</span>`);
+      } else {
+        out.teile.push(`<span class="it fryit">${img}${wer}: ${esc(en ? `start at ${hm(a.start_um)} → done at ${hm(a.fertig_wunsch)}` : `Start um ${hm(a.start_um)} → fertig um ${hm(a.fertig_wunsch)}`)}</span>`);
+      }
+    } else if (a.verworfen === true && zu === "bereit") { // 😴 Fritteuse hat das gesendete Programm ohne Start weggeworfen
+      out.teile.push(`<span class="it fryit">😴 ${wer}: ${esc(en ? "program dropped – send again" : "Programm verworfen – nochmal senden")}</span>`);
     } else if (zu === "gart" || zu === "vorheizen") {
       const f = hass.states[z.finish];
       const ts = ok(f) ? Date.parse(f.state) : NaN;
       const uhr = Number.isFinite(ts) ? `${new Date(ts).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${en ? "" : " Uhr"}` : "";
-      const text = zu === "vorheizen" ? elT("heizt vor") : (uhr ? `${elT("fertig um")} ${uhr}` : elT("gart"));
+      // ⏱️ Restzeit vorne, Uhrzeit dahinter: „noch 12 Min · fertig 18:05 Uhr“
+      const rest = Number.isFinite(ts) ? Math.max(0, Math.ceil((ts - Date.now()) / 60000)) : null;
+      const text = zu === "vorheizen" ? elT("heizt vor") : (uhr ? (en ? `${rest} min left · done ${uhr}` : `noch ${rest} Min · fertig ${uhr}`) : elT("gart"));
       out.teile.push(`<span class="it fryit">${img}${wer}: ${esc(text)}</span>`);
     } else if (zu === "wartet_auf_sync") {
       out.teile.push(`<span class="it fryit">${img}${wer}: ${esc(elT("wartet auf Sync-Start"))}</span>`);
@@ -17208,7 +17223,8 @@ class EinkaufslisteTimerTicker extends HTMLElement {
     for (const t of laufende) {
       const end = Date.parse(t.ende);
       const uhr = Number.isFinite(end) ? `${new Date(end).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}` : "";
-      teile.push(`<span class="it"><img class="ico" src="${EL_TICKER_ICON}" alt="">${esc(t.name)}: ${esc(elT("fertig um"))} ${esc(uhr)}</span>`);
+      const rest = Number.isFinite(end) ? Math.max(0, Math.ceil((end - Date.now()) / 60000)) : null; // ⏱️ Restzeit wie bei der Fritteuse
+      teile.push(`<span class="it"><img class="ico" src="${EL_TICKER_ICON}" alt="">${esc(t.name)}: ${rest == null ? `${esc(elT("fertig um"))} ${esc(uhr)}` : esc(EL_LANG === "en" ? `${rest} min left · done ${uhr}` : `noch ${rest} Min · fertig ${uhr}`)}</span>`);
     }
     // 🍟 Danach die Fritteuse (nur wenn Airfryer Control da ist und der Schalter nicht aus ist)
     const fry = this._config.airfryer === false ? { teile: [], fertig: false, schuetteln: false } : elFryerParts(this._hass, lang);
@@ -17330,6 +17346,11 @@ const EL_COOKVIEW_CSS = `
   @media (prefers-reduced-motion: reduce) { .sc.run { animation:none; } }
   @media (max-width:600px) { .main { flex-direction:column; } .left { flex:2 1 0; } .right { flex:1 1 0; } .right { border-left:none; padding-left:0; border-top:2px solid var(--divider-color,rgba(127,127,127,.3)); padding-top:10px; } }
 `;
+// ⏱️ „noch 8 Min · fertig 18:05 Uhr“ – Restzeit vorne, Uhrzeit dahinter (Kochmodus-Anzeige)
+function elRestText(iso, uhr) {
+  const left = Math.max(0, Math.ceil((Date.parse(iso) - Date.now()) / 60000));
+  return EL_LANG === "en" ? `${left} min left · done ${uhr(iso)}` : `noch ${left} Min · fertig ${uhr(iso)}`;
+}
 class EinkaufslisteKochmodus extends HTMLElement {
   static getStubConfig() { return { entity: "sensor.einkaufsliste_kochmodus" }; }
   static getConfigElement() { return document.createElement("einkaufsliste-kochmodus-editor"); }
@@ -17345,7 +17366,15 @@ class EinkaufslisteKochmodus extends HTMLElement {
   set hass(hass) { this._hass = hass; this._update(); }
   getCardSize() { return 6; }
   getGridOptions() { return { columns: "full", rows: "auto" }; } // 📐 im Abschnitts-Dashboard über die ganze Breite
-  connectedCallback() { this._update(); }
+  connectedCallback() {
+    this._update();
+    // ⏱️ „noch X Min“ alle 30 s weiterzählen – tauscht nur den Text der Restzeit, sonst nichts (gut für den Fire TV)
+    if (!this._restTick) this._restTick = setInterval(() => {
+      const lang = this._hass?.locale?.language || EL_LANG || "de";
+      const uhr = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? `${new Date(t).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}` : ""; };
+      this.shadowRoot?.querySelectorAll(".rest[data-end]").forEach((el) => { const txt = elRestText(el.dataset.end, uhr); if (el.textContent !== txt) el.textContent = txt; });
+    }, 30000);
+  }
   _update() {
     const root = this.shadowRoot;
     if (!root || !this._config || !this._hass) return;
@@ -17376,7 +17405,7 @@ class EinkaufslisteKochmodus extends HTMLElement {
     const uhr = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? `${new Date(t).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}` : ""; };
     const timers = Array.isArray(tst?.attributes?.timer) ? tst.attributes.timer : [];
     const tl = timers.slice().sort((x, y) => (y.fertig - x.fertig) || (Date.parse(x.ende) - Date.parse(y.ende)))
-      .map((t) => `<span class="${t.fertig ? "f" : ""}">⏲️ ${esc(t.name)}: ${t.fertig ? esc(elT("FERTIG!")) : `${esc(elT("fertig um"))} ${esc(uhr(t.ende))}`}</span>`).join("");
+      .map((t) => `<span class="${t.fertig ? "f" : ""}">⏲️ ${esc(t.name)}: ${t.fertig ? esc(elT("FERTIG!")) : Number.isFinite(Date.parse(t.ende)) ? `<span class="rest" data-end="${esc(t.ende)}">${esc(elRestText(t.ende, uhr))}</span>` : `${esc(elT("fertig um"))} ${esc(uhr(t.ende))}`}</span>`).join("");
     const total = Math.max(1, Number(a.schritte) || 1), step = Math.min(total, Math.max(1, Number(a.schritt) || 1));
     const bar = total <= 40 ? `<div class="bar">${Array.from({ length: total }, (_, i) => `<i class="${i < step ? "on" : ""}"></i>`).join("")}</div>` : "";
     const heat = (Array.isArray(a.geraete) ? a.geraete : []).map((h) => `<div class="heat">${esc(h)}</div>`).join("");
@@ -17393,8 +17422,10 @@ class EinkaufslisteKochmodus extends HTMLElement {
       + (cfg.show_next !== false && a.naechster ? `<div class="next"><b>${esc(elT("Danach:"))}</b> ${esc(a.naechster)}</div>` : "")
       + `</div></div>${showIng ? `<div class="right"><div class="sc"><div class="ih">🧺 ${esc(elT("Zutaten"))}</div><div class="ing">${items.map((i, n) => (done.has(n) ? `<s class="dn">✔ ${esc(i)}</s>` : `• ${esc(i)}`)).join("<br>")}</div></div></div>` : ""}</div>`
       + (a.von ? `<div class="by">👨‍🍳 ${esc(a.von)}</div>` : "");
-    if (html === this._sig) { this._fit(); return; }
-    this._sig = html;
+    // ⏱️ Die Restzeit („noch 8 Min“) zählt nur still im Text runter – dafür wird nicht die ganze Anzeige neu gebaut (Foto, Laufen, Schriftgröße bleiben)
+    const sigHtml = html.replace(/<span class="rest" data-end="([^"]*)">[^<]*<\/span>/g, "$1");
+    if (sigHtml === this._sig) { this._fit(); return; }
+    this._sig = sigHtml;
     card.innerHTML = html;
     this._fitted = 0;
     this._fit();
@@ -17462,7 +17493,7 @@ class EinkaufslisteKochmodus extends HTMLElement {
     });
   }
   _rand() { return Math.min(80, Math.max(0, Number(this._config?.margin) || 0)); } // 📺 Rand in Pixeln (0–80)
-  disconnectedCallback() { if (this._onResize) { window.removeEventListener("resize", this._onResize); this._onResize = null; } }
+  disconnectedCallback() { clearInterval(this._restTick); this._restTick = 0; if (this._onResize) { window.removeEventListener("resize", this._onResize); this._onResize = null; } }
 }
 class EinkaufslisteKochmodusEditor extends HTMLElement {
   setConfig(config) { this._config = { entity: "sensor.einkaufsliste_kochmodus", timer_entity: "sensor.einkaufsliste_kochtimer", hide_when_idle: false, show_ingredients: true, show_next: true, show_timers: true, show_photo: true, font_size: 30, fit_screen: true, auto_scroll: true, margin: 0, ...config }; this._render(); }
