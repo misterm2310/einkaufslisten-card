@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.30-beta.3";
+const EL_VERSION = "2.76.30-beta.4";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.30-beta.3"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["⏲️ <b>Timer repariert:</b> Die Zeit zwischen − und + ist wieder zu sehen – auch wenn die Beschriftungen aus sind (Plus, Minus und Schnellwahl haben immer gestimmt, man sah es nur nicht) · ↩️ <b>Zurück löscht keinen Timer mehr:</b> Zurück auf der Timer-Seite oder im Kochmodus schließt nur noch die Seite, der laufende Timer bleibt",
+   "⏲️ <b>Timer fixed:</b> the time between − and + is visible again, even with button labels switched off (plus, minus and the quick picks always worked, you just couldn't see it) · ↩️ <b>Back no longer deletes a timer:</b> going back on the timer page or in cooking mode only closes the page, the running timer keeps going", "beta.4"],
   ["⏱️ <b>Laufband und Kochmodus-Anzeige mit Restzeit:</b> Kochtimer und Fritteuse zeigen jetzt „noch 12 Min · fertig 18:05 Uhr“ statt nur der Uhrzeit · 🕒 Mit <b>Airfryer Control</b> 1.0.6-beta.4: „Start um 18:12 → fertig um 18:30 Uhr“, zur Startzeit blinkt orange „⏰ JETZT STARTEN“, und „😴 Programm verworfen – nochmal senden“, wenn die Fritteuse ein nicht gestartetes Programm weggeworfen hat",
    "⏱️ <b>Ticker and cooking mode display with time left:</b> cooking timers and the air fryer now show “12 min left · done 18:05” instead of just the time · 🕒 With <b>Airfryer Control</b> 1.0.6-beta.4: “start at 18:12 → done at 18:30”, at start time an orange “⏰ START NOW” blinks, and “😴 program dropped – send again” when the fryer threw away a program nobody started", "beta.3"],
   ["🍟 <b>Fritteuse im Kochtimer-Laufband:</b> Ist <b>Airfryer Control</b> installiert, zeigt das Laufband (<code>custom:einkaufsliste-timer-ticker</code>) nach den Kochtimern auch die Fritteuse – z. B. „Fritteuse Grandzone (Frikadellen): fertig um 18:05 Uhr“, „heizt vor“, „wartet auf Start“, „FERTIG!“. Bei <b>↕️ JETZT SCHÜTTELN!</b> und <b>⏰ Start am Gerät vergessen?</b> blinkt der Rahmen orange, links und rechts stehen ↕️-Pfeile. Das Band läuft nach der Uhr weiter und springt beim Neuzeichnen nicht mehr an den Anfang (Fire TV). Ohne Airfryer Control bleibt alles wie bisher; abschaltbar im Karten-Editor.",
@@ -6064,7 +6066,7 @@ class EinkaufslisteCard extends HTMLElement {
     };
     document.addEventListener("keydown", onKey);
     this._page = { key: "ov", host, body, tools, ov, onKey, prev, onBack: () => { // wie die Zurück-Taste bei einem Vollbild-Fenster: „Abbrechen/Schließen“ drücken, damit wartender Code eine Antwort bekommt
-        const btns = [...ov.querySelectorAll("button")];
+        const btns = [...ov.querySelectorAll("button")].filter((b) => !b.closest("[data-elnoback]")); // ⏲️ ✕ an laufenden Timern ist kein „Schließen“
         const close = btns.find((b) => /^\s*(✕|✖️?|×)\s*$|^\s*(✕|✖️?|×)?\s*(Schließen|Abbrechen|Close|Cancel)\b/i.test(b.textContent || ""));
         if (close) { close.click(); return; }
         if (ov._elClose) { ov._elClose(); return; }
@@ -6149,7 +6151,7 @@ class EinkaufslisteCard extends HTMLElement {
     if (ovs.length) {
       const ov = ovs[ovs.length - 1];
       // Nur das OBERSTE Fenster schließen (z. B. Gar-Zeiten über dem Kochen) – ein „Escape“ würde alle offenen Fenster zumachen
-      const btns = [...ov.querySelectorAll("button")];
+      const btns = [...ov.querySelectorAll("button")].filter((b) => !b.closest("[data-elnoback]")); // ⏲️ ✕ an laufenden Timern ist kein „Schließen“
       const close = btns.find((b) => /^\s*(✕|✖️?|×)\s*$|^\s*(✕|✖️?|×)?\s*(Schließen|Abbrechen|Close|Cancel)\b/i.test(b.textContent || ""));
       if (close) { close.click(); return true; }
       if (ovs.length === 1) document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
@@ -13202,7 +13204,7 @@ ${(() => {
       .tmw .adj { align-items:center; justify-content:center; gap:12px; }
       .tmw button.b { border:0; border-radius:12px; padding:12px 16px; cursor:pointer; background:var(--secondary-background-color, rgba(127,127,127,.18)); color:var(--primary-text-color); font:600 16px Roboto,sans-serif; }
       .tmw .adj button.b { width:64px; font-size:26px; padding:10px 0; }
-      .tmw .lbl { font:600 24px Roboto,sans-serif; min-width:120px; text-align:center; }
+      .tmw .tlbl { font:600 24px Roboto,sans-serif; min-width:120px; text-align:center; }
       .tmw button.go { background:#43a047; color:#fff; padding:16px; font-size:18px; }
       .tmw .list { display:flex; flex-wrap:wrap; gap:6px; }
       .tmw .sub { color:var(--secondary-text-color); font-size:13px; margin:0; }
@@ -13211,13 +13213,13 @@ ${(() => {
       ${asPage ? "" : `<div class="gh"><span class="gic"><ha-icon icon="mdi:timer-outline"></ha-icon></span><span class="gt">${T("Timer", "Timer")}</span><button type="button" class="gback" title="${T("Zurück", "Back")}" aria-label="${T("Zurück", "Back")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button></div>`}
       <input type="text" maxlength="40" autocomplete="off" placeholder="${T("Name (optional)", "Name (optional)")}" aria-label="${T("Name (optional)", "Name (optional)")}">
       <div class="pre"></div>
-      <div class="adj"><button type="button" class="b m">−</button><span class="lbl"></span><button type="button" class="b p">+</button></div>
+      <div class="adj"><button type="button" class="b m">−</button><span class="tlbl"></span><button type="button" class="b p">+</button></div>
       <button type="button" class="b go">⏲️ ${T("Timer starten", "Start timer")}</button>
       <p class="sub">${stepNo ? T(`Ohne Namen heißt der Timer „${esc(r.name)} – Schritt ${stepNo}“.`, `Without a name the timer is called “${esc(r.name)} – Schritt ${stepNo}”.`) : T("Ohne Namen heißt der Timer „Timer“.", "Without a name the timer is called “Timer”.")}</p>
       <div class="list"></div>
     </div>`;
     const q = (sel) => ov.querySelector(sel);
-    const inp = q("input"), lbl = q(".lbl"), list = q(".list");
+    const inp = q("input"), lbl = q(".tlbl"), list = q(".list"); // ⏱️ eigene Klasse: „.lbl“ (Knopf-Beschriftung) ist bei ausgeschalteten Beschriftungen unsichtbar
     const setT = (sec) => { tsec = Math.max(5, Math.min(86400, sec)); lbl.textContent = elFmtDur(tsec); };
     for (const sec of [60, 300, 600, 900, 1800, 2700, 3600]) {
       const b = document.createElement("button"); b.type = "button"; b.className = "b"; b.textContent = elFmtDur(sec);
@@ -13249,6 +13251,7 @@ ${(() => {
     const done = !!t.done || left <= 0;
     const rn = this._recipe(t.recipe_id)?.name;
     const chip = document.createElement("span");
+    chip.dataset.elnoback = "1"; // ↩️ Zurück darf das ✕ dieses Timers nie drücken (sonst wird der Timer gelöscht)
     Object.assign(chip.style, {
       display: "inline-flex", alignItems: "center", gap: "8px", borderRadius: "999px", padding: "4px 6px 4px 10px", font: "600 15px Roboto,sans-serif",
       background: done ? "rgba(229,57,53,.88)" : "rgba(66,165,245,.25)", color: done ? "#fff" : "inherit", border: done ? "1px solid #ff8a80" : "1px solid rgba(66,165,245,.5)",

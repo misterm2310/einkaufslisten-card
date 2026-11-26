@@ -45,6 +45,15 @@ await wait(500);
 r = await p.evaluate(`(() => { const h=${card}.shadowRoot; return { heads:h.querySelectorAll(".pagehost .sechead").length, own:h.querySelectorAll(".tmw .gh").length, title:h.querySelector(".pagehost h3")?.textContent, icon:h.querySelector(".pagehost .ic ha-icon")?.getAttribute("icon") }; })()`);
 check("Timer-Seite: Kopf nur einmal", r.heads === 1 && r.own === 0, JSON.stringify(r));
 check("Timer-Seite: Titel und Stoppuhr", r.title === "Timer" && r.icon === "mdi:timer-outline", JSON.stringify(r));
+// ⏲️ 2.76.30-beta.4: Zeit zwischen − und + auch ohne Beschriftungen sichtbar, + zählt sichtbar hoch
+r = await p.evaluate(`(() => { const h=${card}.shadowRoot; const l=h.querySelector(".tmw .tlbl"); const a=l?.textContent; h.querySelector(".tmw button.p").click(); return { labels:h.querySelector("ha-card").classList.contains("labels"), shown:!!l && getComputedStyle(l).display !== "none" && l.offsetWidth > 0, a, b:l?.textContent }; })()`);
+check("Timer-Seite: Zeit sichtbar ohne Beschriftungen, + wirkt", !r.labels && r.shown && r.a === "5 Min" && r.b === "6 Min", JSON.stringify(r));
+// ↩️ Zurück mit laufendem Timer: Seite zu, Timer bleibt (kein timer/cancel)
+r = await p.evaluate(`(async () => { const c=${card}; const old=c._ws; const calls=[]; c._ws=async(m)=>{calls.push(m.type); return {};};
+  c._data.timers=[{id:"tz",label:"Eier",end:new Date(Date.now()+240000).toISOString()}]; c._timerWinTick?.();
+  const chips=c.shadowRoot.querySelectorAll(".tmw .list > span").length; c._pageBack(); await new Promise(r=>setTimeout(r,100));
+  const res={chips, calls, open:!!c.shadowRoot.querySelector(".tmw")}; c._data.timers=[]; c._ws=old; return res; })()`);
+check("Timer-Seite: Zurück löscht keinen laufenden Timer", r.chips === 1 && !r.calls.includes("einkaufsliste/timer/cancel") && !r.open, JSON.stringify(r));
 await back();
 
 // 3) Foto-Seite: Galerie-Symbol
