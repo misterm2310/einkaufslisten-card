@@ -5711,11 +5711,18 @@ async def test_timer_notify(hass, setup) -> None:
     m._timer_due(t["id"])
     await hass.async_block_till_done()
     assert len(calls_a) == 2 and len(calls_b) == 1
-    # Starter ohne angekreuztes Handy: alle bekommen es
+    # Starter ohne Handy (z. B. Fire TV): keine Meldung (2.76.30-beta.6, Marcos Wunsch)
     t = m.start_timer(60, "Reis", by_id="u9")
     m._timer_due(t["id"])
     await hass.async_block_till_done()
-    assert len(calls_a) == 3 and len(calls_b) == 2
+    assert len(calls_a) == 2 and len(calls_b) == 1
+    # „nur Starter“ braucht keine Auswahl: leere Liste bleibt an, Handy des Starters bekommt es
+    assert m.set_timer_notify([], starter=True) == {"services": [], "starter": True}
+    assert m.as_dict()["settings"]["timer_notify"] == {"services": [], "starter": True}
+    t = m.start_timer(60, "Pizza", by_id="u1")
+    m._timer_due(t["id"])
+    await hass.async_block_till_done()
+    assert len(calls_a) == 3 and len(calls_b) == 1
     # leer = aus, gespeichert
     assert m.set_timer_notify([]) is None and m.as_dict()["settings"]["timer_notify"] is None
     t = m.start_timer(60, "Tee")

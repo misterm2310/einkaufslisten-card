@@ -126,22 +126,29 @@ r = await p.evaluate(`(async () => { const c=${card}; const calls=[]; c._ws=asyn
 check("Rückruf-Warnung: Treffer mit sicherem Link", r.href === "https://www.lebensmittelwarnung.de/x.html" && /noopener/.test(r.rel) && r.prod === "Kaffee" && r.check, JSON.stringify(r));
 check("Rückruf-Warnung: ✔ schickt „dismiss“", r.calls.some((m) => m.type === "einkaufsliste/recalls/dismiss" && m.recall_id === "w1"), JSON.stringify(r.calls));
 
-// ⏰ Timer-Meldung (2.76.29-beta.1): Handys ankreuzen, Speichern schickt timer_notify/set
-r = await p.evaluate(`(async () => { const c=${card}; const keepWs=c._ws, keepSvc=c._hass.services, keepAdm=c._hass.user?.is_admin; const sent=[];
-  c._hass.services={...(keepSvc||{}), notify:{mobile_app_marcos_handy:{}, persistent_notification:{}, alexa_kueche:{}}}; c._hass.user={...(c._hass.user||{}), is_admin:true};
+// ⏰ Timer-Meldung (2.76.30-beta.6): Geräte als Zeilen mit Schalter (speichert sofort), „nur Starter“ blendet die Liste aus
+r = await p.evaluate(`(async () => { const c=${card}; const keepWs=c._ws, keepSvc=c._hass.services, keepAdm=c._hass.user?.is_admin, keepSt=c._hass.states; const sent=[];
+  c._hass.services={...(keepSvc||{}), notify:{mobile_app_marcos_handy:{}, persistent_notification:{}, alexa_kueche:{}, tv_wohnzimmer:{}}}; c._hass.user={...(c._hass.user||{}), is_admin:true};
+  c._hass.states={...(keepSt||{}), "device_tracker.marcos_handy":{entity_id:"device_tracker.marcos_handy", state:"home", attributes:{friendly_name:"Marcos Pixel"}}};
   c._ws=async(m)=>{ sent.push(m); return {}; };
   c._data.settings.timer_notify={services:["mobile_app_marcos_handy"], starter:false};
   const host=c.shadowRoot.querySelector("ha-card"); const d=document.createElement("div"); d.id="tnTest"; d.innerHTML=c._timerNotifyHtml(); host.append(d);
-  const boxes=[...d.querySelectorAll(".tnsvc")].map(x=>({v:x.value, on:x.checked}));
-  const sw=!!d.querySelector('[data-act="tn-starter"]');
-  d.querySelector('.tnsvc[value="alexa_kueche"]').checked=true;
-  d.querySelector('[data-act="tn-save"]').click(); await new Promise(r=>setTimeout(r,50));
+  const rows=[...d.querySelectorAll(".tndev")].map(x=>({v:x.dataset.svc, on:x.getAttribute("aria-pressed")==="true", name:x.querySelector("b").textContent, icon:x.querySelector(".ic ha-icon").getAttribute("icon")}));
+  const info=!!d.querySelector('[data-act="finfo"]'), old=!!d.querySelector(".tnsvc,[data-act='tn-save']");
+  d.querySelector('.tndev[data-svc="alexa_kueche"]').click(); await new Promise(r=>setTimeout(r,50));
   d.querySelector('[data-act="tn-starter"]').click(); await new Promise(r=>setTimeout(r,50));
-  d.remove(); c._ws=keepWs; c._hass.services=keepSvc; c._hass.user={...c._hass.user, is_admin:keepAdm};
-  return { boxes, sent, sw }; })()`);
-check("⏰ Timer-Meldung: App-Handys zuerst, persistent_notification nicht dabei, Haken gesetzt",
-  r.boxes.length === 2 && r.boxes[0].v === "mobile_app_marcos_handy" && r.boxes[0].on && !r.boxes.some((x) => x.v === "persistent_notification"), JSON.stringify(r.boxes));
-check("⏰ Timer-Meldung: Speichern schickt beide Dienste, Schalter „nur Starter“ schaltet um", r.sw && r.sent[0]?.type === "einkaufsliste/timer_notify/set" && r.sent[0].services.length === 2 && r.sent[0].starter === false && r.sent[1]?.starter === true, JSON.stringify(r.sent));
+  c._data.settings.timer_notify={services:[], starter:true}; d.innerHTML=c._timerNotifyHtml();
+  const hidden=d.querySelectorAll(".tndev").length===0, off=!!d.querySelector('[data-act="tn-off"]');
+  d.querySelector('[data-act="tn-off"]').click(); await new Promise(r=>setTimeout(r,50));
+  d.remove(); c._ws=keepWs; c._hass.services=keepSvc; c._hass.states=keepSt; c._hass.user={...c._hass.user, is_admin:keepAdm}; c._data.settings.timer_notify=null;
+  return { rows, info, old, sent, hidden, off }; })()`);
+check("⏰ Timer-Meldung: Geräte-Zeilen (Handy zuerst, schöner Name, Symbol, Schalter), ohne persistent_notification",
+  r.rows.length === 3 && r.rows[0].v === "mobile_app_marcos_handy" && r.rows[0].on && r.rows[0].name === "Marcos Pixel" && r.rows[0].icon === "mdi:cellphone"
+  && r.rows.find((x) => x.v === "tv_wohnzimmer")?.icon === "mdi:television" && r.rows.find((x) => x.v === "tv_wohnzimmer")?.name === "Tv Wohnzimmer"
+  && !r.rows.some((x) => x.v === "persistent_notification") && r.info && !r.old, JSON.stringify(r.rows));
+check("⏰ Timer-Meldung: Schalter speichert sofort, „nur Starter“ blendet Liste aus, Ausschalten = alles aus",
+  r.sent[0]?.type === "einkaufsliste/timer_notify/set" && r.sent[0].services.join() === "mobile_app_marcos_handy,alexa_kueche" && r.sent[0].starter === false
+  && r.sent[1]?.starter === true && r.hidden && r.off && r.sent[2]?.services.length === 0 && r.sent[2]?.starter === false, JSON.stringify({ sent: r.sent, hidden: r.hidden }));
 // 🌍 Angebote im Nachbarland (#43): Statuszeile zeigt „Auch im Nachbarland“
 r = await p.evaluate(`(() => { const c=${card}; const was=c._data.settings.offers; c._data.settings.offers={enabled:true, ok:true, zip:"6900", stores:[], hours:6, last:new Date().toISOString(), count:3, foreign:["Kaufland (DE 88131)"]};
   const h=c._offersHtml(); c._data.settings.offers=was; return { foreign:h.includes("Auch im Nachbarland:") && h.includes("Kaufland (DE 88131)"), hint:h.includes("Geschäft im Nachbarland?") }; })()`);

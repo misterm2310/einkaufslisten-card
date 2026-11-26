@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.30-beta.5";
+const EL_VERSION = "2.76.30-beta.6";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.30-beta.3"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -290,11 +290,11 @@ const EL_HELP = {
     "<b>Turn on</b> (admins only). Every 6 hours the official warnings from lebensmittelwarnung.de are compared with everything checked off in the last 30 days. Matches arrive as a Home Assistant notification, are listed here with a link and can be dismissed with ✔. In the list the item gets a red ❗. Matches disappear on their own when the purchase is more than 30 days ago or the warning is older than 60 days. If the item has a note (e.g. the brand), the list checks whether it appears in the warning: red “Your brand is in the warning”, otherwise an orange ❗ “maybe a different brand”. Still check the link to see whether your pack is affected. The warnings also cover cosmetics, toys, dishes and clothing – sadly not pet food.",
   ]],
   timernotify: ["extras", [
-    "<b>⏰ Kochtimer fertig → Meldung aufs Handy</b>, auch wenn keine Karte offen ist (die Timer laufen sowieso in Home Assistant). Häkchen bei den Handys setzen (die Liste zeigt alle Melde-Dienste, die Home-Assistant-App heißt <code>mobile_app_…</code>), <b>Speichern</b>. Leer = aus (Standard). Nur Admins.",
-    "<b>📱 Nur an den, der gestartet hat:</b> Die Meldung geht nur an die Handys der Person, die den Timer gestartet hat (über ihre Person in Home Assistant und deren App-Gerät). Ist so ein Handy nicht unter den Häkchen, bekommen alle ausgewählten die Meldung. Wer mehr will (Alexa-Ansage, Licht blinken): das Ereignis <code>einkaufsliste_timer_fertig</code> gibt es weiterhin.",
+    "<b>⏰ Kochtimer fertig → Meldung aufs Handy</b>, auch wenn keine Karte offen ist (die Timer laufen sowieso in Home Assistant). Jedes Gerät hat eine Zeile mit Symbol (📱 Handy mit der Home-Assistant-App, 📺 Fernseher, 🔊 Lautsprecher) und einem Schalter rechts – Schalter an = es bekommt die Meldung, das speichert sofort. Alles aus = aus (Standard). Nur Admins.",
+    "<b>📱 Nur an den, der gestartet hat:</b> Die Meldung geht nur an die Handys der Person, die den Timer gestartet hat (über ihre Person in Home Assistant und deren App-Gerät). Dafür braucht es keine Auswahl, die Geräteliste verschwindet. Hat die Person kein Handy (z. B. Start am Fire TV), kommt keine Meldung. Wer mehr will (Alexa-Ansage, Licht blinken): das Ereignis <code>einkaufsliste_timer_fertig</code> gibt es weiterhin.",
   ], [
-    "<b>⏰ Cooking timer done → alert on the phone</b>, even when no card is open (the timers run in Home Assistant anyway). Tick the phones (the list shows all notify services, the Home Assistant app is called <code>mobile_app_…</code>), <b>Save</b>. Empty = off (default). Admins only.",
-    "<b>📱 Only to whoever started it:</b> the alert only goes to the phones of the person who started the timer (via their person in Home Assistant and its app device). If none of their phones is ticked, all ticked phones get it. Want more (Alexa announcement, flashing light)? The event <code>einkaufsliste_timer_fertig</code> is still there.",
+    "<b>⏰ Cooking timer done → alert on the phone</b>, even when no card is open (the timers run in Home Assistant anyway). Every device has a row with an icon (📱 phone with the Home Assistant app, 📺 TV, 🔊 speaker) and a switch on the right – switch on = it gets the alert, saved right away. All off = off (default). Admins only.",
+    "<b>📱 Only to whoever started it:</b> the alert only goes to the phones of the person who started the timer (via their person in Home Assistant and its app device). No selection needed, the device list disappears. If the person has no phone (e.g. started on a Fire TV), there is no alert. Want more (Alexa announcement, flashing light)? The event <code>einkaufsliste_timer_fertig</code> is still there.",
   ]],
   spend: ["extras", [
     "Eigener Schalter plus <b>„🎉 Automatisch fragen“</b> (erscheint erst, wenn das Protokoll an ist). Ausschalten versteckt nur die Anzeige – die Einträge bleiben gespeichert. Gilt für alle Geräte.",
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🎨 <b>Timer-Meldung im Look der Karte:</b> Jedes Gerät hat jetzt eine eigene Zeile mit Symbol (📱 Handy, 📺 Fernseher, 🔊 Lautsprecher), schönem Namen und Schalter – jeder Schalter speichert sofort, ⓘ erklärt alles · 📱 <b>„Nur an den, der den Timer gestartet hat“</b> braucht keine Haken mehr: Die Meldung geht an die Handys dieser Person (Person → Home-Assistant-App), die Geräteliste verschwindet. Hat die Person kein Handy (z. B. Start am Fire TV), kommt keine Meldung",
+   "🎨 <b>Timer alert in the card's look:</b> every device now has its own row with an icon (📱 phone, 📺 TV, 🔊 speaker), a nice name and a switch – each switch saves right away, ⓘ explains it · 📱 <b>“Only to whoever started the timer”</b> needs no ticks any more: the alert goes to that person's phones (person → Home Assistant app) and the device list disappears. No phone (e.g. started on a Fire TV) = no alert", "beta.6"],
   ["📱 <b>Timer-Meldung in der Offline-App:</b> Unter ⚙️ → Extras → ⏰ Timer-Meldung stehen jetzt auch in der Offline-App die Handys zum Anhaken (vorher war die Liste dort leer)",
    "📱 <b>Timer alert in the offline app:</b> ⚙️ → Extras → ⏰ Timer alert now lists the phones to tick in the offline app too (the list used to be empty there)", "beta.5"],
   ["⏲️ <b>Timer repariert:</b> Die Zeit zwischen − und + ist wieder zu sehen – auch wenn die Beschriftungen aus sind (Plus, Minus und Schnellwahl haben immer gestimmt, man sah es nur nicht) · ↩️ <b>Zurück löscht keinen Timer mehr:</b> Zurück auf der Timer-Seite oder im Kochmodus schließt nur noch die Seite, der laufende Timer bleibt",
@@ -8090,7 +8092,7 @@ ${(() => {
       { key: "privacy", icon: "mdi:shield-lock-outline", title: "Datenschutz", info: this._privacyOn() ? "an – keine Kamera/Fotos" : "aus", html: () => this._privacyHtml() },
       { key: "credits", icon: "mdi:hand-heart-outline", title: "Credits", info: `v${EL_VERSION} · von Mister-M`, html: () => this._creditsHtml() },
       { key: "offers", icon: "mdi:tag-outline", title: "Angebote", info: this._data.settings?.offers?.enabled ? (this._data.settings.offers.ok === false ? "⚠️ gerade nicht verfügbar" : "an · Marktguru") : "aus · inoffiziell", html: () => this._offersHtml() },
-      { key: "timernotify", icon: "mdi:timer-alert-outline", title: "Timer-Meldung", info: this._data.settings?.timer_notify?.services?.length ? `an · ${this._data.settings.timer_notify.services.length} 📱` : "aus", html: () => this._timerNotifyHtml() },
+      { key: "timernotify", icon: "mdi:timer-alert-outline", title: "Timer-Meldung", info: this._data.settings?.timer_notify?.starter ? "an · nur an den Starter" : this._data.settings?.timer_notify?.services?.length ? `an · ${this._data.settings.timer_notify.services.length} 📱` : "aus", html: () => this._timerNotifyHtml() },
       { key: "recalls", icon: "mdi:alert-octagon-outline", title: "Rückruf-Warnung", info: this._data.settings?.recalls?.enabled ? (this._data.settings.recalls.ok === false ? "⚠️ gerade nicht erreichbar" : `an · ${(this._data.settings.recalls.hits || []).length} Treffer`) : "aus", html: () => this._recallsHtml() },
       { key: "stats", icon: "mdi:chart-donut", title: "Ressourcen", info: "Speicher, Umfang & Last", html: () => {
         this._accOpen = this._accOpen || {};
@@ -13775,23 +13777,37 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
   _timerNotifyHtml() {
     const t = this._data.settings?.timer_notify;
     const chosen = t?.services || [];
+    const starter = !!t?.starter;
+    const on = !!(chosen.length || starter);
     const admin = !!this._hass?.user?.is_admin;
     const all = Object.keys(this._hass?.services?.notify || {}).filter((n) => n !== "persistent_notification" && n !== "send_message");
     for (const c of chosen) if (!all.includes(c)) all.push(c); // gespeichert, aber gerade nicht da (Handy weg?) – trotzdem zeigen
     all.sort((a, b) => (b.startsWith("mobile_app_") - a.startsWith("mobile_app_")) || a.localeCompare(b));
-    const nice = (n) => n.replace(/^mobile_app_/, "📱 ").replace(/_/g, " ");
-    return `
-      <p class="hint">⏰ Timer fertig – Meldung aufs Handy. Die Kochtimer laufen in Home Assistant. Ist die Zeit um, kommt eine Meldung aufs Handy – auch wenn keine Karte offen ist. Standard: aus.</p>
-      ${chosen.length ? `<p><b>✅ An</b> <span>· meldet an</span> <span translate="no">${esc(chosen.map(nice).join(", "))}</span></p>` : ""}
-      ${admin ? (all.length ? `
-      <div class="pestores">🔔 <span>Melden an:</span> ${all.map((n) =>
-        `<label class="stck" style="--c:#00897b"><input type="checkbox" class="tnsvc" value="${esc(n)}" ${chosen.includes(n) ? "checked" : ""}><span translate="no" style="white-space:nowrap">${esc(nice(n))}</span></label>`).join("")}</div>
-      ${chosen.length ? this._swHtml("tn-starter", !!t?.starter, "📱 Nur an den, der den Timer gestartet hat", "sonst an alle angekreuzten Handys") : ""}
-      <div class="btnrow">
-        <button class="btn primary" data-act="tn-save"><ha-icon icon="mdi:content-save-outline"></ha-icon>Speichern</button>
-        ${chosen.length ? `<button class="btn" data-act="tn-off"><ha-icon icon="mdi:close"></ha-icon>Ausschalten</button>` : ""}
-      </div>` : `<p class="hint">🤷 In Home Assistant gibt es noch keinen Melde-Dienst. Installiere die Home-Assistant-App auf dem Handy und melde dich an – dann steht es hier als 📱.</p>`)
-      : `<p class="hint">🔒 Einschalten oder ändern kann das nur ein Admin.</p>`}`;
+    const intro = `<p class="hint">⏰ Timer fertig – Meldung aufs Handy. Die Kochtimer laufen in Home Assistant. Ist die Zeit um, kommt eine Meldung aufs Handy – auch wenn keine Karte offen ist. Standard: aus.</p>`;
+    if (!admin) return `${intro}${on ? `<p><b>✅ An</b> <span>· ${starter ? "nur an den, der den Timer gestartet hat" : `meldet an ${esc(chosen.map((n) => this._tnDev(n).name).join(", "))}`}</span></p>` : ""}<p class="hint">🔒 Einschalten oder ändern kann das nur ein Admin.</p>`;
+    // 📱 Geräte wie die Listen der Karte: farbiges Symbol, schöner Name, Dienstname klein darunter, Schalter rechts (speichert sofort)
+    const rows = all.map((n) => {
+      const d = this._tnDev(n), sel = chosen.includes(n);
+      return `<button class="lrow tndev" data-act="tn-dev" data-svc="${esc(n)}" aria-pressed="${sel}"><span class="ic" style="--ic:${d.color}"><ha-icon icon="${d.icon}"></ha-icon></span><span class="grow"><b translate="no">${esc(d.name)}</b><small translate="no">notify.${esc(n)}</small></span><span class="tgl"><span></span></span></button>`;
+    }).join("");
+    const help = "Schalter an = dieses Gerät bekommt die Meldung, sobald ein Kochtimer fertig ist. 📱 sind Handys mit der Home-Assistant-App. Fehlt ein Handy, dort in der App anmelden – dann taucht es hier auf.";
+    return `${intro}
+      ${this._swHtml("tn-starter", starter, "📱 Nur an den, der den Timer gestartet hat", starter ? "geht an die Handys dieser Person (Person → Home-Assistant-App) · hat sie keins, kommt keine Meldung" : "aus = an die Geräte unten")}
+      ${starter ? "" : all.length ? `<div class="flab"><span>🔔 Melden an</span><button type="button" class="finfo" data-act="finfo" aria-expanded="false" title="Was ist das?" aria-label="Erklärung: Melden an">i</button></div><p class="hint fhint" hidden>${help}</p>${rows}`
+        : `<p class="hint">🤷 In Home Assistant gibt es noch keinen Melde-Dienst. Installiere die Home-Assistant-App auf dem Handy und melde dich an – dann steht es hier als 📱.</p>`}
+      ${on ? `<div class="btnrow"><button class="btn" data-act="tn-off"><ha-icon icon="mdi:close"></ha-icon>Ausschalten</button></div>` : ""}`;
+  }
+
+  // 📱 Melde-Dienst hübsch: Symbol + Farbe nach Art, Name aus dem Geräte-Tracker der HA-App (sonst aus dem Dienstnamen)
+  _tnDev(n) {
+    const obj = n.replace(/^mobile_app_/, "");
+    const fn = n.startsWith("mobile_app_") ? this._hass?.states?.[`device_tracker.${obj}`]?.attributes?.friendly_name : "";
+    const name = fn || obj.replace(/_/g, " ").replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+    const [icon, color] = n.startsWith("mobile_app_") ? ["mdi:cellphone", "#00897b"]
+      : /tv|fire|fernseh|television|kodi|shield/i.test(n) ? ["mdi:television", "#1e88e5"]
+      : /alexa|echo|speaker|lautsprecher|sonos/i.test(n) ? ["mdi:speaker", "#7e57c2"]
+      : ["mdi:bell-outline", "#607d8b"];
+    return { name, icon, color };
   }
 
   // ⚠️ Rückruf-Warnung: offizielle Warnungen (lebensmittelwarnung.de) gegen die Einkäufe der letzten 30 Tage
@@ -15426,14 +15442,17 @@ ${S(".rzcols")}{column-count:2;column-gap:22px}${S(".rzcols .rzi")}{break-inside
           .catch(() => {});
         break;
       }
-      case "tn-save":
+      case "tn-dev":
       case "tn-off":
-      case "tn-starter": {
+      case "tn-starter": { // 🎚️ jeder Schalter speichert sofort
         const cur = this._data.settings?.timer_notify || {};
-        const services = act === "tn-off" ? [] : act === "tn-starter" ? (cur.services || []) : [...this.shadowRoot.querySelectorAll(".tnsvc:checked")].map((x) => x.value);
-        const starter = act === "tn-starter" ? !cur.starter : !!cur.starter;
+        let services = [...(cur.services || [])], starter = !!cur.starter;
+        if (act === "tn-off") { services = []; starter = false; }
+        else if (act === "tn-starter") starter = !starter;
+        else { const n = el.dataset.svc; services = services.includes(n) ? services.filter((x) => x !== n) : [...services, n]; }
+        const was = !!((cur.services || []).length || cur.starter), now = !!(services.length || starter);
         this._ws({ type: "einkaufsliste/timer_notify/set", services, starter })
-          .then(() => { this._toast(services.length ? "⏰ Timer-Meldung ist an" : "⏰ Timer-Meldung ist aus"); setTimeout(() => this._renderSettings(), 150); })
+          .then(() => { if (was !== now) this._toast(now ? "⏰ Timer-Meldung ist an" : "⏰ Timer-Meldung ist aus"); setTimeout(() => this._renderSettings(), 150); })
           .catch(() => {});
         break;
       }

@@ -944,7 +944,7 @@ class EinkaufslisteManager:
                            if isinstance(v, list)} if isinstance(raw_ext, dict) else {}
         self.recalls_cfg = data.get("recalls_cfg") or None
         tn = data.get("timer_notify")
-        self.timer_notify = tn if isinstance(tn, dict) and tn.get("services") else None
+        self.timer_notify = tn if isinstance(tn, dict) and (tn.get("services") or tn.get("starter")) else None
         self.recalls_hits = [h for h in (data.get("recalls_hits") or []) if isinstance(h, dict)]
         g = data.get("guest")
         self.guest = g if isinstance(g, dict) and isinstance(g.get("th"), str) and isinstance(g.get("ph"), str) else None
@@ -1486,13 +1486,14 @@ class EinkaufslisteManager:
         return self._offers_info()
 
     def set_timer_notify(self, services: list[str] | None, starter: bool = False) -> dict[str, Any] | None:
-        """⏰ Kochtimer fertig: an diese Handys melden (notify-Dienste, z. B. mobile_app_marcos_handy). Leer = aus."""
+        """⏰ Kochtimer fertig: an diese Handys melden (notify-Dienste, z. B. mobile_app_marcos_handy).
+        starter = nur an die Handys des Starters (braucht keine Liste). Leer und ohne starter = aus."""
         clean: list[str] = []
         for svc in services or []:
             name = str(svc or "").strip().lower().removeprefix("notify.")
             if re.fullmatch(r"[a-z0-9_]{1,80}", name) and name not in clean:
                 clean.append(name)
-        self.timer_notify = {"services": clean[:10], "starter": bool(starter)} if clean else None
+        self.timer_notify = {"services": clean[:10], "starter": bool(starter)} if clean or starter else None
         self._changed()
         return self.timer_notify
 
@@ -1511,14 +1512,12 @@ class EinkaufslisteManager:
         return out
 
     def timer_notify_targets(self, timer: dict[str, Any]) -> list[str]:
-        """⏰ Wohin die Meldung geht: alle ausgewählten – oder (Schalter an) nur die Handys des Starters, falls darunter."""
+        """⏰ Wohin die Meldung geht: alle ausgewählten – oder (Schalter an) die Handys des Starters.
+        Hat der Starter kein Handy (z. B. Start am Fire TV), gibt es keine Meldung (Marcos Wunsch 26.11.2026)."""
         cfg = self.timer_notify or {}
-        chosen = [s for s in cfg.get("services") or [] if self.hass.services.has_service("notify", s)]
         if cfg.get("starter"):
-            mine = [s for s in chosen if s in self._starter_services(timer.get("by_id"))]
-            if mine:
-                return mine
-        return chosen
+            return [s for s in self._starter_services(timer.get("by_id")) if self.hass.services.has_service("notify", s)]
+        return [s for s in cfg.get("services") or [] if self.hass.services.has_service("notify", s)]
 
     async def _send_timer_notify(self, timer: dict[str, Any], recipe: dict[str, Any] | None) -> None:
         """⏰ Handy-Meldung „Timer fertig“ – klappt auch, wenn keine Karte offen ist. Fehler stören den Timer nie."""
@@ -4765,7 +4764,7 @@ class EinkaufslisteManager:
                     "by": timer.get("by"),
                 },
             )
-            if (self.timer_notify or {}).get("services"):
+            if self.timer_notify:
                 self.hass.async_create_task(self._send_timer_notify(timer, recipe))
         self._changed()
 
