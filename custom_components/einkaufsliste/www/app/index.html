@@ -368,6 +368,8 @@ async function loadUserAndStates() {
     const sv = await raw({ type: "get_services" });
     services = {};
     for (const d of ["airfryer_control"]) if (sv && sv[d]) services[d] = sv[d];
+    // 📱 Melde-Dienste (z. B. mobile_app_…) nur mit Namen merken – für ⚙️ → Extras → ⏰ Timer-Meldung („Melden an“)
+    if (sv?.notify) services.notify = Object.fromEntries(Object.keys(sv.notify).map((n) => [n, {}]));
     put(K.services, services);
   } catch (_) { /* später */ }
   try {

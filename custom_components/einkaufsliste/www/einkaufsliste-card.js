@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.30-beta.4";
+const EL_VERSION = "2.76.30-beta.5";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.30-beta.3"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["📱 <b>Timer-Meldung in der Offline-App:</b> Unter ⚙️ → Extras → ⏰ Timer-Meldung stehen jetzt auch in der Offline-App die Handys zum Anhaken (vorher war die Liste dort leer)",
+   "📱 <b>Timer alert in the offline app:</b> ⚙️ → Extras → ⏰ Timer alert now lists the phones to tick in the offline app too (the list used to be empty there)", "beta.5"],
   ["⏲️ <b>Timer repariert:</b> Die Zeit zwischen − und + ist wieder zu sehen – auch wenn die Beschriftungen aus sind (Plus, Minus und Schnellwahl haben immer gestimmt, man sah es nur nicht) · ↩️ <b>Zurück löscht keinen Timer mehr:</b> Zurück auf der Timer-Seite oder im Kochmodus schließt nur noch die Seite, der laufende Timer bleibt",
    "⏲️ <b>Timer fixed:</b> the time between − and + is visible again, even with button labels switched off (plus, minus and the quick picks always worked, you just couldn't see it) · ↩️ <b>Back no longer deletes a timer:</b> going back on the timer page or in cooking mode only closes the page, the running timer keeps going", "beta.4"],
   ["⏱️ <b>Laufband und Kochmodus-Anzeige mit Restzeit:</b> Kochtimer und Fritteuse zeigen jetzt „noch 12 Min · fertig 18:05 Uhr“ statt nur der Uhrzeit · 🕒 Mit <b>Airfryer Control</b> 1.0.6-beta.4: „Start um 18:12 → fertig um 18:30 Uhr“, zur Startzeit blinkt orange „⏰ JETZT STARTEN“, und „😴 Programm verworfen – nochmal senden“, wenn die Fritteuse ein nicht gestartetes Programm weggeworfen hat",
