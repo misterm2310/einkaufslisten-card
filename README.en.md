@@ -431,6 +431,7 @@ Everything works in the visual editor. For YAML fans:
 | `binary_sensor.einkaufsliste_<store>_offen` | **per store**: on while it is open according to its opening hours (with branches: as soon as one is open; public holidays count too – depending on the store’s “🎌 Holidays” setting). Without opening hours it is “unknown”. Attributes `offen_bis` (open until), `oeffnet` (opens, e.g. “Montag 08:00”), `feiertag` (holiday), with branches `filialen`. Recalculated every minute – e.g. “remind me when Aldi closes in 30 minutes” |
 | `sensor.einkaufsliste_zuletzt_eingetragen` (English HA: `…_last_added`) | last added item with `von` (who), `wann` (when), `geschaeft` (store) |
 | `sensor.einkaufsliste_zuletzt_gekauft` (English HA: `…_last_bought`) | last checked-off item with `von`, `wann`, `geschaeft`, `menge` (tidy-up does not count as a purchase) |
+| `sensor.einkaufsliste_rezepte` (English HA: `…_recipes`) | 👨‍🍳 **all recipes** from the chef's hat: state = number, attribute `rezepte` (all names A–Z) and `diese_woche` (only the ones marked 📅 this week). Recipe suggestions still waiting for an OK do not count. Ideal for filling an `input_select` (e.g. a dinner choice) via an automation with `input_select.set_options` |
 
 | Action | What happens |
 |---|---|

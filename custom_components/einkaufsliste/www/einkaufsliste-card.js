@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.30-beta.7";
+const EL_VERSION = "2.76.30-beta.8";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.30-beta.3"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["👨‍🍳 <b>Neuer Sensor „Rezepte“:</b> <code>sensor.einkaufsliste_rezepte</code> zeigt, wie viele Rezepte in der Kochmütze sind, und hat alle Namen (A–Z) als Liste dabei – dazu extra die mit 📅 „diese Woche“. Damit kann Home Assistant z. B. deine Abendessen-Auswahl (input_select) automatisch mit den Rezepten füllen. Wartende Vorschläge zählen nicht mit.",
+   "👨‍🍳 <b>New “Recipes” sensor:</b> <code>sensor.einkaufsliste_recipes</code> (German setup: <code>…_rezepte</code>) shows how many recipes are in the chef's hat and carries all names (A–Z) as a list – plus the ones marked 📅 “this week”. Home Assistant can use it to fill e.g. your dinner choice (input_select) with the recipes automatically. Suggestions still waiting don't count.", "beta.8"],
   ["⭐ <b>Stern-Knopf in den Credits:</b> Gefällt dir die Karte? Unter 🙏 Credits führt „⭐ Gib uns einen Stern“ direkt zu GitHub · 📦 <b>Download-Zähler:</b> Jede neue Version hängt jetzt als fertige ZIP-Datei am Release, HACS lädt diese ZIP – so zählt GitHub endlich mit, wie oft die Einkaufsliste geladen wird (Schild oben im README). Es wird nichts getrackt und nichts von dir übertragen.",
    "⭐ <b>Star button in the credits:</b> like the card? Under 🙏 Credits, “⭐ Give us a star” takes you straight to GitHub · 📦 <b>Download counter:</b> every new version now comes as a ready-made ZIP file on the release and HACS downloads that ZIP – so GitHub finally counts how often the shopping list is downloaded (badge at the top of the README). Nothing is tracked and nothing about you is sent.", "beta.7"],
   ["🎨 <b>Timer-Meldung im Look der Karte:</b> Jedes Gerät hat jetzt eine eigene Zeile mit Symbol (📱 Handy, 📺 Fernseher, 🔊 Lautsprecher), schönem Namen und Schalter – jeder Schalter speichert sofort, ⓘ erklärt alles · 📱 <b>„Nur an den, der den Timer gestartet hat“</b> braucht keine Haken mehr: Die Meldung geht an die Handys dieser Person (Person → Home-Assistant-App), die Geräteliste verschwindet. Hat die Person kein Handy (z. B. Start am Fire TV), kommt keine Meldung",

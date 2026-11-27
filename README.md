@@ -430,6 +430,7 @@ Alles geht im visuellen Editor. Für YAML-Fans:
 | `binary_sensor.einkaufsliste_<geschäft>_offen` | **pro Geschäft**: an, solange es laut Öffnungszeiten offen hat (mit Filialen: sobald eine offen hat; Feiertage zählen mit – je nach Einstellung „🎌 Feiertage“ des Geschäfts). Ohne eingetragene Zeiten „unbekannt“. Attribute `offen_bis`, `oeffnet` (z. B. „Montag 08:00“), `feiertag`, bei Filialen `filialen`. Wird jede Minute neu berechnet – z. B. „Erinnere mich, wenn Aldi in 30 Minuten zumacht“ |
 | `sensor.einkaufsliste_zuletzt_eingetragen` | letzter Artikel mit `von`, `wann`, `geschaeft` |
 | `sensor.einkaufsliste_zuletzt_gekauft` | zuletzt abgehakter Artikel mit `von`, `wann`, `geschaeft`, `menge` (Aufräumen zählt nicht als Einkauf) |
+| `sensor.einkaufsliste_rezepte` | 👨‍🍳 **alle Rezepte** aus der Kochmütze: Zustand = Anzahl, Attribut `rezepte` (alle Namen A–Z) und `diese_woche` (nur die mit 📅). Wartende Rezept-Vorschläge zählen nicht. Ideal, um z. B. ein `input_select` (Abendessen-Auswahl) per Automation mit `input_select.set_options` zu füllen |
 
 | Aktion | Was passiert |
 |---|---|

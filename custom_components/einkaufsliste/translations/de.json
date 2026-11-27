@@ -260,6 +260,9 @@
       "kochmodus": {
         "name": "Kochmodus"
       },
+      "rezepte": {
+        "name": "Rezepte"
+      },
       "gesundheit": {
         "name": "Gesundheit",
         "state": {

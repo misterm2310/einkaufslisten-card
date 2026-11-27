@@ -5758,3 +5758,41 @@ async def test_photo_search_new_then_old(hass, setup, aioclient_mock):
     assert [r["url"] for r in res["results"]] == [base + "7/f.jpg"]
     old = [c for c in aioclient_mock.mock_calls if "cgi/search.pl" in str(c[1]) and "openfoodfacts" in str(c[1])]
     assert old and old[0][1].query.get("page_size") == "24"
+
+
+async def test_rezepte_sensor(hass, setup, hass_ws_client) -> None:
+    """👨‍🍳 sensor.einkaufsliste_rezepte: Anzahl + Namen (A–Z) + 📅 diese Woche – für eine input_select-Automation."""
+    client = await hass_ws_client(hass)
+    nid = 0
+
+    async def ws(**msg):
+        nonlocal nid
+        nid += 1
+        await client.send_json({"id": nid, **msg})
+        res = await client.receive_json()
+        assert res["success"] is True, res
+        return res.get("result")
+
+    await hass.async_block_till_done()
+    st = hass.states.get("sensor.einkaufsliste_rezepte")
+    assert st is not None and st.state == "0" and st.attributes["rezepte"] == []
+    await ws(type="einkaufsliste/recipe/add", name="Lasagne")
+    r2 = await ws(type="einkaufsliste/recipe/add", name="Apfelkuchen")
+    await hass.async_block_till_done()
+    st = hass.states.get("sensor.einkaufsliste_rezepte")
+    assert st.state == "2" and st.attributes["rezepte"] == ["Apfelkuchen", "Lasagne"]
+    assert st.attributes["diese_woche"] == []
+    rid = (r2.get("recipe") or r2)["id"]
+    await ws(type="einkaufsliste/recipe/update", recipe_id=rid, name="Zwiebelkuchen", plan="week")
+    await hass.async_block_till_done()
+    st = hass.states.get("sensor.einkaufsliste_rezepte")
+    assert st.attributes["rezepte"] == ["Lasagne", "Zwiebelkuchen"] and st.attributes["diese_woche"] == ["Zwiebelkuchen"]
+    # ⚡ Ein Artikel ändert nichts an den Rezepten → Sensor wird nicht neu geschrieben
+    before = st.last_updated
+    await ws(type="einkaufsliste/item/add", name="Milch")
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.einkaufsliste_rezepte").last_updated == before
+    await ws(type="einkaufsliste/recipe/remove", recipe_id=rid)
+    await hass.async_block_till_done()
+    st = hass.states.get("sensor.einkaufsliste_rezepte")
+    assert st.state == "1" and st.attributes["rezepte"] == ["Lasagne"] and st.attributes["diese_woche"] == []

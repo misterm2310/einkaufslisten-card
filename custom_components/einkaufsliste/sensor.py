@@ -25,7 +25,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     manager: EinkaufslisteManager = hass.data[DOMAIN]["manager"]
-    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry), ZuletztGekauftSensor(manager, entry), GesundheitSensor(manager, entry), KochtimerSensor(manager, entry), KochmodusSensor(manager, entry)])
+    async_add_entities([OffeneArtikelSensor(manager, entry), ZuletztEingetragenSensor(manager, entry), ZuletztGekauftSensor(manager, entry), GesundheitSensor(manager, entry), KochtimerSensor(manager, entry), KochmodusSensor(manager, entry), RezepteSensor(manager, entry)])
 
     # 🏪 Ein Sensor pro Geschäft – neue Geschäfte bekommen ihren Sensor automatisch, gelöschte verschwinden
     known: dict[str, GeschaeftSensor] = {}
@@ -401,6 +401,46 @@ class KochmodusSensor(_Base):
             "seit": c["since"],
             "aktualisiert": c["updated"],
         }
+
+
+class RezepteSensor(_Base):
+    """sensor.einkaufsliste_rezepte – alle Rezepte aus der Kochmütze für Home Assistant. Zustand = Anzahl,
+    Attribut „rezepte“ = alle Namen (A–Z), „diese_woche“ = die mit 📅. Damit kann z. B. eine Automation eine Auswahl
+    (input_select) mit den Rezepten füllen. Vorschläge, die noch auf ein OK warten, zählen nicht mit."""
+
+    _attr_translation_key = "rezepte"
+    _attr_icon = "mdi:chef-hat"
+    # 📦 Die Namenslisten nicht in die Datenbank (Verlauf) – nur die Anzahl
+    _unrecorded_attributes = frozenset({"rezepte", "diese_woche"})
+
+    def __init__(self, manager: EinkaufslisteManager, entry: ConfigEntry) -> None:
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_rezepte"
+        self._last: tuple | None = None
+
+    def _names(self, only_week: bool = False) -> list[str]:
+        names = {
+            str(r.get("name") or "").strip()
+            for r in self._m.recipes
+            if not only_week or r.get("plan") == "week"
+        }
+        return sorted((n for n in names if n), key=str.casefold)
+
+    @callback
+    def _refresh(self) -> None:
+        # ⚡ Nur neu schreiben, wenn sich an den Rezepten wirklich etwas geändert hat (nicht bei jedem Artikel)
+        snap = (tuple(self._names()), tuple(self._names(True)))
+        if snap != self._last:
+            self._last = snap
+            super()._refresh()
+
+    @property
+    def native_value(self) -> int:
+        return len(self._names())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"rezepte": self._names(), "diese_woche": self._names(True)}
 
 
 class GesundheitSensor(_Base):
