@@ -1218,6 +1218,25 @@ check("🕒 Fertig um: Start um … → fertig um …, JETZT STARTEN orange, ver
   && /^⏰ Fritteuse Zone 2: JETZT STARTEN – fertig um \d\d:\d\d Uhr$/.test(r.plan.items[2]) && r.plan.items[3] === "😴 Fritteuse Grandzone: Programm verworfen – nochmal senden" && r.plan.shake, JSON.stringify(r.plan));
 check("🍟 Schalter airfryer: false = nur Kochtimer", r.aus.items.length === 1 && !r.aus.fertig, JSON.stringify(r.aus));
 
+// ⏱️ 2.76.30-beta.10: Kochmodus-Restzeit wird auch bei jedem hass neu gerechnet (Fire TV würgt den 30-s-Wecker ab)
+r = await p.evaluate(`(() => { const c=${card}; const k=document.createElement("einkaufsliste-kochmodus"); document.querySelector(".wrap").after(k); k.setConfig({});
+  k.hass={...c._hass, states:{"sensor.einkaufsliste_kochmodus":{state:"Suppe",attributes:{aktiv:true,rezept:"Suppe",schritt:1,schritte:2,text:"x"}}}};
+  clearInterval(k._restTick); // so tun, als hätte der Fire TV den Wecker abgewürgt
+  const s=document.createElement("span"); s.className="rest"; s.dataset.end=new Date(Date.now()+20*60000).toISOString(); s.textContent="alt"; k.shadowRoot.querySelector("ha-card").append(s);
+  k.hass={...k._hass}; const gleich=s.textContent; // innerhalb von 10 s: nichts tun (spart Last)
+  k._restAt=Date.now()-11000; k.hass={...k._hass}; const neu=s.textContent; k.remove(); return { gleich, neu }; })()`);
+check("⏱️ Kochmodus: Restzeit rechnet bei hass nach (höchstens alle 10 s)", r.gleich === "alt" && /^noch (19|20) Min/.test(r.neu), JSON.stringify(r));
+// 📥 2.76.30-beta.10: Download-Zahl in den Credits aus downloads.json (fehlt sie, bleibt die Zeile weg)
+await p.route("**/downloads.json*", (rt) => rt.fulfill({ contentType: "application/json", body: JSON.stringify({ downloads: 1234, stand: "2026-11-27" }) }));
+r = await p.evaluate(`(async () => { const c=${card}; const d=document.createElement("div"); d.id="crt"; c.shadowRoot.querySelector("ha-card").append(d);
+  d.innerHTML=c._creditsHtml(false); const vorher=d.querySelector(".elcdl")?.hidden; await new Promise(r=>setTimeout(r,300));
+  const el=d.querySelector(".elcdl"); const res={ vorher, txt: el?.textContent, hidden: el?.hidden, again: (()=>{ const x=document.createElement("div"); x.innerHTML=c._creditsHtml(true); return x.querySelector(".elcdl").textContent; })() };
+  return res; })()`);
+check("📥 Credits: „rund 1.234 Downloads (Stand letztes Release)“", r.vorher === true && /rund 1\.234 Downloads \(Stand letztes Release\)$/.test(r.txt) && r.hidden === false && r.again === "📥 about 1,234 downloads (as of last release)", JSON.stringify(r));
+await p.evaluate(`${card}.shadowRoot.querySelector("#crt").scrollIntoView()`);
+if (process.env.EL_SHOT) await p.locator("#c1").screenshot({ path: process.env.EL_SHOT });
+await p.evaluate(`${card}.shadowRoot.querySelector("#crt").remove()`);
+
 check("keine JavaScript-Fehler", errs.length === 0, errs.join(" | "));
 await b.close(); srv.close();
 if (fails) { console.log(`\n${fails} Prüfung(en) fehlgeschlagen`); process.exit(1); }

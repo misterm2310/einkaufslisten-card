@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.30-beta.9";
+const EL_VERSION = "2.76.30-beta.10";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.30-beta.3"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -424,6 +424,8 @@ const EL_HELP_TITLES = { // [Titel de, Titel en, Icon]
   listview: ["Listenansicht – für alle", "List view – for everyone", "👁️"], app: ["Offline-App", "Offline app", "📱"], theme: ["Hell / Dunkel", "Light / dark", "🌓"], pin: ["Schutz (PIN)", "Protection (PIN)", "🔒"], privacy: ["Datenschutz", "Privacy", "🛡️"], year: ["Euer Jahr in Einkäufen", "Your year in shopping", "🎁"], statistik: ["Statistik", "Statistics", "📊"], guest: ["Gast-Link", "Guest link", "🎫"],
 };
 const EL_NEWS_MAX = 15;
+// 📥 Download-Zahl (downloads.json aus der Release-ZIP) – einmal laden, dann für alle Karten merken
+const elDownloads = { p: null, data: null };
 // 🔢 Versionen vergleichen, auch Testversionen: 2.76.15-beta.5 ist neuer als 2.76.14, aber älter als 2.76.15. > 0 = a neuer, < 0 = b neuer
 function elVerCmp(a, b) {
   const p = (v) => {
@@ -440,6 +442,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["⏱️ <b>Kochmodus-Restzeit läuft am Fire TV weiter:</b> „noch X Min“ wird jetzt zusätzlich bei jedem Lebenszeichen von Home Assistant neu gerechnet – am schwachen Fire TV blieb die Zeit sonst manchmal stehen · 💤 <b>Kochmodus geht von selbst aus:</b> Steht das Rezept auf dem letzten Schritt, geht die Kochmodus-Anzeige nach 30 Minuten von allein aus – läuft noch ein Timer, erst 30 Minuten nach dessen Ende · 📥 <b>Download-Zahl in den Credits:</b> Unter 🙏 Credits steht jetzt „rund N Downloads (Stand letztes Release)“. Die Zahl schreibt GitHub beim Release in die ZIP – die Karte fragt nichts im Internet nach",
+   "⏱️ <b>Cooking mode time left keeps running on Fire TV:</b> “X min left” is now also recalculated on every sign of life from Home Assistant – on the weak Fire TV the time sometimes froze · 💤 <b>Cooking mode switches itself off:</b> when the recipe is on its last step, the cooking mode display turns off by itself after 30 minutes – if a timer is still running, 30 minutes after it ends · 📥 <b>Download count in the credits:</b> under 🙏 Credits you now see “about N downloads (as of last release)”. GitHub writes the number into the ZIP at release time – the card asks nothing on the internet", "beta.10"],
   ["🔢 <b>Menge im Laden-Modus gut sichtbar:</b> Die Zahl (z. B. „3x“) ist jetzt so groß und fett wie der Name, schwarz auf hellblau und mit orangem Rahmen – so übersieht im Laden niemand mehr, wie viel in den Wagen soll. Die normale Liste bleibt, wie sie ist",
    "🔢 <b>Quantity easy to see in store mode:</b> the number (e.g. “3x”) is now as big and bold as the name, black on light blue with an orange frame – so nobody in the store misses how many go in the cart. The normal list stays as it is", "beta.9"],
   ["👨‍🍳 <b>Neuer Sensor „Rezepte“:</b> <code>sensor.einkaufsliste_rezepte</code> zeigt, wie viele Rezepte in der Kochmütze sind, und hat alle Namen (A–Z) als Liste dabei – dazu extra die mit 📅 „diese Woche“. Damit kann Home Assistant z. B. deine Abendessen-Auswahl (input_select) automatisch mit den Rezepten füllen. Wartende Vorschläge zählen nicht mit.",
@@ -12515,12 +12519,29 @@ ${(() => {
     </div>`;
   }
 
+  // 📥 Download-Zahl für die Credits: steht in downloads.json, die das Release beim Packen der ZIP mitschreibt.
+  // Liegt im eigenen Ordner (kein Aufruf ins Internet); fehlt die Datei oder ist N = 0, bleibt die Zeile weg.
+  _dlText(en) {
+    const d = elDownloads.data;
+    const n = Number(d?.downloads) || 0;
+    if (n <= 0) return "";
+    const num = n.toLocaleString(en ? "en" : "de");
+    return en ? `📥 about ${num} downloads (as of last release)` : `📥 rund ${num} Downloads (Stand letztes Release)`;
+  }
+  _dlLoad(en) {
+    if (!elDownloads.p) elDownloads.p = fetch(`${EL_BASE}/downloads.json?v=${EL_VERSION}`, { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => { elDownloads.data = d && typeof d === "object" ? d : null; });
+    elDownloads.p.then(() => {
+      this.shadowRoot?.querySelectorAll(".elcdl").forEach((el) => { const txt = this._dlText(el.dataset.en === "1"); el.textContent = txt; el.hidden = !txt; });
+    });
+  }
   _creditsHtml(en = EL_LANG !== "de") {
     const repo = "https://github.com/misterm2310/einkaufslisten-card";
     const t = (de, eng) => (en ? eng : de);
     return `<div class="elcredits" translate="no">
       <div class="ellogo"><img src="${EL_BASE}/mister-m.webp?v=${EL_VERSION}" alt="Mister-M" loading="lazy"></div>
       <p class="elcv"><b>${t("Einkaufsliste", "Shopping list")}</b> v${EL_VERSION}</p>
+      <p class="elcsmall elcdl" data-en="${en ? 1 : 0}"${this._dlText(en) ? "" : " hidden"}>${this._dlText(en)}</p>${(this._dlLoad(en), "")}
       <p>${t("Gemacht von <b>Mister-M</b> – mit Hilfe von Claude 🤖", "Made by <b>Mister-M</b> – with help from Claude 🤖")}</p>
       <p>${t("Ich versuche, Updates und Fehler-Korrekturen zeitnah zu erledigen.", "I try to ship updates and fixes promptly.")}</p>
       <p>✅ ${t("<b>Offiziell in HACS</b> – seit 04.11.2026 im HACS-Verzeichnis", "<b>Official in HACS</b> – in the HACS directory since 4 Nov 2026")} (<a href="https://github.com/hacs/default/pull/11340" target="_blank" rel="noopener">${t("Antrag", "submission")}</a>)</p>
@@ -17402,17 +17423,26 @@ class EinkaufslisteKochmodus extends HTMLElement {
     this._sig = null;
     this._update();
   }
-  set hass(hass) { this._hass = hass; this._update(); }
+  set hass(hass) {
+    this._hass = hass; this._update();
+    // ⏱️ Jedes Lebenszeichen von HA rechnet die Restzeit nach (höchstens alle 10 s) –
+    // der Fire TV würgt den 30-s-Wecker gern ab, dann blieb „noch X Min“ stehen
+    const now = Date.now();
+    if (now - (this._restAt || 0) >= 10000) this._restNow();
+  }
   getCardSize() { return 6; }
   getGridOptions() { return { columns: "full", rows: "auto" }; } // 📐 im Abschnitts-Dashboard über die ganze Breite
   connectedCallback() {
     this._update();
     // ⏱️ „noch X Min“ alle 30 s weiterzählen – tauscht nur den Text der Restzeit, sonst nichts (gut für den Fire TV)
-    if (!this._restTick) this._restTick = setInterval(() => {
-      const lang = this._hass?.locale?.language || EL_LANG || "de";
-      const uhr = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? `${new Date(t).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}` : ""; };
-      this.shadowRoot?.querySelectorAll(".rest[data-end]").forEach((el) => { const txt = elRestText(el.dataset.end, uhr); if (el.textContent !== txt) el.textContent = txt; });
-    }, 30000);
+    if (!this._restTick) this._restTick = setInterval(() => this._restNow(), 30000);
+  }
+  // ⏱️ Restzeit-Texte neu rechnen (nur Text tauschen, wenn er sich geändert hat)
+  _restNow() {
+    this._restAt = Date.now();
+    const lang = this._hass?.locale?.language || EL_LANG || "de";
+    const uhr = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? `${new Date(t).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })}${EL_LANG === "en" ? "" : " Uhr"}` : ""; };
+    this.shadowRoot?.querySelectorAll(".rest[data-end]").forEach((el) => { const txt = elRestText(el.dataset.end, uhr); if (el.textContent !== txt) el.textContent = txt; });
   }
   _update() {
     const root = this.shadowRoot;

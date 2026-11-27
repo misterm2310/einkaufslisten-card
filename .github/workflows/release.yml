@@ -30,6 +30,16 @@ jobs:
         id: version
         run: echo "tag=v$(jq -r .version custom_components/einkaufsliste/manifest.json)" >> "$GITHUB_OUTPUT"
 
+      # 📥 Download-Zahl für die Credits: Summe aller ZIP-Downloads aller Releases bis jetzt.
+      # Überschreibt den Platzhalter www/downloads.json (im Repo: 0 = keine Zeile) NUR in der ZIP – die Karte liest sie offline, ohne GitHub zu fragen.
+      - name: Download-Zahl in die ZIP schreiben
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --paginate --jq '[.[].assets[] | select(.name | endswith(".zip")) | .download_count] | add // 0' | awk '{s+=$1} END {print s+0}') || N=0
+          echo "{\"downloads\": ${N:-0}, \"stand\": \"$(date -u +%F)\"}" > custom_components/einkaufsliste/www/downloads.json
+          cat custom_components/einkaufsliste/www/downloads.json
+
       # 📦 Fertig gepackte ZIP für HACS/Marketplace (hacs.json: zip_release + filename).
       # Inhalt = der Ordner custom_components/einkaufsliste OHNE Unterordner (manifest.json liegt ganz oben),
       # denn HACS packt die ZIP direkt nach config/custom_components/einkaufsliste/ aus.

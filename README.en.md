@@ -596,7 +596,7 @@ The sensor also has the fields `naechster` (e.g. “Lasagna – Schritt 2”), `
 
 ⭐ **Like the card? Give us a star:** on [GitHub](https://github.com/misterm2310/einkaufslisten-card), tap “⭐ Star” at the top right (free GitHub account needed) – that shows me how many people like the shopping list and helps others find it. The button is also under ⚙️ → Credits.
 
-📊 **Download counter:** the “Downloads” badge at the top counts how often the ready-made ZIP file of the releases (betas and official versions together) was downloaded. Only GitHub counts this, nothing about you is sent.
+📊 **Download counter:** the “Downloads” badge at the top counts how often the ready-made ZIP file of the releases (betas and official versions together) was downloaded. Only GitHub counts this, nothing about you is sent. Under 🙏 Credits the same number appears as “about N downloads (as of last release)” – it is written into the ZIP at release time, the card asks nothing on the internet for it.
 
 It is and stays **free**. If you like, you can send me a small donation via PayPal – completely voluntary: [paypal.me/MarcoStrickmann](https://paypal.me/MarcoStrickmann). The link is also under ⚙️ → Credits. Thank you! 🙏
 

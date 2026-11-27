@@ -4638,6 +4638,7 @@ class EinkaufslisteManager:
 
     # ------------------------------------------------------------------ 👨‍🍳 Kochmodus-Anzeige
     COOK_KEEP = timedelta(hours=6)  # so lange ohne Umblättern bleibt die Anzeige stehen (danach: aus)
+    COOK_LAST = timedelta(minutes=30)  # 💤 auf dem letzten Schritt: nach 30 Min ohne laufenden Timer von selbst aus
 
     @callback
     def set_cooking(self, data: dict[str, Any], by: str | None = None) -> dict[str, Any]:
@@ -4679,7 +4680,8 @@ class EinkaufslisteManager:
         }
         if self._unsub_cooking:
             self._unsub_cooking()
-        self._unsub_cooking = async_call_later(self.hass, self.COOK_KEEP.total_seconds(), self._cooking_expired)
+        keep = self.COOK_LAST if self.cooking["step"] >= total else self.COOK_KEEP  # 💤 letzter Schritt = kürzer
+        self._unsub_cooking = async_call_later(self.hass, keep.total_seconds(), self._cooking_expired)
         async_dispatcher_send(self.hass, SIGNAL_COOKING)
         return self.cooking
 
@@ -4697,6 +4699,12 @@ class EinkaufslisteManager:
     @callback
     def _cooking_expired(self, _now: Any = None) -> None:
         self._unsub_cooking = None
+        # ⏲️ Läuft noch ein Timer? Dann bleibt die Anzeige an – bis 30 Min nach dem letzten Timer-Ende
+        ends = [e for e in (dt_util.parse_datetime(t.get("end") or "") for t in self.timers if not t.get("done")) if e]
+        if self.cooking is not None and ends:
+            wait = (max(ends) - dt_util.utcnow() + self.COOK_LAST).total_seconds()
+            self._unsub_cooking = async_call_later(self.hass, max(60.0, wait), self._cooking_expired)
+            return
         self.clear_cooking()
 
     def _prune_timers(self) -> None:

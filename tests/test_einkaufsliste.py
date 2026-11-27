@@ -5796,3 +5796,34 @@ async def test_rezepte_sensor(hass, setup, hass_ws_client) -> None:
     await hass.async_block_till_done()
     st = hass.states.get("sensor.einkaufsliste_rezepte")
     assert st.state == "1" and st.attributes["rezepte"] == ["Lasagne"] and st.attributes["diese_woche"] == []
+
+
+# ---------------------------------------------------------------- 🆕 Beta 2.76.30-beta.10
+async def test_kochmodus_letzter_schritt_selbst_aus(hass, setup, freezer) -> None:
+    """💤 Auf dem letzten Schritt geht die Kochmodus-Anzeige nach 30 Min von selbst aus – läuft ein Timer, erst 30 Min nach dessen Ende."""
+    m = mgr(hass)
+
+    async def tick(**kw):
+        freezer.tick(timedelta(**kw))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+
+    # Mitten im Rezept: 31 Min reichen nicht, die Anzeige bleibt (6 Stunden)
+    m.set_cooking({"sid": "a", "name": "Suppe", "step": 2, "total": 3})
+    await tick(minutes=31)
+    assert m.cooking is not None
+    # Letzter Schritt ohne Timer: nach 30 Min aus
+    m.set_cooking({"sid": "a", "name": "Suppe", "step": 3, "total": 3})
+    await tick(minutes=29)
+    assert m.cooking is not None
+    await tick(minutes=2)
+    assert m.cooking is None
+    # Letzter Schritt MIT Timer (45 Min): bleibt an, bis 30 Min nach Timer-Ende
+    m.start_timer(45 * 60, "Ofen")
+    m.set_cooking({"sid": "a", "name": "Suppe", "step": 3, "total": 3})
+    await tick(minutes=31)
+    assert m.cooking is not None  # Timer läuft noch
+    await tick(minutes=30)  # jetzt 61 Min: Timer seit 16 Min fertig
+    assert m.cooking is not None
+    await tick(minutes=15)  # 76 Min: 31 Min nach Timer-Ende
+    assert m.cooking is None
