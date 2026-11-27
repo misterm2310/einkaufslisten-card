@@ -6,7 +6,7 @@
 
 **Die Familien-Einkaufsliste direkt im Dashboard.** Mehrere Geschäfte, Kategorien, Rezepte und Live-Sync auf allen Handys. Hinter jedem Artikel steht, wer ihn eingetragen hat. Gekauftes wird abgehakt und bleibt als „schon mal gekauft“ stehen – beim nächsten Mal ist es mit einem Tipp wieder drauf.
 
-Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=einkaufslisten-card&category=integration) [![Integration hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=einkaufsliste)
+Ein Klick öffnet es direkt in deinem Home Assistant: [![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=einkaufslisten-card&category=integration) [![Integration hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=einkaufsliste) [![Downloads](https://img.shields.io/github/downloads/misterm2310/einkaufslisten-card/total?label=Downloads)](https://github.com/misterm2310/einkaufslisten-card/releases)
 
 > ✅ **Offiziell in HACS** (seit 04.11.2026): einfach in HACS nach **Einkaufsliste** suchen, kein eigenes Repository mehr nötig. 🎉
 
@@ -587,6 +587,10 @@ Der Sensor hat außerdem die Felder `naechster` (z. B. „Lasagne – Schritt 2"
 ---
 
 ## 💙 Gefällt dir die Einkaufsliste?
+
+⭐ **Gefällt dir die Karte? Gib uns einen Stern:** Auf [GitHub](https://github.com/misterm2310/einkaufslisten-card) oben rechts auf „⭐ Star“ tippen (kostenloses GitHub-Konto nötig) – so sehe ich, wie vielen die Einkaufsliste gefällt, und andere finden sie leichter. Den Knopf gibt es auch unter ⚙️ → Credits.
+
+📊 **Download-Zähler:** Das Schild „Downloads“ oben zählt, wie oft die fertige ZIP-Datei der Releases (Betas und offizielle Versionen zusammen) geladen wurde. Das zählt nur GitHub, von dir wird nichts übertragen.
 
 Sie ist und bleibt **kostenlos**. Wenn du magst, kannst du mir ganz freiwillig eine kleine Spende per PayPal schicken: [paypal.me/MarcoStrickmann](https://paypal.me/MarcoStrickmann). Den Link gibt es auch unter ⚙️ → Credits. Danke! 🙏
 

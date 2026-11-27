@@ -6,7 +6,7 @@
 
 **The family shopping list right in your dashboard.** Several stores, categories, recipes and live sync on every phone. Every item shows who added it. Bought things get checked off and stay as “bought before”, so next time they are back on with a single tap.
 
-One click opens it right in your Home Assistant: [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=einkaufslisten-card&category=integration) [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=einkaufsliste)
+One click opens it right in your Home Assistant: [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=misterm2310&repository=einkaufslisten-card&category=integration) [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=einkaufsliste) [![Downloads](https://img.shields.io/github/downloads/misterm2310/einkaufslisten-card/total?label=Downloads)](https://github.com/misterm2310/einkaufslisten-card/releases)
 
 > ✅ **Official in HACS** (since 4 Nov 2026): just search HACS for **Einkaufsliste**, no custom repository needed any more. 🎉
 
@@ -592,6 +592,10 @@ The sensor also has the fields `naechster` (e.g. “Lasagna – Schritt 2”), `
 ---
 
 ## 💙 Do you like the shopping list?
+
+⭐ **Like the card? Give us a star:** on [GitHub](https://github.com/misterm2310/einkaufslisten-card), tap “⭐ Star” at the top right (free GitHub account needed) – that shows me how many people like the shopping list and helps others find it. The button is also under ⚙️ → Credits.
+
+📊 **Download counter:** the “Downloads” badge at the top counts how often the ready-made ZIP file of the releases (betas and official versions together) was downloaded. Only GitHub counts this, nothing about you is sent.
 
 It is and stays **free**. If you like, you can send me a small donation via PayPal – completely voluntary: [paypal.me/MarcoStrickmann](https://paypal.me/MarcoStrickmann). The link is also under ⚙️ → Credits. Thank you! 🙏
 
