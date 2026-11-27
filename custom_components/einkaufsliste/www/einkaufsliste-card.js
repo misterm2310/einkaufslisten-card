@@ -2,7 +2,7 @@
  * Einkaufsliste Card – die Familien-Einkaufsliste für Home Assistant
  * Wird automatisch von der Integration "einkaufsliste" geladen.
  */
-const EL_VERSION = "2.76.30-beta.8";
+const EL_VERSION = "2.76.30-beta.9";
 // 🆕 Was ist neu (deutsch, englisch) – NUR echte neue Funktionen; bei reinen Fehlerbehebungen bleibt es unverändert (EL_NEWS_VERSION nicht anfassen)
 const EL_NEWS_VERSION = "2.76.30-beta.3"; // Version der letzten ECHTEN Neuerung – kleine Fehlerbehebungen kommen nicht hierher (stehen in den GitHub-Release-Hinweisen)
 // 📖 Die Anleitung (neu): nur, was jeder beim Benutzen braucht. Einstellungen (⚙️) stehen in EL_HELP weiter unten.
@@ -440,6 +440,8 @@ function elVerCmp(a, b) {
 const elBetaNo = (n) => Number(String(n?.[2] || "").replace(/\D+/g, "")) || 0;
 const elBetaNewsSorted = () => EL_BETA_NEWS.map((n, i) => [n, i]).sort((a, b) => elBetaNo(b[0]) - elBetaNo(a[0]) || a[1] - b[1]).map((x) => x[0]);
 const EL_BETA_NEWS = [
+  ["🔢 <b>Menge im Laden-Modus gut sichtbar:</b> Die Zahl (z. B. „3x“) ist jetzt so groß und fett wie der Name, schwarz auf hellblau und mit orangem Rahmen – so übersieht im Laden niemand mehr, wie viel in den Wagen soll. Die normale Liste bleibt, wie sie ist",
+   "🔢 <b>Quantity easy to see in store mode:</b> the number (e.g. “3x”) is now as big and bold as the name, black on light blue with an orange frame – so nobody in the store misses how many go in the cart. The normal list stays as it is", "beta.9"],
   ["👨‍🍳 <b>Neuer Sensor „Rezepte“:</b> <code>sensor.einkaufsliste_rezepte</code> zeigt, wie viele Rezepte in der Kochmütze sind, und hat alle Namen (A–Z) als Liste dabei – dazu extra die mit 📅 „diese Woche“. Damit kann Home Assistant z. B. deine Abendessen-Auswahl (input_select) automatisch mit den Rezepten füllen. Wartende Vorschläge zählen nicht mit.",
    "👨‍🍳 <b>New “Recipes” sensor:</b> <code>sensor.einkaufsliste_recipes</code> (German setup: <code>…_rezepte</code>) shows how many recipes are in the chef's hat and carries all names (A–Z) as a list – plus the ones marked 📅 “this week”. Home Assistant can use it to fill e.g. your dinner choice (input_select) with the recipes automatically. Suggestions still waiting don't count.", "beta.8"],
   ["⭐ <b>Stern-Knopf in den Credits:</b> Gefällt dir die Karte? Unter 🙏 Credits führt „⭐ Gib uns einen Stern“ direkt zu GitHub · 📦 <b>Download-Zähler:</b> Jede neue Version hängt jetzt als fertige ZIP-Datei am Release, HACS lädt diese ZIP – so zählt GitHub endlich mit, wie oft die Einkaufsliste geladen wird (Schild oben im README). Es wird nichts getrackt und nichts von dir übertragen.",
@@ -3361,7 +3363,10 @@ ha-card.shop .item .check { padding:9px; --mdc-icon-size:38px; }
 ha-card.shop .item .meta { font-size:.66em; }
 ha-card.shop .item .acts { opacity:1; --mdc-icon-size:26px; }
 ha-card.shop .item .acts .iconbtn { padding:8px; }
-ha-card.shop .item .qty { font-size:.8em; padding:2px 10px; }
+/* 🔢 Laden-Modus: Menge so groß und fett wie der Name, schwarze Zahl, oranger Rahmen (Sandra: „optisch nicht so pralle“). */
+/* Kasten immer hellblau und deckend, damit die schwarze Zahl auch im dunklen Design lesbar bleibt. */
+ha-card.shop .item .qty { font-size:1em; font-weight:700; padding:1px 10px; color:#000; background:color-mix(in srgb, var(--primary-color,#03a9f4) 22%, #fff); border:2px solid #fb8c00; }
+ha-card.shop .item.done .qty { color:#000; font-weight:600; background:color-mix(in srgb, var(--primary-color,#03a9f4) 12%, #fff); }
 ha-card.shop .ghead { font-size:.95em; padding:10px 4px 4px; }
 ha-card.shop .tab { padding:9px 15px; font-size:1.05em; }
 ha-card.shop .shopbar { font-size:1.05em; padding:10px 12px; }
